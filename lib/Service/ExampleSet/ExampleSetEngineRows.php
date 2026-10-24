@@ -157,9 +157,10 @@ abstract class ExampleSetEngineRows {
 		foreach (($fragment[$part] ?? []) as $entry) {
 			$name = $fragment['app'].'/'.$entry['key'];
 			$report[$part][$name] = 'kept';
-			$held = isset($record[$part][$name]);
+			$held    = isset($record[$part][$name]);
 			$earlier = ($record[$part][$name] ?? []);
-			if ($held === true && $this->writesAgain(refresh: $refresh, entry: $earlier, where: $fragment['file'], key: $entry['key'], report: $report) === false) {
+			$where   = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'"';
+			if ($held === true && $this->writesAgain(refresh: $refresh, entry: $earlier, where: $where, report: $report) === false) {
 				continue;
 			}
 
@@ -194,21 +195,20 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @param bool                 $refresh Whether this run refreshes this part.
 	 * @param array<string, mixed> $entry  The record entry of the row.
-	 * @param string               $where  The fragment file.
-	 * @param string               $key    The row's key.
+	 * @param string               $where  The fragment file and the row, for the report.
 	 * @param array<string, mixed> $report The report.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
-	private function writesAgain(bool $refresh, array $entry, string $where, string $key, array &$report): bool {
+	private function writesAgain(bool $refresh, array $entry, string $where, array &$report): bool {
 		if ($refresh === false) {
 			return false;
 		}
 
 		if ($this->revert(entry: $entry) === 'failed') {
-			$report['dropped'][] = $where.': '.$this->noun().' "'.$key.'": not refreshed, the earlier one could not be taken away';
+			$report['dropped'][] = $where.': not refreshed, the earlier one could not be taken away';
 			return false;
 		}
 
