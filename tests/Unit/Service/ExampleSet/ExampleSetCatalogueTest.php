@@ -108,7 +108,12 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 26, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 33, haystack: $plan['cast']['people']);
+		// DqOverdragen's team picker: Juridische zaken with six members, Juridische zaken sociaal domein with four.
+		$members = static fn (string $group): int => count(
+			array_filter($plan['cast']['people'], static fn (array $person): bool => in_array($group, ($person['groups'] ?? []), true))
+		);
+		$this->assertSame(expected: [6, 4], actual: [$members('juridische-zaken'), $members('juridische-zaken-sociaal-domein')]);
 		// Buurtvereniging Oost and its chair, whom DqOrganisatie draws.
 		$this->assertSame(expected: 'buurtoost', actual: $plan['cast']['people']['marja']['organisation']);
 		// The parties on the Lindelaan Woo case: Van Wijk's representative and the residents' association.
