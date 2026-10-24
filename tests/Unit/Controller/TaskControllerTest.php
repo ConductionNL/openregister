@@ -195,6 +195,30 @@ class TaskControllerTest extends TestCase {
 	}//end testIndexReturnsTheInboxPageForTheSession()
 
 	/**
+	 * `openFirst=true` asks for the open tasks before the finished ones; it is
+	 * off unless asked, so an existing caller's order does not change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	public function testIndexPassesOpenFirstIntoTheCriteria(): void {
+		$seen = [];
+		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$seen): array {
+				$seen[] = $criteria->openFirst;
+
+				return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
+			}
+		);
+
+		$this->controller->index(sort: 'dueAt', openFirst: 'true');
+		$this->controller->index(sort: 'dueAt');
+
+		$this->assertSame([true, false], $seen);
+	}//end testIndexPassesOpenFirstIntoTheCriteria()
+
+	/**
 	 * GET /api/flow-tasks/{uuid}: 404 for the invisible, 200 for the visible.
 	 *
 	 * @return void

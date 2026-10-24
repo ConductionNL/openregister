@@ -214,6 +214,8 @@ class TaskController extends Controller {
 	 * @param string|null $includeBlocked 'true' to list tasks whose blocker is
 	 *                                    still open. An object or run anchor
 	 *                                    lists them regardless.
+	 * @param string|null $openFirst 'true' to list open tasks before finished
+	 *                               ones, each in the order `sort` asks.
 	 *
 	 * @return JSONResponse The page: results, total, limit, offset.
 	 *
@@ -237,6 +239,7 @@ class TaskController extends Controller {
 		int $limit = 25,
 		int $offset = 0,
 		?string $includeBlocked = null,
+		?string $openFirst = null,
 	): JSONResponse {
 		$uid = $this->uid();
 		if ($uid === null) {
@@ -289,6 +292,7 @@ class TaskController extends Controller {
 			sort: $sortKey,
 			sortDescending: $descending,
 			includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true),
+			openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true),
 		);
 
 		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));

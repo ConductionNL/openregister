@@ -1064,9 +1064,16 @@ class TaskMapper extends QBMapper {
 			$direction = 'DESC';
 		}
 
+		// Open work first: a finished task sorts after every open one.
+		$order = 'orderBy';
+		if ($criteria->openFirst === true) {
+			$qb->orderBy('is_terminal', 'ASC');
+			$order = 'addOrderBy';
+		}
+
 		switch ($criteria->sort) {
 			case TaskInboxCriteria::SORT_PRIORITY:
-				$qb->orderBy(
+				$qb->$order(
 					$qb->createFunction(
 						sprintf(
 							"CASE %s WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END",
@@ -1077,10 +1084,10 @@ class TaskMapper extends QBMapper {
 				);
 				break;
 			case TaskInboxCriteria::SORT_CREATED:
-				$qb->orderBy('created', $direction);
+				$qb->$order('created', $direction);
 				break;
 			default:
-				$qb->orderBy('due_at', $direction);
+				$qb->$order('due_at', $direction);
 				break;
 		}
 
