@@ -627,6 +627,60 @@
 				"function": "Woo-coördinator"
 			},
 			{
+				"key": "hannabos",
+				"uid": "hanna.bos",
+				"displayName": "Hanna Bos",
+				"givenName": "Hanna",
+				"prefix": "",
+				"familyName": "Bos",
+				"email": "hanna.bos@zuiddrecht.example",
+				"role": "employee",
+				"department": "Woo en informatie",
+				"groups": [
+					"medewerkers",
+					"woo-en-informatie"
+				],
+				"function": "Woo-adviseur"
+			},
+			{
+				"key": "timmulder",
+				"uid": "tim.mulder",
+				"displayName": "Tim Mulder",
+				"givenName": "Tim",
+				"prefix": "",
+				"familyName": "Mulder",
+				"email": "tim.mulder@zuiddrecht.example",
+				"role": "employee",
+				"department": "Woo en informatie",
+				"groups": [
+					"medewerkers",
+					"woo-en-informatie"
+				],
+				"function": "Informatiebeheerder",
+				"absence": {
+					"fromDay": 0,
+					"untilDay": 1,
+					"status": "Afwezig",
+					"message": "Vandaag afwezig, morgen terug."
+				}
+			},
+			{
+				"key": "fatmayildiz",
+				"uid": "fatma.yildiz",
+				"displayName": "Fatma Yildiz",
+				"givenName": "Fatma",
+				"prefix": "",
+				"familyName": "Yildiz",
+				"email": "fatma.yildiz@zuiddrecht.example",
+				"role": "employee",
+				"department": "Woo en informatie",
+				"groups": [
+					"medewerkers",
+					"woo-en-informatie"
+				],
+				"function": "Woo-adviseur"
+			},
+			{
 				"key": "fatma",
 				"uid": "fatma.kaya",
 				"displayName": "Fatma Kaya",

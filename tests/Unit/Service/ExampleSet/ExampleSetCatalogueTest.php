@@ -108,7 +108,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 36, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 39, haystack: $plan['cast']['people']);
 		// DqOverdragen's team picker: Juridische zaken with six members, Juridische zaken sociaal domein with four.
 		$members = static fn (string $group): int => count(
 			array_filter($plan['cast']['people'], static fn (array $person): bool => in_array($group, ($person['groups'] ?? []), true))
@@ -153,9 +153,11 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->assertArrayNotHasKey(key: 'uid', array: $kees);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
-		// The Woo team the dossiq boards name, led by Anouk Bakker.
+		// The Woo team of six the dossiq boards name, led by Anouk Bakker; Tim Mulder is away today.
 		$woo = array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('woo-en-informatie', ($p['groups'] ?? []), true)));
-		$this->assertSame(expected: ['thomas', 'anouk', 'pieter'], actual: $woo);
+		$this->assertSame(expected: ['thomas', 'anouk', 'pieter', 'hannabos', 'timmulder', 'fatmayildiz'], actual: $woo);
+		$absence = $plan['cast']['people']['timmulder']['absence'];
+		$this->assertSame(expected: [0, 1], actual: [$absence['fromDay'], $absence['untilDay']]);
 		$this->assertSame(expected: ['Teamleider', 'Woo en informatie'], actual: [$plan['cast']['people']['anouk']['function'], $plan['cast']['people']['anouk']['department']]);
 		// The ketenpartner DqZaakSamenwerken shares a case with: an organisation of type partner.
 		$partner = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'odzhz'))[0];
