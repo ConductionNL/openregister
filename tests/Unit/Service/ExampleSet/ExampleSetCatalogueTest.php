@@ -156,7 +156,8 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		// The Woo team of six the dossiq boards name, led by Anouk Bakker; Tim Mulder is away today.
 		$woo = array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('woo-en-informatie', ($p['groups'] ?? []), true)));
 		$this->assertSame(expected: ['thomas', 'anouk', 'pieter', 'hannabos', 'timmulder', 'fatmayildiz'], actual: $woo);
-		$this->assertSame(expected: ['fromDay' => 0, 'untilDay' => 1], actual: array_intersect_key($plan['cast']['people']['timmulder']['absence'], ['fromDay' => 0, 'untilDay' => 0]));
+		$absence = $plan['cast']['people']['timmulder']['absence'];
+		$this->assertSame(expected: [0, 1], actual: [$absence['fromDay'], $absence['untilDay']]);
 		$this->assertSame(expected: ['Teamleider', 'Woo en informatie'], actual: [$plan['cast']['people']['anouk']['function'], $plan['cast']['people']['anouk']['department']]);
 		// The ketenpartner DqZaakSamenwerken shares a case with: an organisation of type partner.
 		$partner = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'odzhz'))[0];
