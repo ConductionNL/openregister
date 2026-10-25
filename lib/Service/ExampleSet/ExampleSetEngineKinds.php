@@ -45,6 +45,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetNotes|null $notes Writes the notes a fragment leaves on its objects; null refuses them.
 	 * @param ExampleSetReadStates|null $readStates Writes the objects a fragment's accounts opened; null refuses them.
 	 * @param ExampleSetFlows|null $flows Writes the flows a fragment ships; null refuses them.
+	 * @param ExampleSetExportRuns|null $exportRuns Writes the exports a fragment gives its accounts; null refuses them.
 	 * @param ExampleSetArchival|null $archival Writes the destruction-list keys of the archival setting; null refuses them.
 	 *
 	 * @return void
@@ -57,6 +58,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetNotes $notes=null,
 		private readonly ?ExampleSetReadStates $readStates=null,
 		private readonly ?ExampleSetFlows $flows=null,
+		private readonly ?ExampleSetExportRuns $exportRuns=null,
 		private readonly ?ExampleSetArchival $archival=null,
 	) {
 	}//end __construct()
@@ -211,6 +213,7 @@ class ExampleSetEngineKinds {
 			'notes'      => [$this->notes, 'note'],
 			'readStates' => [$this->readStates, 'read state'],
 			'flows'      => [$this->flows, 'flow'],
+			'exportRuns' => [$this->exportRuns, 'export'],
 			'archival'   => [$this->archival, 'archival setting'],
 		];
 	}//end kinds()
