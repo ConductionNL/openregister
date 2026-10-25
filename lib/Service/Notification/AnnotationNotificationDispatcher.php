@@ -804,7 +804,9 @@ class AnnotationNotificationDispatcher {
 					}
 
 					if ($pref['channels'] !== null) {
-						$effectiveChannels = array_values(array_intersect($channels, $pref['channels']));
+						$effectiveChannels = array_values(
+							array_intersect(NotificationPreferenceService::availableChannelsOf(spec: $spec), $pref['channels'])
+						);
 					}
 				}//end if
 

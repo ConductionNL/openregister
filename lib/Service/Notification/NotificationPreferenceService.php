@@ -103,6 +103,59 @@ class NotificationPreferenceService {
 	private const MAX_KEY_LENGTH = 64;
 
 	/**
+	 * The channels a rule delivers on when it declares none.
+	 */
+	public const DEFAULT_CHANNELS = ['nc-notification'];
+
+	/**
+	 * The channels a person can switch per notification. Webhook and Talk are
+	 * broadcast once per rule, so nobody can opt in or out of them.
+	 */
+	public const PER_RECIPIENT_CHANNELS = ['nc-notification', 'email', 'activity', 'web-push'];
+
+	/**
+	 * The opt-in channels a rule declares: delivered only to someone who
+	 * switched them on for that notification. A channel that is also in
+	 * `channels` is on by default and so not opt-in.
+	 *
+	 * @param array<string, mixed> $spec The notification spec block.
+	 *
+	 * @return array<int, string> The opt-in channels.
+	 *
+	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 */
+	public static function optInChannelsOf(array $spec): array {
+		$declared = (array)($spec['channels'] ?? self::DEFAULT_CHANNELS);
+		$optIn = [];
+		foreach ((array)($spec['optInChannels'] ?? []) as $channel) {
+			if (is_string($channel) === true
+				&& in_array($channel, self::PER_RECIPIENT_CHANNELS, true) === true
+				&& in_array($channel, $declared, true) === false
+				&& in_array($channel, $optIn, true) === false
+			) {
+				$optIn[] = $channel;
+			}
+		}
+
+		return $optIn;
+	}//end optInChannelsOf()
+
+	/**
+	 * Every channel a rule can deliver on: its default channels, then its
+	 * opt-in ones.
+	 *
+	 * @param array<string, mixed> $spec The notification spec block.
+	 *
+	 * @return array<int, string> The channels.
+	 *
+	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 */
+	public static function availableChannelsOf(array $spec): array {
+		$declared = array_values((array)($spec['channels'] ?? self::DEFAULT_CHANNELS));
+		return array_values(array_merge($declared, self::optInChannelsOf(spec: $spec)));
+	}//end availableChannelsOf()
+
+	/**
 	 * Per-request cache of each user's group ids.
 	 *
 	 * One dispatch evaluates every rule on a schema, and the same recipient
@@ -503,6 +556,14 @@ class NotificationPreferenceService {
 			$defaultChannels = array_values($schemaDefault['channels']);
 		}
 
+		// An opt-in channel is off by default and on for whoever chose it, so
+		// the default needs naming even when the rule leaves `channels` out.
+		$allowedChannels = $defaultChannels;
+		if (self::optInChannelsOf(spec: $schemaDefault) !== []) {
+			$defaultChannels = ($defaultChannels ?? self::DEFAULT_CHANNELS);
+			$allowedChannels = self::availableChannelsOf(spec: $schemaDefault);
+		}
+
 		$layers = [
 			[
 				'layer' => 'schema-default',
@@ -539,7 +600,7 @@ class NotificationPreferenceService {
 			$winner = $this->applyLayer(
 				base: $winner,
 				value: $found['value'],
-				defaultChannels: $defaultChannels,
+				defaultChannels: $allowedChannels,
 				layer: 'group-default',
 				scope: $found['scope']
 			);
@@ -565,7 +626,7 @@ class NotificationPreferenceService {
 			$winner = $this->applyLayer(
 				base: $winner,
 				value: $own['value'],
-				defaultChannels: $defaultChannels,
+				defaultChannels: $allowedChannels,
 				layer: 'user-override',
 				scope: $own['scope']
 			);
@@ -672,14 +733,13 @@ class NotificationPreferenceService {
 	/**
 	 * Fold one layer's stored value over the answer so far.
 	 *
-	 * Channel narrowing is preserved from the two-layer version: a layer may
-	 * only RESTRICT to a subset of the channels the schema declared, never
-	 * widen beyond them. A group cannot give its members a channel the rule
-	 * does not have, and neither can a user.
+	 * A layer chooses among the channels the schema declared, its default and
+	 * its opt-in ones, never beyond them. A group cannot give its members a
+	 * channel the rule does not have, and neither can a user.
 	 *
 	 * @param array{enabled: bool, channels: array<int, string>|null, source: string, scope: string} $base The answer so far.
 	 * @param array<string, mixed> $value The layer's stored value.
-	 * @param array<int, string>|null $defaultChannels The channels the schema declared.
+	 * @param array<int, string>|null $defaultChannels The channels the schema declared, opt-in ones included.
 	 * @param string $layer The layer's name, recorded as the source when it decides.
 	 * @param string $scope The scope this value was pinned to.
 	 *
@@ -822,6 +882,10 @@ class NotificationPreferenceService {
 					'notification' => (string)$key,
 					'enabled' => $effective['enabled'],
 					'channels' => $effective['channels'],
+					// What a person can choose from: the default channels and
+					// the opt-in ones, so a screen can draw one column each.
+					'availableChannels' => self::availableChannelsOf(spec: $spec),
+					'optInChannels' => self::optInChannelsOf(spec: $spec),
 					'source' => $effective['source'],
 					// Which layer decided, and how narrowly it was pinned. The
 					// list is the screen a person reads when they want to know
