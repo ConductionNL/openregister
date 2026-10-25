@@ -136,6 +136,17 @@ class ExampleSetRemover {
 		// Before the accounts: an account the set created goes, an adopted one keeps its own values.
 		$record = $this->restoreUserPreferences(set: $set, record: $record, report: $report);
 
+		foreach ($record['subAdmins'] as $index => [$gid, $uid]) {
+			if ($this->accounts->removeSubAdmin(gid: $gid, uid: $uid) === false) {
+				$report['failed'][] = 'sub-admin '.$gid.' / '.$uid;
+				continue;
+			}
+
+			unset($record['subAdmins'][$index]);
+		}
+
+		$record['subAdmins'] = array_values($record['subAdmins']);
+
 		foreach ($record['memberships'] as $index => [$gid, $uid]) {
 			if ($this->accounts->removeFromGroup(gid: $gid, uid: $uid) === false) {
 				$report['failed'][] = 'membership '.$gid.' / '.$uid;
