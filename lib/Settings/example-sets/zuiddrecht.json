@@ -666,7 +666,8 @@
 					"medewerkers",
 					"woo-en-informatie"
 				],
-				"function": "Woo-coördinator"
+				"function": "Woo-coördinator",
+				"roles": ["Woo-coördinator"]
 			},
 			{
 				"key": "hannabos",
