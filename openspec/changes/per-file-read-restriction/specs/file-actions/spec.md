@@ -86,6 +86,29 @@ caller cannot tell a restricted file from a missing one.
 - **WHEN** the files integration provider lists the object's files for that reader
 - **THEN** the restricted file is not in the rows
 
+#### Scenario: The rendered object leaves the file out
+- **WHEN** that reader reads the object with its files, or a file-typed property names the restricted file
+- **THEN** `@self.files` does not hold it and the property does not hydrate it
+
+#### Scenario: An access link never describes it
+- **WHEN** an access link to the object names the restricted file
+- **THEN** no file descriptor is returned
+
 #### Scenario: An admitted reader sees and opens the file on every path
 - **WHEN** a listed user does any of the above
 - **THEN** the file is listed and returned as it is today
+
+### Requirement: A restricted file has no public link (REQ-PFRR-004)
+
+Restricting a file SHALL remove its public link shares (share type 3). Publishing a restricted file SHALL be refused
+while the restriction exists. Native Nextcloud paths (Files, WebDAV, `/f/<id>`, core preview) are outside this
+guarantee; an object folder whose files may be restricted SHALL NOT be shared natively.
+
+#### Scenario: Restricting revokes the public link
+- **GIVEN** file 42 has a public link
+- **WHEN** it is restricted
+- **THEN** the public link share is deleted
+
+#### Scenario: Publishing a restricted file is refused
+- **WHEN** a caller publishes file 42 while it is restricted
+- **THEN** the publish throws and no share is created

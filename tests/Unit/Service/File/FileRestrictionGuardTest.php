@@ -56,6 +56,9 @@ class FileRestrictionGuardTest extends TestCase {
 				? [self::RESTRICTED => ['fileId' => self::RESTRICTED, 'users' => ['pieter'], 'groups' => ['woo-team'], 'reason' => 'Prices', 'setBy' => 'pieter', 'setAt' => '']]
 				: []
 		);
+		$this->store->method('find')->willReturnCallback(
+			static fn (int $id): ?array => $id === self::RESTRICTED ? ['fileId' => self::RESTRICTED] : null
+		);
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 	}//end setUp()
 
@@ -142,4 +145,13 @@ class FileRestrictionGuardTest extends TestCase {
 		$this->assertSame([$open], $this->guardFor('anna')->readableNodes([$restricted, $open]));
 		$this->assertSame([$restricted, $open], $this->guardFor('pieter')->readableNodes([$restricted, $open]));
 	}//end testReadableNodesKeepsOnlyWhatTheCallerMayRead()
+	public function testIsRestrictedWhateverTheCallerAndOnALookupFailure(): void {
+		$this->assertTrue($this->guardFor('pieter')->isRestricted(self::RESTRICTED));
+		$this->assertFalse($this->guardFor('pieter')->isRestricted(self::OPEN));
+
+		$store = $this->createMock(FileRestrictionStore::class);
+		$store->method('find')->willThrowException(new RuntimeException('db gone'));
+		$this->store = $store;
+		$this->assertTrue($this->guardFor('pieter')->isRestricted(self::OPEN));
+	}//end testIsRestrictedWhateverTheCallerAndOnALookupFailure()
 }//end class

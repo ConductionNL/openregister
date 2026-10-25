@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\File\FileRestrictionService;
 use OCA\OpenRegister\Service\File\FileRestrictionStore;
@@ -41,9 +42,12 @@ class FileRestrictionServiceTest extends TestCase {
 
 	private FileRestrictionService $service;
 
+	private FileMapper&MockObject $fileMapper;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->store = $this->createMock(FileRestrictionStore::class);
+		$this->fileMapper = $this->createMock(FileMapper::class);
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('pieter');
 		$session = $this->createMock(IUserSession::class);
@@ -52,7 +56,8 @@ class FileRestrictionServiceTest extends TestCase {
 			$this->store,
 			$this->createMock(FileRestrictionGuard::class),
 			$session,
-			new NullLogger()
+			new NullLogger(),
+			$this->fileMapper
 		);
 	}//end setUp()
 
@@ -71,6 +76,19 @@ class FileRestrictionServiceTest extends TestCase {
 
 		$this->assertSame(['fileId' => 42], $stored);
 	}//end testARestrictionIsStoredWithWhoSetIt()
+
+	public function testRestrictingRevokesTheFilesPublicLinks(): void {
+		$this->store->method('find')->willReturn(['fileId' => 42]);
+		$this->fileMapper->expects($this->once())->method('depublishFile')->with(42)->willReturn(['deleted_shares' => 1, 'file_id' => 42]);
+
+		$this->service->restrict(42, ['pieter'], [], 'Prices');
+	}//end testRestrictingRevokesTheFilesPublicLinks()
+
+	public function testARefusedRestrictionRevokesNothing(): void {
+		$this->fileMapper->expects($this->never())->method('depublishFile');
+		$this->expectException(InvalidArgumentException::class);
+		$this->service->restrict(42, [], [], 'Prices');
+	}//end testARefusedRestrictionRevokesNothing()
 
 	public function testARestrictionWithoutPrincipalsIsRefused(): void {
 		$this->store->expects($this->never())->method('save');

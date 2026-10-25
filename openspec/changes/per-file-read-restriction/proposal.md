@@ -34,11 +34,25 @@ its whole team.
   - download by file id (`GET /api/files/{fileId}/download`) answers 404;
   - the object's ZIP download leaves it out;
   - file search hits (`FileReadScope`) leave it out;
-  - the integration registry's files leaf leaves it out.
+  - the integration registry's files leaf leaves it out;
+  - the rendered object (`@self.files` and file-typed properties) leaves it out;
+  - an access link never describes it.
+- **A restricted file has no public link.** Restricting a file removes its public link shares (share type 3), and
+  publishing a restricted file is refused, because Nextcloud serves `/s/<token>` itself without asking OpenRegister.
 - **Apps set and lift a restriction through `FileRestrictionService`** (PHP). There is no HTTP endpoint in this
   change: who may restrict a file is the app's rule (dossiq: whoever may change the case), so the app decides and
   then calls the service. A restriction needs at least one user or group and a reason.
 - **A failed lookup refuses.** If the restriction cannot be read, the file is treated as restricted and refused.
+
+## Limit: native Nextcloud Files and WebDAV
+
+The restriction is enforced by OpenRegister, on OpenRegister's own paths. Nextcloud's Files app, WebDAV, `/f/<id>`
+links and core previews do not ask it. Since object-files-follow-object-access every object file lives in the
+`openregister` account's home, so an ordinary user has no native path to it; but anyone who holds a native Nextcloud
+share on the object folder (a share made by hand in Files, or a per-object grant, which is a share on the object's
+folder) or who signs in as the `openregister` account reaches the file natively, restriction or not. Public link
+shares on the file itself are removed when it is restricted. Apps must not share an object folder natively when its
+files may be restricted.
 
 ## What does not change
 

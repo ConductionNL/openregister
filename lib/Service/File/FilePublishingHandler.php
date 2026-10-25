@@ -286,6 +286,11 @@ class FilePublishingHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
+		// A restricted file is never published: a public link is served without asking the restriction.
+		if ($this->container->get(FileRestrictionGuard::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
+			throw new Exception('A restricted file cannot be published');
+		}
+
 		// Use FileMapper to create the share directly in the database.
 		try {
 			$openRegisterUser = $this->fileService->getUser();

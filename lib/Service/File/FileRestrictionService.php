@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\FileMapper;
 use InvalidArgumentException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -41,12 +42,14 @@ class FileRestrictionService {
 	 * @param FileRestrictionGuard $guard       Forgets its memo after a write.
 	 * @param IUserSession         $userSession Who sets it.
 	 * @param LoggerInterface      $logger      Where every change is noted.
+	 * @param FileMapper           $fileMapper  Removes the file's public link shares.
 	 */
 	public function __construct(
 		private readonly FileRestrictionStore $store,
 		private readonly FileRestrictionGuard $guard,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly FileMapper $fileMapper,
 	) {
 	}//end __construct()
 
@@ -92,9 +95,18 @@ class FileRestrictionService {
 		);
 		$this->guard->forget();
 
+		// A public link (`/s/<token>`) is served by Nextcloud itself and never asks the guard, so it goes.
+		$revoked = $this->fileMapper->depublishFile(fileId: $fileId);
+
 		$this->logger->info(
 			message: '[FileRestrictionService] Restricted a file',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'setBy' => $setBy]
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'fileId' => $fileId,
+				'setBy' => $setBy,
+				'publicLinksRevoked' => ($revoked['deleted_shares'] ?? 0),
+			]
 		);
 
 		return ($this->store->find(fileId: $fileId) ?? []);

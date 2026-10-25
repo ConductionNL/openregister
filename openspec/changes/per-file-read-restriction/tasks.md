@@ -13,3 +13,8 @@
 - [x] 2.6 Search hits leave the file out (FileReadScope)
 - [x] 2.7 Integration files leaf leaves the file out (FilesProvider)
 - [x] 3.1 Unit tests: guard verdicts (not listed, listed user, group, admin, event, anonymous, lookup failure), service validation, each path above with a refused and an admitted reader
+- [x] 2.8 Rendered object: `@self.files` and file-typed property hydration leave the file out (RenderObject)
+- [x] 2.9 Access links never describe a restricted file (AccessLinkReader::fileDescriptor)
+- [x] 2.10 Restricting removes public link shares; publishing a restricted file is refused
+- [x] 3.2 Tests for 2.8 to 2.10, red before the fix
+- [x] 4.1 Proposal and spec name the native Files/WebDAV limit

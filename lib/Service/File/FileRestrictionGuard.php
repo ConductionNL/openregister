@@ -172,6 +172,28 @@ class FileRestrictionGuard {
 	}//end readableNodes()
 
 	/**
+	 * Whether a file carries a restriction at all, whoever asks. A failed lookup answers true.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return bool True when restricted, or when that cannot be told.
+	 *
+	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-has-no-public-link-req-pfrr-004
+	 */
+	public function isRestricted(int $fileId): bool {
+		try {
+			return $this->store->find(fileId: $fileId) !== null;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FileRestrictionGuard] Could not read a file restriction, treating the file as restricted',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+
+			return true;
+		}
+	}//end isRestricted()
+
+	/**
 	 * Drop the verdicts of this request, after a restriction changed.
 	 *
 	 * @return void
