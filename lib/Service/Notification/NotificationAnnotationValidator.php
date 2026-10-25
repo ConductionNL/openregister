@@ -525,12 +525,17 @@ final class NotificationAnnotationValidator {
 					if (is_string($channel) === false
 						|| in_array($channel, NotificationPreferenceService::PER_RECIPIENT_CHANNELS, true) === false
 					) {
+						$shownChannel = gettype($channel);
+						if (is_string($channel) === true) {
+							$shownChannel = $channel;
+						}
+
 						$errors[] = [
 							'code' => 'notification-bad-opt-in-channel',
 							'message' => sprintf(
 								'Notification "%s" opt-in channel "%s" is not in [%s].',
 								$name,
-								is_string($channel) === true ? $channel : gettype($channel),
+								$shownChannel,
 								implode(', ', NotificationPreferenceService::PER_RECIPIENT_CHANNELS)
 							),
 						];
