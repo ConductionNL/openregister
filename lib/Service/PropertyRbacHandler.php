@@ -461,7 +461,7 @@ class PropertyRbacHandler {
 	}//end collectOmittedWriteOnlyPaths()
 
 	/**
-	 * Properties an update payload omits that the writer may not read (openregister#4170).
+	 * Properties an update payload omits that the writer may not read (openregister#4170) or may not update.
 	 *
 	 * The read path strips a property whose `authorization.read` the caller
 	 * fails, so a caller doing the natural GET, edit, PUT round trip sends a
@@ -469,10 +469,8 @@ class PropertyRbacHandler {
 	 * never shown. These are carried forward exactly as omitted write-only
 	 * values are, through {@see restoreWriteOnlyValues()}.
 	 *
-	 * Read access is decided against the STORED object, since that is the
-	 * object the caller read. A caller who can read the property and leaves it
-	 * out still clears it, as a PUT does. Call it on the RAW payload, for the
-	 * reason {@see collectOmittedWriteOnlyPaths()} gives.
+	 * Omitting one the caller may not update would be the write the rule refuses.
+	 * Decided against the STORED object; call it on the RAW payload.
 	 *
 	 * @param Schema $schema   Schema whose property authorization applies.
 	 * @param array  $incoming The raw incoming update payload.
@@ -480,9 +478,9 @@ class PropertyRbacHandler {
 	 *
 	 * @return array<int, string> Top-level property names to carry forward (possibly empty).
 	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md
+	 * @spec openspec/changes/omitted-unwritable-properties-are-kept/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
 	 */
-	public function collectOmittedUnreadableProperties(Schema $schema, array $incoming, array $stored): array {
+	public function collectOmittedProtectedProperties(Schema $schema, array $incoming, array $stored): array {
 		if ($schema->hasPropertyAuthorization() === false || $this->isAdmin() === true) {
 			return [];
 		}
@@ -494,13 +492,15 @@ class PropertyRbacHandler {
 				continue;
 			}
 
-			if ($this->canReadProperty(schema: $schema, property: $propertyName, object: $stored) === false) {
+			if ($this->canReadProperty(schema: $schema, property: $propertyName, object: $stored) === false
+				|| $this->canUpdateProperty(schema: $schema, property: $propertyName, object: $stored) === false
+			) {
 				$omitted[] = $propertyName;
 			}
 		}
 
 		return $omitted;
-	}//end collectOmittedUnreadableProperties()
+	}//end collectOmittedProtectedProperties()
 
 	/**
 	 * Carry stored write-only values forward onto an update payload that omitted them.
