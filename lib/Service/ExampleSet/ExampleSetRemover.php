@@ -385,6 +385,15 @@ class ExampleSetRemover {
 	 * @return array<string, mixed> The record without what is gone.
 	 */
 	private function removeGroupsAndAccounts(string $set, array $record, array &$report): array {
+		// A group the set only named gets its old name back, while it still carries the set's.
+		foreach ($record['groupNames'] as $gid => $name) {
+			if ($this->accounts->groupName(gid: (string) $gid) === (string) $name['new']) {
+				$this->accounts->setGroupName(gid: (string) $gid, displayName: (string) $name['old']);
+			}
+
+			unset($record['groupNames'][$gid]);
+		}
+
 		$keptGroups = [];
 		foreach ($record['groups'] as $gid) {
 			if ($this->accounts->deleteGroup(gid: $gid) === false) {

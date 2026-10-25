@@ -105,12 +105,14 @@ class ExampleSetRewriter {
 			return $row;
 		}
 
-		$id    = (string) ($row['id'] ?? ($row['@self']['id'] ?? ''));
+		$id = (string) ($row['id'] ?? ($row['@self']['id'] ?? ''));
+		// A field read back as null was never set: sending it would ask the schema to accept a null it may refuse.
+		$set   = array_filter($row, static fn (mixed $value): bool => $value !== null);
 		$error = $store->update(
 			register: $object['register'],
 			schema: $object['schema'],
 			id: $id,
-			data: $this->writable(data: array_merge($row, $resolved['sent']), row: $row, rules: $rules)
+			data: $this->writable(data: array_merge($set, $resolved['sent']), row: $row, rules: $rules)
 		);
 		if ($error !== '') {
 			$report['dropped'][] = $where.': not refreshed: '.$error;

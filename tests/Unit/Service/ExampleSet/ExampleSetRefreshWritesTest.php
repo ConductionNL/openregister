@@ -142,4 +142,24 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$this->assertSame(['coordinates.0'], $proof->lostPaths(declared: $point, stored: ['type' => 'Point', 'coordinates' => [5.1, 51.8148]]));
 		$this->assertSame([''], $proof->lostPaths(declared: 'plain text', stored: ['plain text']));
 	}//end testJsonTextHoldsWhenTheStoreAnswersItDecoded()
+
+	/**
+	 * A field the declaration does not name reads back as null (OpenRegister answers every schema property); the
+	 * refresh leaves it out instead of sending a null the schema refuses.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-refresh-leaves-unset-fields/specs/example-sets/spec.md#requirement-a-refresh-does-not-send-fields-the-declaration-leaves-unset
+	 */
+	public function testARefreshLeavesAFieldTheDeclarationDoesNotNameUnset(): void {
+		$this->incidentWith();
+		$this->store->nonNullFields['pub incident'] = ['intakeChannel'];
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame(1, $report['types']['pub incident']['refreshed']);
+	}//end testARefreshLeavesAFieldTheDeclarationDoesNotNameUnset()
 }//end class

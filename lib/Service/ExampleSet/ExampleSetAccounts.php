@@ -156,6 +156,33 @@ class ExampleSetAccounts {
 	}//end groupExists()
 
 	/**
+	 * A group's display name; '' when the group is not there.
+	 *
+	 * @param string $gid The group id.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 */
+	public function groupName(string $gid): string {
+		return (string) $this->groups->get($gid)?->getDisplayName();
+	}//end groupName()
+
+	/**
+	 * Set a group's display name; true when it was set.
+	 *
+	 * @param string $gid         The group id.
+	 * @param string $displayName The name shown.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 */
+	public function setGroupName(string $gid, string $displayName): bool {
+		return $this->groups->get($gid)?->setDisplayName($displayName) === true;
+	}//end setGroupName()
+
+	/**
 	 * Create a group; true when it exists afterwards.
 	 *
 	 * @param string $gid         The group id.

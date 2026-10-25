@@ -70,12 +70,30 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 		return true;
 	}
 
+	/** @var array<string, string> Display names by group id. */
+	public array $groupNames = [];
+
+	public function groupName(string $gid): string {
+		return ($this->groupNames[$gid] ?? '');
+	}
+
+	public function setGroupName(string $gid, string $displayName): bool {
+		if (isset($this->groups[$gid]) === false) {
+			return false;
+		}
+
+		$this->groupNames[$gid] = $displayName;
+
+		return true;
+	}
+
 	public function groupExists(string $gid): bool {
 		return isset($this->groups[$gid]);
 	}
 
 	public function createGroup(string $gid, string $displayName): bool {
 		$this->groups[$gid] = [];
+		$this->groupNames[$gid] = ($displayName === '' ? $gid : $displayName);
 
 		return true;
 	}
