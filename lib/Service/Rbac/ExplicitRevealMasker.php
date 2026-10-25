@@ -78,7 +78,8 @@ class ExplicitRevealMasker {
 			return [$object, []];
 		}
 
-		$objectIds = array_values(array_filter(array_merge(array_filter($objectIds, static fn (string $id): bool => self::isUuid(value: $id)), $this->idsOf(object: $object))));
+		$given = array_filter($objectIds, static fn (string $id): bool => self::isUuid(value: $id));
+		$objectIds = array_values(array_merge($given, $this->idsOf(object: $object)));
 		$masked = [];
 		foreach ($names as $name) {
 			if ($this->hasValue(object: $object, property: $name) === false) {
