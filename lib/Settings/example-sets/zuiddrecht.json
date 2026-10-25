@@ -38,72 +38,114 @@
 			{
 				"key": "medewerkers",
 				"gid": "zuiddrecht-medewerkers",
-				"displayName": "Zuiddrecht medewerkers"
+				"displayName": "Zuiddrecht medewerkers",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "publiekszaken",
 				"gid": "zuiddrecht-publiekszaken",
-				"displayName": "Publiekszaken"
+				"displayName": "Publiekszaken",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "kcc",
 				"gid": "zuiddrecht-kcc",
-				"displayName": "KCC"
+				"displayName": "KCC",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "vergunningen",
 				"gid": "zuiddrecht-vergunningen",
-				"displayName": "Vergunningen"
+				"displayName": "Vergunningen",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "juridische-zaken",
 				"gid": "zuiddrecht-juridische-zaken",
-				"displayName": "Juridische zaken"
+				"displayName": "Juridische zaken",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "juridische-zaken-sociaal-domein",
 				"gid": "zuiddrecht-juridische-zaken-sociaal-domein",
-				"displayName": "Juridische zaken sociaal domein"
+				"displayName": "Juridische zaken sociaal domein",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "woo-en-informatie",
 				"gid": "zuiddrecht-woo-en-informatie",
-				"displayName": "Woo en informatie"
+				"displayName": "Woo en informatie",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "communicatie",
 				"gid": "zuiddrecht-communicatie",
-				"displayName": "Communicatie"
+				"displayName": "Communicatie",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "griffie",
 				"gid": "zuiddrecht-griffie",
-				"displayName": "Griffie"
+				"displayName": "Griffie",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "financien",
 				"gid": "zuiddrecht-financien",
-				"displayName": "Financien"
+				"displayName": "Financien",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "hr",
 				"gid": "zuiddrecht-hr",
-				"displayName": "HR"
+				"displayName": "HR",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "functioneel-beheer",
 				"gid": "zuiddrecht-functioneel-beheer",
-				"displayName": "Functioneel beheer"
+				"displayName": "Functioneel beheer",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "sociaal-domein",
 				"gid": "zuiddrecht-sociaal-domein",
-				"displayName": "Sociaal domein"
+				"displayName": "Sociaal domein",
+				"subAdmins": [
+					"pieter"
+				]
 			},
 			{
 				"key": "mobiliteit-en-verkeer",
 				"gid": "zuiddrecht-mobiliteit-en-verkeer",
-				"displayName": "Mobiliteit en verkeer"
+				"displayName": "Mobiliteit en verkeer",
+				"subAdmins": [
+					"pieter"
+				]
 			}
 		],
 		"people": [
@@ -625,6 +667,60 @@
 					"woo-en-informatie"
 				],
 				"function": "Woo-coördinator"
+			},
+			{
+				"key": "hannabos",
+				"uid": "hanna.bos",
+				"displayName": "Hanna Bos",
+				"givenName": "Hanna",
+				"prefix": "",
+				"familyName": "Bos",
+				"email": "hanna.bos@zuiddrecht.example",
+				"role": "employee",
+				"department": "Woo en informatie",
+				"groups": [
+					"medewerkers",
+					"woo-en-informatie"
+				],
+				"function": "Woo-adviseur"
+			},
+			{
+				"key": "timmulder",
+				"uid": "tim.mulder",
+				"displayName": "Tim Mulder",
+				"givenName": "Tim",
+				"prefix": "",
+				"familyName": "Mulder",
+				"email": "tim.mulder@zuiddrecht.example",
+				"role": "employee",
+				"department": "Woo en informatie",
+				"groups": [
+					"medewerkers",
+					"woo-en-informatie"
+				],
+				"function": "Informatiebeheerder",
+				"absence": {
+					"fromDay": 0,
+					"untilDay": 1,
+					"status": "Afwezig",
+					"message": "Vandaag afwezig, morgen terug."
+				}
+			},
+			{
+				"key": "fatmayildiz",
+				"uid": "fatma.yildiz",
+				"displayName": "Fatma Yildiz",
+				"givenName": "Fatma",
+				"prefix": "",
+				"familyName": "Yildiz",
+				"email": "fatma.yildiz@zuiddrecht.example",
+				"role": "employee",
+				"department": "Woo en informatie",
+				"groups": [
+					"medewerkers",
+					"woo-en-informatie"
+				],
+				"function": "Woo-adviseur"
 			},
 			{
 				"key": "fatma",

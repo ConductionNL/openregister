@@ -60,6 +60,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -820,6 +821,12 @@ class SaveObjects {
 				),
 				existingByUuid: $existingByUuid
 			);
+
+			// A row that sends an explicit-reveal value back as its mask keeps the
+			// stored value, before validation refuses the mask's shape.
+			if ($existingEntity !== null) {
+				$sanitised = ExplicitReveal::restoreMasked(schema: $rowSchema, incoming: $sanitised, stored: ($existingEntity->getObject() ?? []));
+			}
 
 			// Step 2b: a draft is kept to its owner. Asked before the appendOnly
 			// gate, whose message would otherwise tell a non-owner that the uuid

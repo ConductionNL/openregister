@@ -267,6 +267,7 @@ use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -580,6 +581,15 @@ class Application extends App implements IBootstrap {
 			RevealCollector::class,
 			static function () {
 				return new RevealCollector();
+			}
+		);
+
+		// Shared for the same reason: the grant ObjectsController::show makes
+		// must be the one the render path reads (property-explicit-reveal).
+		$context->registerService(
+			ExplicitReveal::class,
+			static function () {
+				return new ExplicitReveal();
 			}
 		);
 

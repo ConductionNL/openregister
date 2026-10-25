@@ -108,7 +108,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 36, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 39, haystack: $plan['cast']['people']);
 		// DqOrganisaties: 23 organisations in Zuiddrecht, 8 associations, 6 foundations, 9 companies, each with its own made-up KvK number.
 		$forms = array_count_values(array_column($plan['cast']['organisations'], 'legalForm'));
 		$companies = ($forms['Besloten Vennootschap'] + $forms['Eenmanszaak']);
@@ -160,9 +160,11 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->assertArrayNotHasKey(key: 'uid', array: $kees);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
-		// The Woo team the dossiq boards name, led by Anouk Bakker.
+		// The Woo team of six the dossiq boards name, led by Anouk Bakker; Tim Mulder is away today.
 		$woo = array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('woo-en-informatie', ($p['groups'] ?? []), true)));
-		$this->assertSame(expected: ['thomas', 'anouk', 'pieter'], actual: $woo);
+		$this->assertSame(expected: ['thomas', 'anouk', 'pieter', 'hannabos', 'timmulder', 'fatmayildiz'], actual: $woo);
+		$absence = $plan['cast']['people']['timmulder']['absence'];
+		$this->assertSame(expected: [0, 1], actual: [$absence['fromDay'], $absence['untilDay']]);
 		$this->assertSame(expected: ['Teamleider', 'Woo en informatie'], actual: [$plan['cast']['people']['anouk']['function'], $plan['cast']['people']['anouk']['department']]);
 		// The ketenpartner DqZaakSamenwerken shares a case with: an organisation of type partner.
 		$partner = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'odzhz'))[0];
@@ -174,6 +176,8 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		// DqTenant's quota: 5,000 cases and 50 users.
 		$this->assertSame(expected: [5000, 'case', 50], actual: [$waterland['quota']['objects'], $waterland['quota']['objectsSchema'], $waterland['quota']['users']]);
 		$this->assertNotContains('admin', array_column($plan['cast']['groups'], 'gid'));
+		// DqAfdelingen: Pieter, the boards' functional administrator, is sub-admin of every cast group, so he sees the department tree.
+		$this->assertSame(expected: [['pieter']], actual: array_values(array_unique(array_column($plan['cast']['groups'], 'subAdmins'), SORT_REGULAR)));
 		$this->assertNotContains('noor', array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('admin', ($p['groups'] ?? []), true))));
 		$apps = json_decode((string) file_get_contents(dirname(__DIR__, 4).'/lib/Settings/example-sets/zuiddrecht.json'), true)['apps'];
 		$this->assertCount(18, $apps);

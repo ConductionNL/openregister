@@ -61,6 +61,8 @@ use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCP\IRequest;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
@@ -193,6 +195,13 @@ class RenderObject {
 	 * @var LinkExposure|null
 	 */
 	private ?LinkExposure $linkExposure = null;
+
+	/**
+	 * The explicit-reveal masker, resolved on first use.
+	 *
+	 * @var ExplicitRevealMasker|null
+	 */
+	private ?ExplicitRevealMasker $revealMasker = null;
 
 	/**
 	 * Constructor for RenderObject handler.
@@ -777,6 +786,7 @@ class RenderObject {
 				$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
 				$doGated = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
 				if ($doWriteOnly === false && $doGated === false) {
+					$this->maskEntityReveals(entity: $row, schema: $schema);
 					continue;
 				}
 
@@ -812,6 +822,9 @@ class RenderObject {
 					$row->setObject($object);
 				}//end if
 
+				// Explicit-reveal values leave masked on every read, admins and `_rbac: false` included.
+				$this->maskEntityReveals(entity: $row, schema: $schema);
+
 				// The body strip above leaves the `relations` search index untouched; it is
 				// a separate scalar mirror that jsonSerialize surfaces as @self.relations,
 				// so a write-only secret leaks there unless stripped too (#429). It rides the
@@ -841,6 +854,7 @@ class RenderObject {
 				$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
 				$doGated = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
 				if ($doWriteOnly === false && $doGated === false) {
+					$row = $this->maskRowReveals(row: $row, schema: $schema);
 					continue;
 				}
 
@@ -863,6 +877,8 @@ class RenderObject {
 				) {
 					$row = $this->fieldEncryptionHandler->decryptProperties(data: $row, schema: $schema);
 				}
+
+				$row = $this->maskRowReveals(row: $row, schema: $schema);
 
 				if ($doWriteOnly === true
 					&& isset($row['@self']['relations']) === true
@@ -912,6 +928,82 @@ class RenderObject {
 
 		return $removed;
 	}//end removedProperties()
+
+	/**
+	 * The explicit-reveal masker, or null where this class was built without a container.
+	 *
+	 * @return ExplicitRevealMasker|null
+	 */
+	private function revealMasker(): ?ExplicitRevealMasker {
+		if ($this->revealMasker === null && $this->container !== null) {
+			$this->revealMasker = $this->container->get(ExplicitRevealMasker::class);
+		}
+
+		return $this->revealMasker;
+	}//end revealMasker()
+
+	/**
+	 * Mask a rendered object's explicit-reveal values and withhold their `@self` copies.
+	 *
+	 * @param ObjectEntity         $entity     The entity rendered.
+	 * @param Schema|null          $schema     Its schema.
+	 * @param array<string, mixed> $objectData The rendered body.
+	 *
+	 * @return array<string, mixed> The body, masked.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function maskRenderedReveals(ObjectEntity $entity, ?Schema $schema, array $objectData): array {
+		if ($schema === null || ExplicitReveal::explicitProperties(schema: $schema) === [] || $this->revealMasker() === null) {
+			return $objectData;
+		}
+
+		[$objectData, $masked] = $this->revealMasker()->maskObject(
+			schema: $schema,
+			object: $objectData,
+			objectIds: [(string)$entity->getUuid()]
+		);
+		$this->withholdEntityCopies(entity: $entity, schema: $schema, removed: $masked);
+
+		return $objectData;
+	}//end maskRenderedReveals()
+
+	/**
+	 * Mask a list entity's explicit-reveal values in place.
+	 *
+	 * @param ObjectEntity $entity The entity.
+	 * @param Schema|null  $schema Its schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function maskEntityReveals(ObjectEntity $entity, ?Schema $schema): void {
+		$object = $entity->getObject();
+		if (is_array($object) === true) {
+			$entity->setObject($this->maskRenderedReveals(entity: $entity, schema: $schema, objectData: $object));
+		}
+	}//end maskEntityReveals()
+
+	/**
+	 * Mask an array row's explicit-reveal values and withhold their `@self` copies.
+	 *
+	 * @param array<string, mixed> $row    The row.
+	 * @param Schema|null          $schema Its schema.
+	 *
+	 * @return array<string, mixed> The row, masked.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function maskRowReveals(array $row, ?Schema $schema): array {
+		if ($schema === null || ExplicitReveal::explicitProperties(schema: $schema) === [] || $this->revealMasker() === null) {
+			return $row;
+		}
+
+		[$row, $masked] = $this->revealMasker()->maskObject(schema: $schema, object: $row);
+
+		return $this->withholdRowCopies(row: $row, schema: $schema, removed: $masked);
+	}//end maskRowReveals()
 
 	/**
 	 * Remove the copies of withheld properties from an entity's `@self`.
@@ -2234,6 +2326,10 @@ class RenderObject {
 		if ($this->fieldEncryptionHandler !== null && $schema !== null && $schema->hasEncryptedProperties() === true) {
 			$objectData = $this->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
 		}
+
+		// Explicit-reveal values leave masked on every read, admins and `_rbac: false` included,
+		// after decryption so the mask is of the value and not of its ciphertext.
+		$objectData = $this->maskRenderedReveals(entity: $entity, schema: $schema, objectData: $objectData);
 
 		// Resolve translatable properties to the requested language.
 		$renderSchema = $this->getSchema(id: $entity->getSchema());

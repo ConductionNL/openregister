@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCP\Group\ISubAdmin;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\Security\ISecureRandom;
@@ -54,6 +55,7 @@ class ExampleSetAccounts {
 	 * @param IGroupManager   $groups Nextcloud groups.
 	 * @param ISecureRandom   $random Makes passwords.
 	 * @param LoggerInterface $logger Logger; never given a password.
+	 * @param ISubAdmin|null  $subAdmins Nextcloud group sub-admins.
 	 *
 	 * @return void
 	 */
@@ -62,6 +64,7 @@ class ExampleSetAccounts {
 		private readonly IGroupManager $groups,
 		private readonly ISecureRandom $random,
 		private readonly LoggerInterface $logger,
+		private readonly ?ISubAdmin $subAdmins=null,
 	) {
 	}//end __construct()
 
@@ -250,4 +253,77 @@ class ExampleSetAccounts {
 
 		return true;
 	}//end removeFromGroup()
+
+	/**
+	 * Whether an account is a sub-admin of a group.
+	 *
+	 * @param string $gid The group id.
+	 * @param string $uid The account id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 */
+	public function isSubAdmin(string $gid, string $uid): bool {
+		$group = $this->groups->get($gid);
+		$user  = $this->users->get($uid);
+		if ($group === null || $user === null || $this->subAdmins === null) {
+			return false;
+		}
+
+		return $this->subAdmins->isSubAdminOfGroup($user, $group);
+	}//end isSubAdmin()
+
+	/**
+	 * Make an account a sub-admin of a group.
+	 *
+	 * @param string $gid The group id.
+	 * @param string $uid The account id.
+	 *
+	 * @return bool False when the group, the account or the sub-admin service is not there.
+	 *
+	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 */
+	public function addSubAdmin(string $gid, string $uid): bool {
+		$group = $this->groups->get($gid);
+		$user  = $this->users->get($uid);
+		if ($group === null || $user === null || $this->subAdmins === null) {
+			return false;
+		}
+
+		try {
+			$this->subAdmins->createSubAdmin($user, $group);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ExampleSetAccounts] Could not make '.$uid.' sub-admin of '.$gid.': '.$e->getMessage());
+			return false;
+		}
+
+		return true;
+	}//end addSubAdmin()
+
+	/**
+	 * Take an account's sub-admin right on a group away.
+	 *
+	 * @param string $gid The group id.
+	 * @param string $uid The account id.
+	 *
+	 * @return bool True also when there was nothing to take away.
+	 *
+	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 */
+	public function removeSubAdmin(string $gid, string $uid): bool {
+		$group = $this->groups->get($gid);
+		$user  = $this->users->get($uid);
+		if ($group === null || $user === null || $this->subAdmins === null) {
+			return true;
+		}
+
+		try {
+			$this->subAdmins->deleteSubAdmin($user, $group);
+		} catch (Throwable) {
+			return false;
+		}
+
+		return true;
+	}//end removeSubAdmin()
 }//end class
