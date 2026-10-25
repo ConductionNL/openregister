@@ -275,6 +275,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDestructionListRegister</step>
 			<!-- `merge-operation` is where MergeService writes the audit row for
 			     every merge, and where reverseMerge reads the preMergeSnapshot
 			     back from. Its descriptor shipped with no Repair step, so the
@@ -453,6 +454,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDestructionListRegister</step>
 			<!-- `merge-operation` is where MergeService writes the audit row for
 			     every merge, and where reverseMerge reads the preMergeSnapshot
 			     back from. Its descriptor shipped with no Repair step, so the
