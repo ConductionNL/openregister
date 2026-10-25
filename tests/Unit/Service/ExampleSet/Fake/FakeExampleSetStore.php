@@ -83,6 +83,9 @@ class FakeExampleSetStore extends ExampleSetStore {
 	/** @var int Number of owner hand-overs. */
 	public int $ownerChanges = 0;
 
+	/** @var array<string, array<int, string>> Fields a schema refuses null for, by "register schema"; reads give them null when unset. */
+	public array $nonNullFields = [];
+
 	/** @var int Next id number. */
 	private int $next = 1;
 
@@ -316,7 +319,13 @@ class FakeExampleSetStore extends ExampleSetStore {
 			}
 		}
 
-		$lenses = array_values(array_intersect(($this->lensFields[$type] ?? []), array_keys($data)));
+		foreach (($this->nonNullFields[$type] ?? []) as $field) {
+			if (array_key_exists($field, $data) === true && $data[$field] === null) {
+				return "Property '".$field."' should be type 'string' but is 'null'.";
+			}
+		}
+
+				$lenses = array_values(array_intersect(($this->lensFields[$type] ?? []), array_keys($data)));
 		if ($lenses !== []) {
 			return 'Cannot write lens property: '.implode(', ', $lenses);
 		}
@@ -339,6 +348,10 @@ class FakeExampleSetStore extends ExampleSetStore {
 
 		foreach (($this->lensFields[$type] ?? []) as $field) {
 			$row[$field] = 'resolved '.$field;
+		}
+
+		foreach (($this->nonNullFields[$type] ?? []) as $field) {
+			$row[$field] = ($row[$field] ?? null);
 		}
 
 		return $row;
