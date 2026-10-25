@@ -512,6 +512,32 @@ final class NotificationAnnotationValidator {
 				}
 			}
 
+			// Optional `optInChannels`: channels that stay off until a person
+			// switches them on for this notification. Only a per-recipient
+			// channel can be chosen per person; webhook and Talk fire once.
+			if (array_key_exists('optInChannels', $spec) === true) {
+				$optIn = $spec['optInChannels'];
+				if (is_array($optIn) === false) {
+					$optIn = [null];
+				}
+
+				foreach ($optIn as $channel) {
+					if (is_string($channel) === false
+						|| in_array($channel, NotificationPreferenceService::PER_RECIPIENT_CHANNELS, true) === false
+					) {
+						$errors[] = [
+							'code' => 'notification-bad-opt-in-channel',
+							'message' => sprintf(
+								'Notification "%s" opt-in channel "%s" is not in [%s].',
+								$name,
+								is_string($channel) === true ? $channel : gettype($channel),
+								implode(', ', NotificationPreferenceService::PER_RECIPIENT_CHANNELS)
+							),
+						];
+					}
+				}
+			}//end if
+
 			// Optional `messageCategory` (opt-out-before-send): what kind of
 			// message a `parties` mail is, for integriq's opt-out question.
 			// Absent reads as `service`; anything outside the fleet list is
