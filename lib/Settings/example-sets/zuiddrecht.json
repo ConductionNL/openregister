@@ -898,6 +898,326 @@
 				},
 				"registeredOn": "1998-03-12",
 				"employees": 0
+			},
+			{
+				"key": "bakkerijdemolen",
+				"name": "Bakkerij De Molen",
+				"kvk": "00001008",
+				"vestigingsnummer": "000000001008",
+				"legalForm": "Eenmanszaak",
+				"email": "info.bakkerijdemolen@zuiddrecht.example",
+				"address": {
+					"street": "Molenweg",
+					"number": 2,
+					"postcode": "2999BD",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "10710",
+					"description": "Vervaardiging van brood en vers banketbakkerswerk"
+				},
+				"registeredOn": "1987-03-02",
+				"employees": 6
+			},
+			{
+				"key": "dagblad",
+				"name": "Dagblad Drechtsteden B.V.",
+				"kvk": "00001009",
+				"vestigingsnummer": "000000001009",
+				"legalForm": "Besloten Vennootschap",
+				"email": "info.dagblad@zuiddrecht.example",
+				"address": {
+					"street": "Stationsplein",
+					"number": 8,
+					"postcode": "2999BB",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "58130",
+					"description": "Uitgeverijen van kranten"
+				},
+				"registeredOn": "1994-11-21",
+				"employees": 38
+			},
+			{
+				"key": "lumeninfra",
+				"name": "Lumen Infra B.V.",
+				"kvk": "00001010",
+				"vestigingsnummer": "000000001010",
+				"legalForm": "Besloten Vennootschap",
+				"email": "info.lumeninfra@zuiddrecht.example",
+				"address": {
+					"street": "Industrieweg",
+					"number": 31,
+					"postcode": "2999BC",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "43210",
+					"description": "Elektrotechnische bouwinstallatie"
+				},
+				"registeredOn": "2011-05-16",
+				"employees": 54
+			},
+			{
+				"key": "groenenco",
+				"name": "Groen & Co B.V.",
+				"kvk": "00001011",
+				"vestigingsnummer": "000000001011",
+				"legalForm": "Besloten Vennootschap",
+				"email": "info.groenenco@zuiddrecht.example",
+				"address": {
+					"street": "Industrieweg",
+					"number": 45,
+					"postcode": "2999BC",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "81300",
+					"description": "Hoveniers en aanleg en onderhoud van groenvoorzieningen"
+				},
+				"registeredOn": "2007-08-30",
+				"employees": 27
+			},
+			{
+				"key": "sportclub",
+				"name": "Sportclub Zuiddrecht 1958",
+				"kvk": "00001012",
+				"vestigingsnummer": "000000001012",
+				"legalForm": "Vereniging",
+				"email": "info.sportclub@zuiddrecht.example",
+				"address": {
+					"street": "Sportlaan",
+					"number": 1,
+					"postcode": "2999AK",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "93120",
+					"description": "Sportverenigingen"
+				},
+				"registeredOn": "1958-09-01",
+				"employees": 0
+			},
+			{
+				"key": "vvekerkplein",
+				"name": "Vereniging van Eigenaars Kerkplein",
+				"kvk": "00001013",
+				"vestigingsnummer": "000000001013",
+				"legalForm": "Vereniging",
+				"email": "info.vvekerkplein@zuiddrecht.example",
+				"address": {
+					"street": "Kerkplein",
+					"number": 11,
+					"postcode": "2999AA",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "68320",
+					"description": "Verenigingen van eigenaars"
+				},
+				"registeredOn": "2003-01-15",
+				"employees": 0
+			},
+			{
+				"key": "harmonie",
+				"name": "Muziekvereniging Harmonie Zuiddrecht",
+				"kvk": "00001014",
+				"vestigingsnummer": "000000001014",
+				"legalForm": "Vereniging",
+				"email": "info.harmonie@zuiddrecht.example",
+				"address": {
+					"street": "Kerkstraat",
+					"number": 5,
+					"postcode": "2999AB",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "94996",
+					"description": "Muziekverenigingen"
+				},
+				"registeredOn": "1921-04-10",
+				"employees": 0
+			},
+			{
+				"key": "tennisdekade",
+				"name": "Tennisvereniging De Kade",
+				"kvk": "00001015",
+				"vestigingsnummer": "000000001015",
+				"legalForm": "Vereniging",
+				"email": "info.tennisdekade@zuiddrecht.example",
+				"address": {
+					"street": "Oosterkade",
+					"number": 40,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "93120",
+					"description": "Sportverenigingen"
+				},
+				"registeredOn": "1976-05-03",
+				"employees": 0
+			},
+			{
+				"key": "ondernemers",
+				"name": "Ondernemersvereniging Binnenstad Zuiddrecht",
+				"kvk": "00001016",
+				"vestigingsnummer": "000000001016",
+				"legalForm": "Vereniging",
+				"email": "info.ondernemers@zuiddrecht.example",
+				"address": {
+					"street": "Marktstraat",
+					"number": 3,
+					"postcode": "2999AD",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "94110",
+					"description": "Bedrijfs- en werkgeversorganisaties"
+				},
+				"registeredOn": "2008-02-19",
+				"employees": 0
+			},
+			{
+				"key": "scouting",
+				"name": "Scoutinggroep Zuiddrecht",
+				"kvk": "00001017",
+				"vestigingsnummer": "000000001017",
+				"legalForm": "Vereniging",
+				"email": "info.scouting@zuiddrecht.example",
+				"address": {
+					"street": "Parkweg",
+					"number": 30,
+					"postcode": "2999AE",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "94997",
+					"description": "Jeugdverenigingen"
+				},
+				"registeredOn": "1946-10-12",
+				"employees": 0
+			},
+			{
+				"key": "kindzorg",
+				"name": "Stichting Kindzorg Drechtsteden",
+				"kvk": "00001018",
+				"vestigingsnummer": "000000001018",
+				"legalForm": "Stichting",
+				"email": "info.kindzorg@zuiddrecht.example",
+				"address": {
+					"street": "Havenstraat",
+					"number": 18,
+					"postcode": "2999AF",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "88911",
+					"description": "Jeugdzorg zonder overnachting"
+				},
+				"registeredOn": "2014-06-30",
+				"employees": 112
+			},
+			{
+				"key": "drechthof",
+				"name": "Woningstichting Drechthof",
+				"kvk": "00001019",
+				"vestigingsnummer": "000000001019",
+				"legalForm": "Stichting",
+				"email": "info.drechthof@zuiddrecht.example",
+				"address": {
+					"street": "Marktstraat",
+					"number": 20,
+					"postcode": "2999AD",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "68201",
+					"description": "Verhuur van sociale huurwoningen"
+				},
+				"registeredOn": "1919-12-01",
+				"employees": 64
+			},
+			{
+				"key": "voedselbank",
+				"name": "Stichting Voedselbank Zuiddrecht",
+				"kvk": "00001020",
+				"vestigingsnummer": "000000001020",
+				"legalForm": "Stichting",
+				"email": "info.voedselbank@zuiddrecht.example",
+				"address": {
+					"street": "Industrieweg",
+					"number": 3,
+					"postcode": "2999BC",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "88993",
+					"description": "Maatschappelijke hulpverlening"
+				},
+				"registeredOn": "2010-03-08",
+				"employees": 0
+			},
+			{
+				"key": "dorpshuis",
+				"name": "Stichting Dorpshuis De Kade",
+				"kvk": "00001021",
+				"vestigingsnummer": "000000001021",
+				"legalForm": "Stichting",
+				"email": "info.dorpshuis@zuiddrecht.example",
+				"address": {
+					"street": "Oosterkade",
+					"number": 7,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "93299",
+					"description": "Overige recreatie"
+				},
+				"registeredOn": "1982-07-01",
+				"employees": 3
+			},
+			{
+				"key": "jeugdtheater",
+				"name": "Stichting Jeugdtheater De Kade",
+				"kvk": "00001022",
+				"vestigingsnummer": "000000001022",
+				"legalForm": "Stichting",
+				"email": "info.jeugdtheater@zuiddrecht.example",
+				"address": {
+					"street": "Oosterkade",
+					"number": 9,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "90011",
+					"description": "Beoefening van podiumkunst"
+				},
+				"registeredOn": "2005-09-14",
+				"employees": 2
+			},
+			{
+				"key": "erfgoed",
+				"name": "Stichting Erfgoed Zuiddrecht",
+				"kvk": "00001023",
+				"vestigingsnummer": "000000001023",
+				"legalForm": "Stichting",
+				"email": "info.erfgoed@zuiddrecht.example",
+				"address": {
+					"street": "Kerkplein",
+					"number": 1,
+					"postcode": "2999AA",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "91030",
+					"description": "Monumentenzorg"
+				},
+				"registeredOn": "1999-04-22",
+				"employees": 0
 			}
 		],
 		"openregisterOrganisations": [

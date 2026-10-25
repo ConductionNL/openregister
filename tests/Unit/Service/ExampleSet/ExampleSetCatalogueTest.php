@@ -109,6 +109,13 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
 		$this->assertCount(expectedCount: 36, haystack: $plan['cast']['people']);
+		// DqOrganisaties: 23 organisations in Zuiddrecht, 8 associations, 6 foundations, 9 companies, each with its own made-up KvK number.
+		$forms = array_count_values(array_column($plan['cast']['organisations'], 'legalForm'));
+		$companies = ($forms['Besloten Vennootschap'] + $forms['Eenmanszaak']);
+		$this->assertSame(expected: [8, 6, 9], actual: [$forms['Vereniging'], $forms['Stichting'], $companies]);
+		$kvk = array_column($plan['cast']['organisations'], 'kvk');
+		$this->assertSame(expected: $kvk, actual: array_values(array_unique($kvk)));
+		$this->assertSame(expected: [], actual: array_values(array_filter($kvk, static fn (string $n): bool => preg_match('/^00001\d{3}$/', $n) !== 1)));
 		// DqOverdragen's team picker: Juridische zaken with six members, Juridische zaken sociaal domein with four.
 		$members = static fn (string $group): int => count(
 			array_filter($plan['cast']['people'], static fn (array $person): bool => in_array($group, ($person['groups'] ?? []), true))
