@@ -305,6 +305,7 @@ class ExampleSetStore {
 	 * @param string               $register The register slug.
 	 * @param string               $schema   The schema slug.
 	 * @param array<string, mixed> $data     The row.
+	 * @param string|null          $owner    The account that owns the row; null for the system.
 	 *
 	 * @return array{id: string, error: string} The new id, or '' with why the write failed.
 	 *

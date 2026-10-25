@@ -307,6 +307,7 @@ class ExampleSetInstaller {
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];
+		$save    = fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept);
 		foreach ($fragment['objects'] as $object) {
 			$type = $object['register'].' '.$object['schema'];
 			$name = $fragment['app'].'/'.$object['key'];
@@ -325,7 +326,6 @@ class ExampleSetInstaller {
 			$kept = $held['row'];
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
-				// Files declared after the object was written are attached now, once.
 				if (isset($record['files'][$name]) === false) {
 					$heldId = (string) $record['objects'][$name]['id'];
 					$report = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $heldId, report: $report, record: $record);
@@ -343,7 +343,7 @@ class ExampleSetInstaller {
 					report: $report,
 					written: $written
 				);
-				$this->rewriter->follow(record: $record, name: $name, written: $written, save: fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept));
+				$this->rewriter->follow(record: $record, name: $name, written: $written, save: $save);
 
 				continue;
 			}
@@ -996,7 +996,8 @@ class ExampleSetInstaller {
 	}//end installUserPreferences()
 
 	/**
-	 * Attach the files of a just-written object and record them.
+	 * Attach the files of a just-written object and record them. A kept object gets the files declared after it was
+	 * written, once.
 	 *
 	 * @param array<string, mixed> $plan     The plan.
 	 * @param array<string, mixed> $fragment The fragment.
