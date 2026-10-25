@@ -307,6 +307,7 @@ class ExampleSetInstaller {
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];
+		$save    = fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept);
 		foreach ($fragment['objects'] as $object) {
 			$type = $object['register'].' '.$object['schema'];
 			$name = $fragment['app'].'/'.$object['key'];
@@ -325,7 +326,6 @@ class ExampleSetInstaller {
 			$kept = $held['row'];
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
-				// Files declared after the object was written are attached now, once.
 				if (isset($record['files'][$name]) === false) {
 					$heldId = (string) $record['objects'][$name]['id'];
 					$report = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $heldId, report: $report, record: $record);
@@ -343,7 +343,7 @@ class ExampleSetInstaller {
 					report: $report,
 					written: $written
 				);
-				$this->rewriter->follow(record: $record, name: $name, written: $written, save: fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept));
+				$this->rewriter->follow(record: $record, name: $name, written: $written, save: $save);
 
 				continue;
 			}
@@ -358,7 +358,7 @@ class ExampleSetInstaller {
 				continue;
 			}
 
-			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['sent']);
+			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['sent'], owner: $resolved['owner']);
 			if ($made['id'] === '') {
 				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$made['error'];
 				continue;
@@ -617,9 +617,8 @@ class ExampleSetInstaller {
 	 * @param array<string, mixed>             $context `cast`, `objects` and `today`.
 	 * @param array<int, array<string, mixed>> $planned Objects a check pass declared earlier, for lookups.
 	 *
-	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string} The filled data, what
-	 *                                                                                        to send, or why it
-	 *                                                                                        cannot be filled.
+	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string, owner?: string|null} The
+	 *         filled data, what to send and the declared owner, or why it cannot be filled.
 	 */
 	private function resolve(array $object, array $context, array $planned): array {
 		$context['lookups'] = [];
@@ -638,9 +637,10 @@ class ExampleSetInstaller {
 			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
 
-		$sent = $this->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
+		$owner = $this->values->ownerOf(object: $object, context: $context);
+		$sent  = $this->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
 
-		return ['data' => $data, 'sent' => $sent, 'refusal' => ''];
+		return ['data' => $data, 'sent' => $sent, 'refusal' => $owner['refusal'], 'owner' => $owner['owner']];
 	}//end resolve()
 
 	/**
@@ -996,7 +996,8 @@ class ExampleSetInstaller {
 	}//end installUserPreferences()
 
 	/**
-	 * Attach the files of a just-written object and record them.
+	 * Attach the files of a just-written object and record them. A kept object gets the files declared after it was
+	 * written, once.
 	 *
 	 * @param array<string, mixed> $plan     The plan.
 	 * @param array<string, mixed> $fragment The fragment.

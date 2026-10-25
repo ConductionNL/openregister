@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -255,5 +256,40 @@ class ExampleSetStoreTest extends TestCase {
 		$this->assertTrue($rules['appendOnly']);
 		$this->assertSame(['since', 'number'], $rules['kept']);
 		$this->assertSame(['objectTitle'], $rules['lenses']);
+	}
+
+	/**
+	 * A declared owner goes to the save as `_owner`; a hand-over runs OpenRegister's ownership change as the system
+	 * and names a failure.
+	 *
+	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 */
+	public function testTheOwnerGoesToTheSaveAndAHandOverRunsAsTheSystem(): void {
+		$saved = $this->createMock(ObjectEntity::class);
+		$saved->method('jsonSerialize')->willReturn(['@self' => ['id' => 'besluit-1']]);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
+		$objects->expects($this->once())->method('saveObject')->with(
+			$this->anything(), $this->anything(), 'besluiten', 'decision', null, false, false, false, true, null, null, false, false, false, 'pieter'
+		)->willReturn($saved);
+		$system    = [];
+		$ownership = $this->createMock(ObjectOwnershipService::class);
+		$ownership->method('reassignMany')->willReturnCallback(
+			static function (array $identifiers, string $newOwner) use (&$system): array {
+				$system[] = SystemOperationContext::isActive();
+				return ['failed' => ($identifiers === ['gone'] ? [['identifier' => 'gone', 'reason' => 'not found']] : [])];
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
+			ObjectService::class          => $objects,
+			ObjectOwnershipService::class => $ownership,
+		});
+		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
+
+		$this->assertSame('besluit-1', $store->create(register: 'besluiten', schema: 'decision', data: ['title' => 'Besluit'], owner: 'pieter')['id']);
+		$this->assertSame('', $store->assignOwner(id: 'besluit-1', owner: 'pieter'));
+		$this->assertSame('not found', $store->assignOwner(id: 'gone', owner: 'pieter'));
+		$this->assertSame([true, true], $system);
 	}
 }

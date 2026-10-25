@@ -120,6 +120,31 @@ class ExampleSetValues {
 	}//end fill()
 
 	/**
+	 * The owner a declared object names, filled: an account the set's cast declares, or none when it names none.
+	 *
+	 * @param array<string, mixed> $object  The declared object; `owner` is optional.
+	 * @param array<string, mixed> $context See fill(); `cast` holds the entries by key.
+	 *
+	 * @return array{owner: string|null, refusal: string} The account id, or why the owner cannot be used.
+	 *
+	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 */
+	public function ownerOf(array $object, array $context): array {
+		if (array_key_exists('owner', $object) === false) {
+			return ['owner' => null, 'refusal' => ''];
+		}
+
+		$gaps  = [];
+		$owner = $this->fill(value: $object['owner'], context: $context, gaps: $gaps);
+		$uids  = array_column(array_filter((array) ($context['cast'] ?? []), 'is_array'), 'uid');
+		if ($gaps !== [] || is_string($owner) === false || in_array($owner, $uids, true) === false) {
+			return ['owner' => null, 'refusal' => 'owner "'.json_encode($object['owner']).'" is no account the cast declares'];
+		}
+
+		return ['owner' => $owner, 'refusal' => ''];
+	}//end ownerOf()
+
+	/**
 	 * The views a fragment declares, by key, for `{{view:key.uuid}}`: as the record holds them after the install
 	 * wrote them, or with a stand-in uuid for the check (`$record` null), since none is written yet.
 	 *
