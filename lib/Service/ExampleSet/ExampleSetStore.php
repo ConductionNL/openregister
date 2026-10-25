@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -309,7 +310,7 @@ class ExampleSetStore {
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
-	public function create(string $register, string $schema, array $data): array {
+	public function create(string $register, string $schema, array $data, ?string $owner=null): array {
 		$service = $this->objectService();
 		if ($service === null) {
 			return ['id' => '', 'error' => 'OpenRegister\'s object service is not available'];
@@ -317,7 +318,7 @@ class ExampleSetStore {
 
 		try {
 			$saved = $service->runAsSystem(
-				fn () => $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false)
+				fn () => $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _owner: $owner)
 			);
 		} catch (Throwable $e) {
 			return ['id' => '', 'error' => $e->getMessage()];
@@ -364,6 +365,54 @@ class ExampleSetStore {
 
 		return '';
 	}//end update()
+
+	/**
+	 * The owner of a stored object, or null when it cannot be read.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema   The schema slug.
+	 * @param string $id       The object's id.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 */
+	public function ownerOf(string $register, string $schema, string $id): ?string {
+		try {
+			return $this->objectService()?->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false)?->getOwner();
+		} catch (Throwable) {
+			return null;
+		}
+	}//end ownerOf()
+
+	/**
+	 * Hand a stored object to an account, as the system, through OpenRegister's audited ownership change.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema   The schema slug.
+	 * @param string $id       The object's id.
+	 * @param string $owner    The account.
+	 *
+	 * @return string '' when handed over, otherwise why not.
+	 *
+	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 */
+	public function assignOwner(string $register, string $schema, string $id, string $owner): string {
+		$service = $this->objectService();
+		if ($service === null) {
+			return 'OpenRegister\'s object service is not available';
+		}
+
+		try {
+			$outcome = $service->runAsSystem(
+				fn () => $this->container->get(ObjectOwnershipService::class)->reassignMany(identifiers: [$id], newOwner: $owner)
+			);
+		} catch (Throwable $e) {
+			return $e->getMessage();
+		}
+
+		return implode('; ', array_column((array) ($outcome['failed'] ?? []), 'reason'));
+	}//end assignOwner()
 
 	/**
 	 * What a schema lets an update change.

@@ -358,7 +358,7 @@ class ExampleSetInstaller {
 				continue;
 			}
 
-			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['sent']);
+			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['sent'], owner: $resolved['owner']);
 			if ($made['id'] === '') {
 				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$made['error'];
 				continue;
@@ -617,9 +617,8 @@ class ExampleSetInstaller {
 	 * @param array<string, mixed>             $context `cast`, `objects` and `today`.
 	 * @param array<int, array<string, mixed>> $planned Objects a check pass declared earlier, for lookups.
 	 *
-	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string} The filled data, what
-	 *                                                                                        to send, or why it
-	 *                                                                                        cannot be filled.
+	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string, owner?: string|null} The
+	 *         filled data, what to send and the declared owner, or why it cannot be filled.
 	 */
 	private function resolve(array $object, array $context, array $planned): array {
 		$context['lookups'] = [];
@@ -638,9 +637,10 @@ class ExampleSetInstaller {
 			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
 
-		$sent = $this->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
+		$owner = $this->values->ownerOf(object: $object, context: $context);
+		$sent  = $this->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
 
-		return ['data' => $data, 'sent' => $sent, 'refusal' => ''];
+		return ['data' => $data, 'sent' => $sent, 'refusal' => $owner['refusal'], 'owner' => $owner['owner']];
 	}//end resolve()
 
 	/**

@@ -77,6 +77,12 @@ class FakeExampleSetStore extends ExampleSetStore {
 	/** @var array<string, bool> Append-only schemas, by "register schema". */
 	public array $appendOnly = [];
 
+	/** @var array<string, string> The owner of each row, by id. */
+	public array $owners = [];
+
+	/** @var int Number of owner hand-overs. */
+	public int $ownerChanges = 0;
+
 	/** @var int Next id number. */
 	private int $next = 1;
 
@@ -209,7 +215,7 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return ['row' => $this->withLenses(type: $register.' '.$schema, row: ($this->rows[$register.' '.$schema][$id] ?? null)), 'error' => ''];
 	}
 
-	public function create(string $register, string $schema, array $data): array {
+	public function create(string $register, string $schema, array $data, ?string $owner = null): array {
 		if ($this->offers(register: $register, schema: $schema) === false) {
 			return ['id' => '', 'error' => 'no such schema'];
 		}
@@ -225,7 +231,10 @@ class FakeExampleSetStore extends ExampleSetStore {
 			unset($data[$field]);
 		}
 
-		return ['id' => $this->seed(register: $register, schema: $schema, data: $this->asStored(type: $register.' '.$schema, data: $data)), 'error' => ''];
+		$id = $this->seed(register: $register, schema: $schema, data: $this->asStored(type: $register.' '.$schema, data: $data));
+		$this->owners[$id] = ($owner ?? '__system__');
+
+		return ['id' => $id, 'error' => ''];
 	}
 
 	/** @var int Number of updates. */
@@ -261,6 +270,21 @@ class FakeExampleSetStore extends ExampleSetStore {
 	 *
 	 * @return array<string, mixed>
 	 */
+	public function ownerOf(string $register, string $schema, string $id): ?string {
+		return ($this->owners[$id] ?? null);
+	}
+
+	public function assignOwner(string $register, string $schema, string $id, string $owner): string {
+		if (isset($this->rows[$register.' '.$schema][$id]) === false) {
+			return 'no such row';
+		}
+
+		$this->owners[$id] = $owner;
+		$this->ownerChanges++;
+
+		return '';
+	}
+
 	public function writeRules(string $register, string $schema): array {
 		$type = $register.' '.$schema;
 

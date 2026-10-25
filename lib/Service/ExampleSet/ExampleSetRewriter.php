@@ -117,6 +117,11 @@ class ExampleSetRewriter {
 			return $row;
 		}
 
+		$error = $this->handOver(store: $store, object: $object, id: $id, owner: ($resolved['owner'] ?? null));
+		if ($error !== '') {
+			$report['dropped'][] = $where.': not handed to its owner: '.$error;
+		}
+
 		$type = $object['register'].' '.$object['schema'];
 		$report['types'][$type]['refreshed'] = (($report['types'][$type]['refreshed'] ?? 0) + 1);
 		// A kept field still holds what it held and a lens is no stored value: neither is what this run wrote.
@@ -124,6 +129,26 @@ class ExampleSetRewriter {
 
 		return ($store->get(register: $object['register'], schema: $object['schema'], id: $id) ?? $row);
 	}//end rewrite()
+
+	/**
+	 * Hand a rewritten object to the owner its declaration names, when another account owns it; '' when done or not needed.
+	 *
+	 * @param ExampleSetStore      $store  Register access.
+	 * @param array<string, mixed> $object The declared object.
+	 * @param string               $id     The object's id.
+	 * @param string|null          $owner  The declared owner, a cast account; null when it names none.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 */
+	private function handOver(ExampleSetStore $store, array $object, string $id, ?string $owner): string {
+		if ($owner === null || $store->ownerOf(register: $object['register'], schema: $object['schema'], id: $id) === $owner) {
+			return '';
+		}
+
+		return $store->assignOwner(register: $object['register'], schema: $object['schema'], id: $id, owner: $owner);
+	}//end handOver()
 
 	/**
 	 * The update a schema lets through: a field kept as first written carries its stored value (or is left out when
