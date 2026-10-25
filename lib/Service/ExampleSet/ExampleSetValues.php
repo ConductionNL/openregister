@@ -15,6 +15,8 @@
  * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
  * - `{{instance:baseUrl}}` the address of this instance (`overwrite.cli.url`).
  *
+ * A declared object's `verbatimFields` are left as declared (see fillObject()).
+ *
  * A day may be pinned to a weekday: `{{date:+7@thu}}` is the first Thursday
  * on or after the day seven days from the install day; `{{datetime:+7@tue 19:30}}`
  * likewise with a time.
@@ -143,6 +145,27 @@ class ExampleSetValues {
 
 		return ['owner' => $owner, 'refusal' => ''];
 	}//end ownerOf()
+
+	/**
+	 * Fill a declared object's data, leaving the fields it names in `verbatimFields` as declared: they hold
+	 * placeholders of their own (a mail template's `{{zaakNummer}}`), not the set's. Every other field is filled,
+	 * and a placeholder there that cannot be filled is still named in `$gaps`.
+	 *
+	 * @param array<string, mixed> $object  The declared object: `data`, optionally `verbatimFields`.
+	 * @param array<string, mixed> $context See fill().
+	 * @param array<int, string>   $gaps    Collects every placeholder that could not be filled.
+	 *
+	 * @return array<string, mixed> The data, in the declared order.
+	 *
+	 * @spec openspec/changes/example-set-verbatim-fields/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
+	 */
+	public function fillObject(array $object, array $context, array &$gaps): array {
+		$data     = (array) ($object['data'] ?? []);
+		$verbatim = array_flip(array_filter((array) ($object['verbatimFields'] ?? []), 'is_string'));
+		$filled   = (array) $this->fill(value: array_diff_key($data, $verbatim), context: $context, gaps: $gaps);
+
+		return array_replace($data, $filled);
+	}//end fillObject()
 
 	/**
 	 * The views a fragment declares, by key, for `{{view:key.uuid}}`: as the record holds them after the install

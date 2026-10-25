@@ -632,7 +632,7 @@ class ExampleSetInstaller {
 		}
 
 		$gaps = [];
-		$data = (array) $this->values->fill(value: $object['data'], context: $context, gaps: $gaps);
+		$data = $this->values->fillObject(object: $object, context: $context, gaps: $gaps);
 		if ($gaps !== []) {
 			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
