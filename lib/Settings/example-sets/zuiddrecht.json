@@ -669,7 +669,8 @@
 					"medewerkers",
 					"woo-en-informatie"
 				],
-				"function": "Woo-coördinator"
+				"function": "Woo-coördinator",
+				"roles": ["Woo-coördinator"]
 			},
 			{
 				"key": "hannabos",
@@ -832,7 +833,11 @@
 					"medewerkers",
 					"mobiliteit-en-verkeer"
 				],
-				"function": "Beleidsadviseur verkeer"
+				"function": "Beleidsadviseur verkeer",
+				"status": {
+					"status": "busy",
+					"message": "In overleg tot 14:00"
+				}
 			},
 			{
 				"key": "marieke",

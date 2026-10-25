@@ -343,6 +343,8 @@ class ExampleSetInstaller {
 					report: $report,
 					written: $written
 				);
+				$this->rewriter->follow(record: $record, name: $name, written: $written, save: fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept));
+
 				continue;
 			}
 

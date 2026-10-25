@@ -49,6 +49,7 @@ class ExampleSetProof {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function lostPaths(mixed $declared, mixed $stored, string $path=''): array {
+		$declared = $this->asDeclared(declared: $declared, stored: $stored);
 		if (is_array($declared) === false) {
 			if ($this->sameValue(declared: $declared, stored: $stored) === true) {
 				return [];
@@ -73,6 +74,27 @@ class ExampleSetProof {
 
 		return $lost;
 	}//end lostPaths()
+
+	/**
+	 * JSON text declared for a field the store answers decoded, as what it encodes; any other value as it is.
+	 *
+	 * @param mixed $declared What was sent.
+	 * @param mixed $stored   What was read back.
+	 *
+	 * @return mixed
+	 */
+	private function asDeclared(mixed $declared, mixed $stored): mixed {
+		if (is_string($declared) === false || is_array($stored) === false) {
+			return $declared;
+		}
+
+		$decoded = $this->structured(stored: $declared);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return $declared;
+	}//end asDeclared()
 
 	/**
 	 * A stored value, decoded when a schema keeps a structure as JSON text.

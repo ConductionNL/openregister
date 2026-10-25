@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -314,7 +316,9 @@ class ExampleSetStore {
 		}
 
 		try {
-			$saved = $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+			$saved = $service->runAsSystem(
+				fn () => $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false)
+			);
 		} catch (Throwable $e) {
 			return ['id' => '', 'error' => $e->getMessage()];
 		}
@@ -346,14 +350,83 @@ class ExampleSetStore {
 		}
 
 		unset($data['@self'], $data['id']);
+		$actions = $this->lifecycleActions();
+		$actions?->enterDeclaredState(uuid: $id);
 		try {
-			$service->saveObject(object: $data, register: $register, schema: $schema, uuid: $id, _rbac: false, _multitenancy: false);
+			$service->runAsSystem(
+				fn () => $service->saveObject(object: $data, register: $register, schema: $schema, uuid: $id, _rbac: false, _multitenancy: false)
+			);
 		} catch (Throwable $e) {
 			return $e->getMessage();
+		} finally {
+			$actions?->leaveDeclaredState(uuid: $id);
 		}
 
 		return '';
 	}//end update()
+
+	/**
+	 * What a schema lets an update change.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema   The schema slug.
+	 *
+	 * @return array{appendOnly: bool, kept: array<int, string>, lenses: array<int, string>} Whether rows are never
+	 *         updated, the fields kept as first written (readOnly, immutable), and the lens fields (never stored).
+	 *
+	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 */
+	public function writeRules(string $register, string $schema): array {
+		$rules   = ['appendOnly' => false, 'kept' => [], 'lenses' => []];
+		$service = $this->objectService();
+		if ($service === null) {
+			return $rules;
+		}
+
+		try {
+			$service->setRegister(register: $register);
+			$service->setSchema(schema: $schema);
+			$entity = $service->getCurrentSchemaEntity();
+		} catch (Throwable) {
+			return $rules;
+		}
+
+		if ($entity === null) {
+			return $rules;
+		}
+
+		foreach ((array) $entity->getProperties() as $name => $definition) {
+			if (is_array($definition) === true
+				&& (($definition['readOnly'] ?? false) === true || ($definition[Schema::IMMUTABLE_PROPERTY_KEYWORD] ?? false) === true)
+			) {
+				$rules['kept'][] = (string) $name;
+			}
+		}
+
+		$rules['appendOnly'] = $entity->isAppendOnly();
+		$rules['lenses']     = array_keys($entity->getLenses());
+
+		return $rules;
+	}//end writeRules()
+
+	/**
+	 * The lifecycle action context, which tells the lifecycle guard that a write sets declared state; null when absent.
+	 *
+	 * @return LifecycleActionContext|null
+	 */
+	private function lifecycleActions(): ?LifecycleActionContext {
+		try {
+			$actions = $this->container->get(LifecycleActionContext::class);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($actions instanceof LifecycleActionContext) {
+			return $actions;
+		}
+
+		return null;
+	}//end lifecycleActions()
 
 	/**
 	 * Delete one row the set's install record lists; '' when it is gone, otherwise why not.

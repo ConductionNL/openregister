@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -108,6 +109,7 @@ class AccessLinkReader {
 	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param FileRestrictionStore|null $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
@@ -116,6 +118,7 @@ class AccessLinkReader {
 		private readonly PublicTimeline $timeline,
 		private readonly AccessLinkSubject $subjects,
 		private readonly LoggerInterface $logger,
+		private readonly ?FileRestrictionStore $restrictions = null,
 	) {
 
 	}//end __construct()
@@ -412,6 +415,11 @@ class AccessLinkReader {
 	private function fileDescriptor(ObjectEntity $object, string $fileId): ?array {
 		$wanted = trim($fileId);
 		if ($wanted === '') {
+			return null;
+		}
+
+		// A link admits whoever holds it, and a restricted file admits only the people it names.
+		if (ctype_digit($wanted) === true && $this->restrictions?->find(fileId: (int)$wanted) !== null) {
 			return null;
 		}
 
