@@ -414,6 +414,42 @@ class ExampleSetStore {
 	}//end assignOwner()
 
 	/**
+	 * The top-level properties a schema types as text only: a value of one that reads back as a structure (JSON text
+	 * the register decodes on read) is to be written as text again.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema   The schema slug.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/example-set-change-keeps-text/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 */
+	public function textProperties(string $register, string $schema): array {
+		$service = $this->objectService();
+		if ($service === null) {
+			return [];
+		}
+
+		try {
+			$service->setRegister(register: $register);
+			$service->setSchema(schema: $schema);
+			$entity = $service->getCurrentSchemaEntity();
+		} catch (Throwable) {
+			return [];
+		}
+
+		$text = [];
+		foreach (array_filter((array) $entity?->getProperties(), 'is_array') as $name => $definition) {
+			$type = (array) ($definition['type'] ?? []);
+			if (in_array('string', $type, true) === true && array_diff($type, ['string', 'null']) === []) {
+				$text[] = (string) $name;
+			}
+		}
+
+		return $text;
+	}//end textProperties()
+
+	/**
 	 * What a schema lets an update change.
 	 *
 	 * @param string $register The register slug.

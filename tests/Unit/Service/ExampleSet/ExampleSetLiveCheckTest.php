@@ -96,6 +96,33 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	}
 
 	/**
+	 * A text property the store reads back as a structure (a GeoJSON geometry
+	 * kept as JSON text) is validated and written as text again when a change
+	 * touches another field of the object, without the change naming it.
+	 *
+	 * @spec openspec/changes/example-set-change-keeps-text/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 */
+	public function testAChangeSendsATextPropertyTheStoreReadsAsAStructureAsText(): void {
+		$this->store->textFields['cases case'][] = 'geometry';
+		$this->store->storedAs['cases case']['geometry'] = static fn (mixed $value): mixed => (is_string($value) ? json_decode($value, true) : $value);
+		$this->app(app: 'cases', fragment: [
+			'objects' => [
+				['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Parkeren', 'geometry' => '{"type":"Point","coordinates":[4.6612,51.8148]}']],
+				['key' => 'result-1', 'register' => 'cases', 'schema' => 'result', 'data' => ['case' => '{{object:case-1.id}}']],
+			],
+			'changes' => [['key' => 'case-1-result', 'register' => 'cases', 'schema' => 'case', 'object' => 'case-1', 'set' => ['result' => '{{object:result-1.id}}']]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame('created', $report['changes']['cases/case-1-result']);
+		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals'], 'the check on the kept object');
+		$this->assertSame([], $this->remover->remove(set: 'demo')['failed'], 'remove writes the text property as text too');
+	}//end testAChangeSendsATextPropertyTheStoreReadsAsAStructureAsText()
+
+	/**
 	 * The check counts objects per register and schema as the install declares
 	 * them, and a change on the same schema apart (the zuiddrecht set read 12
 	 * dossiq cases checked against 10 declared).
