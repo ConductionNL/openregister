@@ -151,4 +151,46 @@ class ExampleSetRewriter {
 
 		return $data;
 	}//end writable()
+
+	/**
+	 * Move the record of a rewritten object to what the rewrite wrote: its
+	 * reference values and its `#references` change hold the new values, so the
+	 * proof and a later run compare against what is on the instance. What a
+	 * field held before the set first changed it (`had`, `old`) stays.
+	 *
+	 * @param array<string, mixed>                 $record  The record; updated.
+	 * @param string                               $name    The record key of the object, `<app>/<key>`.
+	 * @param array<string, array<string, mixed>>  $written What this run wrote, by record key.
+	 * @param callable(array<string, mixed>): void $save    Keeps the record when it changed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
+	 */
+	public function follow(array &$record, string $name, array $written, callable $save): void {
+		if (isset($written[$name]) === false) {
+			return;
+		}
+
+		$data    = $written[$name];
+		$changed = false;
+		foreach (array_keys((array) ($record['objects'][$name]['refs'] ?? [])) as $field) {
+			if (array_key_exists($field, $data) === true && $record['objects'][$name]['refs'][$field] !== $data[$field]) {
+				$record['objects'][$name]['refs'][$field] = $data[$field];
+				$changed = true;
+			}
+		}
+
+		foreach ((array) ($record['changes'][$name.'#references']['set'] ?? []) as $index => $set) {
+			$path = (string) $set['path'];
+			if (array_key_exists($path, $data) === true && $set['new'] !== $data[$path]) {
+				$record['changes'][$name.'#references']['set'][$index]['new'] = $data[$path];
+				$changed = true;
+			}
+		}
+
+		if ($changed === true) {
+			$save($record);
+		}
+	}//end follow()
 }//end class

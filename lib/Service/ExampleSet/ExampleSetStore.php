@@ -30,7 +30,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
@@ -405,7 +404,7 @@ class ExampleSetStore {
 		}
 
 		$rules['appendOnly'] = $entity->isAppendOnly();
-		$rules['lenses']     = LensResolver::lensPropertyNames(schema: $entity);
+		$rules['lenses']     = array_keys($entity->getLenses());
 
 		return $rules;
 	}//end writeRules()

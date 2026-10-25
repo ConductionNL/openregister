@@ -270,8 +270,7 @@ class LifecycleValidationListenerTest extends TestCase {
 			conditionEvaluator: $this->createMock(LifecycleConditionEvaluator::class),
 			transitionResolver: new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions),
 			conditionTracer: new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect()),
-			ruleRuns: $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class),
-			actions: $actions
+			ruleRuns: $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$outside = $this->event('lifecycle', 'geparafeerd', 'concept');

@@ -343,9 +343,7 @@ class ExampleSetInstaller {
 					report: $report,
 					written: $written
 				);
-				if (isset($written[$name]) === true && $this->followRewrite(record: $record, name: $name, data: $written[$name]) === true) {
-					$this->record->write(set: (string) $plan['set'], record: $record);
-				}
+				$this->rewriter->follow(record: $record, name: $name, written: $written, save: fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept));
 
 				continue;
 			}
@@ -490,40 +488,6 @@ class ExampleSetInstaller {
 
 		return ($this->store->get(register: $object['register'], schema: $object['schema'], id: (string) $entry['id']) ?? $row);
 	}//end refreshReferences()
-
-	/**
-	 * Move the record of a rewritten object to what the rewrite wrote: its
-	 * reference values and its `#references` change hold the new values, so the
-	 * proof and a later run compare against what is on the instance. What a
-	 * field held before the set first changed it (`had`, `old`) stays.
-	 *
-	 * @param array<string, mixed> $record The record; updated.
-	 * @param string               $name   The record key of the object, `<app>/<key>`.
-	 * @param array<string, mixed> $data   The values the rewrite wrote, by field.
-	 *
-	 * @return bool Whether the record changed.
-	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
-	 */
-	private function followRewrite(array &$record, string $name, array $data): bool {
-		$changed = false;
-		foreach (array_keys((array) ($record['objects'][$name]['refs'] ?? [])) as $field) {
-			if (array_key_exists($field, $data) === true && $record['objects'][$name]['refs'][$field] !== $data[$field]) {
-				$record['objects'][$name]['refs'][$field] = $data[$field];
-				$changed = true;
-			}
-		}
-
-		foreach ((array) ($record['changes'][$name.'#references']['set'] ?? []) as $index => $set) {
-			$path = (string) $set['path'];
-			if (array_key_exists($path, $data) === true && $set['new'] !== $data[$path]) {
-				$record['changes'][$name.'#references']['set'][$index]['new'] = $data[$path];
-				$changed = true;
-			}
-		}
-
-		return $changed;
-	}//end followRewrite()
 
 	/**
 	 * What the install last wrote into the reference fields of a kept object.
