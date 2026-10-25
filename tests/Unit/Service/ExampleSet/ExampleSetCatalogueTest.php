@@ -153,6 +153,8 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 			expected: ['lars.dekoning', 'Lars de Koning', ['mobiliteit-en-verkeer']],
 			actual: [$plan['cast']['people']['lars']['uid'], $plan['cast']['people']['lars']['displayName'], array_values(array_diff($plan['cast']['people']['lars']['groups'], ['medewerkers']))]
 		);
+		// DqTeamwachtrij / DqAfdelingen: Lars is in a meeting until two.
+		$this->assertSame(expected: ['status' => 'busy', 'message' => 'In overleg tot 14:00'], actual: $plan['cast']['people']['lars']['status']);
 		// Buurtvereniging Oost's secretary, a contact person with no BSN and no account (dossiq DqOrganisatie).
 		$kees = $plan['cast']['people']['keesdewit'];
 		$this->assertSame(expected: ['Kees de Wit', 'buurtoost', 'kees.dewit@zuiddrecht.example'], actual: [$kees['displayName'], $kees['organisation'], $kees['email']]);
