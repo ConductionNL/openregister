@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -112,6 +113,7 @@ class LifecycleValidationListener implements IEventListener {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -150,6 +152,12 @@ class LifecycleValidationListener implements IEventListener {
 
 		if ($oldValue === $newValue) {
 			// No lifecycle change — nothing to validate.
+			return;
+		}
+
+		// A seed or example-set refresh writes the state its declaration names. As the system, that is the declared
+		// value, not a move a user makes, so no transition has to allow it.
+		if (SystemOperationContext::isActive() === true && $this->transitionResolver->writesDeclaredState(uuid: (string) $newObject->getUuid()) === true) {
 			return;
 		}
 
