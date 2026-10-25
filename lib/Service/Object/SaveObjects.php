@@ -74,6 +74,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -192,6 +193,8 @@ class SaveObjects {
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
 	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
+	 * @param PropertyRbacHandler|null $propertyRbac Applies property authorization per row, as SaveObject does.
+	 *                                               Null only in legacy fixtures.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -209,6 +212,7 @@ class SaveObjects {
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		private readonly ?DecisionTableBulkGuard $decisionTables = null,
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 
 	}//end __construct()
@@ -887,6 +891,20 @@ class SaveObjects {
 				}
 			}
 
+			// Step 3b: property authorization per row, as the single-object save applies it.
+			if ($effectiveRbac === true) {
+				[$sanitised, $refusal] = $this->applyPropertyAuthorization(
+					object: $sanitised,
+					schema: $rowSchema,
+					existing: $existingEntity,
+					isCreate: ($action === 'create')
+				);
+				if ($refusal !== null) {
+					$this->recordSafeguardRejection(object: $sanitised, reason: $refusal, result: $result, index: $rowIndex);
+					continue;
+				}
+			}
+
 			// Step 5: Opis JSON-Schema validation when requested.
 			if ($effectiveValidation === true && $this->validateHandler !== null) {
 				try {
@@ -922,6 +940,53 @@ class SaveObjects {
 
 		return $passed;
 	}//end applyBulkSafeguards()
+
+	/**
+	 * Apply property authorization to one row, the way SaveObject does for a single save.
+	 *
+	 * A value the caller may not write is refused (unchanged values pass, as in a PATCH). On an
+	 * update, a stored property the row omits and the caller may not read or update is carried
+	 * forward, so leaving it out cannot clear it.
+	 *
+	 * @param array<string, mixed> $object   The row, business fields at the top and `@self` beside them.
+	 * @param Schema               $schema   The row's schema.
+	 * @param ObjectEntity|null    $existing The stored row on an update, null on a create.
+	 * @param bool                 $isCreate Whether the row creates.
+	 *
+	 * @return array{0: array<string, mixed>, 1: string|null} The row to write, and a refusal or null.
+	 *
+	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
+	 */
+	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
+		if ($this->propertyRbac === null) {
+			return [$object, null];
+		}
+
+		$incoming = $object;
+		unset($incoming['@self']);
+		$stored = ($existing?->getObject() ?? []);
+
+		$unauthorized = $this->propertyRbac->getUnauthorizedProperties(
+			schema: $schema,
+			object: $stored,
+			incomingData: $incoming,
+			isCreate: $isCreate
+		);
+		if ($unauthorized !== []) {
+			return [$object, 'You are not authorized to modify: ' . implode(', ', $unauthorized)];
+		}
+
+		if ($existing === null) {
+			return [$object, null];
+		}
+
+		$omitted = $this->propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
+		if ($omitted === []) {
+			return [$object, null];
+		}
+
+		return [$this->propertyRbac->restoreWriteOnlyValues(prepared: $object, stored: $stored, omittedPaths: $omitted), null];
+	}//end applyPropertyAuthorization()
 
 	/**
 	 * Strip dangerous client-supplied @self / top-level fields.
