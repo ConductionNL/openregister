@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -159,4 +160,20 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 
 		$this->assertCount(1, $passed);
 	}//end testAnUnchangedProtectedValuePasses()
+
+	public function testASystemOperationWritesAProtectedPropertyAsTheObjectRuleLetsIt(): void {
+		$result = [];
+		$passed = SystemOperationContext::run(
+			function () use (&$result): array {
+				return $this->safeguard(
+					rows: [['@self' => ['uuid' => self::UUID], 'title' => 'Offerte', 'restricted' => false]],
+					result: $result
+				);
+			}
+		);
+
+		$this->assertCount(1, $passed);
+		$this->assertFalse($passed[0]['restricted']);
+		$this->assertSame([], $result['invalid']);
+	}//end testASystemOperationWritesAProtectedPropertyAsTheObjectRuleLetsIt()
 }//end class

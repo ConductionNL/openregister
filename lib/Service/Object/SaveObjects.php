@@ -75,6 +75,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -946,7 +947,7 @@ class SaveObjects {
 	 *
 	 * A value the caller may not write is refused (unchanged values pass, as in a PATCH). On an
 	 * update, a stored property the row omits and the caller may not read or update is carried
-	 * forward, so leaving it out cannot clear it.
+	 * forward, so leaving it out cannot clear it. A system operation is not narrowed.
 	 *
 	 * @param array<string, mixed> $object   The row, business fields at the top and `@self` beside them.
 	 * @param Schema               $schema   The row's schema.
@@ -958,7 +959,9 @@ class SaveObjects {
 	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
 	 */
 	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
-		if ($this->propertyRbac === null) {
+		// A system operation (cron, runAsSystem, the example-set installer) is trusted here as
+		// PermissionHandler::hasPermission trusts it for the object rule.
+		if ($this->propertyRbac === null || SystemOperationContext::isActive() === true) {
 			return [$object, null];
 		}
 
