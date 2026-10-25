@@ -92,7 +92,9 @@ class ExampleSetPeople {
 			$report = $this->installServiceUser(set: $set, account: $account, adopt: $adopt, report: $report, record: $record);
 		}
 
-		return $this->installMemberships(plan: $plan, report: $report, record: $record);
+		$report = $this->installMemberships(plan: $plan, report: $report, record: $record);
+
+		return $this->installSubAdmins(plan: $plan, report: $report, record: $record);
 	}//end install()
 
 	/**
@@ -154,6 +156,83 @@ class ExampleSetPeople {
 
 		return $report;
 	}//end installMemberships()
+
+	/**
+	 * Make every declared group sub-admin one the instance lacks, and record it.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $report The report so far.
+	 * @param array<string, mixed> $record The record.
+	 *
+	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 */
+	private function installSubAdmins(array $plan, array $report, array &$record): array {
+		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid, $uid]) {
+			$name = $gid.' / '.$uid;
+			$report['subAdmins'][$name] = 'kept';
+			if ($this->accounts->isSubAdmin(gid: $gid, uid: $uid) === true) {
+				continue;
+			}
+
+			if ($this->accounts->addSubAdmin(gid: $gid, uid: $uid) === false) {
+				$report['dropped'][] = 'sub-admin '.$name.': the group or the account is not there';
+				continue;
+			}
+
+			$report['subAdmins'][$name] = 'created';
+			$record['subAdmins'][]      = [$gid, $uid];
+			$this->record->write(set: (string) $plan['set'], record: $record);
+		}
+
+		return $report;
+	}//end installSubAdmins()
+
+	/**
+	 * Every group sub-admin the set declares, as gid and uid pairs: `subAdmins` (cast keys) on a cast or fragment group.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}>
+	 *
+	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 */
+	private function declaredSubAdmins(array $plan): array {
+		$pairs = [];
+		foreach ($this->groupsWithSubAdmins(plan: $plan) as [$gid, $keys]) {
+			foreach ($keys as $key) {
+				$uid = (string) ($plan['cast']['people'][$key]['uid'] ?? '');
+				if ($uid !== '') {
+					$pairs[] = [$gid, $uid];
+				}
+			}
+		}
+
+		return array_values(array_unique($pairs, SORT_REGULAR));
+	}//end declaredSubAdmins()
+
+	/**
+	 * The cast and fragment groups with their declared sub-admin cast keys.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return array<int, array{0: string, 1: array<int, string>}>
+	 */
+	private function groupsWithSubAdmins(array $plan): array {
+		$groups = [];
+		foreach ($plan['cast']['groups'] as $key => $group) {
+			$groups[] = [(string) ($group['gid'] ?? $key), array_map('strval', (array) ($group['subAdmins'] ?? []))];
+		}
+
+		foreach ($plan['fragments'] as $fragment) {
+			foreach ($fragment['groups'] as $group) {
+				$groups[] = [(string) ($group['group'] ?? ''), array_map('strval', (array) ($group['subAdmins'] ?? []))];
+			}
+		}
+
+		return array_values(array_filter($groups, static fn (array $group): bool => $group[0] !== '' && $group[1] !== []));
+	}//end groupsWithSubAdmins()
 
 	/**
 	 * One cast account: kept, adopted or created.
@@ -321,6 +400,14 @@ class ExampleSetPeople {
 			}
 		}
 
+		foreach ($this->groupsWithSubAdmins(plan: $plan) as [$gid, $keys]) {
+			foreach ($keys as $key) {
+				if (($plan['cast']['people'][$key]['uid'] ?? '') === '') {
+					$refusals[] = 'group "'.$gid.'": sub-admin "'.$key.'" is not a cast person with an account';
+				}
+			}
+		}
+
 		return array_merge($refusals, $this->memberRefusals(plan: $plan));
 	}//end refusals()
 
@@ -485,6 +572,12 @@ class ExampleSetPeople {
 		foreach ($record['memberships'] as [$gid, $uid]) {
 			if ($this->accounts->inGroup(gid: $gid, uid: $uid) === false) {
 				$missing[] = 'membership '.$gid.' / '.$uid;
+			}
+		}
+
+		foreach (($record['subAdmins'] ?? []) as [$gid, $uid]) {
+			if ($this->accounts->isSubAdmin(gid: $gid, uid: $uid) === false) {
+				$missing[] = 'sub-admin '.$gid.' / '.$uid;
 			}
 		}
 

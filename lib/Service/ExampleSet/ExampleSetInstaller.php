@@ -181,6 +181,7 @@ class ExampleSetInstaller {
 			'users'       => [],
 			'groups'      => [],
 			'memberships' => [],
+			'subAdmins'   => [],
 			'changes'     => [],
 			'appConfig'   => [],
 			'userPreferences' => [],
