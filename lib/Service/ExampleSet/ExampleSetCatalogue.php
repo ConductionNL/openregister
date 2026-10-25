@@ -304,6 +304,7 @@ class ExampleSetCatalogue {
 			'notes'           => $this->keyedRows(file: $file, declared: (array) ($fragment['notes'] ?? []), noun: 'note'),
 			'readStates'      => $this->keyedRows(file: $file, declared: (array) ($fragment['readStates'] ?? []), noun: 'read state'),
 			'flows'           => $this->keyedRows(file: $file, declared: (array) ($fragment['flows'] ?? []), noun: 'flow'),
+			'archival'        => $this->archival(app: $app, file: $file, declared: (array) ($fragment['archival'] ?? [])),
 		];
 	}//end fragment()
 
@@ -341,6 +342,27 @@ class ExampleSetCatalogue {
 
 		return $entries;
 	}//end keyedRows()
+
+	/**
+	 * The archival setting rows of a fragment: only OpenRegister's own fragment may write OpenRegister's setting.
+	 *
+	 * @param string            $app      The app that ships the fragment.
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared rows.
+	 *
+	 * @return array<int, array{key: string, data: array<string, mixed>}>
+	 *
+	 * @throws ExampleSetException When another app declares the part, or a row lacks a key or fields.
+	 *
+	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 */
+	private function archival(string $app, string $file, array $declared): array {
+		if ($declared !== [] && $app !== ExampleSetOrder::CAST_APP) {
+			throw new ExampleSetException($file.': archival is OpenRegister\'s own setting; only OpenRegister\'s fragment may write it.');
+		}
+
+		return $this->keyedRows(file: $file, declared: $declared, noun: 'archival setting');
+	}//end archival()
 
 	/**
 	 * The service accounts of a fragment: a key and an account id each.

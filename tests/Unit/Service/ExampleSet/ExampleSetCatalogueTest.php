@@ -147,7 +147,12 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		);
 		// The jeugdteam's regisseur of the jeugdwet example case.
 		$this->assertSame(['fatma.kaya', ['sociaal-domein']], [$plan['cast']['people']['fatma']['uid'], array_values(array_diff($plan['cast']['people']['fatma']['groups'], ['medewerkers']))]);
-		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true]], $plan['requires']);
+		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true], 'destruction-lists' => ['mock' => false]], $plan['requires']);
+		// Dossiq's archival review widget reads the destruction lists in the register the archival setting names.
+		$this->assertSame(
+			expected: [['key' => 'destruction-lists', 'data' => ['destructionListRegister' => '{{register:destruction-lists}}', 'destructionListSchema' => '{{schema:destruction-lists/destructionList}}']]],
+			actual: $plan['fragments'][0]['archival']
+		);
 		// The colleague at Mobiliteit en verkeer the dossiq case boards ask for the Lindelaan documents.
 		$this->assertSame(
 			expected: ['lars.dekoning', 'Lars de Koning', ['mobiliteit-en-verkeer']],

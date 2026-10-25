@@ -1,0 +1,189 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Destruction Lists",
+    "description": "System register for destruction lists: the objects due for destruction, the reviewer and answer of each entry, the approvals of the list and its decision history. Name it in the archival setting (destructionListRegister, destructionListSchema) so the destruction sweep and the review endpoints have a home for their lists.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational destruction-list register shipped by OpenRegister; backs the destruction review the archival endpoints serve."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "destruction-lists": {
+        "slug": "destruction-lists",
+        "title": "Destruction Lists",
+        "version": "1.0.0",
+        "description": "Destruction lists under review: entries, reviewers, answers, approvals and the decision history.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "destructionList"
+        ],
+        "folder": "Open Registers/Destruction Lists"
+      }
+    },
+    "schemas": {
+      "destructionList": {
+        "slug": "destructionList",
+        "title": "Destruction List",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A list of objects due for destruction, reviewed entry by entry before it is approved and executed.",
+        "description": "The record of one destruction round: the objects whose disposal date has passed, who reviews each entry and what they answered, the approvals of the list and the one decision history an auditor reads. The archival setting names this register and schema (destructionListRegister, destructionListSchema); the destruction sweep writes lists here and the review endpoints read them.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "in_review",
+              "awaiting_second_approval",
+              "approved",
+              "rejected",
+              "completed"
+            ],
+            "default": "in_review",
+            "facetable": true,
+            "title": "Status",
+            "description": "Destruction list lifecycle state."
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "A name for the round, for people reading the list."
+          },
+          "createdBy": {
+            "type": "string",
+            "title": "Created by",
+            "description": "User id that built the list, or system for the sweep."
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Created at",
+            "description": "When the list was built (ISO 8601)."
+          },
+          "objectCount": {
+            "type": "integer",
+            "title": "Object count",
+            "description": "How many objects the list holds."
+          },
+          "objects": {
+            "type": "array",
+            "title": "Entries",
+            "description": "The objects under review, one entry each.",
+            "items": {
+              "type": "object",
+              "title": "Entry",
+              "description": "One object under review.",
+              "properties": {
+                "uuid": {
+                  "type": "string",
+                  "maxLength": 255,
+                  "title": "Object UUID",
+                  "description": "UUID of the object this entry is about."
+                },
+                "title": {
+                  "type": "string",
+                  "title": "Title",
+                  "description": "Name of the object, as the reviewer reads it."
+                },
+                "schema": {
+                  "type": "integer",
+                  "title": "Schema Id",
+                  "description": "Schema the object belongs to."
+                },
+                "register": {
+                  "type": "integer",
+                  "title": "Register Id",
+                  "description": "Register the object belongs to."
+                },
+                "archiefactiedatum": {
+                  "type": "string",
+                  "title": "Disposal date",
+                  "description": "The date the object is due for its archival action (archiefactiedatum)."
+                },
+                "classification": {
+                  "type": "string",
+                  "title": "Classification",
+                  "description": "The archival action due: vernietigen or bewaren."
+                },
+                "reviewer": {
+                  "title": "Reviewer",
+                  "description": "User id of the person who has to sign this entry off; null while nobody is assigned."
+                },
+                "assignedAt": {
+                  "title": "Assigned at",
+                  "description": "When the reviewer was assigned (ISO 8601)."
+                },
+                "decision": {
+                  "title": "Decision",
+                  "description": "The reviewer's answer (destroy, retain or transfer); null while pending."
+                },
+                "decidedBy": {
+                  "title": "Decided by",
+                  "description": "User id of the person who answered."
+                },
+                "decidedAt": {
+                  "title": "Decided at",
+                  "description": "When the answer was recorded (ISO 8601)."
+                },
+                "softDeleted": {
+                  "type": "boolean",
+                  "title": "Soft deleted",
+                  "description": "Whether the object was already soft-deleted when the list was built."
+                },
+                "wooGepubliceerd": {
+                  "type": "boolean",
+                  "title": "Woo published",
+                  "description": "Whether the object was published under the Woo."
+                }
+              }
+            }
+          },
+          "excluded": {
+            "type": "array",
+            "title": "Excluded",
+            "description": "Objects taken off the list, with the reason.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "approvals": {
+            "type": "array",
+            "title": "Approvals",
+            "description": "Who approved the list, and when.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "rejections": {
+            "type": "array",
+            "title": "Rejections",
+            "description": "Who rejected the list, and why.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "decisions": {
+            "type": "array",
+            "title": "Decisions",
+            "description": "The one decision history: every destroy, retain and transfer answer, in order.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "certificateUuid": {
+            "type": "string",
+            "title": "Certificate",
+            "description": "UUID of the destruction certificate once the list is executed."
+          }
+        }
+      }
+    }
+  }
+}

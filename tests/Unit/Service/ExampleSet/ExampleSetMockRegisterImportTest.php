@@ -153,17 +153,19 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 		$plan      = $this->catalogue->gather(set: 'zuiddrecht');
 		$registers = $this->realRegisters();
 
-		$this->assertSame(['brp', 'kvk'], array_keys($plan['requires']));
+		$this->assertSame(['brp', 'kvk', 'destruction-lists'], array_keys($plan['requires']));
+		$this->assertSame([true, true, false], array_column($plan['requires'], 'mock'));
 		foreach ($plan['requires'] as $slug => $required) {
-			$this->assertTrue($required['mock'], $slug.' is required as a mock');
-			$import = $registers->importMock(slug: $slug);
+			$import = match ($required['mock']) {
+				true  => $registers->importMock(slug: $slug),
+				false => $registers->import(slug: $slug),
+			};
 
 			$this->assertSame('', $import['error'], $slug.' imports from what the set declares');
-			$this->assertSame([['appId' => 'openregister.mock', 'jobId' => 'job-'.count($this->importedAs)]], $import['jobs']);
 			$this->assertArrayHasKey($slug, $this->instance);
 		}
 
-		$this->assertSame(['openregister.mock', 'openregister.mock'], $this->importedAs);
+		$this->assertSame(['openregister.mock', 'openregister.mock', 'openregister.destruction-lists'], $this->importedAs);
 	}
 
 	public function testARegisterShippedOnlyAsAMockIsNotImportedAsTheRealConfiguration(): void {
