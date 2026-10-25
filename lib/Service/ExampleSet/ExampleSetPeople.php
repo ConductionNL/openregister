@@ -110,6 +110,7 @@ class ExampleSetPeople {
 		foreach ($this->declaredGroups(plan: $plan) as $gid => $displayName) {
 			$report['groups'][$gid] = 'kept';
 			if ($this->accounts->groupExists(gid: $gid) === true) {
+				$report['groups'][$gid] = $this->nameUnnamedGroup(set: (string) $plan['set'], gid: $gid, displayName: $displayName, record: $record);
 				continue;
 			}
 
@@ -125,6 +126,31 @@ class ExampleSetPeople {
 
 		return $report;
 	}//end installGroups()
+
+	/**
+	 * Give an existing group that shows only its id the declared display name, and record the name it had.
+	 *
+	 * @param string               $set         The set id.
+	 * @param string               $gid         The group id.
+	 * @param string               $displayName The declared display name.
+	 * @param array<string, mixed> $record      The record; gains the old name.
+	 *
+	 * @return string `named` or `kept`.
+	 *
+	 * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 */
+	private function nameUnnamedGroup(string $set, string $gid, string $displayName, array &$record): string {
+		$current = $this->accounts->groupName(gid: $gid);
+		$unnamed = ($current === '' || $current === $gid);
+		if ($displayName === '' || $unnamed === false || $this->accounts->setGroupName(gid: $gid, displayName: $displayName) === false) {
+			return 'kept';
+		}
+
+		$record['groupNames'][$gid] = ($record['groupNames'][$gid] ?? ['old' => $current, 'new' => $displayName]);
+		$this->record->write(set: $set, record: $record);
+
+		return 'named';
+	}//end nameUnnamedGroup()
 
 	/**
 	 * Add every declared membership the instance lacks, and record it.

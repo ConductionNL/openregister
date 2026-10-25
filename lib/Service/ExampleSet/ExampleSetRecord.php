@@ -52,6 +52,7 @@ class ExampleSetRecord {
 		'groups'      => [],
 		'memberships' => [],
 		'subAdmins'   => [],
+		'groupNames'  => [],
 		'objects'     => [],
 		'changes'     => [],
 		'registers'   => [],
@@ -113,6 +114,7 @@ class ExampleSetRecord {
 		}
 
 		$record['groups']      = array_values(array_filter((array) ($decoded['groups'] ?? []), 'is_string'));
+		$record['groupNames']  = array_filter((array) ($decoded['groupNames'] ?? []), 'is_array');
 		$record['memberships'] = $this->memberships(decoded: (array) ($decoded['memberships'] ?? []));
 		$record['subAdmins']   = $this->memberships(decoded: (array) ($decoded['subAdmins'] ?? []));
 		$record['objects']     = $this->objects(decoded: (array) ($decoded['objects'] ?? []));
