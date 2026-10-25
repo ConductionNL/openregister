@@ -147,7 +147,7 @@ class ExampleSetRewriter {
 			return '';
 		}
 
-		return $store->assignOwner(register: $object['register'], schema: $object['schema'], id: $id, owner: $owner);
+		return $store->assignOwner(id: $id, owner: $owner);
 	}//end handOver()
 
 	/**

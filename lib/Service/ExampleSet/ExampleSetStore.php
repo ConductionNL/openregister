@@ -389,16 +389,14 @@ class ExampleSetStore {
 	/**
 	 * Hand a stored object to an account, as the system, through OpenRegister's audited ownership change.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema   The schema slug.
-	 * @param string $id       The object's id.
-	 * @param string $owner    The account.
+	 * @param string $id    The object's id; OpenRegister finds its register and schema.
+	 * @param string $owner The account.
 	 *
 	 * @return string '' when handed over, otherwise why not.
 	 *
 	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
-	public function assignOwner(string $register, string $schema, string $id, string $owner): string {
+	public function assignOwner(string $id, string $owner): string {
 		$service = $this->objectService();
 		if ($service === null) {
 			return 'OpenRegister\'s object service is not available';

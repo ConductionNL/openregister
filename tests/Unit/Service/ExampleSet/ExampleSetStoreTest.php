@@ -288,8 +288,8 @@ class ExampleSetStoreTest extends TestCase {
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
 
 		$this->assertSame('besluit-1', $store->create(register: 'besluiten', schema: 'decision', data: ['title' => 'Besluit'], owner: 'pieter')['id']);
-		$this->assertSame('', $store->assignOwner(register: 'besluiten', schema: 'decision', id: 'besluit-1', owner: 'pieter'));
-		$this->assertSame('not found', $store->assignOwner(register: 'besluiten', schema: 'decision', id: 'gone', owner: 'pieter'));
+		$this->assertSame('', $store->assignOwner(id: 'besluit-1', owner: 'pieter'));
+		$this->assertSame('not found', $store->assignOwner(id: 'gone', owner: 'pieter'));
 		$this->assertSame([true, true], $system);
 	}
 }

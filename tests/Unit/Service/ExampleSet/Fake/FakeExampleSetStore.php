@@ -274,8 +274,8 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return ($this->owners[$id] ?? null);
 	}
 
-	public function assignOwner(string $register, string $schema, string $id, string $owner): string {
-		if (isset($this->rows[$register.' '.$schema][$id]) === false) {
+	public function assignOwner(string $id, string $owner): string {
+		if (isset($this->owners[$id]) === false) {
 			return 'no such row';
 		}
 
