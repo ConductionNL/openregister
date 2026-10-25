@@ -241,7 +241,7 @@ class PropertyRbacHandler {
 	private function recordReveal(Schema $schema, string $property, mixed $authorization, array $object): void {
 		// An explicit-reveal property is masked unless granted, and the
 		// ExplicitRevealMasker records the granted reveal itself.
-		if ($this->reveals === null || is_array($authorization) === false || ExplicitReveal::isExplicit(definition: $authorization) === true) {
+		if ($this->reveals === null || is_array($authorization) === false || ExplicitReveal::isExplicitRules(rules: $authorization) === true) {
 			return;
 		}
 

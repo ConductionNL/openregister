@@ -961,7 +961,7 @@ class RenderObject {
 		[$objectData, $masked] = $this->revealMasker()->maskObject(
 			schema: $schema,
 			object: $objectData,
-			objectIds: [(string)$entity->getUuid(), (string)$entity->getId(), (string)$entity->getSlug()]
+			objectIds: [(string)$entity->getUuid()]
 		);
 		$this->withholdEntityCopies(entity: $entity, schema: $schema, removed: $masked);
 

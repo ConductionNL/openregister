@@ -170,7 +170,7 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$render = $this->bare(RenderObject::class, ['container' => $container]);
 
 		$row = $this->call($render, 'maskRowReveals', [
-			'row' => ['id' => 'p-1', 'citizenServiceNumber' => self::BSN, '@self' => ['name' => self::BSN]],
+			'row' => ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN, '@self' => ['name' => self::BSN]],
 			'schema' => $this->schema(),
 		]);
 

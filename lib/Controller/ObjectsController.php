@@ -2960,13 +2960,6 @@ class ObjectsController extends Controller {
 		// Get request parameters for filtering and searching.
 		$requestParams = $this->request->getParams();
 
-		// `_reveal` is honoured on this single-object read only, and only for this
-		// object: an extended or listed object stays masked (property-explicit-reveal).
-		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
-		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
-			$explicitReveal->grantFor(objectId: $id, reveal: (string)($requestParams['_reveal'] ?? ''));
-		}
-
 		// Extract parameters for rendering.
 		$extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
 		$filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
@@ -3036,6 +3029,14 @@ class ObjectsController extends Controller {
 
 				$errorMsg = "Object with id {$id} not found";
 				return new JSONResponse(data: ['error' => $errorMsg], statusCode: Http::STATUS_NOT_FOUND);
+			}
+
+			// `_reveal` is honoured on this single-object read only, and only for the
+			// object found, by its uuid: an extended or listed object stays masked,
+			// whatever id or slug it shares with the route (property-explicit-reveal).
+			$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
+			if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+				$explicitReveal->grantFor(objectId: (string)$objectEntity->getUuid(), reveal: (string)($requestParams['_reveal'] ?? ''));
 			}
 
 			// Render the object with requested extensions, filters, fields, and unset parameters.
@@ -4871,6 +4872,12 @@ class ObjectsController extends Controller {
 		// Get config and fetch logs.
 		$config = $this->getConfig(_register: $register, _schema: $schema);
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
+
+		// An explicit-reveal value reads masked for an administrator too.
+		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class);
+		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker) {
+			$logs = $trailMasker->mask(entries: $logs);
+		}
 
 		// Get total count of logs.
 		$total = count($logs);

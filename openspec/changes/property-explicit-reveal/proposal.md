@@ -46,5 +46,12 @@ saves (SaveObjects).
 - The routes above. PropertyRbacHandler no longer records an explicit-reveal property (the masker does).
 - Opt-in per property: inert for every schema that does not declare it.
 
-Not covered here: the administrator audit-trail listing (`/api/audit-trails` for an admin) returns entries
-unredacted, as it does for every other property.
+Also, after the re-review:
+
+- a `_related` / `_referenced` condition on an explicit-reveal property of the related schema is refused (400);
+- the revert answer is the rendered object, never the stored entity;
+- only the `authorization.reveal` form counts, so every such property carries an authorization block and every read
+  path filters it;
+- `_reveal` is granted on the found object's uuid after the find, and a grant matches a uuid only;
+- the administrator's trail lists (`/api/audit-trails`, its cursor page, and an object's logs for an administrator)
+  show the value masked (ExplicitRevealTrailMasker).

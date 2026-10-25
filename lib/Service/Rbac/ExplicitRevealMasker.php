@@ -78,7 +78,7 @@ class ExplicitRevealMasker {
 			return [$object, []];
 		}
 
-		$objectIds = array_values(array_filter(array_merge($objectIds, $this->idsOf(object: $object))));
+		$objectIds = array_values(array_filter(array_merge(array_filter($objectIds, static fn (string $id): bool => self::isUuid(value: $id)), $this->idsOf(object: $object))));
 		$masked = [];
 		foreach ($names as $name) {
 			if ($this->hasValue(object: $object, property: $name) === false) {
@@ -158,20 +158,32 @@ class ExplicitRevealMasker {
 	}//end record()
 
 	/**
-	 * The ids an object carries: uuid, id, and its `@self` id.
+	 * The uuids an object carries (`uuid`, `id`, `@self.id`): a grant matches a
+	 * uuid only, never a numeric id or a slug another schema may share.
 	 *
 	 * @param array<string, mixed> $object The object.
 	 *
-	 * @return array<int, string> The ids.
+	 * @return array<int, string> The uuids.
 	 */
 	private function idsOf(array $object): array {
 		$ids = [];
-		foreach ([$object['id'] ?? null, $object['uuid'] ?? null, $object['@self']['id'] ?? null] as $id) {
-			if (is_scalar($id) === true && (string)$id !== '') {
-				$ids[] = (string)$id;
+		foreach ([$object['uuid'] ?? null, $object['id'] ?? null, $object['@self']['id'] ?? null] as $id) {
+			if (is_string($id) === true && self::isUuid(value: $id) === true) {
+				$ids[] = $id;
 			}
 		}
 
 		return $ids;
 	}//end idsOf()
+
+	/**
+	 * Whether a value is a uuid.
+	 *
+	 * @param string $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isUuid(string $value): bool {
+		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+	}//end isUuid()
 }//end class

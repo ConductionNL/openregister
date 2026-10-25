@@ -142,7 +142,7 @@ class ExplicitRevealTest extends TestCase {
 			$reveals = new RevealCollector();
 			[$out, $masked] = $this->masker($groups, new ExplicitReveal(), $reveals)->maskObject(
 				schema: $this->schema(),
-				object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]
+				object: ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN]
 			);
 
 			$this->assertSame(self::MASK, $out['citizenServiceNumber']);
@@ -160,12 +160,12 @@ class ExplicitRevealTest extends TestCase {
 	public function testAGrantRevealsThatObjectOnlyAndIsRecorded(): void {
 		foreach ([['sensitive'], ['admin']] as $groups) {
 			$reveal = new ExplicitReveal();
-			$reveal->grantFor(objectId: 'p-1', reveal: 'citizenServiceNumber');
+			$reveal->grantFor(objectId: '11111111-1111-4111-8111-111111111111', reveal: 'citizenServiceNumber');
 			$reveals = new RevealCollector();
 			$masker = $this->masker($groups, $reveal, $reveals);
 
-			[$own] = $masker->maskObject(schema: $this->schema(), object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]);
-			[$other] = $masker->maskObject(schema: $this->schema(), object: ['id' => 'p-2', 'citizenServiceNumber' => '999990000']);
+			[$own] = $masker->maskObject(schema: $this->schema(), object: ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN]);
+			[$other] = $masker->maskObject(schema: $this->schema(), object: ['id' => '22222222-2222-4222-8222-222222222222', 'citizenServiceNumber' => '999990000']);
 
 			$this->assertSame(self::BSN, $own['citizenServiceNumber']);
 			$this->assertSame('*****0000', $other['citizenServiceNumber']);
@@ -180,12 +180,12 @@ class ExplicitRevealTest extends TestCase {
 	 */
 	public function testAGrantWithoutReadRightsStaysMasked(): void {
 		$reveal = new ExplicitReveal();
-		$reveal->grantFor(objectId: 'p-1', reveal: 'citizenServiceNumber');
+		$reveal->grantFor(objectId: '11111111-1111-4111-8111-111111111111', reveal: 'citizenServiceNumber');
 		$reveals = new RevealCollector();
 
 		[$out] = $this->masker(['frontdesk'], $reveal, $reveals)->maskObject(
 			schema: $this->schema(),
-			object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]
+			object: ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN]
 		);
 
 		$this->assertSame(self::MASK, $out['citizenServiceNumber']);
@@ -200,7 +200,7 @@ class ExplicitRevealTest extends TestCase {
 	public function testTrustedCodeIsNotMasked(): void {
 		$reveal = new ExplicitReveal();
 		$masker = $this->masker(['sensitive'], $reveal, new RevealCollector());
-		$object = ['id' => 'p-1', 'citizenServiceNumber' => self::BSN];
+		$object = ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN];
 
 		[$trusted] = $reveal->trustedDuring(fn () => $masker->maskObject(schema: $this->schema(), object: $object));
 		[$system] = SystemOperationContext::run(fn () => $masker->maskObject(schema: $this->schema(), object: $object));
@@ -218,7 +218,7 @@ class ExplicitRevealTest extends TestCase {
 		$reveals = new RevealCollector();
 		[$handler] = $this->rules(groups: ['sensitive'], reveals: $reveals);
 
-		$handler->filterReadableProperties(schema: $this->schema(), object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]);
+		$handler->filterReadableProperties(schema: $this->schema(), object: ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN]);
 
 		$this->assertSame(0, $reveals->count());
 	}//end testTheReadFilterRecordsNoExplicitReveal()
@@ -289,7 +289,7 @@ class ExplicitRevealTest extends TestCase {
 	 */
 	public function testAnMcpResourceReadsItMasked(): void {
 		$object = new ObjectEntity();
-		$object->setUuid('p-1');
+		$object->setUuid('11111111-1111-4111-8111-111111111111');
 		$object->setObject(['citizenServiceNumber' => self::BSN]);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturn($object);
@@ -304,7 +304,7 @@ class ExplicitRevealTest extends TestCase {
 		}
 
 		$method = $reflection->getMethod('readObjects');
-		$read = $method->invoke($service, 1, 7, 'p-1');
+		$read = $method->invoke($service, 1, 7, '11111111-1111-4111-8111-111111111111');
 
 		$this->assertSame(self::MASK, $read['citizenServiceNumber']);
 	}//end testAnMcpResourceReadsItMasked()

@@ -153,9 +153,12 @@ class ExplicitReveal {
 	}//end isTrusted()
 
 	/**
-	 * Whether a property's definition makes it explicit-reveal.
+	 * Whether a property definition makes it explicit-reveal. Only the
+	 * `authorization.reveal` form counts: a property with an authorization
+	 * block is one every read route filters (Schema::hasPropertyAuthorization),
+	 * so a top-level `reveal` is ignored rather than half honoured.
 	 *
-	 * @param mixed $definition The property definition, or its authorization block.
+	 * @param mixed $definition The property definition.
 	 *
 	 * @return bool
 	 *
@@ -166,13 +169,21 @@ class ExplicitReveal {
 			return false;
 		}
 
-		$rules = $definition;
-		if (is_array($definition['authorization'] ?? null) === true) {
-			$rules = $definition['authorization'];
-		}
-
-		return ($rules[self::KEY] ?? null) === self::EXPLICIT;
+		return self::isExplicitRules(rules: ($definition['authorization'] ?? null));
 	}//end isExplicit()
+
+	/**
+	 * Whether a property's authorization block makes it explicit-reveal.
+	 *
+	 * @param mixed $rules The authorization block.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	public static function isExplicitRules(mixed $rules): bool {
+		return is_array($rules) === true && ($rules[self::KEY] ?? null) === self::EXPLICIT;
+	}//end isExplicitRules()
 
 	/**
 	 * The explicit-reveal properties of a schema.
