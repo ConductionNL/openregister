@@ -131,9 +131,8 @@ class FileRestrictionGuard {
 		$groups = null;
 		foreach ($unknown as $fileId) {
 			$restriction = ($restrictions[$fileId] ?? null);
-			if ($restriction === null) {
-				$verdict = true;
-			} else {
+			$verdict = true;
+			if ($restriction !== null) {
 				$groups ??= $this->callerGroups();
 				$verdict = $this->admits(fileId: $fileId, restriction: $restriction, userId: $userId, groups: $groups);
 			}

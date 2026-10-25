@@ -47,7 +47,7 @@ class Version1Date20261024200000 extends SimpleMigrationStep {
 	 * @param Closure              $schemaClosure Returns the schema wrapper.
 	 * @param array<string, mixed> $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
+	 * @return ISchemaWrapper|null The schema.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
@@ -55,7 +55,7 @@ class Version1Date20261024200000 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(self::TABLE);

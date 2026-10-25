@@ -297,63 +297,11 @@ class FilesController extends Controller {
 		string $fileVerb = ObjectFileAccess::ADD_FILES,
 		?int $fileId = null,
 	): void {
-		$this->ensureObjectRule(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			allowAnonymous: $allowAnonymous,
-			change: $change,
-			fileVerb: $fileVerb
-		);
-
+		// A restricted file the caller is not admitted to is not there for them, whatever the object rule says.
 		if ($fileId !== null) {
 			$this->refuseRestrictedFile(fileId: $fileId);
 		}
-	}//end ensureObjectAccess()
 
-	/**
-	 * Refuse a restricted file, as if it were not there, to a caller the restriction does not admit.
-	 *
-	 * @param int $fileId The file id.
-	 *
-	 * @return void
-	 *
-	 * @throws ObjectFileAccessDeniedException With 404 when the caller is not admitted.
-	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
-	 */
-	private function refuseRestrictedFile(int $fileId): void {
-		if ($this->fileRestrictions !== null && $this->fileRestrictions->mayRead(fileId: $fileId) === false) {
-			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
-		}
-	}//end refuseRestrictedFile()
-
-	/**
-	 * The object rule behind {@see ensureObjectAccess()}.
-	 *
-	 * @param string $register       The register slug or id.
-	 * @param string $schema         The schema slug or id.
-	 * @param string $id             The object id.
-	 * @param bool   $allowAnonymous Whether an anonymous caller passes (gated on publication later).
-	 * @param bool   $change         Whether the action changes the object's files.
-	 * @param string $fileVerb       The file verb a change needs.
-	 *
-	 * @return void
-	 *
-	 * @throws NotAuthorizedException When the caller may not access the object.
-	 * @throws ObjectStateWriteException When $change is true and the object is frozen or archived.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the existing contract of ensureObjectAccess().
-	 */
-	private function ensureObjectRule(
-		string $register,
-		string $schema,
-		string $id,
-		bool $allowAnonymous,
-		bool $change,
-		string $fileVerb,
-	): void {
 		// Anonymous callers are denied by default. Published-file READ
 		// endpoints (e.g. preview) pass $allowAnonymous=true to keep their
 		// existing anonymous access, which is gated on publication.
@@ -390,7 +338,24 @@ class FilesController extends Controller {
 		if ($change === true && $object instanceof ObjectEntity) {
 			$this->fileWriteGuard?->assertWritable(object: $object);
 		}
-	}//end ensureObjectRule()
+	}//end ensureObjectAccess()
+
+	/**
+	 * Refuse a restricted file, as if it were not there, to a caller the restriction does not admit.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectFileAccessDeniedException With 404 when the caller is not admitted.
+	 *
+	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 */
+	private function refuseRestrictedFile(int $fileId): void {
+		if ($this->fileRestrictions?->mayRead(fileId: $fileId) === false) {
+			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
+		}
+	}//end refuseRestrictedFile()
 
 	/**
 	 * Attach a file the caller has in Files (or the files directly inside a
@@ -1605,7 +1570,7 @@ class FilesController extends Controller {
 			// refused rather than served without a rule.
 			$parentObject = $this->managedFileObject(file: $file);
 			if ($this->refusesManagedFile(object: $parentObject, isAnonymous: $isAnonymous) === true
-				|| ($this->fileRestrictions !== null && $this->fileRestrictions->mayRead(fileId: (int)$file->getId()) === false)
+				|| $this->fileRestrictions?->mayRead(fileId: (int)$file->getId()) === false
 			) {
 				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 			}

@@ -107,10 +107,7 @@ class ObjectFolderBrowser {
 		$root = $this->objectFolder(object: $object);
 		$folder = $this->folderAt(root: $root, path: $path);
 
-		$nodes = $folder->getDirectoryListing();
-		if ($this->restrictions !== null) {
-			$nodes = $this->restrictions->readableNodes(nodes: $nodes);
-		}
+		$nodes = ($this->restrictions?->readableNodes(nodes: $folder->getDirectoryListing()) ?? $folder->getDirectoryListing());
 
 		$entries = [];
 		foreach ($nodes as $node) {
@@ -395,7 +392,7 @@ class ObjectFolderBrowser {
 			throw new NotFoundException('Not found in this object');
 		}
 
-		if ($this->restrictions !== null && $this->restrictions->mayRead(fileId: $nodeId) === false) {
+		if ($this->restrictions?->mayRead(fileId: $nodeId) === false) {
 			throw new NotFoundException('Not found in this object');
 		}
 
