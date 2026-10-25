@@ -49,6 +49,11 @@ class ExampleSetProof {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function lostPaths(mixed $declared, mixed $stored, string $path=''): array {
+		// JSON text declared for a field the store answers decoded is compared as what it encodes.
+		if (is_string($declared) === true && is_array($stored) === true && is_array($this->structured(stored: $declared)) === true) {
+			$declared = $this->structured(stored: $declared);
+		}
+
 		if (is_array($declared) === false) {
 			if ($this->sameValue(declared: $declared, stored: $stored) === true) {
 				return [];

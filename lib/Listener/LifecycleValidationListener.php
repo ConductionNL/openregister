@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -85,6 +87,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
 	 * @param ConditionTracer $conditionTracer Names the operand that decided a condition.
 	 * @param RuleRunRecorder $ruleRuns Records each condition's verdict for the rule inventory.
+	 * @param LifecycleActionContext|null $actions Says which writes set declared state as the system.
 	 *
 	 * @return void
 	 *
@@ -100,6 +103,7 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly LifecycleTransitionResolver $transitionResolver,
 		private readonly ConditionTracer $conditionTracer,
 		private readonly RuleRunRecorder $ruleRuns,
+		private readonly ?LifecycleActionContext $actions=null,
 	) {
 	}//end __construct()
 
@@ -150,6 +154,12 @@ class LifecycleValidationListener implements IEventListener {
 
 		if ($oldValue === $newValue) {
 			// No lifecycle change — nothing to validate.
+			return;
+		}
+
+		// A seed or example-set refresh writes the state its declaration names. As the system, that is the declared
+		// value, not a move a user makes, so no transition has to allow it.
+		if (SystemOperationContext::isActive() === true && $this->actions?->writesDeclaredState(uuid: (string) $newObject->getUuid()) === true) {
 			return;
 		}
 

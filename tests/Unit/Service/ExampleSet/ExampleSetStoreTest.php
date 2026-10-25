@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
@@ -191,5 +194,66 @@ class ExampleSetStoreTest extends TestCase {
 		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'null'));
 		$this->assertSame(['row' => null, 'error' => 'db down'], $store->read(register: 'r', schema: 's', id: 'broken'));
 		$this->assertNull($store->get(register: 'r', schema: 's', id: 'broken'));
+	}
+
+	/**
+	 * A write runs as the system, so a read inside the save path (a relation, a
+	 * listener) is never refused as an anonymous caller, and an update is
+	 * marked as a write of declared state while it runs, and only then.
+	 *
+	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function testAWriteRunsAsTheSystemAndAnUpdateWritesDeclaredState(): void {
+		$actions = new LifecycleActionContext();
+		$seen    = [];
+		$saved   = $this->createMock(ObjectEntity::class);
+		$saved->method('jsonSerialize')->willReturn(['@self' => ['id' => 'case-1']]);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
+		$objects->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$seen, $actions, $saved): ObjectEntity {
+				$seen[] = ['system' => SystemOperationContext::isActive(), 'declared' => $actions->writesDeclaredState(uuid: 'case-1')];
+				return $saved;
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
+			ObjectService::class          => $objects,
+			LifecycleActionContext::class => $actions,
+		});
+		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
+
+		$this->assertSame('case-1', $store->create(register: 'dossiq', schema: 'case', data: ['title' => 'Zaak'])['id']);
+		$this->assertSame('', $store->update(register: 'dossiq', schema: 'case', id: 'case-1', data: ['status' => 'requested']));
+
+		$this->assertSame([['system' => true, 'declared' => false], ['system' => true, 'declared' => true]], $seen);
+		$this->assertFalse($actions->writesDeclaredState(uuid: 'case-1'), 'released after the write');
+		$this->assertFalse(SystemOperationContext::isActive());
+	}
+
+	/**
+	 * The write rules of a schema: append-only, and the fields a rewrite must not send (readOnly, immutable, lenses).
+	 *
+	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 */
+	public function testTheWriteRulesOfASchema(): void {
+		$schema = new Schema();
+		$schema->setProperties([
+			'title'    => ['type' => 'string'],
+			'since'    => ['type' => 'string', 'readOnly' => true],
+			'number'   => ['type' => 'string', Schema::IMMUTABLE_PROPERTY_KEYWORD => true],
+		]);
+		$schema->setConfiguration([Schema::LENS_ANNOTATION => ['objectTitle' => ['through' => 'object', 'property' => 'title']]]);
+		$schema->setAppendOnly(true);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('setRegister')->willReturnSelf();
+		$objects->method('setSchema')->willReturnSelf();
+		$objects->method('getCurrentSchemaEntity')->willReturn($schema);
+
+		$rules = $this->storeOver(objects: $objects)->writeRules(register: 'dossiq', schema: 'case');
+
+		$this->assertTrue($rules['appendOnly']);
+		$this->assertSame(['since', 'number'], $rules['kept']);
+		$this->assertSame(['objectTitle'], $rules['lenses']);
 	}
 }
