@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
@@ -1902,6 +1903,13 @@ class ObjectService implements ObjectServiceInterface
 
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
 
+            // A reader was shown an explicit-reveal value as its mask; an
+            // update that sends the mask back keeps the stored value. Before
+            // the validator, which would refuse the mask's shape.
+            if ($uuidWasNull === false) {
+                $object = $this->restoreMaskedReveals(object: $object, uuid: $uuid);
+            }
+
             // The declared bounds hold on every write, hard validation or not.
             // Ordered before the validator so a caller who sent four rows into
             // a group of three reads that sentence rather than a JSON-pointer
@@ -2506,6 +2514,37 @@ class ObjectService implements ObjectServiceInterface
             return null;
         }
     }//end existingForDraftCheck()
+
+    /**
+     * Put stored explicit-reveal values back where an update sends their mask.
+     *
+     * @param array       $object The update payload.
+     * @param string|null $uuid   The object's uuid.
+     *
+     * @return array The payload.
+     *
+     * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+     */
+    private function restoreMaskedReveals(array $object, ?string $uuid): array
+    {
+        if ($uuid === null || $this->currentSchema === null || ExplicitReveal::explicitProperties(schema: $this->currentSchema) === []) {
+            return $object;
+        }
+
+        try {
+            $existing = $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable) {
+            return $object;
+        }
+
+        return ExplicitReveal::restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
+    }//end restoreMaskedReveals()
 
     /**
      * The repeating-group validator, constructed on first use.

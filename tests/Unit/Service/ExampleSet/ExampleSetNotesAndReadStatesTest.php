@@ -150,6 +150,32 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 	}//end testANoteQuotingAnUnknownTaskIsRefused()
 
 	/**
+	 * `--refresh` writes a note and a read state again from today's declaration, once each.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	public function testARefreshWritesTheNoteAndReadStateAgainForToday(): void {
+		$this->caseWith(
+			notes: [['key' => 'n', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{object:case-1.id}}', 'message' => 'Inwoner gebeld.', 'createdAt' => '{{datetime:0 15:40}}']]],
+			readStates: [['key' => 'r', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{object:case-1.id}}', 'register' => 'cases', 'schema' => 'case', 'seenAt' => '{{datetime:0 09:12}}']]]
+		);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$later  = $this->today()->modify('+3 days');
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $later);
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: ['alpha/n' => 'refreshed'], actual: $report['notes']);
+		$this->assertSame(expected: ['alpha/r' => 'refreshed'], actual: $report['readStates']);
+		$this->assertCount(expectedCount: 1, haystack: $this->notes);
+		$this->assertSame(expected: '2026-10-16 15:40', actual: array_values($this->notes)[0]['createdAt']->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-10-16 09:12', actual: array_values($this->readStates)[0]->format('Y-m-d H:i'));
+	}//end testARefreshWritesTheNoteAndReadStateAgainForToday()
+
+	/**
 	 * A note or read state that disappeared is reported missing.
 	 *
 	 * @return void

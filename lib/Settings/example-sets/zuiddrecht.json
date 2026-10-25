@@ -537,7 +537,78 @@
 					"medewerkers",
 					"vergunningen"
 				],
-				"function": "Teamleider"
+				"function": "Teamleider",
+				"roles": [
+					"Vergunningverlener",
+					"teamleider"
+				]
+			},
+			{
+				"key": "jamal",
+				"uid": "jamal.ouali",
+				"displayName": "Jamal Ouali",
+				"givenName": "Jamal",
+				"prefix": "",
+				"familyName": "Ouali",
+				"email": "jamal.ouali@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen"
+				],
+				"function": "Toezichthouder, gedetacheerd",
+				"roles": [
+					"Toezichthouder"
+				],
+				"status": {
+					"status": "away",
+					"message": "Buiten"
+				}
+			},
+			{
+				"key": "sannebakker",
+				"uid": "sanne.bakker",
+				"displayName": "Sanne Bakker",
+				"givenName": "Sanne",
+				"prefix": "",
+				"familyName": "Bakker",
+				"email": "sanne.bakker@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen"
+				],
+				"function": "Vergunningverlener",
+				"roles": [
+					"Vergunningverlener"
+				],
+				"absence": {
+					"fromDay": -2,
+					"untilDay": 7,
+					"status": "Verlof",
+					"message": "Terug op maandag."
+				}
+			},
+			{
+				"key": "mehmet",
+				"uid": "mehmet.yildiz",
+				"displayName": "Mehmet Yıldız",
+				"givenName": "Mehmet",
+				"prefix": "",
+				"familyName": "Yıldız",
+				"email": "mehmet.yildiz@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen"
+				],
+				"function": "Intaker",
+				"roles": [
+					"Intaker"
+				]
 			},
 			{
 				"key": "pieter",
@@ -551,10 +622,9 @@
 				"department": "Vergunningen",
 				"groups": [
 					"medewerkers",
-					"vergunningen",
 					"woo-en-informatie"
 				],
-				"function": "Behandelaar"
+				"function": "Woo-coördinator"
 			},
 			{
 				"key": "fatma",
@@ -853,6 +923,14 @@
 					"marieke",
 					"pieter"
 				]
+			},
+			{
+				"key": "odzhz",
+				"name": "Omgevingsdienst Zuid-Holland Zuid",
+				"slug": "odzhz",
+				"type": "partner",
+				"contactEmail": "info@odzhz.example",
+				"description": "De omgevingsdienst waarmee Zuiddrecht toezicht en handhaving deelt: de ketenpartner in het deelvenster van een zaak."
 			}
 		]
 	},
