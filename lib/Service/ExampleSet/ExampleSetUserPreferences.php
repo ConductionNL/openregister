@@ -5,8 +5,9 @@
  *
  * Per-user preferences an example set writes for the app that ships the
  * fragment, such as the tour a demo employee has already seen. Only for an
- * account the set created or adopted, never for one of Nextcloud's
- * administrators, and never for a key that holds a secret. The old value is
+ * account the set's cast declares (created or adopted), also when that
+ * account is an administrator; never for an administrator outside the cast,
+ * and never for a key that holds a secret. The old value is
  * recorded and put back on remove, but only while the key still holds what
  * the set wrote, so a value the person changed since stays.
  *
@@ -78,14 +79,15 @@ class ExampleSetUserPreferences {
 	 * @return string
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/changes/example-set-preferences-on-cast-admins/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function refusal(string $app, string $uid, string $key, array $users): string {
 		if (in_array($uid, $users, true) === false) {
-			return 'account "'.$uid.'" is not one the set creates or adopts';
-		}
+			if ($this->accounts->inGroup(gid: self::ADMIN_GROUP, uid: $uid) === true) {
+				return 'account "'.$uid.'" is one of Nextcloud\'s administrators and not in the set\'s cast; an example set never changes their preferences';
+			}
 
-		if ($this->accounts->inGroup(gid: self::ADMIN_GROUP, uid: $uid) === true) {
-			return 'account "'.$uid.'" is one of Nextcloud\'s administrators; an example set never changes their preferences';
+			return 'account "'.$uid.'" is not one the set creates or adopts';
 		}
 
 		if (preg_match(self::SECRET, $key) === 1 || $this->sensitive(uid: $uid, app: $app, key: $key) === true) {
