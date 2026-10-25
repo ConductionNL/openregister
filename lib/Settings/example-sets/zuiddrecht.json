@@ -622,7 +622,6 @@
 				"department": "Vergunningen",
 				"groups": [
 					"medewerkers",
-					"vergunningen",
 					"woo-en-informatie"
 				],
 				"function": "Woo-coördinator"
