@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -259,7 +260,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
 				readStates: new ExampleSetReadStates(container: $container),
-				flows: new ExampleSetFlows(container: $container)
+				flows: new ExampleSetFlows(container: $container),
+				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps())
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -279,7 +281,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
 				readStates: new ExampleSetReadStates(container: $container),
-				flows: new ExampleSetFlows(container: $container)
+				flows: new ExampleSetFlows(container: $container),
+				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps())
 			)
 		);
 	}
