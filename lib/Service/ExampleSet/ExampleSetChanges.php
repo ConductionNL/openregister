@@ -36,6 +36,9 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Applies, proves and reverts changes to existing objects.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One change lifecycle: resolve, apply, refresh, prove and revert,
+ *                                                   each reading JSON-text fields the same way.
+ *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 class ExampleSetChanges {
@@ -105,8 +108,9 @@ class ExampleSetChanges {
 			);
 		}
 
-		// A field the schema keeps as JSON text is changed as its structure and written as text again.
-		$fields = $this->jsonFields(change: $change);
+		// A field the schema keeps as JSON text is changed as its structure and written as text again; so is a text
+		// property the store reads back as a structure, which the change does not have to name.
+		$fields = array_values(array_unique(array_merge($this->jsonFields(change: $change), $this->structuredText(change: $change, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
 		$merged = $row;
 		foreach ((array) $fill['set'] as $path => $value) {
@@ -208,6 +212,7 @@ class ExampleSetChanges {
 	 */
 	public function refresh(array $object, array $row, array $values, array $written=[]): array {
 		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
+		$change['jsonFields'] = array_values(array_unique(array_merge($change['jsonFields'], $this->structuredText(change: $change, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
 
 		$same = static fn (mixed $first, mixed $second): bool => json_encode($first) === json_encode($second);
@@ -315,7 +320,7 @@ class ExampleSetChanges {
 			return ['ok' => ($read['error'] === ''), 'left' => []];
 		}
 
-		$fields = $this->jsonFields(change: $entry);
+		$fields = array_values(array_unique(array_merge($this->jsonFields(change: $entry), $this->structuredText(change: $entry, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
 		$left   = [];
 		foreach (array_reverse((array) $entry['set']) as $set) {
@@ -378,6 +383,25 @@ class ExampleSetChanges {
 	public function asSent(array $row, array $fields): array {
 		return $this->paths->withJsonText(row: $row, fields: $fields);
 	}//end asSent()
+
+	/**
+	 * The text properties of the changed object's schema that the store read back as a structure.
+	 *
+	 * @param array<string, mixed> $change The change.
+	 * @param array<string, mixed> $row    The object as read.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/example-set-change-keeps-text/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 */
+	private function structuredText(array $change, array $row): array {
+		return array_values(
+			array_filter(
+				$this->store->textProperties(register: (string) $change['register'], schema: (string) $change['schema']),
+				static fn (string $field): bool => is_array($row[$field] ?? null) === true
+			)
+		);
+	}//end structuredText()
 
 	/**
 	 * The fields a change or a record entry keeps as JSON text.

@@ -192,6 +192,10 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return $refusals;
 	}
 
+	public function textProperties(string $register, string $schema): array {
+		return ($this->textFields[$register.' '.$schema] ?? []);
+	}
+
 	public function find(string $register, string $schema, array $filters): array {
 		return array_values($this->rows[$register.' '.$schema] ?? []);
 	}
