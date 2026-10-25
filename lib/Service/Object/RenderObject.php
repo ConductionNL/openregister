@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -1300,7 +1301,7 @@ class RenderObject {
 	 */
 	private function renderFiles(ObjectEntity $object): ObjectEntity {
 		// Use FileMapper to get files for the object (handles folder property and UUID fallback).
-		$fileRecords = $this->fileMapper->getFilesForObject($object);
+		$fileRecords = $this->withoutRestrictedFiles(fileRecords: $this->fileMapper->getFilesForObject($object));
 
 		// If no files found, set empty array and return.
 		if (empty($fileRecords) === true) {
@@ -1821,6 +1822,11 @@ class RenderObject {
 
 			$cacheKey = (string)$fileIdStr;
 
+			// The batch cache is the same for every caller; the restriction is not.
+			if ($this->withoutRestrictedFiles(fileRecords: [['fileid' => $cacheKey]]) === []) {
+				return null;
+			}
+
 			// PERF-1: serve from the request-scoped batch cache when present.
 			if (array_key_exists($cacheKey, $this->fileObjectCache) === true) {
 				return $this->fileObjectCache[$cacheKey];
@@ -1844,6 +1850,34 @@ class RenderObject {
 			return null;
 		}//end try
 	}//end getFileObject()
+
+	/**
+	 * The file records without the restricted files the caller is not admitted to.
+	 *
+	 * Without a container (legacy fixtures) nothing is filtered.
+	 *
+	 * @param array<int, array<string, mixed>> $fileRecords FileMapper records carrying `fileid`.
+	 *
+	 * @return array<int, array<string, mixed>> The readable records.
+	 *
+	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 */
+	private function withoutRestrictedFiles(array $fileRecords): array {
+		if ($this->container === null || $fileRecords === []) {
+			return $fileRecords;
+		}
+
+		$verdicts = $this->container->get(FileRestrictionGuard::class)->readable(
+			fileIds: array_map(static fn (array $record): int => (int)($record['fileid'] ?? 0), $fileRecords)
+		);
+
+		return array_values(
+			array_filter(
+				$fileRecords,
+				static fn (array $record): bool => ($verdicts[(int)($record['fileid'] ?? 0)] ?? false) === true
+			)
+		);
+	}//end withoutRestrictedFiles()
 
 	/**
 	 * Format a raw FileMapper file record into the rendered file object shape (PERF-1).

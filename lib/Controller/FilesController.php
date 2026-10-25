@@ -37,6 +37,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
+use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
@@ -137,6 +138,7 @@ class FilesController extends Controller {
 	 * @param OfficeSessionService|null $officeSessionService Opens documents in Nextcloud Office.
 	 * @param AttachNodeHandler|null $attachNodeHandler Copies a Files node into an object through the upload pipeline.
 	 * @param FileWriteGuard|null $fileWriteGuard Refuses a file write on a frozen or archived object. Null only in legacy fixtures.
+	 * @param FileRestrictionGuard|null $fileRestrictions Refuses a restricted file to a caller it does not admit. Null only in legacy fixtures.
 	 *
 	 * @return void
 	 *
@@ -158,6 +160,7 @@ class FilesController extends Controller {
 		private readonly ?OfficeSessionService $officeSessionService = null,
 		private readonly ?AttachNodeHandler $attachNodeHandler = null,
 		private readonly ?FileWriteGuard $fileWriteGuard = null,
+		private readonly ?FileRestrictionGuard $fileRestrictions = null,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
@@ -272,10 +275,12 @@ class FilesController extends Controller {
 	 * @param bool $allowAnonymous When false (default) anonymous callers are denied; read-only published-file endpoints pass true.
 	 * @param bool $change True (default) for an action that changes files, which needs update on the object.
 	 * @param string $fileVerb The file verb a change needs when the schema names file verbs: addFiles (default) or deleteFiles.
+	 * @param int|null $fileId The file the action is on; a restricted file the caller is not admitted to answers 404.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
+	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
 	 *                                                            authenticated caller may not access the object.
@@ -290,7 +295,13 @@ class FilesController extends Controller {
 		bool $allowAnonymous = false,
 		bool $change = true,
 		string $fileVerb = ObjectFileAccess::ADD_FILES,
+		?int $fileId = null,
 	): void {
+		// A restricted file the caller is not admitted to is not there for them, whatever the object rule says.
+		if ($fileId !== null) {
+			$this->refuseRestrictedFile(fileId: $fileId);
+		}
+
 		// Anonymous callers are denied by default. Published-file READ
 		// endpoints (e.g. preview) pass $allowAnonymous=true to keep their
 		// existing anonymous access, which is gated on publication.
@@ -327,8 +338,24 @@ class FilesController extends Controller {
 		if ($change === true && $object instanceof ObjectEntity) {
 			$this->fileWriteGuard?->assertWritable(object: $object);
 		}
-
 	}//end ensureObjectAccess()
+
+	/**
+	 * Refuse a restricted file, as if it were not there, to a caller the restriction does not admit.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectFileAccessDeniedException With 404 when the caller is not admitted.
+	 *
+	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 */
+	private function refuseRestrictedFile(int $fileId): void {
+		if ($this->fileRestrictions?->mayRead(fileId: $fileId) === false) {
+			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
+		}
+	}//end refuseRestrictedFile()
 
 	/**
 	 * Attach a file the caller has in Files (or the files directly inside a
@@ -590,6 +617,9 @@ class FilesController extends Controller {
 
 			// Get the raw files from the file service.
 			$files = $this->fileService->getFiles(object: $id, sharedFilesOnly: $isAnonymous);
+			if ($this->fileRestrictions !== null) {
+				$files = $this->fileRestrictions->readableNodes(nodes: $files);
+			}
 
 			// Format the files with pagination using request parameters.
 			$formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
@@ -648,7 +678,7 @@ class FilesController extends Controller {
 			// SEC-CTRL-5: the object read rule decides for authenticated callers
 			// (404 when they may not read it). Anonymous callers are gated
 			// separately by the published-file check below.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false, fileId: $fileId);
 
 			$file = $this->fileService->getFile(object: $object, file: $fileId);
 
@@ -1394,7 +1424,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 
@@ -1459,7 +1489,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before deleting files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 
@@ -1539,7 +1569,9 @@ class FilesController extends Controller {
 			// read rule decides. A managed file whose object cannot be found is
 			// refused rather than served without a rule.
 			$parentObject = $this->managedFileObject(file: $file);
-			if ($this->refusesManagedFile(object: $parentObject, isAnonymous: $isAnonymous) === true) {
+			if ($this->refusesManagedFile(object: $parentObject, isAnonymous: $isAnonymous) === true
+				|| $this->fileRestrictions?->mayRead(fileId: (int)$file->getId()) === false
+			) {
 				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 			}
 
@@ -1782,7 +1814,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -1853,7 +1885,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$sourceObject = $this->objectService->getObject();
@@ -1955,7 +1987,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$sourceObject = $this->objectService->getObject();
@@ -2057,7 +2089,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object read access required to list versions.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2110,7 +2142,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before restoring.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2179,7 +2211,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before locking.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2243,7 +2275,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before unlocking.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2333,6 +2365,9 @@ class FilesController extends Controller {
 
 			$fileIds = $data['fileIds'] ?? [];
 			$params = $data;
+			foreach ((array)$fileIds as $batchFileId) {
+				$this->refuseRestrictedFile(fileId: (int)$batchFileId);
+			}
 
 			$result = $this->fileService->getBatchHandler()->executeBatch(
 				object: $object,
@@ -2398,7 +2433,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: authenticated callers must have object read access.
 			// Anonymous callers were already gated by the published-file check
 			// above, so preview opts out of the write/action anonymous-deny guard.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2467,7 +2502,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies.
 			// Metadata is no less a mutation for being descriptive.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			if ($this->objectService->getObject() === null) {
@@ -2604,7 +2639,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2728,6 +2763,7 @@ class FilesController extends Controller {
 		}
 
 		$object = $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
+		$this->refuseRestrictedFile(fileId: $fileId);
 
 		$file = $this->fileService->getFile(object: $object, file: $fileId);
 		if ($file === null) {
