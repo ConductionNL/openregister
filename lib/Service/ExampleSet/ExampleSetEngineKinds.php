@@ -47,8 +47,11 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetFlows|null $flows Writes the flows a fragment ships; null refuses them.
 	 * @param ExampleSetExportRuns|null $exportRuns Writes the exports a fragment gives its accounts; null refuses them.
 	 * @param ExampleSetArchival|null $archival Writes the destruction-list keys of the archival setting; null refuses them.
+	 * @param ExampleSetDeckCards|null $deckCards Writes the Deck cards a fragment puts on its objects; null refuses them.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One optional writer per fragment part, so a part an OpenRegister lacks is refused, not crashed on.
 	 */
 	public function __construct(
 		private readonly ?ExampleSetTasks $tasks=null,
@@ -60,6 +63,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetFlows $flows=null,
 		private readonly ?ExampleSetExportRuns $exportRuns=null,
 		private readonly ?ExampleSetArchival $archival=null,
+		private readonly ?ExampleSetDeckCards $deckCards=null,
 	) {
 	}//end __construct()
 
@@ -215,6 +219,7 @@ class ExampleSetEngineKinds {
 			'flows'      => [$this->flows, 'flow'],
 			'exportRuns' => [$this->exportRuns, 'export'],
 			'archival'   => [$this->archival, 'archival setting'],
+			'deckCards'  => [$this->deckCards, 'deck card'],
 		];
 	}//end kinds()
 }//end class
