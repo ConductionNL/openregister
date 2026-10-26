@@ -468,6 +468,17 @@ abstract class ExampleSetTestCase extends TestCase {
 				return $view;
 			}
 		);
+		$service->method('update')->willReturnCallback(
+			function (int|string $id, string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $favoredBy = null, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+				$view = ($this->savedViews[(string) $id] ?? throw new DoesNotExistException('no view '.$id));
+				$view->setName($name);
+				$view->setIsPublic($isPublic);
+				$view->setQuery($query);
+				$view->setAlert($alert);
+				$view->setSharedWith($sharedWith ?? []);
+				return $view;
+			}
+		);
 
 		return $service;
 	}
@@ -484,6 +495,11 @@ abstract class ExampleSetTestCase extends TestCase {
 		);
 		$mapper->method('delete')->willReturnCallback(function (View $view): View {
 			unset($this->savedViews[(string) $view->getUuid()]);
+			return $view;
+		});
+		$mapper->method('update')->willReturnCallback(function (View $view): View {
+			$this->savedViews = array_filter($this->savedViews, static fn (View $held): bool => $held !== $view);
+			$this->savedViews[(string) $view->getUuid()] = $view;
 			return $view;
 		});
 

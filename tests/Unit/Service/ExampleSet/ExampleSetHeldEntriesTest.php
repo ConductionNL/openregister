@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+
 /**
  * A held change proves only the fields it still declares and a refresh puts back what an import undid; a held
  * preference follows a view that a refresh wrote again.
@@ -107,11 +109,11 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 	}//end testARefreshLeavesAFieldSomebodyEdited()
 
 	/**
-	 * A refresh writes a view again under a new uuid; the preference that quotes it moves along.
+	 * A refresh keeps a view's uuid, so the preference that quotes it stays valid and is not written again.
 	 *
 	 * @return void
 	 */
-	public function testAPreferenceFollowsAViewARefreshWroteAgain(): void {
+	public function testAPreferenceKeepsQuotingAViewARefreshUpdated(): void {
 		$this->app(app: 'alpha', fragment: [
 			'views'           => [[
 				'key'  => 'zoek-lindelaan',
@@ -129,11 +131,12 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$uuid = (string) array_key_last($this->savedViews);
+		$uuid = ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan');
+		$this->assertSame([$uuid], array_keys($this->savedViews));
 		$this->assertSame(
 			expected: '[{"id":"'.$uuid.'","page":"Search","name":"Lindelaan"}]',
 			actual: $this->userValues['esra.demir']['alpha']['pref_cn_saved_view_menu']
 		);
-		$this->assertSame('refreshed', $report['userPreferences']['alpha/esra.demir/pref_cn_saved_view_menu']);
-	}//end testAPreferenceFollowsAViewARefreshWroteAgain()
+		$this->assertSame('kept', $report['userPreferences']['alpha/esra.demir/pref_cn_saved_view_menu']);
+	}//end testAPreferenceKeepsQuotingAViewARefreshUpdated()
 }//end class

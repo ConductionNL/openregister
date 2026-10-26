@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
@@ -80,7 +82,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['alpha/zoek-lindelaan' => 'created'], $report['views']);
-		$view = $this->savedViews['view-1'];
+		$view = $this->savedViews[ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')];
 		$this->assertSame('esra.demir', $view->getOwner());
 		$this->assertTrue($view->getIsPublic());
 		$this->assertSame('Lindelaan', $view->getQuery()['search']);
@@ -116,7 +118,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 
 		$this->assertSame(
 			expected: [['group' => 'demo-staff', 'mode' => 'read'], ['user' => 'sanne.devries', 'mode' => 'write']],
-			actual: $this->savedViews['view-1']->getSharedWith()
+			actual: $this->savedViews[ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')]->getSharedWith()
 		);
 	}//end testAViewIsWrittenWithItsShares()
 
@@ -148,7 +150,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(
-			expected: '[{"id":"view-1","page":"Search","name":"Lindelaan"}]',
+			expected: '[{"id":"'.ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan').'","page":"Search","name":"Lindelaan"}]',
 			actual: $this->userValues['esra.demir']['alpha']['pref_cn_saved_view_menu']
 		);
 	}//end testAPreferenceQuotesAViewOfItsFragment()
@@ -174,6 +176,44 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
 	}//end testAPreferenceQuotingAnUnknownViewIsRefused()
+
+	/**
+	 * A refresh updates a view where it is, so its uuid, and every link and menu entry that names it, stays.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function testARefreshUpdatesAViewInPlace(): void {
+		$this->withViews([$this->savedSearch()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$before = array_keys($this->savedViews);
+
+		$this->withViews([['key' => 'zoek-lindelaan', 'data' => ['name' => 'Lindelaan en Parkweg'] + $this->savedSearch()['data']]]);
+		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame($before, array_keys($this->savedViews));
+		$this->assertSame('Lindelaan en Parkweg', $this->savedViews[$before[0]]->getName());
+	}//end testARefreshUpdatesAViewInPlace()
+
+	/**
+	 * A seeded view's uuid comes from its app and key, so a remove and a new install give it the same uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function testAViewKeepsItsUuidAcrossARemove(): void {
+		$this->withViews([$this->savedSearch()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->remover->remove(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame([ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')], array_keys($this->savedViews));
+	}//end testAViewKeepsItsUuidAcrossARemove()
 
 	public function testAViewThatDisappearedIsReportedMissing(): void {
 		$this->withViews([$this->savedSearch()]);
