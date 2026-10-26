@@ -142,6 +142,49 @@ class ExampleSetProfiles {
 	}//end apply()
 
 	/**
+	 * Give an account the set adopted the function and role it lacks; a value it holds is never touched.
+	 *
+	 * Absence and status are a person's own day, not missing fields, so an adopted account keeps them as they are.
+	 *
+	 * @param string               $uid     The account.
+	 * @param array<string, mixed> $profile What the cast declares, as fromPerson() gives it.
+	 *
+	 * @return array<int, string> Why a part was not written; empty when all were.
+	 *
+	 * @spec openspec/changes/example-set-adopted-accounts-gain-missing-profile/specs/example-sets/spec.md#requirement-an-adopted-account-gains-the-profile-fields-it-lacks
+	 */
+	public function fillMissing(string $uid, array $profile): array {
+		$user = $this->users->get($uid);
+		if ($user === null) {
+			return ['account '.$uid.' is not there'];
+		}
+
+		try {
+			$account = $this->profiles->getAccount($user);
+			$missing = [];
+			foreach ([IAccountManager::PROPERTY_HEADLINE => $profile['headline'], IAccountManager::PROPERTY_ROLE => $profile['role']] as $name => $value) {
+				if ($value !== '' && trim((string) $account->getProperty($name)->getValue()) === '') {
+					$missing[$name] = $value;
+				}
+			}
+
+			if ($missing === []) {
+				return [];
+			}
+
+			foreach ($missing as $name => $value) {
+				$account->setProperty($name, $value, IAccountManager::SCOPE_LOCAL, IAccountManager::NOT_VERIFIED);
+			}
+
+			$this->profiles->updateAccount($account);
+		} catch (Throwable $e) {
+			return ['profile of '.$uid.': '.$e->getMessage()];
+		}
+
+		return [];
+	}//end fillMissing()
+
+	/**
 	 * Write the headline and role; '' when written or when there is nothing to write.
 	 *
 	 * @param IUser                $user    The account.
