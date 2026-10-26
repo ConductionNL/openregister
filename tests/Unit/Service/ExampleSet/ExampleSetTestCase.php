@@ -37,6 +37,11 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
+use OCA\OpenRegister\Db\DeckLink;
+use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
@@ -158,6 +163,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, string> The uuids of the flows published, in order. */
 	protected array $publishedFlows = [];
 
+	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
+	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
+
+	/** @var array<int, DeckLink> The Deck links, by id. */
+	protected array $deckLinks = [];
+
+	/** @var bool Whether Deck is installed. */
+	protected bool $deckInstalled = true;
+
 	/** @var array<string, FlowRun> The stored flow runs, by uuid. */
 	protected array $flowRuns = [];
 
@@ -203,6 +217,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
 			FlowRunMapper::class      => $this->flowRunMapper(),
+			ExampleSetDeckStore::class => $this->deckStore(),
+			DeckLinkMapper::class     => $this->deckLinkMapper(),
+			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationService::class => $this->organisationService(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
@@ -269,7 +286,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				readStates: new ExampleSetReadStates(container: $container),
 				flows: new ExampleSetFlows(container: $container),
 				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-				exportRuns: new ExampleSetExportRuns(container: $container)
+				exportRuns: new ExampleSetExportRuns(container: $container),
+				deckCards: new ExampleSetDeckCards(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -291,7 +309,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				readStates: new ExampleSetReadStates(container: $container),
 				flows: new ExampleSetFlows(container: $container),
 				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-				exportRuns: new ExampleSetExportRuns(container: $container)
+				exportRuns: new ExampleSetExportRuns(container: $container),
+				deckCards: new ExampleSetDeckCards(container: $container)
 			)
 		);
 	}
@@ -485,6 +504,92 @@ abstract class ExampleSetTestCase extends TestCase {
 		});
 
 		return $service;
+	}
+
+	/**
+	 * A Deck store over $deck: rows found by title, written with the next id, deleted by id.
+	 *
+	 * @return ExampleSetDeckStore
+	 */
+	private function deckStore(): ExampleSetDeckStore {
+		$store = $this->createMock(ExampleSetDeckStore::class);
+		$add   = function (string $kind, array $row): int {
+			$id = (count($this->deck['boards']) + count($this->deck['stacks']) + count($this->deck['labels']) + count($this->deck['cards']) + 1);
+			while (isset($this->deck[$kind][$id]) === true) {
+				$id++;
+			}
+
+			$this->deck[$kind][$id] = $row;
+			return $id;
+		};
+		$find  = function (string $kind, string $key, int|string $value, string $title): ?int {
+			foreach ($this->deck[$kind] as $id => $row) {
+				if ($row[$key] === $value && $row['title'] === $title) {
+					return $id;
+				}
+			}
+
+			return null;
+		};
+		$store->method('available')->willReturnCallback(fn (): bool => $this->deckInstalled);
+		$store->method('board')->willReturnCallback(function (string $owner, string $title, string $color, array $groups) use ($find, $add): array {
+			$found = $find('boards', 'owner', $owner, $title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $owner, 'title' => $title, 'groups' => $groups]), 'created' => true];
+		});
+		$store->method('stack')->willReturnCallback(function (int $board, string $title) use ($find, $add): array {
+			$found = $find('stacks', 'board', $board, $title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('stacks', ['board' => $board, 'title' => $title]), 'created' => true];
+		});
+		$store->method('label')->willReturnCallback(function (int $board, string $title, string $color) use ($find, $add): array {
+			$found = $find('labels', 'board', $board, $title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('labels', ['board' => $board, 'title' => $title, 'color' => $color]), 'created' => true];
+		});
+		$store->method('insertCard')->willReturnCallback(
+			fn (int $stack, string $owner, string $title, string $description, ?\DateTime $due, ?\DateTime $done, array $labels, array $assignees): int => $add(
+				'cards',
+				['stack' => $stack, 'owner' => $owner, 'title' => $title, 'due' => $due?->format('Y-m-d'), 'labels' => $labels, 'assignees' => $assignees]
+			)
+		);
+		$store->method('cardExists')->willReturnCallback(fn (int $card): bool => isset($this->deck['cards'][$card]));
+		$store->method('deleteCard')->willReturnCallback(function (int $card): void {
+			unset($this->deck['cards'][$card]);
+		});
+		$store->method('deleteLabel')->willReturnCallback(function (int $label): void {
+			unset($this->deck['labels'][$label]);
+		});
+		$store->method('deleteUnused')->willReturnCallback(function (?int $stack, ?int $board): void {
+			if ($stack !== null && array_filter($this->deck['cards'], static fn (array $card): bool => $card['stack'] === $stack) === []) {
+				unset($this->deck['stacks'][$stack]);
+			}
+
+			if ($board !== null && array_filter($this->deck['stacks'], static fn (array $row): bool => $row['board'] === $board) === []) {
+				unset($this->deck['boards'][$board]);
+				$this->deck['labels'] = array_filter($this->deck['labels'], static fn (array $row): bool => $row['board'] !== $board);
+			}
+		});
+
+		return $store;
+	}
+
+	/**
+	 * A Deck link mapper over $deckLinks.
+	 *
+	 * @return DeckLinkMapper
+	 */
+	private function deckLinkMapper(): DeckLinkMapper {
+		$mapper = $this->createMock(DeckLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (DeckLink $link): DeckLink {
+			$link->setId(count($this->deckLinks) + 1);
+			$this->deckLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('deleteByObjectAndCard')->willReturnCallback(function (string $objectUuid, int $cardId): int {
+			$before          = count($this->deckLinks);
+			$this->deckLinks = array_filter($this->deckLinks, static fn (DeckLink $link): bool => !($link->getObjectUuid() === $objectUuid && $link->getCardId() === $cardId));
+			return $before - count($this->deckLinks);
+		});
+
+		return $mapper;
 	}
 
 	/**

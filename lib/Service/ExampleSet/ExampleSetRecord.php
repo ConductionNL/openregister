@@ -68,6 +68,7 @@ class ExampleSetRecord {
 		'readStates'    => [],
 		'flows'         => [],
 		'exportRuns'    => [],
+		'deckCards'     => [],
 		'archival'      => [],
 	];
 
@@ -133,6 +134,7 @@ class ExampleSetRecord {
 		$record['readStates']    = array_filter((array) ($decoded['readStates'] ?? []), 'is_array');
 		$record['flows']         = array_filter((array) ($decoded['flows'] ?? []), 'is_array');
 		$record['exportRuns']    = array_filter((array) ($decoded['exportRuns'] ?? []), 'is_array');
+		$record['deckCards']     = array_filter((array) ($decoded['deckCards'] ?? []), 'is_array');
 		$record['archival']      = array_filter((array) ($decoded['archival'] ?? []), 'is_array');
 
 		return $record;
