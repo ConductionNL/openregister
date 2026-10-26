@@ -318,6 +318,25 @@ class MemberOfResolverTest extends TestCase {
 	}//end testAFailingReadGivesAnEmptySet()
 
 	/**
+	 * A container that cannot give MagicMapper on the first read also admits nobody.
+	 *
+	 * @return void
+	 */
+	public function testAContainerThatCannotGiveTheMapperGivesAnEmptySet(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no such service'));
+		$resolver = new MemberOfResolver(
+			schemas: $this->schemas,
+			registers: $this->registers,
+			container: $container,
+			operators: new OperatorEvaluator(new NullLogger()),
+			logger: new NullLogger()
+		);
+
+		$this->assertSame([], $resolver->valuesFor(operand: self::OPERAND, userId: 'anna'));
+	}//end testAContainerThatCannotGiveTheMapperGivesAnEmptySet()
+
+	/**
 	 * The set is read once per caller and operand for the life of the resolver.
 	 *
 	 * @return void
