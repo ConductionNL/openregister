@@ -17,6 +17,7 @@ use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -178,6 +179,27 @@ class FlowTriggerListenerTest extends TestCase {
 	public function testAnUnrelatedEventFiresNothing(): void {
 		$this->triggers->expects($this->never())->method('fire');
 		$this->listener->handle(new class extends Event {});
+	}
+
+	public function testAnUpdateNamesTheFieldsItChanged(): void {
+		$before = $this->object();
+		$before->setObject(['name' => 'Sanne', 'address' => 'Parkstraat 24', 'tags' => ['a'], '@self' => ['updated' => '1']]);
+		$after = $this->object();
+		$after->setObject(['name' => 'Sanne', 'address' => 'Lindelaan 7', 'tags' => ['a', 'b'], 'phone' => '06', '@self' => ['updated' => '2']]);
+
+		$this->triggers->expects($this->once())->method('fire')
+			->with('object.updated', $this->anything(), null, ['changed' => ['address', 'phone', 'tags']])
+			->willReturn(1);
+
+		$this->listener->handle(new ObjectUpdatedEvent($after, $before));
+	}
+
+	public function testAnUpdateWithoutTheOldObjectCarriesNoExtraContext(): void {
+		$this->triggers->expects($this->once())->method('fire')
+			->with('object.updated', $this->anything(), null, [])
+			->willReturn(1);
+
+		$this->listener->handle(new ObjectUpdatedEvent($this->object()));
 	}
 
 	public function testCreateStillCarriesNoExtraContext(): void {

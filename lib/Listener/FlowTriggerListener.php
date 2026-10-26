@@ -169,11 +169,12 @@ class FlowTriggerListener implements IEventListener {
 	 * than a moment: which action ran and the places it moved between are what a
 	 * flow wired to "an object changes state" needs to branch on, so they are
 	 * put on the run context where the flow's conditions can read them. Every
-	 * other lifecycle event adds nothing beyond its subject.
+	 * other lifecycle event adds nothing beyond its subject, except an update,
+	 * which names the fields it changed (`changed`).
 	 *
 	 * @param Event $event The dispatched event.
 	 *
-	 * @return array<string, string> The extra context, empty for most events.
+	 * @return array<string, string|array<int, string>> The extra context, empty for most events.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -195,8 +196,48 @@ class FlowTriggerListener implements IEventListener {
 			];
 		}
 
+		if ($event instanceof ObjectUpdatedEvent && $event->getOldObject() !== null) {
+			// An update carries the names of the top-level fields it changed,
+			// so a flow can start on "the address changed" or "the status
+			// changed" rather than on every save of the object.
+			return [
+				'changed' => $this->changedFields(
+					before: (array)$event->getOldObject()->getObject(),
+					after: (array)$event->getNewObject()->getObject()
+				),
+			];
+		}
+
 		return [];
 	}//end contextFor()
+
+	/**
+	 * The top-level fields whose value differs between two versions of an object.
+	 *
+	 * @param array<string, mixed> $before The object before the update.
+	 * @param array<string, mixed> $after  The object after the update.
+	 *
+	 * @return array<int, string> The changed field names, sorted.
+	 *
+	 * @spec openspec/changes/flow-update-changed-fields/specs/flow-triggers/spec.md
+	 */
+	private function changedFields(array $before, array $after): array {
+		$changed = [];
+		foreach (array_unique(array_merge(array_keys($before), array_keys($after))) as $field) {
+			$field = (string)$field;
+			if ($field === '' || $field[0] === '@') {
+				continue;
+			}
+
+			if (json_encode($before[$field] ?? null) !== json_encode($after[$field] ?? null)) {
+				$changed[] = $field;
+			}
+		}
+
+		sort($changed);
+
+		return $changed;
+	}//end changedFields()
 
 	/**
 	 * Map an event class to the trigger id flows are wired to.
