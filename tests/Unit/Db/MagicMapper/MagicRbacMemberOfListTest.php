@@ -180,7 +180,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 			$evaluator,
 			new NullLogger(),
 			$groups,
-			new MemberOfResolver($schemas, $registers, $objects, $evaluator, new NullLogger())
+			new MemberOfResolver($schemas, $registers, $this->containerGiving($objects), $evaluator, new NullLogger())
 		);
 
 		return new MagicRbacHandler(
@@ -414,4 +414,19 @@ class MagicRbacMemberOfListTest extends TestCase {
 		$this->assertStringContainsString('in(t.administration_id,["adm-1","adm-2"]', $sql);
 		$this->assertStringNotContainsString('adm-3', $sql);
 	}//end testTheQueryBuilderPathFiltersOnTheSameSet()
+
+	/**
+	 * A container that hands out the given MagicMapper, as the real one does on first read.
+	 *
+	 * @param MagicMapper $objects The mapper to hand out.
+	 *
+	 * @return ContainerInterface
+	 */
+	private function containerGiving(MagicMapper $objects): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+		);
+		return $container;
+	}//end containerGiving()
 }//end class
