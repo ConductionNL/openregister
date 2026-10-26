@@ -112,12 +112,9 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 			}
 		}
 
-		if (isset($data['author']) === true && in_array((string) $data['author'], $users, true) === false) {
-			return '"'.(string) $data['author'].'" is not an account the set creates or adopts';
-		}
-
-		if (isset($data['fields']) === true && is_array($data['fields']) === false) {
-			return 'fields is an object';
+		$shape = $this->shapeRefusal(data: $data, users: $users);
+		if ($shape !== '') {
+			return $shape;
 		}
 
 		try {
@@ -128,6 +125,26 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 
 		return '';
 	}//end refusal()
+
+	/**
+	 * Why the author or the fields cannot be written, '' when they can.
+	 *
+	 * @param array<string, mixed> $data  The row's fields.
+	 * @param array<int, string>   $users The accounts the set creates or adopts.
+	 *
+	 * @return string
+	 */
+	private function shapeRefusal(array $data, array $users): string {
+		if (isset($data['author']) === true && in_array((string) $data['author'], $users, true) === false) {
+			return '"'.(string) $data['author'].'" is not an account the set creates or adopts';
+		}
+
+		if (isset($data['fields']) === true && is_array($data['fields']) === false) {
+			return 'fields is an object';
+		}
+
+		return '';
+	}//end shapeRefusal()
 
 	/**
 	 * Write one entry by the named person, or find the one an earlier install wrote.
