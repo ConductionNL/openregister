@@ -140,6 +140,32 @@ class ExampleSetFiles {
 	}//end names()
 
 	/**
+	 * Whether a file the set attached is still on the instance.
+	 *
+	 * Found by its name on the object, or by its id anywhere: an app may move an
+	 * object's file into another folder (dossiq homes a document into its case),
+	 * and a moved file keeps its id.
+	 *
+	 * @param array<string, mixed> $file     The record's entry: `id` and `name`.
+	 * @param array<int, string>   $names    The names the object's folder holds.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 */
+	public function present(array $file, array $names): bool {
+		if (in_array((string) ($file['name'] ?? ''), $names, true) === true) {
+			return true;
+		}
+
+		try {
+			return $this->fileService()->getFileById(fileId: (int) ($file['id'] ?? 0)) !== null;
+		} catch (Throwable) {
+			return false;
+		}
+	}//end present()
+
+	/**
 	 * Delete one file the set attached; '' when it is gone, otherwise why not.
 	 *
 	 * The file is found by its id in OpenRegister's own account, where an

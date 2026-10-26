@@ -97,6 +97,34 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	}
 
 	/**
+	 * A file an app moved out of its object's folder still counts as arrived: it keeps its id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 */
+	public function testAFileMovedToAnotherFolderStillArrived(): void {
+		$this->alpha(fragment: ['objects' => [[
+			'key'      => 'pub-1',
+			'register' => 'pub',
+			'schema'   => 'publication',
+			'data'     => ['title' => 'Besluit'],
+			'files'    => [['path' => 'demo/pub-1/01-besluit.pdf', 'title' => 'Besluit']],
+		]]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$objectId = $this->store->ids(register: 'pub', schema: 'publication')[0];
+		$this->files['case-folder'] = $this->files[$objectId];
+		$this->files[$objectId]     = [];
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame(expected: [], actual: $report['missing']);
+		$this->assertSame(expected: [], actual: $this->files[$objectId], message: 'a moved file is not attached again');
+	}//end testAFileMovedToAnotherFolderStillArrived()
+
+	/**
 	 * Files declared after an object was written are attached on the next install, once.
 	 *
 	 * @return void
