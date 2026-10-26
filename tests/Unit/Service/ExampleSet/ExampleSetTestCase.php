@@ -50,6 +50,11 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries;
+use OCA\OpenRegister\Db\TimelineEntry;
+use OCA\OpenRegister\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Service\Timeline\TimelineKindService;
+use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
@@ -204,6 +209,12 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, AuditTrail> The audit trail, by id. */
 	protected array $auditTrail = [];
 
+	/** @var array<string, TimelineEntry> The timeline entries, by uuid. */
+	protected array $timelineEntries = [];
+
+	/** @var array<int, string> The timeline kinds the fake knows. */
+	protected array $timelineKinds = ['statuswijziging', 'contactmoment'];
+
 	/** @var array<int, array{principal: string, uri: string}> The calendars, by id. */
 	protected array $calendars = [];
 
@@ -278,6 +289,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			ExampleSetTalkStore::class => $this->talkStore(),
 			TalkLinkMapper::class     => $this->talkLinkMapper(),
 			AuditTrailMapper::class   => $this->auditTrailMapper(),
+			TimelineEntryMapper::class => $this->timelineEntryMapper(),
+			TimelineKindService::class => $this->timelineKindService(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
@@ -356,7 +369,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				casePlans: new ExampleSetCasePlans(container: $container),
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
 				talkConversations: new ExampleSetTalkConversations(container: $container),
-				auditEntries: new ExampleSetAuditEntries(container: $container)
+				auditEntries: new ExampleSetAuditEntries(container: $container),
+				timelineEntries: new ExampleSetTimelineEntries(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -384,7 +398,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				casePlans: new ExampleSetCasePlans(container: $container),
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
 				talkConversations: new ExampleSetTalkConversations(container: $container),
-				auditEntries: new ExampleSetAuditEntries(container: $container)
+				auditEntries: new ExampleSetAuditEntries(container: $container),
+				timelineEntries: new ExampleSetTimelineEntries(container: $container)
 			)
 		);
 	}
@@ -637,6 +652,49 @@ abstract class ExampleSetTestCase extends TestCase {
 
 		return $store;
 	}//end collectivesStore()
+
+	/**
+	 * A timeline entry mapper over $timelineEntries.
+	 *
+	 * @return TimelineEntryMapper
+	 */
+	private function timelineEntryMapper(): TimelineEntryMapper {
+		$mapper = $this->createMock(TimelineEntryMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (TimelineEntry $entry): TimelineEntry {
+			$this->timelineEntries[(string) $entry->getUuid()] = $entry;
+			return $entry;
+		});
+		$mapper->method('findForObject')->willReturnCallback(
+			fn (string $objectUuid, ?string $visibility = null, int $limit = 50, int $offset = 0): array => array_values(
+				array_filter($this->timelineEntries, static fn (TimelineEntry $row): bool => $row->getObjectUuid() === $objectUuid)
+			)
+		);
+		$mapper->method('findByUuid')->willReturnCallback(fn (string $uuid): ?TimelineEntry => ($this->timelineEntries[$uuid] ?? null));
+		$mapper->method('delete')->willReturnCallback(function (TimelineEntry $entry): TimelineEntry {
+			unset($this->timelineEntries[(string) $entry->getUuid()]);
+			return $entry;
+		});
+
+		return $mapper;
+	}//end timelineEntryMapper()
+
+	/**
+	 * A timeline kind service that knows $timelineKinds and accepts their fields as given.
+	 *
+	 * @return TimelineKindService
+	 */
+	private function timelineKindService(): TimelineKindService {
+		$kinds = $this->createMock(TimelineKindService::class);
+		$kinds->method('validateFields')->willReturnCallback(function (?string $kindSlug, array $fields): array {
+			if (in_array($kindSlug, $this->timelineKinds, true) === false) {
+				throw new TimelineValidationException(['kind' => 'No entry kind named '.$kindSlug.' is declared']);
+			}
+
+			return $fields;
+		});
+
+		return $kinds;
+	}//end timelineKindService()
 
 	/**
 	 * An audit trail mapper over $auditTrail.
