@@ -153,8 +153,8 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 		$plan      = $this->catalogue->gather(set: 'zuiddrecht');
 		$registers = $this->realRegisters();
 
-		$this->assertSame(['brp', 'kvk', 'destruction-lists'], array_keys($plan['requires']));
-		$this->assertSame([true, true, false], array_column($plan['requires'], 'mock'));
+		$this->assertSame(expected: ['brp', 'kvk', 'destruction-lists', 'public-space'], actual: array_keys($plan['requires']));
+		$this->assertSame(expected: [true, true, false, true], actual: array_column($plan['requires'], 'mock'));
 		foreach ($plan['requires'] as $slug => $required) {
 			$import = match ($required['mock']) {
 				true  => $registers->importMock(slug: $slug),
@@ -165,7 +165,10 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 			$this->assertArrayHasKey($slug, $this->instance);
 		}
 
-		$this->assertSame(['openregister.mock', 'openregister.mock', 'openregister.destruction-lists'], $this->importedAs);
+		$this->assertSame(
+			expected: ['openregister.mock', 'openregister.mock', 'openregister.destruction-lists', 'openregister.mock'],
+			actual: $this->importedAs
+		);
 	}
 
 	public function testARegisterShippedOnlyAsAMockIsNotImportedAsTheRealConfiguration(): void {

@@ -1,7 +1,7 @@
 {
 	"set": "zuiddrecht",
 	"title": "Gemeente Zuiddrecht",
-	"$comment": "The cast of the Zuiddrecht example set, and OpenRegister's own fragment: a BRP row per cast person with a BSN and a KVK row and branch per business. Installed with `occ openregister:example-set:install zuiddrecht`; every other app adds its part in its own lib/Settings/example-sets/zuiddrecht.json and refers to cast members with {{cast:key.field}} and to other apps' objects only through a lookup on a business key (BSN, KVK number). Zuiddrecht is fictitious. BSNs are 11-proof numbers from the BRP test block 999990000-999999999 and appear nowhere else in the fleet's registers; KVK numbers are fictitious; municipality code 9999 belongs to no municipality.",
+	"$comment": "The cast of the Zuiddrecht example set, and OpenRegister's own fragment: a BRP row per cast person with a BSN and a KVK row and branch per business. It also fills the public-space register (openbare ruimte) with the trees, street lights, play equipment, market pitches and road sections the cases link to; other fragments find them by `identification`. Installed with `occ openregister:example-set:install zuiddrecht`; every other app adds its part in its own lib/Settings/example-sets/zuiddrecht.json and refers to cast members with {{cast:key.field}} and to other apps' objects only through a lookup on a business key (BSN, KVK number). Zuiddrecht is fictitious. BSNs are 11-proof numbers from the BRP test block 999990000-999999999 and appear nowhere else in the fleet's registers; KVK numbers are fictitious; municipality code 9999 belongs to no municipality.",
 	"timezone": "Europe/Amsterdam",
 	"requires": [
 		{
@@ -14,6 +14,10 @@
 		},
 		{
 			"register": "destruction-lists"
+		},
+		{
+			"register": "public-space",
+			"mock": true
 		}
 	],
 	"apps": [
@@ -2197,6 +2201,265 @@
 				"notes": "Verwijderverzoek per brief van een ouder voor een oud-leerling, uitgeschreven in juli. Leerlingdossier en foto's uit het portaal verwijderen; de wettelijke bewaarplicht van de leerlingadministratie blijft staan.",
 				"dpiaRequired": false,
 				"escalationTier": "on-track"
+			}
+		},
+		{
+			"key": "public-space-kastanje-parkstraat",
+			"register": "public-space",
+			"schema": "tree",
+			"data": {
+				"identification": "BM-0412",
+				"name": "Kastanje Parkstraat",
+				"status": "Te kappen",
+				"species": "Paardenkastanje (Aesculus hippocastanum)",
+				"plantingYear": 1958,
+				"heightClass": "15-18 m",
+				"trunkDiameter": 74,
+				"monumental": false,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6331,
+						51.8164
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-es-parkweg-1",
+			"register": "public-space",
+			"schema": "tree",
+			"data": {
+				"identification": "BM-1031",
+				"name": "Es Parkweg 1",
+				"status": "Te kappen",
+				"species": "Gewone es (Fraxinus excelsior)",
+				"plantingYear": 1975,
+				"heightClass": "12-15 m",
+				"trunkDiameter": 46,
+				"monumental": false,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6352,
+						51.8181
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-es-parkweg-2",
+			"register": "public-space",
+			"schema": "tree",
+			"data": {
+				"identification": "BM-1032",
+				"name": "Es Parkweg 2",
+				"status": "Te kappen",
+				"species": "Gewone es (Fraxinus excelsior)",
+				"plantingYear": 1975,
+				"heightClass": "12-15 m",
+				"trunkDiameter": 52,
+				"monumental": false,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6355,
+						51.8182
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-es-parkweg-3",
+			"register": "public-space",
+			"schema": "tree",
+			"data": {
+				"identification": "BM-1033",
+				"name": "Es Parkweg 3",
+				"status": "Te kappen",
+				"species": "Gewone es (Fraxinus excelsior)",
+				"plantingYear": 1975,
+				"heightClass": "12-15 m",
+				"trunkDiameter": 41,
+				"monumental": false,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6358,
+						51.8183
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-linde-oosthavenplein",
+			"register": "public-space",
+			"schema": "tree",
+			"data": {
+				"identification": "BM-0207",
+				"name": "Linde Oosthavenplein",
+				"status": "Gezond",
+				"species": "Zilverlinde (Tilia tomentosa)",
+				"plantingYear": 1932,
+				"heightClass": "18-24 m",
+				"trunkDiameter": 88,
+				"monumental": true,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6412,
+						51.8129
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-lantaarnpaal-kerkplein",
+			"register": "public-space",
+			"schema": "street-light",
+			"data": {
+				"identification": "LP-0703",
+				"name": "Lantaarnpaal Kerkplein",
+				"status": "In orde",
+				"address": "Kerkplein, bij de ingang",
+				"lampType": "LED",
+				"mastHeight": 6,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6298,
+						51.815
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-lantaarnpaal-lindelaan-14",
+			"register": "public-space",
+			"schema": "street-light",
+			"data": {
+				"identification": "LP-1408",
+				"name": "Lantaarnpaal Lindelaan 14",
+				"status": "Defect",
+				"address": "Lindelaan 14",
+				"lampType": "LED",
+				"mastHeight": 6,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.627,
+						51.8201
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-lichtmast-14",
+			"register": "public-space",
+			"schema": "street-light",
+			"data": {
+				"identification": "LM-0014",
+				"name": "Lichtmast 14",
+				"status": "Gepland",
+				"address": "Fietspad Lindelaan, bij de brug",
+				"lampType": "LED",
+				"mastHeight": 5,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6259,
+						51.8213
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-lichtmast-15",
+			"register": "public-space",
+			"schema": "street-light",
+			"data": {
+				"identification": "LM-0015",
+				"name": "Lichtmast 15",
+				"status": "Gepland",
+				"address": "Fietspad Lindelaan, bij de bushalte",
+				"lampType": "LED",
+				"mastHeight": 5,
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6251,
+						51.8219
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-wipkip-oosthavenplein",
+			"register": "public-space",
+			"schema": "play-equipment",
+			"data": {
+				"identification": "SP-0117",
+				"name": "Wipkip Oosthavenplein",
+				"status": "Defect",
+				"playground": "Speelplek Oosthavenplein",
+				"equipmentType": "Veerwipper",
+				"manufacturer": "Speelwerk Zuid",
+				"installationYear": 2014,
+				"ageGroup": "2 tot 6 jaar",
+				"safetySurface": "Rubbertegels",
+				"lastInspection": "{{date:-40}}",
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6415,
+						51.8127
+					]
+				}
+			}
+		},
+		{
+			"key": "public-space-standplaats-markt-7",
+			"register": "public-space",
+			"schema": "market-pitch",
+			"data": {
+				"identification": "ST-0007",
+				"name": "Standplaats Markt 7",
+				"status": "Vrij",
+				"market": "Weekmarkt Markt",
+				"marketDay": "Zaterdag",
+				"area": 12
+			}
+		},
+		{
+			"key": "public-space-standplaats-oosthavenplein",
+			"register": "public-space",
+			"schema": "market-pitch",
+			"data": {
+				"identification": "ST-0031",
+				"name": "Standplaats Oosthavenplein",
+				"status": "Vergeven",
+				"market": "Oosthavenplein",
+				"marketDay": "Evenement",
+				"area": 9
+			}
+		},
+		{
+			"key": "public-space-fietspad-lindelaan",
+			"register": "public-space",
+			"schema": "road-section",
+			"data": {
+				"identification": "BGT wgl.0505.1234",
+				"name": "Fietspad Lindelaan",
+				"status": "In beheer",
+				"function": "Fietspad",
+				"surface": "Rood asfalt",
+				"location": {
+					"type": "Point",
+					"coordinates": [
+						4.6262,
+						51.8209
+					]
+				}
 			}
 		}
 	],
