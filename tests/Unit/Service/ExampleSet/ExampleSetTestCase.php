@@ -48,6 +48,10 @@ use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
+use OCA\OpenRegister\Db\TalkLink;
+use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
@@ -185,6 +189,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var bool Whether the fake Collectives is installed. */
 	protected bool $collectivesInstalled = true;
 
+	/** @var array{rooms: array<string, array<string, mixed>>, messages: array<int, array<string, mixed>>} What the fake Talk holds. */
+	protected array $talk = ['rooms' => [], 'messages' => []];
+
+	/** @var array<int, TalkLink> The Talk links, by id. */
+	protected array $talkLinks = [];
+
+	/** @var bool Whether the fake Talk is installed. */
+	protected bool $talkInstalled = true;
+
 	/** @var array<int, array{principal: string, uri: string}> The calendars, by id. */
 	protected array $calendars = [];
 
@@ -256,6 +269,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowRunMapper::class      => $this->flowRunMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
+			ExampleSetTalkStore::class => $this->talkStore(),
+			TalkLinkMapper::class     => $this->talkLinkMapper(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
@@ -332,7 +347,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				deckCards: new ExampleSetDeckCards(container: $container),
 				appointments: new ExampleSetAppointments(container: $container),
 				casePlans: new ExampleSetCasePlans(container: $container),
-				collectivesPages: new ExampleSetCollectivesPages(container: $container)
+				collectivesPages: new ExampleSetCollectivesPages(container: $container),
+				talkConversations: new ExampleSetTalkConversations(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -358,7 +374,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				deckCards: new ExampleSetDeckCards(container: $container),
 				appointments: new ExampleSetAppointments(container: $container),
 				casePlans: new ExampleSetCasePlans(container: $container),
-				collectivesPages: new ExampleSetCollectivesPages(container: $container)
+				collectivesPages: new ExampleSetCollectivesPages(container: $container),
+				talkConversations: new ExampleSetTalkConversations(container: $container)
 			)
 		);
 	}
@@ -611,6 +628,68 @@ abstract class ExampleSetTestCase extends TestCase {
 
 		return $store;
 	}//end collectivesStore()
+
+	/**
+	 * A Talk store over $talk: a room by name, its held call as two system messages.
+	 *
+	 * @return ExampleSetTalkStore
+	 */
+	private function talkStore(): ExampleSetTalkStore {
+		$store = $this->createMock(ExampleSetTalkStore::class);
+		$store->method('available')->willReturnCallback(fn (): bool => $this->talkInstalled);
+		$store->method('room')->willReturnCallback(function (string $owner, string $name, array $participants): array {
+			foreach ($this->talk['rooms'] as $token => $room) {
+				if ($room['name'] === $name && $room['owner'] === $owner) {
+					return ['token' => $token, 'id' => $room['id'], 'created' => false];
+				}
+			}
+
+			$token = 'room'.(count($this->talk['rooms']) + 1);
+			$this->talk['rooms'][$token] = ['id' => (count($this->talk['rooms']) + 1), 'name' => $name, 'owner' => $owner, 'participants' => $participants];
+			return ['token' => $token, 'id' => $this->talk['rooms'][$token]['id'], 'created' => true];
+		});
+		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, \DateTime $start, \DateTime $end, array $joined): void {
+			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_started', 'at' => $start->format('c')];
+			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
+		});
+		$store->method('roomExists')->willReturnCallback(fn (string $token): bool => isset($this->talk['rooms'][$token]));
+		$store->method('deleteRoom')->willReturnCallback(function (string $token): void {
+			unset($this->talk['rooms'][$token]);
+			$this->talk['messages'] = array_values(array_filter($this->talk['messages'], static fn (array $message): bool => $message['room'] !== $token));
+		});
+
+		return $store;
+	}//end talkStore()
+
+	/**
+	 * A Talk link mapper over $talkLinks.
+	 *
+	 * @return TalkLinkMapper
+	 */
+	private function talkLinkMapper(): TalkLinkMapper {
+		$mapper = $this->createMock(TalkLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (TalkLink $link): TalkLink {
+			$link->setId(count($this->talkLinks) + 1);
+			$this->talkLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('findByObjectAndRoom')->willReturnCallback(function (string $objectUuid, string $roomToken): ?TalkLink {
+			foreach ($this->talkLinks as $link) {
+				if ($link->getObjectUuid() === $objectUuid && $link->getRoomToken() === $roomToken) {
+					return $link;
+				}
+			}
+
+			return null;
+		});
+		$mapper->method('deleteByObjectAndRoom')->willReturnCallback(function (string $objectUuid, string $roomToken): int {
+			$before          = count($this->talkLinks);
+			$this->talkLinks = array_filter($this->talkLinks, static fn (TalkLink $link): bool => !($link->getObjectUuid() === $objectUuid && $link->getRoomToken() === $roomToken));
+			return $before - count($this->talkLinks);
+		});
+
+		return $mapper;
+	}//end talkLinkMapper()
 
 	/**
 	 * A Deck store over $deck: rows found by title, written with the next id, deleted by id.
