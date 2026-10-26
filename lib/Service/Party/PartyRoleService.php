@@ -283,34 +283,20 @@ class PartyRoleService {
 	 * Refuse a party kind or a role the schema does not accept, naming it.
 	 *
 	 * A schema that declares no party kinds accepts every kind, which is what
-	 * keeps a register written before the party model behaving as it did.
+	 * keeps a register written before the party model behaving as it did. The
+	 * trusted import (a named linker, no user) finds the party without RBAC, a
+	 * request with its caller's rights.
 	 *
-	 * @param int|string|null $schemaId The object's schema.
-	 * @param string $partyUuid The party being added.
-	 * @param string|null $role The role.
+	 * @param int|string|null $schemaId  The object's schema.
+	 * @param string          $partyUuid The party being added.
+	 * @param string|null     $role      The role.
+	 * @param bool            $unscoped  Whether to find the party without RBAC.
 	 *
 	 * @return void
 	 *
 	 * @throws Exception 400 naming the kind or the role, 404 when the party is unknown.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
-	 */
-	public function assertAccepted(int|string|null $schemaId, string $partyUuid, ?string $role): void {
-		$this->assertAcceptedParty(schemaId: $schemaId, partyUuid: $partyUuid, role: $role, unscoped: false);
-	}//end assertAccepted()
-
-	/**
-	 * See assertAccepted(); the trusted import (a named linker, no user) finds
-	 * the party without RBAC, a request with its caller's rights.
-	 *
-	 * @param int|string|null $schemaId The object's schema.
-	 * @param string          $partyUuid The party being added.
-	 * @param string|null     $role The role.
-	 * @param bool            $unscoped Whether to find the party without RBAC.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception 400 naming the kind or the role, 404 when the party is unknown.
 	 */
 	private function assertAcceptedParty(int|string|null $schemaId, string $partyUuid, ?string $role, bool $unscoped): void {
 		$schema = $this->schemaOf(schemaId: $schemaId);
