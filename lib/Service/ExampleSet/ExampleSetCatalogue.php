@@ -134,7 +134,11 @@ class ExampleSetCatalogue {
 		foreach ($enabled as $app) {
 			$folder = $this->folderOf(app: $app);
 			if ($folder !== null && is_file($folder.'/'.$set.'.json') === true) {
-				$fragments[$app] = $this->read(app: $app, file: $folder.'/'.$set.'.json');
+				$fragments[$app] = $this->withParts(
+					app: $app,
+					fragment: $this->read(app: $app, file: $folder.'/'.$set.'.json'),
+					folder: $folder.'/'.$set.'.d'
+				);
 			}
 		}
 
@@ -200,6 +204,59 @@ class ExampleSetCatalogue {
 			}
 		}
 	}//end refuseSharedAccountKeys()
+
+	/**
+	 * A fragment with the parts in its `<set>.d/` folder appended, in file-name order.
+	 *
+	 * A part adds lists to its app's fragment (`objects`, `changes`, `appConfig` and the
+	 * other parts a fragment declares as lists), so two seed areas can live in two files.
+	 * A part may not set anything else: the fragment's own settings stay in its main file.
+	 * Relative file paths in a part resolve from the main file's folder.
+	 *
+	 * @param string               $app      The app id.
+	 * @param array<string, mixed> $fragment The main fragment, as read.
+	 * @param string               $folder   The parts folder.
+	 *
+	 * @return array<string, mixed> The fragment with every part's lists appended.
+	 *
+	 * @throws ExampleSetException When a part does not parse or sets a value that is not a list.
+	 */
+	private function withParts(string $app, array $fragment, string $folder): array {
+		$files = glob($folder.'/*.json');
+		if ($files === false || $files === []) {
+			return $fragment;
+		}
+
+		sort($files);
+		foreach ($files as $file) {
+			$part  = $this->read(app: $app, file: $file);
+			$named = $app.'/'.self::FOLDER.'/'.basename($folder).'/'.basename($file);
+			foreach ($part as $key => $value) {
+				if (self::isPartNote(key: (string) $key) === true) {
+					continue;
+				}
+
+				if (is_array($value) === false || array_is_list($value) === false) {
+					throw new ExampleSetException($named.': a part may only add lists; "'.$key.'" belongs in the main file.');
+				}
+
+				$fragment[$key] = array_merge((array) ($fragment[$key] ?? []), $value);
+			}
+		}
+
+		return $fragment;
+	}//end withParts()
+
+	/**
+	 * Whether a part's key is a note rather than content: `set`, `$comment`, or what read() adds (`@file`, `@dir`).
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return bool True for a note.
+	 */
+	private static function isPartNote(string $key): bool {
+		return $key === 'set' || str_starts_with($key, '@') === true || str_starts_with($key, '$') === true;
+	}//end isPartNote()
 
 	/**
 	 * Read and parse one fragment file.
