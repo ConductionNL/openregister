@@ -2,7 +2,8 @@
 
 /**
  * A cast person's function, role, absence and status reach the account the
- * set created, and only that account; absence days count from the install day.
+ * set created; an adopted account only gains the function and role it lacks.
+ * Absence days count from the install day.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -48,20 +49,32 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 	}//end testAProfileIsReadFromTheCastPerson()
 
 	/**
-	 * The install writes the profile of an account it created and leaves an adopted account's alone.
+	 * The install writes the profile of an account it created; an adopted account only gains what it lacks.
 	 *
 	 * @return void
 	 */
-	public function testOnlyAnAccountTheSetCreatedGetsItsProfile(): void {
+	public function testACreatedAccountGetsItsProfileAndAnAdoptedOneWhatItLacks(): void {
 		$written  = [];
-		$profiles = new class($written) extends ExampleSetProfiles {
+		$filled   = [];
+		$profiles = new class($written, $filled) extends ExampleSetProfiles {
 
 			/**
 			 * Records instead of writing.
 			 *
 			 * @param array<string, mixed> $written The profiles written, by uid.
 			 */
-			public function __construct(private array &$written) {
+			public function __construct(private array &$written, private array &$filled) {
+			}
+
+			/**
+			 * Record the profile an adopted account may gain.
+			 * @param string               $uid     The account.
+			 * @param array<string, mixed> $profile The profile.
+			 * @return array<int, string>
+			 */
+			public function fillMissing(string $uid, array $profile): array {
+				$this->filled[$uid] = $profile;
+				return [];
 			}
 
 			/**
@@ -99,5 +112,36 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 
 		$this->assertSame(expected: ['sanne.bakker'], actual: array_keys($written));
 		$this->assertSame(expected: 'Vergunningverlener', actual: $written['sanne.bakker']['headline']);
-	}//end testOnlyAnAccountTheSetCreatedGetsItsProfile()
+		$this->assertSame(expected: ['adopted.one'], actual: array_keys($filled));
+		$this->assertSame(expected: 'Iets', actual: $filled['adopted.one']['headline']);
+	}//end testACreatedAccountGetsItsProfileAndAnAdoptedOneWhatItLacks()
+
+	/**
+	 * Filling in writes only the properties the account has empty, and never touches one it holds.
+	 *
+	 * @return void
+	 */
+	public function testFillingInWritesOnlyEmptyProperties(): void {
+		$values  = ['headline' => '', 'role' => 'Woo-coördinator'];
+		$account = $this->createMock(\OCP\Accounts\IAccount::class);
+		$account->method('getProperty')->willReturnCallback(function (string $name) use (&$values): \OCP\Accounts\IAccountProperty {
+			$property = $this->createMock(\OCP\Accounts\IAccountProperty::class);
+			$property->method('getValue')->willReturn($values[$name] ?? '');
+			return $property;
+		});
+		$account->method('setProperty')->willReturnCallback(function (string $name, string $value) use (&$values, $account): \OCP\Accounts\IAccount {
+			$values[$name] = $value;
+			return $account;
+		});
+		$accounts = $this->createMock(\OCP\Accounts\IAccountManager::class);
+		$accounts->method('getAccount')->willReturn($account);
+		$users = $this->createMock(\OCP\IUserManager::class);
+		$users->method('get')->willReturn($this->createMock(\OCP\IUser::class));
+		$profiles = new ExampleSetProfiles(users: $users, profiles: $accounts, container: $this->createMock(\Psr\Container\ContainerInterface::class));
+
+		$reasons = $profiles->fillMissing(uid: 'pieter', profile: ['headline' => 'Woo-coördinator', 'role' => 'Iets anders', 'absence' => null, 'status' => null]);
+
+		$this->assertSame(expected: [], actual: $reasons);
+		$this->assertSame(expected: ['headline' => 'Woo-coördinator', 'role' => 'Woo-coördinator'], actual: $values);
+	}//end testFillingInWritesOnlyEmptyProperties()
 }//end class
