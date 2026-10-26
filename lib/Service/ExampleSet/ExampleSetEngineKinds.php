@@ -52,6 +52,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetDeckCards|null $deckCards Writes the Deck cards a fragment puts on its objects; null refuses them.
 	 * @param ExampleSetAppointments|null $appointments Writes the appointments a fragment puts on its objects; null refuses them.
 	 * @param ExampleSetCasePlans|null $casePlans Writes the case plans a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetCollectivesPages|null $collectivesPages Writes the Collectives pages a fragment ships; null refuses them.
 	 *
 	 * @return void
 	 *
@@ -70,6 +71,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetDeckCards $deckCards=null,
 		private readonly ?ExampleSetAppointments $appointments=null,
 		private readonly ?ExampleSetCasePlans $casePlans=null,
+		private readonly ?ExampleSetCollectivesPages $collectivesPages=null,
 	) {
 	}//end __construct()
 
@@ -228,6 +230,7 @@ class ExampleSetEngineKinds {
 			'deckCards'  => [$this->deckCards, 'deck card'],
 			'appointments' => [$this->appointments, 'appointment'],
 			'casePlans'  => [$this->casePlans, 'case plan'],
+			'collectivesPages' => [$this->collectivesPages, 'collectives page'],
 		];
 	}//end kinds()
 }//end class
