@@ -114,6 +114,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<string, string>> App config of the apps a fragment configures: app, key, value. */
 	protected array $appValues = [];
 
+	/** @var array<string, array<string, string>> The type a key of $appValues was written with, when not text. */
+	protected array $appTypes = [];
+
 	/** @var array<string, array<string, bool>> Which of those keys are kept as sensitive. */
 	protected array $sensitive = [];
 
@@ -684,9 +687,26 @@ abstract class ExampleSetTestCase extends TestCase {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('hasKey')->willReturnCallback(fn (string $app, string $key): bool => isset($this->appValues[$app][$key]));
 		$config->method('isSensitive')->willReturnCallback(fn (string $app, string $key): bool => ($this->sensitive[$app][$key] ?? false));
-		$config->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->appValues[$app][$key] ?? $default));
+		// As Nextcloud's typed app config: a key written as an integer is not read or written as text.
+		$config->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = ''): string => (($this->appTypes[$app][$key] ?? 'string') === 'int'
+				? throw new \RuntimeException('the key '.$key.' is typed int')
+				: ($this->appValues[$app][$key] ?? $default))
+		);
+		$config->method('getValueInt')->willReturnCallback(fn (string $app, string $key, int $default = 0): int => (int) ($this->appValues[$app][$key] ?? $default));
+		$config->method('setValueInt')->willReturnCallback(
+			function (string $app, string $key, int $value): bool {
+				$this->appValues[$app][$key] = (string) $value;
+				$this->appTypes[$app][$key]  = 'int';
+				return true;
+			}
+		);
 		$config->method('setValueString')->willReturnCallback(
 			function (string $app, string $key, string $value, bool $lazy = false, bool $sensitive = false): bool {
+				if (($this->appTypes[$app][$key] ?? 'string') === 'int') {
+					throw new \RuntimeException('the key '.$key.' is typed int');
+				}
+
 				$this->appValues[$app][$key] = $value;
 				$this->sensitive[$app][$key] = $sensitive;
 				return true;

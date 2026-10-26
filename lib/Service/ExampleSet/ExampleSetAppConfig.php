@@ -86,15 +86,16 @@ class ExampleSetAppConfig {
 	 * @param string $key      The key.
 	 * @param string $value    The filled value; ignored when generating.
 	 * @param bool   $generate Whether to generate a value instead.
+	 * @param string $type     `string`, or `int` for a key the app reads as an integer.
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to be
 	 *                                                                 written), or why the write failed.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
 	 */
-	public function apply(string $app, string $key, string $value, bool $generate): array {
+	public function apply(string $app, string $key, string $value, bool $generate, string $type='string'): array {
 		$had = $this->has(app: $app, key: $key);
-		$old = $this->read(app: $app, key: $key);
+		$old = $this->read(app: $app, key: $key, type: $type);
 		if (($generate === true && $had === true && $old !== '') || ($generate === false && $had === true && $old === $value)) {
 			return ['error' => '', 'entry' => null];
 		}
@@ -118,12 +119,12 @@ class ExampleSetAppConfig {
 				];
 			}
 
-			$this->appConfig->setValueString($app, $key, $value);
+			$this->write(app: $app, key: $key, value: $value, type: $type);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['app' => $app, 'key' => $key, 'had' => $had, 'old' => $old, 'new' => $value, 'generated' => false]];
+		return ['error' => '', 'entry' => ['app' => $app, 'key' => $key, 'had' => $had, 'old' => $old, 'new' => $value, 'generated' => false, 'type' => $type]];
 	}//end apply()
 
 	/**
@@ -140,7 +141,7 @@ class ExampleSetAppConfig {
 			return $this->read(app: (string) $entry['app'], key: (string) $entry['key']) === '';
 		}
 
-		return $this->read(app: (string) $entry['app'], key: (string) $entry['key']) !== (string) $entry['new'];
+		return $this->read(app: (string) $entry['app'], key: (string) $entry['key'], type: $this->typeOf(entry: $entry)) !== (string) $entry['new'];
 	}//end lost()
 
 	/**
@@ -169,7 +170,7 @@ class ExampleSetAppConfig {
 
 		try {
 			if ($entry['had'] === true && ($generated === false || isset($entry['fingerprint']) === true)) {
-				$this->appConfig->setValueString($app, $key, (string) $entry['old']);
+				$this->write(app: $app, key: $key, value: (string) $entry['old'], type: $this->typeOf(entry: $entry));
 				return 'restored';
 			}
 
@@ -203,7 +204,7 @@ class ExampleSetAppConfig {
 			return hash_equals((string) $entry['fingerprint'], hash('sha256', $this->read(app: $app, key: $key))) === false;
 		}
 
-		return $this->read(app: $app, key: $key) !== (string) $entry['new'];
+		return $this->read(app: $app, key: $key, type: $this->typeOf(entry: $entry)) !== (string) $entry['new'];
 	}//end changedSince()
 
 	/**
@@ -245,16 +246,55 @@ class ExampleSetAppConfig {
 	/**
 	 * A key's value as text, '' when it is not there or not text.
 	 *
-	 * @param string $app The app.
-	 * @param string $key The key.
+	 * @param string $app  The app.
+	 * @param string $key  The key.
+	 * @param string $type `string`, or `int` for a key kept as an integer.
 	 *
 	 * @return string
 	 */
-	private function read(string $app, string $key): string {
+	private function read(string $app, string $key, string $type='string'): string {
 		try {
+			if ($type === 'int') {
+				if ($this->has(app: $app, key: $key) === false) {
+					return '';
+				}
+
+				return (string) $this->appConfig->getValueInt($app, $key);
+			}
+
 			return $this->appConfig->getValueString($app, $key, '');
 		} catch (Throwable) {
 			return '';
 		}
 	}//end read()
+
+	/**
+	 * Write a value with its type.
+	 *
+	 * @param string $app   The app.
+	 * @param string $key   The key.
+	 * @param string $value The value as text.
+	 * @param string $type  `string`, or `int` for a key the app reads as an integer.
+	 *
+	 * @return void
+	 */
+	private function write(string $app, string $key, string $value, string $type): void {
+		if ($type === 'int') {
+			$this->appConfig->setValueInt($app, $key, (int) $value);
+			return;
+		}
+
+		$this->appConfig->setValueString($app, $key, $value);
+	}//end write()
+
+	/**
+	 * The type a record entry was written with; an entry from before types were recorded is text.
+	 *
+	 * @param array<string, mixed> $entry A record entry from apply().
+	 *
+	 * @return string
+	 */
+	private function typeOf(array $entry): string {
+		return (string) ($entry['type'] ?? 'string');
+	}//end typeOf()
 }//end class

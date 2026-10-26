@@ -214,6 +214,35 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertContains('app config alpha groups, which somebody changed after the install', $removed['left']);
 	}
 
+	/**
+	 * An entry may name its type: an integer key (a sequence counter an app reads with getValueInt) is written as
+	 * an integer, kept on a second install and put back on remove; a value that is no integer refuses the set.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-typed-app-config/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 */
+	public function testAnIntegerAppConfigEntryIsWrittenAsAnInteger(): void {
+		$this->appValues['alpha'] = ['counter' => '7'];
+		$this->appTypes['alpha']  = ['counter' => 'int'];
+		$this->alpha(['appConfig' => [['key' => 'counter', 'value' => '402', 'type' => 'int']]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame('created', $report['appConfig']['alpha/counter'], (string) json_encode($report));
+		$this->assertSame(['402', 'int'], [$this->appValues['alpha']['counter'], $this->appTypes['alpha']['counter']]);
+		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+
+		$this->remover->remove(set: 'demo');
+		$this->assertSame('7', $this->appValues['alpha']['counter']);
+
+		$this->alpha(['appConfig' => [['key' => 'counter', 'value' => 'veel', 'type' => 'int']]]);
+		$this->expectException(ExampleSetException::class);
+		$this->expectExceptionMessage('is an integer');
+		$this->catalogue->gather(set: 'demo');
+	}
+
 	public function testAppConfigForAnotherAppIsRefused(): void {
 		$this->alpha(['appConfig' => [['app' => 'beta', 'key' => 'x', 'value' => 'y']]]);
 

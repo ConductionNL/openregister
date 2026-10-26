@@ -403,9 +403,10 @@ class ExampleSetCatalogue {
 	 * @param string            $file     The fragment file, for messages.
 	 * @param array<int, mixed> $declared The declared entries.
 	 *
-	 * @return array<int, array{key: string, value: mixed, generate: bool}>
+	 * @return array<int, array{key: string, value: mixed, generate: bool, type: string}>
 	 *
-	 * @throws ExampleSetException When an entry names another app, lacks a key, or has no value to write.
+	 * @throws ExampleSetException When an entry names another app, lacks a key, has no value to write, or a type it
+	 *                             cannot write or whose value does not fit.
 	 */
 	private function appConfig(string $app, string $file, array $declared): array {
 		$entries = [];
@@ -420,11 +421,45 @@ class ExampleSetCatalogue {
 				throw new ExampleSetException($file.': app config '.$index.' needs a key and a value, or generate: true.');
 			}
 
-			$entries[] = ['key' => $entry['key'], 'value' => ($entry['value'] ?? ''), 'generate' => $generate];
+			$entries[] = [
+				'key'      => $entry['key'],
+				'value'    => ($entry['value'] ?? ''),
+				'generate' => $generate,
+				'type'     => $this->appConfigType(file: $file, index: (int) $index, entry: $entry, generate: $generate),
+			];
 		}
 
 		return $entries;
 	}//end appConfig()
+
+	/**
+	 * The type an app config entry is written with: `string`, or `int` for a key its app reads as an integer.
+	 *
+	 * @param string               $file     The fragment file, for messages.
+	 * @param int                  $index    The entry's position, for messages.
+	 * @param array<string, mixed> $entry    The declared entry.
+	 * @param bool                 $generate Whether the set generates the value.
+	 *
+	 * @return string
+	 *
+	 * @throws ExampleSetException When the type is not one a set writes, or an integer's value is no integer.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the value is generated is the entry's own fact.
+	 *
+	 * @spec openspec/changes/example-set-typed-app-config/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 */
+	private function appConfigType(string $file, int $index, array $entry, bool $generate): string {
+		$type = (string) ($entry['type'] ?? 'string');
+		if (in_array($type, ['string', 'int'], true) === false) {
+			throw new ExampleSetException($file.': app config '.$index.' has type "'.$type.'"; a set writes string or int.');
+		}
+
+		if ($type === 'int' && $generate === false && preg_match('/^(-?\d+|\{\{[^{}]+\}\})$/', (string) ($entry['value'] ?? '')) !== 1) {
+			throw new ExampleSetException($file.': app config '.$index.' ("'.(string) $entry['key'].'") is an integer; its value is not.');
+		}
+
+		return $type;
+	}//end appConfigType()
 
 	/**
 	 * The per-user preferences of a fragment, each for the fragment's own app.
