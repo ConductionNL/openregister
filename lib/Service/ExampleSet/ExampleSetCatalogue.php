@@ -307,6 +307,7 @@ class ExampleSetCatalogue {
 			'exportRuns'      => $this->keyedRows(file: $file, declared: (array) ($fragment['exportRuns'] ?? []), noun: 'export'),
 			'deckCards'       => $this->keyedRows(file: $file, declared: (array) ($fragment['deckCards'] ?? []), noun: 'deck card'),
 			'appointments'    => $this->keyedRows(file: $file, declared: (array) ($fragment['appointments'] ?? []), noun: 'appointment'),
+			'casePlans'       => $this->keyedRows(file: $file, declared: (array) ($fragment['casePlans'] ?? []), noun: 'case plan'),
 			'archival'        => $this->archival(app: $app, file: $file, declared: (array) ($fragment['archival'] ?? [])),
 		];
 	}//end fragment()

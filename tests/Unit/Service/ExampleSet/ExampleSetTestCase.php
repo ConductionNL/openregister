@@ -39,6 +39,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans;
+use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\DAV\CalDAV\CalDavBackend;
@@ -176,6 +180,12 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, string> The calendar objects, by `<calendar id> <uri>`: their iCalendar text. */
 	protected array $calendarObjects = [];
 
+	/** @var array<string, CaseItem> The case plan items, by `<object uuid> <item key>`. */
+	protected array $caseItems = [];
+
+	/** @var array<int, string> The apps that brought plan items in, one per call. */
+	protected array $casePlanActors = [];
+
 	/** @var array<int, CalendarLink> The calendar links, by id. */
 	protected array $calendarLinks = [];
 
@@ -234,6 +244,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
+			CasePlanService::class    => $this->casePlans(),
+			CaseItemMapper::class     => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationService::class => $this->organisationService(),
 		});
@@ -303,7 +315,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
 				exportRuns: new ExampleSetExportRuns(container: $container),
 				deckCards: new ExampleSetDeckCards(container: $container),
-				appointments: new ExampleSetAppointments(container: $container)
+				appointments: new ExampleSetAppointments(container: $container),
+				casePlans: new ExampleSetCasePlans(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -327,7 +340,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
 				exportRuns: new ExampleSetExportRuns(container: $container),
 				deckCards: new ExampleSetDeckCards(container: $container),
-				appointments: new ExampleSetAppointments(container: $container)
+				appointments: new ExampleSetAppointments(container: $container),
+				casePlans: new ExampleSetCasePlans(container: $container)
 			)
 		);
 	}
@@ -622,6 +636,59 @@ abstract class ExampleSetTestCase extends TestCase {
 		});
 
 		return $backend;
+	}
+
+	/**
+	 * A case plan service whose convergent import puts the definition's items
+	 * (nested under `children`) in $caseItems, creating only keys not held yet.
+	 *
+	 * @return CasePlanService
+	 */
+	private function casePlans(): CasePlanService {
+		$service = $this->createMock(CasePlanService::class);
+		$service->method('ensureItems')->willReturnCallback(
+			function (string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array {
+				$this->casePlanActors[] = $app;
+				$created = [];
+				$walk    = function (array $nodes) use (&$walk, &$created, $objectUuid): void {
+					foreach ($nodes as $node) {
+						$key = (string) $node['key'];
+						if (isset($this->caseItems[$objectUuid.' '.$key]) === false) {
+							$item = new CaseItem();
+							$item->setObjectUuid($objectUuid);
+							$item->setItemKey($key);
+							$item->setState((string) ($node['state'] ?? 'available'));
+							$this->caseItems[$objectUuid.' '.$key] = $item;
+							$created[] = $key;
+						}
+
+						$walk((array) ($node['children'] ?? []));
+					}
+				};
+				$walk((array) $definition['items']);
+				return ['created' => $created, 'existing' => [], 'items' => []];
+			}
+		);
+
+		return $service;
+	}
+
+	/**
+	 * A case item mapper over $caseItems.
+	 *
+	 * @return CaseItemMapper
+	 */
+	private function caseItemMapper(): CaseItemMapper {
+		$mapper = $this->createMock(CaseItemMapper::class);
+		$mapper->method('findByObject')->willReturnCallback(
+			fn (string $objectUuid): array => array_values(array_filter($this->caseItems, static fn (CaseItem $item): bool => $item->getObjectUuid() === $objectUuid))
+		);
+		$mapper->method('delete')->willReturnCallback(function (CaseItem $item): CaseItem {
+			unset($this->caseItems[$item->getObjectUuid().' '.$item->getItemKey()]);
+			return $item;
+		});
+
+		return $mapper;
 	}
 
 	/**
