@@ -47,6 +47,15 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
+use OCA\OpenRegister\Db\TalkLink;
+use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
@@ -177,6 +186,24 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
 	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
 
+	/** @var array{collectives: array<int, array<string, mixed>>, pages: array<int, array<string, mixed>>} What the fake Collectives holds. */
+	protected array $collectives = ['collectives' => [], 'pages' => []];
+
+	/** @var bool Whether the fake Collectives is installed. */
+	protected bool $collectivesInstalled = true;
+
+	/** @var array{rooms: array<string, array<string, mixed>>, messages: array<int, array<string, mixed>>} What the fake Talk holds. */
+	protected array $talk = ['rooms' => [], 'messages' => []];
+
+	/** @var array<int, TalkLink> The Talk links, by id. */
+	protected array $talkLinks = [];
+
+	/** @var bool Whether the fake Talk is installed. */
+	protected bool $talkInstalled = true;
+
+	/** @var array<int, AuditTrail> The audit trail, by id. */
+	protected array $auditTrail = [];
+
 	/** @var array<int, array{principal: string, uri: string}> The calendars, by id. */
 	protected array $calendars = [];
 
@@ -247,6 +274,10 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowService::class        => $this->flowService(),
 			FlowRunMapper::class      => $this->flowRunMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
+			ExampleSetCollectivesStore::class => $this->collectivesStore(),
+			ExampleSetTalkStore::class => $this->talkStore(),
+			TalkLinkMapper::class     => $this->talkLinkMapper(),
+			AuditTrailMapper::class   => $this->auditTrailMapper(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
@@ -322,7 +353,10 @@ abstract class ExampleSetTestCase extends TestCase {
 				exportRuns: new ExampleSetExportRuns(container: $container),
 				deckCards: new ExampleSetDeckCards(container: $container),
 				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container)
+				casePlans: new ExampleSetCasePlans(container: $container),
+				collectivesPages: new ExampleSetCollectivesPages(container: $container),
+				talkConversations: new ExampleSetTalkConversations(container: $container),
+				auditEntries: new ExampleSetAuditEntries(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -347,7 +381,10 @@ abstract class ExampleSetTestCase extends TestCase {
 				exportRuns: new ExampleSetExportRuns(container: $container),
 				deckCards: new ExampleSetDeckCards(container: $container),
 				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container)
+				casePlans: new ExampleSetCasePlans(container: $container),
+				collectivesPages: new ExampleSetCollectivesPages(container: $container),
+				talkConversations: new ExampleSetTalkConversations(container: $container),
+				auditEntries: new ExampleSetAuditEntries(container: $container)
 			)
 		);
 	}
@@ -468,6 +505,17 @@ abstract class ExampleSetTestCase extends TestCase {
 				return $view;
 			}
 		);
+		$service->method('update')->willReturnCallback(
+			function (int|string $id, string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $favoredBy = null, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+				$view = ($this->savedViews[(string) $id] ?? throw new DoesNotExistException('no view '.$id));
+				$view->setName($name);
+				$view->setIsPublic($isPublic);
+				$view->setQuery($query);
+				$view->setAlert($alert);
+				$view->setSharedWith($sharedWith ?? []);
+				return $view;
+			}
+		);
 
 		return $service;
 	}
@@ -484,6 +532,11 @@ abstract class ExampleSetTestCase extends TestCase {
 		);
 		$mapper->method('delete')->willReturnCallback(function (View $view): View {
 			unset($this->savedViews[(string) $view->getUuid()]);
+			return $view;
+		});
+		$mapper->method('update')->willReturnCallback(function (View $view): View {
+			$this->savedViews = array_filter($this->savedViews, static fn (View $held): bool => $held !== $view);
+			$this->savedViews[(string) $view->getUuid()] = $view;
 			return $view;
 		});
 
@@ -542,6 +595,135 @@ abstract class ExampleSetTestCase extends TestCase {
 
 		return $service;
 	}
+
+	/**
+	 * A Collectives store over $collectives: a collective by name, a page by title in it.
+	 *
+	 * @return ExampleSetCollectivesStore
+	 */
+	private function collectivesStore(): ExampleSetCollectivesStore {
+		$store = $this->createMock(ExampleSetCollectivesStore::class);
+		$store->method('available')->willReturnCallback(fn (): bool => $this->collectivesInstalled);
+		$store->method('collective')->willReturnCallback(function (string $owner, string $name, array $groups): array {
+			foreach ($this->collectives['collectives'] as $id => $row) {
+				if ($row['name'] === $name) {
+					return ['id' => $id, 'created' => false];
+				}
+			}
+
+			$id = (count($this->collectives['collectives']) + 1);
+			$this->collectives['collectives'][$id] = ['name' => $name, 'owner' => $owner, 'groups' => $groups];
+			return ['id' => $id, 'created' => true];
+		});
+		$store->method('page')->willReturnCallback(function (int $collective, string $owner, string $title, string $content): array {
+			foreach ($this->collectives['pages'] as $id => $row) {
+				if ($row['collective'] === $collective && $row['title'] === $title) {
+					return ['id' => $id, 'created' => false];
+				}
+			}
+
+			$id = (100 + count($this->collectives['pages']) + 1);
+			$this->collectives['pages'][$id] = ['collective' => $collective, 'title' => $title, 'content' => $content, 'owner' => $owner];
+			return ['id' => $id, 'created' => true];
+		});
+		$store->method('pageExists')->willReturnCallback(fn (int $collective, int $page, string $owner): bool => isset($this->collectives['pages'][$page]));
+		$store->method('deletePage')->willReturnCallback(function (int $collective, int $page, string $owner): void {
+			unset($this->collectives['pages'][$page]);
+		});
+		$store->method('deleteCollective')->willReturnCallback(function (int $collective, string $owner): void {
+			unset($this->collectives['collectives'][$collective]);
+			$this->collectives['pages'] = array_filter($this->collectives['pages'], static fn (array $page): bool => $page['collective'] !== $collective);
+		});
+
+		return $store;
+	}//end collectivesStore()
+
+	/**
+	 * An audit trail mapper over $auditTrail.
+	 *
+	 * @return AuditTrailMapper
+	 */
+	private function auditTrailMapper(): AuditTrailMapper {
+		$mapper = $this->createMock(AuditTrailMapper::class);
+		$mapper->method('insertAuditTrails')->willReturnCallback(function (array $entries): array {
+			foreach ($entries as $entry) {
+				$entry->setId(count($this->auditTrail) + 1);
+				$this->auditTrail[$entry->getId()] = $entry;
+			}
+
+			return $entries;
+		});
+		$mapper->method('findForObjectByAction')->willReturnCallback(
+			fn (string $objectUuid, array $actions = [], int $limit = 50): array => array_values(
+				array_filter($this->auditTrail, static fn (AuditTrail $row): bool => $row->getObjectUuid() === $objectUuid && in_array($row->getAction(), $actions, true))
+			)
+		);
+		$mapper->method('find')->willReturnCallback(fn (int $id): AuditTrail => ($this->auditTrail[$id] ?? throw new DoesNotExistException('no entry '.$id)));
+
+		return $mapper;
+	}//end auditTrailMapper()
+
+	/**
+	 * A Talk store over $talk: a room by name, its held call as two system messages.
+	 *
+	 * @return ExampleSetTalkStore
+	 */
+	private function talkStore(): ExampleSetTalkStore {
+		$store = $this->createMock(ExampleSetTalkStore::class);
+		$store->method('available')->willReturnCallback(fn (): bool => $this->talkInstalled);
+		$store->method('room')->willReturnCallback(function (string $owner, string $name, array $participants): array {
+			foreach ($this->talk['rooms'] as $token => $room) {
+				if ($room['name'] === $name && $room['owner'] === $owner) {
+					return ['token' => $token, 'id' => $room['id'], 'created' => false];
+				}
+			}
+
+			$token = 'room'.(count($this->talk['rooms']) + 1);
+			$this->talk['rooms'][$token] = ['id' => (count($this->talk['rooms']) + 1), 'name' => $name, 'owner' => $owner, 'participants' => $participants];
+			return ['token' => $token, 'id' => $this->talk['rooms'][$token]['id'], 'created' => true];
+		});
+		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, \DateTime $start, \DateTime $end, array $joined): void {
+			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_started', 'at' => $start->format('c')];
+			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
+		});
+		$store->method('roomExists')->willReturnCallback(fn (string $token): bool => isset($this->talk['rooms'][$token]));
+		$store->method('deleteRoom')->willReturnCallback(function (string $token): void {
+			unset($this->talk['rooms'][$token]);
+			$this->talk['messages'] = array_values(array_filter($this->talk['messages'], static fn (array $message): bool => $message['room'] !== $token));
+		});
+
+		return $store;
+	}//end talkStore()
+
+	/**
+	 * A Talk link mapper over $talkLinks.
+	 *
+	 * @return TalkLinkMapper
+	 */
+	private function talkLinkMapper(): TalkLinkMapper {
+		$mapper = $this->createMock(TalkLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (TalkLink $link): TalkLink {
+			$link->setId(count($this->talkLinks) + 1);
+			$this->talkLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('findByObjectAndRoom')->willReturnCallback(function (string $objectUuid, string $roomToken): ?TalkLink {
+			foreach ($this->talkLinks as $link) {
+				if ($link->getObjectUuid() === $objectUuid && $link->getRoomToken() === $roomToken) {
+					return $link;
+				}
+			}
+
+			return null;
+		});
+		$mapper->method('deleteByObjectAndRoom')->willReturnCallback(function (string $objectUuid, string $roomToken): int {
+			$before          = count($this->talkLinks);
+			$this->talkLinks = array_filter($this->talkLinks, static fn (TalkLink $link): bool => !($link->getObjectUuid() === $objectUuid && $link->getRoomToken() === $roomToken));
+			return $before - count($this->talkLinks);
+		});
+
+		return $mapper;
+	}//end talkLinkMapper()
 
 	/**
 	 * A Deck store over $deck: rows found by title, written with the next id, deleted by id.

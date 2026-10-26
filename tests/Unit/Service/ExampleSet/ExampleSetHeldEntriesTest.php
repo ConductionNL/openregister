@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+
 /**
  * A held change proves only the fields it still declares and a refresh puts back what an import undid; a held
  * preference follows a view that a refresh wrote again.
@@ -68,6 +70,29 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 	}//end testAFieldTheChangeNoLongerDeclaresIsNotProved()
 
 	/**
+	 * A field the declaration of a held change gained is written on the next install, and the record holds it.
+	 *
+	 * @return void
+	 */
+	public function testAHeldChangeWritesAFieldItsDeclarationGained(): void {
+		$this->store->offer(register: 'int', schema: 'connection');
+		$id = $this->store->seed(register: 'int', schema: 'connection', data: ['key' => 'stuf', 'source' => null, 'rightsMatrix' => null]);
+		$this->connectionChange(set: ['source' => 'zaakmagazijn']);
+		$this->assertTrue($this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+
+		$this->connectionChange(set: ['source' => 'zaakmagazijn', 'rightsMatrix' => ['behandelaar' => ['read']]]);
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame(['behandelaar' => ['read']], $this->store->rows['int connection'][$id]['rightsMatrix']);
+		$this->assertSame('refreshed', $report['changes']['alpha/stuf-bron']);
+
+		$this->store->rows['int connection'][$id]['rightsMatrix'] = null;
+		$this->remover->remove(set: 'demo');
+		$this->assertNull($this->store->rows['int connection'][$id]['source'], 'remove puts back what the change replaced');
+	}//end testAHeldChangeWritesAFieldItsDeclarationGained()
+
+	/**
 	 * A refresh writes a declared field again when an import put back the value the change replaced.
 	 *
 	 * @return void
@@ -107,11 +132,11 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 	}//end testARefreshLeavesAFieldSomebodyEdited()
 
 	/**
-	 * A refresh writes a view again under a new uuid; the preference that quotes it moves along.
+	 * A refresh keeps a view's uuid, so the preference that quotes it stays valid and is not written again.
 	 *
 	 * @return void
 	 */
-	public function testAPreferenceFollowsAViewARefreshWroteAgain(): void {
+	public function testAPreferenceKeepsQuotingAViewARefreshUpdated(): void {
 		$this->app(app: 'alpha', fragment: [
 			'views'           => [[
 				'key'  => 'zoek-lindelaan',
@@ -129,11 +154,12 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$uuid = (string) array_key_last($this->savedViews);
+		$uuid = ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan');
+		$this->assertSame([$uuid], array_keys($this->savedViews));
 		$this->assertSame(
 			expected: '[{"id":"'.$uuid.'","page":"Search","name":"Lindelaan"}]',
 			actual: $this->userValues['esra.demir']['alpha']['pref_cn_saved_view_menu']
 		);
-		$this->assertSame('refreshed', $report['userPreferences']['alpha/esra.demir/pref_cn_saved_view_menu']);
-	}//end testAPreferenceFollowsAViewARefreshWroteAgain()
+		$this->assertSame('kept', $report['userPreferences']['alpha/esra.demir/pref_cn_saved_view_menu']);
+	}//end testAPreferenceKeepsQuotingAViewARefreshUpdated()
 }//end class

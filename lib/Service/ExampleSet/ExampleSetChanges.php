@@ -219,9 +219,10 @@ class ExampleSetChanges {
 	 * Keep a held change in step with its declaration.
 	 *
 	 * The entry lets go of every field the declaration no longer sets (a job may own it now), so the proof and remove
-	 * leave it alone. On a refresh a declared field is written again when it holds what the change replaced (an
-	 * import put it back) or what the change wrote while the declaration now resolves to something else; a field
-	 * with a third value is somebody's edit and is left.
+	 * leave it alone. A field the declaration gained is written on any install and recorded like the others. On a
+	 * refresh a declared field is written again when it holds what the change replaced (an import put it back) or
+	 * what the change wrote while the declaration now resolves to something else; a field with a third value is
+	 * somebody's edit and is left.
 	 *
 	 * @param array<string, mixed> $change  The declared change.
 	 * @param array<string, mixed> $entry   The record entry from apply().
@@ -238,7 +239,8 @@ class ExampleSetChanges {
 		$appended        = array_map('strval', array_keys((array) ($change['append'] ?? [])));
 		$entry['set']    = $this->onPaths(rows: (array) $entry['set'], paths: $declared);
 		$entry['append'] = $this->onPaths(rows: (array) $entry['append'], paths: $appended);
-		if ($refresh === false) {
+		$gained          = array_values(array_diff($declared, array_map('strval', array_column($entry['set'], 'path'))));
+		if ($refresh === false && $gained === []) {
 			return ['error' => '', 'entry' => $entry, 'wrote' => false];
 		}
 
@@ -247,7 +249,8 @@ class ExampleSetChanges {
 			return ['error' => $resolved['refusal'], 'entry' => $entry, 'wrote' => false];
 		}
 
-		$again = $this->writtenAgain(entry: $entry, resolved: $resolved);
+		$fresh = $this->gainedRows(paths: $gained, resolved: $resolved);
+		$again = array_merge($this->refreshed(refresh: $refresh, entry: $entry, resolved: $resolved), array_column($fresh, 'new', 'path'));
 		if ($again === []) {
 			return ['error' => '', 'entry' => $entry, 'wrote' => false];
 		}
@@ -275,8 +278,56 @@ class ExampleSetChanges {
 			}
 		}
 
+		$entry['set'] = array_merge($entry['set'], $fresh);
+
 		return ['error' => '', 'entry' => $entry, 'wrote' => true];
 	}//end follow()
+
+	/**
+	 * The held fields this run writes again: those of writtenAgain() on a refresh, none otherwise.
+	 *
+	 * @param bool                 $refresh  Whether this run refreshes.
+	 * @param array<string, mixed> $entry    The record entry, held fields only.
+	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function refreshed(bool $refresh, array $entry, array $resolved): array {
+		if ($refresh === false) {
+			return [];
+		}
+
+		return $this->writtenAgain(entry: $entry, resolved: $resolved);
+	}//end refreshed()
+
+	/**
+	 * The record rows of fields the declaration gained that do not hold their declared value yet.
+	 *
+	 * @param array<int, string>   $paths    The gained paths.
+	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
+	 *
+	 * @return array<int, array{path: string, had: bool, old: mixed, new: mixed, from: string}>
+	 */
+	private function gainedRows(array $paths, array $resolved): array {
+		$rows = [];
+		foreach ($paths as $path) {
+			$want = $resolved['set'][$path];
+			$held = $this->paths->atPath(row: $resolved['row'], path: $path);
+			if ($held['found'] === true && $held['value'] === $want) {
+				continue;
+			}
+
+			$rows[] = [
+				'path' => $path,
+				'had'  => $held['found'],
+				'old'  => $held['value'],
+				'new'  => $want,
+				'from' => $this->paths->firstMissing(row: $resolved['row'], path: $path),
+			];
+		}
+
+		return $rows;
+	}//end gainedRows()
 
 	/**
 	 * The record rows whose path is one of the given paths.

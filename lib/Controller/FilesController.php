@@ -548,12 +548,18 @@ class FilesController extends Controller {
 	 * Closes file-actions tasks 148, 149, 151, 152: download logging
 	 * integration into FilesController::show() and downloadById().
 	 *
+	 * The audit row names the file, so a history can say which document was
+	 * looked at ("Inzage medisch verslag") rather than a bare file id.
+	 *
 	 * @param int $fileId The Nextcloud filecache fileid being downloaded.
 	 * @param \OCA\OpenRegister\Db\ObjectEntity|null $object Parent object whose folder hosts the file.
+	 * @param string $fileName The file's name, '' when unknown.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/file-download-audit-names-the-file/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
 	 */
-	private function recordDownloadEvent(int $fileId, ?\OCA\OpenRegister\Db\ObjectEntity $object = null): void {
+	private function recordDownloadEvent(int $fileId, ?\OCA\OpenRegister\Db\ObjectEntity $object = null, string $fileName = ''): void {
 		if ($this->fileMapper !== null) {
 			try {
 				$this->fileMapper->incrementDownloadCount(fileId: $fileId);
@@ -571,7 +577,7 @@ class FilesController extends Controller {
 					object: $object,
 					fileId: $fileId,
 					action: 'file.downloaded',
-					data: ['fileId' => $fileId]
+					data: ['fileId' => $fileId, 'fileName' => $fileName]
 				);
 			} catch (\Throwable $e) {
 				// Same best-effort policy as above.
@@ -726,7 +732,7 @@ class FilesController extends Controller {
 			$response->addHeader('Content-Length', (string)$file->getSize());
 
 			// Record download (counter + audit). Best-effort.
-			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $object);
+			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $object, fileName: (string)$file->getName());
 
 			return $response;
 		} catch (DoesNotExistException $e) {
@@ -1579,7 +1585,7 @@ class FilesController extends Controller {
 			$parentObject = ($parentObject ?? $this->resolveParentObjectForFile(file: $file));
 
 			// Record download (counter + audit). Best-effort.
-			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $parentObject);
+			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $parentObject, fileName: (string)$file->getName());
 
 			// Stream the file content back to the client.
 			return $this->fileService->streamFile($file);

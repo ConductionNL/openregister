@@ -316,7 +316,8 @@ class ExampleSetPeople {
 	/**
 	 * Write the function, role, absence and status of an account the set created, at every install.
 	 *
-	 * An account the set adopted or found is someone else's, so its profile is left alone.
+	 * An account the set adopted is someone else's: it only gains the function and role it lacks, and a value it
+	 * holds stays. An account the set found but did not adopt is left alone.
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $person The cast person.
@@ -328,18 +329,41 @@ class ExampleSetPeople {
 	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
 	private function installProfile(array $plan, array $person, array $report, array $record): array {
-		$uid = (string) $person['uid'];
-		if ($this->profiles === null || ($record['users'][$uid] ?? null) !== 'created') {
+		$uid  = (string) $person['uid'];
+		$held = ($record['users'][$uid] ?? null);
+		if ($this->profiles === null || in_array($held, ['created', 'adopted'], true) === false) {
 			return $report;
 		}
 
-		$today = new DateTimeImmutable('today', new DateTimeZone((string) ($plan['timezone'] ?? 'UTC')));
-		foreach ($this->profiles->apply(uid: $uid, profile: $this->profiles->fromPerson(person: $person, today: $today)) as $reason) {
+		$today   = new DateTimeImmutable('today', new DateTimeZone((string) ($plan['timezone'] ?? 'UTC')));
+		$profile = $this->profiles->fromPerson(person: $person, today: $today);
+		$reasons = $this->writeProfile(uid: $uid, profile: $profile, adopted: $held === 'adopted');
+
+		foreach ($reasons as $reason) {
 			$report['dropped'][] = $reason;
 		}
 
 		return $report;
 	}//end installProfile()
+
+	/**
+	 * Write a created account's whole profile, or fill in what an adopted account lacks.
+	 *
+	 * @param string               $uid     The account.
+	 * @param array<string, mixed> $profile The profile, as ExampleSetProfiles::fromPerson() gives it.
+	 * @param bool                 $adopted Whether the set adopted the account rather than created it.
+	 *
+	 * @return array<int, string> Why a part was not written.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Created or adopted is the account's own fact in the record.
+	 */
+	private function writeProfile(string $uid, array $profile, bool $adopted): array {
+		if ($adopted === true) {
+			return $this->profiles->fillMissing(uid: $uid, profile: $profile);
+		}
+
+		return $this->profiles->apply(uid: $uid, profile: $profile);
+	}//end writeProfile()
 
 	/**
 	 * One service account: kept, adopted or created with a password nobody ever sees.
