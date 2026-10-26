@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -63,13 +64,18 @@ class HistoryEntryRedactor {
 	 * @return array<int, array> The entries without the withheld fields and values.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-an-objects-history-withholds-from-its-reader-what-the-object-withholds
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	public function redact(array $rows, Schema $schema, ObjectEntity $object): array {
 		$hidden = $this->hiddenProperties(schema: $schema, object: $object, rows: $rows);
+		// Explicit-reveal values read masked in the history, as on the object;
+		// their `@self` copies are withheld like a hidden property's.
+		$masked = array_values(array_diff(ExplicitReveal::explicitProperties(schema: $schema), $hidden));
 
 		$entries = [];
 		foreach ($rows as $row) {
-			$entries[] = $this->readerEntry(entry: $row, schema: $schema, hidden: $hidden);
+			$entries[] = $this->readerEntry(entry: $row, schema: $schema, hidden: $hidden, masked: $masked);
 		}
 
 		return $entries;
@@ -128,10 +134,11 @@ class HistoryEntryRedactor {
 	 * @param AuditTrail         $entry  The entry.
 	 * @param Schema             $schema The object's schema.
 	 * @param array<int, string> $hidden Withheld property names.
+	 * @param array<int, string> $masked Explicit-reveal property names, shown masked.
 	 *
 	 * @return array The entry, without the withheld fields and values.
 	 */
-	private function readerEntry(AuditTrail $entry, Schema $schema, array $hidden): array {
+	private function readerEntry(AuditTrail $entry, Schema $schema, array $hidden, array $masked = []): array {
 		$row = $entry->jsonSerialize();
 
 		foreach (ReadableAuditTrailLister::WITHHELD_FIELDS as $field) {
@@ -139,7 +146,7 @@ class HistoryEntryRedactor {
 		}
 
 		if (is_array($row['changed'] ?? null) === true) {
-			$row['changed'] = $this->filterChanged(changed: $row['changed'], schema: $schema, hidden: $hidden);
+			$row['changed'] = $this->filterChanged(changed: $row['changed'], schema: $schema, hidden: $hidden, masked: $masked);
 		}
 
 		return $row;
@@ -151,13 +158,18 @@ class HistoryEntryRedactor {
 	 * @param array              $changed The change set, keyed by property.
 	 * @param Schema             $schema  The object's schema.
 	 * @param array<int, string> $hidden  Withheld property names.
+	 * @param array<int, string> $masked  Explicit-reveal property names, whose `@self` copies are withheld too.
 	 *
 	 * @return array The change set the reader is given.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
-	private function filterChanged(array $changed, Schema $schema, array $hidden): array {
+	private function filterChanged(array $changed, Schema $schema, array $hidden, array $masked = []): array {
 		foreach ($hidden as $property) {
 			unset($changed[$property]);
 		}
+
+		$changed = ExplicitReveal::maskChanges(schema: $schema, changed: $changed);
 
 		$changed = $this->stripNestedWriteOnly(changed: $changed, schema: $schema);
 
@@ -174,7 +186,7 @@ class HistoryEntryRedactor {
 				$changed['@self'][$side] = $this->filterSelf(
 					self: $changed['@self'][$side],
 					schema: $schema,
-					hidden: $hidden
+					hidden: array_merge($hidden, $masked)
 				);
 			}
 		}

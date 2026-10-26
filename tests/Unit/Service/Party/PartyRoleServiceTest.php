@@ -239,6 +239,37 @@ class PartyRoleServiceTest extends TestCase {
 	}//end testImportNamesTheLinkerAndAddDoesNot()
 
 	/**
+	 * The trusted import (an occ example-set install, no user) finds the party
+	 * without RBAC; a request's addParty still reads it with the caller's rights.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
+	 */
+	public function testTheTrustedImportFindsAPartyTheCallerCouldNotRead(): void {
+		$this->schemaAccepts(kinds: [['key' => 'person', 'label' => 'Persoon']]);
+		$party = new ObjectEntity();
+		$party->setUuid('party-a');
+		$this->parties->method('find')->willReturn(null);
+		$this->parties->method('findUnscoped')->willReturn($party);
+		$this->parties->method('definitionFor')->willReturn(new PartyDefinition(kind: 'person'));
+		$this->writer->method('write')->willReturn($this->storedLink(partyUuid: 'party-a', role: 'aanvrager'));
+
+		$link = $this->service->importParty(
+			objectUuid: 'case-1',
+			registerId: 1,
+			schemaId: 7,
+			payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager'],
+			linkedBy: 'portaliq'
+		);
+		$this->assertSame(expected: 'party-a', actual: $link->getPartyUuid());
+
+		$this->expectException(exception: Exception::class);
+		$this->expectExceptionMessage(message: 'Party not found');
+		$this->service->addParty(objectUuid: 'case-1', registerId: 1, schemaId: 7, payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager']);
+	}//end testTheTrustedImportFindsAPartyTheCallerCouldNotRead()
+
+	/**
 	 * A party of a kind the schema does not accept is refused, and the
 	 * message names the kind.
 	 *

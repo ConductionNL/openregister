@@ -1,0 +1,10 @@
+## ADDED Requirements
+
+### Requirement: A fragment may put appointments on its objects
+
+A fragment MAY declare `appointments`. Each row SHALL name `object`, `owner`, `summary` and `start`, and MAY give `calendar`, `end`, `location`, `description` and `attendees` (`{name?, email, status?}`). The owner SHALL be an account the set creates or adopts. On install the set SHALL write the event, with its invitees and their participation, to the owner's calendar, and link it to the object. A second install SHALL keep it, and remove SHALL delete the event and its link.
+
+#### Scenario: an explanation at the desk
+- **GIVEN** a row on case 710d44a4: "Toelichting stukken aan de verzoeker", 14 okt 10:00-10:30, Stadskantoor balie 3, Sanne de Vries invited
+- **WHEN** the set is installed
+- **THEN** the case's Afspraken card lists it, and Sanne de Vries is invited

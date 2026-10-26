@@ -103,8 +103,8 @@ class ExampleSetPrerequisites {
 	}//end context()
 
 	/**
-	 * Import every required register that is not on the instance, or that this set imported and removed the data of,
-	 * and record the import.
+	 * Import every required register that is not on the instance, that this set imported and removed the data of, or
+	 * whose descriptor ships a newer version than the instance holds, and record the import.
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $record The record; gains the imports.
@@ -120,11 +120,14 @@ class ExampleSetPrerequisites {
 			$result['outcome'][$slug] = 'kept';
 			// A register this set imported whose import was removed again is on the instance without its data.
 			$dataRemoved = (array_key_exists($slug, $record['registers']) === true && $record['registers'][$slug] === []);
-			if ($this->registers->exists(slug: $slug) === true && $dataRemoved === false) {
+			$mock        = (($required['mock'] ?? false) === true);
+			if ($this->registers->exists(slug: $slug) === true && $dataRemoved === false
+				&& $this->registers->isBehind(slug: $slug, mock: $mock) === false
+			) {
 				continue;
 			}
 
-			$import = match (($required['mock'] ?? false) === true) {
+			$import = match ($mock) {
 				true  => $this->registers->importMock(slug: $slug),
 				false => $this->registers->import(slug: $slug),
 			};

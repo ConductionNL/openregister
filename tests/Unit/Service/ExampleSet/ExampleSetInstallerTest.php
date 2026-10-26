@@ -174,6 +174,40 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertSame(['declared' => 2, 'created' => 0, 'kept' => 2, 'arrived' => 2], $report['types']['cases case']);
 	}
 
+	/**
+	 * `--refresh` rewrites every object the set declares to today's values, keeps a field the declaration does not
+	 * name, and leaves an object the set did not write alone.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	public function testARefreshRewritesTheDeclaredObjectsToTodaysValues(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$case   = $this->store->find(register: 'cases', schema: 'case', filters: ['start' => '2026-10-11'])[0];
+		$extra  = ($case + ['remark' => 'added on the instance']);
+		$this->store->update(register: 'cases', schema: 'case', id: $case['id'], data: $extra);
+		$type    = $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0];
+		$updates = $this->store->updates;
+
+		$later  = $this->today()->modify('+5 days');
+		$plain  = $this->installer->install(plan: $plan, today: $later);
+		$this->assertSame('2026-10-11', $this->store->get(register: 'cases', schema: 'case', id: $case['id'])['start'], 'a plain install keeps the stored value');
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $later);
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertTrue($plain['ok']);
+		$refreshed = $this->store->get(register: 'cases', schema: 'case', id: $case['id']);
+		$this->assertSame('2026-10-16', $refreshed['start'], 'the date is resolved against the new day');
+		$this->assertSame('added on the instance', $refreshed['remark'], 'a field the declaration does not name stays');
+		$this->assertSame(2, $report['types']['cases case']['refreshed']);
+		$this->assertSame($type, $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0], 'an object the set did not write is untouched');
+		$this->assertGreaterThan($updates, $this->store->updates);
+	}//end testARefreshRewritesTheDeclaredObjectsToTodaysValues()
+
 	public function testAForeignAccountRefusesTheInstallBeforeAnyWrite(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Somebody', 'email' => '', 'password' => 'theirs'];
 
@@ -266,6 +300,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 				'parties'          => 0,
 				'notes'            => 0,
 				'readStates'       => 0,
+				'flows'            => 0,
 				'memberships'      => 2,
 				'groups'           => 1,
 				'accounts'         => 2,

@@ -126,7 +126,7 @@ class ExampleSetInstance {
 	/**
 	 * Create an organisation with this slug unless one exists.
 	 *
-	 * @param array{name: string, slug: string, description: string} $declared The declared organisation.
+	 * @param array<string, mixed> $declared The declared organisation; a new one gets its quota and members.
 	 *
 	 * @return array{uuid: string, created: bool, error: string}
 	 *
@@ -148,6 +148,26 @@ class ExampleSetInstance {
 			$organisation->setName($declared['name']);
 			$organisation->setSlug($declared['slug']);
 			$organisation->setDescription($declared['description']);
+			// A partner (ketenpartner) is an organisation of type partner; empty keeps the default.
+			if (($declared['type'] ?? '') !== '') {
+				$organisation->setType($declared['type']);
+			}
+
+			if (($declared['contactEmail'] ?? '') !== '') {
+				$organisation->setContactEmail($declared['contactEmail']);
+			}
+
+			$quota = ($declared['quota'] ?? []);
+			$organisation->setStorageQuota($quota['storage'] ?? null);
+			$organisation->setRequestQuota($quota['requests'] ?? null);
+			$organisation->setBandwidthQuota($quota['bandwidth'] ?? null);
+			$organisation->setUserQuota($quota['users'] ?? null);
+			$organisation->setObjectQuota($quota['objects'] ?? null);
+			$organisation->setObjectQuotaSchema($quota['objectsSchema'] ?? null);
+			foreach (($declared['members'] ?? []) as $member) {
+				$organisation->addUser($member);
+			}
+
 			$saved = $this->mapper()->insert(entity: $organisation);
 		} catch (Throwable $e) {
 			return ['uuid' => '', 'created' => false, 'error' => $e->getMessage()];

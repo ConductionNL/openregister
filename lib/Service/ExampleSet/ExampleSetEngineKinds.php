@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  * Tasks and saved views of an example set, together.
  *
  * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) It holds one writer per fragment part; each is a separate kind, so the count grows with the parts.
  */
 class ExampleSetEngineKinds {
 	/**
@@ -44,8 +46,16 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetParties|null $parties Writes the party links a fragment declares; null refuses them.
 	 * @param ExampleSetNotes|null $notes Writes the notes a fragment leaves on its objects; null refuses them.
 	 * @param ExampleSetReadStates|null $readStates Writes the objects a fragment's accounts opened; null refuses them.
+	 * @param ExampleSetFlows|null $flows Writes the flows a fragment ships; null refuses them.
+	 * @param ExampleSetExportRuns|null $exportRuns Writes the exports a fragment gives its accounts; null refuses them.
+	 * @param ExampleSetArchival|null $archival Writes the destruction-list keys of the archival setting; null refuses them.
+	 * @param ExampleSetDeckCards|null $deckCards Writes the Deck cards a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetAppointments|null $appointments Writes the appointments a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetCasePlans|null $casePlans Writes the case plans a fragment puts on its objects; null refuses them.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One optional writer per fragment part, so a part an OpenRegister lacks is refused, not crashed on.
 	 */
 	public function __construct(
 		private readonly ?ExampleSetTasks $tasks=null,
@@ -54,6 +64,12 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetParties $parties=null,
 		private readonly ?ExampleSetNotes $notes=null,
 		private readonly ?ExampleSetReadStates $readStates=null,
+		private readonly ?ExampleSetFlows $flows=null,
+		private readonly ?ExampleSetExportRuns $exportRuns=null,
+		private readonly ?ExampleSetArchival $archival=null,
+		private readonly ?ExampleSetDeckCards $deckCards=null,
+		private readonly ?ExampleSetAppointments $appointments=null,
+		private readonly ?ExampleSetCasePlans $casePlans=null,
 	) {
 	}//end __construct()
 
@@ -71,6 +87,7 @@ class ExampleSetEngineKinds {
 	 */
 	public function check(array $fragment, array $context, array $users, ExampleSetValues $values): array {
 		$refusals = [];
+		$context['tasks'] = $values->tasksOf(fragment: $fragment, record: null);
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
 			if ($rows === null) {
 				foreach (($fragment[$part] ?? []) as $entry) {
@@ -101,14 +118,42 @@ class ExampleSetEngineKinds {
 	 */
 	public function install(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$changed = false;
-		foreach ($this->kinds() as [$rows]) {
+		foreach ($this->kinds() as $part => [$rows]) {
+			// The flows are written earlier, by installFlows(), so a change may quote one.
+			if ($part === 'flows') {
+				continue;
+			}
+
 			if ($rows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true) {
 				$changed = true;
+			}
+
+			// The parts after the tasks may quote one (`{{task:key.uuid}}`).
+			if ($part === 'tasks') {
+				$context['tasks'] = $values->tasksOf(fragment: $fragment, record: $record);
 			}
 		}
 
 		return $changed;
 	}//end install()
+
+	/**
+	 * Write the flows of one fragment that the record does not hold, before its changes, so a change may quote
+	 * one (`{{flow:key.uuid}}`).
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  The context placeholders draw on.
+	 * @param array<string, mixed> $report   The report; gains `flows`.
+	 * @param array<string, mixed> $record   The record; gains the flows written.
+	 * @param ExampleSetValues     $values   Fills placeholders.
+	 *
+	 * @return bool Whether the record changed and is to be written.
+	 *
+	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 */
+	public function installFlows(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
+		return $this->flows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true;
+	}//end installFlows()
 
 	/**
 	 * Read back the tasks and views the record holds.
@@ -177,6 +222,12 @@ class ExampleSetEngineKinds {
 			'parties'    => [$this->parties, 'party'],
 			'notes'      => [$this->notes, 'note'],
 			'readStates' => [$this->readStates, 'read state'],
+			'flows'      => [$this->flows, 'flow'],
+			'exportRuns' => [$this->exportRuns, 'export'],
+			'archival'   => [$this->archival, 'archival setting'],
+			'deckCards'  => [$this->deckCards, 'deck card'],
+			'appointments' => [$this->appointments, 'appointment'],
+			'casePlans'  => [$this->casePlans, 'case plan'],
 		];
 	}//end kinds()
 }//end class
