@@ -47,6 +47,8 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
@@ -177,6 +179,12 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
 	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
 
+	/** @var array{collectives: array<int, array<string, mixed>>, pages: array<int, array<string, mixed>>} What the fake Collectives holds. */
+	protected array $collectives = ['collectives' => [], 'pages' => []];
+
+	/** @var bool Whether the fake Collectives is installed. */
+	protected bool $collectivesInstalled = true;
+
 	/** @var array<int, array{principal: string, uri: string}> The calendars, by id. */
 	protected array $calendars = [];
 
@@ -247,6 +255,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowService::class        => $this->flowService(),
 			FlowRunMapper::class      => $this->flowRunMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
+			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
@@ -322,7 +331,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				exportRuns: new ExampleSetExportRuns(container: $container),
 				deckCards: new ExampleSetDeckCards(container: $container),
 				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container)
+				casePlans: new ExampleSetCasePlans(container: $container),
+				collectivesPages: new ExampleSetCollectivesPages(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -347,7 +357,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				exportRuns: new ExampleSetExportRuns(container: $container),
 				deckCards: new ExampleSetDeckCards(container: $container),
 				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container)
+				casePlans: new ExampleSetCasePlans(container: $container),
+				collectivesPages: new ExampleSetCollectivesPages(container: $container)
 			)
 		);
 	}
@@ -542,6 +553,48 @@ abstract class ExampleSetTestCase extends TestCase {
 
 		return $service;
 	}
+
+	/**
+	 * A Collectives store over $collectives: a collective by name, a page by title in it.
+	 *
+	 * @return ExampleSetCollectivesStore
+	 */
+	private function collectivesStore(): ExampleSetCollectivesStore {
+		$store = $this->createMock(ExampleSetCollectivesStore::class);
+		$store->method('available')->willReturnCallback(fn (): bool => $this->collectivesInstalled);
+		$store->method('collective')->willReturnCallback(function (string $owner, string $name, array $groups): array {
+			foreach ($this->collectives['collectives'] as $id => $row) {
+				if ($row['name'] === $name) {
+					return ['id' => $id, 'created' => false];
+				}
+			}
+
+			$id = (count($this->collectives['collectives']) + 1);
+			$this->collectives['collectives'][$id] = ['name' => $name, 'owner' => $owner, 'groups' => $groups];
+			return ['id' => $id, 'created' => true];
+		});
+		$store->method('page')->willReturnCallback(function (int $collective, string $owner, string $title, string $content): array {
+			foreach ($this->collectives['pages'] as $id => $row) {
+				if ($row['collective'] === $collective && $row['title'] === $title) {
+					return ['id' => $id, 'created' => false];
+				}
+			}
+
+			$id = (100 + count($this->collectives['pages']) + 1);
+			$this->collectives['pages'][$id] = ['collective' => $collective, 'title' => $title, 'content' => $content, 'owner' => $owner];
+			return ['id' => $id, 'created' => true];
+		});
+		$store->method('pageExists')->willReturnCallback(fn (int $collective, int $page, string $owner): bool => isset($this->collectives['pages'][$page]));
+		$store->method('deletePage')->willReturnCallback(function (int $collective, int $page, string $owner): void {
+			unset($this->collectives['pages'][$page]);
+		});
+		$store->method('deleteCollective')->willReturnCallback(function (int $collective, string $owner): void {
+			unset($this->collectives['collectives'][$collective]);
+			$this->collectives['pages'] = array_filter($this->collectives['pages'], static fn (array $page): bool => $page['collective'] !== $collective);
+		});
+
+		return $store;
+	}//end collectivesStore()
 
 	/**
 	 * A Deck store over $deck: rows found by title, written with the next id, deleted by id.
