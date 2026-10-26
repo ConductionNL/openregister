@@ -75,6 +75,18 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	}//end part()
 
 	/**
+	 * A refresh writes a held link again where it is: the link store finds it by object, party and role, and the
+	 * name and e-mail address it caches of the party are read afresh.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-parties-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
+	 */
+	public function updatesInPlace(): bool {
+		return true;
+	}//end updatesInPlace()
+
+	/**
 	 * The word for one party link, in messages.
 	 *
 	 * @return string

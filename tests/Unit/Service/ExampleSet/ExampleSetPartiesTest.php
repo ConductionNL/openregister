@@ -90,6 +90,29 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 	}//end testARepresentativeIsLinkedOnceAndUnlinkedOnRemove()
 
 	/**
+	 * A refresh writes a held link again where it is, so what the link caches of the party (its name and e-mail
+	 * address) follows the party, and a changed note arrives.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-parties-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
+	 */
+	public function testARefreshWritesTheLinkAgainWhereItIs(): void {
+		$row = ['objectUuid' => '{{object:case-1.id}}', 'partyUuid' => 'party-vanwijk', 'role' => 'gemachtigde', 'note' => 'Awb 2:1'];
+		$this->caseWithParties(parties: [['key' => 'gemachtigde', 'data' => $row]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->caseWithParties(parties: [['key' => 'gemachtigde', 'data' => ['note' => 'Machtiging tot 31 december'] + $row]]);
+		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame('refreshed', $report['parties']['alpha/gemachtigde']);
+		$caseId = $this->store->ids(register: 'cases', schema: 'case')[0];
+		$this->assertCount(1, $this->partyLinks);
+		$this->assertSame('Machtiging tot 31 december', $this->partyLinks[$caseId.' party-vanwijk gemachtigde']['payload']['note']);
+	}//end testARefreshWritesTheLinkAgainWhereItIs()
+
+	/**
 	 * A link the party model refuses is not written and the install says why.
 	 *
 	 * @return void
