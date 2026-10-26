@@ -127,6 +127,31 @@ class ExampleSetUserPreferences {
 	}//end apply()
 
 	/**
+	 * Write a held preference again when its declaration now resolves to something else than the set last wrote (a
+	 * view it quotes was written again under a new uuid); what it first replaced stays recorded.
+	 *
+	 * @param array<string, mixed> $entry   The record entry from apply().
+	 * @param string               $value   The value the declaration resolves to now.
+	 * @param bool                 $refresh Whether this run refreshes and the value resolved.
+	 *
+	 * @return array{error: string, entry: array<string, mixed>, wrote: bool}
+	 *
+	 * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 */
+	public function follow(array $entry, string $value, bool $refresh): array {
+		if ($refresh === false || $value === (string) $entry['new']) {
+			return ['error' => '', 'entry' => $entry, 'wrote' => false];
+		}
+
+		$made = $this->apply(uid: (string) $entry['user'], app: (string) $entry['app'], key: (string) $entry['key'], value: $value);
+		if ($made['error'] !== '') {
+			return ['error' => $made['error'], 'entry' => $entry, 'wrote' => false];
+		}
+
+		return ['error' => '', 'entry' => array_merge($entry, ['new' => $value]), 'wrote' => true];
+	}//end follow()
+
+	/**
 	 * Whether a written preference is no longer on the instance as written.
 	 *
 	 * @param array<string, mixed> $entry A record entry from apply().

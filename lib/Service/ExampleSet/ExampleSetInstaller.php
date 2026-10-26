@@ -446,7 +446,7 @@ class ExampleSetInstaller {
 			object: $object,
 			row: $row,
 			values: array_intersect_key($resolved['data'], array_flip($fields)),
-			written: $this->writtenReferences(record: $record, name: $name, key: $fragment['app'].'/'.$object['key'])
+			written: $this->changes->writtenReferences(record: $record, name: $name, key: $fragment['app'].'/'.$object['key'])
 		);
 		foreach ($made['left'] as $field) {
 			$report['left'][] = $fragment['file'].': object "'.$object['key'].'": field "'.$field.'" was changed after the install and is left as it is';
@@ -490,29 +490,6 @@ class ExampleSetInstaller {
 	}//end refreshReferences()
 
 	/**
-	 * What the install last wrote into the reference fields of a kept object.
-	 *
-	 * The value a refresh wrote when there was one (the newest `new` of the
-	 * `#references` change), else the value the object was created with.
-	 *
-	 * @param array<string, mixed> $record The record.
-	 * @param string               $name   The record key of the refresh change, `<app>/<key>#references`.
-	 * @param string               $key    The record key of the object, `<app>/<key>`.
-	 *
-	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
-	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
-	 */
-	private function writtenReferences(array $record, string $name, string $key): array {
-		$written = (array) ($record['objects'][$key]['refs'] ?? []);
-		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $set) {
-			$written[(string) $set['path']] = $set['new'];
-		}
-
-		return $written;
-	}//end writtenReferences()
-
-	/**
 	 * The top-level fields of an object whose declared value references another object.
 	 *
 	 * @param array<string, mixed> $object The declared object.
@@ -547,11 +524,14 @@ class ExampleSetInstaller {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	private function installChanges(array $plan, array $fragment, array $context, array $report, array &$record): array {
+		$refresh = (($plan['refresh'] ?? false) === true);
 		foreach ($fragment['changes'] as $change) {
 			$change = $this->withObjectJsonFields(change: $change, fragment: $fragment);
 			$name   = $fragment['app'].'/'.$change['key'];
 			$report['changes'][$name] = 'kept';
 			if (isset($record['changes'][$name]) === true) {
+				$made   = $this->changes->follow(change: $change, entry: $record['changes'][$name], context: $context, refresh: $refresh);
+				$report = $this->record->hold(set: (string) $plan['set'], part: 'changes', name: $name, made: $made, report: $report, record: $record);
 				continue;
 			}
 
@@ -959,6 +939,7 @@ class ExampleSetInstaller {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	private function installUserPreferences(array $plan, array $fragment, array $context, array $report, array &$record): array {
+		$refresh = (($plan['refresh'] ?? false) === true);
 		foreach (($fragment['userPreferences'] ?? []) as $entry) {
 			$gaps  = [];
 			$uid   = (string) $this->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
@@ -966,6 +947,8 @@ class ExampleSetInstaller {
 			$name  = $fragment['app'].'/'.$uid.'/'.$entry['key'];
 			$report['userPreferences'][$name] = 'kept';
 			if (isset($record['userPreferences'][$name]) === true) {
+				$made   = $this->userPreferences->follow(entry: $record['userPreferences'][$name], value: $value, refresh: $refresh && $gaps === []);
+				$report = $this->record->hold(set: (string) $plan['set'], part: 'userPreferences', name: $name, made: $made, report: $report, record: $record);
 				continue;
 			}
 

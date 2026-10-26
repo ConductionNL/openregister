@@ -192,6 +192,134 @@ class ExampleSetChanges {
 	}//end apply()
 
 	/**
+	 * What the install last wrote into the reference fields of a kept object.
+	 *
+	 * The value a refresh wrote when there was one (the newest `new` of the
+	 * `#references` change), else the value the object was created with.
+	 *
+	 * @param array<string, mixed> $record The record.
+	 * @param string               $name   The record key of the refresh change, `<app>/<key>#references`.
+	 * @param string               $key    The record key of the object, `<app>/<key>`.
+	 *
+	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	public function writtenReferences(array $record, string $name, string $key): array {
+		$written = (array) ($record['objects'][$key]['refs'] ?? []);
+		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $set) {
+			$written[(string) $set['path']] = $set['new'];
+		}
+
+		return $written;
+	}//end writtenReferences()
+
+
+	/**
+	 * Keep a held change in step with its declaration.
+	 *
+	 * The entry lets go of every field the declaration no longer sets (a job may own it now), so the proof and remove
+	 * leave it alone. On a refresh a declared field is written again when it holds what the change replaced (an
+	 * import put it back) or what the change wrote while the declaration now resolves to something else; a field
+	 * with a third value is somebody's edit and is left.
+	 *
+	 * @param array<string, mixed> $change  The declared change.
+	 * @param array<string, mixed> $entry   The record entry from apply().
+	 * @param array<string, mixed> $context The context placeholders draw on.
+	 * @param bool                 $refresh Whether this run refreshes.
+	 *
+	 * @return array{error: string, entry: array<string, mixed>, wrote: bool} The entry to hold, whether a field was
+	 *                                                                         written, or why the write failed.
+	 *
+	 * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 */
+	public function follow(array $change, array $entry, array $context, bool $refresh): array {
+		$declared        = array_map('strval', array_keys((array) ($change['set'] ?? [])));
+		$appended        = array_map('strval', array_keys((array) ($change['append'] ?? [])));
+		$entry['set']    = $this->onPaths(rows: (array) $entry['set'], paths: $declared);
+		$entry['append'] = $this->onPaths(rows: (array) $entry['append'], paths: $appended);
+		if ($refresh === false) {
+			return ['error' => '', 'entry' => $entry, 'wrote' => false];
+		}
+
+		$resolved = $this->resolve(change: $change, context: $context);
+		if ($resolved['refusal'] !== '') {
+			return ['error' => $resolved['refusal'], 'entry' => $entry, 'wrote' => false];
+		}
+
+		$again = $this->writtenAgain(entry: $entry, resolved: $resolved);
+		if ($again === []) {
+			return ['error' => '', 'entry' => $entry, 'wrote' => false];
+		}
+
+		$merged = $resolved['row'];
+		foreach ($again as $path => $value) {
+			$merged = $this->paths->withPath(row: $merged, path: $path, value: $value);
+		}
+
+		$fields = array_merge($this->jsonFields(change: $change), $this->structuredText(change: $change, row: $resolved['row']));
+		$fields = array_values(array_unique($fields));
+		$error  = $this->store->update(
+			register: (string) $change['register'],
+			schema: (string) $change['schema'],
+			id: (string) $entry['id'],
+			data: $this->paths->withJsonText(row: $merged, fields: $fields)
+		);
+		if ($error !== '') {
+			return ['error' => $error, 'entry' => $entry, 'wrote' => false];
+		}
+
+		foreach ($entry['set'] as $index => $set) {
+			if (array_key_exists((string) $set['path'], $again) === true) {
+				$entry['set'][$index]['new'] = $again[(string) $set['path']];
+			}
+		}
+
+		return ['error' => '', 'entry' => $entry, 'wrote' => true];
+	}//end follow()
+
+	/**
+	 * The record rows whose path is one of the given paths.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  Record rows with a `path`.
+	 * @param array<int, string>               $paths The paths to keep.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function onPaths(array $rows, array $paths): array {
+		return array_values(array_filter($rows, static fn (array $row): bool => in_array((string) $row['path'], $paths, true)));
+	}//end onPaths()
+
+	/**
+	 * The held fields a refresh writes again, by path: back at what the change replaced, or still what it wrote while
+	 * the declaration resolves to a new value.
+	 *
+	 * @param array<string, mixed> $entry    The record entry, held fields only.
+	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function writtenAgain(array $entry, array $resolved): array {
+		$again = [];
+		foreach ($entry['set'] as $set) {
+			$path = (string) $set['path'];
+			$want = $resolved['set'][$path];
+			$held = $this->paths->atPath(row: $resolved['row'], path: $path);
+			if ($held['found'] === true && $held['value'] === $want) {
+				continue;
+			}
+
+			$undone = (($held['found'] === (bool) $set['had']) && $held['value'] === $set['old']);
+			$moved  = ($held['found'] === true && $held['value'] === $set['new']);
+			if ($undone === true || $moved === true) {
+				$again[$path] = $want;
+			}
+		}
+
+		return $again;
+	}//end writtenAgain()
+
+	/**
 	 * Bring top-level fields of an object the set wrote earlier to the values its declaration resolves to now.
 	 *
 	 * Made like a change, so only a field that differs is written, its old

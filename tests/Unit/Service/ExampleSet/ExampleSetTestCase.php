@@ -204,6 +204,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
 
+	/** @var int The views created so far, so a view written again gets a uuid of its own. */
+	private int $viewsCreated = 0;
+
 	/** @var string The instance's overwrite.cli.url. */
 	protected string $baseUrl = 'https://cloud.example.test/';
 
@@ -454,7 +457,7 @@ abstract class ExampleSetTestCase extends TestCase {
 		$service->method('create')->willReturnCallback(
 			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
 				$view = new View();
-				$view->setUuid('view-'.(count($this->savedViews) + 1));
+				$view->setUuid('view-'.(++$this->viewsCreated));
 				$view->setName($name);
 				$view->setOwner($owner);
 				$view->setIsPublic($isPublic);
