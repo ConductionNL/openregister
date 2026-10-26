@@ -242,6 +242,38 @@ class ExampleSetRecord {
 	}//end write()
 
 	/**
+	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
+	 *
+	 * @param string                                                         $set    The set id.
+	 * @param string                                                         $part   `changes` or `userPreferences`.
+	 * @param string                                                         $name   The record key.
+	 * @param array{error: string, entry: array<string, mixed>, wrote: bool} $made   What follow() made.
+	 * @param array<string, mixed>                                           $report The report so far.
+	 * @param array<string, mixed>                                           $record The record; written when the entry changed.
+	 *
+	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 */
+	public function hold(string $set, string $part, string $name, array $made, array $report, array &$record): array {
+		if ($made['error'] !== '') {
+			$report['dropped'][]  = $part.' '.$name.': not refreshed: '.$made['error'];
+			$report[$part][$name] = 'failed';
+		}
+
+		if ($made['entry'] !== $record[$part][$name]) {
+			$record[$part][$name] = $made['entry'];
+			$this->write(set: $set, record: $record);
+		}
+
+		if ($made['wrote'] === true) {
+			$report[$part][$name] = 'refreshed';
+		}
+
+		return $report;
+	}//end hold()
+
+	/**
 	 * The stored record as JSON text, '' when there is none.
 	 *
 	 * A record is kept as a lazy app-config value: Nextcloud loads every
