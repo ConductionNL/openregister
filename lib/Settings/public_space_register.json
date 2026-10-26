@@ -99,7 +99,8 @@
             "description": "Whether the tree is on the municipal list of monumental trees."
           },
           "location": {
-            "type": "geo",
+            "type": "object",
+            "format": "geo:point",
             "title": "Location",
             "description": "Where the object is, as a GeoJSON point in WGS84."
           }
@@ -164,7 +165,8 @@
             "description": "Height of the mast in metres."
           },
           "location": {
-            "type": "geo",
+            "type": "object",
+            "format": "geo:point",
             "title": "Location",
             "description": "Where the object is, as a GeoJSON point in WGS84."
           }
@@ -250,7 +252,8 @@
             "format": "date"
           },
           "location": {
-            "type": "geo",
+            "type": "object",
+            "format": "geo:point",
             "title": "Location",
             "description": "Where the object is, as a GeoJSON point in WGS84."
           }
@@ -369,7 +372,8 @@
             "description": "The paving, such as asphalt."
           },
           "location": {
-            "type": "geo",
+            "type": "object",
+            "format": "geo:point",
             "title": "Location",
             "description": "Where the object is, as a GeoJSON point in WGS84."
           }

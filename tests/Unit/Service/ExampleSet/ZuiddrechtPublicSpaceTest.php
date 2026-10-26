@@ -25,7 +25,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
+use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCP\IAppConfig;
+use OCP\IURLGenerator;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Reads the shipped descriptor and cast file from disk.
@@ -72,7 +81,7 @@ class ZuiddrechtPublicSpaceTest extends TestCase {
 
 		$shape = [];
 		foreach ($schemas as $slug => $schema) {
-			$geo = array_filter($schema['properties'], static fn (array $property): bool => $property['type'] === 'geo');
+			$geo = array_filter($schema['properties'], static fn (array $property): bool => ($property['format'] ?? '') === 'geo:point');
 			$shape[$slug] = [$schema['title'], count($schema['properties']), $geo !== []];
 		}
 
@@ -119,6 +128,61 @@ class ZuiddrechtPublicSpaceTest extends TestCase {
 		$identifications = array_map(static fn (array $object): string => $object['data']['identification'], $objects);
 		$this->assertSame(expected: $identifications, actual: array_values(array_unique($identifications)));
 	}//end testEveryObjectFitsItsSchema()
+
+	/**
+	 * Every object passes OpenRegister's own validation against its schema:
+	 * the JSON Schema validator (which refuses a type it does not know, such
+	 * as `geo`) and the GeoJSON check of each `geo:point` property.
+	 *
+	 * @return void
+	 */
+	public function testEveryObjectPassesTheValidator(): void {
+		$urls = $this->createMock(originalClassName: IURLGenerator::class);
+		$urls->method('getBaseUrl')->willReturn('http://localhost:8080');
+		$validator = new ValidateObject(
+			config: $this->createMock(originalClassName: IAppConfig::class),
+			objectMapper: $this->createMock(originalClassName: MagicMapper::class),
+			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+			urlGenerator: $urls,
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			userManager: $this->createMock(originalClassName: IUserManager::class)
+		);
+
+		$schemas = self::read(path: self::DESCRIPTOR_FILE)['components']['schemas'];
+		$checked = 0;
+		foreach (self::read(path: self::CAST_FILE)['objects'] as $object) {
+			if ($object['register'] !== 'public-space') {
+				continue;
+			}
+
+			$declared = $schemas[$object['schema']];
+			$schema   = new Schema();
+			$schema->setSlug(slug: $declared['slug']);
+			$schema->setTitle($declared['title']);
+			$schema->setProperties($declared['properties']);
+			$schema->setRequired($declared['required']);
+
+			$data = $object['data'];
+			if (isset($data['lastInspection']) === true) {
+				$data['lastInspection'] = '2026-09-16';
+			}
+
+			$json   = json_decode(json: (string) json_encode(value: $declared), associative: false);
+			$result = $validator->validateObject(object: $data, schema: $schema, schemaObject: $json);
+			$this->assertTrue(
+				condition: $result->isValid(),
+				message: $object['key'].': '.$validator->generateErrorMessage(result: $result)
+			);
+			$this->assertSame(
+				expected: [],
+				actual: (new GeoJsonGeometryValidator())->validateObject(object: $data, schema: $schema),
+				message: $object['key']
+			);
+			$checked++;
+		}
+
+		$this->assertSame(expected: 13, actual: $checked);
+	}//end testEveryObjectPassesTheValidator()
 
 	/**
 	 * The three objects the Lindelaan Woo case links: the cycle path in
