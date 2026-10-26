@@ -48,6 +48,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetExportRuns|null $exportRuns Writes the exports a fragment gives its accounts; null refuses them.
 	 * @param ExampleSetArchival|null $archival Writes the destruction-list keys of the archival setting; null refuses them.
 	 * @param ExampleSetDeckCards|null $deckCards Writes the Deck cards a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetAppointments|null $appointments Writes the appointments a fragment puts on its objects; null refuses them.
 	 *
 	 * @return void
 	 *
@@ -64,6 +65,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetExportRuns $exportRuns=null,
 		private readonly ?ExampleSetArchival $archival=null,
 		private readonly ?ExampleSetDeckCards $deckCards=null,
+		private readonly ?ExampleSetAppointments $appointments=null,
 	) {
 	}//end __construct()
 
@@ -220,6 +222,7 @@ class ExampleSetEngineKinds {
 			'exportRuns' => [$this->exportRuns, 'export'],
 			'archival'   => [$this->archival, 'archival setting'],
 			'deckCards'  => [$this->deckCards, 'deck card'],
+			'appointments' => [$this->appointments, 'appointment'],
 		];
 	}//end kinds()
 }//end class

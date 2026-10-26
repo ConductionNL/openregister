@@ -38,6 +38,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments;
+use OCA\OpenRegister\Db\CalendarLink;
+use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
@@ -169,6 +173,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
 	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
 
+	/** @var array<int, array{principal: string, uri: string}> The calendars, by id. */
+	protected array $calendars = [];
+
+	/** @var array<string, string> The calendar objects, by `<calendar id> <uri>`: their iCalendar text. */
+	protected array $calendarObjects = [];
+
+	/** @var array<int, CalendarLink> The calendar links, by id. */
+	protected array $calendarLinks = [];
+
 	/** @var array<int, DeckLink> The Deck links, by id. */
 	protected array $deckLinks = [];
 
@@ -222,6 +235,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowRunMapper::class      => $this->flowRunMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
+			CalDavBackend::class      => $this->caldav(),
+			CalendarLinkMapper::class => $this->calendarLinkMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationService::class => $this->organisationService(),
 		});
@@ -290,7 +305,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				flows: new ExampleSetFlows(container: $container),
 				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
 				exportRuns: new ExampleSetExportRuns(container: $container),
-				deckCards: new ExampleSetDeckCards(container: $container)
+				deckCards: new ExampleSetDeckCards(container: $container),
+				appointments: new ExampleSetAppointments(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -313,7 +329,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				flows: new ExampleSetFlows(container: $container),
 				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
 				exportRuns: new ExampleSetExportRuns(container: $container),
-				deckCards: new ExampleSetDeckCards(container: $container)
+				deckCards: new ExampleSetDeckCards(container: $container),
+				appointments: new ExampleSetAppointments(container: $container)
 			)
 		);
 	}
@@ -572,6 +589,66 @@ abstract class ExampleSetTestCase extends TestCase {
 		});
 
 		return $store;
+	}
+
+	/**
+	 * A CalDAV backend over $calendars and $calendarObjects.
+	 *
+	 * @return CalDavBackend
+	 */
+	private function caldav(): CalDavBackend {
+		$backend = $this->createMock(CalDavBackend::class);
+		$backend->method('getCalendarsForUser')->willReturnCallback(function (string $principal): array {
+			$rows = [];
+			foreach ($this->calendars as $id => $calendar) {
+				if ($calendar['principal'] === $principal) {
+					$rows[] = ['id' => $id, 'uri' => $calendar['uri']];
+				}
+			}
+
+			return $rows;
+		});
+		$backend->method('createCalendar')->willReturnCallback(function (string $principal, string $uri, array $properties): int {
+			$id                   = (count($this->calendars) + 1);
+			$this->calendars[$id] = ['principal' => $principal, 'uri' => $uri];
+			return $id;
+		});
+		$backend->method('createCalendarObject')->willReturnCallback(function (int $calendarId, string $uri, string $data): string {
+			$this->calendarObjects[$calendarId.' '.$uri] = $data;
+			return 'etag';
+		});
+		$backend->method('getCalendarObject')->willReturnCallback(
+			fn (int $calendarId, string $uri): ?array => (isset($this->calendarObjects[$calendarId.' '.$uri]) === true ? ['uri' => $uri] : null)
+		);
+		$backend->method('deleteCalendarObject')->willReturnCallback(function (int $calendarId, string $uri): void {
+			unset($this->calendarObjects[$calendarId.' '.$uri]);
+		});
+
+		return $backend;
+	}
+
+	/**
+	 * A calendar link mapper over $calendarLinks.
+	 *
+	 * @return CalendarLinkMapper
+	 */
+	private function calendarLinkMapper(): CalendarLinkMapper {
+		$mapper = $this->createMock(CalendarLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (CalendarLink $link): CalendarLink {
+			$link->setId(count($this->calendarLinks) + 1);
+			$this->calendarLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('deleteByObjectAndEvent')->willReturnCallback(function (string $objectUuid, string $eventUid): int {
+			$before              = count($this->calendarLinks);
+			$this->calendarLinks = array_filter(
+				$this->calendarLinks,
+				static fn (CalendarLink $link): bool => !($link->getObjectUuid() === $objectUuid && $link->getEventUid() === $eventUid)
+			);
+			return $before - count($this->calendarLinks);
+		});
+
+		return $mapper;
 	}
 
 	/**
