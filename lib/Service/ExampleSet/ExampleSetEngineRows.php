@@ -133,6 +133,9 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, or why the update failed.
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $entry is the contract for the kinds that update
+	 *                                                in place; this default writes the row afresh.
+	 *
 	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
 	public function update(array $entry, string $app, string $key, array $data): array {
