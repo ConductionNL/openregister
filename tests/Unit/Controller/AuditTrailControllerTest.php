@@ -136,6 +136,20 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertEquals(404, $result->getStatus());
 	}
 
+	public function testObjectsReturns409ForAnAmbiguousIdentifier(): void {
+		// #4037: a slug two objects of the register and schema hold answers 409 like the
+		// object routes, and names neither object.
+		$this->request->method('getParams')->willReturn([]);
+		$this->logService->method('getLogs')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two objects'));
+
+		$result = $this->controller->objects('28', '68', 'dubbel');
+
+		$this->assertEquals(409, $result->getStatus());
+		$this->assertEquals('ambiguous-identifier', $result->getData()['error']);
+		$this->assertEquals('Identifier "dubbel" matches more than one object in this register and schema', $result->getData()['message']);
+	}
+
 	public function testExportSuccess(): void {
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getParam')

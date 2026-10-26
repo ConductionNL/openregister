@@ -254,10 +254,20 @@ HTTP 409 with a JSON body that says the identifier is ambiguous, on every route 
 resolves an object identifier through `ObjectService::find()` or `findSilent()`
 (show, update, patch, destroy, canDelete, lock, unlock, move, the presence routes,
 downloadFiles, referencedBy, geoFeatures, referenceOptions and the other `{id}` routes
-of `ObjectsController`, and the relations route of `RelationsController`), each keeping
-its other error codes. The body MUST NOT list the matching uuids. The audit-trail, files
-and uses/used sub-routes do not resolve the identifier through these lookups and are out
-of scope of this requirement.
+of `ObjectsController`, the relations route of `RelationsController` and the object
+history route `…/{id}/audit-trails` of `AuditTrailController`), each keeping its other
+error codes. The body MUST NOT list the matching uuids. The history route MUST look the
+object up within the register and schema of the route, deleted objects included, so an
+identifier of this register and schema never answers with another schema's history; only
+when the register or schema itself no longer resolves does it fall back to the cross-table
+lookup. The files and uses/used sub-routes do not resolve the identifier through these
+lookups and are out of scope of this requirement.
+
+#### Scenario: The history route is scoped to the register and schema
+- **GIVEN** object A with slug `hello-world` in register 28 / schema 68 and an older object with slug `hello-world` in schema 63
+- **WHEN** `GET /api/objects/28/68/hello-world/audit-trails` is requested by an administrator
+- **THEN** the response MUST list A's history only
+- **AND** `GET /api/objects/28/68/dubbel/audit-trails`, where two objects of 28/68 hold `dubbel`, MUST be HTTP 409 with `"error": "ambiguous-identifier"`
 
 An exact match on the object's numeric `_id` or `_uuid` MUST win over a slug match: a
 slug that equals another object's id (`2024`) or uuid does not make that object

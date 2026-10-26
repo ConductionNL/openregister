@@ -60,10 +60,11 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   is on) and a warning names both objects; seed data objects follow the same rule.
 - **Lookups.** `GET /api/objects/{register}/{schema}/{slug}` resolves the slug. A
   slug that more than one object holds (possible only for duplicates created before
-  this rule) answers `409` with `"error": "ambiguous-identifier"` on the object routes
-  and the relations route; the matching uuids go to the log. The audit-trail, files and
-  uses/used sub-routes do not resolve a slug within the register and schema: use the
-  object's uuid there. An exact match on an
+  this rule) answers `409` with `"error": "ambiguous-identifier"` on the object routes,
+  the relations route and the object history route (`…/{id}/audit-trails`, which looks
+  the object up within the register and schema of the URL); the matching uuids go to the
+  log. The files and uses/used sub-routes do not resolve a slug within the register and
+  schema: use the object's uuid there. An exact match on an
   object's id or uuid wins over a slug that happens to look the same (a slug `2024` next to
   the object with id 2024, a slug equal to another object's uuid), and a numeric identifier
   is an id only when it is a canonical integer (`2024`; `007` is a slug, not id 7); only when no single row is matched by its id or

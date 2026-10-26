@@ -582,7 +582,7 @@ class AuditTrailController extends Controller {
 	 *     (ObjectService::find with _rbac and _multitenancy on, as the object GET) for the SESSION's
 	 *     user and returns null, answered 404, when that read is refused.
 	 *
-	 * @psalm-return JSONResponse<200|400|401|403|404,
+	 * @psalm-return JSONResponse<200|400|401|403|404|409,
 	 *     array{error?: string,
 	 *     results?: array<array|\OCA\OpenRegister\Db\AuditTrail>,
 	 *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
@@ -641,6 +641,15 @@ class AuditTrailController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			// Same body as the object routes (#4037): neither object's history is returned.
+			return new JSONResponse(
+				data: [
+					'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
+					'error' => 'ambiguous-identifier',
+				],
+				statusCode: 409
+			);
 		}//end try
 	}//end objects()
 
