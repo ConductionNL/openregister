@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -64,14 +65,24 @@ class PartyService {
 	private array $definitions = [];
 
 	/**
+	 * The register and schema ids of every party table, for the life of the request.
+	 *
+	 * @var array<int, array{register: int, schema: int}>|null
+	 */
+	private ?array $partyTables = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService $objects The object layer a party record lives in.
 	 * @param SchemaMapper $schemas The schemas, for the party declaration.
+	 * @param RegisterMapper|null $registers The registers carrying a party schema, so a lookup reads only
+	 *                                       the party tables; absent, every lookup searches the instance
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly SchemaMapper $schemas,
+		private readonly ?RegisterMapper $registers = null,
 	) {
 	}//end __construct()
 
@@ -89,12 +100,63 @@ class PartyService {
 			return null;
 		}
 
+		// The party tables first: an id alone makes the object layer search every
+		// magic table on the instance, which took seconds per party.
+		foreach ($this->partyTables() as $table) {
+			try {
+				$found = $this->objects->find(
+					id: $partyUuid,
+					register: $table['register'],
+					schema: $table['schema'],
+					_render: false,
+					_audit: false
+				);
+			} catch (Throwable) {
+				$found = null;
+			}
+
+			if ($found !== null) {
+				return $found;
+			}
+		}
+
 		try {
 			return $this->objects->find(id: $partyUuid, _render: false, _audit: false);
 		} catch (Throwable) {
 			return null;
 		}
 	}//end find()
+
+	/**
+	 * The register and schema ids of every table that holds party records.
+	 *
+	 * @return array<int, array{register: int, schema: int}> The tables.
+	 *
+	 * @spec openspec/changes/party-lookup-reads-the-party-tables/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
+	 */
+	private function partyTables(): array {
+		if ($this->partyTables !== null) {
+			return $this->partyTables;
+		}
+
+		$tables = [];
+		if ($this->registers !== null) {
+			try {
+				foreach ($this->partySchemas() as $party) {
+					$schemaId = (int)$party['schema']->getId();
+					foreach ($this->registers->getAllRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
+						$tables[] = ['register' => (int)$registerId, 'schema' => $schemaId];
+					}
+				}
+			} catch (Throwable) {
+				$tables = [];
+			}
+		}
+
+		$this->partyTables = $tables;
+
+		return $tables;
+	}//end partyTables()
 
 	/**
 	 * The object with that uuid, read without RBAC or multitenancy; null when there is none.
