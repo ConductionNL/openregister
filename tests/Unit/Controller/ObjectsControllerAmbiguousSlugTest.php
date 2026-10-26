@@ -64,6 +64,8 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 	 */
 	private function controller(ObjectService $objectService, bool $admin = true): ObjectsController {
 		$user = $this->createMock(IUser::class);
+		// IUser::getUID() has no return type on NC 32, so an unstubbed mock answers null there.
+		$user->method('getUID')->willReturn('anna');
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
