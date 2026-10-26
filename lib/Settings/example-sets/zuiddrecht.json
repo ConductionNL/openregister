@@ -429,6 +429,24 @@
 				"function": "Baliemedewerker"
 			},
 			{
+				"key": "lotte",
+				"uid": "lotte.mulder",
+				"displayName": "Lotte Mulder",
+				"givenName": "Lotte",
+				"prefix": "",
+				"familyName": "Mulder",
+				"email": "lotte.mulder@zuiddrecht.example",
+				"role": "employee",
+				"department": "Publiekszaken",
+				"groups": [
+					"medewerkers",
+					"publiekszaken",
+					"kcc"
+				],
+				"team": "KCC",
+				"function": "Klantcontactmedewerker"
+			},
+			{
 				"key": "esra",
 				"uid": "esra.demir",
 				"displayName": "Esra Demir",
