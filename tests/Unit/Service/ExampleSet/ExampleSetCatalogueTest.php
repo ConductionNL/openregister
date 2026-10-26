@@ -108,7 +108,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 40, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 41, haystack: $plan['cast']['people']);
 		// DqOrganisaties: 23 organisations in Zuiddrecht, 8 associations, 6 foundations, 9 companies, each with its own made-up KvK number.
 		$forms = array_count_values(array_column($plan['cast']['organisations'], 'legalForm'));
 		$companies = ($forms['Besloten Vennootschap'] + $forms['Eenmanszaak']);
