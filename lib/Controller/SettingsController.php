@@ -366,11 +366,9 @@ class SettingsController extends Controller {
 		try {
 			$maintenance = $this->container->get(SearchIndexMaintenance::class);
 
-			$tables = [];
+			$tables = $maintenance->indexNamesFor(tableNames: $maintenance->tablesInScope());
 			$indexCount = 0;
-			foreach ($maintenance->tablesInScope() as $tableName) {
-				$indexes = array_keys($maintenance->indexesFor(tableName: $tableName));
-				$tables[$tableName] = $indexes;
+			foreach ($tables as $indexes) {
 				$indexCount += count($indexes);
 			}
 
