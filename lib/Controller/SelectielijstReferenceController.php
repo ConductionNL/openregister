@@ -61,6 +61,10 @@ class SelectielijstReferenceController extends Controller {
 	 *
 	 * @return JSONResponse `{url, code, name}`; 400 for a URL that is not a selectielijst row, 404 when it cannot be read.
 	 *
+	 * @no-admin-idor-exempt Takes no object id: it reads public reference data behind a URL.
+	 *   SelectielijstReferenceResolver::isResolvable() admits only the allowed selectielijst
+	 *   hosts, and the answer holds nothing the caller could not read there themselves.
+	 *
 	 * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
 	 */
 	#[NoAdminRequired]

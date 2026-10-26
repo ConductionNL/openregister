@@ -243,6 +243,10 @@ class SettingsChangeAuditor {
 	 *
 	 * @return int How many rows were written.
 	 *
+	 * @orphaned-write-capability exclude task 1.1c of settings-change-audit:
+	 *   loadConfiguration() does not yet compute the overwritten-key count this row
+	 *   needs, so it is not called from there.
+	 *
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordImport(string $app, bool $forced, int $keysOverwritten): int {

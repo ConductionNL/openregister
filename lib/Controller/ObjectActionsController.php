@@ -44,6 +44,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -56,6 +57,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * Lists and runs declared actions on objects and selections.
@@ -86,6 +88,9 @@ class ObjectActionsController extends Controller {
 	 * @param ObjectActionRunner      $runner      Runs one action on one object.
 	 * @param ObjectActionHistory     $history     Reads the runs recorded on an object.
 	 * @param ObjectActionBulk        $bulk        Hands a large selection to a bulk job.
+	 * @param LoggerInterface         $logger      Records a declaration that cannot be read.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
 	 */
 	public function __construct(
 		string $appName,
@@ -97,6 +102,7 @@ class ObjectActionsController extends Controller {
 		private readonly ObjectActionRunner $runner,
 		private readonly ObjectActionHistory $history,
 		private readonly ObjectActionBulk $bulk,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -178,6 +184,16 @@ class ObjectActionsController extends Controller {
 	 * @param string $schema   The schema slug or id.
 	 *
 	 * @return JSONResponse `{actions: [...]}`.
+	 *
+	 * @no-admin-idor-exempt Takes no object id: it lists the schema's bulk actions.
+	 *   ObjectActionList::forSelection() keeps an entry only when ObjectActionGate::may()
+	 *   grants the caller its right at schema level with RBAC on; each object is
+	 *   checked again when the action runs on it. The schema itself is loaded without
+	 *   RBAC or multitenancy (MacroActionResolver::loadSchema()), so where neither the
+	 *   schema nor its register declares authorization (default-open unless default-closed
+	 *   is enforced) any signed-in user sees that schema's action declarations (key,
+	 *   label, description, inputs and the rest of ObjectActionList's shape), also for a
+	 *   schema of another organisation. No object data is returned.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
@@ -263,7 +279,7 @@ class ObjectActionsController extends Controller {
 		$selectionSchema = $this->macros->loadSchema(schema: $schema);
 		$definition = null;
 		if ($selectionSchema !== null) {
-			$definition = $this->definitions->find(schema: $selectionSchema, key: $action, register: $register);
+			$definition = $this->findDefinition(schema: $selectionSchema, action: $action, register: $register);
 		}
 
 		if ($definition === null || $definition->isRunnable() === false || $definition->offersBulk() === false) {
@@ -365,6 +381,32 @@ class ObjectActionsController extends Controller {
 
 		return ['id' => $id, 'status' => 'failed', 'reason' => (string)($one['body']['message'] ?? ($one['body']['error'] ?? 'refused'))];
 	}//end runOnSelected()
+
+	/**
+	 * The schema's declaration of an action, or null when it cannot be read.
+	 *
+	 * A declaration that cannot be resolved reads as "not offered", the same
+	 * answer findObject() and loadSchema() give, so a broken schema
+	 * configuration is a 400 on the selection and never a 500. The cause is
+	 * logged, so a defect behind the 400 still leaves a trace.
+	 *
+	 * @param Schema $schema   The selection's schema.
+	 * @param string $action   The action key.
+	 * @param string $register The register as the caller named it.
+	 *
+	 * @return ObjectActionDefinition|null The declaration.
+	 */
+	private function findDefinition(Schema $schema, string $action, string $register): ?ObjectActionDefinition {
+		try {
+			return $this->definitions->find(schema: $schema, key: $action, register: $register);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Object action "{action}" of schema {schema} could not be read: {message}',
+				['action' => $action, 'schema' => (string)($schema->getSlug() ?? $schema->getId()), 'message' => $e->getMessage(), 'exception' => $e]
+			);
+			return null;
+		}
+	}//end findDefinition()
 
 	/**
 	 * The object, or null when there is none the caller can reach.
