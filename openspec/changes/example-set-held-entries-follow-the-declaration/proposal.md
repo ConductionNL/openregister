@@ -10,3 +10,4 @@
 - A held change lets go of every field its declaration no longer sets. The proof and remove leave such a field alone.
 - On a refresh, a held change writes a declared field again in two cases: the field is back at what the change replaced, or it still holds what the change wrote while the declaration resolves to something new. A field with a third value is somebody's edit and is left.
 - On a refresh, a held preference is written again when its declaration resolves to a different value than the set last wrote. What it first replaced stays recorded for remove.
+- A field that the declaration of a held change gained is written on the next install and recorded. Measured: regulier v4 never received the `rightsMatrix` and `fieldRoleRules` its change added after the first install.

@@ -70,6 +70,29 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 	}//end testAFieldTheChangeNoLongerDeclaresIsNotProved()
 
 	/**
+	 * A field the declaration of a held change gained is written on the next install, and the record holds it.
+	 *
+	 * @return void
+	 */
+	public function testAHeldChangeWritesAFieldItsDeclarationGained(): void {
+		$this->store->offer(register: 'int', schema: 'connection');
+		$id = $this->store->seed(register: 'int', schema: 'connection', data: ['key' => 'stuf', 'source' => null, 'rightsMatrix' => null]);
+		$this->connectionChange(set: ['source' => 'zaakmagazijn']);
+		$this->assertTrue($this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+
+		$this->connectionChange(set: ['source' => 'zaakmagazijn', 'rightsMatrix' => ['behandelaar' => ['read']]]);
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame(['behandelaar' => ['read']], $this->store->rows['int connection'][$id]['rightsMatrix']);
+		$this->assertSame('refreshed', $report['changes']['alpha/stuf-bron']);
+
+		$this->store->rows['int connection'][$id]['rightsMatrix'] = null;
+		$this->remover->remove(set: 'demo');
+		$this->assertNull($this->store->rows['int connection'][$id]['source'], 'remove puts back what the change replaced');
+	}//end testAHeldChangeWritesAFieldItsDeclarationGained()
+
+	/**
 	 * A refresh writes a declared field again when an import put back the value the change replaced.
 	 *
 	 * @return void

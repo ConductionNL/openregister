@@ -2,7 +2,7 @@
 
 ### Requirement: A held change or preference follows its declaration
 
-A change the record holds SHALL be proved and removed only on the fields its declaration still sets. On `--refresh`, a held change SHALL write a declared field again in two cases: the field holds the value the change replaced, or it holds the value the change wrote while the declaration resolves to a new one. It SHALL leave any other value. On `--refresh`, a held user preference SHALL be written again when its declaration resolves to a value other than the one the set last wrote. The value it first replaced SHALL stay recorded.
+A change the record holds SHALL be proved and removed only on the fields its declaration still sets. A field its declaration gained SHALL be written on the next install and recorded, so remove can put it back. On `--refresh`, a held change SHALL write a declared field again in two cases: the field holds the value the change replaced, or it holds the value the change wrote while the declaration resolves to a new one. It SHALL leave any other value. On `--refresh`, a held user preference SHALL be written again when its declaration resolves to a value other than the one the set last wrote. The value it first replaced SHALL stay recorded.
 
 #### Scenario: a field a job owns now
 - **GIVEN** a held change that set `status`, and a declaration that no longer sets it
@@ -18,3 +18,8 @@ A change the record holds SHALL be proved and removed only on the fields its dec
 - **GIVEN** a preference that quotes a view of its fragment
 - **WHEN** a refresh writes the view again under a new uuid
 - **THEN** the preference quotes the new uuid
+
+#### Scenario: the declaration gains a field
+- **GIVEN** a held change that sets `decisionTypes` and `rules`
+- **WHEN** its declaration also sets `rightsMatrix` and the set is installed again
+- **THEN** `rightsMatrix` is written and recorded with the value it replaced
