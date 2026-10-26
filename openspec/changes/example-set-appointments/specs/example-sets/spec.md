@@ -13,3 +13,8 @@ A fragment MAY declare `appointments`. Each row SHALL name `object`, `owner`, `s
 - **GIVEN** a row whose `object` is `{{task:hoorzitting-inplannen.uuid}}`, a task the fragment declares
 - **WHEN** the set is installed
 - **THEN** the event is linked to the task, with the register and schema of the record the task is on, and the task page's Afspraken card lists it
+
+#### Scenario: a refresh on a later day
+- **GIVEN** an appointment three days after the install day
+- **WHEN** the set is refreshed five days later
+- **THEN** the event is written again three days after the new day, and the old event and its link are gone
