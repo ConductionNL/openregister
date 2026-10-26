@@ -94,6 +94,9 @@ class ExampleSetRemover {
 				'views'             => 0,
 				'watchers'          => 0,
 				'parties'           => 0,
+				'notes'             => 0,
+				'readStates'        => 0,
+				'flows'             => 0,
 				'memberships'       => 0,
 				'groups'            => 0,
 				'accounts'          => 0,
@@ -132,6 +135,17 @@ class ExampleSetRemover {
 		$record = $this->restoreAppConfig(set: $set, record: $record, report: $report);
 		// Before the accounts: an account the set created goes, an adopted one keeps its own values.
 		$record = $this->restoreUserPreferences(set: $set, record: $record, report: $report);
+
+		foreach ($record['subAdmins'] as $index => [$gid, $uid]) {
+			if ($this->accounts->removeSubAdmin(gid: $gid, uid: $uid) === false) {
+				$report['failed'][] = 'sub-admin '.$gid.' / '.$uid;
+				continue;
+			}
+
+			unset($record['subAdmins'][$index]);
+		}
+
+		$record['subAdmins'] = array_values($record['subAdmins']);
 
 		foreach ($record['memberships'] as $index => [$gid, $uid]) {
 			if ($this->accounts->removeFromGroup(gid: $gid, uid: $uid) === false) {
@@ -371,6 +385,15 @@ class ExampleSetRemover {
 	 * @return array<string, mixed> The record without what is gone.
 	 */
 	private function removeGroupsAndAccounts(string $set, array $record, array &$report): array {
+		// A group the set only named gets its old name back, while it still carries the set's.
+		foreach ($record['groupNames'] as $gid => $name) {
+			if ($this->accounts->groupName(gid: (string) $gid) === (string) $name['new']) {
+				$this->accounts->setGroupName(gid: (string) $gid, displayName: (string) $name['old']);
+			}
+
+			unset($record['groupNames'][$gid]);
+		}
+
 		$keptGroups = [];
 		foreach ($record['groups'] as $gid) {
 			if ($this->accounts->deleteGroup(gid: $gid) === false) {

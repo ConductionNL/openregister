@@ -95,6 +95,86 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->savedViews);
 	}
 
+	/**
+	 * A view can be shared with the set's own groups and accounts, as board
+	 * DqFilterDelen draws Pieter's "Wacht op inwoner" shared with Woo en
+	 * informatie (may use) and Anouk Bakker (may update).
+	 *
+	 * @return void
+	 */
+	public function testAViewIsWrittenWithItsShares(): void {
+		$view = $this->savedSearch();
+		$view['data']['sharedWith'] = [
+			['group' => '{{cast:staff.gid}}', 'mode' => 'read'],
+			['user' => '{{cast:sanne.uid}}', 'mode' => 'write'],
+		];
+		$this->withViews(views: [$view]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame(
+			expected: [['group' => 'demo-staff', 'mode' => 'read'], ['user' => 'sanne.devries', 'mode' => 'write']],
+			actual: $this->savedViews['view-1']->getSharedWith()
+		);
+	}//end testAViewIsWrittenWithItsShares()
+
+	/**
+	 * A user preference may quote a view the same fragment declares, as
+	 * board DqFilterInMenu has Pieter's "Termijn deze week" in his menu: the
+	 * check accepts the placeholder before the view exists, and the install
+	 * writes the preference after the view, with its uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 */
+	public function testAPreferenceQuotesAViewOfItsFragment(): void {
+		$this->app(app: 'alpha', fragment: [
+			'views'           => [$this->savedSearch()],
+			'userPreferences' => [[
+				'user'  => '{{cast:esra.uid}}',
+				'key'   => 'pref_cn_saved_view_menu',
+				'value' => '[{"id":"{{view:zoek-lindelaan.uuid}}","page":"Search","name":"Lindelaan"}]',
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->savedViews, message: 'the check writes no view');
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(
+			expected: '[{"id":"view-1","page":"Search","name":"Lindelaan"}]',
+			actual: $this->userValues['esra.demir']['alpha']['pref_cn_saved_view_menu']
+		);
+	}//end testAPreferenceQuotesAViewOfItsFragment()
+
+	/**
+	 * A preference quoting a view the fragment does not declare refuses the set.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 */
+	public function testAPreferenceQuotingAnUnknownViewIsRefused(): void {
+		$this->app(app: 'alpha', fragment: [
+			'views'           => [$this->savedSearch()],
+			'userPreferences' => [[
+				'user'  => '{{cast:esra.uid}}',
+				'key'   => 'pref_cn_saved_view_menu',
+				'value' => '[{"id":"{{view:nope.uuid}}","page":"Search","name":"Nope"}]',
+			]],
+		]);
+
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
+	}//end testAPreferenceQuotingAnUnknownViewIsRefused()
+
 	public function testAViewThatDisappearedIsReportedMissing(): void {
 		$this->withViews([$this->savedSearch()]);
 		$plan = $this->catalogue->gather(set: 'demo');
@@ -131,6 +211,19 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 			'a stranger'    => [['name' => 'V', 'owner' => 'somebody.else'], 'owner "somebody.else"'],
 			'another field' => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'favoredBy' => []], 'field "favoredBy"'],
 			'a bad query'   => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'query' => 'Lindelaan'], 'query must be an object'],
+			'shares not a list' => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => 'staff'], 'sharedWith must be a list'],
+			'a share to a stranger' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['user' => 'somebody.else', 'mode' => 'read']]],
+				'share to "somebody.else"',
+			],
+			'a share without a target' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['mode' => 'read']]],
+				'a share names one user or one group',
+			],
+			'a share with a bad mode' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['group' => 'demo-staff', 'mode' => 'admin']]],
+				'mode "admin"',
+			],
 		];
 	}
 }//end class

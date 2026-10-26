@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
@@ -1198,8 +1199,16 @@ class MagicFacetHandler {
 	 * @return bool Whether the facet may be offered.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function callerMayFacet(Schema $schema, string $property): bool {
+		// An explicit-reveal value is shown only through the logged reveal; its
+		// distinct values in a facet would list it unmasked, for anyone.
+		if (in_array($property, ExplicitReveal::explicitProperties(schema: $schema), true) === true) {
+			return false;
+		}
+
 		if ($schema->hasPropertyAuthorization() === false) {
 			// Nothing on this schema is governed at property level, so there is
 			// no question to ask and no handler to resolve.
@@ -1870,10 +1879,12 @@ class MagicFacetHandler {
 		string $tableName,
 		?Schema $schema = null,
 	): void {
-		// Exclude deleted objects by default.
-		$includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-		if ($includeDeleted === false) {
-			$queryBuilder->andWhere($queryBuilder->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		// The deleted lens, spelled once in DeletedLens so the facets
+		// count the rows the list shows.
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $baseQuery), columnPrefix: '');
+		if ($deleted !== null) {
+			$queryBuilder->andWhere($queryBuilder->createFunction($deleted));
 		}
 
 		// Apply metadata filters from @self.
@@ -1966,6 +1977,7 @@ class MagicFacetHandler {
 			'_schema',
 			'_schemas',
 			'_includeDeleted',
+			'_deleted',
 			'_empty',
 			'@self',
 		];

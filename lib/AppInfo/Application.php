@@ -267,6 +267,7 @@ use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -580,6 +581,15 @@ class Application extends App implements IBootstrap {
 			RevealCollector::class,
 			static function () {
 				return new RevealCollector();
+			}
+		);
+
+		// Shared for the same reason: the grant ObjectsController::show makes
+		// must be the one the render path reads (property-explicit-reveal).
+		$context->registerService(
+			ExplicitReveal::class,
+			static function () {
+				return new ExplicitReveal();
 			}
 		);
 
@@ -3359,6 +3369,10 @@ class Application extends App implements IBootstrap {
 		// one: nothing should be recomputed against a calendar whose save might
 		// still be refused.
 		$context->registerEventListener(ObjectUpdatedEvent::class, WorkingCalendarChangedListener::class);
+
+		// A materialised calculation that reads `@ref.<name>.<field>` is refreshed
+		// on the objects that point at an updated object when that field changed.
+		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ReferencedCalculationListener::class);
 
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into

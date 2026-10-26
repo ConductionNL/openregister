@@ -113,6 +113,10 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	/**
 	 * Link the party to the object through the party model's trusted path.
 	 *
+	 * The object is found without RBAC, as every other example-set read is: an
+	 * occ install has no user, and a schema that refuses "Anonymous" would
+	 * otherwise read as "no such object".
+	 *
 	 * @param string               $app  The app that ships the fragment, recorded as the linker.
 	 * @param string               $key  The link's key in the fragment (unused).
 	 * @param array<string, mixed> $data The filled link fields.
@@ -123,7 +127,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['objectUuid'];
-		$object     = $this->parties()->find(partyUuid: $objectUuid);
+		$object     = $this->parties()->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
 			return ['error' => 'no object "'.$objectUuid.'" to put the party on', 'entry' => null];
 		}

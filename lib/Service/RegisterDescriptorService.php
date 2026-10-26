@@ -476,6 +476,37 @@ class RegisterDescriptorService {
 	}//end reimportMock()
 
 	/**
+	 * Whether the instance holds an older version of a register than the
+	 * descriptor of the given kind (mock or real) ships.
+	 *
+	 * A register that is not on the instance, or that no descriptor of the
+	 * kind declares, is not behind: there is nothing to bring up to date.
+	 *
+	 * @param string $appId The app whose descriptors are read.
+	 * @param string $slug  The register slug.
+	 * @param bool   $mock  True for the mock descriptor, false for the real one.
+	 *
+	 * @return bool True when the shipped version is newer than the installed one.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	public function isBehind(string $appId, string $slug, bool $mock): bool {
+		$descriptor = $this->descriptorFor(appId: $appId, slug: $slug, mock: $mock);
+		$installed  = ($this->installedRegisterVersions()[strtolower($slug)] ?? null);
+		if ($descriptor === null || $installed === null) {
+			return false;
+		}
+
+		foreach ($descriptor['registers'] as $declared => $register) {
+			if (strtolower((string)$declared) === strtolower($slug)) {
+				return version_compare((string)($register['version'] ?? '0.0.1'), $installed, '>');
+			}
+		}
+
+		return false;
+	}//end isBehind()
+
+	/**
 	 * Slug (lowercased) to version for every register that exists.
 	 *
 	 * RBAC and multitenancy are off: this is an administrative inventory, and a

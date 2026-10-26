@@ -164,6 +164,33 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'high', actual: $this->taskImports[0]['data']['priority']);
 	}
 
+	/**
+	 * A task may carry the engine key and organisation an app reads it by, such as a tenant's onboarding step.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-task-key-and-organisation/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-engine-key-and-organisation
+	 */
+	public function testATaskKeepsTheKeyAndOrganisationItDeclares(): void {
+		$this->caseWithTasks(tasks: [
+			['key' => 'stap-contract', 'data' => [
+				'title' => 'Contract', 'objectUuid' => '{{object:case-1.id}}', 'kind' => 'dossiq.onboarding',
+				'taskKey' => 'contract', 'organisation' => '{{object:case-1.id}}', 'state' => 'completed',
+			]],
+			['key' => 'gewoon', 'data' => ['title' => 'Gewoon', 'objectUuid' => '{{object:case-1.id}}']],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$caseId = $this->store->ids(register: 'cases', schema: 'case')[0];
+		$this->assertSame(expected: 'contract', actual: $this->taskImports[0]['data']['key']);
+		$this->assertSame(expected: $caseId, actual: $this->taskImports[0]['data']['organisation']);
+		$this->assertArrayNotHasKey(key: 'taskKey', array: $this->taskImports[0]['data']);
+		$this->assertSame(expected: 'example-set:alpha/gewoon', actual: $this->taskImports[1]['data']['key'], message: 'without taskKey the set names it');
+	}//end testATaskKeepsTheKeyAndOrganisationItDeclares()
+
 	public function testATaskThatDisappearedIsReportedMissing(): void {
 		$this->caseWithTasks([['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
 		$plan = $this->catalogue->gather(set: 'demo');

@@ -32,6 +32,9 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 	/** @var array<string, array<int, string>> Members by gid. */
 	public array $groups = [];
 
+	/** @var array<string, array<int, string>> Sub-admins by gid. */
+	public array $subAdmins = [];
+
 	/** @var int Number of accounts created. */
 	public int $userCreates = 0;
 
@@ -67,12 +70,30 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 		return true;
 	}
 
+	/** @var array<string, string> Display names by group id. */
+	public array $groupNames = [];
+
+	public function groupName(string $gid): string {
+		return ($this->groupNames[$gid] ?? '');
+	}
+
+	public function setGroupName(string $gid, string $displayName): bool {
+		if (isset($this->groups[$gid]) === false) {
+			return false;
+		}
+
+		$this->groupNames[$gid] = $displayName;
+
+		return true;
+	}
+
 	public function groupExists(string $gid): bool {
 		return isset($this->groups[$gid]);
 	}
 
 	public function createGroup(string $gid, string $displayName): bool {
 		$this->groups[$gid] = [];
+		$this->groupNames[$gid] = ($displayName === '' ? $gid : $displayName);
 
 		return true;
 	}
@@ -99,6 +120,26 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 
 	public function removeFromGroup(string $gid, string $uid): bool {
 		$this->groups[$gid] = array_values(array_diff(($this->groups[$gid] ?? []), [$uid]));
+
+		return true;
+	}
+
+	public function isSubAdmin(string $gid, string $uid): bool {
+		return in_array($uid, ($this->subAdmins[$gid] ?? []), true);
+	}
+
+	public function addSubAdmin(string $gid, string $uid): bool {
+		if (isset($this->groups[$gid]) === false || isset($this->users[$uid]) === false) {
+			return false;
+		}
+
+		$this->subAdmins[$gid][] = $uid;
+
+		return true;
+	}
+
+	public function removeSubAdmin(string $gid, string $uid): bool {
+		$this->subAdmins[$gid] = array_values(array_diff(($this->subAdmins[$gid] ?? []), [$uid]));
 
 		return true;
 	}

@@ -349,6 +349,24 @@ class RegisterDescriptorServiceTest extends TestCase {
 	}
 
 	/**
+	 * A register is behind when the descriptor of the asked kind ships a newer
+	 * version than the instance holds; same version, the other kind or a
+	 * register that is not there is not behind.
+	 *
+	 * @return void
+	 */
+	public function testARegisterIsBehindOnlyWhenItsDescriptorIsNewer(): void {
+		$this->writeDescriptor(file: 'a_mock_register.json', slug: 'flows', version: '1.0.1', type: 'mock');
+		$this->writeDescriptor(file: 'flows_register.json', slug: 'flows', version: '1.0.0');
+		$this->expectApp(appId: 'fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register(slug: 'flows', version: '1.0.0')]);
+
+		$this->assertTrue(condition: $this->service->isBehind(appId: 'fixtureapp', slug: 'flows', mock: true));
+		$this->assertFalse(condition: $this->service->isBehind(appId: 'fixtureapp', slug: 'flows', mock: false));
+		$this->assertFalse(condition: $this->service->isBehind(appId: 'fixtureapp', slug: 'other', mock: true));
+	}//end testARegisterIsBehindOnlyWhenItsDescriptorIsNewer()
+
+	/**
 	 * 🔴 A MOCK IMPORTS UNDER ITS OWN CONFIGURATION IDENTITY.
 	 *
 	 * `importFromApp` stamps `imported_config_<appId>_version` plus a content

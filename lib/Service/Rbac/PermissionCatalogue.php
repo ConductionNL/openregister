@@ -117,6 +117,9 @@ class PermissionCatalogue {
 		'export' => 'Take the objects of a schema off this instance as a file.',
 		'manage' => 'Change the access rules themselves, including roles and grants.',
 		'assign' => 'Hand the work on an object to somebody else.',
+		'readFiles' => 'Read the files of an object.',
+		'addFiles' => 'Add a file to an object, or change one of its files.',
+		'deleteFiles' => 'Delete a file of an object.',
 	];
 
 	/**

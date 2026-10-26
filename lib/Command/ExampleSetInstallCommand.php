@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -58,12 +59,14 @@ class ExampleSetInstallCommand extends Command {
 	 *
 	 * @param ExampleSetCatalogue $catalogue Gathers the set.
 	 * @param ExampleSetInstaller $installer Checks, writes and proves.
+	 * @param ExampleSetDailyRefresh|null $daily Marks a set for the daily refresh.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetCatalogue $catalogue,
 		private readonly ExampleSetInstaller $installer,
+		private readonly ?ExampleSetDailyRefresh $daily=null,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -91,6 +94,25 @@ class ExampleSetInstallCommand extends Command {
 				shortcut: null,
 				mode: (InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY),
 				description: 'An existing account id the set may use although it did not create it; remove leaves it in place'
+			)
+			->addOption(
+				name: 'refresh',
+				shortcut: null,
+				mode: InputOption::VALUE_NONE,
+				description: 'Rewrite every object the set declares and already holds to its current values '
+					.'(dates against today, cast, lookups); objects the set did not write are left alone'
+			)
+			->addOption(
+				name: 'daily',
+				shortcut: null,
+				mode: InputOption::VALUE_NONE,
+				description: 'Also refresh the set once a day from now on, so its dates follow the day it is viewed (a demo instance)'
+			)
+			->addOption(
+				name: 'no-daily',
+				shortcut: null,
+				mode: InputOption::VALUE_NONE,
+				description: 'Stop the daily refresh of the set'
 			)
 			->addOption(
 				name: 'password-from-env',
@@ -124,6 +146,8 @@ class ExampleSetInstallCommand extends Command {
 			$output->writeln('<comment>Skipped: '.$app.' is not enabled on this instance.</comment>');
 		}
 
+		$this->markDaily(set: (string) $plan['set'], input: $input, output: $output);
+
 		$adopt = array_values(array_filter(array_map('strval', (array) $input->getOption('adopt'))));
 		if ($input->getOption('check') === true) {
 			return $this->check(plan: $plan, adopt: $adopt, output: $output);
@@ -138,7 +162,8 @@ class ExampleSetInstallCommand extends Command {
 			}
 		}
 
-		$report = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
+		$plan['refresh'] = ($input->getOption('refresh') === true);
+		$report          = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
 		if ($report['refusals'] !== []) {
 			$this->printRefusals(refusals: $report['refusals'], output: $output);
 			$output->writeln('<error>The set was refused, so none of its accounts, groups or objects was written.</error>');
@@ -155,6 +180,31 @@ class ExampleSetInstallCommand extends Command {
 
 		return self::SUCCESS;
 	}//end execute()
+
+	/**
+	 * Mark or unmark the set for the daily refresh when `--daily` or `--no-daily` asks.
+	 *
+	 * @param string          $set    The set id.
+	 * @param InputInterface  $input  The command input.
+	 * @param OutputInterface $output The command output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 */
+	private function markDaily(string $set, InputInterface $input, OutputInterface $output): void {
+		if ($this->daily === null || ($input->getOption('daily') !== true && $input->getOption('no-daily') !== true)) {
+			return;
+		}
+
+		$this->daily->mark(set: $set, daily: ($input->getOption('daily') === true));
+		$sets = $this->daily->sets();
+		if ($sets === []) {
+			$sets = ['none'];
+		}
+
+		$output->writeln('Daily refresh: '.implode(', ', $sets));
+	}//end markDaily()
 
 	/**
 	 * Run only the check.
@@ -228,6 +278,9 @@ class ExampleSetInstallCommand extends Command {
 			'views'       => 'View',
 			'watchers'    => 'Watcher',
 			'parties'     => 'Party',
+			'notes'       => 'Note',
+			'readStates'  => 'Read state',
+			'flows'       => 'Flow',
 		];
 		foreach ($parts as $part => $word) {
 			foreach (($report[$part] ?? []) as $name => $outcome) {
@@ -263,16 +316,34 @@ class ExampleSetInstallCommand extends Command {
 		foreach ($types as $type => $counts) {
 			$output->writeln(
 				sprintf(
-					'%s: %d declared, %d created, %d already there, %d found afterwards',
+					'%s: %d declared, %d created, %d already there%s, %d found afterwards',
 					$type,
 					$counts['declared'],
 					$counts['created'],
 					$counts['kept'],
+					$this->refreshedNote(counts: $counts),
 					$counts['arrived']
 				)
 			);
 		}
 	}//end printTypes()
+
+	/**
+	 * " (n refreshed)" after a `--refresh`, nothing otherwise.
+	 *
+	 * @param array<string, int> $counts The counts of one type.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	private function refreshedNote(array $counts): string {
+		if (isset($counts['refreshed']) === false) {
+			return '';
+		}
+
+		return sprintf(' (%d refreshed)', $counts['refreshed']);
+	}//end refreshedNote()
 
 	/**
 	 * Print what was left as it is, and what is not written, not there or not kept.

@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
 use Dompdf\Dompdf;
@@ -129,6 +130,13 @@ class ExportService {
 	 * @var Register|null
 	 */
 	private ?Register $contextRegister = null;
+
+	/**
+	 * The explicit-reveal columns of the export being written.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $maskedColumns = [];
 
 	/**
 	 * Constructor for the ExportService.
@@ -1028,8 +1036,13 @@ class ExportService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getHeaders(?Schema $schema = null, ?IUser $currentUser = null): array {
+		// The export's explicit-reveal columns read masked, as on every other route.
+		$this->maskedColumns = array_fill_keys(ExplicitReveal::explicitProperties(schema: $schema), true);
+
 		// Start with id as the first column.
 		// Will contain the uuid.
 		$headers = [
@@ -1146,6 +1159,8 @@ class ExportService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex multi-step value extraction logic
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Value extraction requires many conditional type checks
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple header prefix and value type conditions
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getObjectValue(ObjectEntity $object, string $header): ?string {
 		// Handle metadata fields with @self. prefix.
@@ -1254,6 +1269,10 @@ class ExportService {
 				}
 
 				$value = $objectData[$header] ?? null;
+				if (isset($this->maskedColumns[$header]) === true && $value !== null && $value !== '') {
+					return ExplicitReveal::mask(value: $value);
+				}
+
 				return $this->convertValueToString(value: $value);
 		}
 	}//end getObjectValue()

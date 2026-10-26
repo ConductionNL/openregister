@@ -126,6 +126,28 @@ class ExampleSetRegisters {
 	}//end importMock()
 
 	/**
+	 * Whether the instance holds an older version of the register than
+	 * OpenRegister's descriptor ships, so the set imports it again. A
+	 * descriptor that cannot be read counts as not behind.
+	 *
+	 * @param string $slug The register slug.
+	 * @param bool   $mock True when the set requires the mock descriptor.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-impure It reads the instance, which an import changes.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	public function isBehind(string $slug, bool $mock): bool {
+		try {
+			return $this->container->get(RegisterDescriptorService::class)->isBehind(appId: self::APP, slug: $slug, mock: $mock);
+		} catch (Throwable) {
+			return false;
+		}
+	}//end isBehind()
+
+	/**
 	 * Run one descriptor import and return why it failed and the import job it reports.
 	 *
 	 * @param callable(RegisterDescriptorService): array<string, mixed> $import The import.

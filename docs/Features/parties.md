@@ -172,6 +172,16 @@ Set the cap under `party.queryCap` in the app settings. The default is 50.
 A listing answers `results`, `total`, `byRole`, `kinds`, `roles` and `primary`.
 A picker reads one call.
 
+## Who may change the parties
+
+Who holds a role on an object is part of the object. So the three writes, give
+a role, replace the primary party and take a party off, each need the `update`
+right on that object, exactly as editing one of its fields does. The schema's
+`update` rule decides, conditional rules included. Without it the answer is a
+403 and nothing is written.
+
+Reading the parties needs the read right only.
+
 ## What dossiq declares
 
 Per case type, on the case schema: `partyKinds` with the roles each kind may

@@ -59,6 +59,10 @@ use Throwable;
  * itself depends on all of them.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every constructor parameter is
  * an injected collaborator; Nextcloud's container wires them by type.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) delete() and deleteStored() are
+ * one cascade with and without the caller check; an example set removing the
+ * flow it wrote has no caller to check. Moving the cascade out would split one
+ * flow's delete over two classes.
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
@@ -611,7 +615,24 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function delete(string $uuid): void {
-		$this->mapper->delete($this->find(uuid: $uuid));
+		$this->deleteStored(flow: $this->find(uuid: $uuid));
+
+	}//end delete()
+
+	/**
+	 * Delete a stored flow with its trigger rows, runs, state and versions,
+	 * without asking whose it is. For callers that already decided they may,
+	 * such as an example set removing the flow it wrote.
+	 *
+	 * @param Flow $flow The stored flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 */
+	public function deleteStored(Flow $flow): void {
+		$uuid = (string)$flow->getUuid();
+		$this->mapper->delete($flow);
 
 		// Drop the flow's trigger rows too. An orphaned row is read on every
 		// matching object event and names a flow that can no longer be loaded,
@@ -662,7 +683,7 @@ class FlowService {
 			);
 		}
 
-	}//end delete()
+	}//end deleteStored()
 
 	/**
 	 * Queue a manual run of a flow the caller owns.

@@ -3687,15 +3687,20 @@ class Schema extends Entity implements JsonSerializable {
 	 * Validate and normalise `partyKinds`: the kinds of party an object of
 	 * this schema accepts, and per kind the roles it may hold.
 	 *
-	 * Each entry is `{key, label, description?, roles?}`; a bare string reads
-	 * as `{key: s, label: s}`. Keys are unique, non-empty and at most 64
-	 * characters, the width of the link table's `party_kind` column. `roles`
-	 * is an optional list of role keys: naming it binds those roles to that
-	 * kind, leaving it out lets the kind hold any role the schema declares.
+	 * Each entry is `{key, label, description?, roles?, identityShapes?}`; a
+	 * bare string reads as `{key: s, label: s}`. Keys are unique, non-empty and
+	 * at most 64 characters, the width of the link table's `party_kind` column.
+	 * `roles` is an optional list of role keys: naming it binds those roles to
+	 * that kind, leaving it out lets the kind hold any role the schema
+	 * declares. `identityShapes` names the identity shapes a party of this
+	 * kind has in a shared party-kind vocabulary (`naturalPerson`,
+	 * `organization`), so a host can check a party against a vocabulary that
+	 * accepts shapes rather than this schema's kind keys.
 	 *
 	 * @param mixed $value The configured value.
 	 *
-	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The normalised entries.
+	 * @return array<int, array<string, mixed>> The normalised entries, each
+	 *   `{key, label, description?, roles?, identityShapes?}`.
 	 *
 	 * @throws InvalidArgumentException When the value is not a list of valid entries.
 	 *
@@ -3726,36 +3731,50 @@ class Schema extends Entity implements JsonSerializable {
 	}//end validatePartyKindsValue()
 
 	/**
-	 * One `partyKinds` entry as `{key, label, description?, roles?}`, or null when it has no usable key.
+	 * One `partyKinds` entry as `{key, label, description?, roles?, identityShapes?}`, or null when it has no usable key.
 	 *
 	 * @param mixed $entry A string or an array.
 	 *
-	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>}|null The entry.
+	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>, identityShapes?: array<int, string>}|null The entry.
 	 */
 	private static function normalisePartyKind(mixed $entry): ?array {
 		$normalised = self::normaliseLinkRole(entry: $entry);
-		if ($normalised === null) {
-			return null;
-		}
-
-		if (is_array($entry) === false || isset($entry['roles']) === false || is_array($entry['roles']) === false) {
+		if ($normalised === null || is_array($entry) === false) {
 			return $normalised;
 		}
 
-		$roles = [];
-		foreach ($entry['roles'] as $role) {
-			$role = trim((string)$role);
-			if ($role !== '' && in_array($role, $roles, true) === false) {
-				$roles[] = $role;
+		foreach (['roles', 'identityShapes'] as $listKey) {
+			$list = self::distinctStrings(value: ($entry[$listKey] ?? null));
+			if ($list !== []) {
+				$normalised[$listKey] = $list;
 			}
-		}
-
-		if ($roles !== []) {
-			$normalised['roles'] = $roles;
 		}
 
 		return $normalised;
 	}//end normalisePartyKind()
+
+	/**
+	 * The distinct, trimmed, non-empty strings of a list, in order; [] for anything else.
+	 *
+	 * @param mixed $value The configured list.
+	 *
+	 * @return array<int, string> The strings.
+	 */
+	private static function distinctStrings(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($value as $item) {
+			$item = trim((string)$item);
+			if ($item !== '' && in_array($item, $out, true) === false) {
+				$out[] = $item;
+			}
+		}
+
+		return $out;
+	}//end distinctStrings()
 
 	/**
 	 * The kinds of party an object of this schema accepts, [] when it declares none.

@@ -81,10 +81,12 @@ class ObjectFolderBrowser {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService $fileService Resolves the object folder and runs the file pipeline.
+	 * @param FileService               $fileService  Resolves the object folder and runs the file pipeline.
+	 * @param FileRestrictionGuard|null $restrictions Leaves out a restricted file the caller is not admitted to. Null only in legacy fixtures.
 	 */
 	public function __construct(
 		private readonly FileService $fileService,
+		private readonly ?FileRestrictionGuard $restrictions = null,
 	) {
 	}//end __construct()
 
@@ -105,8 +107,10 @@ class ObjectFolderBrowser {
 		$root = $this->objectFolder(object: $object);
 		$folder = $this->folderAt(root: $root, path: $path);
 
+		$nodes = ($this->restrictions?->readableNodes(nodes: $folder->getDirectoryListing()) ?? $folder->getDirectoryListing());
+
 		$entries = [];
-		foreach ($folder->getDirectoryListing() as $node) {
+		foreach ($nodes as $node) {
 			$entries[] = $this->describe(root: $root, node: $node);
 		}
 
@@ -385,6 +389,10 @@ class ObjectFolderBrowser {
 
 		$node = $root->getFirstNodeById($nodeId);
 		if ($node === null || str_starts_with($node->getPath(), rtrim($root->getPath(), '/') . '/') === false) {
+			throw new NotFoundException('Not found in this object');
+		}
+
+		if ($this->restrictions?->mayRead(fileId: $nodeId) === false) {
 			throw new NotFoundException('Not found in this object');
 		}
 

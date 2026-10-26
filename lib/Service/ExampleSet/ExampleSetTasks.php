@@ -67,6 +67,8 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'performerType',
 		'uploadRules',
 		'checklist',
+		'taskKey',
+		'organisation',
 	];
 
 
@@ -144,8 +146,9 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
-		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy', 'uploadRules']));
-		$fields['key']   = 'example-set:'.$app.'/'.$key;
+		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy', 'uploadRules', 'taskKey']));
+		// An app that reads its tasks by engine key, such as a tenant's onboarding steps, names that key.
+		$fields['key'] = (string) ($data['taskKey'] ?? 'example-set:'.$app.'/'.$key);
 		$fields['appId'] = $app;
 		$fields += ExampleSetExternalTask::metadata(data: $data);
 
