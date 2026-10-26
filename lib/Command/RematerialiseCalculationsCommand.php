@@ -298,7 +298,13 @@ class RematerialiseCalculationsCommand extends Command {
 			// re-save hands it back as stored, or validation refuses the row.
 			$stored = $this->types->restoreStringTypedValues(data: $stored, properties: ($schema->getProperties() ?? []));
 
-			if ($this->saveForMaterialisation(entity: $entity, stored: $stored, expected: $expected, output: $output) === true) {
+			// A `fallback` calculation gives the value only until an app's own
+			// save listener sets it (dossiq: a case deadline follows its
+			// statutory term), so a value the save kept is not a failure.
+			$fallbacks = array_filter($calcs, static fn ($spec): bool => is_array($spec) === true && ($spec['fallback'] ?? false) === true);
+			$checked   = array_diff_key($expected, $fallbacks);
+
+			if ($this->saveForMaterialisation(entity: $entity, stored: $stored, expected: $checked, output: $output) === true) {
 				$touched++;
 				continue;
 			}
