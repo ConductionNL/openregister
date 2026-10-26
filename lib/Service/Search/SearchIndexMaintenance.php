@@ -56,6 +56,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The work spans registers, schemas, the magic
  *                                                mapper and the connection; naming them is the
  *                                                job rather than a sign of one too many.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Each platform (PostgreSQL, MySQL/MariaDB,
+ *                                                   SQLite) answers the index questions its own
+ *                                                   way; the branches are that difference.
  */
 class SearchIndexMaintenance {
 	/**
