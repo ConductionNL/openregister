@@ -49,6 +49,9 @@ use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
@@ -198,6 +201,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var bool Whether the fake Talk is installed. */
 	protected bool $talkInstalled = true;
 
+	/** @var array<int, AuditTrail> The audit trail, by id. */
+	protected array $auditTrail = [];
+
 	/** @var array<int, array{principal: string, uri: string}> The calendars, by id. */
 	protected array $calendars = [];
 
@@ -271,6 +277,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
 			TalkLinkMapper::class     => $this->talkLinkMapper(),
+			AuditTrailMapper::class   => $this->auditTrailMapper(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
@@ -348,7 +355,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				appointments: new ExampleSetAppointments(container: $container),
 				casePlans: new ExampleSetCasePlans(container: $container),
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
-				talkConversations: new ExampleSetTalkConversations(container: $container)
+				talkConversations: new ExampleSetTalkConversations(container: $container),
+				auditEntries: new ExampleSetAuditEntries(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -375,7 +383,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				appointments: new ExampleSetAppointments(container: $container),
 				casePlans: new ExampleSetCasePlans(container: $container),
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
-				talkConversations: new ExampleSetTalkConversations(container: $container)
+				talkConversations: new ExampleSetTalkConversations(container: $container),
+				auditEntries: new ExampleSetAuditEntries(container: $container)
 			)
 		);
 	}
@@ -628,6 +637,31 @@ abstract class ExampleSetTestCase extends TestCase {
 
 		return $store;
 	}//end collectivesStore()
+
+	/**
+	 * An audit trail mapper over $auditTrail.
+	 *
+	 * @return AuditTrailMapper
+	 */
+	private function auditTrailMapper(): AuditTrailMapper {
+		$mapper = $this->createMock(AuditTrailMapper::class);
+		$mapper->method('insertAuditTrails')->willReturnCallback(function (array $entries): array {
+			foreach ($entries as $entry) {
+				$entry->setId(count($this->auditTrail) + 1);
+				$this->auditTrail[$entry->getId()] = $entry;
+			}
+
+			return $entries;
+		});
+		$mapper->method('findForObjectByAction')->willReturnCallback(
+			fn (string $objectUuid, array $actions = [], int $limit = 50): array => array_values(
+				array_filter($this->auditTrail, static fn (AuditTrail $row): bool => $row->getObjectUuid() === $objectUuid && in_array($row->getAction(), $actions, true))
+			)
+		);
+		$mapper->method('find')->willReturnCallback(fn (int $id): AuditTrail => ($this->auditTrail[$id] ?? throw new DoesNotExistException('no entry '.$id)));
+
+		return $mapper;
+	}//end auditTrailMapper()
 
 	/**
 	 * A Talk store over $talk: a room by name, its held call as two system messages.
