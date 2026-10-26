@@ -803,7 +803,7 @@ class ExampleSetInstaller {
 		foreach ($record['files'] as $name => $files) {
 			$present = $this->files->names(objectId: (string) ($record['objects'][$name]['id'] ?? ''));
 			foreach ($files as $file) {
-				if (in_array($file['name'], $present, true) === false) {
+				if ($this->files->present(file: $file, names: $present) === false) {
 					$report['missing'][] = 'file '.$file['name'].' on '.$name;
 				}
 			}
