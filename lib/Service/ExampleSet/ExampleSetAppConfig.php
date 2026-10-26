@@ -124,7 +124,9 @@ class ExampleSetAppConfig {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['app' => $app, 'key' => $key, 'had' => $had, 'old' => $old, 'new' => $value, 'generated' => false, 'type' => $type]];
+		$entry = ['app' => $app, 'key' => $key, 'had' => $had, 'old' => $old, 'new' => $value, 'generated' => false, 'type' => $type];
+
+		return ['error' => '', 'entry' => $entry];
 	}//end apply()
 
 	/**

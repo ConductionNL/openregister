@@ -891,7 +891,8 @@ class ExampleSetInstaller {
 
 			$gaps  = [];
 			$value = (string) $this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
-			$made  = $this->appConfig->apply(app: $fragment['app'], key: $entry['key'], value: $value, generate: $entry['generate'], type: ($entry['type'] ?? 'string'));
+			$type  = (string) ($entry['type'] ?? 'string');
+			$made  = $this->appConfig->apply(app: $fragment['app'], key: $entry['key'], value: $value, generate: $entry['generate'], type: $type);
 			if ($made['error'] !== '') {
 				$report['dropped'][]        = $fragment['file'].': app config "'.$entry['key'].'": '.$made['error'];
 				$report['appConfig'][$name] = 'failed';
