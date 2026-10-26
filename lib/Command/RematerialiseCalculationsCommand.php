@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -64,6 +65,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @param CalculationEvaluator $evaluator Expression evaluator.
 	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
 	 * @param AggregateReferenceResolver $aggregates Aggregate-reference pre-resolver.
+	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
 	 *
 	 * @return void
 	 *
@@ -79,6 +81,7 @@ class RematerialiseCalculationsCommand extends Command {
 		private readonly CalculationEvaluator $evaluator,
 		private readonly ReferenceResolver $references,
 		private readonly AggregateReferenceResolver $aggregates,
+		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -290,6 +293,10 @@ class RematerialiseCalculationsCommand extends Command {
 					continue;
 				}
 			}
+
+			// The read decodes JSON held in a `type: string` property; the
+			// re-save hands it back as stored, or validation refuses the row.
+			$stored = $this->types->restoreStringTypedValues(data: $stored, properties: ($schema->getProperties() ?? []));
 
 			if ($this->saveForMaterialisation(entity: $entity, stored: $stored, expected: $expected, output: $output) === true) {
 				$touched++;
