@@ -8,3 +8,8 @@ A fragment MAY declare `appointments`. Each row SHALL name `object`, `owner`, `s
 - **GIVEN** a row on case 710d44a4: "Toelichting stukken aan de verzoeker", 14 okt 10:00-10:30, Stadskantoor balie 3, Sanne de Vries invited
 - **WHEN** the set is installed
 - **THEN** the case's Afspraken card lists it, and Sanne de Vries is invited
+
+#### Scenario: an appointment on a task
+- **GIVEN** a row whose `object` is `{{task:hoorzitting-inplannen.uuid}}`, a task the fragment declares
+- **WHEN** the set is installed
+- **THEN** the event is linked to the task, with the register and schema of the record the task is on, and the task page's Afspraken card lists it
