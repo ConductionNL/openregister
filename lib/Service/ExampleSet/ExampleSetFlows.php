@@ -158,35 +158,48 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 		}
 
 		foreach ($runs as $run) {
-			$run     = (array) $run;
-			$unknown = array_diff(array_keys($run), self::RUN_FIELDS);
-			if ($unknown !== []) {
-				return 'field "'.implode('", "', $unknown).'" is not a run field a set may write';
-			}
-
-			if (in_array(($run['status'] ?? null), FlowRun::TERMINAL, true) === false) {
-				return 'a run is finished: status is one of '.implode(', ', FlowRun::TERMINAL);
-			}
-
-			if (is_string($run['subject'] ?? null) === false || trim($run['subject']) === '') {
-				return 'a run needs the object it ran on (subject)';
-			}
-
-			foreach (['created', 'updated'] as $field) {
-				if (isset($run[$field]) === false) {
-					continue;
-				}
-
-				try {
-					new DateTime((string) $run[$field]);
-				} catch (Throwable) {
-					return 'run '.$field.' "'.(string) $run[$field].'" is not a date';
-				}
+			$refusal = $this->runRefusal(run: (array) $run);
+			if ($refusal !== '') {
+				return $refusal;
 			}
 		}
 
 		return '';
 	}//end runsRefusal()
+
+	/**
+	 * Why one declared run cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $run The declared run.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 */
+	private function runRefusal(array $run): string {
+		$unknown = array_diff(array_keys($run), self::RUN_FIELDS);
+		if ($unknown !== []) {
+			return 'field "'.implode('", "', $unknown).'" is not a run field a set may write';
+		}
+
+		if (in_array(($run['status'] ?? null), FlowRun::TERMINAL, true) === false) {
+			return 'a run is finished: status is one of '.implode(', ', FlowRun::TERMINAL);
+		}
+
+		if (is_string($run['subject'] ?? null) === false || trim($run['subject']) === '') {
+			return 'a run needs the object it ran on (subject)';
+		}
+
+		foreach (['created', 'updated'] as $field) {
+			try {
+				new DateTime((string) ($run[$field] ?? 'now'));
+			} catch (Throwable) {
+				return 'run '.$field.' "'.(string) $run[$field].'" is not a date';
+			}
+		}
+
+		return '';
+	}//end runRefusal()
 
 	/**
 	 * Why the steps and lines cannot make a flow, or ''.
