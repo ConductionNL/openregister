@@ -49,6 +49,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -156,6 +158,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, string> The uuids of the flows published, in order. */
 	protected array $publishedFlows = [];
 
+	/** @var array<string, FlowRun> The stored flow runs, by uuid. */
+	protected array $flowRuns = [];
+
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
 
@@ -197,6 +202,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowMapper::class         => $this->flowMapper(),
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
+			FlowRunMapper::class      => $this->flowRunMapper(),
 			OrganisationService::class => $this->organisationService(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
@@ -475,9 +481,25 @@ abstract class ExampleSetTestCase extends TestCase {
 		$service = $this->createMock(FlowService::class);
 		$service->method('deleteStored')->willReturnCallback(function (Flow $flow): void {
 			unset($this->flows[(string) $flow->getUuid()]);
+			$this->flowRuns = array_filter($this->flowRuns, static fn (FlowRun $run): bool => $run->getFlowId() !== $flow->getUuid());
 		});
 
 		return $service;
+	}
+
+	/**
+	 * A flow run mapper over $flowRuns, keyed by uuid.
+	 *
+	 * @return FlowRunMapper
+	 */
+	private function flowRunMapper(): FlowRunMapper {
+		$mapper = $this->createMock(FlowRunMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (FlowRun $run): FlowRun {
+			$this->flowRuns[(string) $run->getUuid()] = $run;
+			return $run;
+		});
+
+		return $mapper;
 	}
 
 	/**
