@@ -69,9 +69,12 @@ class SeedVersionLedger {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig OpenRegister's app config.
+	 * @param string     $prefix    The app-config key prefix; another prefix keeps another value per seed, such as the
+	 *                              hash of the content it was last shipped with.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
+		private readonly string $prefix = self::KEY_PREFIX,
 	) {
 
 	}//end __construct()
@@ -168,11 +171,11 @@ class SeedVersionLedger {
 	 * @return string
 	 */
 	private function key(string $appId): string {
-		$key = self::KEY_PREFIX . $appId;
+		$key = $this->prefix . $appId;
 		if (strlen($key) <= self::MAX_KEY_LENGTH) {
 			return $key;
 		}
 
-		return self::KEY_PREFIX . sha1($appId);
+		return $this->prefix . sha1($appId);
 	}//end key()
 }//end class
