@@ -419,6 +419,7 @@
 				"familyName": "Demir",
 				"email": "esra.demir@zuiddrecht.example",
 				"role": "employee",
+				"function": "Vergunningverlener",
 				"department": "Vergunningen",
 				"groups": [
 					"medewerkers",
