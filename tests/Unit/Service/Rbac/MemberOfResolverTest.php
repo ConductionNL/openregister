@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -97,7 +98,7 @@ class MemberOfResolverTest extends TestCase {
 		return new MemberOfResolver(
 			schemas: $this->schemas,
 			registers: $this->registers,
-			objects: $this->objects,
+			container: $this->containerGiving($this->objects),
 			operators: new OperatorEvaluator(new NullLogger()),
 			logger: new NullLogger()
 		);
@@ -317,6 +318,25 @@ class MemberOfResolverTest extends TestCase {
 	}//end testAFailingReadGivesAnEmptySet()
 
 	/**
+	 * A container that cannot give MagicMapper on the first read also admits nobody.
+	 *
+	 * @return void
+	 */
+	public function testAContainerThatCannotGiveTheMapperGivesAnEmptySet(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no such service'));
+		$resolver = new MemberOfResolver(
+			schemas: $this->schemas,
+			registers: $this->registers,
+			container: $container,
+			operators: new OperatorEvaluator(new NullLogger()),
+			logger: new NullLogger()
+		);
+
+		$this->assertSame([], $resolver->valuesFor(operand: self::OPERAND, userId: 'anna'));
+	}//end testAContainerThatCannotGiveTheMapperGivesAnEmptySet()
+
+	/**
 	 * The set is read once per caller and operand for the life of the resolver.
 	 *
 	 * @return void
@@ -416,4 +436,55 @@ class MemberOfResolverTest extends TestCase {
 
 		$this->assertSame(MemberOfResolver::ROW_LIMIT, $this->searches[0]['query']['_limit']);
 	}//end testTheReadIsCapped()
+
+	/**
+	 * A container that hands out the given MagicMapper, as the real one does on first read.
+	 *
+	 * @param MagicMapper $objects The mapper to hand out.
+	 *
+	 * @return ContainerInterface
+	 */
+	private function containerGiving(MagicMapper $objects): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+		);
+		return $container;
+	}//end containerGiving()
+
+	/**
+	 * Regression (openregister#4741): constructing the resolver must not resolve MagicMapper.
+	 *
+	 * MagicMapper's constructor resolves ConditionMatcher, which autowires this class; a
+	 * resolver that pulled MagicMapper at construction recursed until the stack ran out.
+	 *
+	 * @return void
+	 */
+	public function testConstructionDoesNotResolveMagicMapper(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->expects($this->never())->method('get');
+
+		new MemberOfResolver(
+			schemas: $this->schemas,
+			registers: $this->registers,
+			container: $container,
+			operators: new OperatorEvaluator(new NullLogger()),
+			logger: new NullLogger()
+		);
+	}//end testConstructionDoesNotResolveMagicMapper()
+
+	/**
+	 * Regression (openregister#4741): no constructor parameter may be a MagicMapper.
+	 *
+	 * @return void
+	 */
+	public function testConstructorTakesNoMagicMapper(): void {
+		foreach ((new \ReflectionClass(MemberOfResolver::class))->getConstructor()->getParameters() as $parameter) {
+			$type = $parameter->getType();
+			$this->assertFalse(
+				$type instanceof \ReflectionNamedType && is_a($type->getName(), MagicMapper::class, true),
+				'MemberOfResolver must resolve MagicMapper lazily: ' . $parameter->getName()
+			);
+		}
+	}//end testConstructorTakesNoMagicMapper()
 }//end class
