@@ -42,7 +42,10 @@ Metadata fields are configured in the schema's `configuration` object:
 
 Setting `objectSlugField` switches on managed slugs for the schema. The field takes
 the same dot paths and templates as `objectNameField`; the value is slugified
-(lower case, `a-z0-9` and hyphens).
+(lower case, `a-z0-9` and hyphens). The reserved value `@schema.name` is the other
+choice: the slug becomes `<schema slug>-<object name>`, the name being the value of
+`objectNameField` (`convenanten-hello-world`). An object without a name gets no slug
+and stays reachable by its uuid; there is no fallback to other fields.
 
 - **Unique per register and schema.** A slug another live object of the same
   register and schema holds is not written: the new object is saved without a slug

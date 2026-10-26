@@ -61,6 +61,14 @@ class ObjectSlugHandler {
 	private const SUFFIX_LENGTH = 15;
 
 	/**
+	 * The `objectSlugField` value that builds the slug from the schema name and the
+	 * object's name instead of from a property: `<schema slug>-<slug of the value of
+	 * objectNameField>`. Offered as the second choice next to a property (Robert
+	 * Zondervan, 2026-10-26); frozen like every slug once set.
+	 */
+	public const SCHEMA_NAME_SOURCE = '@schema.name';
+
+	/**
 	 * Registers resolved during this request, by id.
 	 *
 	 * @var array<string, Register|null>
@@ -82,11 +90,11 @@ class ObjectSlugHandler {
 	private ObjectSlugBatch $batch;
 
 	/**
-	 * Reads a client-sent slug.
+	 * Builds the candidate: a normalised client slug, or the value `objectSlugField` names.
 	 *
-	 * @var ObjectSlugClientValue
+	 * @var ObjectSlugSource
 	 */
-	private ObjectSlugClientValue $clientValue;
+	private ObjectSlugSource $source;
 
 	/**
 	 * Constructor.
@@ -105,7 +113,7 @@ class ObjectSlugHandler {
 		private readonly ?ITimeFactory $timeFactory=null,
 	) {
 		$this->log = new ObjectSlugLog(logger: $logger);
-		$this->clientValue = new ObjectSlugClientValue(hydrator: $hydrator);
+		$this->source = new ObjectSlugSource(hydrator: $hydrator);
 		$this->batch = new ObjectSlugBatch(handler: $this, magicMapper: $magicMapper, log: $this->log);
 	}//end __construct()
 
@@ -139,7 +147,7 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
 	public function candidate(array $objectData, Schema $schema, ?string $clientSlug): ?string {
-		$normalised = $this->clientValue->normalise(clientSlug: $clientSlug);
+		$normalised = $this->source->normaliseClient(clientSlug: $clientSlug);
 		if ($normalised !== null) {
 			// Normalised like a generated slug, so `Hello` and `hello` are one slug
 			// in both the single and the bulk path and the value fits the column.
@@ -167,11 +175,11 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function differsFromStored(?string $clientSlug, string $stored): bool {
-		return $this->clientValue->differsFromStored(clientSlug: $clientSlug, stored: $stored);
+		return $this->source->differsFromStored(clientSlug: $clientSlug, stored: $stored);
 	}//end differsFromStored()
 
 	/**
-	 * The candidate built from the schema's `objectSlugField`.
+	 * The candidate built from the schema's `objectSlugField` (see {@see ObjectSlugSource}).
 	 *
 	 * @param array  $objectData The object's business data.
 	 * @param Schema $schema     The schema.
@@ -179,26 +187,7 @@ class ObjectSlugHandler {
 	 * @return string|null The slugified value cut to the column, or null when there is none.
 	 */
 	private function sourceCandidate(array $objectData, Schema $schema): ?string {
-		$businessData = $objectData;
-		if (isset($objectData['object']) === true && is_array($objectData['object']) === true) {
-			$businessData = $objectData['object'];
-		}
-
-		$value = $this->hydrator->extractMetadataValue(
-			data: $businessData,
-			fieldPath: (string)$schema->getConfiguration()['objectSlugField'],
-			schemaProperties: $schema->getProperties() ?? []
-		);
-		if ($value === null || trim($value) === '') {
-			return null;
-		}
-
-		$slug = $this->hydrator->createSlug(text: trim($value));
-		if ($slug === '') {
-			return null;
-		}
-
-		return substr($slug, 0, self::MAX_LENGTH);
+		return $this->source->candidate(objectData: $objectData, schema: $schema, maxLength: self::MAX_LENGTH);
 	}//end sourceCandidate()
 
 	/**

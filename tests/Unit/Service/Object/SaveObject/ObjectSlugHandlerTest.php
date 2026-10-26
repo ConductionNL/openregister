@@ -207,6 +207,38 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->assertStringEndsWith('-20261022120000', $slug);
 	}
 
+	public function testTheSchemaNameSourceBuildsTheSlugFromSchemaSlugAndObjectName(): void {
+		// Robert Zondervan (2026-10-26): "schema name + title" is the second choice next
+		// to a property. The object's name is what objectNameField says; the schema part
+		// is the schema slug.
+		$this->magicMapper->method('findSlugHolders')->willReturn([]);
+		$schema = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
+
+		$this->handler->applyOnSave(entity: $entity, schema: $schema, originalSlug: null, clientSlug: null);
+
+		$this->assertSame('convenanten-hello-world', $entity->getSlug());
+	}
+
+	public function testTheSchemaNameSourceFallsBackToTheSchemaTitleWhenItHasNoSlug(): void {
+		$this->magicMapper->method('findSlugHolders')->willReturn([]);
+		$schema = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
+		$schema->setSlug(null);
+		$schema->setTitle('WOO Besluiten');
+
+		$this->assertSame('woo-besluiten-hello', $this->handler->candidate(['title' => 'Hello'], $schema, null));
+	}
+
+	public function testTheSchemaNameSourceGivesNoSlugWithoutANameFieldOrName(): void {
+		// No fallback to title/name/label: the schema says what the name is, or there is none.
+		$withoutNameField = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE]);
+		$withEmptyName = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
+
+		$this->assertNull($this->handler->candidate(['title' => 'Hello'], $withoutNameField, null));
+		$this->assertNull($this->handler->candidate(['title' => '   '], $withEmptyName, null));
+		$this->assertNull($this->handler->candidate(['body' => 'x'], $withEmptyName, null));
+	}
+
 	public function testAStoredSlugIsFrozenWhenTheSourceFieldIsRenamed(): void {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World Renamed'], 'hello-world');

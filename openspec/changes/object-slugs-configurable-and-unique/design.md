@@ -63,6 +63,12 @@ assumption, pending Robert's answer (Q8): a re-import with a new uuid waits for 
 
 **Goals:**
 
+- `objectSlugField` accepts, next to a property path or template, the reserved value
+  `@schema.name`: the slug becomes `<schema slug>-<object name>` (`objectNameField`). It is
+  the second choice in the schema editor, not a fallback: an object without a name keeps
+  the uuid link as its address (Robert Zondervan, 2026-10-26, after the 23-10 note
+  "kenmerk als slug en als secondary optie schemanaam+title"). `ObjectSlugSource`
+  builds both kinds of candidate for `ObjectSlugHandler`.
 - `objectSlugField` and `objectSlugSuffix` round-trip through schema save, import and the
   schema editor.
 - One place decides an object's slug, for single save, bulk save and the backfill alike.

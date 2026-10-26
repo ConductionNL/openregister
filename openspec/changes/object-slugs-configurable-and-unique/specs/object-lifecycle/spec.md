@@ -42,14 +42,25 @@ at that field path, converted by the single slugify routine
 hyphens, characters other than `a-z`, `0-9` and `-` removed, repeated hyphens
 collapsed, leading and trailing hyphens trimmed). When the field is absent or empty the
 candidate MUST be `null` and the object MUST get no slug. There MUST be no fallback to
-`name`, `title`, `label` or the schema title. The save pipeline MUST NOT add a `slug`
-key to the object data. The slug is entity metadata only, so it never appears in
-`@self.relations` and never causes a magic-mapper "Discarding … slug" warning.
+`name`, `title`, `label` or the schema title. The reserved value `@schema.name` is the
+one other source a schema MAY choose (Robert Zondervan, 2026-10-26: a choice, not a
+fallback): the candidate is then `<schema slug>-<object name>`, the object name being
+the value of the schema's `objectNameField`, slugified as one string; without an
+`objectNameField`, without a name value or without a schema slug and title the
+candidate MUST be `null`. The save pipeline MUST NOT add a `slug` key to the object
+data. The slug is entity metadata only, so it never appears in `@self.relations` and
+never causes a magic-mapper "Discarding … slug" warning.
 
 #### Scenario: Slug derived from the configured field
 - **GIVEN** a schema with `objectSlugField: "title"` and no object holding slug `hello-world` in its register and schema
 - **WHEN** an object with `title: "Hello World"` is created
 - **THEN** the object's `@self.slug` MUST be `hello-world`
+
+#### Scenario: The schema-name source builds the slug from schema slug and object name
+- **GIVEN** a schema with slug `convenanten`, `objectSlugField: "@schema.name"` and `objectNameField: "title"`
+- **WHEN** an object with `title: "Hello World"` is created
+- **THEN** the object's `@self.slug` MUST be `convenanten-hello-world`
+- **AND** an object without a `title` value MUST get no slug
 
 #### Scenario: Empty source field gives no slug
 - **GIVEN** a schema with `objectSlugField: "title"`

@@ -2751,8 +2751,10 @@ class Schema extends Entity implements JsonSerializable {
 	 * - 'objectImageField': (string) A dot-notation path to the field for the object's image.
 	 *   Example: 'profile.avatar' (should contain base64 encoded image data)
 	 * - 'objectSlugField': (string) A dot-notation path or template for the field an
-	 *   object's slug is built from. Example: 'kenmerk'. A slug is unique within the
-	 *   register and schema and does not change once set (#4037).
+	 *   object's slug is built from. Example: 'kenmerk'. The reserved value
+	 *   '@schema.name' builds the slug from the schema name and the object's name
+	 *   ('objectNameField') instead: '<schema slug>-<name>'. A slug is unique within
+	 *   the register and schema and does not change once set (#4037).
 	 * - 'objectSlugSuffix': (bool) Append a UTC date-time suffix to a slug that is
 	 *   already taken instead of saving the object without a slug. Default false.
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
