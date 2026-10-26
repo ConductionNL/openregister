@@ -175,7 +175,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			$evaluator,
 			new NullLogger(),
 			$groups,
-			new MemberOfResolver($schemas, $registers, $objects, $evaluator, new NullLogger())
+			new MemberOfResolver($schemas, $registers, $container, $evaluator, new NullLogger())
 		);
 
 		$permissions = new PermissionHandler(
@@ -192,13 +192,17 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 		);
 
 		$container->method('get')->willReturnCallback(
-			static function (string $id) use ($permissions, $registers) {
+			static function (string $id) use ($permissions, $registers, $objects) {
 				if ($id === PermissionHandler::class) {
 					return $permissions;
 				}
 
 				if ($id === RegisterMapper::class) {
 					return $registers;
+				}
+
+				if ($id === MagicMapper::class) {
+					return $objects;
 				}
 
 				throw new \RuntimeException('Not in this test: ' . $id);
