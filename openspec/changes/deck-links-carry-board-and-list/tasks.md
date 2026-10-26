@@ -1,0 +1,2 @@
+- [x] 1.1 boardTitle/stackTitle on linked card rows (DeckLinkService)
+- [x] 1.2 tests (DeckLinkServiceTest), red first
