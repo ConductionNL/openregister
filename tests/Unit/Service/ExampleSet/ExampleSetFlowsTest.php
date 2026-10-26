@@ -149,6 +149,46 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	}//end testAChangeQuotingAnUnknownFlowIsRefused()
 
 	/**
+	 * A flow carries finished runs on a case: each is stored in the flow's
+	 * organisation, anchored to its subject, and goes with the flow on remove.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 */
+	public function testAFlowCarriesFinishedRunsThatGoWithIt(): void {
+		$runs = [
+			['status' => 'completed', 'subject' => 'case-1', 'subjectRegister' => 'cases', 'subjectSchema' => 'case', 'triggeredBy' => 'pieter', 'created' => '2026-10-03T14:32:00+02:00'],
+			['status' => 'failed', 'subject' => 'case-1', 'error' => 'Berichtenbox niet bereikbaar', 'created' => '2026-10-04T09:12:00+02:00'],
+		];
+		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'bevestiging', 'data' => self::flow(extra: ['runs' => $runs])]]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->flowRuns, message: 'the check writes no run');
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+
+		$flow   = array_values($this->flows)[0];
+		$stored = array_values($this->flowRuns);
+		$this->assertCount(expectedCount: 2, haystack: $stored);
+		$this->assertSame(expected: $flow->getUuid(), actual: $stored[0]->getFlowId());
+		$this->assertSame(expected: 'completed', actual: $stored[0]->getStatus());
+		$this->assertSame(expected: 'case-1', actual: $stored[0]->getSubjectUuid());
+		$this->assertSame(expected: 'org-1', actual: $stored[0]->getOrganisation());
+		$this->assertSame(expected: 'pieter', actual: $stored[0]->getTriggeredBy());
+		$this->assertSame(expected: '2026-10-03 14:32', actual: $stored[0]->getCreated()->format('Y-m-d H:i'));
+		$this->assertSame(expected: 'Berichtenbox niet bereikbaar', actual: $stored[1]->getError());
+
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertCount(expectedCount: 2, haystack: $this->flowRuns, message: 'a kept flow writes its runs once');
+
+		$this->remover->remove(set: 'demo');
+		$this->assertSame(expected: [], actual: $this->flowRuns);
+	}//end testAFlowCarriesFinishedRunsThatGoWithIt()
+
+	/**
 	 * A flow that says not to be published stays a draft; one that
 	 * disappeared is reported missing.
 	 *
@@ -198,6 +238,9 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 			'a step with no type' => [self::flow(extra: ['nodes' => [['id' => 'a']]]), 'an id and a type'],
 			'a line to nowhere'   => [self::flow(extra: ['edges' => [['from' => 'start', 'to' => 'ghost']]]), 'from one step'],
 			'an owner'            => [self::flow(extra: ['owner' => 'admin']), 'field "owner"'],
+			'a waiting run'       => [self::flow(extra: ['runs' => [['status' => 'suspended', 'subject' => 'case-1']]]), 'a run is finished'],
+			'a run on nothing'    => [self::flow(extra: ['runs' => [['status' => 'completed']]]), 'needs the object it ran on'],
+			'a run field'         => [self::flow(extra: ['runs' => [['status' => 'completed', 'subject' => 'c', 'marking' => []]]]), 'field "marking"'],
 			'publish as a word'   => [self::flow(extra: ['publish' => 'ja']), 'publish is true or false'],
 		];
 	}//end refusedFlows()
