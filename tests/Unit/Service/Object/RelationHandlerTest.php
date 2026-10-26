@@ -830,6 +830,35 @@ class RelationHandlerTest extends TestCase {
 	}//end testGetUsesReturnsErrorResponseOnException()
 
 	/**
+	 * A slug two objects of the register and schema hold (#4037) is not an empty
+	 * relation list: the exception reaches the controller, which answers 409.
+	 *
+	 * @return void
+	 */
+	public function testGetUsesPropagatesAnAmbiguousIdentifier(): void {
+		$this->objectMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two objects hold "dubbel"'));
+		$this->logger->expects($this->never())->method('error');
+
+		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
+		$this->handler->getUses('dubbel');
+	}//end testGetUsesPropagatesAnAmbiguousIdentifier()
+
+	/**
+	 * The same for the objects that use this one.
+	 *
+	 * @return void
+	 */
+	public function testGetUsedByPropagatesAnAmbiguousIdentifier(): void {
+		$this->objectMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two objects hold "dubbel"'));
+		$this->logger->expects($this->never())->method('error');
+
+		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
+		$this->handler->getUsedBy('dubbel');
+	}//end testGetUsedByPropagatesAnAmbiguousIdentifier()
+
+	/**
 	 * Returns default limit/offset in empty response when no query provided.
 	 *
 	 * @return void

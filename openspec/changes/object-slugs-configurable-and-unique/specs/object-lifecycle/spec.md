@@ -260,14 +260,24 @@ error codes. The body MUST NOT list the matching uuids. The history route MUST l
 object up within the register and schema of the route, deleted objects included, so an
 identifier of this register and schema never answers with another schema's history; only
 when the register or schema itself no longer resolves does it fall back to the cross-table
-lookup. The files and uses/used sub-routes do not resolve the identifier through these
-lookups and are out of scope of this requirement.
+lookup. The uses and used sub-routes MUST answer the same 409 instead of an empty list.
+The files listing `…/{id}/files` MUST list the files of the object its read check resolved
+within the register and schema, never of a cross-table lookup of the raw identifier; a
+slug held by two objects answers 404 there, the answer that route gives every refused read
+(file-actions REQ-OFOA-002), and it MUST NOT list either object's files.
 
 #### Scenario: The history route is scoped to the register and schema
 - **GIVEN** object A with slug `hello-world` in register 28 / schema 68 and an older object with slug `hello-world` in schema 63
 - **WHEN** `GET /api/objects/28/68/hello-world/audit-trails` is requested by an administrator
 - **THEN** the response MUST list A's history only
 - **AND** `GET /api/objects/28/68/dubbel/audit-trails`, where two objects of 28/68 hold `dubbel`, MUST be HTTP 409 with `"error": "ambiguous-identifier"`
+
+#### Scenario: The files and relations of a slug are those of this schema's object
+- **GIVEN** object A with slug `hello-world` in register 28 / schema 68 holding one file, and objects D and E of 28/68 both holding slug `dubbel`
+- **WHEN** `GET /api/objects/28/68/hello-world/files` is requested by a reader of A
+- **THEN** the response MUST list A's file
+- **AND** `GET /api/objects/28/68/dubbel/uses` and `…/dubbel/used` MUST be HTTP 409 with `"error": "ambiguous-identifier"`
+- **AND** `GET /api/objects/28/68/dubbel/files` MUST be HTTP 404 and list no file
 
 An exact match on the object's numeric `_id` or `_uuid` MUST win over a slug match: a
 slug that equals another object's id (`2024`) or uuid does not make that object

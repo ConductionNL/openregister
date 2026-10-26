@@ -272,7 +272,9 @@ class FilesController extends Controller {
 	 * @param bool $allowAnonymous When false (default) anonymous callers are denied; read-only published-file endpoints pass true.
 	 * @param bool $change True (default) for an action that changes files, which needs update on the object.
 	 *
-	 * @return void
+	 * @return ObjectEntity|null The object the route names, resolved within its register and
+	 *                           schema (so a slug is this schema's object, #4037); null for an
+	 *                           anonymous caller, who is gated on publication instead.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 *
@@ -288,7 +290,7 @@ class FilesController extends Controller {
 		string $id,
 		bool $allowAnonymous = false,
 		bool $change = true,
-	): void {
+	): ?ObjectEntity {
 		// Anonymous callers are denied by default. Published-file READ
 		// endpoints (e.g. preview) pass $allowAnonymous=true to keep their
 		// existing anonymous access, which is gated on publication.
@@ -299,7 +301,7 @@ class FilesController extends Controller {
 				);
 			}
 
-			return;
+			return null;
 		}
 
 		// The object rule is the only gate: an object's files live in the
@@ -313,11 +315,10 @@ class FilesController extends Controller {
 				// change either. Asked after the access rule, so a caller
 				// without access still gets 404/403 and learns nothing of the state.
 				$this->fileWriteGuard?->assertWritable(object: $object);
-				return;
+				return $object;
 			}
 
-			$this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
-			return;
+			return $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
 		}
 
 		// Legacy wiring without the guard: the object read check alone.
@@ -326,6 +327,11 @@ class FilesController extends Controller {
 			$this->fileWriteGuard?->assertWritable(object: $object);
 		}
 
+		if ($object instanceof ObjectEntity) {
+			return $object;
+		}
+
+		return null;
 	}//end ensureObjectAccess()
 
 	/**
@@ -584,10 +590,15 @@ class FilesController extends Controller {
 			// A person sees the list only when they may read the object. Every
 			// file sits in the openregister account's home, so without this
 			// check any signed-in user could list any object's files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
+			$object = $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
 
 			// Get the raw files from the file service.
-			$files = $this->fileService->getFiles(object: $id, sharedFilesOnly: $isAnonymous);
+			// List the files of the object the access check resolved within this
+			// register and schema: a slug names THIS schema's object (#4037). The raw
+			// identifier would be looked up across every table, where another schema's
+			// object with the same slug could win. Anonymous callers have no resolved
+			// object and keep the identifier path.
+			$files = $this->fileService->getFiles(object: ($object ?? $id), sharedFilesOnly: $isAnonymous);
 
 			// Format the files with pagination using request parameters.
 			$formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
