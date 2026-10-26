@@ -38,9 +38,10 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  */
 abstract class ExampleSetEngineRows {
 	/**
-	 * The parts `--refresh` writes again: a saved view, a task, a note, a read state and an export carry values that age.
+	 * The parts `--refresh` writes again: a saved view, a task, a note, a read state and an export carry values that age,
+	 * and a party link caches its party's name and e-mail address.
 	 */
-	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns'];
+	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties'];
 
 	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).
