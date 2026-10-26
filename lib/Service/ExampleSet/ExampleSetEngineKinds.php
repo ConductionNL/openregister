@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  * Tasks and saved views of an example set, together.
  *
  * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) It holds one writer per fragment part; each is a separate kind, so the count grows with the parts.
  */
 class ExampleSetEngineKinds {
 	/**
@@ -49,6 +51,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetArchival|null $archival Writes the destruction-list keys of the archival setting; null refuses them.
 	 * @param ExampleSetDeckCards|null $deckCards Writes the Deck cards a fragment puts on its objects; null refuses them.
 	 * @param ExampleSetAppointments|null $appointments Writes the appointments a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetCasePlans|null $casePlans Writes the case plans a fragment puts on its objects; null refuses them.
 	 *
 	 * @return void
 	 *
@@ -66,6 +69,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetArchival $archival=null,
 		private readonly ?ExampleSetDeckCards $deckCards=null,
 		private readonly ?ExampleSetAppointments $appointments=null,
+		private readonly ?ExampleSetCasePlans $casePlans=null,
 	) {
 	}//end __construct()
 
@@ -223,6 +227,7 @@ class ExampleSetEngineKinds {
 			'archival'   => [$this->archival, 'archival setting'],
 			'deckCards'  => [$this->deckCards, 'deck card'],
 			'appointments' => [$this->appointments, 'appointment'],
+			'casePlans'  => [$this->casePlans, 'case plan'],
 		];
 	}//end kinds()
 }//end class
