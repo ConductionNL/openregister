@@ -8,3 +8,8 @@ A fragment MAY declare `casePlans`. Each row SHALL name `object` and a `definiti
 - **GIVEN** a row on case 710d44a4 with a reached milestone, an active task, a discretionary task and a waiting one
 - **WHEN** the set is installed
 - **THEN** the case's Zaakplan card shows the four items in those states
+
+#### Scenario: a refresh after the plan moved on
+- **GIVEN** a seeded plan whose waiting item a cascade activated since
+- **WHEN** the set is refreshed
+- **THEN** the items the set created are taken away and written again in their declared states
