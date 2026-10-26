@@ -4,7 +4,7 @@
 
 The import SHALL remember, per seed object, the hash of the content it last shipped (`@self` excluded, key order ignored). When a re-import ships a seed whose version is not newer:
 - if the shipped content differs from the remembered hash, the import SHALL write the shipped seed over the stored object;
-- if it equals the remembered hash, the import SHALL leave the stored object as it is;
+- if it equals the remembered hash, the import SHALL keep every value the stored object holds, and SHALL add only the shipped fields it lacks;
 - with no remembered hash, the import SHALL add only the shipped fields the stored object lacks (null or absent), and SHALL keep every value it holds.
 
 A change to the rules an import writes by SHALL invalidate the app-level fast-skip once.
@@ -23,3 +23,10 @@ A change to the rules an import writes by SHALL invalidate the app-level fast-sk
 - **GIVEN** a remembered hash equal to the shipped content
 - **WHEN** the app imports again
 - **THEN** the stored object, edits included, is left alone
+
+The import SHALL remember a seed's content hash only after the seed is written, so a refused write is tried again on the next import.
+
+#### Scenario: a refused write is tried again
+- **GIVEN** a seed whose fill-in write the store refuses
+- **WHEN** the app imports again
+- **THEN** the import tries the fill-in again, because no hash was remembered for it
