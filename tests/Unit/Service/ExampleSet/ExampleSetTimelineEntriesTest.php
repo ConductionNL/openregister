@@ -90,6 +90,22 @@ class ExampleSetTimelineEntriesTest extends ExampleSetTestCase {
 	}//end testAnEntryIsWrittenOnceByThePersonAndRemoved()
 
 	/**
+	 * An entry without an author is the system's, as one written without a session is.
+	 *
+	 * @return void
+	 */
+	public function testAnEntryWithoutAnAuthorIsTheSystems(): void {
+		$row = self::statusChange(['message' => 'Zaak aangemaakt']);
+		unset($row['author']);
+		$this->caseWithEntries(rows: [['key' => 'aangemaakt', 'data' => $row]]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertNull(array_values($this->timelineEntries)[0]->getAuthor());
+	}//end testAnEntryWithoutAnAuthorIsTheSystems()
+
+	/**
 	 * An entry of a kind nobody declared is not written, and the install says why.
 	 *
 	 * @return void

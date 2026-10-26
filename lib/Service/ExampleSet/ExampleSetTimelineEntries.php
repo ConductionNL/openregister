@@ -5,9 +5,9 @@
  *
  * The timeline an example set gives its objects: a fragment's
  * `timelineEntries` part names the object, the entry's kind (a declared
- * timeline kind), its message, the person who wrote it, when, and optionally
- * its fields and visibility. Each row becomes one timeline entry by that
- * person at that moment, its fields checked against the kind's declaration,
+ * timeline kind), its message, when, and optionally the person who wrote it
+ * (none is the system), its fields and visibility. Each row becomes one
+ * timeline entry at that moment, its fields checked against the kind's declaration,
  * and marked with the source `example-set:<app>/<key>` so a second install
  * finds it and writes nothing. Remove deletes the entry.
  *
@@ -105,14 +105,14 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 			return 'field "'.implode('", "', $unknown).'" is not a timeline entry field a set may write';
 		}
 
-		$required = ['object' => 'the object it is on', 'kind' => 'a kind', 'message' => 'a message', 'author' => 'its author', 'at' => 'a moment'];
+		$required = ['object' => 'the object it is on', 'kind' => 'a kind', 'message' => 'a message', 'at' => 'a moment'];
 		foreach ($required as $field => $what) {
 			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
 				return 'a timeline entry needs '.$what.' ('.$field.')';
 			}
 		}
 
-		if (in_array((string) $data['author'], $users, true) === false) {
+		if (isset($data['author']) === true && in_array((string) $data['author'], $users, true) === false) {
 			return '"'.(string) $data['author'].'" is not an account the set creates or adopts';
 		}
 
@@ -166,7 +166,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 			$entry->setRegister((string) $object->getRegister());
 			$entry->setSchema((string) $object->getSchema());
 			$entry->setKind($kind);
-			$entry->setAuthor((string) $data['author']);
+			$entry->setAuthor($this->author(data: $data));
 			$entry->setVisibility((string) ($data['visibility'] ?? 'internal'));
 			$entry->setMessage((string) $data['message']);
 			$entry->setFields($fields);
@@ -220,6 +220,22 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end revert()
+
+	/**
+	 * The entry's author: the declared account, or null for an entry the system wrote, as a write without a session
+	 * leaves it.
+	 *
+	 * @param array<string, mixed> $data The row's fields.
+	 *
+	 * @return string|null
+	 */
+	private function author(array $data): ?string {
+		if (isset($data['author']) === false) {
+			return null;
+		}
+
+		return (string) $data['author'];
+	}//end author()
 
 	/**
 	 * The timeline entry mapper.
