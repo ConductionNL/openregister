@@ -100,6 +100,35 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	}//end testAPlanIsBroughtInOnceAndTakenAway()
 
 	/**
+	 * A refresh brings the plan's items back to the states the declaration gives them: an item that moved on since
+	 * (a cascade that activated it) is put back.
+	 *
+	 * @return void
+	 */
+	public function testARefreshPutsThePlanBackInItsDeclaredStates(): void {
+		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		foreach ($this->caseItems as $item) {
+			if ($item->getItemKey() === 'besluit-opstellen') {
+				$item->setState('active');
+			}
+		}
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame('refreshed', $report['casePlans']['alpha/woo-plan']);
+		$states = [];
+		foreach ($this->caseItems as $item) {
+			$states[$item->getItemKey()] = $item->getState();
+		}
+
+		$this->assertSame('available', $states['besluit-opstellen']);
+		$this->assertCount(5, $this->caseItems);
+	}//end testARefreshPutsThePlanBackInItsDeclaredStates()
+
+	/**
 	 * A faulty plan is refused at check time and nothing is written.
 	 *
 	 * @param array<string, mixed> $data   The row's fields.
