@@ -53,6 +53,7 @@ class ReferencedCalculationRefresherTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(2);
 		$schema->setSlug('case');
+		$schema->setProperties(['title' => ['type' => 'string'], 'caseType' => ['type' => 'string'], 'statusHistory' => ['type' => 'string']]);
 		$schema->setConfiguration([
 			'x-openregister-references'   => [
 				'caseType' => ['schema' => 'caseType', 'mode' => 'relatedObject', 'field' => 'caseType'],
@@ -98,7 +99,8 @@ class ReferencedCalculationRefresherTest extends TestCase {
 		$case->setUuid('case-1');
 		$case->setRegister('7');
 		$case->setSchema('2');
-		$case->setObject(['title' => 'Zaak', 'caseType' => 'type-1']);
+		// As the read hands it back: the JSON the string-typed statusHistory holds, decoded.
+		$case->setObject(['title' => 'Zaak', 'caseType' => 'type-1', 'statusHistory' => [['status' => 'ontvangen']]]);
 
 		$rows ??= $this->createMock(originalClassName: MagicMapper::class);
 		$rows->method('findAllInRegisterSchemaTable')->willReturnCallback(
@@ -151,6 +153,25 @@ class ReferencedCalculationRefresherTest extends TestCase {
 
 		$this->assertSame(expected: 1, actual: $saved);
 	}//end testAChangedReadFieldReSavesTheReferringObjects()
+
+	/**
+	 * The re-save hands a decoded string-typed value back as the stored JSON string.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/resave-restores-string-typed-values/specs/computed-fields/spec.md
+	 */
+	public function testTheReSaveRestoresDecodedStringTypedValues(): void {
+		$service = $this->createMock(originalClassName: ObjectService::class);
+		$service->expects($this->once())->method('saveObject')->with(
+			$this->callback(callback: static fn (array $object): bool => ($object['statusHistory'] ?? null) === '[{"status":"ontvangen"}]')
+		);
+
+		$this->refresher(service: $service)->refresh(
+			updated: self::caseType(data: ['title' => 'Woo', 'startableFlows' => ['flow-1']]),
+			old: self::caseType(data: ['title' => 'Woo'])
+		);
+	}//end testTheReSaveRestoresDecodedStringTypedValues()
 
 	/**
 	 * A change to a field no calculation reads re-saves nothing.

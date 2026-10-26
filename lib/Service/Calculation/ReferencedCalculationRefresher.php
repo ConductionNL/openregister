@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -51,6 +52,9 @@ use Throwable;
  * Re-saves the objects whose materialised calculations read a field of an updated object.
  *
  * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A re-save reads the referrers, resolves their schemas
+ *   and hands each row back in its stored form; each collaborator is one of those steps.
  */
 class ReferencedCalculationRefresher {
 
@@ -86,6 +90,7 @@ class ReferencedCalculationRefresher {
 	 * @param MagicMapper        $rows      Finds the referring objects.
 	 * @param ContainerInterface $container Hands out the object service on first use.
 	 * @param LoggerInterface    $logger    The logger.
+	 * @param SchemaTypeConverter $types    Restores the stored form of `type: string` values the read decoded.
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registers,
@@ -93,6 +98,7 @@ class ReferencedCalculationRefresher {
 		private readonly MagicMapper $rows,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
 	}//end __construct()
 
@@ -320,8 +326,9 @@ class ReferencedCalculationRefresher {
 		$saved   = 0;
 		foreach ($rows as $row) {
 			try {
+				// The read decodes JSON held in a `type: string` property; hand it back as stored.
 				$service->saveObject(
-					object: ($row->getObject() ?? []),
+					object: $this->types->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
 					register: $row->getRegister(),
 					schema: $row->getSchema(),
 					uuid: $row->getUuid(),
