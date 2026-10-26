@@ -98,6 +98,8 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'personal', actual: $link->getCalendarUri());
 		$this->assertSame(expected: 'Stadskantoor, balie 3', actual: $link->getLocation());
 		$this->assertSame(expected: 'alpha', actual: $link->getLinkedBy());
+		$this->assertSame(expected: '2026-10-14 08:00 UTC', actual: $link->getDtstart()->format('Y-m-d H:i T'), message: 'the link holds the moment in UTC');
+		$this->assertSame(expected: '2026-10-14 08:30 UTC', actual: $link->getDtend()->format('Y-m-d H:i T'));
 
 		$this->installer->install(plan: $plan, today: $this->today());
 		$this->assertCount(expectedCount: 1, haystack: $this->calendarObjects, message: 'a kept appointment is written once');

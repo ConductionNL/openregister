@@ -169,8 +169,9 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 			$link->setEventUid($uid);
 			$link->setEventUri($uri);
 			$link->setSummary((string) $data['summary']);
-			$link->setDtstart(new DateTime((string) $data['start']));
-			$link->setDtend($this->dateOrNull(value: ($data['end'] ?? null)));
+			// The link table holds wall time without a zone and is read back as UTC.
+			$link->setDtstart((new DateTime((string) $data['start']))->setTimezone(new DateTimeZone('UTC')));
+			$link->setDtend($this->dateOrNull(value: ($data['end'] ?? null))?->setTimezone(new DateTimeZone('UTC')));
 			$link->setLocation($this->textOrNull(value: ($data['location'] ?? null)));
 			$link->setLinkedBy($app);
 			$link->setLinkedAt(new DateTime());
