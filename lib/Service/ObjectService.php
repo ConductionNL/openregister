@@ -2655,7 +2655,8 @@ class ObjectService implements ObjectServiceInterface
      * that differs from what is stored, `immutable` accepts the first value
      * and refuses every later change.
      *
-     * No-op on CREATE (uuid === null). On UPDATE:
+     * No-op on CREATE (uuid === null). `readOnly` is not enforced inside a
+     * SystemOperationContext; `immutable` is. On UPDATE:
      *  1. Strip `@self` from the incoming payload (it is not a user-controllable
      *     business field — readOnly applies to schema properties, not metadata).
      *  2. Load the previously-stored business data via the magic mapper.
@@ -2675,6 +2676,8 @@ class ObjectService implements ObjectServiceInterface
      * @return void
      *
      * @throws ValidationException When one or more readOnly properties were mutated.
+     *
+     * @spec openspec/changes/readonly-is-stamped-by-system-operations/specs/object-lifecycle/spec.md#requirement-a-system-operation-may-stamp-a-readonly-property
      */
     private function enforceReadOnlyOnUpdate(array $object, ?string $uuid): void
     {
@@ -2692,11 +2695,17 @@ class ObjectService implements ObjectServiceInterface
         $candidate = $object;
         unset($candidate['@self']);
 
-        $violations = $this->validateHandler->validateReadOnlyConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
-            schema: $this->currentSchema
-        );
+        // `readOnly` means a client may not write the field; a trusted system
+        // operation is what stamps it, so it is not refused there. `immutable`
+        // below still holds for everyone.
+        $violations = [];
+        if (SystemOperationContext::isActive() === false) {
+            $violations = $this->validateHandler->validateReadOnlyConstraints(
+                incomingObject: $candidate,
+                existingObject: $existingData,
+                schema: $this->currentSchema
+            );
+        }
 
         // `immutable: true` is checked here rather than in a second private
         // method so it reuses the record this one already loaded. Two methods
