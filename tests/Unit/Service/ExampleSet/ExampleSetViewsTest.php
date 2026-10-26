@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
@@ -80,7 +82,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['alpha/zoek-lindelaan' => 'created'], $report['views']);
-		$view = $this->savedViews['view-1'];
+		$view = $this->savedViews[ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')];
 		$this->assertSame('esra.demir', $view->getOwner());
 		$this->assertTrue($view->getIsPublic());
 		$this->assertSame('Lindelaan', $view->getQuery()['search']);
@@ -94,6 +96,124 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		$this->assertSame(1, $removed['removed']['views']);
 		$this->assertSame([], $this->savedViews);
 	}
+
+	/**
+	 * A view can be shared with the set's own groups and accounts, as board
+	 * DqFilterDelen draws Pieter's "Wacht op inwoner" shared with Woo en
+	 * informatie (may use) and Anouk Bakker (may update).
+	 *
+	 * @return void
+	 */
+	public function testAViewIsWrittenWithItsShares(): void {
+		$view = $this->savedSearch();
+		$view['data']['sharedWith'] = [
+			['group' => '{{cast:staff.gid}}', 'mode' => 'read'],
+			['user' => '{{cast:sanne.uid}}', 'mode' => 'write'],
+		];
+		$this->withViews(views: [$view]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame(
+			expected: [['group' => 'demo-staff', 'mode' => 'read'], ['user' => 'sanne.devries', 'mode' => 'write']],
+			actual: $this->savedViews[ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')]->getSharedWith()
+		);
+	}//end testAViewIsWrittenWithItsShares()
+
+	/**
+	 * A user preference may quote a view the same fragment declares, as
+	 * board DqFilterInMenu has Pieter's "Termijn deze week" in his menu: the
+	 * check accepts the placeholder before the view exists, and the install
+	 * writes the preference after the view, with its uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 */
+	public function testAPreferenceQuotesAViewOfItsFragment(): void {
+		$this->app(app: 'alpha', fragment: [
+			'views'           => [$this->savedSearch()],
+			'userPreferences' => [[
+				'user'  => '{{cast:esra.uid}}',
+				'key'   => 'pref_cn_saved_view_menu',
+				'value' => '[{"id":"{{view:zoek-lindelaan.uuid}}","page":"Search","name":"Lindelaan"}]',
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->savedViews, message: 'the check writes no view');
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(
+			expected: '[{"id":"'.ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan').'","page":"Search","name":"Lindelaan"}]',
+			actual: $this->userValues['esra.demir']['alpha']['pref_cn_saved_view_menu']
+		);
+	}//end testAPreferenceQuotesAViewOfItsFragment()
+
+	/**
+	 * A preference quoting a view the fragment does not declare refuses the set.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 */
+	public function testAPreferenceQuotingAnUnknownViewIsRefused(): void {
+		$this->app(app: 'alpha', fragment: [
+			'views'           => [$this->savedSearch()],
+			'userPreferences' => [[
+				'user'  => '{{cast:esra.uid}}',
+				'key'   => 'pref_cn_saved_view_menu',
+				'value' => '[{"id":"{{view:nope.uuid}}","page":"Search","name":"Nope"}]',
+			]],
+		]);
+
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
+	}//end testAPreferenceQuotingAnUnknownViewIsRefused()
+
+	/**
+	 * A refresh updates a view where it is, so its uuid, and every link and menu entry that names it, stays.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function testARefreshUpdatesAViewInPlace(): void {
+		$this->withViews([$this->savedSearch()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$before = array_keys($this->savedViews);
+
+		$this->withViews([['key' => 'zoek-lindelaan', 'data' => ['name' => 'Lindelaan en Parkweg'] + $this->savedSearch()['data']]]);
+		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame($before, array_keys($this->savedViews));
+		$this->assertSame('Lindelaan en Parkweg', $this->savedViews[$before[0]]->getName());
+	}//end testARefreshUpdatesAViewInPlace()
+
+	/**
+	 * A seeded view's uuid comes from its app and key, so a remove and a new install give it the same uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function testAViewKeepsItsUuidAcrossARemove(): void {
+		$this->withViews([$this->savedSearch()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->remover->remove(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame([ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')], array_keys($this->savedViews));
+	}//end testAViewKeepsItsUuidAcrossARemove()
 
 	public function testAViewThatDisappearedIsReportedMissing(): void {
 		$this->withViews([$this->savedSearch()]);
@@ -131,6 +251,19 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 			'a stranger'    => [['name' => 'V', 'owner' => 'somebody.else'], 'owner "somebody.else"'],
 			'another field' => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'favoredBy' => []], 'field "favoredBy"'],
 			'a bad query'   => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'query' => 'Lindelaan'], 'query must be an object'],
+			'shares not a list' => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => 'staff'], 'sharedWith must be a list'],
+			'a share to a stranger' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['user' => 'somebody.else', 'mode' => 'read']]],
+				'share to "somebody.else"',
+			],
+			'a share without a target' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['mode' => 'read']]],
+				'a share names one user or one group',
+			],
+			'a share with a bad mode' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['group' => 'demo-staff', 'mode' => 'admin']]],
+				'mode "admin"',
+			],
 		];
 	}
 }//end class

@@ -162,7 +162,11 @@ class ExampleSetCatalogue {
 			'timezone'  => (string) ($castFile['timezone'] ?? 'UTC'),
 			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file'], set: $set),
 			'requires'  => $this->requiredRegisters(declared: (array) ($castFile['requires'] ?? []), file: $castFile['@file']),
-			'organisations' => $this->organisationEntities(declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []), file: $castFile['@file']),
+			'organisations' => $this->organisationEntities(
+				declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []),
+				file: $castFile['@file'],
+				people: (array) ($castFile['cast']['people'] ?? [])
+			),
 			'fragments' => [],
 			'skipped'   => $ordered['skipped'],
 		];
@@ -296,6 +300,18 @@ class ExampleSetCatalogue {
 			'tasks'           => $this->keyedRows(file: $file, declared: (array) ($fragment['tasks'] ?? []), noun: 'task'),
 			'views'           => $this->keyedRows(file: $file, declared: (array) ($fragment['views'] ?? []), noun: 'view'),
 			'watchers'        => $this->keyedRows(file: $file, declared: (array) ($fragment['watchers'] ?? []), noun: 'watcher'),
+			'parties'         => $this->keyedRows(file: $file, declared: (array) ($fragment['parties'] ?? []), noun: 'party'),
+			'notes'           => $this->keyedRows(file: $file, declared: (array) ($fragment['notes'] ?? []), noun: 'note'),
+			'readStates'      => $this->keyedRows(file: $file, declared: (array) ($fragment['readStates'] ?? []), noun: 'read state'),
+			'flows'           => $this->keyedRows(file: $file, declared: (array) ($fragment['flows'] ?? []), noun: 'flow'),
+			'exportRuns'      => $this->keyedRows(file: $file, declared: (array) ($fragment['exportRuns'] ?? []), noun: 'export'),
+			'deckCards'       => $this->keyedRows(file: $file, declared: (array) ($fragment['deckCards'] ?? []), noun: 'deck card'),
+			'appointments'    => $this->keyedRows(file: $file, declared: (array) ($fragment['appointments'] ?? []), noun: 'appointment'),
+			'casePlans'       => $this->keyedRows(file: $file, declared: (array) ($fragment['casePlans'] ?? []), noun: 'case plan'),
+			'collectivesPages' => $this->keyedRows(file: $file, declared: (array) ($fragment['collectivesPages'] ?? []), noun: 'collectives page'),
+			'talkConversations' => $this->keyedRows(file: $file, declared: (array) ($fragment['talkConversations'] ?? []), noun: 'talk conversation'),
+			'auditEntries'    => $this->keyedRows(file: $file, declared: (array) ($fragment['auditEntries'] ?? []), noun: 'audit entry'),
+			'archival'        => $this->archival(app: $app, file: $file, declared: (array) ($fragment['archival'] ?? [])),
 		];
 	}//end fragment()
 
@@ -335,6 +351,27 @@ class ExampleSetCatalogue {
 	}//end keyedRows()
 
 	/**
+	 * The archival setting rows of a fragment: only OpenRegister's own fragment may write OpenRegister's setting.
+	 *
+	 * @param string            $app      The app that ships the fragment.
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared rows.
+	 *
+	 * @return array<int, array{key: string, data: array<string, mixed>}>
+	 *
+	 * @throws ExampleSetException When another app declares the part, or a row lacks a key or fields.
+	 *
+	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 */
+	private function archival(string $app, string $file, array $declared): array {
+		if ($declared !== [] && $app !== ExampleSetOrder::CAST_APP) {
+			throw new ExampleSetException($file.': archival is OpenRegister\'s own setting; only OpenRegister\'s fragment may write it.');
+		}
+
+		return $this->keyedRows(file: $file, declared: $declared, noun: 'archival setting');
+	}//end archival()
+
+	/**
 	 * The service accounts of a fragment: a key and an account id each.
 	 *
 	 * @param string            $file     The fragment file, for messages.
@@ -372,9 +409,10 @@ class ExampleSetCatalogue {
 	 * @param string            $file     The fragment file, for messages.
 	 * @param array<int, mixed> $declared The declared entries.
 	 *
-	 * @return array<int, array{key: string, value: mixed, generate: bool}>
+	 * @return array<int, array{key: string, value: mixed, generate: bool, type: string}>
 	 *
-	 * @throws ExampleSetException When an entry names another app, lacks a key, or has no value to write.
+	 * @throws ExampleSetException When an entry names another app, lacks a key, has no value to write, or a type it
+	 *                             cannot write or whose value does not fit.
 	 */
 	private function appConfig(string $app, string $file, array $declared): array {
 		$entries = [];
@@ -389,11 +427,45 @@ class ExampleSetCatalogue {
 				throw new ExampleSetException($file.': app config '.$index.' needs a key and a value, or generate: true.');
 			}
 
-			$entries[] = ['key' => $entry['key'], 'value' => ($entry['value'] ?? ''), 'generate' => $generate];
+			$entries[] = [
+				'key'      => $entry['key'],
+				'value'    => ($entry['value'] ?? ''),
+				'generate' => $generate,
+				'type'     => $this->appConfigType(file: $file, index: (int) $index, entry: $entry, generate: $generate),
+			];
 		}
 
 		return $entries;
 	}//end appConfig()
+
+	/**
+	 * The type an app config entry is written with: `string`, or `int` for a key its app reads as an integer.
+	 *
+	 * @param string               $file     The fragment file, for messages.
+	 * @param int                  $index    The entry's position, for messages.
+	 * @param array<string, mixed> $entry    The declared entry.
+	 * @param bool                 $generate Whether the set generates the value.
+	 *
+	 * @return string
+	 *
+	 * @throws ExampleSetException When the type is not one a set writes, or an integer's value is no integer.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the value is generated is the entry's own fact.
+	 *
+	 * @spec openspec/changes/example-set-typed-app-config/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 */
+	private function appConfigType(string $file, int $index, array $entry, bool $generate): string {
+		$type = (string) ($entry['type'] ?? 'string');
+		if (in_array($type, ['string', 'int'], true) === false) {
+			throw new ExampleSetException($file.': app config '.$index.' has type "'.$type.'"; a set writes string or int.');
+		}
+
+		if ($type === 'int' && $generate === false && preg_match('/^(-?\d+|\{\{[^{}]+\}\})$/', (string) ($entry['value'] ?? '')) !== 1) {
+			throw new ExampleSetException($file.': app config '.$index.' ("'.(string) $entry['key'].'") is an integer; its value is not.');
+		}
+
+		return $type;
+	}//end appConfigType()
 
 	/**
 	 * The per-user preferences of a fragment, each for the fragment's own app.
@@ -466,16 +538,26 @@ class ExampleSetCatalogue {
 	}//end requiredRegisters()
 
 	/**
-	 * The OpenRegister organisations the cast needs, each with a key, a name and a slug.
+	 * The OpenRegister organisations the cast declares, each with its quota and its members' accounts.
 	 *
-	 * @param array<int, mixed> $declared The declared organisations.
-	 * @param string            $file     The cast file, for messages.
+	 * @param array<int, mixed>  $declared The declared organisations.
+	 * @param string             $file     The cast file, for messages.
+	 * @param array<int, mixed>  $people   The cast's people, to turn member keys into accounts.
 	 *
-	 * @return array<int, array{key: string, name: string, slug: string, description: string}>
+	 * @return array<int, array{key: string, name: string, slug: string, description: string, quota: array<string, int>, members: array<int, string>}>
 	 *
-	 * @throws ExampleSetException When one lacks a key, a name or a slug.
+	 * @throws ExampleSetException When an organisation lacks a key, name or slug, names a quota that is not a whole number,
+	 *                             or a member the cast does not hold.
+	 *
+	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
-	private function organisationEntities(array $declared, string $file): array {
+	private function organisationEntities(array $declared, string $file, array $people=[]): array {
+		$accounts = [];
+		foreach ($people as $person) {
+			$person = (array) $person;
+			$accounts[(string) ($person['key'] ?? '')] = (string) ($person['uid'] ?? '');
+		}
+
 		$organisations = [];
 		foreach ($declared as $index => $organisation) {
 			$organisation = (array) $organisation;
@@ -488,11 +570,79 @@ class ExampleSetCatalogue {
 				'name'        => (string) $organisation['name'],
 				'slug'        => (string) $organisation['slug'],
 				'description' => (string) ($organisation['description'] ?? ''),
+				'type'        => (string) ($organisation['type'] ?? ''),
+				'contactEmail' => (string) ($organisation['contactEmail'] ?? ''),
+				'quota'       => $this->organisationQuota(declared: ($organisation['quota'] ?? []), file: $file, slug: (string) $organisation['slug']),
+				'members'     => $this->organisationMembers(
+					declared: ($organisation['members'] ?? []),
+					accounts: $accounts,
+					file: $file,
+					slug: (string) $organisation['slug']
+				),
 			];
 		}
 
 		return $organisations;
 	}//end organisationEntities()
+
+	/**
+	 * An organisation's declared quota: storage (bytes), requests, bandwidth,
+	 * users and objects, each a whole number, and objectsSchema, the slug of the
+	 * schema the object quota counts.
+	 *
+	 * @param mixed  $declared The declared quota.
+	 * @param string $file     The cast file, for messages.
+	 * @param string $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<string, int|string>
+	 *
+	 * @throws ExampleSetException When a key is unknown or a value is not a whole number.
+	 */
+	private function organisationQuota(mixed $declared, string $file, string $slug): array {
+		$quota = [];
+		foreach ((array) $declared as $key => $value) {
+			if ($key === 'objectsSchema' && is_string($value) === true && $value !== '') {
+				$quota[$key] = $value;
+				continue;
+			}
+
+			if (in_array($key, ['storage', 'requests', 'bandwidth', 'users', 'objects'], true) === false || is_int($value) === false || $value < 0) {
+				throw new ExampleSetException(
+					$file.': OpenRegister organisation "'.$slug.'": quota "'.$key.'" must be storage, requests, bandwidth, users or objects'
+					.' with a whole number, or objectsSchema with a schema slug.'
+				);
+			}
+
+			$quota[$key] = $value;
+		}
+
+		return $quota;
+	}//end organisationQuota()
+
+	/**
+	 * The accounts of an organisation's declared members, which are cast people's keys.
+	 *
+	 * @param mixed                 $declared The declared member keys.
+	 * @param array<string, string> $accounts Each cast person's account, by key.
+	 * @param string                $file     The cast file, for messages.
+	 * @param string                $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @throws ExampleSetException When a member is not a cast person with an account.
+	 */
+	private function organisationMembers(mixed $declared, array $accounts, string $file, string $slug): array {
+		$members = [];
+		foreach ((array) $declared as $key) {
+			if (($accounts[(string) $key] ?? '') === '') {
+				throw new ExampleSetException($file.': OpenRegister organisation "'.$slug.'": member "'.$key.'" is not a cast person with an account.');
+			}
+
+			$members[] = $accounts[(string) $key];
+		}
+
+		return $members;
+	}//end organisationMembers()
 
 	/**
 	 * The objects or changes of a fragment, each checked for its parts and a key of its own.

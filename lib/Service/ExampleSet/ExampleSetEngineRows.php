@@ -38,6 +38,12 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  */
 abstract class ExampleSetEngineRows {
 	/**
+	 * The parts `--refresh` writes again: a saved view, a task, a note, a read state and an export carry values that age,
+	 * and a party link caches its party's name and e-mail address.
+	 */
+	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties'];
+
+	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).
 	 *
 	 * @return string
@@ -103,6 +109,33 @@ abstract class ExampleSetEngineRows {
 	abstract public function revert(array $entry): string;
 
 	/**
+	 * Whether a refresh updates a held row where it is instead of taking it away and writing it again.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function updatesInPlace(): bool {
+		return false;
+	}//end updatesInPlace()
+
+	/**
+	 * Update a held row where it is; a kind that updatesInPlace() overrides this.
+	 *
+	 * @param array<string, mixed> $entry The record entry of the earlier write.
+	 * @param string               $app   The app that ships the fragment.
+	 * @param string               $key   The row's key in the fragment.
+	 * @param array<string, mixed> $data  The filled fields.
+	 *
+	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, or why the update failed.
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function update(array $entry, string $app, string $key, array $data): array {
+		return $this->write(app: $app, key: $key, data: $data);
+	}//end update()
+
+	/**
 	 * Check the rows of one fragment: each fills and passes refusal().
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
@@ -148,10 +181,15 @@ abstract class ExampleSetEngineRows {
 	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$part    = $this->part();
 		$changed = false;
+		$refresh = (($context['refresh'] ?? false) === true && in_array($part, self::REFRESHED, true) === true);
 		foreach (($fragment[$part] ?? []) as $entry) {
 			$name = $fragment['app'].'/'.$entry['key'];
 			$report[$part][$name] = 'kept';
-			if (isset($record[$part][$name]) === true) {
+			$held    = isset($record[$part][$name]);
+			$earlier = ($record[$part][$name] ?? []);
+			$where   = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'"';
+			$mode    = $this->mode(held: $held, refresh: $refresh, earlier: $earlier, where: $where, report: $report);
+			if ($mode === 'skip') {
 				continue;
 			}
 
@@ -163,7 +201,7 @@ abstract class ExampleSetEngineRows {
 			}
 
 			if ($made['error'] === '') {
-				$made = $this->write(app: $fragment['app'], key: $entry['key'], data: $data);
+				$made = $this->writeOrUpdate(mode: $mode, earlier: $earlier, app: $fragment['app'], key: $entry['key'], data: $data);
 			}
 
 			if ($made['entry'] === null) {
@@ -173,10 +211,82 @@ abstract class ExampleSetEngineRows {
 			}
 
 			$record[$part][$name] = $made['entry'];
-			$report[$part][$name] = 'created';
+			$report[$part][$name] = ['created', 'refreshed'][(int) $held];
 			$changed = true;
 		}//end foreach
 
 		return $changed;
 	}//end installFragment()
+
+	/**
+	 * What this run does with a row: `write` it, `update` the held one where it is, or `skip` a held one.
+	 *
+	 * @param bool                 $held    Whether the record holds the row.
+	 * @param bool                 $refresh Whether this run refreshes this part.
+	 * @param array<string, mixed> $earlier The record entry of the earlier write.
+	 * @param string               $where   The row, for messages.
+	 * @param array<string, mixed> $report  The report; gains a row that could not be taken away.
+	 *
+	 * @return string
+	 */
+	private function mode(bool $held, bool $refresh, array $earlier, string $where, array &$report): string {
+		if ($held === false) {
+			return 'write';
+		}
+
+		if ($refresh === true && $this->updatesInPlace() === true) {
+			return 'update';
+		}
+
+		if ($this->writesAgain(refresh: $refresh, entry: $earlier, where: $where, report: $report) === true) {
+			return 'write';
+		}
+
+		return 'skip';
+	}//end mode()
+
+	/**
+	 * Write a row, or update the held one where it is.
+	 *
+	 * @param string               $mode    `write` or `update`, from mode().
+	 * @param array<string, mixed> $earlier The record entry of the earlier write.
+	 * @param string               $app     The app that ships the fragment.
+	 * @param string               $key     The row's key in the fragment.
+	 * @param array<string, mixed> $data    The filled fields.
+	 *
+	 * @return array{error: string, entry: array<string, mixed>|null}
+	 */
+	private function writeOrUpdate(string $mode, array $earlier, string $app, string $key, array $data): array {
+		if ($mode === 'update') {
+			return $this->update(entry: $earlier, app: $app, key: $key, data: $data);
+		}
+
+		return $this->write(app: $app, key: $key, data: $data);
+	}//end writeOrUpdate()
+
+	/**
+	 * Whether a row an earlier run wrote is written again: only on `--refresh`, after the old row is taken away; false
+	 * (and named under `dropped`) when it could not be taken away, so the old row stays and is not written twice.
+	 *
+	 * @param bool                 $refresh Whether this run refreshes this part.
+	 * @param array<string, mixed> $entry  The record entry of the row.
+	 * @param string               $where  The fragment file and the row, for the report.
+	 * @param array<string, mixed> $report The report.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	private function writesAgain(bool $refresh, array $entry, string $where, array &$report): bool {
+		if ($refresh === false) {
+			return false;
+		}
+
+		if ($this->revert(entry: $entry) === 'failed') {
+			$report['dropped'][] = $where.': not refreshed, the earlier one could not be taken away';
+			return false;
+		}
+
+		return true;
+	}//end writesAgain()
 }//end class

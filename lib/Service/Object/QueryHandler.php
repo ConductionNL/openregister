@@ -614,7 +614,8 @@ class QueryHandler {
 			|| empty($query['_fields'] ?? null) === false
 			|| empty($query['_filter'] ?? null) === false
 			|| empty($query['_unset'] ?? null) === false
-			|| $hasPropAuth === true;
+			|| $hasPropAuth === true
+			|| self::declaresLenses(schemas: $schemas) === true;
 
 		// Apply complex rendering if needed.
 		if ($hasComplexRendering === true && is_array($results) === true) {
@@ -819,4 +820,29 @@ class QueryHandler {
 			perQueryCap: $this->dictionary->perQueryCap()
 		);
 	}//end expandSearchTerm()
+
+	/**
+	 * Whether any of the schemas declares a lens. A lens is resolved while an
+	 * object is rendered, so rows of such a schema take the render path, or a
+	 * list would answer without the values a single read shows.
+	 *
+	 * @param array<int|string, mixed> $schemas Schema entities or serialised schemas.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 */
+	public static function declaresLenses(array $schemas): bool {
+		foreach ($schemas as $schema) {
+			if ($schema instanceof \OCA\OpenRegister\Db\Schema && $schema->getLenses() !== []) {
+				return true;
+			}
+
+			if (is_array($schema) === true && empty($schema['configuration'][\OCA\OpenRegister\Db\Schema::LENS_ANNOTATION] ?? null) === false) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end declaresLenses()
 }//end class

@@ -723,18 +723,17 @@ class ArchivalControllerTest extends TestCase {
 	// ==================================================================================
 
 	/**
-	 * Test listing legal holds returns OK with empty results.
+	 * Listing legal holds answers the held records the service found.
 	 */
 	public function testListLegalHoldsOk(): void {
 		$this->setUpArchivist();
+		$held = ['results' => [['id' => 'z-1', 'register' => '5', 'schema' => '9', 'name' => 'Zaak', 'holds' => [['reason' => 'Bezwaar loopt']]]], 'total' => 1, 'truncated' => false];
+		$this->legalHoldService->expects($this->once())->method('listActiveHolds')->willReturn($held);
 
 		$response = $this->controller->listLegalHolds();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$data = $response->getData();
-		$this->assertArrayHasKey('results', $data);
-		$this->assertArrayHasKey('total', $data);
-		$this->assertSame(0, $data['total']);
+		$this->assertSame($held, $response->getData());
 	}
 
 	// ==================================================================================

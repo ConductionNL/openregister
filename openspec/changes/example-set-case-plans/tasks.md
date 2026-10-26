@@ -1,0 +1,2 @@
+- [x] 1.1 ExampleSetCasePlans part, wired in EngineKinds, Catalogue and Record
+- [x] 1.2 tests (ExampleSetCasePlansTest)

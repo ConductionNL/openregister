@@ -1,0 +1,2 @@
+- [x] T01 ExampleSetTasks accepts taskKey and organisation; taskKey becomes the engine key
+- [x] T02 PHPUnit: a declared key and organisation reach the engine, an undeclared key stays the set's own

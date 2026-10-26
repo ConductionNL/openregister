@@ -57,8 +57,9 @@ class TaskAuthorizationService {
 	 * Which relationship each verb requires of the caller.
 	 *
 	 * The spec's minimums, as data: claim needs pool membership; unclaim,
-	 * delegate, complete, resolve and checklist need the assignee; assign,
-	 * reassign and cancel need the requester (an administrator passes all).
+	 * delegate, complete, resolve and checklist need the assignee; edit needs
+	 * the assignee or pool membership; assign, reassign and cancel need the
+	 * requester (an administrator passes all).
 	 *
 	 * @var array<string, string> verb => private rule method.
 	 */
@@ -75,6 +76,9 @@ class TaskAuthorizationService {
 		// Offer rewrites the pool AND the routing fallback, which decides who
 		// ends up assigned: that is the requester's call, nobody else's.
 		'offer' => 'assertRequester',
+		// Editing the title, description, due date or priority belongs to
+		// whoever works the task: the assignee or a member of its pool.
+		'edit' => 'assertAssigneeOrPoolMember',
 	];
 
 	/**
@@ -82,7 +86,7 @@ class TaskAuthorizationService {
 	 *
 	 * @var array<int, string>
 	 */
-	private const REFUSED_FOR_EXTERNAL = ['claim', 'unclaim', 'delegate', 'offer', 'assign', 'reassign'];
+	private const REFUSED_FOR_EXTERNAL = ['claim', 'unclaim', 'delegate', 'offer', 'assign', 'reassign', 'edit'];
 
 	/**
 	 * Verbs that ANSWER a task, admitted on an external task to the matched
@@ -172,6 +176,15 @@ class TaskAuthorizationService {
 
 		if (self::RULES[$verb] === 'assertAssignee') {
 			$this->assertAssignee(verb: $verb, task: $task, uid: $uid);
+			return;
+		}
+
+		if (self::RULES[$verb] === 'assertAssigneeOrPoolMember') {
+			if (trim((string)$task->getAssignee()) === $uid) {
+				return;
+			}
+
+			$this->assertPoolMember(verb: $verb, task: $task, uid: $uid);
 			return;
 		}
 

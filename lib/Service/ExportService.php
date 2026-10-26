@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
 use Dompdf\Dompdf;
@@ -129,6 +130,13 @@ class ExportService {
 	 * @var Register|null
 	 */
 	private ?Register $contextRegister = null;
+
+	/**
+	 * The explicit-reveal columns of the export being written.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $maskedColumns = [];
 
 	/**
 	 * Constructor for the ExportService.
@@ -861,6 +869,14 @@ class ExportService {
 			$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
 		}
 
+		// `_ids` (a list or a comma-separated string) narrows the export to the
+		// selected objects; RBAC and multitenancy still apply to each.
+		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
+		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
+		if ($selectedIds === []) {
+			$selectedIds = null;
+		}
+
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// Set a very high limit to get all objects (export needs all data).
 		// The export's own keys come first, so no property filter can replace them.
@@ -878,10 +894,11 @@ class ExportService {
 			// Apply RBAC filtering.
 			_multitenancy: $multitenancy,
 			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: null,
+			ids: $selectedIds,
 			uses: null
 		);
 	}//end fetchObjectsForExport()
+
 
 	/**
 	 * Identify which header columns are name-companion columns (prefixed with _).
@@ -1019,8 +1036,13 @@ class ExportService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getHeaders(?Schema $schema = null, ?IUser $currentUser = null): array {
+		// The export's explicit-reveal columns read masked, as on every other route.
+		$this->maskedColumns = array_fill_keys(ExplicitReveal::explicitProperties(schema: $schema), true);
+
 		// Start with id as the first column.
 		// Will contain the uuid.
 		$headers = [
@@ -1137,6 +1159,8 @@ class ExportService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex multi-step value extraction logic
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Value extraction requires many conditional type checks
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple header prefix and value type conditions
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getObjectValue(ObjectEntity $object, string $header): ?string {
 		// Handle metadata fields with @self. prefix.
@@ -1245,6 +1269,10 @@ class ExportService {
 				}
 
 				$value = $objectData[$header] ?? null;
+				if (isset($this->maskedColumns[$header]) === true && $value !== null && $value !== '') {
+					return ExplicitReveal::mask(value: $value);
+				}
+
 				return $this->convertValueToString(value: $value);
 		}
 	}//end getObjectValue()

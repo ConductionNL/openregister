@@ -214,6 +214,8 @@ class TaskController extends Controller {
 	 * @param string|null $includeBlocked 'true' to list tasks whose blocker is
 	 *                                    still open. An object or run anchor
 	 *                                    lists them regardless.
+	 * @param string|null $openFirst 'true' to list open tasks before finished
+	 *                               ones, each in the order `sort` asks.
 	 *
 	 * @return JSONResponse The page: results, total, limit, offset.
 	 *
@@ -237,6 +239,7 @@ class TaskController extends Controller {
 		int $limit = 25,
 		int $offset = 0,
 		?string $includeBlocked = null,
+		?string $openFirst = null,
 	): JSONResponse {
 		$uid = $this->uid();
 		if ($uid === null) {
@@ -289,6 +292,7 @@ class TaskController extends Controller {
 			sort: $sortKey,
 			sortDescending: $descending,
 			includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true),
+			openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true),
 		);
 
 		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
@@ -327,7 +331,7 @@ class TaskController extends Controller {
 
 		return new JSONResponse(
 			array_merge(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->inbox->enrich(task: $task),
 				$this->forms->describe(task: $task)
 			)
 		);
@@ -580,6 +584,28 @@ class TaskController extends Controller {
 	}//end cancel()
 
 	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * The body is the change. Who may edit (the assignee, a pool member or
+	 * an administrator) is decided in the service before anything is
+	 * written; an unknown or invalid field is a 400.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The task as it now stands, or a named refusal.
+	 *
+	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function edit(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): Task => $this->tasks->edit(uuid: $uuid, changes: $this->body(), actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end edit()
+
+	/**
 	 * Check or uncheck one checklist item, addressed by id.
 	 *
 	 * @param string $uuid The task uuid.
@@ -629,7 +655,7 @@ class TaskController extends Controller {
 			$task = $verb();
 
 			return new JSONResponse(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->inbox->enrich(task: $task),
 				$successStatus
 			);
 		} catch (TaskFormRefusedException $refused) {

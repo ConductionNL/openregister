@@ -308,6 +308,20 @@ class ImportHandler {
 	private ?SeedVersionLedger $seedVersions = null;
 
 	/**
+	 * The hash of the content each seed object was last shipped with, loaded on first use.
+	 *
+	 * @var SeedVersionLedger|null
+	 */
+	private ?SeedVersionLedger $seedHashes = null;
+
+	/**
+	 * Decides what a re-import writes to a stored seed whose version did not move.
+	 *
+	 * @var ShippedSeedContent
+	 */
+	private ShippedSeedContent $shippedContent;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -370,6 +384,7 @@ class ImportHandler {
 		$this->appDataPath = $appDataPath;
 		$this->uploadHandler = $uploadHandler;
 		$this->objectService = $objectService;
+		$this->shippedContent = new ShippedSeedContent();
 	}//end __construct()
 
 	/**
@@ -1443,6 +1458,11 @@ class ImportHandler {
 	private const SHIPPED_GUARD_KEYS = ['properties', 'required', 'authorization'];
 
 	/**
+	 * The generation of the rules an import writes by; raised when they change, so a stored hash does not skip it.
+	 */
+	private const IMPORT_RULES = 'seed-content-1:';
+
+	/**
 	 * Resolve an incoming shipped schema against what the instance changed.
 	 *
 	 * Returns the definition to write. When no guard is wired, or no baseline
@@ -1830,7 +1850,7 @@ class ImportHandler {
 		?string $version,
 	): ?Schema {
 		if ($registerSchemaIds !== null) {
-			return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds);
+			return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId);
 		}
 
 		if ($appId !== null && $appId !== '') {
@@ -1846,15 +1866,27 @@ class ImportHandler {
 	 * `SchemaMapper::findBySlugInIds()`. A same-slug schema owned elsewhere is
 	 * only logged for visibility — it is never reused.
 	 *
-	 * @param array $data The schema data (MUST carry a non-empty `slug`).
-	 * @param array $registerSchemaIds Pre-import schema ids of the target register(s).
+	 * Outside that set, the importing app's OWN row with this slug that no
+	 * register lists is adopted rather than forked: an import that stopped
+	 * after creating its schemas and before linking them leaves such a row,
+	 * and scoping to the register's list alone made every later import create
+	 * a twin (dossiq, 29 Sep: 17 slugs twice).
+	 *
+	 * @param array       $data              The schema data (MUST carry a non-empty `slug`).
+	 * @param array       $registerSchemaIds Pre-import schema ids of the target register(s).
+	 * @param string|null $appId             The importing application id, or null.
 	 *
 	 * @return Schema|null The schema already in scope, or null (create a new one).
 	 */
-	private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds): ?Schema {
+	private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds, ?string $appId=null): ?Schema {
 		$existingSchema = $this->schemaMapper->findBySlugInIds(slug: $data['slug'], schemaIds: $registerSchemaIds);
 		if ($existingSchema !== null) {
 			return $existingSchema;
+		}
+
+		$orphan = $this->findOwnUnlinkedSchema(slug: (string)$data['slug'], appId: $appId);
+		if ($orphan !== null) {
+			return $orphan;
 		}
 
 		// Visibility only: a same-slug row exists but is not (yet) in the
@@ -1879,6 +1911,47 @@ class ImportHandler {
 
 		return null;
 	}//end resolveSchemaWithinRegisterScope()
+
+	/**
+	 * The importing app's own schema row with this slug that no register
+	 * lists, the highest version when there are several; null without one or
+	 * without an app id.
+	 *
+	 * @param string      $slug  The schema slug.
+	 * @param string|null $appId The importing application id.
+	 *
+	 * @return Schema|null The row to adopt, or null.
+	 *
+	 * @spec openspec/changes/import-adopts-own-unlinked-schema/specs/schema-import/spec.md#requirement-an-import-adopts-its-apps-own-unlinked-schema
+	 */
+	private function findOwnUnlinkedSchema(string $slug, ?string $appId): ?Schema {
+		if ($appId === null || $appId === '' || $slug === '') {
+			return null;
+		}
+
+		try {
+			$candidates = $this->schemaMapper->findBySlug(slug: $slug, limit: 50, _rbac: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$best = null;
+		foreach ($candidates as $candidate) {
+			if ($candidate->getApplication() !== $appId || $candidate->getSlug() !== $slug) {
+				continue;
+			}
+
+			if ($this->registerMapper->getAllRegisterIdsWithSchema((int)$candidate->getId()) !== []) {
+				continue;
+			}
+
+			if ($best === null || version_compare((string)($candidate->getVersion() ?? '0'), (string)($best->getVersion() ?? '0')) > 0) {
+				$best = $candidate;
+			}
+		}
+
+		return $best;
+	}//end findOwnUnlinkedSchema()
 
 	/**
 	 * Application-scoped fallback: resolve via
@@ -2490,7 +2563,9 @@ class ImportHandler {
 	 * changes should re-trigger the version-gated import — and falls back to the whole
 	 * payload when `components` is absent. Key order is taken from the source config
 	 * files (deterministic for an unchanged release), so no normalisation is needed; a
-	 * reordering at most triggers one extra import pass.
+	 * reordering at most triggers one extra import pass. The import's own rules
+	 * (IMPORT_RULES) are part of the hash: when they change, the same content
+	 * imports differently, so every app imports once more.
 	 *
 	 * @param array $data The configuration data (pre-mutation snapshot).
 	 *
@@ -2503,7 +2578,7 @@ class ImportHandler {
 			$encoded = '';
 		}
 
-		return hash('sha256', $encoded);
+		return hash('sha256', self::IMPORT_RULES.$encoded);
 	}//end computeDefinitionHash()
 
 	/**
@@ -3352,6 +3427,7 @@ class ImportHandler {
 
 		// The shipped versions the seeds above recorded are written once, not once per seed.
 		$this->seedVersions()->flush();
+		$this->seedHashes()->flush();
 
 		// Process OpenConnector integration if available.
 		if ($this->connectorConfigSvc !== null) {
@@ -3659,9 +3735,31 @@ class ImportHandler {
 				);
 				$result['objects'][] = $object;
 				$this->rememberShippedVersion(appId: $appId, seedKey: $seedKey, version: (string)$importedVersion);
+				$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
 			}
 
 			if (version_compare($importedVersion, $baseline, '>') <= 0) {
+				// The version did not move, but the shipped content may have (ShippedSeedContent).
+				$remembered = null;
+				if ($seedKey !== null) {
+					$remembered = $this->seedHashes()->shipped(appId: (string)$appId, seed: $seedKey);
+				}
+
+				$follow = $this->shippedContent->update(stored: $existingObjectData, shipped: $objectData, remembered: $remembered);
+				$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
+				if ($follow !== null) {
+					$result['objects'][] = $this->objectService->saveObject(
+						object: $follow,
+						register: $registerObject,
+						schema: $schemaObject,
+						uuid: ($existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null),
+						_rbac: false,
+						_multitenancy: false,
+						currentUser: $actingUser
+					);
+					return;
+				}
+
 				// COUNTED, not just logged. Skipping an unchanged
 				// object is the DESIGNED behaviour of a re-import,
 				// but a debug line is invisible to the caller, and
@@ -3710,6 +3808,7 @@ class ImportHandler {
 			);
 			$result['objects'][] = $object;
 			if ($appId !== null && $appId !== '') {
+				$this->rememberShippedContent(appId: $appId, seedKey: (int)$registerId . '/' . (int)$schemaId . '/' . $slug, shipped: $objectData);
 				$this->rememberShippedVersion(
 					appId: $appId,
 					seedKey: (int)$registerId . '/' . (int)$schemaId . '/' . $slug,
@@ -3731,6 +3830,38 @@ class ImportHandler {
 
 		return $this->seedVersions;
 	}//end seedVersions()
+
+	/**
+	 * The ledger of the hashes of the content the seed objects were last shipped with.
+	 *
+	 * @return SeedVersionLedger
+	 */
+	private function seedHashes(): SeedVersionLedger {
+		if ($this->seedHashes === null) {
+			$this->seedHashes = new SeedVersionLedger(appConfig: $this->appConfig, prefix: 'imported_seed_hashes_');
+		}
+
+		return $this->seedHashes;
+	}//end seedHashes()
+
+	/**
+	 * Remember the hash of the content a seed object was shipped with, when the import knows its app.
+	 *
+	 * @param string|null          $appId   The importing app.
+	 * @param string|null          $seedKey The seed's identity; null when there is no app to remember it under.
+	 * @param array<string, mixed> $shipped The seed as listed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 */
+	private function rememberShippedContent(?string $appId, ?string $seedKey, array $shipped): void {
+		if ($appId === null || $appId === '' || $seedKey === null) {
+			return;
+		}
+
+		$this->seedHashes()->record(appId: $appId, seed: $seedKey, version: $this->shippedContent->hash(shipped: $shipped));
+	}//end rememberShippedContent()
 
 	/**
 	 * Remember the version a seed object was shipped at, when the import knows its app.

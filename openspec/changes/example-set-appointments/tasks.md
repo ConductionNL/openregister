@@ -1,0 +1,3 @@
+- [x] 1.1 ExampleSetAppointments part, wired in EngineKinds, Catalogue and Record
+- [x] 1.2 tests (ExampleSetAppointmentsTest)
+- [x] 1.3 an appointment may sit on a task (`object` names a task uuid)

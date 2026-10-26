@@ -208,6 +208,68 @@ class PartyRoleServiceTest extends TestCase {
 	}//end testTwoGemachtigdenOnOneCase()
 
 	/**
+	 * The trusted path passes the named linker to the writer, with the period and note,
+	 * and the API path passes none, so a request can never name its own linker.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 */
+	public function testImportNamesTheLinkerAndAddDoesNot(): void {
+		$linkers = [];
+		$this->writer->method('write')->willReturnCallback(
+			function (string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role, ?string $linkedBy = null) use (&$linkers): ContactLink {
+				$linkers[] = $linkedBy;
+				return $this->storedLink(partyUuid: $partyUuid, role: (string) $role);
+			}
+		);
+
+		$link = $this->service->importParty(
+			objectUuid: 'case-1',
+			registerId: 3,
+			schemaId: null,
+			payload: ['partyUuid' => 'party-a', 'role' => 'gemachtigde', 'validUntil' => '2026-12-31', 'note' => 'Awb 2:1'],
+			linkedBy: 'dossiq'
+		);
+		$this->service->addParty(objectUuid: 'case-1', registerId: 3, schemaId: null, payload: ['partyUuid' => 'party-b', 'role' => 'gemachtigde', 'linkedBy' => 'spoofed']);
+
+		$this->assertSame(expected: ['dossiq', null], actual: $linkers);
+		$this->assertSame(expected: '2026-12-31', actual: $link->getValidUntil()?->format('Y-m-d'));
+		$this->assertSame(expected: 'Awb 2:1', actual: $link->getNote());
+	}//end testImportNamesTheLinkerAndAddDoesNot()
+
+	/**
+	 * The trusted import (an occ example-set install, no user) finds the party
+	 * without RBAC; a request's addParty still reads it with the caller's rights.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
+	 */
+	public function testTheTrustedImportFindsAPartyTheCallerCouldNotRead(): void {
+		$this->schemaAccepts(kinds: [['key' => 'person', 'label' => 'Persoon']]);
+		$party = new ObjectEntity();
+		$party->setUuid('party-a');
+		$this->parties->method('find')->willReturn(null);
+		$this->parties->method('findUnscoped')->willReturn($party);
+		$this->parties->method('definitionFor')->willReturn(new PartyDefinition(kind: 'person'));
+		$this->writer->method('write')->willReturn($this->storedLink(partyUuid: 'party-a', role: 'aanvrager'));
+
+		$link = $this->service->importParty(
+			objectUuid: 'case-1',
+			registerId: 1,
+			schemaId: 7,
+			payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager'],
+			linkedBy: 'portaliq'
+		);
+		$this->assertSame(expected: 'party-a', actual: $link->getPartyUuid());
+
+		$this->expectException(exception: Exception::class);
+		$this->expectExceptionMessage(message: 'Party not found');
+		$this->service->addParty(objectUuid: 'case-1', registerId: 1, schemaId: 7, payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager']);
+	}//end testTheTrustedImportFindsAPartyTheCallerCouldNotRead()
+
+	/**
 	 * A party of a kind the schema does not accept is refused, and the
 	 * message names the kind.
 	 *
