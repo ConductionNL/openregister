@@ -86,6 +86,21 @@ class ExampleSetCommandsTest extends ExampleSetTestCase {
 		$this->assertStringContainsString('Account sanne.devries: already there', $tester->getDisplay());
 	}
 
+	/**
+	 * `--refresh` rewrites the objects the set holds and says how many.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	public function testRefreshRewritesWhatTheSetHolds(): void {
+		$tester = $this->install();
+		$this->assertSame(0, $tester->execute(['set' => 'demo']));
+
+		$this->assertSame(0, $tester->execute(['set' => 'demo', '--refresh' => true]));
+		$this->assertStringContainsString('brp person: 1 declared, 0 created, 1 already there (1 refreshed), 1 found afterwards', $tester->getDisplay());
+	}
+
 	public function testAnUnknownSetExitsOne(): void {
 		$tester = $this->install();
 

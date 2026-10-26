@@ -97,6 +97,31 @@ class PartyService {
 	}//end find()
 
 	/**
+	 * The object with that uuid, read without RBAC or multitenancy; null when there is none.
+	 *
+	 * For a trusted write with no user to read as, such as an occ example-set
+	 * install: there `find` answers a schema that refuses "Anonymous" as null.
+	 * Never for a request, which reads with its caller's rights through `find`.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return ObjectEntity|null The object.
+	 *
+	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
+	 */
+	public function findUnscoped(string $uuid): ?ObjectEntity {
+		if (trim($uuid) === '') {
+			return null;
+		}
+
+		try {
+			return $this->objects->find(id: $uuid, _render: false, _audit: false, _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end findUnscoped()
+
+	/**
 	 * The party declaration of an object's schema, null when it is not a party.
 	 *
 	 * @param ObjectEntity $party The object.

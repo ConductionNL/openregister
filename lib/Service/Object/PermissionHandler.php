@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixPersonValues;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
@@ -153,6 +155,13 @@ class PermissionHandler {
 	private ?DepartmentMatrixPersonValues $personValues = null;
 
 	/**
+	 * The asker of app-contributed matrix rows, built on first use.
+	 *
+	 * @var MatrixRowsFromApps|null
+	 */
+	private ?MatrixRowsFromApps $matrixRowsFromApps = null;
+
+	/**
 	 * The five canonical action verbs the static rule chain knows.
 	 * Anything outside this set is treated as a custom verb and
 	 * routed through `CustomScopeEvaluatingEvent` so consuming apps
@@ -188,6 +197,10 @@ class PermissionHandler {
 		// other, which is two answers to "what kind of verb is this" and
 		// exactly the divergence the catalogue exists to end (row 13.40).
 		'assign',
+		// The file verbs, canonical on this path for the same reason.
+		'readFiles',
+		'addFiles',
+		'deleteFiles',
 	];
 
 	/**
@@ -229,6 +242,8 @@ class PermissionHandler {
 		'update',
 		'delete',
 		'destroy',
+		'addFiles',
+		'deleteFiles',
 	];
 
 	/**
@@ -2706,7 +2721,7 @@ class PermissionHandler {
 		// verdict identical BY CONSTRUCTION rather than by two implementations
 		// agreeing, which is the property rbac-scopes requires and the one a
 		// second enforcement path would quietly break.
-		$authorization = $this->compileDepartmentMatrix(authorization: $authorization);
+		$authorization = $this->compileDepartmentMatrix(authorization: $authorization, schema: $schema);
 
 		// THE END AND THE AREA ARE READ HERE, with the mcp strip, because this
 		// is the one step every path takes: the object read, the relation check
@@ -2790,19 +2805,25 @@ class PermissionHandler {
 	 * admitted: without it the caller falls back to whatever the schema said
 	 * before, and nobody is admitted by an error.
 	 *
+	 * A matrix that declares `rowsFrom` gets the rows its provider app adds
+	 * at check time beside its declared rows (MatrixRowsFromApps).
+	 *
 	 * @param array<string, mixed>|null $authorization The resolved block.
+	 * @param Schema                    $schema        The schema the block belongs to.
 	 *
 	 * @return array<string, mixed>|null The block, with the matrix's rules in it.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
 	 */
-	private function compileDepartmentMatrix(?array $authorization): ?array {
+	private function compileDepartmentMatrix(?array $authorization, Schema $schema): ?array {
 		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
 		if (is_array($matrix) === false) {
 			return $authorization;
 		}
 
 		try {
+			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 			$compiler = new DepartmentMatrixCompiler();
 
 			$userId = $this->userSession->getUser()?->getUID();
@@ -2842,11 +2863,28 @@ class PermissionHandler {
 	}//end compileDepartmentMatrix()
 
 	/**
-	 * The reader of a matrix user's own values from a person schema, built once.
+	 * The asker of app-contributed matrix rows, built once.
 	 *
 	 * Built here rather than injected for the same reason as the resolvers
 	 * above: a new required constructor argument is a fatal at every existing
 	 * construction site.
+	 *
+	 * @return MatrixRowsFromApps The asker of app-contributed matrix rows.
+	 *
+	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 */
+	private function matrixRowsFromApps(): MatrixRowsFromApps {
+		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
+			dispatcher: $this->eventDispatcher,
+			validator: new DepartmentMatrixValidator(),
+			logger: $this->logger
+		);
+
+		return $this->matrixRowsFromApps;
+	}//end matrixRowsFromApps()
+
+	/**
+	 * The reader of a matrix user's own values from a person schema, built once.
 	 *
 	 * @return DepartmentMatrixPersonValues The reader.
 	 *

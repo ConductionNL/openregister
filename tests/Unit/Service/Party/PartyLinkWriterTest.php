@@ -33,16 +33,23 @@ class PartyLinkWriterTest extends TestCase {
 	/**
 	 * A writer over one person party, with the given signed-in user.
 	 *
-	 * @param string|null $signedIn The signed-in uid, or null for none.
+	 * @param string|null $signedIn    The signed-in uid, or null for none.
+	 * @param bool        $rbacSeesIt  Whether the RBAC-scoped find returns the party.
 	 *
 	 * @return PartyLinkWriter
 	 */
-	private function writer(?string $signedIn): PartyLinkWriter {
+	private function writer(?string $signedIn, bool $rbacSeesIt=true): PartyLinkWriter {
 		$party = new ObjectEntity();
 		$party->setUuid(uuid: 'party-a');
 
 		$parties = $this->createMock(originalClassName: PartyService::class);
-		$parties->method('find')->willReturn(value: $party);
+		$scoped  = null;
+		if ($rbacSeesIt === true) {
+			$scoped = $party;
+		}
+
+		$parties->method('find')->willReturn(value: $scoped);
+		$parties->method('findUnscoped')->willReturn(value: $party);
 		$parties->method('definitionFor')->willReturn(value: new PartyDefinition(kind: 'person'));
 		$parties->method('addressesOfKind')->willReturn(value: []);
 		$parties->method('addresses')->willReturn(value: []);
@@ -101,4 +108,31 @@ class PartyLinkWriterTest extends TestCase {
 
 		$this->writer(signedIn: null)->write(objectUuid: 'case-1', registerId: 3, schemaId: 9, partyUuid: 'party-a', role: 'gemachtigde');
 	}//end testNoLinkerIsRefused()
+
+	/**
+	 * A trusted import (nobody signed in, a linker named) links a party that
+	 * the RBAC-scoped read does not return to "Anonymous".
+	 *
+	 * @return void
+	 */
+	public function testATrustedImportFindsThePartyWithoutRbac(): void {
+		$writer = $this->writer(signedIn: null, rbacSeesIt: false);
+		$link   = $writer->write(objectUuid: 'case-1', registerId: 3, schemaId: 9, partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq');
+
+		$this->assertSame(expected: 'dossiq', actual: $link->getLinkedBy());
+	}//end testATrustedImportFindsThePartyWithoutRbac()
+
+	/**
+	 * A signed-in caller reads with their own rights: a party they cannot
+	 * see is not found, even when a linker is named.
+	 *
+	 * @return void
+	 */
+	public function testASignedInCallerFindsThePartyWithTheirRights(): void {
+		$this->expectException(exception: Exception::class);
+		$this->expectExceptionCode(code: 404);
+
+		$writer = $this->writer(signedIn: 'pieter', rbacSeesIt: false);
+		$writer->write(objectUuid: 'case-1', registerId: 3, schemaId: 9, partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq');
+	}//end testASignedInCallerFindsThePartyWithTheirRights()
 }//end class

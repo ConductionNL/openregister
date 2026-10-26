@@ -1147,6 +1147,9 @@ class OrganisationController extends Controller {
 			'storageQuota' => 'setStorageQuota',
 			'bandwidthQuota' => 'setBandwidthQuota',
 			'requestQuota' => 'setRequestQuota',
+			'userQuota' => 'setUserQuota',
+			'objectQuota' => 'setObjectQuota',
+			'objectQuotaSchema' => 'setObjectQuotaSchema',
 		];
 
 		foreach ($simpleFields as $field => $setter) {

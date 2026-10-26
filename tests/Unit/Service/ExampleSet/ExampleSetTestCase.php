@@ -37,6 +37,19 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans;
+use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CalendarLink;
+use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
+use OCA\OpenRegister\Db\DeckLink;
+use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
@@ -44,6 +57,17 @@ use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival;
+use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCP\Comments\IComment;
@@ -61,7 +85,6 @@ use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\IConfig;
 use OCP\Security\ISecureRandom;
@@ -106,6 +129,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<string, string>> App config of the apps a fragment configures: app, key, value. */
 	protected array $appValues = [];
 
+	/** @var array<string, array<string, string>> The type a key of $appValues was written with, when not text. */
+	protected array $appTypes = [];
+
 	/** @var array<string, array<string, bool>> Which of those keys are kept as sensitive. */
 	protected array $sensitive = [];
 
@@ -142,8 +168,44 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, \DateTime> The read states, by `<user> <object uuid>`: when the object was seen. */
 	protected array $readStates = [];
 
+	/** @var array<string, Flow> The stored flows, by uuid. */
+	protected array $flows = [];
+
+	/** @var array<int, string> The uuids of the flows published, in order. */
+	protected array $publishedFlows = [];
+
+	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
+	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
+
+	/** @var array<int, array{principal: string, uri: string}> The calendars, by id. */
+	protected array $calendars = [];
+
+	/** @var array<string, string> The calendar objects, by `<calendar id> <uri>`: their iCalendar text. */
+	protected array $calendarObjects = [];
+
+	/** @var array<string, CaseItem> The case plan items, by `<object uuid> <item key>`. */
+	protected array $caseItems = [];
+
+	/** @var array<int, string> The apps that brought plan items in, one per call. */
+	protected array $casePlanActors = [];
+
+	/** @var array<int, CalendarLink> The calendar links, by id. */
+	protected array $calendarLinks = [];
+
+	/** @var array<int, DeckLink> The Deck links, by id. */
+	protected array $deckLinks = [];
+
+	/** @var bool Whether Deck is installed. */
+	protected bool $deckInstalled = true;
+
+	/** @var array<string, FlowRun> The stored flow runs, by uuid. */
+	protected array $flowRuns = [];
+
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
+
+	/** @var int The views created so far, so a view written again gets a uuid of its own. */
+	private int $viewsCreated = 0;
 
 	/** @var string The instance's overwrite.cli.url. */
 	protected string $baseUrl = 'https://cloud.example.test/';
@@ -180,6 +242,18 @@ abstract class ExampleSetTestCase extends TestCase {
 			ContactLinkMapper::class  => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
 			ObjectReadStateMapper::class => $this->readStateMapper(),
+			FlowMapper::class         => $this->flowMapper(),
+			FlowVersionService::class => $this->flowVersions(),
+			FlowService::class        => $this->flowService(),
+			FlowRunMapper::class      => $this->flowRunMapper(),
+			ExampleSetDeckStore::class => $this->deckStore(),
+			DeckLinkMapper::class     => $this->deckLinkMapper(),
+			CalDavBackend::class      => $this->caldav(),
+			CalendarLinkMapper::class => $this->calendarLinkMapper(),
+			CasePlanService::class    => $this->casePlans(),
+			CaseItemMapper::class     => $this->caseItemMapper(),
+			IUserManager::class       => $this->createMock(IUserManager::class),
+			OrganisationService::class => $this->organisationService(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -242,7 +316,13 @@ abstract class ExampleSetTestCase extends TestCase {
 				watchers: new ExampleSetWatchers(container: $container),
 				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container)
+				readStates: new ExampleSetReadStates(container: $container),
+				flows: new ExampleSetFlows(container: $container),
+				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+				exportRuns: new ExampleSetExportRuns(container: $container),
+				deckCards: new ExampleSetDeckCards(container: $container),
+				appointments: new ExampleSetAppointments(container: $container),
+				casePlans: new ExampleSetCasePlans(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -261,7 +341,13 @@ abstract class ExampleSetTestCase extends TestCase {
 				watchers: new ExampleSetWatchers(container: $container),
 				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container)
+				readStates: new ExampleSetReadStates(container: $container),
+				flows: new ExampleSetFlows(container: $container),
+				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+				exportRuns: new ExampleSetExportRuns(container: $container),
+				deckCards: new ExampleSetDeckCards(container: $container),
+				appointments: new ExampleSetAppointments(container: $container),
+				casePlans: new ExampleSetCasePlans(container: $container)
 			)
 		);
 	}
@@ -371,12 +457,13 @@ abstract class ExampleSetTestCase extends TestCase {
 		$service->method('create')->willReturnCallback(
 			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
 				$view = new View();
-				$view->setUuid('view-'.(count($this->savedViews) + 1));
+				$view->setUuid('view-'.(++$this->viewsCreated));
 				$view->setName($name);
 				$view->setOwner($owner);
 				$view->setIsPublic($isPublic);
 				$view->setQuery($query);
 				$view->setAlert($alert);
+				$view->setSharedWith($sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
@@ -401,6 +488,285 @@ abstract class ExampleSetTestCase extends TestCase {
 		});
 
 		return $mapper;
+	}
+
+	/**
+	 * A flow mapper over $flows, keyed by uuid.
+	 *
+	 * @return FlowMapper
+	 */
+	private function flowMapper(): FlowMapper {
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flows[(string) $flow->getUuid()] = $flow;
+			return $flow;
+		});
+		$mapper->method('findByUuid')->willReturnCallback(function (string $uuid): Flow {
+			if (isset($this->flows[$uuid]) === false) {
+				throw new DoesNotExistException('No such flow');
+			}
+
+			return $this->flows[$uuid];
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A version service that records which flows it published.
+	 *
+	 * @return FlowVersionService
+	 */
+	private function flowVersions(): FlowVersionService {
+		$versions = $this->createMock(FlowVersionService::class);
+		$versions->method('publish')->willReturnCallback(function (Flow $flow) {
+			$this->publishedFlows[] = (string) $flow->getUuid();
+			$flow->setLifecycleStatus('published');
+			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
+		});
+
+		return $versions;
+	}
+
+	/**
+	 * A flow service whose deleteStored() drops the flow from $flows.
+	 *
+	 * @return FlowService
+	 */
+	private function flowService(): FlowService {
+		$service = $this->createMock(FlowService::class);
+		$service->method('deleteStored')->willReturnCallback(function (Flow $flow): void {
+			unset($this->flows[(string) $flow->getUuid()]);
+			$this->flowRuns = array_filter($this->flowRuns, static fn (FlowRun $run): bool => $run->getFlowId() !== $flow->getUuid());
+		});
+
+		return $service;
+	}
+
+	/**
+	 * A Deck store over $deck: rows found by title, written with the next id, deleted by id.
+	 *
+	 * @return ExampleSetDeckStore
+	 */
+	private function deckStore(): ExampleSetDeckStore {
+		$store = $this->createMock(ExampleSetDeckStore::class);
+		$add   = function (string $kind, array $row): int {
+			$id = (count($this->deck['boards']) + count($this->deck['stacks']) + count($this->deck['labels']) + count($this->deck['cards']) + 1);
+			while (isset($this->deck[$kind][$id]) === true) {
+				$id++;
+			}
+
+			$this->deck[$kind][$id] = $row;
+			return $id;
+		};
+		$find  = function (string $kind, string $key, int|string $value, string $title): ?int {
+			foreach ($this->deck[$kind] as $id => $row) {
+				if ($row[$key] === $value && $row['title'] === $title) {
+					return $id;
+				}
+			}
+
+			return null;
+		};
+		$store->method('available')->willReturnCallback(fn (): bool => $this->deckInstalled);
+		$store->method('board')->willReturnCallback(function (string $owner, string $title, string $color, array $groups) use ($find, $add): array {
+			$found = $find('boards', 'owner', $owner, $title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $owner, 'title' => $title, 'groups' => $groups]), 'created' => true];
+		});
+		$store->method('stack')->willReturnCallback(function (int $board, string $title) use ($find, $add): array {
+			$found = $find('stacks', 'board', $board, $title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('stacks', ['board' => $board, 'title' => $title]), 'created' => true];
+		});
+		$store->method('label')->willReturnCallback(function (int $board, string $title, string $color) use ($find, $add): array {
+			$found = $find('labels', 'board', $board, $title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('labels', ['board' => $board, 'title' => $title, 'color' => $color]), 'created' => true];
+		});
+		$store->method('insertCard')->willReturnCallback(
+			fn (int $stack, string $owner, string $title, string $description, ?\DateTime $due, ?\DateTime $done, array $labels, array $assignees): int => $add(
+				'cards',
+				['stack' => $stack, 'owner' => $owner, 'title' => $title, 'due' => $due?->format('Y-m-d'), 'labels' => $labels, 'assignees' => $assignees]
+			)
+		);
+		$store->method('cardExists')->willReturnCallback(fn (int $card): bool => isset($this->deck['cards'][$card]));
+		$store->method('deleteCard')->willReturnCallback(function (int $card): void {
+			unset($this->deck['cards'][$card]);
+		});
+		$store->method('deleteLabel')->willReturnCallback(function (int $label): void {
+			unset($this->deck['labels'][$label]);
+		});
+		$store->method('deleteUnused')->willReturnCallback(function (?int $stack, ?int $board): void {
+			if ($stack !== null && array_filter($this->deck['cards'], static fn (array $card): bool => $card['stack'] === $stack) === []) {
+				unset($this->deck['stacks'][$stack]);
+			}
+
+			if ($board !== null && array_filter($this->deck['stacks'], static fn (array $row): bool => $row['board'] === $board) === []) {
+				unset($this->deck['boards'][$board]);
+				$this->deck['labels'] = array_filter($this->deck['labels'], static fn (array $row): bool => $row['board'] !== $board);
+			}
+		});
+
+		return $store;
+	}
+
+	/**
+	 * A CalDAV backend over $calendars and $calendarObjects.
+	 *
+	 * @return CalDavBackend
+	 */
+	private function caldav(): CalDavBackend {
+		$backend = $this->createMock(CalDavBackend::class);
+		$backend->method('getCalendarsForUser')->willReturnCallback(function (string $principal): array {
+			$rows = [];
+			foreach ($this->calendars as $id => $calendar) {
+				if ($calendar['principal'] === $principal) {
+					$rows[] = ['id' => $id, 'uri' => $calendar['uri']];
+				}
+			}
+
+			return $rows;
+		});
+		$backend->method('createCalendar')->willReturnCallback(function (string $principal, string $uri, array $properties): int {
+			$id                   = (count($this->calendars) + 1);
+			$this->calendars[$id] = ['principal' => $principal, 'uri' => $uri];
+			return $id;
+		});
+		$backend->method('createCalendarObject')->willReturnCallback(function (int $calendarId, string $uri, string $data): string {
+			$this->calendarObjects[$calendarId.' '.$uri] = $data;
+			return 'etag';
+		});
+		$backend->method('getCalendarObject')->willReturnCallback(
+			fn (int $calendarId, string $uri): ?array => (isset($this->calendarObjects[$calendarId.' '.$uri]) === true ? ['uri' => $uri] : null)
+		);
+		$backend->method('deleteCalendarObject')->willReturnCallback(function (int $calendarId, string $uri): void {
+			unset($this->calendarObjects[$calendarId.' '.$uri]);
+		});
+
+		return $backend;
+	}
+
+	/**
+	 * A case plan service whose convergent import puts the definition's items
+	 * (nested under `children`) in $caseItems, creating only keys not held yet.
+	 *
+	 * @return CasePlanService
+	 */
+	private function casePlans(): CasePlanService {
+		$service = $this->createMock(CasePlanService::class);
+		$service->method('ensureItems')->willReturnCallback(
+			function (string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array {
+				$this->casePlanActors[] = $app;
+				$created = [];
+				$walk    = function (array $nodes) use (&$walk, &$created, $objectUuid): void {
+					foreach ($nodes as $node) {
+						$key = (string) $node['key'];
+						if (isset($this->caseItems[$objectUuid.' '.$key]) === false) {
+							$item = new CaseItem();
+							$item->setObjectUuid($objectUuid);
+							$item->setItemKey($key);
+							$item->setState((string) ($node['state'] ?? 'available'));
+							$this->caseItems[$objectUuid.' '.$key] = $item;
+							$created[] = $key;
+						}
+
+						$walk((array) ($node['children'] ?? []));
+					}
+				};
+				$walk((array) $definition['items']);
+				return ['created' => $created, 'existing' => [], 'items' => []];
+			}
+		);
+
+		return $service;
+	}
+
+	/**
+	 * A case item mapper over $caseItems.
+	 *
+	 * @return CaseItemMapper
+	 */
+	private function caseItemMapper(): CaseItemMapper {
+		$mapper = $this->createMock(CaseItemMapper::class);
+		$mapper->method('findByObject')->willReturnCallback(
+			fn (string $objectUuid): array => array_values(array_filter($this->caseItems, static fn (CaseItem $item): bool => $item->getObjectUuid() === $objectUuid))
+		);
+		$mapper->method('delete')->willReturnCallback(function (CaseItem $item): CaseItem {
+			unset($this->caseItems[$item->getObjectUuid().' '.$item->getItemKey()]);
+			return $item;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A calendar link mapper over $calendarLinks.
+	 *
+	 * @return CalendarLinkMapper
+	 */
+	private function calendarLinkMapper(): CalendarLinkMapper {
+		$mapper = $this->createMock(CalendarLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (CalendarLink $link): CalendarLink {
+			$link->setId(count($this->calendarLinks) + 1);
+			$this->calendarLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('deleteByObjectAndEvent')->willReturnCallback(function (string $objectUuid, string $eventUid): int {
+			$before              = count($this->calendarLinks);
+			$this->calendarLinks = array_filter(
+				$this->calendarLinks,
+				static fn (CalendarLink $link): bool => !($link->getObjectUuid() === $objectUuid && $link->getEventUid() === $eventUid)
+			);
+			return $before - count($this->calendarLinks);
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A Deck link mapper over $deckLinks.
+	 *
+	 * @return DeckLinkMapper
+	 */
+	private function deckLinkMapper(): DeckLinkMapper {
+		$mapper = $this->createMock(DeckLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (DeckLink $link): DeckLink {
+			$link->setId(count($this->deckLinks) + 1);
+			$this->deckLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('deleteByObjectAndCard')->willReturnCallback(function (string $objectUuid, int $cardId): int {
+			$before          = count($this->deckLinks);
+			$this->deckLinks = array_filter($this->deckLinks, static fn (DeckLink $link): bool => !($link->getObjectUuid() === $objectUuid && $link->getCardId() === $cardId));
+			return $before - count($this->deckLinks);
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A flow run mapper over $flowRuns, keyed by uuid.
+	 *
+	 * @return FlowRunMapper
+	 */
+	private function flowRunMapper(): FlowRunMapper {
+		$mapper = $this->createMock(FlowRunMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (FlowRun $run): FlowRun {
+			$this->flowRuns[(string) $run->getUuid()] = $run;
+			return $run;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * An organisation service that puts new entities in org-1.
+	 *
+	 * @return OrganisationService
+	 */
+	private function organisationService(): OrganisationService {
+		$service = $this->createMock(OrganisationService::class);
+		$service->method('getOrganisationForNewEntity')->willReturn('org-1');
+
+		return $service;
 	}
 
 	/**
@@ -530,19 +896,22 @@ abstract class ExampleSetTestCase extends TestCase {
 	}
 
 	/**
-	 * A party service that finds every object the store holds.
+	 * A party service as an occ install meets it: `find` reads with RBAC and
+	 * no user, which a schema refusing "Anonymous" answers with null;
+	 * `findUnscoped` finds every object.
 	 *
 	 * @return PartyService
 	 */
 	private function partyService(): PartyService {
 		$parties = $this->createMock(PartyService::class);
-		$parties->method('find')->willReturnCallback(function (string $partyUuid): ?ObjectEntity {
-			if (str_starts_with($partyUuid, 'missing') === true) {
+		$parties->method('find')->willReturn(null);
+		$parties->method('findUnscoped')->willReturnCallback(function (string $uuid): ?ObjectEntity {
+			if (str_starts_with($uuid, 'missing') === true) {
 				return null;
 			}
 
 			$object = new ObjectEntity();
-			$object->setUuid($partyUuid);
+			$object->setUuid($uuid);
 			$object->setRegister('7');
 			$object->setSchema('9');
 			return $object;
@@ -592,9 +961,26 @@ abstract class ExampleSetTestCase extends TestCase {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('hasKey')->willReturnCallback(fn (string $app, string $key): bool => isset($this->appValues[$app][$key]));
 		$config->method('isSensitive')->willReturnCallback(fn (string $app, string $key): bool => ($this->sensitive[$app][$key] ?? false));
-		$config->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->appValues[$app][$key] ?? $default));
+		// As Nextcloud's typed app config: a key written as an integer is not read or written as text.
+		$config->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = ''): string => (($this->appTypes[$app][$key] ?? 'string') === 'int'
+				? throw new \RuntimeException('the key '.$key.' is typed int')
+				: ($this->appValues[$app][$key] ?? $default))
+		);
+		$config->method('getValueInt')->willReturnCallback(fn (string $app, string $key, int $default = 0): int => (int) ($this->appValues[$app][$key] ?? $default));
+		$config->method('setValueInt')->willReturnCallback(
+			function (string $app, string $key, int $value): bool {
+				$this->appValues[$app][$key] = (string) $value;
+				$this->appTypes[$app][$key]  = 'int';
+				return true;
+			}
+		);
 		$config->method('setValueString')->willReturnCallback(
 			function (string $app, string $key, string $value, bool $lazy = false, bool $sensitive = false): bool {
+				if (($this->appTypes[$app][$key] ?? 'string') === 'int') {
+					throw new \RuntimeException('the key '.$key.' is typed int');
+				}
+
 				$this->appValues[$app][$key] = $value;
 				$this->sensitive[$app][$key] = $sensitive;
 				return true;

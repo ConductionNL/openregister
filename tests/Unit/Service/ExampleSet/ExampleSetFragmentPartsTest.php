@@ -96,6 +96,35 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->store->ids(register: 'pub', schema: 'publication'));
 	}
 
+	/**
+	 * Files declared after an object was written are attached on the next install, once.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-files-on-kept-objects/specs/example-sets/spec.md#requirement-a-later-install-attaches-the-files-an-object-gained
+	 */
+	public function testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce(): void {
+		$object = ['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Besluit']];
+		$this->alpha(fragment: ['objects' => [$object]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$objectId = $this->store->ids(register: 'pub', schema: 'publication')[0];
+		$this->assertSame(expected: [], actual: array_values($this->files[$objectId] ?? []));
+
+		$object['files'] = [['path' => 'demo/pub-1/01-besluit.pdf', 'title' => 'Besluit']];
+		$this->alpha(fragment: ['objects' => [$object]]);
+		$plan   = $this->catalogue->gather(set: 'demo');
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: 1, actual: $report['files']);
+		$ids = $this->store->ids(register: 'pub', schema: 'publication');
+		$this->assertSame(expected: [$objectId], actual: $ids, message: 'the object is kept, not written again');
+		$this->assertCount(expectedCount: 1, haystack: $this->files[$objectId]);
+
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertCount(expectedCount: 1, haystack: $this->files[$objectId], message: 'a third install attaches nothing');
+	}//end testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce()
+
 	public function testAFileThatIsNotThereRefusesTheCheck(): void {
 		$this->alpha(['objects' => [[
 			'key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Besluit'],
@@ -183,6 +212,35 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 
 		$this->assertSame(['catalog_slug' => 'publication', 'groups' => 'their-own'], $this->appValues['alpha']);
 		$this->assertContains('app config alpha groups, which somebody changed after the install', $removed['left']);
+	}
+
+	/**
+	 * An entry may name its type: an integer key (a sequence counter an app reads with getValueInt) is written as
+	 * an integer, kept on a second install and put back on remove; a value that is no integer refuses the set.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-typed-app-config/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 */
+	public function testAnIntegerAppConfigEntryIsWrittenAsAnInteger(): void {
+		$this->appValues['alpha'] = ['counter' => '7'];
+		$this->appTypes['alpha']  = ['counter' => 'int'];
+		$this->alpha(['appConfig' => [['key' => 'counter', 'value' => '402', 'type' => 'int']]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame('created', $report['appConfig']['alpha/counter'], (string) json_encode($report));
+		$this->assertSame(['402', 'int'], [$this->appValues['alpha']['counter'], $this->appTypes['alpha']['counter']]);
+		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+
+		$this->remover->remove(set: 'demo');
+		$this->assertSame('7', $this->appValues['alpha']['counter']);
+
+		$this->alpha(['appConfig' => [['key' => 'counter', 'value' => 'veel', 'type' => 'int']]]);
+		$this->expectException(ExampleSetException::class);
+		$this->expectExceptionMessage('is an integer');
+		$this->catalogue->gather(set: 'demo');
 	}
 
 	public function testAppConfigForAnotherAppIsRefused(): void {
@@ -275,6 +333,40 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->config);
 	}
 
+	/**
+	 * A value the store keeps in another form is still kept: a moment stored in UTC, and an empty text stored as
+	 * null (:8080, 24 Oct: six decidiq agendaPublishedAt changes and three opencatalogi status messages reported as
+	 * written but not kept).
+	 *
+	 * @return void
+	 */
+	public function testAValueStoredInAnotherFormIsNotReportedLost(): void {
+		$this->store->storedAs['cases case'] = [
+			'publishedAt' => static fn (mixed $v): string => (new \DateTimeImmutable((string) $v))->setTimezone(new \DateTimeZone('UTC'))->format('c'),
+			'message'     => static function (mixed $v): mixed {
+				if ($v === '') {
+					return null;
+				}
+
+				return $v;
+			},
+		];
+		$this->alpha(fragment: [
+			'objects' => [['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Zaak', 'message' => '']]],
+			'changes' => [
+				[
+					'key' => 'case-1-published', 'register' => 'cases', 'schema' => 'case', 'object' => 'case-1',
+					'set' => ['publishedAt' => '{{datetime:-3@tue 09:00}}'],
+				],
+			],
+		]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame(expected: [], actual: $report['lost']);
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+	}
+
 	public function testAChangeToAnObjectNotWrittenEarlierIsRefused(): void {
 		$this->alpha(['changes' => [['key' => 'c', 'register' => 'cases', 'schema' => 'case', 'object' => 'nope', 'set' => ['x' => 1]]]]);
 
@@ -337,6 +429,53 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame(1, $again['removed']['organisations'], 'once only its own accounts and leftovers of deleted ones are members it goes');
 		$this->assertSame([], $this->organisations);
 	}
+
+	/**
+	 * A declared organisation is created with its quota and the cast members who belong to it, and still goes on remove.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
+	 */
+	public function testAnOrganisationIsCreatedWithItsQuotaAndMembers(): void {
+		$file = $this->castFile();
+		$file['cast']['openregisterOrganisations'] = [[
+			'key' => 'gemeente', 'name' => 'Gemeente Demo', 'slug' => 'demo',
+			'quota' => ['storage' => 107374182400, 'requests' => 5000], 'members' => ['sanne'],
+		]];
+		$this->app(app: 'openregister', fragment: $file);
+		$this->alpha(fragment: ['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['organization' => '{{organisation:demo}}']]]]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$organisation = array_values($this->organisations)[0];
+		$this->assertSame(expected: 107374182400, actual: $organisation->getStorageQuota());
+		$this->assertSame(expected: 5000, actual: $organisation->getRequestQuota());
+		$this->assertSame(expected: ['sanne.devries'], actual: $organisation->getUserIds());
+
+		$removed = $this->remover->remove(set: 'demo');
+		$this->assertSame(expected: 1, actual: $removed['removed']['organisations'], message: 'its members are the set\'s own accounts');
+	}//end testAnOrganisationIsCreatedWithItsQuotaAndMembers()
+
+	/**
+	 * A quota that is not a whole number, or a member the cast does not hold, refuses the set.
+	 *
+	 * @return void
+	 */
+	public function testAFaultyQuotaOrMemberRefusesTheSet(): void {
+		foreach ([['quota' => ['storage' => 'veel']], ['members' => ['nobody']], ['quota' => ['seats' => 3]]] as $extra) {
+			$file = $this->castFile();
+			$file['cast']['openregisterOrganisations'] = [['key' => 'gemeente', 'name' => 'Gemeente Demo', 'slug' => 'demo'] + $extra];
+			$this->app(app: 'openregister', fragment: $file);
+			try {
+				$this->catalogue->gather(set: 'demo');
+				$this->fail(message: 'refused: '.json_encode($extra));
+			} catch (ExampleSetException $e) {
+				$this->assertStringContainsString(needle: 'OpenRegister organisation', haystack: $e->getMessage());
+			}
+		}
+	}//end testAFaultyQuotaOrMemberRefusesTheSet()
 
 	public function testEveryCastMemberHasAStableContactsUid(): void {
 		$plan = $this->catalogue->gather(set: 'demo');

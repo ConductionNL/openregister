@@ -70,6 +70,27 @@ class ExampleSetInstanceTest extends TestCase {
 		$this->assertSame(['uuid' => 'org-new', 'created' => true, 'error' => ''], $result);
 	}
 
+	/**
+	 * A partner organisation is written with its type and contact e-mail, so case sharing lists it.
+	 *
+	 * @return void
+	 */
+	public function testAPartnerIsCreatedWithItsTypeAndContact(): void {
+		$this->mapper->method('findBySlug')->willThrowException(new DoesNotExistException('none'));
+		$written = null;
+		$this->mapper->expects($this->once())->method('insert')->willReturnCallback(
+			static function (Organisation $entity) use (&$written): Organisation {
+				$written = $entity;
+				$entity->setUuid('org-partner');
+				return $entity;
+			}
+		);
+
+		$this->instance()->ensure(declared: ['name' => 'Omgevingsdienst', 'slug' => 'odzhz', 'description' => '', 'type' => 'partner', 'contactEmail' => 'info@odzhz.example']);
+
+		$this->assertSame(expected: ['partner', 'info@odzhz.example'], actual: [$written->getType(), $written->getContactEmail()]);
+	}
+
 	public function testALookupThatFailsIsNotReadAsGoneAndNothingIsForgotten(): void {
 		$this->mapper->method('findByUuid')->willThrowException(new RuntimeException('database is gone'));
 		$this->mapper->expects($this->never())->method('delete');

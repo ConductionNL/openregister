@@ -137,6 +137,9 @@ class TaskControllerTest extends TestCase {
 		$this->inbox->method('row')->willReturnCallback(
 			static fn (Task $task): array => ['uuid' => $task->getUuid(), 'row' => true]
 		);
+		$this->inbox->method('enrich')->willReturnCallback(
+			static fn (Task $task): array => ['uuid' => $task->getUuid(), 'row' => true]
+		);
 
 		$this->controller = new TaskController(
 			appName: 'openregister',
@@ -192,6 +195,30 @@ class TaskControllerTest extends TestCase {
 	}//end testIndexReturnsTheInboxPageForTheSession()
 
 	/**
+	 * `openFirst=true` asks for the open tasks before the finished ones; it is
+	 * off unless asked, so an existing caller's order does not change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	public function testIndexPassesOpenFirstIntoTheCriteria(): void {
+		$seen = [];
+		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$seen): array {
+				$seen[] = $criteria->openFirst;
+
+				return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
+			}
+		);
+
+		$this->controller->index(sort: 'dueAt', openFirst: 'true');
+		$this->controller->index(sort: 'dueAt');
+
+		$this->assertSame([true, false], $seen);
+	}//end testIndexPassesOpenFirstIntoTheCriteria()
+
+	/**
 	 * GET /api/flow-tasks/{uuid}: 404 for the invisible, 200 for the visible.
 	 *
 	 * @return void
@@ -208,6 +235,37 @@ class TaskControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $shown->getStatus());
 		$this->assertSame('t-1', $shown->getData()['uuid']);
 	}//end testShowIs404ForAnInvisibleTaskAnd200ForAVisibleOne()
+
+	/**
+	 * GET /api/flow-tasks/{uuid} carries the task's subject context, as an
+	 * inbox row does, so a task page can name its case ("bij zaak 2026-0074").
+	 *
+	 * @return void
+	 */
+	public function testShowCarriesTheSubjectContext(): void {
+		$this->tasks->method('get')->willReturn($this->task());
+		$this->authorization->method('mayRead')->willReturn(true);
+		$inbox = $this->createMock(originalClassName: TaskInboxService::class);
+		$inbox->expects($this->never())->method('row');
+		$inbox->expects($this->once())->method('enrich')->willReturn(
+			['uuid' => 't-1', 'subject' => ['uuid' => 'case-1', 'title' => 'Bezwaar parkeerboete Havenstraat', 'identifier' => '2026-0074']]
+		);
+		$controller = new TaskController(
+			appName: 'openregister',
+			request: $this->createMock(originalClassName: IRequest::class),
+			tasks: $this->tasks,
+			inbox: $inbox,
+			authorization: $this->authorization,
+			temporal: new TaskTemporalProjection(),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			forms: $this->createMock(originalClassName: TaskFormResolver::class),
+			completion: $this->completion
+		);
+
+		$data = $controller->show(uuid: 't-1')->getData();
+
+		$this->assertSame(expected: '2026-0074', actual: $data['subject']['identifier']);
+	}//end testShowCarriesTheSubjectContext()
 
 	/**
 	 * GET /api/flow-tasks/{uuid} carries the resolved form and the checklist
