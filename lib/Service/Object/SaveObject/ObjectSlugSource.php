@@ -64,6 +64,8 @@ class ObjectSlugSource {
 	 * @param string|null $clientSlug `@self.slug` or top-level `slug` as sent.
 	 *
 	 * @return string|null The normalised slug, or null.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function normaliseClient(?string $clientSlug): ?string {
 		return $this->clientValue->normalise(clientSlug: $clientSlug);
@@ -76,6 +78,8 @@ class ObjectSlugSource {
 	 * @param string      $stored     The stored slug.
 	 *
 	 * @return bool True when the client asked for a different slug.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function differsFromStored(?string $clientSlug, string $stored): bool {
 		return $this->clientValue->differsFromStored(clientSlug: $clientSlug, stored: $stored);
