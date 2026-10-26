@@ -123,6 +123,32 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	}//end testTheOwnersCalendarIsUsed()
 
 	/**
+	 * An appointment may sit on a task the fragment declares: the link names the task, with the register and schema
+	 * of the record the task is on, so the task page's Afspraken card lists it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 */
+	public function testAnAppointmentMaySitOnATask(): void {
+		$this->app(app: 'alpha', fragment: [
+			'objects'      => [['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Zaak']]],
+			'tasks'        => [['key' => 'hoorzitting', 'data' => [
+				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'state' => 'active', 'assignee' => '{{cast:esra.uid}}',
+			]]],
+			'appointments' => [['key' => 'hoorzitting', 'data' => ['object' => '{{task:hoorzitting.uuid}}', 'summary' => 'Hoorzitting bezwaar parkeerboete'] + self::appointment()]],
+		]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$taskUuid = (string) array_key_first($this->engineTasks);
+		$link     = array_values($this->calendarLinks)[0];
+		$this->assertSame($taskUuid, $link->getObjectUuid());
+		$this->assertSame('Hoorzitting bezwaar parkeerboete', $link->getSummary());
+	}//end testAnAppointmentMaySitOnATask()
+
+	/**
 	 * A faulty appointment is refused at check time and nothing is written.
 	 *
 	 * @param array<string, mixed> $data   The row's fields.

@@ -1088,7 +1088,8 @@ abstract class ExampleSetTestCase extends TestCase {
 		$parties = $this->createMock(PartyService::class);
 		$parties->method('find')->willReturn(null);
 		$parties->method('findUnscoped')->willReturnCallback(function (string $uuid): ?ObjectEntity {
-			if (str_starts_with($uuid, 'missing') === true) {
+			// A task is not an object, as on an instance.
+			if (str_starts_with($uuid, 'missing') === true || isset($this->engineTasks[$uuid]) === true) {
 				return null;
 			}
 

@@ -34,6 +34,7 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
@@ -147,9 +148,9 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['object'];
-		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
-		if ($object === null) {
-			return ['error' => 'no object "'.$objectUuid.'" to put the appointment on', 'entry' => null];
+		$target     = $this->target(uuid: $objectUuid);
+		if ($target === null) {
+			return ['error' => 'no object or task "'.$objectUuid.'" to put the appointment on', 'entry' => null];
 		}
 
 		try {
@@ -161,8 +162,8 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 
 			$link = new CalendarLink();
 			$link->setObjectUuid($objectUuid);
-			$link->setRegisterId((int) $object->getRegister());
-			$link->setSchemaId((int) $object->getSchema());
+			$link->setRegisterId($target['register']);
+			$link->setSchemaId($target['schema']);
 			$link->setCalendarUri($calendarUri);
 			$link->setCalendarId($calendarId);
 			$link->setEventUid($uid);
@@ -180,6 +181,29 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 
 		return ['error' => '', 'entry' => ['object' => $objectUuid, 'calendar' => $calendarId, 'uri' => $uri, 'uid' => $uid]];
 	}//end write()
+
+	/**
+	 * The register and schema an appointment's link names: those of the object, or, for a task (which is no object),
+	 * those of the record the task is on; null when the uuid names neither.
+	 *
+	 * @param string $uuid The object or task uuid.
+	 *
+	 * @return array{register: int, schema: int}|null
+	 */
+	private function target(string $uuid): ?array {
+		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: $uuid);
+		if ($object !== null) {
+			return ['register' => (int) $object->getRegister(), 'schema' => (int) $object->getSchema()];
+		}
+
+		try {
+			$task = $this->container->get(TaskMapper::class)->findByUuid($uuid);
+		} catch (Throwable) {
+			return null;
+		}
+
+		return ['register' => (int) $task->getRegisterId(), 'schema' => (int) $task->getSchemaId()];
+	}//end target()
 
 	/**
 	 * Whether a written appointment is no longer there.
