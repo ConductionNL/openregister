@@ -159,25 +159,24 @@ class ExampleSetViews extends ExampleSetEngineRows {
 	}//end shareRefusal()
 
 	/**
-	 * Write a view through the view service.
+	 * Write a view through the view service, under the uuid its app and key give it.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: a view names its owner).
-	 * @param string               $key  The view's key in the fragment (unused).
+	 * A view the set wrote before under that uuid (an earlier install that was removed without its views, or a record
+	 * that was lost) is updated where it is, so the uuid every link, menu entry and route names stays valid.
+	 *
+	 * @param string               $app  The app that ships the fragment.
+	 * @param string               $key  The view's key in the fragment.
 	 * @param array<string, mixed> $data The filled view fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
 	public function write(string $app, string $key, array $data): array {
-		$presentation = null;
-		if (isset($data['presentation']) === true) {
-			$presentation = (array) $data['presentation'];
-		}
-
-		$alert = null;
-		if (isset($data['alert']) === true) {
-			$alert = (array) $data['alert'];
+		$uuid = self::uuidFor(app: $app, key: $key);
+		if ($this->exists(uuid: $uuid) === true) {
+			return $this->update(entry: ['uuid' => $uuid], app: $app, key: $key, data: $data);
 		}
 
 		try {
@@ -188,16 +187,127 @@ class ExampleSetViews extends ExampleSetEngineRows {
 				isPublic: ($data['isPublic'] ?? false) === true,
 				isDefault: false,
 				query: (array) ($data['query'] ?? []),
-				presentation: $presentation,
+				presentation: $this->optional(data: $data, field: 'presentation'),
 				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? [])),
-				alert: $alert,
+				alert: $this->optional(data: $data, field: 'alert'),
+			);
+			$view->setUuid($uuid);
+			$this->mapper()->update($view);
+		} catch (Throwable $e) {
+			return ['error' => $e->getMessage(), 'entry' => null];
+		}
+
+		return ['error' => '', 'entry' => ['uuid' => $uuid]];
+	}//end write()
+
+	/**
+	 * A refresh updates a view where it is.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function updatesInPlace(): bool {
+		return true;
+	}//end updatesInPlace()
+
+	/**
+	 * Update the view the record holds to its declaration; a view that is gone is written again.
+	 *
+	 * @param array<string, mixed> $entry The record entry, with the view's uuid.
+	 * @param string               $app   The app that ships the fragment.
+	 * @param string               $key   The view's key in the fragment.
+	 * @param array<string, mixed> $data  The filled view fields.
+	 *
+	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the update failed.
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function update(array $entry, string $app, string $key, array $data): array {
+		$uuid = (string) ($entry['uuid'] ?? '');
+		if ($this->exists(uuid: $uuid) === false) {
+			return $this->write(app: $app, key: $key, data: $data);
+		}
+
+		try {
+			$this->service()->update(
+				id: $uuid,
+				name: (string) $data['name'],
+				description: (string) ($data['description'] ?? ''),
+				owner: (string) $data['owner'],
+				isPublic: ($data['isPublic'] ?? false) === true,
+				isDefault: false,
+				query: (array) ($data['query'] ?? []),
+				presentation: $this->optional(data: $data, field: 'presentation'),
+				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? [])),
+				alert: $this->optional(data: $data, field: 'alert'),
 			);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['uuid' => (string) $view->getUuid()]];
-	}//end write()
+		return ['error' => '', 'entry' => ['uuid' => $uuid]];
+	}//end update()
+
+	/**
+	 * The uuid a seeded view has: the same for the same app and key, on every instance and every install.
+	 *
+	 * @param string $app The app that ships the fragment.
+	 * @param string $key The view's key in the fragment.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public static function uuidFor(string $app, string $key): string {
+		$hash = md5('openregister-example-set-view:'.$app.'/'.$key);
+
+		return sprintf(
+			'%s-%s-4%s-8%s-%s',
+			substr($hash, 0, 8),
+			substr($hash, 8, 4),
+			substr($hash, 13, 3),
+			substr($hash, 17, 3),
+			substr($hash, 20, 12)
+		);
+	}//end uuidFor()
+
+	/**
+	 * Whether a view with this uuid exists.
+	 *
+	 * @param string $uuid The uuid.
+	 *
+	 * @return bool
+	 */
+	private function exists(string $uuid): bool {
+		if ($uuid === '') {
+			return false;
+		}
+
+		try {
+			$this->mapper()->find(id: $uuid, _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			return false;
+		}
+
+		return true;
+	}//end exists()
+
+	/**
+	 * An optional structured field of the view, or null when it is not declared.
+	 *
+	 * @param array<string, mixed> $data  The filled view fields.
+	 * @param string               $field The field.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private function optional(array $data, string $field): ?array {
+		if (isset($data[$field]) === false) {
+			return null;
+		}
+
+		return (array) $data[$field];
+	}//end optional()
 
 	/**
 	 * The declared shares as the view stores them: `{user|group, mode}`.
