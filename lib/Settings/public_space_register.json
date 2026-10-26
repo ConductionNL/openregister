@@ -3,7 +3,7 @@
   "info": {
     "title": "Public Space Mock Register",
     "description": "Mock register of objects in public space (openbare ruimte): trees, street lights, play equipment, market pitches and road sections. Example data a case can link an object to; the Zuiddrecht example set imports it and fills it.",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "x-openregister": {
     "type": "mock",
@@ -16,6 +16,7 @@
     "registers": {
       "public-space": {
         "slug": "public-space",
+        "version": "1.0.1",
         "title": "Openbare ruimte",
         "description": "Objects in public space that the municipality manages and that cases are about: trees, street lights, play equipment, market pitches and road sections.",
         "schemas": [
@@ -32,7 +33,7 @@
       "tree": {
         "slug": "tree",
         "title": "Bomenregister",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "summary": "A tree the municipality manages in public space.",
         "description": "A tree the municipality manages in public space.",
         "type": "object",
@@ -109,7 +110,7 @@
       "street-light": {
         "slug": "street-light",
         "title": "Openbare verlichting",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "summary": "A street light or light mast the municipality manages.",
         "description": "A street light or light mast the municipality manages.",
         "type": "object",
@@ -175,7 +176,7 @@
       "play-equipment": {
         "slug": "play-equipment",
         "title": "Buitenruimte",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "summary": "A piece of play equipment on a public playground.",
         "description": "A piece of play equipment on a public playground.",
         "type": "object",
@@ -322,7 +323,7 @@
       "road-section": {
         "slug": "road-section",
         "title": "Wegen en paden",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "summary": "A road, cycle path or footpath section the municipality manages.",
         "description": "A road, cycle path or footpath section the municipality manages.",
         "type": "object",
