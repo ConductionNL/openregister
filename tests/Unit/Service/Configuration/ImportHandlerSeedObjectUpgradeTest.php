@@ -425,4 +425,21 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 		$this->assertNotContains(['slug' => 'woo-verzoek', 'uuid' => self::CASE_TYPE_UUID, 'written' => true], $this->saves);
 		$this->assertSame(1, $result['unchanged']['objects']);
 	}//end testUnchangedShippedContentIsNotWrittenAgain()
+
+	/**
+	 * A seed whose write fails is not remembered at the shipped content, so the next import tries it again.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 */
+	public function testAFailedWriteIsNotRememberedAsShipped(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
+		$this->saves(static fn (int $attempt): ?\Throwable => new \OCA\OpenRegister\Exception\ValidationException('refused'));
+
+		$this->importDossiq(shippedVersion: '1.4.7');
+
+		$hashes = json_decode(($this->configWrites['imported_seed_hashes_dossiq'] ?? '{}'), true);
+		$this->assertArrayNotHasKey('23/165/woo-verzoek', $hashes);
+	}//end testAFailedWriteIsNotRememberedAsShipped()
 }//end class

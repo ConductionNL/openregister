@@ -1457,7 +1457,7 @@ class ImportHandler {
 	/**
 	 * The generation of the rules an import writes by; raised when they change, so a stored hash does not skip it.
 	 */
-	private const IMPORT_RULES = 'seed-content-1:';
+	private const IMPORT_RULES = 'seed-content-2:';
 
 	/**
 	 * Resolve an incoming shipped schema against what the instance changed.
@@ -3743,8 +3743,8 @@ class ImportHandler {
 				}
 
 				$follow = $this->shippedContent->update(stored: $existingObjectData, shipped: $objectData, remembered: $remembered);
-				$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
 				if ($follow !== null) {
+					// Remembered only once written: a refused write is tried again on the next import.
 					$result['objects'][] = $this->objectService->saveObject(
 						object: $follow,
 						register: $registerObject,
@@ -3754,8 +3754,11 @@ class ImportHandler {
 						_multitenancy: false,
 						currentUser: $actingUser
 					);
+					$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
 					return;
 				}
+
+				$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
 
 				// COUNTED, not just logged. Skipping an unchanged
 				// object is the DESIGNED behaviour of a re-import,
