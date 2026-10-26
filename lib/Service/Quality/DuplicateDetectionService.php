@@ -806,11 +806,17 @@ class DuplicateDetectionService {
 				continue;
 			}
 
-			$sim = $this->similarity->similarity(
-				$method,
-				$this->resolvePath(data: $dataA, path: $field),
-				$this->resolvePath(data: $dataB, path: $field)
-			);
+			$valueA = $this->resolvePath(data: $dataA, path: $field);
+			$valueB = $this->resolvePath(data: $dataB, path: $field);
+
+			// A field neither side holds says nothing about the pair, so its
+			// weight stays out of the denominator (a permit reference on two
+			// Woo requests that never have one).
+			if ($this->isBlank(value: $valueA) === true && $this->isBlank(value: $valueB) === true) {
+				continue;
+			}
+
+			$sim = $this->similarity->similarity($method, $valueA, $valueB);
 
 			$weightedSum += ($sim * $weight);
 			$totalWeight += $weight;
@@ -836,4 +842,23 @@ class DuplicateDetectionService {
 			'matchedRules' => $matchedRules,
 		];
 	}//end scoreAgainstRules()
+
+	/**
+	 * Whether a field value is absent: null, an empty or blank string, or an empty list.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True when there is nothing to compare.
+	 */
+	private function isBlank(mixed $value): bool {
+		if ($value === null) {
+			return true;
+		}
+
+		if (is_string($value) === true) {
+			return trim($value) === '';
+		}
+
+		return is_array($value) === true && $value === [];
+	}//end isBlank()
 }//end class
