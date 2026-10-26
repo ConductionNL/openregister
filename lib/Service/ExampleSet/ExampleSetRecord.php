@@ -73,6 +73,7 @@ class ExampleSetRecord {
 		'casePlans'     => [],
 		'collectivesPages' => [],
 		'talkConversations' => [],
+		'auditEntries'  => [],
 		'archival'      => [],
 	];
 
@@ -143,6 +144,7 @@ class ExampleSetRecord {
 		$record['casePlans']     = array_filter((array) ($decoded['casePlans'] ?? []), 'is_array');
 		$record['collectivesPages'] = array_filter((array) ($decoded['collectivesPages'] ?? []), 'is_array');
 		$record['talkConversations'] = array_filter((array) ($decoded['talkConversations'] ?? []), 'is_array');
+		$record['auditEntries']  = array_filter((array) ($decoded['auditEntries'] ?? []), 'is_array');
 		$record['archival']      = array_filter((array) ($decoded['archival'] ?? []), 'is_array');
 
 		return $record;

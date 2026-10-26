@@ -54,6 +54,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetCasePlans|null $casePlans Writes the case plans a fragment puts on its objects; null refuses them.
 	 * @param ExampleSetCollectivesPages|null $collectivesPages Writes the Collectives pages a fragment ships; null refuses them.
 	 * @param ExampleSetTalkConversations|null $talkConversations Writes the Talk conversations a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetAuditEntries|null $auditEntries Writes the history a fragment gives its objects; null refuses it.
 	 *
 	 * @return void
 	 *
@@ -74,6 +75,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetCasePlans $casePlans=null,
 		private readonly ?ExampleSetCollectivesPages $collectivesPages=null,
 		private readonly ?ExampleSetTalkConversations $talkConversations=null,
+		private readonly ?ExampleSetAuditEntries $auditEntries=null,
 	) {
 	}//end __construct()
 
@@ -234,6 +236,7 @@ class ExampleSetEngineKinds {
 			'casePlans'  => [$this->casePlans, 'case plan'],
 			'collectivesPages' => [$this->collectivesPages, 'collectives page'],
 			'talkConversations' => [$this->talkConversations, 'talk conversation'],
+			'auditEntries' => [$this->auditEntries, 'audit entry'],
 		];
 	}//end kinds()
 }//end class
