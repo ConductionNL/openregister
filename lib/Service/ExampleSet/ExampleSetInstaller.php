@@ -61,6 +61,7 @@ class ExampleSetInstaller {
 	 * @param ExampleSetUserPreferences $userPreferences Writes a fragment's own app's preferences of the set's accounts.
 	 * @param ExampleSetEngineKinds|null $engineRows     Writes the tasks and saved views a fragment declares; null refuses them.
 	 * @param ExampleSetRewriter         $rewriter       Rewrites a kept object on `--refresh`.
+	 * @param ExampleSetLock|null        $lock           One install or removal of a set at a time; null holds nothing.
 	 * @return void
 	 */
 	public function __construct(
@@ -76,6 +77,7 @@ class ExampleSetInstaller {
 		private readonly ExampleSetUserPreferences $userPreferences,
 		private readonly ?ExampleSetEngineKinds $engineRows=null,
 		private readonly ExampleSetRewriter $rewriter=new ExampleSetRewriter(),
+		private readonly ?ExampleSetLock $lock=null,
 	) {
 	}//end __construct()
 
@@ -204,6 +206,33 @@ class ExampleSetInstaller {
 			'ok'          => false,
 		];
 
+		$set = (string) $plan['set'];
+		if ($this->lock !== null && $this->lock->hold(set: $set) === false) {
+			$report['refusals'] = [$this->lock->busy(set: $set)];
+			return $report;
+		}
+
+		try {
+			return $this->installHeld(plan: $plan, adopt: $adopt, password: $password, today: $today, report: $report);
+		} finally {
+			$this->lock?->release(set: $set);
+		}
+	}//end install()
+
+	/**
+	 * Install a set this run holds: check, then write what the record lacks, then prove it.
+	 *
+	 * @param array<string, mixed> $plan     A plan from ExampleSetCatalogue::gather().
+	 * @param array<int, string>   $adopt    Account ids the administrator lets the set use.
+	 * @param string               $password One password for every new account; '' makes one per account.
+	 * @param DateTimeImmutable    $today    The install day.
+	 * @param array<string, mixed> $report   The empty report.
+	 *
+	 * @return array<string, mixed> The report, as install() returns it.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 */
+	private function installHeld(array $plan, array $adopt, string $password, DateTimeImmutable $today, array $report): array {
 		$checked             = $this->check(plan: $plan, adopt: $adopt, today: $today);
 		$report['refusals']  = $checked['refusals'];
 		$report['registers'] = $checked['registers'];
@@ -222,7 +251,7 @@ class ExampleSetInstaller {
 		}
 
 		return $this->proven(report: $report, record: $record, written: $written);
-	}//end install()
+	}//end installHeld()
 
 	/**
 	 * The context with the database id of every register and schema the set names by slug.
