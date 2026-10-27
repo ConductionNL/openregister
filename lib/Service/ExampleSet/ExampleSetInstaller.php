@@ -304,6 +304,9 @@ class ExampleSetInstaller {
 	 * @param array<string, array<string, mixed>> $written  Collects what this run sent, by record key.
 	 *
 	 * @return array<string, mixed> The report.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One pass per object: held, kept, refused,
+	 *                                               not made or written, each answered in place.
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];
