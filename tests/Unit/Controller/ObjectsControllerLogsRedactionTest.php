@@ -124,11 +124,6 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 	}//end testAnUnreadableObjectIs404()
 
 	/**
-	 * An administrator still reads the stored history as before: the reader history is not asked.
-	 *
-	 * @return void
-	 */
-	/**
 	 * A slug two objects of the register and schema hold is the 409 an administrator
 	 * gets on this route, not a 500 (#4037).
 	 *
@@ -143,6 +138,11 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
 	}//end testAnAmbiguousSlugIs409ForAReader()
 
+	/**
+	 * An administrator still reads the stored history as before: the reader history is not asked.
+	 *
+	 * @return void
+	 */
 	public function testAnAdministratorKeepsTheStoredHistory(): void {
 		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
 		$this->history->expects($this->never())->method('page');
