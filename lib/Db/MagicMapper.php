@@ -7393,14 +7393,16 @@ class MagicMapper extends AbstractObjectMapper {
 	 * This method efficiently searches all magic tables for multiple UUIDs in batch.
 	 * It's optimized for performance by searching all UUIDs in each table with a single query.
 	 *
-	 * @param array $uuids Array of UUIDs to search for.
-	 * @param bool $includeDeleted Whether to include soft-deleted objects.
+	 * @param array    $uuids           Array of UUIDs to search for.
+	 * @param bool     $includeDeleted  Whether to include soft-deleted objects.
+	 * @param int|null $registerIdScope Only look in this register's tables (null: every table).
 	 *
 	 * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
 	 */
 	public function findMultipleAcrossAllMagicTables(
 		array $uuids,
 		bool $includeDeleted = false,
+		?int $registerIdScope = null,
 	): array {
 		if (empty($uuids) === true) {
 			return [];
@@ -7443,6 +7445,10 @@ class MagicMapper extends AbstractObjectMapper {
 
 			$registerId = (int)$matches[1];
 			$schemaId = (int)$matches[2];
+			if ($registerIdScope !== null && $registerId !== $registerIdScope) {
+				continue;
+			}
+
 			$tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 
 			// Build UNION part for this table - select only metadata columns for efficiency.
