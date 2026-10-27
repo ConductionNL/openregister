@@ -207,6 +207,47 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	}//end testADraftFlowIsNotPublishedAndALostOneIsReportedMissing()
 
 	/**
+	 * A refresh updates a held flow where it is: the same uuid, the declared
+	 * graph, published again when it changed and not when it did not, switched
+	 * on or off as it was. A flow that is gone is written again.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 */
+	public function testARefreshUpdatesAHeldFlowWhereItIs(): void {
+		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'omgevingsvergunning', 'data' => self::flow()]]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$uuid = array_key_first($this->flows);
+		$this->flows[$uuid]->setEnabled(true);
+
+		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'omgevingsvergunning', 'data' => self::flow(extra: [
+			'name'  => 'Regulier',
+			'nodes' => [
+				['id' => 'start', 'type' => 'openregister.trigger-manual', 'name' => 'Zaak aangemaakt', 'position' => ['x' => 40, 'y' => 260]],
+				['id' => 'status', 'type' => 'dossiq.setStatus', 'name' => 'Status: ontvangen', 'position' => ['x' => 196, 'y' => 260]],
+				['id' => 'end', 'type' => 'openregister.end', 'position' => ['x' => 352, 'y' => 260]],
+			],
+		])]]]);
+		$plan   = ($this->catalogue->gather(set: 'demo') + ['refresh' => true]);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame(expected: ['alpha/omgevingsvergunning' => 'refreshed'], actual: $report['flows']);
+		$this->assertSame(expected: [$uuid], actual: array_keys($this->flows), message: 'the flow keeps its uuid');
+		$this->assertSame(expected: 'Regulier', actual: $this->flows[$uuid]->getName());
+		$this->assertSame(expected: ['x' => 196, 'y' => 260], actual: $this->flows[$uuid]->getNodes()[1]['position']);
+		$this->assertTrue(condition: (bool) $this->flows[$uuid]->getEnabled(), message: 'a refresh leaves the flow on or off');
+		$this->assertSame(expected: [$uuid, $uuid], actual: $this->publishedFlows, message: 'the changed flow is published again');
+
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [$uuid, $uuid], actual: $this->publishedFlows, message: 'an unchanged flow is not published again');
+
+		$this->flows = [];
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertCount(expectedCount: 1, haystack: $this->flows, message: 'a flow that is gone is written again');
+	}//end testARefreshUpdatesAHeldFlowWhereItIs()
+
+	/**
 	 * A faulty flow is refused at check time and nothing is written.
 	 *
 	 * @param array<string, mixed> $data   The row's fields.
