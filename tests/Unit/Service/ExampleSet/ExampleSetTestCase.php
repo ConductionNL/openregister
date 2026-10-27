@@ -460,6 +460,13 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
 		$service->method('import')->willReturnCallback(function (array $data, ?string $actor): Task {
+			foreach ($this->engineTasks as $held) {
+				if ($held->getTaskKey() === (string) $data['key']) {
+					// The task key is unique in the engine (or_tasks_key_uniq).
+					throw new \RuntimeException('duplicate key value violates unique constraint "or_tasks_key_uniq"');
+				}
+			}
+
 			$this->taskImports[] = ['data' => $data, 'actor' => $actor];
 			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
 			$task  = new Task();
@@ -486,6 +493,9 @@ abstract class ExampleSetTestCase extends TestCase {
 		$mapper = $this->createMock(TaskMapper::class);
 		$mapper->method('findByUuid')->willReturnCallback(
 			fn (string $uuid): Task => ($this->engineTasks[$uuid] ?? throw new DoesNotExistException('no task '.$uuid))
+		);
+		$mapper->method('findByKey')->willReturnCallback(
+			fn (string $key): array => array_values(array_filter($this->engineTasks, static fn (Task $task): bool => $task->getTaskKey() === $key))
 		);
 		$mapper->method('update')->willReturnCallback(function (Task $task): Task {
 			$this->engineTasks[(string) $task->getUuid()] = $task;

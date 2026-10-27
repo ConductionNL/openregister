@@ -206,6 +206,25 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		];
 	}
 
+	/**
+	 * A declared service account that turns out to exist when the install creates it (another writer made it in
+	 * between) is adopted into the record, so the set uses it and remove leaves it.
+	 *
+	 * @return void
+	 */
+	public function testAServiceAccountThatAppearedIsAdoptedNotDropped(): void {
+		$this->alpha(fragment: $this->serviceFragment());
+		$this->accounts->unseenUsers = ['demo_background'];
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$dropped = array_filter($report['dropped'], static fn (string $line): bool => str_contains($line, 'demo_background'));
+		$this->assertSame(expected: [], actual: array_values($dropped));
+		$this->assertSame(expected: 'adopted', actual: $report['users']['demo_background']);
+		$this->remover->remove(set: 'demo');
+		$this->assertArrayHasKey(key: 'demo_background', array: $this->accounts->users, message: 'remove leaves an adopted account');
+	}//end testAServiceAccountThatAppearedIsAdoptedNotDropped()
+
 	public function testAServiceAccountIsMadeWithoutAPasswordAnyoneSeesAndJoinsItsGroup(): void {
 		$this->alpha($this->serviceFragment());
 

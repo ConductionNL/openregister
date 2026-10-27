@@ -152,6 +152,13 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		$fields['appId'] = $app;
 		$fields += ExampleSetExternalTask::metadata(data: $data);
 
+		// The task key is unique in the engine: a task that already holds it (the record lost track of it) is
+		// adopted, not written a second time.
+		$holder = $this->holderOf(key: (string) $fields['key']);
+		if ($holder !== null) {
+			return ['error' => '', 'entry' => ['uuid' => $holder]];
+		}
+
 		$actor = (string) ($data['completedBy'] ?? $data['assignee'] ?? '');
 		if ($actor === '' || ExampleSetExternalTask::isExternal(data: $data) === true) {
 			// A party is not an account: the app that ships the set raises its task.
@@ -317,6 +324,27 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 			return null;
 		}
 	}//end moment()
+
+	/**
+	 * The uuid of the task that holds a key, null when none does or it cannot be read.
+	 *
+	 * @param string $key The task key.
+	 *
+	 * @return string|null
+	 */
+	private function holderOf(string $key): ?string {
+		try {
+			$held = $this->mapper()->findByKey($key);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($held === []) {
+			return null;
+		}
+
+		return (string) $held[0]->getUuid();
+	}//end holderOf()
 
 	/**
 	 * The task service.
