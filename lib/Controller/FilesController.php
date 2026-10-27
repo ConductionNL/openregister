@@ -628,12 +628,17 @@ class FilesController extends Controller {
 			// check any signed-in user could list any object's files.
 			$object = $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
 
-			// Get the raw files from the file service.
-			// List the files of the object the access check resolved within this
-			// register and schema: a slug names THIS schema's object (#4037). The raw
-			// identifier would be looked up across every table, where another schema's
-			// object with the same slug could win. Anonymous callers have no resolved
-			// object and keep the identifier path.
+			// An anonymous caller has no read check to resolve the object; it is looked
+			// up within this register and schema all the same. Publication still decides
+			// what it sees (shared files only).
+			if ($object === null && $isAnonymous === true) {
+				$object = $this->objectInScope(register: $register, schema: $schema, id: $id);
+			}
+
+			// List the files of the object resolved within this register and schema: a
+			// slug names THIS schema's object (#4037). The raw identifier would be looked
+			// up across every table, where another schema's object with the same slug
+			// could win; only the legacy wiring without the access guard still passes it.
 			$files = $this->fileService->getFiles(object: ($object ?? $id), sharedFilesOnly: $isAnonymous);
 			if ($this->fileRestrictions !== null) {
 				$files = $this->fileRestrictions->readableNodes(nodes: $files);
@@ -657,6 +662,42 @@ class FilesController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end index()
+
+	/**
+	 * The object an identifier names within a register and schema, without a read check.
+	 *
+	 * For a caller who has no read check to resolve the object (anonymous): it only
+	 * picks the object, what the caller sees is decided by publication. A slug two
+	 * objects hold is answered as not found, the answer the files listing gives every
+	 * refused read (file-actions REQ-OFOA-002), and lists neither object's files.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $id       The object's id, uuid or slug.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DoesNotExistException When no object, or more than one, holds the identifier there.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function objectInScope(string $register, string $schema, string $id): ObjectEntity {
+		try {
+			$object = WriteCause::asLookup(
+				fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false)
+			);
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			throw new DoesNotExistException('Object not found');
+		}
+
+		if ($object instanceof ObjectEntity === false) {
+			throw new DoesNotExistException('Object not found');
+		}
+
+		return $object;
+	}//end objectInScope()
 
 	/**
 	 * Get a specific file associated with an object
