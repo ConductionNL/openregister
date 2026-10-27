@@ -654,16 +654,31 @@ class AuditTrailController extends Controller {
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			// Same body as the object routes (#4037): neither object's history is returned.
-			return new JSONResponse(
-				data: [
-					'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
-					'error' => 'ambiguous-identifier',
-				],
-				statusCode: 409
-			);
+			return $this->ambiguousIdentifier(id: $id);
 		}//end try
 	}//end objects()
+
+	/**
+	 * The 409 an identifier two objects of the register and schema hold answers.
+	 *
+	 * Same body as the object routes (#4037): neither object's history is returned,
+	 * and no uuid is named.
+	 *
+	 * @param string $id The identifier from the path.
+	 *
+	 * @return JSONResponse HTTP 409 `ambiguous-identifier`.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function ambiguousIdentifier(string $id): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
+				'error' => 'ambiguous-identifier',
+			],
+			statusCode: 409
+		);
+	}//end ambiguousIdentifier()
 
 	/**
 	 * One object's history for a non-admin, when they may read the object.
@@ -687,6 +702,10 @@ class AuditTrailController extends Controller {
 			);
 		} catch (PurposeRefusedException $refusal) {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			// A reader gets the 409 an administrator gets: the identifier is ambiguous
+			// whoever asks, and the body names neither object.
+			return $this->ambiguousIdentifier(id: $id);
 		}
 
 		if ($page === null) {
