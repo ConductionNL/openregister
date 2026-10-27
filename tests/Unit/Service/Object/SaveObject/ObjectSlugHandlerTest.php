@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -237,6 +238,28 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->assertNull($this->handler->candidate(['title' => 'Hello'], $withoutNameField, null));
 		$this->assertNull($this->handler->candidate(['title' => '   '], $withEmptyName, null));
 		$this->assertNull($this->handler->candidate(['body' => 'x'], $withEmptyName, null));
+	}
+
+	public function testASchemaNameSourceNameThatSlugifiesToNothingGivesNoSlug(): void {
+		// Only punctuation, or only letters the slugify routine removes: no name, so the
+		// schema slug alone must not become the object's slug.
+		$schema = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
+
+		$this->assertNull($this->handler->candidate(['title' => '!!!'], $schema, null));
+		$this->assertNull($this->handler->candidate(['title' => 'Москва'], $schema, null));
+	}
+
+	public function testASchemaNameSourceSlugIsCutToTheColumnWithoutATrailingHyphen(): void {
+		$schema = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
+		$source = new ObjectSlugSource(
+			hydrator: new MetadataHydrationHandler(
+				logger: $this->createMock(LoggerInterface::class),
+				cacheHandler: $this->createMock(CacheHandler::class)
+			)
+		);
+
+		// "convenanten-abcdefgh-ijk" cut at 21 ends on the hyphen before "ijk".
+		$this->assertSame('convenanten-abcdefgh', $source->candidate(objectData: ['title' => 'abcdefgh ijk'], schema: $schema, maxLength: 21));
 	}
 
 	public function testAStoredSlugIsFrozenWhenTheSourceFieldIsRenamed(): void {

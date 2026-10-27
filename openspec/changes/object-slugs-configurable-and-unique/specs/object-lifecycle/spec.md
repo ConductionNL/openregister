@@ -45,9 +45,11 @@ candidate MUST be `null` and the object MUST get no slug. There MUST be no fallb
 `name`, `title`, `label` or the schema title. The reserved value `@schema.name` is the
 one other source a schema MAY choose (Robert Zondervan, 2026-10-26: a choice, not a
 fallback): the candidate is then `<schema slug>-<object name>`, the object name being
-the value of the schema's `objectNameField`, slugified as one string; without an
-`objectNameField`, without a name value or without a schema slug and title the
-candidate MUST be `null`. The save pipeline MUST NOT add a `slug` key to the object
+the value of the schema's `objectNameField`, slugified on its own; a schema without a
+slug contributes its slugified title. Without an `objectNameField`, without a name value,
+with a name that slugifies to nothing (only punctuation or non-Latin letters) or without
+a schema slug and title the candidate MUST be `null`; the schema part alone is never a
+slug. Any candidate is cut to the width of the slug column without a trailing hyphen. The save pipeline MUST NOT add a `slug` key to the object
 data. The slug is entity metadata only, so it never appears in `@self.relations` and
 never causes a magic-mapper "Discarding … slug" warning.
 
@@ -61,6 +63,7 @@ never causes a magic-mapper "Discarding … slug" warning.
 - **WHEN** an object with `title: "Hello World"` is created
 - **THEN** the object's `@self.slug` MUST be `convenanten-hello-world`
 - **AND** an object without a `title` value MUST get no slug
+- **AND** an object whose `title` is `"!!!"` MUST get no slug, not `convenanten`
 
 #### Scenario: Empty source field gives no slug
 - **GIVEN** a schema with `objectSlugField: "title"`

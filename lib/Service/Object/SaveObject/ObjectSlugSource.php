@@ -117,12 +117,21 @@ class ObjectSlugSource {
 			return null;
 		}
 
-		$slug = $this->hydrator->createSlug(text: trim($prefix . ' ' . trim($value)));
-		if ($slug === '') {
+		// The name is slugified on its own: a name that slugifies to nothing (only
+		// punctuation, only non-Latin letters) is no name, so the schema part alone
+		// never becomes the slug.
+		$name = $this->hydrator->createSlug(text: trim($value));
+		if ($name === '') {
 			return null;
 		}
 
-		return substr($slug, 0, $maxLength);
+		$slug = $name;
+		if ($prefix !== '') {
+			$slug = $prefix.'-'.$name;
+		}
+
+		// Cut to the column without leaving a trailing hyphen at the cut.
+		return rtrim(substr($slug, 0, $maxLength), '-');
 	}//end candidate()
 
 	/**
