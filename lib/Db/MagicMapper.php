@@ -10068,8 +10068,12 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		// Load ALL columns for this table in one query (instead of one query per column).
+		// table_name is compared as stored (magic tables are created lower-case).
+		// Wrapping that column in a function keeps PostgreSQL from using the
+		// catalog index, so each lookup walked the columns of every table
+		// (89k columns over 1.7k magic tables: 18-33 ms against 3-4 ms).
 		$sql = 'SELECT LOWER(column_name) AS col, LOWER(data_type) AS col_type FROM information_schema.columns
-                WHERE LOWER(table_name) = ?';
+                WHERE table_name = ?';
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([$fullTableNameLower]);
