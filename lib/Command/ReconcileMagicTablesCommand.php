@@ -223,6 +223,11 @@ class ReconcileMagicTablesCommand extends Command {
 						register: $register,
 						schema: $schema
 					);
+					$this->magicMapper->widenDecimalColumns(
+						tableName: $tableName,
+						currentColumns: $currentColumns,
+						requiredColumns: $requiredColumns
+					);
 					$repaired++;
 				} catch (\Throwable $e) {
 					$failed++;

@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
+use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -4355,6 +4356,7 @@ class MagicMapper extends AbstractObjectMapper {
 	): string {
 		// Prepare object data for table storage with register+schema context.
 		$preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
+		$this->refuseNumbersTheColumnsWouldRound(row: $preparedData, tableName: $tableName);
 
 		// Generate UUID if not provided in prepared data.
 		// Check both in metadata and top-level for UUID.
@@ -4747,7 +4749,6 @@ class MagicMapper extends AbstractObjectMapper {
 
 		if (is_array($schemaProperties) === true) {
 			$columnRoles = new MagicMetadataColumn();
-			$numberColumn = new MagicNumberColumn();
 			foreach (array_keys($schemaProperties) as $propertyName) {
 				// A property whose column is a metadata column (`_owner`, `_authorization`,
 				// `_status`, ...) never writes it: the loop above stamped that column from
@@ -4779,7 +4780,6 @@ class MagicMapper extends AbstractObjectMapper {
 					$value = $data[$propertyName];
 					$propertyConfig = $schemaProperties[$propertyName] ?? [];
 					$propertyType = $propertyConfig['type'] ?? 'string';
-					$numberColumn->assertFits(propertyName: (string)$propertyName, value: $value, propertyConfig: $propertyConfig);
 
 					// Safety check for file properties: if a base64 data URL is still present,.
 					// the FilePropertyHandler didn't process it. Log a warning and set to null.
@@ -5879,6 +5879,7 @@ class MagicMapper extends AbstractObjectMapper {
 			try {
 				$this->db->executeStatement($sql);
 				$widened[] = $columnName;
+				MagicNumberColumnSizes::forget(fullTableName: $this->getFullTableName(tableName: $tableName));
 			} catch (Exception $e) {
 				$this->logger->warning(
 					message: '[MagicMapper] Could not widen number column; values it cannot hold are refused on save',
@@ -5895,6 +5896,57 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $widened;
 	}//end widenDecimalColumns()
+
+	/**
+	 * Widen every number column of a table to at least the default DECIMAL(20,6).
+	 *
+	 * The upgrade step runs this over the physical tables, so a table whose
+	 * schema no register lists any more is widened too. A property whose
+	 * multipleOf needs a larger scale gets it from the reconcile command or its
+	 * next schema change.
+	 *
+	 * @param string $tableName The magic table (without prefix).
+	 *
+	 * @return array<string> The column names widened.
+	 *
+	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 */
+	public function widenNumberColumnsToDefault(string $tableName): array {
+		$currentColumns = $this->getExistingTableColumns(tableName: $tableName);
+		$requiredColumns = [];
+		foreach ($currentColumns as $columnName => $column) {
+			if (in_array(strtolower((string)($column['type'] ?? '')), ['decimal', 'numeric'], true) === true) {
+				$requiredColumns[$columnName] = [
+					'name' => $columnName,
+					'type' => 'decimal',
+					'precision' => MagicNumberColumn::INTEGER_DIGITS + MagicNumberColumn::DEFAULT_SCALE,
+					'scale' => MagicNumberColumn::DEFAULT_SCALE,
+				];
+			}
+		}
+
+		return $this->widenDecimalColumns(tableName: $tableName, currentColumns: $currentColumns, requiredColumns: $requiredColumns);
+	}//end widenNumberColumnsToDefault()
+
+	/**
+	 * Refuse a row holding a number its table's column would round.
+	 *
+	 * Reads the column's actual size, so a table not yet widened refuses what
+	 * its old DECIMAL(10,2) would round instead of rounding it.
+	 *
+	 * @param array  $row       The prepared row, keyed by column name.
+	 * @param string $tableName The magic table (without prefix).
+	 *
+	 * @throws \OCA\OpenRegister\Exception\ValidationException When a column cannot hold its value.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 */
+	private function refuseNumbersTheColumnsWouldRound(array $row, string $tableName): void {
+		$sizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getTablePrefix()))->sizes(tableName: $tableName);
+		(new MagicNumberColumn())->assertRowFits(row: $row, columnSizes: $sizes);
+	}//end refuseNumbersTheColumnsWouldRound()
 
 	/**
 	 * The widened size of each number column narrower than its property maps to.

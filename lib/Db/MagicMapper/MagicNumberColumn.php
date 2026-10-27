@@ -138,53 +138,31 @@ final class MagicNumberColumn {
 	}//end floatRefusal()
 
 	/**
-	 * Refuse a value its property's column cannot hold.
+	 * Refuse a row holding a number its column would round.
 	 *
-	 * @param string $propertyName   The property.
-	 * @param mixed  $value          The value to store.
-	 * @param array  $propertyConfig The schema property.
+	 * @param array                                           $row         The prepared row, keyed by column name.
+	 * @param array<string, array{precision: int, scale: int}> $columnSizes The table's number columns, keyed by lower-cased name.
 	 *
-	 * @throws ValidationException When the column would round or reject the value.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
-	 */
-	public function assertFits(string $propertyName, mixed $value, array $propertyConfig): void {
-		if (($propertyConfig['type'] ?? null) !== 'number' || $value === null) {
-			return;
-		}
-
-		$size = $this->size(propertyConfig: $propertyConfig);
-		$reason = $this->refusal(value: $value, precision: $size['precision'], scale: $size['scale']);
-		if ($reason === null) {
-			return;
-		}
-
-		$message = sprintf(
-			"The value of '%s' %s and cannot be stored without rounding. Declare multipleOf on the property for a finer scale.",
-			$propertyName,
-			$reason
-		);
-		throw new ValidationException(message: $message);
-	}//end assertFits()
-
-	/**
-	 * Refuse a value its property's column cannot hold, looking the property up in a schema's properties.
-	 *
-	 * @param array  $properties   The schema's properties.
-	 * @param string $propertyName The property.
-	 * @param mixed  $value        The value to store.
-	 *
-	 * @throws ValidationException When the column would round or reject the value.
+	 * @throws ValidationException When a column cannot hold its value.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
-	public function assertFitsIn(array $properties, string $propertyName, mixed $value): void {
-		$this->assertFits(propertyName: $propertyName, value: $value, propertyConfig: ($properties[$propertyName] ?? []));
-	}//end assertFitsIn()
+	public function assertRowFits(array $row, array $columnSizes): void {
+		foreach ($row as $columnName => $value) {
+			$size = $columnSizes[strtolower((string)$columnName)] ?? null;
+			if ($size === null || $value === null) {
+				continue;
+			}
+
+			$reason = $this->refusal(value: $value, precision: $size['precision'], scale: $size['scale']);
+			if ($reason !== null) {
+				$message = sprintf("The value of '%s' %s and cannot be stored without rounding.", $columnName, $reason);
+				throw new ValidationException(message: $message);
+			}
+		}
+	}//end assertRowFits()
 
 	/**
 	 * The size an existing column must be widened to, or null when it already holds the required size.

@@ -115,14 +115,57 @@ class MagicMapperNumberColumnTest extends TestCase {
 		$this->assertSame(0.005, (new SchemaTypeConverter())->convertValue(value: $stored, schemaType: 'number'));
 	}//end testFiveGramsRoundTrips()
 
-	public function testAValueTheColumnWouldRoundIsRefusedOnSave(): void {
+	public function testAnOldTwoDecimalColumnRefusesFiveGramsOnSaveWithoutAlteringIt(): void {
 		$mapper = $this->mapper();
-		$schema = $this->schema(properties: ['weight' => ['type' => 'number']]);
+		$this->columnSizes(rows: [['col' => 'weight', 'numeric_precision' => 10, 'numeric_scale' => 2]]);
+		$this->db->expects($this->never())->method('executeStatement');
 
 		$this->expectException(ValidationException::class);
 		$this->expectExceptionMessage("'weight'");
-		$this->call($mapper, 'prepareObjectDataForTable', [['weight' => 0.0000001], $this->createMock(Register::class), $schema]);
-	}//end testAValueTheColumnWouldRoundIsRefusedOnSave()
+		$this->call($mapper, 'refuseNumbersTheColumnsWouldRound', [['weight' => 0.005], 'openregister_table_old']);
+	}//end testAnOldTwoDecimalColumnRefusesFiveGramsOnSaveWithoutAlteringIt()
+
+	public function testAWidenedColumnTakesFiveGrams(): void {
+		$mapper = $this->mapper();
+		$this->columnSizes(rows: [['col' => 'weight', 'numeric_precision' => 20, 'numeric_scale' => 6]]);
+		$this->db->expects($this->never())->method('executeStatement');
+
+		$this->call($mapper, 'refuseNumbersTheColumnsWouldRound', [['weight' => 0.005], 'openregister_table_new']);
+		$this->addToAssertionCount(1);
+	}//end testAWidenedColumnTakesFiveGrams()
+
+	public function testTheUpgradeWidensEveryNumberColumnOfATable(): void {
+		$mapper = $this->mapper();
+		$this->db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQLPlatform::class));
+		$statement = $this->createMock(\OCP\DB\IPreparedStatement::class);
+		$statement->method('fetchAll')->willReturn([
+			['column_name' => 'weight', 'data_type' => 'numeric', 'character_maximum_length' => null, 'numeric_precision' => 10, 'numeric_scale' => 2, 'is_nullable' => 'YES', 'column_default' => null],
+			['column_name' => 'rate', 'data_type' => 'numeric', 'character_maximum_length' => null, 'numeric_precision' => 20, 'numeric_scale' => 6, 'is_nullable' => 'YES', 'column_default' => null],
+			['column_name' => 'title', 'data_type' => 'character varying', 'character_maximum_length' => 255, 'numeric_precision' => null, 'numeric_scale' => null, 'is_nullable' => 'YES', 'column_default' => null],
+		]);
+		$this->db->method('prepare')->willReturn($statement);
+		$statements = [];
+		$this->db->method('executeStatement')->willReturnCallback(static function (string $sql) use (&$statements): int {
+			$statements[] = $sql;
+			return 0;
+		});
+
+		$this->assertSame(['weight'], $mapper->widenNumberColumnsToDefault(tableName: 'openregister_table_up'));
+		$this->assertSame(['ALTER TABLE "oc_openregister_table_up" ALTER COLUMN "weight" TYPE DECIMAL(20,6)'], $statements);
+	}//end testTheUpgradeWidensEveryNumberColumnOfATable()
+
+	/**
+	 * Let the information_schema read of the column sizes return these rows.
+	 *
+	 * @param array $rows The rows (col, numeric_precision, numeric_scale).
+	 *
+	 * @return void
+	 */
+	private function columnSizes(array $rows): void {
+		$statement = $this->createMock(\OCP\DB\IPreparedStatement::class);
+		$statement->method('fetch')->willReturnOnConsecutiveCalls(...[...$rows, false]);
+		$this->db->method('prepare')->willReturn($statement);
+	}//end columnSizes()
 
 	public function testAnOldTwoDecimalColumnIsWidenedOnPostgres(): void {
 		$mapper = $this->mapper();

@@ -222,7 +222,6 @@ class MagicBulkHandler {
 				}
 
 				$columnName = $this->sanitizeColumnName(name: $propertyName);
-				(new MagicNumberColumn())->assertFitsIn(properties: ($schema->getProperties() ?? []), propertyName: (string)$propertyName, value: $value);
 
 				// Convert empty strings to NULL for all schema properties.
 				// This is necessary because:
@@ -477,6 +476,11 @@ class MagicBulkHandler {
 
 		if ($preparedObjects === []) {
 			return [];
+		}
+
+		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
+		foreach ($preparedObjects as $preparedObject) {
+			(new MagicNumberColumn())->assertRowFits(row: $preparedObject, columnSizes: $numberColumnSizes);
 		}
 
 		// Determine optimal chunk size.

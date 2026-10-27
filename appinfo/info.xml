@@ -377,6 +377,11 @@ Vrij en open source onder de EUPL-licentie.
 			     re-syncs an already-materialised table on a read, so the sync
 			     has to be asked for, and an upgrade is when. Idempotent. -->
 			<step>OCA\OpenRegister\Repair\AddObjectStateColumns</step>
+			<!-- Number columns were DECIMAL(10,2) and rounded every value with
+			     more decimals. Widened here, once, table by table, rather than on
+			     each table's first request. Post-migration only: a fresh install
+			     creates its tables at the new size. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\WidenMagicNumberColumns</step>
 			<!-- The export verb (export-as-its-own-right). Exporting is now a
 			     right of its own, and an instance that granted read granted an
 			     export with it. This step writes that grant down so an

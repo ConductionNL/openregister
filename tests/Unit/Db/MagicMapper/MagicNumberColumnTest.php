@@ -74,17 +74,16 @@ class MagicNumberColumnTest extends TestCase {
 		$this->assertNull($this->column->refusal(value: 'not a number', precision: 20, scale: 6));
 	}//end testTooManyDecimalsOrDigitsAreRefused()
 
-	public function testAssertFitsNamesTheProperty(): void {
+	public function testARowIsCheckedAgainstTheColumnsActualSize(): void {
 		$this->expectException(ValidationException::class);
 		$this->expectExceptionMessage("'weight'");
-		$this->column->assertFits(propertyName: 'weight', value: 0.0000001, propertyConfig: ['type' => 'number']);
-	}//end testAssertFitsNamesTheProperty()
+		$this->column->assertRowFits(row: ['weight' => 0.005, 'title' => '0.0000001'], columnSizes: ['weight' => ['precision' => 10, 'scale' => 2]]);
+	}//end testARowIsCheckedAgainstTheColumnsActualSize()
 
-	public function testAssertFitsIgnoresOtherTypesAndNull(): void {
-		$this->column->assertFits(propertyName: 'name', value: '0.0000001', propertyConfig: ['type' => 'string']);
-		$this->column->assertFits(propertyName: 'weight', value: null, propertyConfig: ['type' => 'number']);
+	public function testARowThatFitsItsColumnsPasses(): void {
+		$this->column->assertRowFits(row: ['weight' => 0.005, 'price' => null, 'title' => '0.0000001'], columnSizes: ['weight' => ['precision' => 20, 'scale' => 6], 'price' => ['precision' => 10, 'scale' => 2]]);
 		$this->addToAssertionCount(1);
-	}//end testAssertFitsIgnoresOtherTypesAndNull()
+	}//end testARowThatFitsItsColumnsPasses()
 
 	public function testAnOldTwoDecimalColumnIsWidenedNeverNarrowed(): void {
 		$this->assertSame(['precision' => 20, 'scale' => 6], $this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 10, 'scale' => 2], precision: 20, scale: 6));
