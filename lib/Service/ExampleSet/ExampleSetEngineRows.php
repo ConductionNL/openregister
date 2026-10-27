@@ -44,9 +44,10 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * The parts `--refresh` writes again: a saved view, a task, a note, a read state, an export and an appointment carry
 	 * values that age, a party link caches its party's name and e-mail address, and a case plan's items move on as
-	 * the case is worked (a refresh puts them back in their declared states).
+	 * the case is worked (a refresh puts them back in their declared states). A flow is updated where it is, so a
+	 * changed declaration reaches it without a new uuid.
 	 */
-	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties', 'appointments', 'casePlans'];
+	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties', 'appointments', 'casePlans', 'flows'];
 
 	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).

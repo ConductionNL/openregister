@@ -418,6 +418,8 @@ class ExampleSetInstaller {
 		}//end foreach
 
 		$context = (['objects' => $objects] + $base);
+		// A refresh updates the flows too, so it is known before they are written.
+		$context['refresh'] = (($plan['refresh'] ?? false) === true);
 
 		// Before the changes, so a change can quote a flow (`{{flow:key.uuid}}`).
 		if ($this->engineRows?->installFlows(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
@@ -428,8 +430,6 @@ class ExampleSetInstaller {
 		$report           = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
-
-		$context['refresh'] = (($plan['refresh'] ?? false) === true);
 
 		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
