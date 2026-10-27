@@ -142,6 +142,39 @@ class ExampleSetAppConfig {
 	}//end apply()
 
 	/**
+	 * Bring a recorded entry up to a floor declared after it was written: an entry without `atLeast`, or with a lower
+	 * floor. The key is written only when it holds less than the floor. The returned entry keeps `had` and `old`, so
+	 * remove still puts back what was there before the set.
+	 *
+	 * @param array<string, mixed> $entry A record entry from apply().
+	 * @param string               $value The declared floor.
+	 *
+	 * @return array{entry: array<string, mixed>|null, written: bool} The updated entry (null when it already holds this
+	 *                                                                floor, or the write failed) and whether the key was written.
+	 *
+	 * @spec openspec/changes/example-set-recorded-floor/specs/example-sets/spec.md#requirement-a-recorded-app-config-entry-follows-a-floor-declared-later
+	 */
+	public function raise(array $entry, string $value): array {
+		if (($entry['atLeast'] ?? false) === true && (int) $entry['new'] >= (int) $value) {
+			return ['entry' => null, 'written' => false];
+		}
+
+		$app     = (string) $entry['app'];
+		$key     = (string) $entry['key'];
+		$current = $this->read(app: $app, key: $key, type: 'int');
+		$written = ($current === '' || (int) $current < (int) $value);
+		try {
+			if ($written === true) {
+				$this->write(app: $app, key: $key, value: $value, type: 'int');
+			}
+		} catch (Throwable) {
+			return ['entry' => null, 'written' => false];
+		}
+
+		return ['entry' => array_merge($entry, ['new' => $value, 'type' => 'int', 'atLeast' => true]), 'written' => $written];
+	}//end raise()
+
+	/**
 	 * Whether an existing key already holds what the entry asks for: any value for a generated entry, the same value
 	 * for a written one, and the value or more for a floor.
 	 *
