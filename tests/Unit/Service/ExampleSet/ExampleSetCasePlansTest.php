@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Db\Task;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
@@ -98,6 +99,96 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 		$this->assertSame(expected: [], actual: $removed['failed']);
 		$this->assertSame(expected: [], actual: $this->caseItems);
 	}//end testAPlanIsBroughtInOnceAndTakenAway()
+
+	/**
+	 * A refresh brings the plan's items back to the states the declaration gives them: an item that moved on since
+	 * (a cascade that activated it) is put back.
+	 *
+	 * @return void
+	 */
+	public function testARefreshPutsThePlanBackInItsDeclaredStates(): void {
+		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		foreach ($this->caseItems as $item) {
+			if ($item->getItemKey() === 'besluit-opstellen') {
+				$item->setState('active');
+			}
+		}
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame('refreshed', $report['casePlans']['alpha/woo-plan']);
+		$states = [];
+		foreach ($this->caseItems as $item) {
+			$states[$item->getItemKey()] = $item->getState();
+		}
+
+		$this->assertSame('available', $states['besluit-opstellen']);
+		$this->assertCount(5, $this->caseItems);
+	}//end testARefreshPutsThePlanBackInItsDeclaredStates()
+
+	/**
+	 * A refresh takes away the task an item was realised by when it puts the item back: a plan item the set
+	 * returns to `available` must not leave its old task in the case's task list (710d44a4 "Besluit opstellen",
+	 * whose entry criterion is still unmet).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 */
+	public function testARefreshTakesAwayTheTaskOfAnItemItPutsBack(): void {
+		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->realiseAsTask(itemKey: 'besluit-opstellen', taskUuid: 'task-besluit');
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertArrayNotHasKey(key: 'task-besluit', array: $this->engineTasks, message: 'the realisation of the item put back is gone');
+	}//end testARefreshTakesAwayTheTaskOfAnItemItPutsBack()
+
+	/**
+	 * Removing the set takes away the tasks its plan items were realised by.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 */
+	public function testRemovingTheSetTakesAwayTheTasksItsItemsMade(): void {
+		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->realiseAsTask(itemKey: 'besluit-opstellen', taskUuid: 'task-besluit');
+
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $removed['failed']);
+		$this->assertSame(expected: [], actual: $this->engineTasks);
+	}//end testRemovingTheSetTakesAwayTheTasksItsItemsMade()
+
+	/**
+	 * Activate an item as a cascade would: the item is realised by a task.
+	 *
+	 * @param string $itemKey  The plan item.
+	 * @param string $taskUuid The task's uuid.
+	 *
+	 * @return void
+	 */
+	private function realiseAsTask(string $itemKey, string $taskUuid): void {
+		$task = new Task();
+		$task->setUuid($taskUuid);
+		$task->setTitle('Besluit opstellen');
+		$this->engineTasks[$taskUuid] = $task;
+		foreach ($this->caseItems as $item) {
+			if ($item->getItemKey() === $itemKey) {
+				$item->setState('active');
+				$item->setRealisationKind(CaseItem::REALISATION_TASK);
+				$item->setRealisationUuid($taskUuid);
+			}
+		}
+	}//end realiseAsTask()
 
 	/**
 	 * A faulty plan is refused at check time and nothing is written.

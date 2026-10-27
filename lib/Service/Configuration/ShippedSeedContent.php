@@ -9,9 +9,10 @@
  * instead: the import remembers the hash of the content it last shipped per
  * seed. When the shipped content differs from the remembered hash, it is a new
  * release of the seed and is written, as a version bump would be. When the
- * content is unchanged, the stored object stays as it is, edits included. A
- * seed with no remembered hash (stored before the import kept one) cannot be
- * told apart from an edited one, so it only gains the fields it lacks.
+ * content is unchanged, the stored object keeps every value it holds and only
+ * gains a field it lacks (an earlier write may have been refused). A seed with
+ * no remembered hash cannot be told apart from an edited one, so it is treated
+ * the same way.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -66,11 +67,7 @@ class ShippedSeedContent {
 	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
 	 */
 	public function update(array $stored, array $shipped, ?string $remembered): ?array {
-		if ($remembered !== null) {
-			if ($remembered === $this->hash(shipped: $shipped)) {
-				return null;
-			}
-
+		if ($remembered !== null && $remembered !== $this->hash(shipped: $shipped)) {
 			return $shipped;
 		}
 

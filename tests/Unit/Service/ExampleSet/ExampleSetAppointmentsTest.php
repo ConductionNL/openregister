@@ -125,6 +125,28 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	}//end testTheOwnersCalendarIsUsed()
 
 	/**
+	 * An appointment's moment is relative to the install day, so a refresh writes it again on the new day: the old
+	 * event and its link go, the new one is linked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 */
+	public function testARefreshMovesTheAppointmentToItsNewDay(): void {
+		$this->caseWithAppointments(rows: [['key' => 'toelichting', 'data' => ['start' => '{{datetime:3 10:00}}', 'end' => '{{datetime:3 10:30}}'] + self::appointment()]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days'));
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame('refreshed', $report['appointments']['alpha/toelichting']);
+		$this->assertCount(1, $this->calendarObjects);
+		$this->assertCount(1, $this->calendarLinks);
+		$this->assertSame($this->today()->modify('+8 days')->format('Y-m-d'), array_values($this->calendarLinks)[0]->getDtstart()->format('Y-m-d'));
+	}//end testARefreshMovesTheAppointmentToItsNewDay()
+
+	/**
 	 * An appointment may sit on a task the fragment declares: the link names the task, with the register and schema
 	 * of the record the task is on, so the task page's Afspraken card lists it.
 	 *

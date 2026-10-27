@@ -58,6 +58,10 @@ class ExampleSetProof {
 			return [$path];
 		}
 
+		if ($this->readInOneLanguage(declared: $declared, stored: $stored) === true) {
+			return [];
+		}
+
 		$stored = $this->structured(stored: $stored);
 		$lost   = [];
 		foreach ($declared as $key => $value) {
@@ -74,6 +78,31 @@ class ExampleSetProof {
 
 		return $lost;
 	}//end lostPaths()
+
+	/**
+	 * Whether a declared language map reads back as one of its texts.
+	 *
+	 * A translatable property keeps `{nl: …, en: …}` and a read answers it in
+	 * the reader's language, so the map arrived when the read is one of its values.
+	 *
+	 * @param array<int|string, mixed> $declared What was sent.
+	 * @param mixed                    $stored   What was read back.
+	 *
+	 * @return bool
+	 */
+	private function readInOneLanguage(array $declared, mixed $stored): bool {
+		if (is_string($stored) === false || $declared === [] || is_array($this->structured(stored: $stored)) === true) {
+			return false;
+		}
+
+		foreach ($declared as $language => $text) {
+			if (is_string($language) === false || preg_match('/^[a-z]{2}(?:[-_][A-Za-z]{2})?$/', $language) !== 1 || is_string($text) === false) {
+				return false;
+			}
+		}
+
+		return in_array($stored, $declared, true);
+	}//end readInOneLanguage()
 
 	/**
 	 * JSON text declared for a field the store answers decoded, as what it encodes; any other value as it is.

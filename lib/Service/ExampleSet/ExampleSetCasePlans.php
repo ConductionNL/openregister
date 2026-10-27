@@ -33,8 +33,10 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -52,7 +54,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container Hands out the case plan service, the item mapper and the object finder on first use.
+	 * @param ContainerInterface $container Hands out the case plan service, the item and task mappers and the object finder on first use.
 	 *
 	 * @return void
 	 */
@@ -180,7 +182,10 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	}//end lost()
 
 	/**
-	 * Delete the items the set created; items the plan held before stay.
+	 * Delete the items the set created, and the tasks they were realised by;
+	 * items the plan held before stay. A task an item became when a cascade
+	 * activated it goes with the item, so a refresh that puts the item back to
+	 * `available` leaves no task of it in the case's list.
 	 *
 	 * @param array<string, mixed> $entry A record entry from write().
 	 *
@@ -192,6 +197,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 		try {
 			$mapper = $this->container->get(CaseItemMapper::class);
 			foreach ($this->createdItems(entry: $entry) as $item) {
+				$this->deleteRealisationTask(item: $item);
 				$mapper->delete($item);
 			}
 		} catch (Throwable) {
@@ -200,6 +206,29 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end revert()
+
+	/**
+	 * Delete the task an item was realised by, when it is one and still there.
+	 *
+	 * @param CaseItem $item The plan item.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 */
+	private function deleteRealisationTask(CaseItem $item): void {
+		$uuid = trim((string) $item->getRealisationUuid());
+		if ($item->getRealisationKind() !== CaseItem::REALISATION_TASK || $uuid === '') {
+			return;
+		}
+
+		$tasks = $this->container->get(TaskMapper::class);
+		try {
+			$tasks->delete($tasks->findByUuid(uuid: $uuid));
+		} catch (DoesNotExistException) {
+			return;
+		}
+	}//end deleteRealisationTask()
 
 	/**
 	 * The object's plan items the set created, children before their parents.

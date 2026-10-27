@@ -74,6 +74,21 @@ class ShippedSeedContentTest extends TestCase {
 		$stored  = ['@self' => ['id' => 'u-1'], 'name' => 'Binnengekomen'];
 
 		$this->assertSame(self::shipped(), $content->update(stored: $stored, shipped: self::shipped(), remembered: 'older'));
-		$this->assertNull($content->update(stored: $stored, shipped: self::shipped(), remembered: $content->hash(shipped: self::shipped())));
+		$this->assertNull($content->update(stored: ['phase' => 'Ontvangst', 'order' => 1] + $stored, shipped: self::shipped(), remembered: $content->hash(shipped: self::shipped())));
 	}//end testARememberedHashDecides()
+
+	/**
+	 * Content that did not change still fills a field the stored seed lacks: an earlier write may have failed after
+	 * the hash was remembered, and nothing the stored seed holds is touched.
+	 *
+	 * @return void
+	 */
+	public function testUnchangedContentStillFillsAMissingField(): void {
+		$content = new ShippedSeedContent();
+		$stored  = ['@self' => ['id' => 'u-1'], 'phase' => null, 'name' => 'Binnengekomen', 'order' => 1];
+
+		$update = $content->update(stored: $stored, shipped: self::shipped(), remembered: $content->hash(shipped: self::shipped()));
+
+		$this->assertSame(['Ontvangst', 'Binnengekomen'], [$update['phase'], $update['name']]);
+	}//end testUnchangedContentStillFillsAMissingField()
 }//end class

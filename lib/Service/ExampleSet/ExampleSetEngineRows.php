@@ -34,14 +34,19 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  * check and install loops are shared, each kind says how one row is refused,
  * written, proved and deleted.
  *
+ * @SuppressWarnings(PHPMD.NumberOfChildren) One child per kind of row an example set writes;
+ *                                            a new kind is a new child by design, and the
+ *                                            shared loops stay here.
+ *
  * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  */
 abstract class ExampleSetEngineRows {
 	/**
-	 * The parts `--refresh` writes again: a saved view, a task, a note, a read state and an export carry values that age,
-	 * and a party link caches its party's name and e-mail address.
+	 * The parts `--refresh` writes again: a saved view, a task, a note, a read state, an export and an appointment carry
+	 * values that age, a party link caches its party's name and e-mail address, and a case plan's items move on as
+	 * the case is worked (a refresh puts them back in their declared states).
 	 */
-	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties'];
+	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties', 'appointments', 'casePlans'];
 
 	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).
@@ -128,6 +133,9 @@ abstract class ExampleSetEngineRows {
 	 * @param array<string, mixed> $data  The filled fields.
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, or why the update failed.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $entry is the contract for the kinds that update
+	 *                                                in place; this default writes the row afresh.
 	 *
 	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */

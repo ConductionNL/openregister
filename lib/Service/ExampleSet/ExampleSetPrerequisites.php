@@ -111,6 +111,9 @@ class ExampleSetPrerequisites {
 	 *
 	 * @return array{refusals: array<int, string>, outcome: array<string, string>}
 	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Missing, emptied and behind are three reasons to
+	 *                                               import, then the jobs and the refusal follow.
+	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function ensureRegisters(array $plan, array &$record): array {

@@ -304,6 +304,9 @@ class ExampleSetInstaller {
 	 * @param array<string, array<string, mixed>> $written  Collects what this run sent, by record key.
 	 *
 	 * @return array<string, mixed> The report.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One pass per object: held, kept, refused,
+	 *                                               not made or written, each answered in place.
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];
@@ -803,7 +806,7 @@ class ExampleSetInstaller {
 		foreach ($record['files'] as $name => $files) {
 			$present = $this->files->names(objectId: (string) ($record['objects'][$name]['id'] ?? ''));
 			foreach ($files as $file) {
-				if (in_array($file['name'], $present, true) === false) {
+				if ($this->files->present(file: $file, names: $present) === false) {
 					$report['missing'][] = 'file '.$file['name'].' on '.$name;
 				}
 			}

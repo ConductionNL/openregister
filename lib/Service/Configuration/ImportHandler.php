@@ -1460,7 +1460,14 @@ class ImportHandler {
 	/**
 	 * The generation of the rules an import writes by; raised when they change, so a stored hash does not skip it.
 	 */
-	private const IMPORT_RULES = 'seed-content-1:';
+	private const IMPORT_RULES = 'seed-content-3:';
+
+	/**
+	 * Plain configuration keys an import compares besides the annotations.
+	 *
+	 * @var array<int, string>
+	 */
+	private const COMPARED_CONFIGURATION_KEYS = ['partyKinds', 'linkRoles'];
 
 	/**
 	 * Resolve an incoming shipped schema against what the instance changed.
@@ -1766,15 +1773,9 @@ class ImportHandler {
 		$incoming = [];
 		foreach ([$data, $incomingConfig] as $source) {
 			foreach ($source as $key => $value) {
-				if (is_string($key) === false || str_starts_with($key, 'x-openregister-') === false) {
-					continue;
+				if (self::isComparedConfigurationKey(key: $key) === true) {
+					$incoming[$key] = $value;
 				}
-
-				if (in_array($key, Schema::ANNOTATION_VOCABULARY, true) === false) {
-					continue;
-				}
-
-				$incoming[$key] = $value;
 			}
 		}
 
@@ -1787,6 +1788,31 @@ class ImportHandler {
 
 		return false;
 	}//end schemaAnnotationsDiffer()
+
+	/**
+	 * Whether an incoming configuration key is compared against the stored one.
+	 *
+	 * Annotations of the vocabulary, plus the party and role vocabularies: a
+	 * party kind a schema starts accepting is a configuration change with no
+	 * property or version change, and the party writer refuses that kind until
+	 * it lands.
+	 *
+	 * @param int|string $key The configuration key.
+	 *
+	 * @return bool True when the key is compared.
+	 */
+	private static function isComparedConfigurationKey(int|string $key): bool {
+		if (is_string($key) === false) {
+			return false;
+		}
+
+		if (in_array($key, self::COMPARED_CONFIGURATION_KEYS, true) === true) {
+			return true;
+		}
+
+		return str_starts_with($key, 'x-openregister-') === true
+			&& in_array($key, Schema::ANNOTATION_VOCABULARY, true) === true;
+	}//end isComparedConfigurationKey()
 
 	/**
 	 * Normalise a JSON-ish value into an order-insensitive canonical string.
@@ -3746,8 +3772,8 @@ class ImportHandler {
 				}
 
 				$follow = $this->shippedContent->update(stored: $existingObjectData, shipped: $objectData, remembered: $remembered);
-				$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
 				if ($follow !== null) {
+					// Remembered only once written: a refused write is tried again on the next import.
 					$result['objects'][] = $this->objectService->saveObject(
 						object: $follow,
 						register: $registerObject,
@@ -3757,8 +3783,11 @@ class ImportHandler {
 						_multitenancy: false,
 						currentUser: $actingUser
 					);
+					$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
 					return;
 				}
+
+				$this->rememberShippedContent(appId: $appId, seedKey: $seedKey, shipped: $objectData);
 
 				// COUNTED, not just logged. Skipping an unchanged
 				// object is the DESIGNED behaviour of a re-import,

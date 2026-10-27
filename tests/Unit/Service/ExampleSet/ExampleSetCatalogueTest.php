@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
@@ -87,6 +88,80 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->catalogue->gather(set: 'demo');
 	}
 
+	/**
+	 * A fragment's parts add their objects after the main file's, in file-name order, and list no set of their own.
+	 *
+	 * @return void
+	 */
+	public function testAFragmentsPartsAddTheirListsInFileNameOrder(): void {
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'alpha', fragment: ['objects' => [['key' => 'main', 'register' => 'r', 'schema' => 's', 'data' => []]]]);
+		$this->part(app: 'alpha', name: '20-later.json', part: ['objects' => [['key' => 'later', 'register' => 'r', 'schema' => 's', 'data' => []]]]);
+		$this->part(
+			app: 'alpha',
+			name: '10-sooner.json',
+			part: [
+				'$comment' => 'The sooner part.',
+				'objects'  => [['key' => 'sooner', 'register' => 'r', 'schema' => 's', 'data' => []]],
+				'appConfig' => [['key' => 'counter', 'value' => '1']],
+			]
+		);
+
+		$plan  = $this->catalogue->gather(set: 'demo');
+		$alpha = $plan['fragments'][1];
+
+		$this->assertSame(expected: ['main', 'sooner', 'later'], actual: array_column($alpha['objects'], 'key'));
+		$this->assertSame(expected: ['demo' => ['alpha', 'openregister']], actual: $this->catalogue->sets());
+	}
+
+	/**
+	 * A part that sets a value other than a list is refused, naming the part and the key.
+	 *
+	 * @return void
+	 */
+	public function testAPartThatSetsMoreThanAListIsRefused(): void {
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'alpha', fragment: ['objects' => []]);
+		$this->part(app: 'alpha', name: 'extra.json', part: ['after' => 'beta']);
+
+		$this->expectException(exception: ExampleSetException::class);
+		$this->expectExceptionMessage(
+			message: 'alpha/lib/Settings/example-sets/demo.d/extra.json: a part may only add lists; "after" belongs in the main file.'
+		);
+		$this->catalogue->gather(set: 'demo');
+	}
+
+	/**
+	 * An object key used in the main file and again in a part refuses the set.
+	 *
+	 * @return void
+	 */
+	public function testAKeyRepeatedAcrossPartsRefusesTheSet(): void {
+		$object = ['key' => 'one', 'register' => 'r', 'schema' => 's', 'data' => []];
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'alpha', fragment: ['objects' => [$object]]);
+		$this->part(app: 'alpha', name: 'again.json', part: ['objects' => [$object]]);
+
+		$this->expectException(exception: ExampleSetException::class);
+		$this->expectExceptionMessage(message: 'the key "one" is used twice');
+		$this->catalogue->gather(set: 'demo');
+	}
+
+	/**
+	 * Write one part of an app's fragment of the demo set.
+	 *
+	 * @param string               $app  The app id.
+	 * @param string               $name The part's file name.
+	 * @param array<string, mixed> $part The part.
+	 *
+	 * @return void
+	 */
+	private function part(string $app, string $name, array $part): void {
+		$folder = $this->apps[$app].'/'.ExampleSetCatalogue::FOLDER.'/demo.d';
+		@mkdir($folder, 0777, true);
+		file_put_contents($folder.'/'.$name, (string) json_encode($part));
+	}
+
 	public function testAnUnsafeSetIdIsRefused(): void {
 		$this->expectException(ExampleSetException::class);
 		$this->catalogue->gather(set: '../etc');
@@ -108,7 +183,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 39, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 41, haystack: $plan['cast']['people']);
 		// DqOrganisaties: 23 organisations in Zuiddrecht, 8 associations, 6 foundations, 9 companies, each with its own made-up KvK number.
 		$forms = array_count_values(array_column($plan['cast']['organisations'], 'legalForm'));
 		$companies = ($forms['Besloten Vennootschap'] + $forms['Eenmanszaak']);
