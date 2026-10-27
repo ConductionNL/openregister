@@ -153,12 +153,14 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$this->store->offer(register: 'int', schema: 'connection');
 		$old = [['field' => 'note', 'rule' => 'hidden', 'groups' => ['intake']]];
 		$new = [['field' => 'note', 'rule' => 'hidden', 'groups' => ['intake', 'staff']]];
-		$this->app(app: 'alpha', fragment: ['objects' => [['key' => 'bron', 'register' => 'int', 'schema' => 'connection', 'data' => ['key' => 'stuf', 'rules' => $old]]]]);
+		$object = ['key' => 'bron', 'register' => 'int', 'schema' => 'connection', 'data' => ['key' => 'stuf', 'rules' => $old]];
+		$this->app(app: 'alpha', fragment: ['objects' => [$object]]);
 		$this->assertTrue(condition: $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
 		$id = $this->store->ids(register: 'int', schema: 'connection')[0];
 		$this->store->rows['int connection'][$id]['rules'] = [['groups' => ['intake'], 'rule' => 'hidden', 'field' => 'note']];
 
-		$this->app(app: 'alpha', fragment: ['objects' => [['key' => 'bron', 'register' => 'int', 'schema' => 'connection', 'data' => ['key' => 'stuf', 'rules' => $new]]]]);
+		$object['data']['rules'] = $new;
+		$this->app(app: 'alpha', fragment: ['objects' => [$object]]);
 		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
