@@ -112,13 +112,14 @@ class ExampleSetInstaller {
 		$users     = $this->people->declaredUids(plan: $plan);
 		foreach ($plan['fragments'] as $fragment) {
 			$objects = [];
+			$files   = [];
 			foreach ($fragment['objects'] as $object) {
 				$type           = $object['register'].' '.$object['schema'];
 				$checked[$type] = (($checked[$type] ?? 0) + 1);
 				$where          = $fragment['file'].': object "'.$object['key'].'" ('.$type.')';
 				$resolved       = $this->resolve(
 					object: $object,
-					context: (['objects' => $objects] + $base),
+					context: (['objects' => $objects, 'files' => $files] + $base),
 					planned: $planned
 				);
 				if ($resolved['refusal'] !== '') {
@@ -139,6 +140,7 @@ class ExampleSetInstaller {
 				$planned[] = ['register' => $object['register'], 'schema' => $object['schema'], 'row' => $standIn];
 				$kept      = $this->kept(record: $record, app: $fragment['app'], key: $object['key'])['row'];
 				$objects[$object['key']] = ($kept ?? $standIn);
+				$files[$object['key']]   = $this->plannedFileIds(record: $record, app: $fragment['app'], object: $object);
 			}//end foreach
 
 			$context  = (['objects' => $objects, 'flows' => $this->values->flowsOf(fragment: $fragment, record: null)] + $base);
@@ -310,6 +312,7 @@ class ExampleSetInstaller {
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];
+		$files   = [];
 		$save    = fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept);
 		foreach ($fragment['objects'] as $object) {
 			$type = $object['register'].' '.$object['schema'];
@@ -334,7 +337,8 @@ class ExampleSetInstaller {
 					$report = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $heldId, report: $report, record: $record);
 				}
 
-				$context = (['objects' => $objects] + $base);
+				$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
+				$context = (['objects' => $objects, 'files' => $files] + $base);
 				$objects[$object['key']] = $this->rewriter->keep(
 					plan: $plan,
 					run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
@@ -353,7 +357,7 @@ class ExampleSetInstaller {
 
 			$resolved = $this->resolve(
 				object: $object,
-				context: (['objects' => $objects] + $base),
+				context: (['objects' => $objects, 'files' => $files] + $base),
 				planned: []
 			);
 			if ($resolved['refusal'] !== '') {
@@ -377,6 +381,7 @@ class ExampleSetInstaller {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 			$written[$name] = $resolved['data'];
 			$report         = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $made['id'], report: $report, record: $record);
+			$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
 
 			// The row as stored, because a later object may quote a field the
 			// register made itself, such as a case number.
@@ -750,6 +755,51 @@ class ExampleSetInstaller {
 
 		return array_merge($data, ['id' => $id, 'uuid' => $id, ExampleSetValues::PLANNED => true]);
 	}//end standIn()
+
+	/**
+	 * The ids of the files the set attached to one object, in the order the
+	 * fragment declares them, for `{{file:key.n}}`.
+	 *
+	 * @param array<string, mixed> $record The record.
+	 * @param string               $name   The object's record key (`app/key`).
+	 *
+	 * @return array<int, int> The file ids.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 */
+	private function heldFileIds(array $record, string $name): array {
+		return array_map(
+			static fn (array $file): int => (int) ($file['id'] ?? 0),
+			array_values((array) ($record['files'][$name] ?? []))
+		);
+	}//end heldFileIds()
+
+	/**
+	 * The file ids `check` stands in for an object's declared files: the ids an
+	 * earlier install attached, else 1..n, so a field that holds a file id is
+	 * validated as the integer it will be. Nothing is written by a check.
+	 *
+	 * @param array<string, mixed> $record The record.
+	 * @param string               $app    The fragment's app.
+	 * @param array<string, mixed> $object The declared object.
+	 *
+	 * @return array<int, int> The file ids.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 */
+	private function plannedFileIds(array $record, string $app, array $object): array {
+		$held = $this->heldFileIds(record: $record, name: $app.'/'.$object['key']);
+		if ($held !== []) {
+			return $held;
+		}
+
+		$count = count((array) ($object['files'] ?? []));
+		if ($count === 0) {
+			return [];
+		}
+
+		return range(1, $count);
+	}//end plannedFileIds()
 
 	/**
 	 * Read the instance back and fill in what is missing and what was not kept.

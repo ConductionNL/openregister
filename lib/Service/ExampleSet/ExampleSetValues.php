@@ -7,6 +7,8 @@
  * - `{{cast:key.path}}` a field of a cast person, organisation or group;
  * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day;
  * - `{{object:key.path}}` a field of an object declared earlier in the same fragment;
+ * - `{{file:key.n}}` the Nextcloud file id of the n-th file (from 0) an object declared earlier in the same
+ *   fragment carries, so a record can name a file the set adds;
  * - `{{view:key.uuid}}` the uuid of a saved view the same fragment declares (user preferences only);
  * - `{{task:key.uuid}}` the uuid of a task the same fragment declares (the parts written after its tasks: notes, read states);
  * - `{{flow:key.uuid}}` the uuid of a flow the same fragment declares (changes and the engine parts, all written after its flows);
@@ -297,6 +299,7 @@ class ExampleSetValues {
 		return match ($kind) {
 			'cast'   => $this->pathIn(entries: (array) ($context['cast'] ?? []), reference: $rest),
 			'object' => $this->objectField(objects: (array) ($context['objects'] ?? []), reference: $rest),
+			'file'   => $this->fileId(files: (array) ($context['files'] ?? []), reference: $rest),
 			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
 			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
 			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $rest),
@@ -310,6 +313,30 @@ class ExampleSetValues {
 			default  => null,
 		};
 	}//end valueOf()
+
+	/**
+	 * The id of one file an object declared earlier in the fragment carries.
+	 *
+	 * @param array<string, array<int, int>> $files     File ids by object key, in declared order.
+	 * @param string                         $reference `key.n`, n counted from 0.
+	 *
+	 * @return int|null The file id, or null when there is no such file.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 */
+	private function fileId(array $files, string $reference): ?int {
+		[$key, $index] = array_pad(explode('.', $reference, 2), 2, '');
+		if ($index === '' || ctype_digit($index) === false) {
+			return null;
+		}
+
+		$id = ($files[$key][(int) $index] ?? 0);
+		if (is_int($id) === false || $id <= 0) {
+			return null;
+		}
+
+		return $id;
+	}//end fileId()
 
 	/**
 	 * A field of an object declared earlier in the fragment.
