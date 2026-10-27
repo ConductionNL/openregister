@@ -416,7 +416,7 @@ class ExampleSetChanges {
 		$change['jsonFields'] = array_values(array_unique(array_merge($change['jsonFields'], $this->structuredText(change: $change, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
 
-		$same = static fn (mixed $first, mixed $second): bool => json_encode($first) === json_encode($second);
+		$same = fn (mixed $first, mixed $second): bool => $this->sameAs(stored: $first, value: $second);
 		$todo = [];
 		$left = [];
 		foreach ($values as $field => $value) {

@@ -144,6 +144,28 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 	}//end testARefreshWritesAFieldWhoseDeclarationChanged()
 
 	/**
+	 * A refresh rewrites an object field the set wrote when the store gives it back with its keys in another order:
+	 * the field still holds what the set wrote, so it is not somebody's edit.
+	 *
+	 * @return void
+	 */
+	public function testARefreshRewritesAnObjectFieldTheStoreReordered(): void {
+		$this->store->offer(register: 'int', schema: 'connection');
+		$old = [['field' => 'note', 'rule' => 'hidden', 'groups' => ['intake']]];
+		$new = [['field' => 'note', 'rule' => 'hidden', 'groups' => ['intake', 'staff']]];
+		$this->app(app: 'alpha', fragment: ['objects' => [['key' => 'bron', 'register' => 'int', 'schema' => 'connection', 'data' => ['key' => 'stuf', 'rules' => $old]]]]);
+		$this->assertTrue(condition: $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+		$id = $this->store->ids(register: 'int', schema: 'connection')[0];
+		$this->store->rows['int connection'][$id]['rules'] = [['groups' => ['intake'], 'rule' => 'hidden', 'field' => 'note']];
+
+		$this->app(app: 'alpha', fragment: ['objects' => [['key' => 'bron', 'register' => 'int', 'schema' => 'connection', 'data' => ['key' => 'stuf', 'rules' => $new]]]]);
+		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: $new, actual: $this->store->rows['int connection'][$id]['rules']);
+	}//end testARefreshRewritesAnObjectFieldTheStoreReordered()
+
+	/**
 	 * The two ways the store can give a written list of objects back.
 	 *
 	 * @return array<string, array{bool}>
