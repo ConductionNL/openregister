@@ -204,6 +204,28 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	}
 
 	/**
+	 * A refresh that finds the recorded task gone but a task with the same key in the engine adopts that task and
+	 * points the record at it, instead of writing a second task with the key.
+	 *
+	 * @return void
+	 */
+	public function testARefreshAdoptsTheTaskThatHoldsTheKey(): void {
+		$this->caseWithTasks(tasks: [['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$task = array_values($this->engineTasks)[0];
+		$task->setUuid('task-elsewhere');
+		$this->engineTasks = ['task-elsewhere' => $task];
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: ['task-elsewhere'], actual: array_keys($this->engineTasks), message: 'no second task with the key');
+		$this->assertCount(expectedCount: 1, haystack: $this->taskImports);
+		$this->assertNotContains(needle: 'task alpha/t', haystack: $report['missing']);
+	}//end testARefreshAdoptsTheTaskThatHoldsTheKey()
+
+	/**
 	 * @dataProvider refusedTasks
 	 *
 	 * @param array<string, mixed> $data   The task's fields.
