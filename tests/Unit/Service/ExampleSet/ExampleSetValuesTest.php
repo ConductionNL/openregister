@@ -40,6 +40,7 @@ class ExampleSetValuesTest extends TestCase {
 		$this->context = [
 			'cast'    => ['sanne' => ['bsn' => '999994001', 'address' => ['number' => 14, 'street' => 'Lindelaan']]],
 			'objects' => ['case-1' => ['id' => 'abc', 'identifier' => 'Z-1']],
+			'files'   => ['dossier-1' => [20525, 20526]],
 			'lookups' => ['caseType' => 'type-uuid'],
 			'today'   => new DateTimeImmutable('2026-10-13 12:00', new DateTimeZone('Europe/Amsterdam')),
 			'accounts'      => ['background' => ['uid' => 'demo_background']],
@@ -70,6 +71,7 @@ class ExampleSetValuesTest extends TestCase {
 			'service account'           => ['{{account:background.uid}}', 'demo_background'],
 			'organisation'              => ['{{organisation:zuiddrecht}}', 'org-uuid'],
 			'instance'                  => ['{{instance:baseUrl}}/x', 'https://cloud.example.test/x'],
+			'a file id keeps its type'  => ['{{file:dossier-1.1}}', 20526],
 		];
 	}
 
@@ -98,6 +100,9 @@ class ExampleSetValuesTest extends TestCase {
 			'unknown weekday'     => ['{{date:+7@thursday}}'],
 			'unknown organisation' => ['{{organisation:nergens}}'],
 			'unknown account'     => ['{{account:nobody.uid}}'],
+			'file past the last'  => ['{{file:dossier-1.2}}'],
+			'file without index'  => ['{{file:dossier-1}}'],
+			'file of elsewhere'   => ['{{file:other.0}}'],
 		];
 	}
 
