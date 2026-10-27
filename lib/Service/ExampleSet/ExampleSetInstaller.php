@@ -918,13 +918,17 @@ class ExampleSetInstaller {
 		foreach (($fragment['appConfig'] ?? []) as $entry) {
 			$name = $fragment['app'].'/'.$entry['key'];
 			$report['appConfig'][$name] = 'kept';
+			$gaps  = [];
+			$value = (string) $this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
 			if (isset($record['appConfig'][$name]) === true) {
+				if (($entry['atLeast'] ?? false) === true) {
+					$report['appConfig'][$name] = $this->raiseRecordedFloor(set: (string) $plan['set'], name: $name, value: $value, record: $record);
+				}
+
 				continue;
 			}
 
-			$gaps  = [];
-			$value = (string) $this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
-			$type  = (string) ($entry['type'] ?? 'string');
+			$type = (string) ($entry['type'] ?? 'string');
 			$made  = $this->appConfig->apply(
 				app: $fragment['app'],
 				key: $entry['key'],
@@ -948,6 +952,35 @@ class ExampleSetInstaller {
 
 		return $report;
 	}//end installAppConfig()
+
+	/**
+	 * Bring a recorded app config entry up to the floor its declaration now names: an entry recorded before it was a
+	 * floor, or with a lower one. The key is raised when it holds less; the record learns the floor, so the read-back
+	 * uses it, and keeps what was there before the set for remove.
+	 *
+	 * @param string               $set    The set id.
+	 * @param string               $name   The entry's record name (`app/key`).
+	 * @param string               $value  The declared floor, filled.
+	 * @param array<string, mixed> $record The record; updated when the entry changes.
+	 *
+	 * @return string `raised` when the key was written, `kept` otherwise.
+	 *
+	 * @spec openspec/changes/example-set-recorded-floor/specs/example-sets/spec.md#requirement-a-recorded-app-config-entry-follows-a-floor-declared-later
+	 */
+	private function raiseRecordedFloor(string $set, string $name, string $value, array &$record): string {
+		$raised = $this->appConfig->raise(entry: $record['appConfig'][$name], value: $value);
+		if ($raised['entry'] === null) {
+			return 'kept';
+		}
+
+		$record['appConfig'][$name] = $raised['entry'];
+		$this->record->write(set: $set, record: $record);
+		if ($raised['written'] === true) {
+			return 'raised';
+		}
+
+		return 'kept';
+	}//end raiseRecordedFloor()
 
 	/**
 	 * Check the user preferences of one fragment: each account fills and is the set's own, and each key may be written.

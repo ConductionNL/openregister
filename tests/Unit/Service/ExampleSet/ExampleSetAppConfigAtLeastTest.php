@@ -137,6 +137,70 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 	}//end testRemoveLeavesACounterTheAppMovedOn()
 
 	/**
+	 * A record written before floors existed holds the counter as a plain value. When the declaration becomes a floor,
+	 * install raises the key to it, the read-back then uses the floor, and remove still puts back what was there first.
+	 *
+	 * @return void
+	 */
+	public function testARecordedPlainEntryBecomesAFloor(): void {
+		$this->appValues['alpha'] = ['counter' => '7'];
+		$this->appTypes['alpha']  = ['counter' => 'int'];
+		$this->counter(entry: ['value' => '402', 'atLeast' => false]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->appValues['alpha']['counter'] = '404';
+
+		$this->counter();
+		$plan   = $this->catalogue->gather(set: 'demo');
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame(expected: '423', actual: $this->appValues['alpha']['counter']);
+		$this->assertSame(expected: 'raised', actual: $report['appConfig']['alpha/counter'], message: (string) json_encode($report));
+		$this->assertSame(expected: [], actual: $report['lost'], message: (string) json_encode($report));
+
+		$this->appValues['alpha']['counter'] = '431';
+		$this->assertSame(expected: [], actual: $this->installer->install(plan: $plan, today: $this->today())['lost']);
+
+		$this->appValues['alpha']['counter'] = '423';
+		$this->remover->remove(set: 'demo');
+		$this->assertSame(expected: '7', actual: $this->appValues['alpha']['counter']);
+	}//end testARecordedPlainEntryBecomesAFloor()
+
+	/**
+	 * A recorded floor lower than the declared one is raised to the declared one.
+	 *
+	 * @return void
+	 */
+	public function testARecordedLowerFloorIsRaised(): void {
+		$this->counter(entry: ['value' => '400']);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->counter();
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame(expected: '423', actual: $this->appValues['alpha']['counter']);
+		$this->assertSame(expected: 'raised', actual: $report['appConfig']['alpha/counter'], message: (string) json_encode($report));
+	}//end testARecordedLowerFloorIsRaised()
+
+	/**
+	 * A recorded plain entry whose key the app already moved past the floor keeps that value; only the record learns
+	 * the floor, so the read-back no longer compares against the old exact value.
+	 *
+	 * @return void
+	 */
+	public function testARecordedEntryAboveTheFloorKeepsItsValue(): void {
+		$this->counter(entry: ['value' => '402', 'atLeast' => false]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->appValues['alpha']['counter'] = '450';
+
+		$this->counter();
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame(expected: '450', actual: $this->appValues['alpha']['counter']);
+		$this->assertSame(expected: [], actual: $report['lost'], message: (string) json_encode($report));
+	}//end testARecordedEntryAboveTheFloorKeepsItsValue()
+
+	/**
 	 * A string entry cannot be a floor.
 	 *
 	 * @return void
