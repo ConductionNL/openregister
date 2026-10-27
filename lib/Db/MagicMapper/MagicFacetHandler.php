@@ -1835,8 +1835,9 @@ class MagicFacetHandler {
 			}
 
 			// Load ALL columns for this table in one query (instead of one query per column).
+			// table_name is compared as stored, so PostgreSQL can use the catalog index.
 			$sql = 'SELECT LOWER(column_name) as col FROM information_schema.columns
-                    WHERE LOWER(table_name) = ?';
+                    WHERE table_name = ?';
 
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([$fullTableNameLower]);
