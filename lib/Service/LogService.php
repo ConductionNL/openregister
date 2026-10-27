@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use SimpleXMLElement;
 
 /**
@@ -236,9 +237,10 @@ class LogService {
 		try {
 			$registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
 			$schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
-		} catch (\Exception $e) {
+		} catch (DoesNotExistException $e) {
 			// Register or schema gone (soft-deleted): no scope to search in; the
-			// history of the object itself stays readable, as before.
+			// history of the object itself stays readable, as before. Any other
+			// failure propagates: it is no reason to drop the scope.
 			$result = $this->unifiedObjectMapper->findAcrossAllSources(
 				identifier: $id,
 				includeDeleted: true,

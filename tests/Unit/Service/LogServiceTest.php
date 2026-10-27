@@ -108,7 +108,7 @@ class LogServiceTest extends TestCase {
 		$object = $this->createObjectEntity(42, '1', '2');
 
 		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
-		$this->registerMapper->method('find')->willThrowException(new \Exception('Not found'));
+		$this->registerMapper->method('find')->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
 		$this->auditTrailMapper->expects($this->once())
 			->method('findAll')
@@ -117,6 +117,16 @@ class LogServiceTest extends TestCase {
 		$result = $this->service->getLogs('deleted-reg', 'deleted-schema', '42');
 
 		$this->assertSame(['log1'], $result);
+	}
+
+	public function testGetLogsKeepsTheScopeWhenTheRegisterLookupFailsOtherwise(): void {
+		// Only a register or schema that is gone drops the scope; another failure must
+		// not fall back to the cross-table lookup, where another schema's slug could win.
+		$this->registerMapper->method('find')->willThrowException(new \RuntimeException('database gone'));
+		$this->objectEntityMapper->expects($this->never())->method('findAcrossAllSources');
+
+		$this->expectException(\RuntimeException::class);
+		$this->service->getLogs('1', '2', 'hello-world');
 	}
 
 	public function testGetLogsLooksTheObjectUpWithinTheRegisterAndSchema(): void {
