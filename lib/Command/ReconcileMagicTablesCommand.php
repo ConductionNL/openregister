@@ -164,6 +164,10 @@ class ReconcileMagicTablesCommand extends Command {
 					// the metadata pass above; reporting them again here would
 					// count the same drift twice.
 					$missing = array_diff_key($missing, array_flip($metadataNames));
+					$narrow = $this->magicMapper->findDecimalColumnsNeedingWiden(
+						currentColumns: $currentColumns,
+						requiredColumns: $requiredColumns
+					);
 				} catch (\Throwable $e) {
 					$output->writeln(
 						sprintf(
@@ -177,23 +181,38 @@ class ReconcileMagicTablesCommand extends Command {
 					continue;
 				}//end try
 
-				if (empty($missing) === true) {
+				if (empty($missing) === true && empty($narrow) === true) {
 					continue;
 				}
 
 				$driftTables++;
-				$driftColumns += count($missing);
+				$driftColumns += count($missing) + count($narrow);
 
-				$output->writeln(
-					sprintf(
-						'r%d schema=%s(#%d) missing %d: %s',
-						$register->getId(),
-						$schema->getSlug(),
-						$schema->getId(),
-						count($missing),
-						implode(', ', array_keys($missing))
-					)
-				);
+				if (empty($missing) === false) {
+					$output->writeln(
+						sprintf(
+							'r%d schema=%s(#%d) missing %d: %s',
+							$register->getId(),
+							$schema->getSlug(),
+							$schema->getId(),
+							count($missing),
+							implode(', ', array_keys($missing))
+						)
+					);
+				}
+
+				if (empty($narrow) === false) {
+					$output->writeln(
+						sprintf(
+							'r%d schema=%s(#%d) number columns to widen %d: %s',
+							$register->getId(),
+							$schema->getSlug(),
+							$schema->getId(),
+							count($narrow),
+							implode(', ', $narrow)
+						)
+					);
+				}
 
 				if ($apply === false) {
 					continue;

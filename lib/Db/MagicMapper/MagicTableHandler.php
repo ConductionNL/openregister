@@ -241,6 +241,21 @@ class MagicTableHandler {
 				$retypeColumns = array_merge($retypeColumns, $relationRetype);
 			}
 
+			// A number column made before its scale came from the schema is
+			// DECIMAL(10,2) and rounds every value with more decimals.
+			$decimalWiden = $this->magicMapper->findDecimalColumnsNeedingWiden(
+				currentColumns: $currentColumns,
+				requiredColumns: $requiredColumns
+			);
+			if (empty($decimalWiden) === false) {
+				$this->magicMapper->widenDecimalColumns(
+					tableName: $tableName,
+					currentColumns: $currentColumns,
+					requiredColumns: $requiredColumns
+				);
+				$retypeColumns = array_merge($retypeColumns, $decimalWiden);
+			}
+
 			if (empty($missingColumns) === true && empty($retypeColumns) === true) {
 				MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
 				return true;

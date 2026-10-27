@@ -222,6 +222,7 @@ class MagicBulkHandler {
 				}
 
 				$columnName = $this->sanitizeColumnName(name: $propertyName);
+				(new MagicNumberColumn())->assertFitsIn(properties: ($schema->getProperties() ?? []), propertyName: (string)$propertyName, value: $value);
 
 				// Convert empty strings to NULL for all schema properties.
 				// This is necessary because:

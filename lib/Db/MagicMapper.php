@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
+use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -3793,7 +3794,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @psalm-param  SchemaPropertyConfig $propertyConfig
 	 * @psalm-return array{default: mixed|null, index: true, name: string,
-	 *                      nullable: bool, precision: 10, scale: 2, type: 'decimal'}
+	 *                      nullable: bool, precision: int, scale: int, type: 'decimal'}
+	 *
+	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	private function mapNumberProperty(string $columnName, array $propertyConfig): array {
 		// Handle 'required' - can be boolean (property level) or array (schema level).
@@ -3811,11 +3814,13 @@ class MagicMapper extends AbstractObjectMapper {
 			$defaultValue = $propertyConfig['default'];
 		}
 
+		$size = (new MagicNumberColumn())->size(propertyConfig: $propertyConfig);
+
 		return [
 			'name' => $columnName,
 			'type' => 'decimal',
-			'precision' => 10,
-			'scale' => 2,
+			'precision' => $size['precision'],
+			'scale' => $size['scale'],
 			'nullable' => $isRequired === false,
 			// PropertyConfig may contain 'default' key even if not in type definition.
 			'default' => $defaultValue,
@@ -4742,6 +4747,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 		if (is_array($schemaProperties) === true) {
 			$columnRoles = new MagicMetadataColumn();
+			$numberColumn = new MagicNumberColumn();
 			foreach (array_keys($schemaProperties) as $propertyName) {
 				// A property whose column is a metadata column (`_owner`, `_authorization`,
 				// `_status`, ...) never writes it: the loop above stamped that column from
@@ -4773,6 +4779,7 @@ class MagicMapper extends AbstractObjectMapper {
 					$value = $data[$propertyName];
 					$propertyConfig = $schemaProperties[$propertyName] ?? [];
 					$propertyType = $propertyConfig['type'] ?? 'string';
+					$numberColumn->assertFits(propertyName: (string)$propertyName, value: $value, propertyConfig: $propertyConfig);
 
 					// Safety check for file properties: if a base64 data URL is still present,.
 					// the FilePropertyHandler didn't process it. Log a warning and set to null.
@@ -5452,11 +5459,11 @@ class MagicMapper extends AbstractObjectMapper {
 			$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
 			// MySQL/MariaDB.
-			$sql = 'SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+			$sql = 'SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default
                     FROM information_schema.columns
                     WHERE table_name = ? AND table_schema = DATABASE()';
 			if ($isPostgres === true) {
-				$sql = 'SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+				$sql = 'SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default
                         FROM information_schema.columns
                         WHERE table_name = ? AND table_schema = current_schema()';
 			}
@@ -5471,6 +5478,8 @@ class MagicMapper extends AbstractObjectMapper {
 					'name' => $column['column_name'],
 					'type' => $column['data_type'],
 					'length' => $column['character_maximum_length'],
+					'precision' => $column['numeric_precision'] ?? null,
+					'scale' => $column['numeric_scale'] ?? null,
 					'nullable' => $column['is_nullable'] === 'YES',
 					'default' => $column['column_default'],
 				];
@@ -5573,6 +5582,12 @@ class MagicMapper extends AbstractObjectMapper {
 			currentColumns: $currentColumns,
 			requiredColumns: $requiredColumns,
 			isPostgres: $isPostgres
+		);
+
+		// 8. Widen number columns narrower than their property now maps to.
+		$columnsRetyped = array_merge(
+			$columnsRetyped,
+			$this->widenDecimalColumns(tableName: $tableName, currentColumns: $currentColumns, requiredColumns: $requiredColumns)
 		);
 
 		// Info: a DDL change to a live table is worth a permanent record.
@@ -5800,6 +5815,120 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $columnsRetyped;
 	}//end migrateRelationColumnsToVarchar()
+
+	/**
+	 * Find number columns narrower than their property now maps to.
+	 *
+	 * A table made before a number column took its scale from the schema has
+	 * DECIMAL(10,2) columns, which round every value with more decimals.
+	 *
+	 * @param array $currentColumns  Live columns, keyed by physical column name.
+	 * @param array $requiredColumns Desired columns, keyed by property name.
+	 *
+	 * @return array<string> Physical column names to widen.
+	 *
+	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 */
+	public function findDecimalColumnsNeedingWiden(array $currentColumns, array $requiredColumns): array {
+		return array_keys($this->decimalColumnWidenings(currentColumns: $currentColumns, requiredColumns: $requiredColumns));
+	}//end findDecimalColumnsNeedingWiden()
+
+	/**
+	 * Widen number columns in place; never narrows, so no stored value changes.
+	 *
+	 * A failure is logged and the column left as it is: the write path refuses
+	 * a value the property's column size cannot hold, so nothing is rounded.
+	 *
+	 * @param string $tableName       The magic table (without prefix).
+	 * @param array  $currentColumns  Live columns, keyed by physical column name.
+	 * @param array  $requiredColumns Desired columns, keyed by property name.
+	 *
+	 * @return array<string> The column names widened.
+	 *
+	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 */
+	public function widenDecimalColumns(string $tableName, array $currentColumns, array $requiredColumns): array {
+		$widenings = $this->decimalColumnWidenings(currentColumns: $currentColumns, requiredColumns: $requiredColumns);
+		if ($widenings === []) {
+			return [];
+		}
+
+		$isPostgres = ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
+		$tableNameQuoted = $this->quoteIdentifier(name: $this->getFullTableName(tableName: $tableName), isPostgres: $isPostgres);
+
+		$widened = [];
+		foreach ($widenings as $columnName => $size) {
+			$type = 'DECIMAL('.$size['precision'].','.$size['scale'].')';
+			$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+			$sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' TYPE '.$type;
+			if ($isPostgres === false) {
+				// MODIFY restates the whole column, so its nullability and default are carried over.
+				$sql = 'ALTER TABLE '.$tableNameQuoted.' MODIFY '.$colNameQuoted.' '.$type;
+				$nullability = ' NULL';
+				if (($currentColumns[$columnName]['nullable'] ?? true) === false) {
+					$nullability = ' NOT NULL';
+				}
+
+				$sql .= $nullability;
+				$default = $currentColumns[$columnName]['default'] ?? null;
+				if (is_numeric($default) === true) {
+					$sql .= ' DEFAULT '.$default;
+				}
+			}
+
+			try {
+				$this->db->executeStatement($sql);
+				$widened[] = $columnName;
+			} catch (Exception $e) {
+				$this->logger->warning(
+					message: '[MagicMapper] Could not widen number column; values it cannot hold are refused on save',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'tableName' => $tableName,
+						'columnName' => $columnName,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+
+		return $widened;
+	}//end widenDecimalColumns()
+
+	/**
+	 * The widened size of each number column narrower than its property maps to.
+	 *
+	 * @param array $currentColumns  Live columns, keyed by physical column name.
+	 * @param array $requiredColumns Desired columns, keyed by property name.
+	 *
+	 * @return array<string, array{precision: int, scale: int}> Sizes keyed by physical column name.
+	 */
+	private function decimalColumnWidenings(array $currentColumns, array $requiredColumns): array {
+		$numberColumn = new MagicNumberColumn();
+		$widenings = [];
+		foreach ($requiredColumns as $propertyName => $columnDef) {
+			if (($columnDef['type'] ?? null) !== 'decimal') {
+				continue;
+			}
+
+			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: (string)$propertyName);
+			if (isset($currentColumns[$columnName]) === false) {
+				continue;
+			}
+
+			$size = $numberColumn->widening(
+				currentColumn: $currentColumns[$columnName],
+				precision: (int)($columnDef['precision'] ?? MagicNumberColumn::INTEGER_DIGITS + MagicNumberColumn::DEFAULT_SCALE),
+				scale: (int)($columnDef['scale'] ?? MagicNumberColumn::DEFAULT_SCALE)
+			);
+			if ($size !== null) {
+				$widenings[$columnName] = $size;
+			}
+		}
+
+		return $widenings;
+	}//end decimalColumnWidenings()
 
 	/**
 	 * Migrate object-typed JSONB columns to JSON to preserve client-supplied key order.
