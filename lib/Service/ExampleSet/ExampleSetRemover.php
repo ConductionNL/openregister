@@ -51,6 +51,7 @@ class ExampleSetRemover {
 	 * @param ExampleSetInstance  $instance  Deletes the OpenRegister organisations the set created.
 	 * @param ExampleSetUserPreferences $userPreferences Restores the user preferences the set wrote.
 	 * @param ExampleSetEngineKinds|null $engineRows     Deletes the tasks and saved views the set wrote; null names them as failed.
+	 * @param ExampleSetLock|null        $lock           One install or removal of a set at a time; null holds nothing.
 	 *
 	 * @return void
 	 */
@@ -65,6 +66,7 @@ class ExampleSetRemover {
 		private readonly ExampleSetInstance $instance,
 		private readonly ExampleSetUserPreferences $userPreferences,
 		private readonly ?ExampleSetEngineKinds $engineRows=null,
+		private readonly ?ExampleSetLock $lock=null,
 	) {
 	}//end __construct()
 
@@ -81,6 +83,28 @@ class ExampleSetRemover {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function remove(string $set): array {
+		if ($this->lock !== null && $this->lock->hold(set: $set) === false) {
+			return ['installed' => true, 'removed' => [], 'left' => [], 'failed' => [$this->lock->busy(set: $set)]];
+		}
+
+		try {
+			return $this->removeHeld(set: $set);
+		} finally {
+			$this->lock?->release(set: $set);
+		}
+	}//end remove()
+
+	/**
+	 * Remove what the record holds, in a run that holds the set.
+	 *
+	 * @param string $set The set id.
+	 *
+	 * @return array{installed: bool, removed: array<string, int>, left: array<int, string>, failed: array<int, string>}
+	 *         As remove() returns it.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 */
+	private function removeHeld(string $set): array {
 		$record = $this->record->read(set: $set);
 		$report = [
 			'installed' => ($this->record->isEmpty(record: $record) === false),
@@ -170,7 +194,7 @@ class ExampleSetRemover {
 		$this->removeOrganisations(set: $set, record: $record, report: $report, accounts: $accounts);
 
 		return $report;
-	}//end remove()
+	}//end removeHeld()
 
 	/**
 	 * Revert the recorded changes, newest first.

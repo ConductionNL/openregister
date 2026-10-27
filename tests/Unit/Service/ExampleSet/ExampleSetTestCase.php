@@ -114,6 +114,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetAccounts;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetRegisters;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetStore;
+use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeLockingProvider;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetLock;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -137,6 +139,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	protected FakeExampleSetStore $store;
 
 	protected FakeExampleSetAccounts $accounts;
+
+	/** Locks held by the runs under test and by the "other process" a test plays. */
+	protected FakeLockingProvider $locks;
 
 	protected FakeExampleSetRegisters $registers;
 
@@ -336,6 +341,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			unset($this->config[$key], $this->lazyKeys[$key]);
 		});
 		$this->record = new ExampleSetRecord(appConfig: $appConfig);
+		$this->locks  = new FakeLockingProvider();
 
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')->willReturnCallback(fn (): array => array_keys($this->apps));
@@ -371,7 +377,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container)
-			)
+			),
+			lock: new ExampleSetLock(locks: $this->locks)
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
@@ -400,7 +407,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container)
-			)
+			),
+			lock: new ExampleSetLock(locks: $this->locks)
 		);
 	}
 
