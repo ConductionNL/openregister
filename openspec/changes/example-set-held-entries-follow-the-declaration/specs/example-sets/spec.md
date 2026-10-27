@@ -23,3 +23,8 @@ A change the record holds SHALL be proved and removed only on the fields its dec
 - **GIVEN** a held change that sets `decisionTypes` and `rules`
 - **WHEN** its declaration also sets `rightsMatrix` and the set is installed again
 - **THEN** `rightsMatrix` is written and recorded with the value it replaced
+
+#### Scenario: the declaration of a written field changed
+- **GIVEN** a change wrote a list of rules to an object, and the store gives it back with the keys of each rule in another order
+- **WHEN** the declaration now sets other rules and an install runs with `--refresh`
+- **THEN** the field is written with the declared rules, the record holds them as its new value, and the change is reported as refreshed
