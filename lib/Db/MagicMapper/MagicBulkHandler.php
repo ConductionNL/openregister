@@ -478,6 +478,11 @@ class MagicBulkHandler {
 			return [];
 		}
 
+		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
+		foreach ($preparedObjects as $preparedObject) {
+			(new MagicNumberColumn())->assertRowFits(row: $preparedObject, columnSizes: $numberColumnSizes);
+		}
+
 		// Determine optimal chunk size.
 		$chunkSize = $this->calculateOptimalChunkSize(objects: $preparedObjects);
 		$chunks = array_chunk($preparedObjects, $chunkSize);
