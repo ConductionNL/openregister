@@ -4989,6 +4989,9 @@ class ObjectsController extends Controller {
 			);
 		} catch (PurposeRefusedException $refusal) {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+		} catch (MultipleObjectsReturnedException $e) {
+			// The 409 an administrator gets on this route (#4037), not a 500.
+			return $this->ambiguousIdentifierResponse(id: $id);
 		}
 
 		if ($page === null) {
