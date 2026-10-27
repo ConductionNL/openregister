@@ -746,7 +746,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$object = $this->createObjectMock();
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('hello-world', [], false, 'reg', 'sch', false, false)
+			->with('hello-world', [], false, 'reg', 'sch', false, false, true, false)
 			->willReturn($object);
 		$this->fileService->expects($this->once())
 			->method('getFiles')

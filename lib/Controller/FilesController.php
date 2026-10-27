@@ -686,7 +686,7 @@ class FilesController extends Controller {
 	private function objectInScope(string $register, string $schema, string $id): ObjectEntity {
 		try {
 			$object = WriteCause::asLookup(
-				fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false)
+				fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _audit: false)
 			);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
 			throw new DoesNotExistException('Object not found');
