@@ -47,7 +47,7 @@ class Version1Date20261028180000 extends SimpleMigrationStep {
 	 * @param Closure              $schemaClosure Returns the schema wrapper.
 	 * @param array<string, mixed> $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null The schema, or null when nothing changed.
+	 * @return ISchemaWrapper|null The schema.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
@@ -55,12 +55,12 @@ class Version1Date20261028180000 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
 		if ($table->hasColumn('sender_name') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn('sender_name', Types::STRING, ['notnull' => false, 'length' => 255]);
