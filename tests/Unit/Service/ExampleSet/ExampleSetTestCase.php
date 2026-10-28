@@ -62,6 +62,9 @@ use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
+use OCA\OpenRegister\Db\EmailLink;
+use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -217,6 +220,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, TimelineEntry> The timeline entries, by uuid. */
 	protected array $timelineEntries = [];
 
+	/** @var array<int, EmailLink> The email links, by id. */
+	protected array $emailLinks = [];
+
 	/** @var array<int, string> The timeline kinds the fake knows. */
 	protected array $timelineKinds = ['statuswijziging', 'contactmoment'];
 
@@ -297,6 +303,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
+			EmailLinkMapper::class    => $this->emailLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
 			CasePlanService::class    => $this->casePlans(),
@@ -376,7 +383,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container)
+				timelineEntries: new ExampleSetTimelineEntries(container: $container),
+				emailLinks: new ExampleSetEmailLinks(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -406,7 +414,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container)
+				timelineEntries: new ExampleSetTimelineEntries(container: $container),
+				emailLinks: new ExampleSetEmailLinks(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -1012,6 +1021,33 @@ abstract class ExampleSetTestCase extends TestCase {
 
 		return $mapper;
 	}
+
+	/**
+	 * An email link mapper over $emailLinks.
+	 *
+	 * @return EmailLinkMapper
+	 */
+	private function emailLinkMapper(): EmailLinkMapper {
+		$mapper = $this->createMock(EmailLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (EmailLink $link): EmailLink {
+			$link->setId(count($this->emailLinks) + 1);
+			$this->emailLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('find')->willReturnCallback(function (int $id): EmailLink {
+			if (isset($this->emailLinks[$id]) === false) {
+				throw new DoesNotExistException('no email link '.$id);
+			}
+
+			return $this->emailLinks[$id];
+		});
+		$mapper->method('delete')->willReturnCallback(function (EmailLink $link): EmailLink {
+			unset($this->emailLinks[$link->getId()]);
+			return $link;
+		});
+
+		return $mapper;
+	}//end emailLinkMapper()
 
 	/**
 	 * A flow run mapper over $flowRuns, keyed by uuid.
