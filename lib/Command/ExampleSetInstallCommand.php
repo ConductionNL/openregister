@@ -329,20 +329,21 @@ class ExampleSetInstallCommand extends Command {
 	}//end printTypes()
 
 	/**
-	 * " (n refreshed)" after a `--refresh`, nothing otherwise.
+	 * " (n refreshed, m unchanged)" after a `--refresh`, nothing otherwise.
 	 *
 	 * @param array<string, int> $counts The counts of one type.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	private function refreshedNote(array $counts): string {
-		if (isset($counts['refreshed']) === false) {
+		if (isset($counts['refreshed']) === false && isset($counts['unchanged']) === false) {
 			return '';
 		}
 
-		return sprintf(' (%d refreshed)', $counts['refreshed']);
+		return sprintf(' (%d refreshed, %d unchanged)', ($counts['refreshed'] ?? 0), ($counts['unchanged'] ?? 0));
 	}//end refreshedNote()
 
 	/**

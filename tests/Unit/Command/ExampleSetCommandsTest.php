@@ -87,18 +87,19 @@ class ExampleSetCommandsTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * `--refresh` rewrites the objects the set holds and says how many.
+	 * `--refresh` goes over the objects the set holds and says how many it wrote and how many already held their values.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	public function testRefreshRewritesWhatTheSetHolds(): void {
 		$tester = $this->install();
 		$this->assertSame(0, $tester->execute(['set' => 'demo']));
 
 		$this->assertSame(0, $tester->execute(['set' => 'demo', '--refresh' => true]));
-		$this->assertStringContainsString('brp person: 1 declared, 0 created, 1 already there (1 refreshed), 1 found afterwards', $tester->getDisplay());
+		$this->assertStringContainsString('brp person: 1 declared, 0 created, 1 already there (0 refreshed, 1 unchanged), 1 found afterwards', $tester->getDisplay());
 	}
 
 	public function testAnUnknownSetExitsOne(): void {
