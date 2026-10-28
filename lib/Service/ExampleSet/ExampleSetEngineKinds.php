@@ -56,6 +56,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetTalkConversations|null $talkConversations Writes the Talk conversations a fragment puts on its objects; null refuses them.
 	 * @param ExampleSetAuditEntries|null $auditEntries Writes the history a fragment gives its objects; null refuses it.
 	 * @param ExampleSetTimelineEntries|null $timelineEntries Writes the timeline a fragment gives its objects; null refuses it.
+	 * @param ExampleSetEmailLinks|null $emailLinks Writes the mail a fragment links to its objects; null refuses it.
 	 *
 	 * @return void
 	 *
@@ -78,6 +79,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetTalkConversations $talkConversations=null,
 		private readonly ?ExampleSetAuditEntries $auditEntries=null,
 		private readonly ?ExampleSetTimelineEntries $timelineEntries=null,
+		private readonly ?ExampleSetEmailLinks $emailLinks=null,
 	) {
 	}//end __construct()
 
@@ -240,6 +242,7 @@ class ExampleSetEngineKinds {
 			'talkConversations' => [$this->talkConversations, 'talk conversation'],
 			'auditEntries' => [$this->auditEntries, 'audit entry'],
 			'timelineEntries' => [$this->timelineEntries, 'timeline entry'],
+			'emailLinks' => [$this->emailLinks, 'email link'],
 		];
 	}//end kinds()
 }//end class
