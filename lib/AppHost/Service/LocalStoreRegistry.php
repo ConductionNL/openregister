@@ -108,6 +108,67 @@ class LocalStoreRegistry {
 	}//end read()
 
 	/**
+	 * Write a published item into the register: the object that carries the
+	 * same slug is updated, else one is created.
+	 *
+	 * The body is the filtered publish body (the slug plus the declared
+	 * fields), so nothing the descriptor did not name is written. A failed
+	 * write answers unreachable, never ok.
+	 *
+	 * @param string               $register The register slug.
+	 * @param string               $schema   The schema slug.
+	 * @param array<string, mixed> $body     The publish body; carries `slug`.
+	 *
+	 * @return array{outcome: string, slug: string}
+	 *
+	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 */
+	public function write(string $register, string $schema, array $body): array {
+		$slug = (string) ($body['slug'] ?? '');
+
+		$existing = $this->read(register: $register, schema: $schema, params: ['slug' => $slug], limit: 1);
+		if ($existing['outcome'] !== GenericStoreService::OUTCOME_OK) {
+			return ['outcome' => $existing['outcome'], 'slug' => ''];
+		}
+
+		$uuid = $this->idOf(object: ($existing['results'][0] ?? []));
+
+		try {
+			$objects = $this->container->get(ObjectService::class);
+			if ($objects instanceof ObjectServiceInterface === false) {
+				return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''];
+			}
+
+			$objects->saveObject($body, [], $register, $schema, $uuid);
+		} catch (Throwable $e) {
+			$this->logger->warning('AppHost store: local registry write failed: '.$e->getMessage());
+			return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''];
+		}
+
+		return ['outcome' => GenericStoreService::OUTCOME_OK, 'slug' => $slug];
+	}//end write()
+
+	/**
+	 * The id of a stored object, or null.
+	 *
+	 * @param mixed $object The object as an array.
+	 *
+	 * @return string|null
+	 */
+	private function idOf(mixed $object): ?string {
+		if (is_array($object) === false) {
+			return null;
+		}
+
+		$id = ($object['id'] ?? ($object['@self']['id'] ?? null));
+		if (is_string($id) === false || $id === '') {
+			return null;
+		}
+
+		return $id;
+	}//end idOf()
+
+	/**
 	 * The search answer as a list of arrays: entities are serialised, anything
 	 * else is dropped.
 	 *
