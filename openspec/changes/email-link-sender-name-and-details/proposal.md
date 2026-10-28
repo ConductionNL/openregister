@@ -7,5 +7,5 @@ A case's linked mail is listed by its subject and sender. The boards (dossiq DqZ
 ## What changes
 
 - `openregister_email_links.sender_name` (migration Version1Date20261028180000). Linking a Mail message keeps the From recipient's label Mail holds; an example set may write it.
-- Five link details, read from the link's `metadata`: `direction` (inbound/outbound), `recipientName`, `attachmentCount`, `linkedVia` (manual/mailbox/file) and `archivedAs` (such as pdf). The JSON has `senderName` and `details` (those five keys, null when absent); `metadata` keeps its string shape.
-- Example sets (`emailLinks`, #5002) may write `senderName` and the five details, checked before install.
+- Six link details, read from the link's `metadata`: `direction` (inbound/outbound), `recipientName`, `attachmentCount`, `linkedVia` (manual/mailbox/file), `archivedAs` (such as pdf) and `mailboxName` (the shared mailbox a mail came in through, "het Woo-postvak"). The JSON has `senderName` and `details` (those six keys, null when absent); `metadata` keeps its string shape.
+- Example sets (`emailLinks`, #5002) may write `senderName` and the six details, checked before install.

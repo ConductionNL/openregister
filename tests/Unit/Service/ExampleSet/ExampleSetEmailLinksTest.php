@@ -144,6 +144,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 				'attachmentCount' => 2,
 				'linkedVia'       => 'file',
 				'archivedAs'      => 'pdf',
+				'mailboxName'     => null,
 			],
 			actual: $link['details']
 		);

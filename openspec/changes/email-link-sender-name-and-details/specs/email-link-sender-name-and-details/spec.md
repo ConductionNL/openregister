@@ -11,7 +11,7 @@ An email link SHALL store the sender's display name beside the address: taken fr
 
 ### Requirement: An email link carries the details the row shows
 
-An email link SHALL return `details` with `direction`, `recipientName`, `attachmentCount`, `linkedVia` and `archivedAs`, read from its metadata and null when absent. An example set MAY write them; a direction other than inbound/outbound, a linkedVia other than manual/mailbox/file or an attachment count below 0 SHALL be refused at check time.
+An email link SHALL return `details` with `direction`, `recipientName`, `attachmentCount`, `linkedVia`, `archivedAs` and `mailboxName`, read from its metadata and null when absent. An example set MAY write them; a direction other than inbound/outbound, a linkedVia other than manual/mailbox/file or an attachment count below 0 SHALL be refused at check time.
 
 #### Scenario: the Lindelaan mail
 - GIVEN an example-set link with direction inbound, attachmentCount 1, linkedVia mailbox and archivedAs pdf

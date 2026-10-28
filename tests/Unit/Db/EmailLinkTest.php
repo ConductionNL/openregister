@@ -53,6 +53,7 @@ class EmailLinkTest extends TestCase {
 			'attachmentCount' => 1,
 			'linkedVia'       => 'mailbox',
 			'archivedAs'      => 'pdf',
+			'mailboxName'     => 'het Woo-postvak',
 			'other'           => 'kept out',
 		]));
 
@@ -60,7 +61,14 @@ class EmailLinkTest extends TestCase {
 
 		$this->assertSame(expected: 'Sanne de Vries', actual: $json['senderName']);
 		$this->assertSame(
-			expected: ['direction' => 'inbound', 'recipientName' => null, 'attachmentCount' => 1, 'linkedVia' => 'mailbox', 'archivedAs' => 'pdf'],
+			expected: [
+				'direction'       => 'inbound',
+				'recipientName'   => null,
+				'attachmentCount' => 1,
+				'linkedVia'       => 'mailbox',
+				'archivedAs'      => 'pdf',
+				'mailboxName'     => 'het Woo-postvak',
+			],
 			actual: $json['details']
 		);
 		$this->assertIsString(actual: $json['metadata']);
@@ -82,7 +90,14 @@ class EmailLinkTest extends TestCase {
 		$this->assertNull(actual: $json['subject']);
 		$this->assertNull(actual: $json['senderName']);
 		$this->assertSame(
-			expected: ['direction' => null, 'recipientName' => null, 'attachmentCount' => null, 'linkedVia' => null, 'archivedAs' => null],
+			expected: [
+				'direction'       => null,
+				'recipientName'   => null,
+				'attachmentCount' => null,
+				'linkedVia'       => null,
+				'archivedAs'      => null,
+				'mailboxName'     => null,
+			],
 			actual: $json['details']
 		);
 	}

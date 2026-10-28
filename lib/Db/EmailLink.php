@@ -63,10 +63,10 @@ class EmailLink extends Entity implements JsonSerializable {
 	/**
 	 * The link details read from the metadata and shown beside the fields: the
 	 * mail's direction, the other party's name on an outgoing mail, how many
-	 * attachments it has, how it was linked (manual, mailbox, file) and its
-	 * archive copy (such as pdf).
+	 * attachments it has, how it was linked (manual, mailbox, file), its
+	 * archive copy (such as pdf) and the shared mailbox it came in through.
 	 */
-	public const DETAIL_KEYS = ['direction', 'recipientName', 'attachmentCount', 'linkedVia', 'archivedAs'];
+	public const DETAIL_KEYS = ['direction', 'recipientName', 'attachmentCount', 'linkedVia', 'archivedAs', 'mailboxName'];
 
 	/**
 	 * The object uuid.
