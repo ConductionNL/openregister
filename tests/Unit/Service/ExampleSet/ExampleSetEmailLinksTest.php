@@ -70,28 +70,29 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => self::subsidyMail()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$this->assertSame([], $this->emailLinks, 'the check writes no link');
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->emailLinks, message: 'the check writes no link');
 
 		$report = $this->installer->install(plan: $plan, today: $this->today());
-		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$this->assertCount(1, $this->emailLinks);
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertCount(expectedCount: 1, haystack: $this->emailLinks);
 		$link = array_values($this->emailLinks)[0]->jsonSerialize();
-		$this->assertSame('Subsidieformulier en de lijst met documenten gestuurd.', $link['subject']);
-		$this->assertSame('esra.demir@zuiddrecht.nl', $link['sender']);
-		$this->assertSame('2026-10-06T14:05:00+00:00', (new \DateTime($link['mailDate']))->setTimezone(new \DateTimeZone('UTC'))->format('c'));
-		$this->assertSame('esra.demir', $link['linkedBy']);
-		$this->assertSame('<subsidie-6-okt@zuiddrecht.nl>', $link['mailMessageUid']);
-		$this->assertSame([0, 0], [$link['mailAccountId'], $link['mailMessageId']], 'a declared mail has no Mail ids');
-		$this->assertNotNull($link['registerId']);
-		$this->assertSame('example-set:alpha/subsidie', json_decode((string) $link['metadata'], true)['source']);
+		$this->assertSame(expected: 'Subsidieformulier en de lijst met documenten gestuurd.', actual: $link['subject']);
+		$this->assertSame(expected: 'esra.demir@zuiddrecht.nl', actual: $link['sender']);
+		$mailDate = (new \DateTime($link['mailDate']))->setTimezone(new \DateTimeZone('UTC'));
+		$this->assertSame(expected: '2026-10-06T14:05:00+00:00', actual: $mailDate->format('c'));
+		$this->assertSame(expected: 'esra.demir', actual: $link['linkedBy']);
+		$this->assertSame(expected: '<subsidie-6-okt@zuiddrecht.nl>', actual: $link['mailMessageUid']);
+		$this->assertSame(expected: [0, 0], actual: [$link['mailAccountId'], $link['mailMessageId']], message: 'a declared mail has no Mail ids');
+		$this->assertNotNull(actual: $link['registerId']);
+		$this->assertSame(expected: 'example-set:alpha/subsidie', actual: json_decode((string) $link['metadata'], true)['source']);
 
 		$this->installer->install(plan: $plan, today: $this->today());
-		$this->assertCount(1, $this->emailLinks, 'a kept link is written once');
+		$this->assertCount(expectedCount: 1, haystack: $this->emailLinks, message: 'a kept link is written once');
 
 		$removed = $this->remover->remove(set: 'demo');
-		$this->assertSame([], $removed['failed']);
-		$this->assertSame([], $this->emailLinks);
+		$this->assertSame(expected: [], actual: $removed['failed']);
+		$this->assertSame(expected: [], actual: $this->emailLinks);
 	}//end testALinkIsWrittenOnceAndRemoved()
 
 	/**
@@ -100,15 +101,15 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 	 * @return void
 	 */
 	public function testARealMailMessageIsLinkedByItsIds(): void {
-		$row = self::subsidyMail(['mailAccountId' => 3, 'mailMessageId' => 41]);
+		$row = self::subsidyMail(extra: ['mailAccountId' => 3, 'mailMessageId' => 41]);
 		unset($row['messageId'], $row['linkedBy']);
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => $row]]);
 
 		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
-		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$link = array_values($this->emailLinks)[0]->jsonSerialize();
-		$this->assertSame([3, 41, 'alpha'], [$link['mailAccountId'], $link['mailMessageId'], $link['linkedBy']]);
+		$this->assertSame(expected: [3, 41, 'alpha'], actual: [$link['mailAccountId'], $link['mailMessageId'], $link['linkedBy']]);
 	}//end testARealMailMessageIsLinkedByItsIds()
 
 	/**
@@ -126,8 +127,8 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 
 		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
 
-		$this->assertCount(1, $refusals);
-		$this->assertStringContainsString($reason, $refusals[0]);
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: $reason, haystack: $refusals[0]);
 	}//end testACheckRefusesAFaultyLink()
 
 	/**
@@ -140,12 +141,12 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		unset($noMail['messageId']);
 
 		return [
-			'no object'       => [self::subsidyMail(['object' => '']), 'needs the object it is on'],
-			'no subject'      => [self::subsidyMail(['subject' => '']), 'needs a subject'],
+			'no object'       => [self::subsidyMail(extra: ['object' => '']), 'needs the object it is on'],
+			'no subject'      => [self::subsidyMail(extra: ['subject' => '']), 'needs a subject'],
 			'no mail'         => [$noMail, 'messageId, or mailAccountId and mailMessageId'],
-			'foreign linker'  => [self::subsidyMail(['linkedBy' => 'nobody']), 'not an account the set creates or adopts'],
-			'no moment'       => [self::subsidyMail(['mailDate' => 'gisteren']), 'mailDate is a date and time'],
-			'unknown field'   => [self::subsidyMail(['folder' => 'INBOX']), 'not an email link field'],
+			'foreign linker'  => [self::subsidyMail(extra: ['linkedBy' => 'nobody']), 'not an account the set creates or adopts'],
+			'no moment'       => [self::subsidyMail(extra: ['mailDate' => 'gisteren']), 'mailDate is a date and time'],
+			'unknown field'   => [self::subsidyMail(extra: ['folder' => 'INBOX']), 'not an email link field'],
 		];
 	}//end refusedLinks()
 }//end class

@@ -108,6 +108,18 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 			return 'an email link needs a subject';
 		}
 
+		return $this->mailRefusal(data: $data, users: $users);
+	}//end refusal()
+
+	/**
+	 * Why the mail, its date or its linker cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $data  The filled fields.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 */
+	private function mailRefusal(array $data, array $users): string {
 		if ($this->filled(value: ($data['messageId'] ?? null)) === false && $this->mailIds(data: $data) === null) {
 			return 'an email link needs the mail: a messageId, or mailAccountId and mailMessageId';
 		}
@@ -121,7 +133,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		}
 
 		return '';
-	}//end refusal()
+	}//end mailRefusal()
 
 	/**
 	 * Link the mail to the object, on the object's register and schema.
