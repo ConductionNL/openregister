@@ -1863,7 +1863,9 @@ class ValidateObject {
 					&& is_array($propertySchema->enum) === true
 				) {
 					// For enum fields, only keep null if it's explicitly allowed in the enum.
-					if ($value === null && in_array(null, $propertySchema->enum) === false) {
+					// Strict: loosely, null == "", so an enum listing "" (stored as null)
+					// read as allowing null, the null was kept, and failed the string type.
+					if ($value === null && in_array(null, $propertySchema->enum, true) === false) {
 						return false;
 						// Remove null values for enum fields that don't allow null.
 					}
