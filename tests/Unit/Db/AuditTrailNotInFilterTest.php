@@ -42,18 +42,33 @@ class AuditTrailNotInFilterTest extends TestCase {
 
 	private const OBJECT = 'e0b306d2-c523-5938-9b5c-3474d292dc01';
 
+	/**
+	 * The migrated in-memory database.
+	 *
+	 * @var MigratedSqliteDatabase
+	 */
 	private MigratedSqliteDatabase $database;
 
+	/**
+	 * The mapper under test.
+	 *
+	 * @var AuditTrailMapper
+	 */
 	private AuditTrailMapper $mapper;
 
+	/**
+	 * Seven rows on one object: reads, System updates and what people did.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
-		$this->database = new MigratedSqliteDatabase($this, ['openregister_audit_trails']);
+		$this->database = new MigratedSqliteDatabase(test: $this, tables: ['openregister_audit_trails']);
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			container: $this->createMock(ContainerInterface::class),
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
+			container: $this->createMock(originalClassName: ContainerInterface::class),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			request: $this->createMock(originalClassName: IRequest::class),
 			logger: new NullLogger()
 		);
 
@@ -99,20 +114,26 @@ class AuditTrailNotInFilterTest extends TestCase {
 
 	/**
 	 * `action[notIn]=read` drops every read row, whatever its case.
+	 *
+	 * @return void
 	 */
 	public function testNotInDropsTheActionsCaseInsensitively(): void {
-		$this->assertSame([1, 3, 5, 6], $this->ids(filters: ['action' => ['notIn' => 'read']]));
+		$this->assertSame(expected: [1, 3, 5, 6], actual: $this->ids(filters: ['action' => ['notIn' => 'read']]));
 	}//end testNotInDropsTheActionsCaseInsensitively()
 
 	/**
 	 * `user[notIn]=System` drops the System actor and keeps rows without a user.
+	 *
+	 * @return void
 	 */
 	public function testNotInKeepsRowsWithoutTheValue(): void {
-		$this->assertSame([1, 2, 4, 5, 6], $this->ids(filters: ['user' => ['notIn' => 'System']]));
+		$this->assertSame(expected: [1, 2, 4, 5, 6], actual: $this->ids(filters: ['user' => ['notIn' => 'System']]));
 	}//end testNotInKeepsRowsWithoutTheValue()
 
 	/**
 	 * Both exclusions apply before the limit, so the first page holds what is left.
+	 *
+	 * @return void
 	 */
 	public function testTheExclusionsApplyBeforeTheLimit(): void {
 		$filters = [
@@ -121,28 +142,34 @@ class AuditTrailNotInFilterTest extends TestCase {
 			'user' => ['notIn' => 'System'],
 		];
 
-		$this->assertSame([1, 5], $this->ids(filters: $filters, limit: 2));
+		$this->assertSame(expected: [1, 5], actual: $this->ids(filters: $filters, limit: 2));
 	}//end testTheExclusionsApplyBeforeTheLimit()
 
 	/**
 	 * A comma-separated value names several values, as the equality filter does.
+	 *
+	 * @return void
 	 */
 	public function testACommaSeparatedValueNamesSeveral(): void {
-		$this->assertSame([1, 5], $this->ids(filters: ['action' => ['notIn' => 'read, update']]));
+		$this->assertSame(expected: [1, 5], actual: $this->ids(filters: ['action' => ['notIn' => 'read, update']]));
 	}//end testACommaSeparatedValueNamesSeveral()
 
 	/**
 	 * A list without an operator is an in-list, never the string "Array".
+	 *
+	 * @return void
 	 */
 	public function testAPlainListIsAnInList(): void {
-		$this->assertSame([3, 6], $this->ids(filters: ['action' => ['update']]));
+		$this->assertSame(expected: [3, 6], actual: $this->ids(filters: ['action' => ['update']]));
 	}//end testAPlainListIsAnInList()
 
 	/**
 	 * An operator the mapper does not know is refused, not read as no filter.
+	 *
+	 * @return void
 	 */
 	public function testAnUnknownOperatorIsRefused(): void {
-		$this->expectException(InvalidArgumentException::class);
+		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->mapper->findAll(filters: ['action' => ['like' => 'read']]);
 	}//end testAnUnknownOperatorIsRefused()
