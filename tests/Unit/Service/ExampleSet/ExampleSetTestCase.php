@@ -1028,7 +1028,7 @@ abstract class ExampleSetTestCase extends TestCase {
 	 * @return EmailLinkMapper
 	 */
 	private function emailLinkMapper(): EmailLinkMapper {
-		$mapper = $this->createMock(EmailLinkMapper::class);
+		$mapper = $this->createMock(originalClassName: EmailLinkMapper::class);
 		$mapper->method('insert')->willReturnCallback(function (EmailLink $link): EmailLink {
 			$link->setId(count($this->emailLinks) + 1);
 			$this->emailLinks[$link->getId()] = $link;
