@@ -64,6 +64,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCP\App\IAppManager;
@@ -84,8 +85,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Spans send, link, list,
  *     enrich, and delete paths; each path requires direct NC Mail DB queries
  *     because Mail's own service layer is session-gated outside its own context.
+ *
+ * @spec openspec/specs/generic-integrations/spec.md
  */
-class EmailLinkService {
+class EmailLinkService implements EmailLinkReaderInterface {
 	/**
 	 * NC Mail app id.
 	 *
