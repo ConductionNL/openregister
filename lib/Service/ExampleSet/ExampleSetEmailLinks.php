@@ -48,7 +48,18 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	/**
 	 * The email link fields a fragment may set.
 	 */
-	public const FIELDS = ['object', 'messageId', 'mailAccountId', 'mailMessageId', 'subject', 'sender', 'mailDate', 'linkedBy'];
+	public const FIELDS = [
+		'object',
+		'messageId',
+		'mailAccountId',
+		'mailMessageId',
+		'subject',
+		'sender',
+		'senderName',
+		'mailDate',
+		'linkedBy',
+		...EmailLink::DETAIL_KEYS,
+	];
 
 	/**
 	 * Constructor.
@@ -108,8 +119,38 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 			return 'an email link needs a subject';
 		}
 
-		return $this->mailRefusal(data: $data, users: $users);
+		$mail = $this->mailRefusal(data: $data, users: $users);
+		if ($mail !== '') {
+			return $mail;
+		}
+
+		return $this->detailRefusal(data: $data);
 	}//end refusal()
+
+	/**
+	 * Why the link's details cannot be written, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
+	 */
+	private function detailRefusal(array $data): string {
+		if (isset($data['direction']) === true && in_array($data['direction'], ['inbound', 'outbound'], true) === false) {
+			return 'direction is inbound or outbound';
+		}
+
+		if (isset($data['linkedVia']) === true && in_array($data['linkedVia'], ['manual', 'mailbox', 'file'], true) === false) {
+			return 'linkedVia is manual, mailbox or file';
+		}
+
+		if (isset($data['attachmentCount']) === true && (is_int($data['attachmentCount']) === false || $data['attachmentCount'] < 0)) {
+			return 'attachmentCount is a whole number of 0 or more';
+		}
+
+		return '';
+	}//end detailRefusal()
 
 	/**
 	 * Why the mail, its date or its linker cannot be written, or ''.
@@ -163,8 +204,16 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		$link->setMailMessageUid($this->stringOrNull(value: ($data['messageId'] ?? null)));
 		$link->setSubject((string) $data['subject']);
 		$link->setSender($this->stringOrNull(value: ($data['sender'] ?? null)));
+		$link->setSenderName($this->stringOrNull(value: ($data['senderName'] ?? null)));
 		$link->setMailDate($this->moment(value: ($data['mailDate'] ?? null)));
-		$link->setMetadata((string) json_encode(['source' => 'example-set:'.$app.'/'.$key]));
+		$metadata = ['source' => 'example-set:'.$app.'/'.$key];
+		foreach (EmailLink::DETAIL_KEYS as $detail) {
+			if (isset($data[$detail]) === true) {
+				$metadata[$detail] = $data[$detail];
+			}
+		}
+
+		$link->setMetadata((string) json_encode($metadata));
 		$link->setLinkedBy((string) ($data['linkedBy'] ?? $app));
 		$link->setLinkedAt(new DateTime());
 

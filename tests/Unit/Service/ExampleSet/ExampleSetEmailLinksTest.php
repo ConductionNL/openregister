@@ -113,6 +113,45 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 	}//end testARealMailMessageIsLinkedByItsIds()
 
 	/**
+	 * A link carries the sender's name and the details the board shows under
+	 * the subject (DqZaakEmail): direction, recipient, attachments, how it was
+	 * linked and its archive copy, beside the set's source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md
+	 */
+	public function testALinkCarriesTheSenderNameAndItsDetails(): void {
+		$row = self::subsidyMail(extra: [
+			'senderName'      => 'Esra Demir',
+			'direction'       => 'outbound',
+			'recipientName'   => 'Buurtvereniging Oost',
+			'attachmentCount' => 2,
+			'linkedVia'       => 'file',
+			'archivedAs'      => 'pdf',
+		]);
+		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => $row]]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$link = array_values($this->emailLinks)[0]->jsonSerialize();
+		$this->assertSame(expected: 'Esra Demir', actual: $link['senderName']);
+		$this->assertSame(
+			expected: [
+				'direction'       => 'outbound',
+				'recipientName'   => 'Buurtvereniging Oost',
+				'attachmentCount' => 2,
+				'linkedVia'       => 'file',
+				'archivedAs'      => 'pdf',
+				'mailboxName'     => null,
+			],
+			actual: $link['details']
+		);
+		$this->assertSame(expected: 'example-set:alpha/subsidie', actual: json_decode((string) $link['metadata'], true)['source']);
+	}//end testALinkCarriesTheSenderNameAndItsDetails()
+
+	/**
 	 * A faulty link is refused at check time and nothing is written.
 	 *
 	 * @param array<string, mixed> $data   The row's fields.
@@ -147,6 +186,9 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 			'foreign linker'  => [self::subsidyMail(extra: ['linkedBy' => 'nobody']), 'not an account the set creates or adopts'],
 			'no moment'       => [self::subsidyMail(extra: ['mailDate' => 'gisteren']), 'mailDate is a date and time'],
 			'unknown field'   => [self::subsidyMail(extra: ['folder' => 'INBOX']), 'not an email link field'],
+			'bad direction'   => [self::subsidyMail(extra: ['direction' => 'sideways']), 'direction is inbound or outbound'],
+			'bad linked via'  => [self::subsidyMail(extra: ['linkedVia' => 'pigeon']), 'linkedVia is manual, mailbox or file'],
+			'bad attachments' => [self::subsidyMail(extra: ['attachmentCount' => -1]), 'attachmentCount is a whole number of 0 or more'],
 		];
 	}//end refusedLinks()
 }//end class
