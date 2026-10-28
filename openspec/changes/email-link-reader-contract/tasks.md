@@ -1,0 +1,3 @@
+- [x] 1. `EmailLinkReaderInterface` in lib/Contract
+- [x] 2. `EmailLinkService implements EmailLinkReaderInterface`; container binding in Application
+- [x] 3. Tests: EmailLinkReaderContractTest (implements, binding, read through the interface)
