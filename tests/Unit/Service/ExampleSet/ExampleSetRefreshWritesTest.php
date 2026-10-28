@@ -97,7 +97,8 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$this->assertSame(2, $report['types']['pub incident']['refreshed'] + $report['types']['pub theme']['refreshed']);
+		$this->assertSame(1, $report['types']['pub incident']['refreshed']);
+		$this->assertSame(1, $report['types']['pub theme']['unchanged']);
 		$stored = $this->store->rows['pub incident'][$this->store->ids(register: 'pub', schema: 'incident')[0]];
 		$this->assertSame('2026-10-12', $stored['since'], 'kept as written');
 		$this->assertSame('2026-10-15', $stored['reported'], 'refreshed');
@@ -122,7 +123,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertArrayNotHasKey('refreshed', $report['types']['pub incident']);
-		$this->assertSame($updates + 1, $this->store->updates, 'only the theme is written');
+		$this->assertSame($updates, $this->store->updates, 'the incident is append-only and the theme is unchanged');
 	}//end testAnAppendOnlyRowIsKept()
 
 	/**

@@ -203,7 +203,9 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$refreshed = $this->store->get(register: 'cases', schema: 'case', id: $case['id']);
 		$this->assertSame('2026-10-16', $refreshed['start'], 'the date is resolved against the new day');
 		$this->assertSame('added on the instance', $refreshed['remark'], 'a field the declaration does not name stays');
-		$this->assertSame(2, $report['types']['cases case']['refreshed']);
+		// The case whose dates moved is written; the one whose declaration resolves as stored is not.
+		$this->assertSame(1, $report['types']['cases case']['refreshed']);
+		$this->assertSame(1, $report['types']['cases case']['unchanged']);
 		$this->assertSame($type, $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0], 'an object the set did not write is untouched');
 		$this->assertGreaterThan($updates, $this->store->updates);
 	}//end testARefreshRewritesTheDeclaredObjectsToTodaysValues()

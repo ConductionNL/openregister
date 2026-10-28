@@ -107,16 +107,17 @@ class ExampleSetRewriter {
 
 		$id = (string) ($row['id'] ?? ($row['@self']['id'] ?? ''));
 		// A field read back as null was never set: sending it would ask the schema to accept a null it may refuse.
-		$set   = array_filter($row, static fn (mixed $value): bool => $value !== null);
-		$error = $store->update(
-			register: $object['register'],
-			schema: $object['schema'],
-			id: $id,
-			data: $this->writable(data: array_merge($set, $resolved['sent']), row: $row, rules: $rules)
-		);
-		if ($error !== '') {
-			$report['dropped'][] = $where.': not refreshed: '.$error;
-			return $row;
+		$set  = array_filter($row, static fn (mixed $value): bool => $value !== null);
+		$data = $this->writable(data: array_merge($set, $resolved['sent']), row: $row, rules: $rules);
+		$type = $object['register'].' '.$object['schema'];
+
+		$unchanged = $this->holds(row: $row, data: $data);
+		if ($unchanged === false) {
+			$error = $store->update(register: $object['register'], schema: $object['schema'], id: $id, data: $data);
+			if ($error !== '') {
+				$report['dropped'][] = $where.': not refreshed: '.$error;
+				return $row;
+			}
 		}
 
 		$error = $this->handOver(store: $store, object: $object, id: $id, owner: ($resolved['owner'] ?? null));
@@ -124,13 +125,59 @@ class ExampleSetRewriter {
 			$report['dropped'][] = $where.': not handed to its owner: '.$error;
 		}
 
-		$type = $object['register'].' '.$object['schema'];
-		$report['types'][$type]['refreshed'] = (($report['types'][$type]['refreshed'] ?? 0) + 1);
 		// A kept field still holds what it held and a lens is no stored value: neither is what this run wrote.
 		$written[$fragment['app'].'/'.$object['key']] = array_diff_key($resolved['data'], array_flip(array_merge($rules['kept'], $rules['lenses'])));
+		if ($unchanged === true) {
+			$report['types'][$type]['unchanged'] = (($report['types'][$type]['unchanged'] ?? 0) + 1);
+			return $row;
+		}
+
+		$report['types'][$type]['refreshed'] = (($report['types'][$type]['refreshed'] ?? 0) + 1);
 
 		return ($store->get(register: $object['register'], schema: $object['schema'], id: $id) ?? $row);
 	}//end rewrite()
+
+	/**
+	 * Whether the stored row already holds every field of an update, so writing it would change nothing.
+	 *
+	 * @param array<string, mixed> $row  The object as stored.
+	 * @param array<string, mixed> $data The update a refresh would send.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 */
+	private function holds(array $row, array $data): bool {
+		foreach ($data as $field => $value) {
+			if (array_key_exists($field, $row) === false || $this->canonical(value: $row[$field]) !== $this->canonical(value: $value)) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end holds()
+
+	/**
+	 * A value with the keys of every map in it sorted, so two maps that differ only in key order compare equal.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 */
+	private function canonical(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$value = array_map(fn (mixed $item): mixed => $this->canonical(value: $item), $value);
+		if (array_is_list($value) === false) {
+			ksort($value);
+		}
+
+		return $value;
+	}//end canonical()
 
 	/**
 	 * Hand a rewritten object to the owner its declaration names, when another account owns it; '' when done or not needed.
