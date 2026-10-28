@@ -37,6 +37,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
+ * @uses \OCA\OpenRegister\Db\AuditTrail
  */
 class AuditTrailNotInFilterTest extends TestCase {
 
