@@ -639,7 +639,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @throws \InvalidArgumentException When the list names an operator other than `notIn`.
+	 * @throws InvalidArgumentException When the list names an operator other than `notIn`.
 	 *
 	 * @spec openspec/changes/audit-trail-not-in-filter/specs/audit-trail-immutable/spec.md#requirement-a-history-read-can-leave-out-actions-and-actors-in-the-query
 	 */
@@ -651,7 +651,7 @@ class AuditTrailMapper extends QBMapper {
 
 		$unknown = array_diff(array_keys($value), ['notIn']);
 		if ($unknown !== []) {
-			throw new \InvalidArgumentException('Unsupported audit trail filter operator for ' . $field . ': ' . implode(', ', $unknown));
+			throw new InvalidArgumentException('Unsupported audit trail filter operator for ' . $field . ': ' . implode(', ', $unknown));
 		}
 
 		$excluded = array_map('strtolower', $this->listValues(value: $value['notIn']));
