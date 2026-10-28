@@ -606,8 +606,21 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function flowVersions(): FlowVersionService {
 		$versions = $this->createMock(FlowVersionService::class);
 		$versions->method('publish')->willReturnCallback(function (Flow $flow) {
+			// As the real service: only a draft head can be published.
+			if ($flow->getLifecycleStatus() === 'published') {
+				throw new \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused(
+					reason: \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused::REASON_NOT_A_DRAFT,
+					flowId: (string) $flow->getUuid(),
+					state: 'published'
+				);
+			}
+
 			$this->publishedFlows[] = (string) $flow->getUuid();
 			$flow->setLifecycleStatus('published');
+			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
+		});
+		$versions->method('publishShippedUpdate')->willReturnCallback(function (Flow $flow) {
+			$this->publishedFlows[] = (string) $flow->getUuid();
 			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
 		});
 

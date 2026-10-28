@@ -313,7 +313,8 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 				$flow->setUpdated(new DateTime());
 				$this->container->get(FlowMapper::class)->update($flow);
 				if (($data['publish'] ?? true) === true) {
-					$this->container->get(FlowVersionService::class)->publish(flow: $flow, publishedBy: null);
+					// The held flow is published already: its changed head goes out as the next version.
+					$this->container->get(FlowVersionService::class)->publishShippedUpdate(flow: $flow);
 				}
 			}
 		} catch (Throwable $e) {
