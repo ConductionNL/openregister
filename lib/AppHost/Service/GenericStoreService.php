@@ -301,6 +301,14 @@ class GenericStoreService {
 			return ['outcome' => self::OUTCOME_TOO_LARGE, 'slug' => ''];
 		}
 
+		if ($this->isLocal(descriptor: $descriptor) === true) {
+			return $this->localRegistry?->write(
+				register: $this->registerSlug(descriptor: $descriptor),
+				schema: $descriptor->schema,
+				body: (array)json_decode($json, true)
+			) ?? ['outcome' => self::OUTCOME_UNREACHABLE, 'slug' => ''];
+		}
+
 		$response = $this->send(
 			descriptor: $descriptor,
 			method: 'POST',

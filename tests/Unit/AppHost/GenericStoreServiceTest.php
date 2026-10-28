@@ -245,6 +245,111 @@ class GenericStoreServiceTest extends TestCase {
 	}//end testLocalRegistryWithoutTheSchemaIsUnreachable()
 
 	/**
+	 * A descriptor that may publish its title and version.
+	 *
+	 * @return StoreDescriptor
+	 */
+	private function localPublishingDescriptor(): StoreDescriptor {
+		return new StoreDescriptor(
+			appId: 'pipelinq',
+			schema: 'commercial-template',
+			defaultRegister: 'pipelinq',
+			publishFields: ['title', 'version'],
+			publishGroups: ['pipelinq-publishers']
+		);
+
+	}//end localPublishingDescriptor()
+
+	/**
+	 * Publishing to a local registry creates the object in-process, with only
+	 * the declared fields, and makes no HTTP request.
+	 *
+	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishToALocalRegistryCreatesTheObjectWithoutANetworkCall(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+		$this->clientService->expects($this->never())->method('newClient');
+
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willReturn([]);
+		$objects->expects($this->once())
+			->method('saveObject')
+			->with(
+				['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.0.0'],
+				[],
+				'pipelinq',
+				'commercial-template',
+				null
+			);
+
+		$result = $this->localService(objects: $objects)->publish(
+			descriptor: $this->localPublishingDescriptor(),
+			payload: ['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.0.0', 'owner' => 'not declared']
+		);
+
+		$this->assertSame(['outcome' => GenericStoreService::OUTCOME_OK, 'slug' => 'woo-intake'], $result);
+
+	}//end testPublishToALocalRegistryCreatesTheObjectWithoutANetworkCall()
+
+	/**
+	 * Publishing a slug the local registry already holds updates that object.
+	 *
+	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishToALocalRegistryUpdatesTheObjectWithTheSameSlug(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willReturn([
+			['id' => '0f3c2a8e-4b1d-4c55-9a7e-2d6b9e1f0a11', 'slug' => 'woo-intake', 'version' => '1.0.0'],
+		]);
+		$objects->expects($this->once())
+			->method('saveObject')
+			->with(
+				['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.1.0'],
+				[],
+				'pipelinq',
+				'commercial-template',
+				'0f3c2a8e-4b1d-4c55-9a7e-2d6b9e1f0a11'
+			);
+
+		$result = $this->localService(objects: $objects)->publish(
+			descriptor: $this->localPublishingDescriptor(),
+			payload: ['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.1.0']
+		);
+
+		$this->assertSame(GenericStoreService::OUTCOME_OK, $result['outcome']);
+
+	}//end testPublishToALocalRegistryUpdatesTheObjectWithTheSameSlug()
+
+	/**
+	 * A local write that fails answers unreachable, never ok.
+	 *
+	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testAFailedLocalPublishIsUnreachable(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willReturn([]);
+		$objects->method('saveObject')->willThrowException(new RuntimeException('validation failed'));
+
+		$result = $this->localService(objects: $objects)->publish(
+			descriptor: $this->localPublishingDescriptor(),
+			payload: ['slug' => 'woo-intake', 'title' => 'Woo-intake']
+		);
+
+		$this->assertSame(['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''], $result);
+
+	}//end testAFailedLocalPublishIsUnreachable()
+
+	/**
 	 * Build the service with a container that hands out the given object service.
 	 *
 	 * @param ObjectServiceInterface $objects The object service the local registry reads.
