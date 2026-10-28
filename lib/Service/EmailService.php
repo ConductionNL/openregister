@@ -205,6 +205,7 @@ class EmailService {
 		$link->setMailMessageUid($messageData['uid'] ?? null);
 		$link->setSubject($messageData['subject'] ?? null);
 		$link->setSender($messageData['sender'] ?? null);
+		$link->setSenderName($messageData['senderName'] ?? null);
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
 
@@ -377,7 +378,7 @@ class EmailService {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at')
-				->addSelect('r.email as sender_email')
+				->addSelect('r.email as sender_email', 'r.label as sender_label')
 				->from('mail_messages', 'm')
 				->leftJoin(
 					'm',
@@ -416,6 +417,7 @@ class EmailService {
 				'uid' => (string)($row['uid'] ?? ''),
 				'subject' => $row['subject'] ?? null,
 				'sender' => $row['sender_email'] ?? null,
+				'senderName' => $row['sender_label'] ?? null,
 				'date' => $sentAt,
 			];
 		} catch (Exception $e) {

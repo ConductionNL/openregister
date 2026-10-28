@@ -34,6 +34,36 @@ class EmailLinkTest extends TestCase {
 		$this->assertStringContainsString('2026-03-25', $json['linkedAt']);
 	}
 
+	/**
+	 * The sender's display name and the link's details read from the metadata
+	 * (direction, recipient, attachments, how it was linked, its archive copy),
+	 * flat beside the fields; the metadata string keeps its shape and unknown
+	 * keys stay out.
+	 *
+	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md
+	 */
+	public function testJsonSerializeCarriesSenderNameAndDetails(): void {
+		$link = new EmailLink();
+		$link->setSenderName('Sanne de Vries');
+		$link->setMetadata((string) json_encode([
+			'source'          => 'example-set:portaliq/x',
+			'direction'       => 'inbound',
+			'attachmentCount' => 1,
+			'linkedVia'       => 'mailbox',
+			'archivedAs'      => 'pdf',
+			'other'           => 'kept out',
+		]));
+
+		$json = $link->jsonSerialize();
+
+		$this->assertSame('Sanne de Vries', $json['senderName']);
+		$this->assertSame(
+			['direction' => 'inbound', 'recipientName' => null, 'attachmentCount' => 1, 'linkedVia' => 'mailbox', 'archivedAs' => 'pdf'],
+			$json['details']
+		);
+		$this->assertIsString($json['metadata']);
+	}
+
 	public function testJsonSerializeHandlesNulls(): void {
 		$link = new EmailLink();
 
@@ -43,6 +73,11 @@ class EmailLinkTest extends TestCase {
 		$this->assertNull($json['mailDate']);
 		$this->assertNull($json['linkedAt']);
 		$this->assertNull($json['subject']);
+		$this->assertNull($json['senderName']);
+		$this->assertSame(
+			['direction' => null, 'recipientName' => null, 'attachmentCount' => null, 'linkedVia' => null, 'archivedAs' => null],
+			$json['details']
+		);
 	}
 
 	public function testSettersAndGetters(): void {

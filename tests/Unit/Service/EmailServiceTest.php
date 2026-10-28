@@ -94,6 +94,39 @@ class EmailServiceTest extends TestCase {
 		$this->service->linkEmail('abc-123', 5, 1, 42);
 	}
 
+	/**
+	 * Linking a Mail message keeps the sender's display name Mail holds (the
+	 * From recipient's label) beside the address.
+	 *
+	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
+	 */
+	public function testLinkEmailKeepsTheSenderNameFromMail(): void {
+		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
+		$this->userSession->method('getUser')->willReturn($this->createUser('pieter'));
+
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		foreach (['select', 'addSelect', 'from', 'leftJoin', 'where', 'andWhere', 'setMaxResults'] as $fluent) {
+			$qb->method($fluent)->willReturnSelf();
+		}
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createFunction')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryFunction::class));
+		$qb->method('getSQL')->willReturn('');
+		$result = $this->createMock(\OCP\DB\IResult::class);
+		$result->method('fetch')->willReturn([
+			'uid' => '44', 'subject' => 'Aanvulling op Woo-verzoek', 'sent_at' => 1760512500,
+			'sender_email' => 'sanne.devries@zuiddrecht.example', 'sender_label' => 'Sanne de Vries',
+		]);
+		$qb->method('executeQuery')->willReturn($result);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$this->emailLinkMapper->method('insert')->willReturnArgument(0);
+
+		$link = $this->service->linkEmail('abc-123', 5, 4, 44);
+
+		$this->assertSame('sanne.devries@zuiddrecht.example', $link->getSender());
+		$this->assertSame('Sanne de Vries', $link->getSenderName());
+	}
+
 	public function testUnlinkEmailSuccess(): void {
 		$link = new EmailLink();
 		$this->emailLinkMapper->method('find')->with(7)->willReturn($link);
