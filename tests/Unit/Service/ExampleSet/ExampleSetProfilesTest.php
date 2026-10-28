@@ -33,8 +33,9 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		$profiles = (new \ReflectionClass(objectOrClass: ExampleSetProfiles::class))->newInstanceWithoutConstructor();
 		$profile  = $profiles->fromPerson(
 			person: [
-				'function' => 'Vergunningverlener',
-				'roles'    => ['Vergunningverlener', 'teamleider'],
+				'function'   => 'Vergunningverlener',
+				'department' => 'Vergunningen',
+				'roles'      => ['Vergunningverlener', 'teamleider'],
 				'absence'  => ['fromDay' => -2, 'untilDay' => 7, 'status' => 'Verlof', 'message' => 'Terug op 14 oktober'],
 				'status'   => ['status' => 'away', 'message' => 'Buiten'],
 			],
@@ -43,6 +44,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 
 		$this->assertSame(expected: 'Vergunningverlener', actual: $profile['headline']);
 		$this->assertSame(expected: 'Vergunningverlener, teamleider', actual: $profile['role']);
+		$this->assertSame(expected: 'Vergunningen', actual: $profile['organisation']);
 		$this->assertSame(expected: ['2026-10-05', '2026-10-14'], actual: [$profile['absence']['firstDay'], $profile['absence']['lastDay']]);
 		$this->assertSame(expected: ['away', 'Buiten'], actual: [$profile['status']['status'], $profile['status']['message']]);
 		$this->assertNull(actual: $profiles->fromPerson(person: ['function' => 'Intaker'], today: new DateTimeImmutable())['absence']);
@@ -139,9 +141,9 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		$users->method('get')->willReturn($this->createMock(\OCP\IUser::class));
 		$profiles = new ExampleSetProfiles(users: $users, profiles: $accounts, container: $this->createMock(\Psr\Container\ContainerInterface::class));
 
-		$reasons = $profiles->fillMissing(uid: 'pieter', profile: ['headline' => 'Woo-coördinator', 'role' => 'Iets anders', 'absence' => null, 'status' => null]);
+		$reasons = $profiles->fillMissing(uid: 'pieter', profile: ['headline' => 'Woo-coördinator', 'role' => 'Iets anders', 'organisation' => 'Woo en informatie', 'absence' => null, 'status' => null]);
 
 		$this->assertSame(expected: [], actual: $reasons);
-		$this->assertSame(expected: ['headline' => 'Woo-coördinator', 'role' => 'Woo-coördinator'], actual: $values);
+		$this->assertSame(expected: ['headline' => 'Woo-coördinator', 'role' => 'Woo-coördinator', 'organisation' => 'Woo en informatie'], actual: $values);
 	}//end testFillingInWritesOnlyEmptyProperties()
 }//end class
