@@ -138,7 +138,13 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		$link = array_values($this->emailLinks)[0]->jsonSerialize();
 		$this->assertSame(expected: 'Esra Demir', actual: $link['senderName']);
 		$this->assertSame(
-			expected: ['direction' => 'outbound', 'recipientName' => 'Buurtvereniging Oost', 'attachmentCount' => 2, 'linkedVia' => 'file', 'archivedAs' => 'pdf'],
+			expected: [
+				'direction'       => 'outbound',
+				'recipientName'   => 'Buurtvereniging Oost',
+				'attachmentCount' => 2,
+				'linkedVia'       => 'file',
+				'archivedAs'      => 'pdf',
+			],
 			actual: $link['details']
 		);
 		$this->assertSame(expected: 'example-set:alpha/subsidie', actual: json_decode((string) $link['metadata'], true)['source']);
