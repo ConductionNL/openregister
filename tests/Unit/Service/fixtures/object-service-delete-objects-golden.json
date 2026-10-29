@@ -1,0 +1,2458 @@
+{
+    "archival schema": {
+        "result": {
+            "deleted_uuids": [
+                "b"
+            ],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "SCHEMA_ARCHIVAL_IMMUTABLE",
+                    "message": "SCHEMA_ARCHIVAL_IMMUTABLE: Schema \"schema-5\" declares x-openregister-archival; user-driven delete operations are not permitted. Rows expire automatically via the ArchivalRetentionTask cron.",
+                    "schema": "schema-5",
+                    "operation": "delete",
+                    "hint": "Rows on archival schemas are removed automatically by OCA\\OpenRegister\\Cron\\ArchivalRetentionTask when they pass their effective retention. To force-delete, drop x-openregister-archival from the schema definition first."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    5,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "b",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "b"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "batch lookup fails": {
+        "result": {
+            "deleted_uuids": [
+                "a",
+                "b"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete batch scope resolution failed; falling back to per-uuid lookups",
+                    {
+                        "error": "batch failed"
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "a",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    null,
+                    null,
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "b",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    null,
+                    null,
+                    "b",
+                    null,
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "cache invalidation fails": {
+        "result": {
+            "deleted_uuids": [
+                "a",
+                "b"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    4,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 4
+                    },
+                    "b",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "b"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete cache invalidation failed",
+                    {
+                        "error": "cache down",
+                        "deletedCount": 2,
+                        "registerId": 7,
+                        "schemaId": 3
+                    }
+                ]
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    4
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete cache invalidation failed",
+                    {
+                        "error": "cache down",
+                        "deletedCount": 2,
+                        "registerId": 7,
+                        "schemaId": 4
+                    }
+                ]
+            ]
+        ]
+    },
+    "deleted without scope": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "SCHEMA_UNRESOLVED",
+                    "message": "The schema of this object could not be resolved, so its archival status could not be established."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "a",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation",
+                    {
+                        "uuid": "a",
+                        "error": "not found"
+                    }
+                ]
+            ]
+        ]
+    },
+    "empty schema id": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "SCHEMA_UNRESOLVED",
+                    "message": "The schema of this object could not be resolved, so its archival status could not be established."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ]
+        ]
+    },
+    "filtered out": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [
+                "b",
+                "gone"
+            ],
+            "skipped_reasons": {
+                "b": {
+                    "error": "OBJECT_NOT_PERMITTED",
+                    "message": "Object is not visible to this user, or does not exist."
+                },
+                "gone": {
+                    "error": "OBJECT_NOT_PERMITTED",
+                    "message": "Object is not visible to this user, or does not exist."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b",
+                        "gone"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "handler fails": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [
+                "b"
+            ],
+            "skipped_reasons": {
+                "b": {
+                    "error": "DELETE_FAILED",
+                    "message": "transaction rolled back"
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "b",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "b"
+                    },
+                    false
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete failed for object",
+                    {
+                        "uuid": "b",
+                        "error": "transaction rolled back"
+                    }
+                ]
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "handler refuses": {
+        "result": {
+            "deleted_uuids": [
+                "b"
+            ],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "DELETE_REFUSED",
+                    "message": "The delete handler did not delete this object."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete handler refused object",
+                    {
+                        "uuid": "a"
+                    }
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "b",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "b"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "mixed batch": {
+        "result": {
+            "deleted_uuids": [
+                "a",
+                "c"
+            ],
+            "skipped_uuids": [
+                "x",
+                "b",
+                "d",
+                "e"
+            ],
+            "skipped_reasons": {
+                "x": {
+                    "error": "OBJECT_NOT_PERMITTED",
+                    "message": "Object is not visible to this user, or does not exist."
+                },
+                "b": {
+                    "error": "SCHEMA_ARCHIVAL_IMMUTABLE",
+                    "message": "SCHEMA_ARCHIVAL_IMMUTABLE: Schema \"schema-5\" declares x-openregister-archival; user-driven delete operations are not permitted. Rows expire automatically via the ArchivalRetentionTask cron.",
+                    "schema": "schema-5",
+                    "operation": "delete",
+                    "hint": "Rows on archival schemas are removed automatically by OCA\\OpenRegister\\Cron\\ArchivalRetentionTask when they pass their effective retention. To force-delete, drop x-openregister-archival from the schema definition first."
+                },
+                "d": {
+                    "error": "REFERENTIAL_INTEGRITY_RESTRICT",
+                    "message": "Cannot delete object: 2 dependent object(s) block deletion"
+                },
+                "e": {
+                    "error": "DELETE_REFUSED",
+                    "message": "The delete handler did not delete this object."
+                }
+            },
+            "cascade_count": 4
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b",
+                        "c",
+                        "d",
+                        "e",
+                        "x"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b",
+                        "c",
+                        "d",
+                        "e"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    5,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "c",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    null,
+                    null,
+                    "c",
+                    null,
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    4,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 4
+                    },
+                    "d",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "d"
+                    },
+                    false
+                ]
+            ],
+            [
+                "logger.info",
+                [
+                    "[ObjectService] Bulk delete skipped object due to RESTRICT constraint",
+                    {
+                        "uuid": "d",
+                        "blockers": 2
+                    }
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "e",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "e"
+                    },
+                    false
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete handler refused object",
+                    {
+                        "uuid": "e"
+                    }
+                ]
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "no rbac and no multitenancy": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [
+                "gone"
+            ],
+            "skipped_reasons": {
+                "gone": {
+                    "error": "SCHEMA_UNRESOLVED",
+                    "message": "The schema of this object could not be resolved, so its archival status could not be established."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "gone"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    false,
+                    false,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "gone",
+                    null,
+                    null,
+                    true,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation",
+                    {
+                        "uuid": "gone",
+                        "error": "not found"
+                    }
+                ]
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "non numeric scope": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    null,
+                    null,
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    0,
+                    3
+                ]
+            ]
+        ]
+    },
+    "not batch resolved": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "a",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    null,
+                    null,
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "not resolvable at all": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "SCHEMA_UNRESOLVED",
+                    "message": "The schema of this object could not be resolved, so its archival status could not be established."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "a",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation",
+                    {
+                        "uuid": "a",
+                        "error": "not found"
+                    }
+                ]
+            ]
+        ]
+    },
+    "nothing deleted": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "DELETE_REFUSED",
+                    "message": "The delete handler did not delete this object."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete handler refused object",
+                    {
+                        "uuid": "a"
+                    }
+                ]
+            ]
+        ]
+    },
+    "nothing requested": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": []
+    },
+    "numeric uuid": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [
+                123
+            ],
+            "skipped_reasons": {
+                "123": {
+                    "error": "OBJECT_NOT_PERMITTED",
+                    "message": "Object is not visible to this user, or does not exist."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "123"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [],
+                    true
+                ]
+            ]
+        ]
+    },
+    "one deleted": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "own draft on archival schema": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    5,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 5
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    true
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    5
+                ]
+            ]
+        ]
+    },
+    "rbac only": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    false
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    false,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "register cannot be loaded": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    66,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete could not materialise scope entities",
+                    {
+                        "registerId": 66,
+                        "schemaId": 3,
+                        "error": "register gone"
+                    }
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    null,
+                    null,
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    66,
+                    3
+                ]
+            ]
+        ]
+    },
+    "restrict": {
+        "result": {
+            "deleted_uuids": [
+                "b"
+            ],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "REFERENTIAL_INTEGRITY_RESTRICT",
+                    "message": "Cannot delete object: 2 dependent object(s) block deletion"
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "logger.info",
+                [
+                    "[ObjectService] Bulk delete skipped object due to RESTRICT constraint",
+                    {
+                        "uuid": "a",
+                        "blockers": 2
+                    }
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "b",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "b"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "schema cannot be loaded": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "SCHEMA_UNRESOLVED",
+                    "message": "The schema of this object could not be resolved, so its archival status could not be established."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    99,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete could not materialise scope entities",
+                    {
+                        "registerId": 7,
+                        "schemaId": 99,
+                        "error": "schema gone"
+                    }
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    99,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Bulk delete could not resolve the schema of a candidate row",
+                    {
+                        "schemaId": 99,
+                        "error": "schema gone"
+                    }
+                ]
+            ]
+        ]
+    },
+    "several deleted with cascades": {
+        "result": {
+            "deleted_uuids": [
+                "a",
+                "b",
+                "c"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 7
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a",
+                        "b",
+                        "c"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a",
+                        "b",
+                        "c"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    4,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 4
+                    },
+                    "b",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "b"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "registerMapper.find",
+                [
+                    8,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 8
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "c",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "c"
+                    },
+                    false
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    4
+                ]
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    8,
+                    3
+                ]
+            ]
+        ]
+    },
+    "someone elses draft": {
+        "result": {
+            "deleted_uuids": [],
+            "skipped_uuids": [
+                "a"
+            ],
+            "skipped_reasons": {
+                "a": {
+                    "error": "OBJECT_NOT_PERMITTED",
+                    "message": "Object is not visible to this user, or does not exist."
+                }
+            },
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ]
+        ]
+    },
+    "someone elses draft as admin": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    true,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    true
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    },
+    "someone elses draft without rbac": {
+        "result": {
+            "deleted_uuids": [
+                "a"
+            ],
+            "skipped_uuids": [],
+            "skipped_reasons": [],
+            "cascade_count": 0
+        },
+        "calls": [
+            [
+                "permissions.filter",
+                [
+                    [
+                        "a"
+                    ],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.findMultiple",
+                [
+                    [
+                        "a"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "registerMapper.find",
+                [
+                    7,
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.find",
+                [
+                    3,
+                    [
+                        [],
+                        false,
+                        false
+                    ]
+                ]
+            ],
+            [
+                "deleteHandler.deleteObject",
+                [
+                    {
+                        "register": 7
+                    },
+                    {
+                        "schema": 3
+                    },
+                    "a",
+                    null,
+                    false,
+                    true,
+                    false,
+                    {
+                        "entity": "a"
+                    },
+                    true
+                ]
+            ],
+            [
+                "deleteHandler.getLastCascadeCount",
+                []
+            ],
+            [
+                "cache.invalidate",
+                [
+                    null,
+                    "bulk_delete",
+                    7,
+                    3
+                ]
+            ]
+        ]
+    }
+}
