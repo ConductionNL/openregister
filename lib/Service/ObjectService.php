@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
@@ -46,9 +48,7 @@ use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -296,8 +296,8 @@ class ObjectService implements ObjectServiceInterface
      * @param ValidationHandler              $validationHandler    Handler for validation operations.
      * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
      * @param MigrationHandler               $migrationHandler     Handler for migration operations.
-     * @param RegisterMapper                 $registerMapper       Mapper for register operations.
-     * @param SchemaMapper                   $schemaMapper         Mapper for schema operations.
+     * @param RegisterMapperInterface<Register, Schema>                 $registerMapper       Mapper for register operations.
+     * @param SchemaMapperInterface<Schema>                   $schemaMapper         Mapper for schema operations.
      * @param ViewMapper                     $viewMapper           Mapper for view operations.
      * @param MagicMapperInterface<ObjectEntity, Register, Schema>                    $objectMapper         Unified mapper for object
      *                                                             operations (routes to
@@ -353,8 +353,8 @@ class ObjectService implements ObjectServiceInterface
         private readonly ValidationHandler $validationHandler,
         private readonly CascadingHandler $cascadingHandler,
         private readonly MigrationHandler $migrationHandler,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapperInterface $registerMapper,
+        private readonly SchemaMapperInterface $schemaMapper,
         private readonly ViewMapper $viewMapper,
         private readonly MagicMapperInterface $objectMapper,
         private readonly FileService $fileService,

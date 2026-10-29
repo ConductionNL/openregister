@@ -38,9 +38,9 @@ namespace OCA\OpenRegister\Service\History;
 
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\StateHistory;
 use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -54,12 +54,12 @@ class StateHistoryProjector {
 	 * Constructor.
 	 *
 	 * @param StateHistoryMapper $mapper       The projection.
-	 * @param SchemaMapper       $schemaMapper Resolves a schema's declared lifecycle field.
+	 * @param SchemaMapperInterface<Schema>       $schemaMapper Resolves a schema's declared lifecycle field.
 	 * @param LoggerInterface    $logger       Diagnostics.
 	 */
 	public function __construct(
 		private readonly StateHistoryMapper $mapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

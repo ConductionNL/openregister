@@ -35,7 +35,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserManager;
@@ -214,9 +215,9 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	/**
 	 * The audit trail mapper.
 	 *
-	 * @return AuditTrailMapper
+	 * @return AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private function mapper(): AuditTrailMapper {
-		return $this->container->get(AuditTrailMapper::class);
+	private function mapper(): AuditTrailMapperInterface {
+		return $this->container->get(AuditTrailMapperInterface::class);
 	}//end mapper()
 }//end class

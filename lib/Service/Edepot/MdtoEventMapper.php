@@ -27,8 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Edepot;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -110,11 +110,11 @@ class MdtoEventMapper {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Source of the event history.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Source of the event history.
 	 * @param LoggerInterface $logger Logger for truncation and lookup failures.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

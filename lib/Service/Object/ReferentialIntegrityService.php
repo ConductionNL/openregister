@@ -32,14 +32,14 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
@@ -144,10 +144,10 @@ class ReferentialIntegrityService {
 	/**
 	 * Constructor for ReferentialIntegrityService.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema data mapper.
-	 * @param RegisterMapper $registerMapper Register data mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema data mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register data mapper.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity data mapper.
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for integrity action logging.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for integrity action logging.
 	 * @param LoggerInterface $logger Logger for debugging.
 	 * @param IDBConnection $db Database connection for raw SQL queries.
 	 * @param ICacheFactory $cacheFactory Distributed cache for the relation index.
@@ -156,10 +156,10 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IDBConnection $db,
 		private readonly ICacheFactory $cacheFactory,

@@ -134,7 +134,7 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	 */
 	private function loadSchemas(): ?array {
 		try {
-			$mapper = $this->container->get('OCA\\OpenRegister\\Db\\SchemaMapper');
+			$mapper = $this->container->get('OCA\\OpenRegister\\Kernel\\Contracts\\SchemaMapperInterface');
 			if (method_exists($mapper, 'findAll') === true) {
 				$result = $mapper->findAll();
 				if (is_array($result) === true) {

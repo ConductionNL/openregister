@@ -37,7 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -91,14 +91,14 @@ class TaskFormReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemas Resolves the subject schema.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the subject schema.
 	 * @param TransitionEngine $engine Reads a transition's declared inputs.
 	 * @param IAppManager $apps Answers whether the Forms app is installed.
 	 * @param IL10N $l10n Translations, for refusals an author reads.
 	 * @param FormDestinationValidator|null $validator The field check this reader delegates to; built from $l10n when absent.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly TransitionEngine $engine,
 		private readonly IAppManager $apps,
 		private readonly IL10N $l10n,

@@ -37,7 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Aggregation\ThresholdEvaluationService;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
@@ -62,7 +63,7 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	 * @param OrganisationService $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
 	 * @param ThresholdEvaluationService $evaluator Shared threshold evaluation logic.
 	 *
 	 * @return void
@@ -74,7 +75,7 @@ class AggregationThresholdJob extends ActorForwardedJob {
 		OrganisationService $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ThresholdEvaluationService $evaluator,
 	) {
 		parent::__construct(

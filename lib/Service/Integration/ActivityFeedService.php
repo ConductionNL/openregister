@@ -45,7 +45,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,13 +63,13 @@ class ActivityFeedService {
 	 * Constructor.
 	 *
 	 * @param ActivityFeedMerge $merge    Decides order, bounds and the cursor.
-	 * @param AuditTrailMapper  $audit    OpenRegister's own trail for the object.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity>  $audit    OpenRegister's own trail for the object.
 	 * @param ActivityProvider  $activity The NC Activity rows marked for this object.
 	 * @param LoggerInterface   $logger   Logger.
 	 */
 	public function __construct(
 		private readonly ActivityFeedMerge $merge,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly ActivityProvider $activity,
 		private readonly LoggerInterface $logger,
 	) {

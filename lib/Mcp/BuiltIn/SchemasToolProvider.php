@@ -28,7 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 
 /**
@@ -52,10 +53,10 @@ class SchemasToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapper $schemaMapper Schema database mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema database mapper
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

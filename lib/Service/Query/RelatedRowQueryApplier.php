@@ -26,7 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -52,7 +52,7 @@ class RelatedRowQueryApplier {
 	/**
 	 * The parser, clause and lookups.
 	 *
-	 * @param SchemaMapper      $schemaMapper The schema lookup.
+	 * @param SchemaMapperInterface<Schema>      $schemaMapper The schema lookup.
 	 * @param MagicTableHandler $tableHandler Resolves a register and schema to their table.
 	 * @param IDBConnection     $db           The connection, read for its platform.
 	 * @param LoggerInterface   $logger       The logger.
@@ -60,7 +60,7 @@ class RelatedRowQueryApplier {
 	 *                                        rule, organisation boundary).
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicTableHandler $tableHandler,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,

@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -161,11 +161,11 @@ class ArchivalRetentionGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema reader, used unscoped (see resolveSchema()).
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema reader, used unscoped (see resolveSchema()).
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

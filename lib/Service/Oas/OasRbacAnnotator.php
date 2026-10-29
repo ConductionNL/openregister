@@ -22,8 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
@@ -63,12 +64,12 @@ class OasRbacAnnotator {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper           $registerMapper Resolves the register a schema's authorization falls back to.
+	 * @param RegisterMapperInterface<Register, Schema>           $registerMapper Resolves the register a schema's authorization falls back to.
 	 * @param LoggerInterface|null     $logger         Where an unreadable rule is noted.
 	 * @param PropertyRbacHandler|null $propertyRbac   Withholds a property the caller may not read.
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {

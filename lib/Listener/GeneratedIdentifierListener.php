@@ -37,9 +37,9 @@ namespace OCA\OpenRegister\Listener;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCA\OpenRegister\Service\SequenceService;
@@ -65,13 +65,13 @@ class GeneratedIdentifierListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves the object's schema.
 	 * @param SequenceService $sequences Reserves a number, atomically.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param ObjectEventGate $gate Decides what a draft is held from.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SequenceService $sequences,
 		private readonly LoggerInterface $logger,
 		private readonly ObjectEventGate $gate,

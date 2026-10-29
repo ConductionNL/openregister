@@ -34,8 +34,8 @@ use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -89,9 +89,9 @@ class EmailService {
 	/**
 	 * Schema mapper for iterating over schemas with `_mail` linked-type column.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Magic mapper for cross-table _mail JSONB containment queries.
@@ -108,7 +108,7 @@ class EmailService {
 	 * @param IDBConnection $db Database connection.
 	 * @param IUserSession $userSession User session.
 	 * @param LoggerInterface $logger Logger.
-	 * @param SchemaMapper $schemaMapper Schema mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic mapper.
 	 */
 	public function __construct(
@@ -117,7 +117,7 @@ class EmailService {
 		IDBConnection $db,
 		IUserSession $userSession,
 		LoggerInterface $logger,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		MagicMapperInterface $magicMapper,
 	) {
 		$this->emailLinkMapper = $emailLinkMapper;

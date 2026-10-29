@@ -34,8 +34,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\History\StateHistoryRebuild;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -85,16 +88,16 @@ class StateHistoryRebuildJob extends TimedJob {
 	 *
 	 * @param ITimeFactory        $time      Time factory for TimedJob.
 	 * @param StateHistoryRebuild $rebuild   Derives the intervals.
-	 * @param AuditTrailMapper    $audit     Lists the objects to walk.
-	 * @param SchemaMapper        $schemas   Resolves each object's declared lifecycle property.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity>    $audit     Lists the objects to walk.
+	 * @param SchemaMapperInterface<Schema>        $schemas   Resolves each object's declared lifecycle property.
 	 * @param IAppConfig          $appConfig Holds the flag and the cursor.
 	 * @param LoggerInterface     $logger    Diagnostics.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly StateHistoryRebuild $rebuild,
-		private readonly AuditTrailMapper $audit,
-		private readonly SchemaMapper $schemas,
+		private readonly AuditTrailMapperInterface $audit,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 
 /**
  * Resolves a schema's effective authorization block.
@@ -42,10 +44,10 @@ class EffectiveAuthorization {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Resolves the register a schema falls back to.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Resolves the register a schema falls back to.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 	) {
 	}//end __construct()
 

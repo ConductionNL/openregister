@@ -31,8 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -75,7 +75,7 @@ class ExampleSetRegisters {
 	 */
 	public function exists(string $slug): bool {
 		try {
-			$this->container->get(RegisterMapper::class)->find(id: $slug, _rbac: false, _multitenancy: false);
+			$this->container->get(RegisterMapperInterface::class)->find(id: $slug, _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return false;
 		}
@@ -192,7 +192,7 @@ class ExampleSetRegisters {
 	 */
 	public function removeImport(string $appId, string $jobId): bool {
 		try {
-			$uuids   = $this->container->get(AuditTrailMapper::class)->objectUuidsByImportJobId(importJobId: $jobId);
+			$uuids   = $this->container->get(AuditTrailMapperInterface::class)->objectUuidsByImportJobId(importJobId: $jobId);
 			$objects = $this->container->get(ObjectService::class);
 		} catch (Throwable) {
 			return false;

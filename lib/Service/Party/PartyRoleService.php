@@ -31,12 +31,13 @@ namespace OCA\OpenRegister\Service\Party;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use Throwable;
 
@@ -67,16 +68,16 @@ class PartyRoleService {
 	 * @param ContactLinkMapper $links The link rows.
 	 * @param PartyLinkWriter $writer Writes one party link.
 	 * @param PartyService $parties The party records.
-	 * @param SchemaMapper $schemas The schemas, for the accepted kinds and roles.
-	 * @param AuditTrailMapper $audit The audit trail.
+	 * @param SchemaMapperInterface<Schema> $schemas The schemas, for the accepted kinds and roles.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $audit The audit trail.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly PartyLinkWriter $writer,
 		private readonly PartyService $parties,
-		private readonly SchemaMapper $schemas,
-		private readonly AuditTrailMapper $audit,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly PersonLinkEvents $events,
 	) {
 	}//end __construct()

@@ -31,16 +31,18 @@ use DateTime;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
@@ -89,9 +91,9 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Schema mapper instance
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Object service instance
@@ -159,24 +161,24 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Constructor for the ImportService
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper
 	 * @param ObjectService $objectService The object service
 	 * @param LoggerInterface $logger The logger interface
 	 * @param IGroupManager $groupManager The group manager
 	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper The audit trail mapper
 	 * @param MappingEngine $mappingEngine Migration-pack mapping engine
 	 * @param ValidateObject $validateObjectHandler Schema validator, used for genuinely
 	 *                                              side-effect-free dry-run imports
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		ObjectService $objectService,
 		LoggerInterface $logger,
 		IGroupManager $groupManager,
 		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly MappingEngine $mappingEngine,
 		private readonly ValidateObject $validateObjectHandler,
 		private readonly ContainerInterface $container,

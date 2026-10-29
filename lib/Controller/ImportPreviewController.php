@@ -38,7 +38,8 @@ use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Import\ConflictPolicy;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
@@ -86,7 +87,7 @@ class ImportPreviewController extends Controller {
 	 * @param ImportPreviewMapper $previewMapper Preview persistence.
 	 * @param ImportPreviewRowMapper $rowMapper Per-row decision persistence.
 	 * @param SourceRowReader $reader The file reader, for hashing and staging.
-	 * @param RegisterMapper $registerMapper Register lookup.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup.
 	 * @param IJobList $jobList The background queue.
 	 * @param IUserSession $userSession Current-user session.
 	 * @param IGroupManager $groupManager Group manager.
@@ -98,7 +99,7 @@ class ImportPreviewController extends Controller {
 		private readonly ImportPreviewMapper $previewMapper,
 		private readonly ImportPreviewRowMapper $rowMapper,
 		private readonly SourceRowReader $reader,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,

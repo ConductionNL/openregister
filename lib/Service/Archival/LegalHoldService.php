@@ -28,10 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserSession;
@@ -59,9 +60,9 @@ class LegalHoldService {
 	/**
 	 * Audit trail mapper for logging hold operations.
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * User session for identifying who placed the hold.
@@ -88,7 +89,7 @@ class LegalHoldService {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object entity data mapper.
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for logging.
 	 * @param IUserSession $userSession User session service.
 	 * @param IJobList $jobList Background job list for bulk operations.
 	 * @param LoggerInterface $logger Logger for error and info messages.
@@ -96,7 +97,7 @@ class LegalHoldService {
 	 */
 	public function __construct(
 		MagicMapperInterface $objectMapper,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		IUserSession $userSession,
 		IJobList $jobList,
 		LoggerInterface $logger,

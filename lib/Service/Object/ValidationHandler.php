@@ -21,12 +21,12 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,8 +59,8 @@ class ValidationHandler {
 	 *
 	 * @param ValidateObject $validateHandler Handler for object validation.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities.
-	 * @param RegisterMapper $registerMapper Mapper for registers.
-	 * @param SchemaMapper $schemaMapper Mapper for schemas.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for registers.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schemas.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Mapper for magic tables.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 *
@@ -69,8 +69,8 @@ class ValidationHandler {
 	public function __construct(
 		private readonly ValidateObject $validateHandler,
 		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {

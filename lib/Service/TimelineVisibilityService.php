@@ -29,9 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -76,18 +78,18 @@ class TimelineVisibilityService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper     $schemaMapper     Resolves the object's schema for the permission check.
+	 * @param SchemaMapperInterface<Schema>     $schemaMapper     Resolves the object's schema for the permission check.
 	 * @param PermissionHandler $permissionHandler Canonical RBAC verdict.
-	 * @param AuditTrailMapper $auditTrailMapper Writes the audit entry on a change.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Writes the audit entry on a change.
 	 * @param IUserSession     $userSession      Current caller.
 	 * @param LoggerInterface  $logger           Logger for the fail-closed paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

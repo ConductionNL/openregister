@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
@@ -73,7 +73,7 @@ class ErasurePreviewService {
 	 * @param ArchivalRetentionGuard    $archivalGuard  Retention and legal-hold refusal, with its wording.
 	 * @param RetentionService          $retention      Immutable archival status.
 	 * @param DestructionScopeService   $scopeService   What goes with an object.
-	 * @param SchemaMapper              $schemaMapper   Schema resolution for the scope.
+	 * @param SchemaMapperInterface<Schema>              $schemaMapper   Schema resolution for the scope.
 	 * @param SubjectPartyCounter       $parties        Party records naming the subject.
 	 * @param IDBConnection             $db             The PII index, for other subjects on a record.
 	 * @param LoggerInterface           $logger         PSR logger.
@@ -85,7 +85,7 @@ class ErasurePreviewService {
 		private readonly ArchivalRetentionGuard $archivalGuard,
 		private readonly RetentionService $retention,
 		private readonly DestructionScopeService $scopeService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SubjectPartyCounter $parties,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,

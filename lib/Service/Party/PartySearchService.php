@@ -28,7 +28,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use Throwable;
@@ -55,13 +57,13 @@ class PartySearchService {
 	 *
 	 * @param ObjectService $objects The object layer party records live in.
 	 * @param PartyService $parties The party schemas.
-	 * @param AuditTrailMapper $audit The audit trail, for a refused attempt.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $audit The audit trail, for a refused attempt.
 	 * @param IAppConfig $config The administered cap.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly PartyService $parties,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly IAppConfig $config,
 	) {
 	}//end __construct()

@@ -42,17 +42,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Handoff;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
@@ -112,9 +113,9 @@ class HandoffService {
 	 *
 	 * @param ObjectService $objectService RBAC-enforcing object read/write path.
 	 * @param SemanticTypeResolver $semanticTypeResolver Kind URI → installed schema resolution.
-	 * @param SchemaMapper $schemaMapper Source-schema loading.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Source-schema loading.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Raw entity access for provenance relation writes.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable audit rows.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Immutable audit rows.
 	 * @param PermissionHandler $permissionHandler RBAC pre-checks (typed 403 before any write).
 	 * @param HandoffMappingEvaluator $mappingEvaluator The five-expression mapping evaluator.
 	 * @param HandoffQueueEntryMapper $queueMapper Durable queue-mode storage.
@@ -128,9 +129,9 @@ class HandoffService {
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly SemanticTypeResolver $semanticTypeResolver,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly HandoffMappingEvaluator $mappingEvaluator,
 		private readonly HandoffQueueEntryMapper $queueMapper,

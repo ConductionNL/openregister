@@ -23,10 +23,10 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -65,8 +65,8 @@ class TablesController extends Controller {
 	 * @param IRequest $request Request object
 	 * @param IAppConfig $config Application config
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic mapper for table operations
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
@@ -74,8 +74,8 @@ class TablesController extends Controller {
 		IRequest $request,
 		private readonly IAppConfig $config,
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

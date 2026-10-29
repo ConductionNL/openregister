@@ -47,9 +47,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -84,8 +84,8 @@ final class SemanticTypeResolver {
 	 * Constructor-injection only; the service is autowired (no explicit DI
 	 * registration needed, matching RegisterResolverService).
 	 *
-	 * @param SchemaMapper $schemaMapper Cross-register, org/RBAC-scoped schema enumeration.
-	 * @param RegisterMapper $registerMapper Register enumeration for register/app resolution + tie-break.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Cross-register, org/RBAC-scoped schema enumeration.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register enumeration for register/app resolution + tie-break.
 	 * @param JsonLdContextService $jsonLdContextService Computes a schema's implemented semantic types.
 	 * @param LoggerInterface $logger Logger for ambiguity WARN.
 	 * @param IAppManager|null $appManager App manager used to treat a provider whose owning
@@ -93,8 +93,8 @@ final class SemanticTypeResolver {
 	 *                                     unavailable the app-enabled filter is skipped).
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly JsonLdContextService $jsonLdContextService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IAppManager $appManager = null,

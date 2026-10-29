@@ -25,14 +25,15 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -73,9 +74,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for audit trail entries.
 	 *
-	 * @var AuditTrailMapper Audit trail mapper instance
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity> Audit trail mapper instance
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Webhook log mapper
@@ -91,9 +92,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface<Register, Schema> Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Logger
@@ -109,9 +110,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for schema entities.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface<Schema> Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Constructor for DashboardService
@@ -119,20 +120,20 @@ class DashboardService {
 	 * Initializes service with required mappers and logger for dashboard operations.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object entity mapper for object statistics
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for log statistics
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for register operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for schema operations
 	 * @param LoggerInterface $logger Logger instance for error tracking
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		MagicMapperInterface $objectMapper,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		WebhookLogMapper $webhookLogMapper,
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		LoggerInterface $logger,
 	) {
 		// Store dependencies for use in service methods.

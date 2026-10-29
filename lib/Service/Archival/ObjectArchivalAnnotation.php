@@ -29,7 +29,8 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -75,12 +76,12 @@ class ObjectArchivalAnnotation {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Source of the object's schema.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Source of the object's schema.
 	 * @param RetentionEvaluator $evaluator The one evaluator both paths use.
 	 * @param LoggerInterface $logger Logger for a lookup that fails.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RetentionEvaluator $evaluator,
 		private readonly LoggerInterface $logger,
 	) {

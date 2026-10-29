@@ -31,10 +31,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Registry;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\RegistrySubscriptionEndedEvent;
 use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
@@ -49,11 +50,11 @@ class RegistrySubscriptionNotifier {
 	 * Constructor.
 	 *
 	 * @param IEventDispatcher $eventDispatcher Dispatches the connector-facing events.
-	 * @param AuditTrailMapper $auditTrailMapper Writes the audit rows.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Writes the audit rows.
 	 */
 	public function __construct(
 		private readonly IEventDispatcher $eventDispatcher,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
 	}//end __construct()
 

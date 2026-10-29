@@ -41,9 +41,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
 use OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException;
@@ -94,15 +94,15 @@ final class RegisterResolverService {
 	 * Wire the resolver against the canonical OR mappers + IAppConfig.
 	 *
 	 * @param IAppConfig $appConfig The app config store.
-	 * @param RegisterMapper $registerMapper Register lookup mapper.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
 	 * @param OrganisationService $organisationService Active-tenant resolution.
 	 * @param LoggerInterface $logger Logger for diagnostics.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly OrganisationService $organisationService,
 		private readonly LoggerInterface $logger,
 	) {

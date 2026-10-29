@@ -34,7 +34,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Support\RegisterSlugAliases;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -60,11 +62,11 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper  $registerMapper Reads the register table.
+	 * @param RegisterMapperInterface<Register, Schema>  $registerMapper Reads the register table.
 	 * @param LoggerInterface $logger         Diagnostics for the ambiguous and failed cases.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

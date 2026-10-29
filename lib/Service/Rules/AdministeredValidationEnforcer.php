@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -44,7 +44,7 @@ class AdministeredValidationEnforcer {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper                 $schemaMapper The schema lookup.
+	 * @param SchemaMapperInterface<Schema>                 $schemaMapper The schema lookup.
 	 * @param AdministeredValidations      $validations  The declared checks.
 	 * @param NamedConditionLibrary        $conditions   The named-condition vocabulary.
 	 * @param AdministeredValidationRunLog $runLog       Records what a validation decided.
@@ -52,7 +52,7 @@ class AdministeredValidationEnforcer {
 	 * @param LoggerInterface              $logger       The logger.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AdministeredValidations $validations,
 		private readonly NamedConditionLibrary $conditions,
 		private readonly AdministeredValidationRunLog $runLog,

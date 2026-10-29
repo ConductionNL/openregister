@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use JsonSerializable;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -51,10 +51,10 @@ class ExplicitRevealTrailMasker {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Reads an entry's schema.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Reads an entry's schema.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

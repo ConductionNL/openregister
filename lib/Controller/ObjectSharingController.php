@@ -45,9 +45,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\AppFramework\Controller;
@@ -67,8 +69,8 @@ class ObjectSharingController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param ObjectService $objectService Resolves an object through the RBAC boundary.
-	 * @param RegisterMapper $registerMapper Resolves the register entity.
-	 * @param SchemaMapper $schemaMapper Resolves the schema entity.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Resolves the register entity.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves the schema entity.
 	 * @param ObjectSharingService $sharing Performs the owner-checked writes.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -76,8 +78,8 @@ class ObjectSharingController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectSharingService $sharing,
 		private readonly LoggerInterface $logger,
 	) {

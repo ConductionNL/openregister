@@ -37,8 +37,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\NotificationSubscriptionMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -64,16 +66,16 @@ class NotificationSubscriptionsController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param NotificationSubscriptionMapper $mapper Subscription mapper.
 	 * @param IUserSession $userSession Current-user session.
-	 * @param RegisterMapper $registerMapper Register mapper for permission check.
-	 * @param SchemaMapper $schemaMapper Schema mapper for permission check.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for permission check.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for permission check.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly NotificationSubscriptionMapper $mapper,
 		private readonly IUserSession $userSession,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

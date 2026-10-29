@@ -28,8 +28,8 @@ namespace OCA\OpenRegister\Service\Hinge;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -64,7 +64,7 @@ class LensResolver {
 	 * Wire the lookups a lens resolves through.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>       $magicMapper       Object storage, to read the referenced record.
-	 * @param SchemaMapper      $schemaMapper      Schema lookup for the referenced record.
+	 * @param SchemaMapperInterface<Schema>      $schemaMapper      Schema lookup for the referenced record.
 	 * @param PermissionHandler $permissionHandler The read check over the referenced record.
 	 * @param IUserSession      $userSession       The caller, for that check.
 	 * @param LoggerInterface   $logger            PSR logger for unresolvable lenses.
@@ -75,7 +75,7 @@ class LensResolver {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

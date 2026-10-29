@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Tool;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\IUserSession;
@@ -51,22 +51,22 @@ class SchemaTool extends AbstractTool {
 	/**
 	 * Schema mapper
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private SchemaMapper $schemaMapper;
+	private SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Constructor
 	 *
 	 * @param IUserSession $userSession User session service
 	 * @param LoggerInterface $logger Logger service
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper
 	 * @param SchemaVersioningService|null $schemaVersioning Classifies, versions and logs a definition change (#4102)
 	 */
 	public function __construct(
 		IUserSession $userSession,
 		LoggerInterface $logger,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		private readonly ?SchemaVersioningService $schemaVersioning = null,
 	) {
 		parent::__construct(userSession: $userSession, logger: $logger);

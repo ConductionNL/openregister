@@ -37,7 +37,8 @@ namespace OCA\OpenRegister\Service;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCP\IUserSession;
@@ -95,7 +96,7 @@ class ManifestService {
 	 * Constructor.
 	 *
 	 * @param ObjectService $objectService OR object retrieval service.
-	 * @param SchemaMapper $schemaMapper Schema lookup by slug.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup by slug.
 	 * @param CalculationEvaluator $evaluator Expression evaluator.
 	 * @param IUserSession $userSession Nextcloud user session.
 	 * @param LoggerInterface $logger PSR logger.
@@ -104,7 +105,7 @@ class ManifestService {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly CalculationEvaluator $evaluator,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

@@ -26,19 +26,20 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\MigrationPackService;
@@ -110,9 +111,9 @@ class RegistersController extends Controller {
 	/**
 	 * Audit trail mapper for fetching log statistics
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Export service for handling data exports
@@ -131,16 +132,16 @@ class RegistersController extends Controller {
 	/**
 	 * Schema mapper for handling schema operations
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper for handling register operations
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface<Register, Schema>
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * GitHub service for publishing to GitHub
@@ -177,11 +178,11 @@ class RegistersController extends Controller {
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param IUserSession $userSession User session service
 	 * @param ConfigurationService $configurationService Configuration service for import/export
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for log statistics
 	 * @param ObjectExporterInterface $exportService Export service for data exports
 	 * @param ObjectImporterInterface $importService Import service for data imports
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for schema operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for database operations
 	 * @param GitHubClientInterface $githubService GitHub service for publishing
 	 * @param IAppManager $appManager App manager for app version
 	 * @param OasService $oasService OAS service for OpenAPI generation
@@ -204,11 +205,11 @@ class RegistersController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		ConfigurationService $configurationService,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ObjectExporterInterface $exportService,
 		ObjectImporterInterface $importService,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		GitHubClientInterface $githubService,
 		IAppManager $appManager,
 		OasService $oasService,

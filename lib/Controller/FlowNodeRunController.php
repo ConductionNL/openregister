@@ -52,7 +52,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
@@ -130,7 +131,7 @@ class FlowNodeRunController extends Controller {
 	 *                               via `$permissions`, so the 403 that
 	 *                               follows names a permission refusal rather
 	 *                               than reading as a generic 404.
-	 * @param SchemaMapper $schemas Resolves the subject's
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the subject's
 	 *                              schema entity, which the permission check
 	 *                              is evaluated against.
 	 * @param PermissionHandler $permissions The SAME object-RBAC evaluator the
@@ -148,7 +149,7 @@ class FlowNodeRunController extends Controller {
 		private readonly FlowNodeRegistry $nodes,
 		private readonly FlowRunService $runner,
 		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly PermissionHandler $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);

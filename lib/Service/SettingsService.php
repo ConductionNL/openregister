@@ -25,12 +25,13 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -129,9 +130,9 @@ class SettingsService {
 	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Cache factory
@@ -295,7 +296,7 @@ class SettingsService {
 	 * Constructor for SettingsService
 	 *
 	 * @param IConfig $config Configuration service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper
 	 * @param ICacheFactory $cacheFactory Cache factory
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
@@ -322,7 +323,7 @@ class SettingsService {
 	 */
 	public function __construct(
 		IConfig $config,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ICacheFactory $cacheFactory,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,

@@ -39,14 +39,15 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
@@ -114,9 +115,9 @@ class RetentionService {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object mapper for queries
-	 * @param SchemaMapper $schemaMapper Schema mapper for lookups
-	 * @param RegisterMapper $registerMapper Register mapper for lookups
-	 * @param AuditTrailMapper $auditMapper Audit trail mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for lookups
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for lookups
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditMapper Audit trail mapper
 	 * @param ObjectRetentionHandler $settingsHandler Retention settings handler
 	 * @param IAppConfig $appConfig App configuration
 	 * @param IUserSession $userSession Current user session
@@ -132,9 +133,9 @@ class RetentionService {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly AuditTrailMapper $auditMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly ObjectRetentionHandler $settingsHandler,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,

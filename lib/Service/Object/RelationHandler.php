@@ -22,10 +22,10 @@ use Adbar\Dot;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use Psr\Log\LoggerInterface;
@@ -77,11 +77,11 @@ class RelationHandler {
 	 * Constructor for RelationHandler.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities.
-	 * @param SchemaMapper $schemaMapper Mapper for schemas.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schemas.
 	 * @param PerformanceHandler $performanceHandler Handler for performance operations.
 	 * @param MagicRbacHandler $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param RegisterMapper $registerMapper Mapper for registers.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for registers.
 	 * @param RelationTypeResolver|null $relationTypes Resolves what a relation is called from each side.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
@@ -89,11 +89,11 @@ class RelationHandler {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PerformanceHandler $performanceHandler,
 		private readonly MagicRbacHandler $rbacHandler,
 		private readonly LoggerInterface $logger,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ?RelationTypeResolver $relationTypes = null,
 	) {
 	}//end __construct()

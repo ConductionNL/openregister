@@ -33,8 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectAction;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use Throwable;
 
 /**
@@ -49,10 +49,10 @@ class ObjectActionDefinitions {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registers Loads the register an object lives in.
+	 * @param RegisterMapperInterface<Register, Schema> $registers Loads the register an object lives in.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 	) {
 	}//end __construct()
 

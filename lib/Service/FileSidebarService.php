@@ -30,8 +30,10 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -50,8 +52,8 @@ class FileSidebarService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for RBAC-aware register lookups.
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema lookups.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for RBAC-aware register lookups.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for schema lookups.
 	 * @param IDBConnection $db Database connection for magic table queries.
 	 * @param ChunkMapper $chunkMapper Chunk mapper for extraction data.
 	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper for PII data.
@@ -60,8 +62,8 @@ class FileSidebarService {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IDBConnection $db,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly EntityRelationMapper $entityRelationMapper,

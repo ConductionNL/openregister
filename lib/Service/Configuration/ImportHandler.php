@@ -41,12 +41,12 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
@@ -113,16 +113,16 @@ class ImportHandler {
 	/**
 	 * Schema mapper instance for handling schema operations.
 	 *
-	 * @var SchemaMapper The schema mapper instance.
+	 * @var SchemaMapperInterface<Schema> The schema mapper instance.
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper instance for handling register operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface<Register, Schema> The register mapper instance.
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Object mapper instance for handling object operations.
@@ -332,8 +332,8 @@ class ImportHandler {
 	/**
 	 * Constructor for ImportHandler.
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper.
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper The register mapper.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
@@ -353,8 +353,8 @@ class ImportHandler {
 	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,

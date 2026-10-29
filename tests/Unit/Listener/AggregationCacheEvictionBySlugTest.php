@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -121,8 +123,8 @@ class AggregationCacheEvictionBySlugTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnMap(
 			[
-				[RegisterMapper::class, $registerMapper],
-				[SchemaMapper::class, $schemaMapper],
+				[RegisterMapperInterface::class, $registerMapper],
+				[SchemaMapperInterface::class, $schemaMapper],
 			]
 		);
 

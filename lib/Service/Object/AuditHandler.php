@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,13 +50,13 @@ class AuditHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper
 	 * @param LoggerInterface $logger PSR-3 logger
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -43,6 +43,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuditRetentionResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -76,7 +77,7 @@ class AuditRetentionResolverTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $class) use ($schemaMapper): object {
-				if ($class === SchemaMapper::class) {
+				if ($class === SchemaMapperInterface::class) {
 					return $schemaMapper;
 				}
 

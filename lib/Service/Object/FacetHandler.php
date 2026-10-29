@@ -37,8 +37,8 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
@@ -75,7 +75,7 @@ class FacetHandler {
 	 * Constructor for FacetHandler.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $unifiedObjectMapper Unified object mapper with storage routing.
-	 * @param SchemaMapper $schemaMapper Schema database mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema database mapper.
 	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
 	 * @param PropertyRbacHandler|null $propertyRbac Withholds a facet over a property the caller may not read.
@@ -88,7 +88,7 @@ class FacetHandler {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $unifiedObjectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly FacetResponseCache $responseCache,
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction keeps working. The

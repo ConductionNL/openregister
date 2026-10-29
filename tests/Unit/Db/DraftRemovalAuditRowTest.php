@@ -46,6 +46,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\AuditFlowAttribution
  * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
  * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class DraftRemovalAuditRowTest extends TestCase {
 

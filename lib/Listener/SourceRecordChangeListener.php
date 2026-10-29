@@ -49,13 +49,13 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use OCP\EventDispatcher\Event;
@@ -130,7 +130,7 @@ class SourceRecordChangeListener implements IEventListener {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema registry (to build the reverse index).
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema registry (to build the reverse index).
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory for the reverse index.
 	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service (ADR-078).
@@ -141,7 +141,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
 		private readonly ListenerDeferralService $deferral,

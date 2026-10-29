@@ -33,9 +33,9 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
@@ -75,16 +75,16 @@ class ConfigurationService {
 	/**
 	 * Schema mapper instance for handling schema operations.
 	 *
-	 * @var SchemaMapper The schema mapper instance.
+	 * @var SchemaMapperInterface<Schema> The schema mapper instance.
 	 */
-	private SchemaMapper $schemaMapper;
+	private SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper instance for handling register operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface<Register, Schema> The register mapper instance.
 	 */
-	private RegisterMapper $registerMapper;
+	private RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
@@ -202,8 +202,8 @@ class ConfigurationService {
 	 *
 	 * Initializes service with required dependencies for configuration operations.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for schema operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for register operations
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper for configuration operations
 	 * @param IAppManager $appManager App manager for checking installed apps
 	 * @param ContainerInterface $container Container for lazy service loading
@@ -224,8 +224,8 @@ class ConfigurationService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		ConfigurationMapper $configurationMapper,
 		IAppManager $appManager,
 		ContainerInterface $container,

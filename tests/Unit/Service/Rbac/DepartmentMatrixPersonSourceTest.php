@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -178,7 +179,7 @@ class DepartmentMatrixPersonSourceTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === RegisterMapper::class ? $this->registers : null)
+			fn (string $id) => ($id === RegisterMapperInterface::class ? $this->registers : null)
 		);
 
 		$appConfig = $this->createMock(IAppConfig::class);

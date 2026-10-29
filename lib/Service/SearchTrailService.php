@@ -30,10 +30,12 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -68,8 +70,8 @@ class SearchTrailService {
 	 * Sets retention period and self-clearing flag if provided.
 	 *
 	 * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
-	 * @param RegisterMapper $registerMapper Mapper for register database operations
-	 * @param SchemaMapper $schemaMapper Mapper for schema database operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for register database operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema database operations
 	 * @param int|null $retentionDays Optional retention period in days (default: 365)
 	 * @param bool|null $selfClearing Optional flag to enable/disable self-clearing
 	 *                                (default: false, use cron jobs instead)
@@ -78,8 +80,8 @@ class SearchTrailService {
 	 */
 	public function __construct(
 		private readonly SearchTrailMapper $searchTrailMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		?int $retentionDays = null,
 		?bool $selfClearing = null,
 	) {

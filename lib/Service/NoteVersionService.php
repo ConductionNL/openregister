@@ -32,10 +32,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\NoteVersion;
 use OCA\OpenRegister\Db\NoteVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -60,7 +61,7 @@ class NoteVersionService {
 	 * Constructor.
 	 *
 	 * @param NoteVersionMapper $mapper      Reads and writes the version rows.
-	 * @param AuditTrailMapper  $auditTrail  Writes the entry on the object.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity>  $auditTrail  Writes the entry on the object.
 	 * @param IUserManager      $userManager Resolves display names for the version list.
 	 * @param LoggerInterface   $logger      Logger for the paths that must not lose the edit.
 	 *
@@ -68,7 +69,7 @@ class NoteVersionService {
 	 */
 	public function __construct(
 		private readonly NoteVersionMapper $mapper,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
 	) {

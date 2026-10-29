@@ -43,7 +43,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCP\App\IAppManager;
@@ -102,7 +104,7 @@ class RegisterDescriptorService {
 	 * Constructor.
 	 *
 	 * @param IAppManager          $appManager           Enumerates installed apps and resolves their paths.
-	 * @param RegisterMapper       $registerMapper       Reads the registers that actually exist.
+	 * @param RegisterMapperInterface<Register, Schema>       $registerMapper       Reads the registers that actually exist.
 	 * @param ConfigurationService    $configurationService Performs the mock import.
 	 * @param LoggerInterface         $logger               Records unreadable descriptors.
 	 * @param CountedRegisterImport   $counted              Runs a re-import under the decision and counts what changed.
@@ -112,7 +114,7 @@ class RegisterDescriptorService {
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ConfigurationService $configurationService,
 		private readonly LoggerInterface $logger,
 		private readonly CountedRegisterImport $counted,

@@ -16,6 +16,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\McpProviderDiscovery;
@@ -153,10 +156,10 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 
 		$container = $this->container(
 			[
-				SchemaMapper::class => $schemaMapper,
-				RegisterMapper::class => $registerMapper,
+				SchemaMapperInterface::class => $schemaMapper,
+				RegisterMapperInterface::class => $registerMapper,
 				ObjectService::class => $this->createMock(ObjectService::class),
-				AuditTrailMapper::class => $this->createMock(AuditTrailMapper::class),
+				AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapper::class),
 			]
 		);
 

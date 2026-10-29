@@ -21,17 +21,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use GuzzleHttp\Client;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
@@ -137,8 +137,8 @@ final class ConfigurationServiceRegistrar {
 			ConfigurationExportHandler::class,
 			function (ContainerInterface $container): ConfigurationExportHandler {
 				$exportHandler = new ConfigurationExportHandler(
-					schemaMapper: $container->get(SchemaMapper::class),
-					registerMapper: $container->get(RegisterMapper::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
 					objectEntityMapper: $container->get(MagicMapperInterface::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					mappingMapper: $container->get(MappingMapper::class),
@@ -156,8 +156,8 @@ final class ConfigurationServiceRegistrar {
 				$appDataPath = $dataDir . '/appdata_openregister';
 
 				return new ConfigurationService(
-					schemaMapper: $container->get(SchemaMapper::class),
-					registerMapper: $container->get(RegisterMapper::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					appManager: $container->get('OCP\App\IAppManager'),
 					container: $container,
@@ -234,8 +234,8 @@ final class ConfigurationServiceRegistrar {
 		}
 
 		$importHandler = new ConfigurationImportHandler(
-			schemaMapper: $container->get(SchemaMapper::class),
-			registerMapper: $container->get(RegisterMapper::class),
+			schemaMapper: $container->get(SchemaMapperInterface::class),
+			registerMapper: $container->get(RegisterMapperInterface::class),
 			objectEntityMapper: $container->get(MagicMapperInterface::class),
 			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 			mappingMapper: $container->get(MappingMapper::class),
@@ -339,7 +339,7 @@ final class ConfigurationServiceRegistrar {
 			function (ContainerInterface $container) {
 				return new ValidationOperationsHandler(
 					validateHandler: null,
-					schemaMapper: $container->get(SchemaMapper::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					container: $container
 				);
@@ -351,7 +351,7 @@ final class ConfigurationServiceRegistrar {
 			function (ContainerInterface $container) {
 				return new SettingsService(
 					config: $container->get('OCP\IConfig'),
-					auditTrailMapper: $container->get(AuditTrailMapper::class),
+					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					cacheFactory: $container->get('OCP\ICacheFactory'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
@@ -442,7 +442,7 @@ final class ConfigurationServiceRegistrar {
 						decision: $container->get(ShippedAuthorizationDecision::class)
 					),
 					comparator: $comparator,
-					audit: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+					audit: $container->get(AuditTrailMapperInterface::class),
 					session: $container->get('OCP\IUserSession'),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);

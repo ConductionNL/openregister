@@ -23,9 +23,10 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
@@ -132,7 +133,7 @@ final class ServiceRegistrar {
 			RegisterSlugResolver::class,
 			function ($c) {
 				return new RegisterSlugResolver(
-					registerMapper: $c->get(RegisterMapper::class),
+					registerMapper: $c->get(RegisterMapperInterface::class),
 					logger: $c->get(LoggerInterface::class)
 				);
 			}
@@ -287,7 +288,7 @@ final class ServiceRegistrar {
 					organisationService: $container->get(OrganisationService::class),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					avatarManager: $container->get('OCP\IAvatarManager'),
-					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					secureRandom: $container->get('OCP\Security\ISecureRandom'),
 					db: $container->get('OCP\IDBConnection'),
 					l10nFactory: $container->get('OCP\L10N\IFactory')
@@ -344,8 +345,8 @@ final class ServiceRegistrar {
 					cacheFactory: $container->get('OCP\ICacheFactory'),
 					userSession: $container->get('OCP\IUserSession'),
 					container: $container,
-					registerMapper: $container->get(RegisterMapper::class),
-					schemaMapper: $container->get(SchemaMapper::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
 					db: $container->get('OCP\IDBConnection')
 				);
 			}
@@ -358,11 +359,11 @@ final class ServiceRegistrar {
 				return new FolderManagementHandler(
 					rootFolder: $container->get('OCP\Files\IRootFolder'),
 					objectEntityMapper: $container->get(MagicMapperInterface::class),
-					registerMapper: $container->get(RegisterMapper::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
 					folderRecorder: $container->get(\OCA\OpenRegister\Db\RegisterFolderRecorder::class),
 					fileService: null

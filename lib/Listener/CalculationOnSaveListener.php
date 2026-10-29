@@ -29,11 +29,12 @@ namespace OCA\OpenRegister\Listener;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
@@ -67,8 +68,8 @@ class CalculationOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema calculations.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapper $registerMapper Register lookup mapper (for sequence scope id).
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup mapper (for sequence scope id).
 	 * @param CalculationEvaluator $evaluator Expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param SequenceService $sequences Atomic running-number reservation service.
@@ -83,8 +84,8 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly CalculationEvaluator $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly SequenceService $sequences,

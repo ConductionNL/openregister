@@ -45,11 +45,11 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
@@ -78,8 +78,8 @@ class EntityRelationsController extends Controller {
 	 * @param IRootFolder $rootFolder Nextcloud root folder (for file lookups).
 	 * @param PermissionHandler $permissionHandler RBAC verdict for object-bound relations.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper ObjectEntity loader (for object-bound authz).
-	 * @param SchemaMapper $schemaMapper Schema loader (for hasPermission inputs).
-	 * @param RegisterMapper $registerMapper Register loader (for object lookup disambiguation).
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema loader (for hasPermission inputs).
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register loader (for object lookup disambiguation).
 	 * @param EmailLinkMapper $emailLinkMapper EmailLink loader (for email-bound authz indirection).
 	 * @param LoggerInterface $logger Structured log sink.
 	 * @param RelationDecisionService $relationDecisions Takes the decision as its own object, under the ownership rule.
@@ -93,8 +93,8 @@ class EntityRelationsController extends Controller {
 		private readonly IRootFolder $rootFolder,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly EmailLinkMapper $emailLinkMapper,
 		private readonly LoggerInterface $logger,
 		private readonly RelationDecisionService $relationDecisions,

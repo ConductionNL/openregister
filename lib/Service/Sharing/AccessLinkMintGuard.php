@@ -39,9 +39,11 @@ namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use Throwable;
 
@@ -58,15 +60,15 @@ class AccessLinkMintGuard {
 	 * @param ObjectService $objects The object read path, asked with the rules on.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param ViewMapper        $views    Resolves a view under the caller's own rules.
-	 * @param RegisterMapper $registers Resolves the registers a view names, same rules.
-	 * @param SchemaMapper $schemas Resolves the schemas a view names, same rules.
+	 * @param RegisterMapperInterface<Register, Schema> $registers Resolves the registers a view names, same rules.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the schemas a view names, same rules.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly AccessLinkSubject $subjects,
 		private readonly ViewMapper $views,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 	) {
 
 	}//end __construct()

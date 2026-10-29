@@ -27,14 +27,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -119,17 +120,17 @@ class SchemaDeletionService {
 	 *
 	 * @param IDBConnection $db Database connection, for phase-1 transaction control.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic-table mapper (row reads, bulk delete, table drop).
-	 * @param RegisterMapper $registerMapper Register mapper, to resolve register entities.
-	 * @param SchemaMapper $schemaMapper Schema mapper, to resolve and delete schema entities.
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper (ADR-003 hash-chained writes).
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper, to resolve register entities.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper, to resolve and delete schema entities.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper (ADR-003 hash-chained writes).
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 

@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
@@ -112,7 +113,7 @@ class PermissionHandlerRbacTest extends TestCase {
 	private function setupRegisterForSchema(int $schemaId, Register $register): void {
 		$this->container->method('get')
 			->willReturnCallback(function (string $class) use ($register) {
-				if ($class === RegisterMapper::class) {
+				if ($class === RegisterMapperInterface::class) {
 					return $this->registerMapper;
 				}
 				if ($class === 'OCA\OpenRegister\Service\OrganisationService') {

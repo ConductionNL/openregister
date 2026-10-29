@@ -31,9 +31,9 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluator;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -75,7 +75,7 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemas Resolves the schema an object belongs to.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the schema an object belongs to.
 	 * @param IUserSession $userSession Current user session (acting identity).
 	 * @param IRequest $request Current request (IP + user agent).
 	 * @param LoggerInterface $logger The logger.
@@ -83,7 +83,7 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserSession $userSession,
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,

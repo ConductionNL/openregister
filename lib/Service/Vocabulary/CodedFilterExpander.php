@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -65,13 +65,13 @@ class CodedFilterExpander {
 	 *
 	 * @param ConceptRepository $concepts Reads the scheme's concepts.
 	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
-	 * @param SchemaMapper $schemas Resolves the schema being queried.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the schema being queried.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
 		private readonly ConceptRepository $concepts,
 		private readonly ConceptHierarchy $hierarchy,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 

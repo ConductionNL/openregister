@@ -25,7 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
@@ -54,13 +56,13 @@ class MailAppScriptListener implements IEventListener {
 	 *
 	 * @param IAppManager $appManager The app manager.
 	 * @param IUserSession $userSession The user session.
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper The register mapper.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

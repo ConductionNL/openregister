@@ -28,7 +28,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\Activity\IManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -45,7 +45,7 @@ class ActivityService {
 	 * @param IUserSession $userSession The user session.
 	 * @param IURLGenerator $urlGenerator The URL generator.
 	 * @param LoggerInterface $logger The logger.
-	 * @param SchemaMapper|null $schemaMapper Resolves the schema title an object activity names; null only in hand-built tests.
+	 * @param SchemaMapperInterface<Schema>|null $schemaMapper Resolves the schema title an object activity names; null only in hand-built tests.
 	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
@@ -56,7 +56,7 @@ class ActivityService {
 		private IUserSession $userSession,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
-		private ?SchemaMapper $schemaMapper = null,
+		private ?SchemaMapperInterface $schemaMapper = null,
 		private ?DeepLinkRegistryService $deepLinks = null,
 	) {
 	}//end __construct()

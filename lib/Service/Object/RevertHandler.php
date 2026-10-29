@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -52,9 +53,9 @@ class RevertHandler {
 	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Container
@@ -94,7 +95,7 @@ class RevertHandler {
 	/**
 	 * RevertHandler constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper.
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity mapper.
@@ -102,7 +103,7 @@ class RevertHandler {
 	 * @param ValidateObject $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
 		MagicMapperInterface $objectEntityMapper,

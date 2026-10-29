@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\AppInfo;
 use OCA\OpenRegister\AppHost\FeatureToggleRegistrar;
 use OCA\OpenRegister\AppHost\ObservabilityRegistrar;
 use OCA\OpenRegister\Capabilities\CapabilityRegistrar;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MapperRegistrar;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;

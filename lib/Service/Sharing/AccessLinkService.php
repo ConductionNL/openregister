@@ -49,8 +49,9 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -106,7 +107,7 @@ class AccessLinkService {
 	 * Constructor.
 	 *
 	 * @param AccessLinkMapper $mapper The link store.
-	 * @param AuditTrailMapper $auditTrail The audit trail, where every use is written.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrail The audit trail, where every use is written.
 	 * @param ISecureRandom $secureRandom Nextcloud's secure RNG, for the anchor.
 	 * @param IHasher $hasher Nextcloud's password hasher.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the link a holder is given.
@@ -114,7 +115,7 @@ class AccessLinkService {
 	 */
 	public function __construct(
 		private readonly AccessLinkMapper $mapper,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly ISecureRandom $secureRandom,
 		private readonly IHasher $hasher,
 		private readonly IURLGenerator $urlGenerator,

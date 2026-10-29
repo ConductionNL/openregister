@@ -36,6 +36,7 @@ use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -382,7 +383,7 @@ class AuditRetentionResolver {
 		}
 
 		try {
-			$schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+			$schemaMapper = $this->container->get(SchemaMapperInterface::class);
 
 			return $schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 		} catch (Throwable $error) {

@@ -28,8 +28,8 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -64,14 +64,14 @@ class LifecycleInitialStateListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema lifecycle metadata.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
 	 * @param ReferenceResolver $references Cross-object reference resolver (dynamic initial).
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ReferenceResolver $references,
 		private readonly LoggerInterface $logger,
 	) {

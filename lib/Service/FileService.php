@@ -56,8 +56,8 @@ use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
@@ -138,9 +138,9 @@ class FileService {
 	/**
 	 * REMOVED: Register mapper (unused, caused circular dependency)
 	 *
-	 * @var RegisterMapper|null
+	 * @var RegisterMapperInterface<Register, Schema>|null
 	 */
-	// Private ?RegisterMapper $registerMapper;.
+	// Private ?RegisterMapperInterface $registerMapper;.
 
 	/**
 	 * Root folder

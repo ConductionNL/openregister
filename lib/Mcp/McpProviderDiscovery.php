@@ -20,12 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
@@ -152,8 +152,8 @@ class McpProviderDiscovery {
 		array &$providers,
 	): void {
 		try {
-			$schemaMapper = $container->get(SchemaMapper::class);
-			$registerMapper = $container->get(RegisterMapper::class);
+			$schemaMapper = $container->get(SchemaMapperInterface::class);
+			$registerMapper = $container->get(RegisterMapperInterface::class);
 
 			// Catalog enumeration, not data access: every enabled schema
 			// MUST be considered regardless of the resolving request's org
@@ -176,7 +176,7 @@ class McpProviderDiscovery {
 					schemaEntries: $schemaEntries,
 					suppressedIds: $suppressedIds,
 					objectService: $container->get(ObjectService::class),
-					auditTrailMapper: $container->get(AuditTrailMapper::class),
+					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					logger: $logger
 				);
 			}
@@ -197,14 +197,14 @@ class McpProviderDiscovery {
 	 * the ABI requires a concrete `getAppId()` per provider instance.
 	 *
 	 * @param array<int, Schema> $schemas Every schema on the instance.
-	 * @param RegisterMapper $registerMapper Register mapper (owning-app + owning-register resolution).
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper (owning-app + owning-register resolution).
 	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
 	 *
 	 * @return array<string, list<array{schema: Schema, register: Register|null}>> Opted-in schemas grouped by owning app id.
 	 */
 	private function groupOptedInSchemasByApp(
 		array $schemas,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		$schemasByApp = [];
@@ -237,14 +237,14 @@ class McpProviderDiscovery {
 	 * `schemas` id-list contains it), or null when the schema is orphaned.
 	 *
 	 * @param Schema $schema The schema.
-	 * @param RegisterMapper $registerMapper Register mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper.
 	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
 	 *
 	 * @return Register|null The owning register, or null when none is found.
 	 */
 	private function resolveSchemaRegister(
 		Schema $schema,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		\Psr\Log\LoggerInterface $logger,
 	): ?Register {
 		try {
@@ -407,7 +407,7 @@ class McpProviderDiscovery {
 				$providers[] = new AttributeToolProvider(
 					appId: $appId,
 					entries: $entries,
-					auditTrailMapper: $container->get(AuditTrailMapper::class),
+					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					logger: $logger
 				);
 			}//end foreach

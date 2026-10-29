@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Repair\CreateMissingRegisterFolders;
 use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCP\Migration\IOutput;
@@ -61,7 +62,7 @@ class CreateMissingRegisterFoldersTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnMap(
 			[
-				[RegisterMapper::class, $mapper],
+				[RegisterMapperInterface::class, $mapper],
 				[RegisterFolderProvisioner::class, $provisioner],
 			]
 		);

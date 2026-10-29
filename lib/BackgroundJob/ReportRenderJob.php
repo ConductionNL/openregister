@@ -35,10 +35,10 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -129,8 +129,8 @@ class ReportRenderJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory.
 	 * @param IAppConfig $appConfig App-config reader.
 	 * @param ReportRenderService $renderService Render composer.
-	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param SchemaMapper $schemaMapper Schema lookup for the register's schemas.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup for the register's schemas.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object loader.
 	 * @param IRootFolder $rootFolder Files root.
 	 * @param LoggerInterface $logger Logger.
@@ -139,8 +139,8 @@ class ReportRenderJob extends TimedJob {
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
 		private readonly ReportRenderService $renderService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly LoggerInterface $logger,

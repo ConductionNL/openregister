@@ -30,9 +30,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -133,7 +134,7 @@ class SearchQueryHandler {
 	 * SearchQueryHandler constructor.
 	 *
 	 * @param ViewScopeApplier $viewScope Merges a view's stored query into a search.
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema operations.
 	 * @param SettingsService $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
 	 * @param IRequest $request Request object.
@@ -149,7 +150,7 @@ class SearchQueryHandler {
 	 */
 	public function __construct(
 		private readonly ViewScopeApplier $viewScope,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SettingsService $settingsService,
 		private readonly LoggerInterface $logger,
 		private readonly IRequest $request,

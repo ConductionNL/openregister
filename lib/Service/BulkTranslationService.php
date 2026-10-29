@@ -35,9 +35,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use Psr\Log\LoggerInterface;
@@ -49,14 +49,14 @@ class BulkTranslationService {
 	 * @param TranslationProviderInterface $provider The translation provider.
 	 * @param TranslationMapper $translationMapper The translation mapper.
 	 * @param TranslationHandler $translationHandler The translation handler.
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly TranslationProviderInterface $provider,
 		private readonly TranslationMapper $translationMapper,
 		private readonly TranslationHandler $translationHandler,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

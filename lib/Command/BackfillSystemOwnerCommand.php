@@ -31,10 +31,10 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IDBConnection;
 use Symfony\Component\Console\Command\Command;
@@ -51,8 +51,8 @@ class BackfillSystemOwnerCommand extends Command {
 	/**
 	 * Wire the mappers and database connection used by the command.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup mapper.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic table resolver.
 	 * @param IDBConnection $db Database connection for native UPDATE.
 	 *
@@ -61,8 +61,8 @@ class BackfillSystemOwnerCommand extends Command {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly IDBConnection $db,
 	) {

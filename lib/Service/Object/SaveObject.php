@@ -32,16 +32,15 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
@@ -54,7 +53,9 @@ use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -321,9 +322,9 @@ class SaveObject implements ObjectSaverInterface {
 	 * @param FilePropertyHandler $filePropertyHandler Handler for file property operations
 	 * @param LinkedEntityPropertyHandler $linkedEntityHandler Linked entity property handler
 	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging changes
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for logging changes
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for schema operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for register operations
 	 * @param IURLGenerator $urlGenerator URL generator service
 	 * @param OrganisationService $organisationService Service for organisation operations
 	 * @param CacheHandler $cacheHandler Object entity and query cache
@@ -358,9 +359,9 @@ class SaveObject implements ObjectSaverInterface {
 		private readonly FilePropertyHandler $filePropertyHandler,
 		private readonly LinkedEntityPropertyHandler $linkedEntityHandler,
 		private readonly IUserSession $userSession,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly OrganisationService $organisationService,
 		private readonly CacheHandler $cacheHandler,

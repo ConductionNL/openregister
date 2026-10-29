@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use Throwable;
@@ -72,7 +72,7 @@ final class RuleEnablementService {
 	 * Constructor.
 	 *
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param SchemaMapper $schemaMapper Saves the schema carrying the switch.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Saves the schema carrying the switch.
 	 * @param FlowService $flows Saves a flow's own enabled flag and reindexes it.
 	 * @param RuleAuditService $audit Records who switched what.
 	 *
@@ -80,7 +80,7 @@ final class RuleEnablementService {
 	 */
 	public function __construct(
 		private readonly RuleInventoryService $inventory,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly FlowService $flows,
 		private readonly RuleAuditService $audit,
 	) {

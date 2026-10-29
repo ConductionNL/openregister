@@ -33,10 +33,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -81,18 +82,18 @@ class OasService {
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface<Register, Schema> Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
 	 *
 	 * Handles database operations for schema entities.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface<Schema> Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * URL generator
@@ -201,8 +202,8 @@ class OasService {
 	/**
 	 * Constructor for OasService
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for database operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for database operations
 	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
 	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
 	 * @param ?OasRequestValidator $metaValidator Optional validator for the vendored OAS 3.1 meta-schema check.
@@ -211,8 +212,8 @@ class OasService {
 	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		IURLGenerator $urlGenerator,
 		?LoggerInterface $logger = null,
 		private readonly ?OasRequestValidator $metaValidator = null,

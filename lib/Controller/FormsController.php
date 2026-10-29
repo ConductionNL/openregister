@@ -28,8 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
@@ -77,7 +78,7 @@ class FormsController extends Controller {
 	 * @param FormSubmitService        $submitter   Creates the destination.
 	 * @param FormDestinationValidator $validator   Judges a mapping.
 	 * @param FormUploadStore          $uploads     Holds upload tokens.
-	 * @param SchemaMapper             $schemas     Resolves a destination schema.
+	 * @param SchemaMapperInterface<Schema>             $schemas     Resolves a destination schema.
 	 * @param IUserSession             $userSession The signed-in subject, if any.
 	 * @param IThrottler               $throttler   Counts guesses at form ids.
 	 * @param IL10N                    $l10n        Translations.
@@ -93,7 +94,7 @@ class FormsController extends Controller {
 		private readonly FormSubmitService $submitter,
 		private readonly FormDestinationValidator $validator,
 		private readonly FormUploadStore $uploads,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserSession $userSession,
 		private readonly IThrottler $throttler,
 		private readonly IL10N $l10n,

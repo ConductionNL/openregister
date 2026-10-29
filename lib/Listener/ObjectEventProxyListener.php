@@ -26,9 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectEventSubscription;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
@@ -422,9 +422,9 @@ final class ObjectEventProxyListener implements IEventListener {
 
 			try {
 				if ($isSchema === true) {
-					$mapper = $this->container->get(SchemaMapper::class);
+					$mapper = $this->container->get(SchemaMapperInterface::class);
 				} else {
-					$mapper = $this->container->get(RegisterMapper::class);
+					$mapper = $this->container->get(RegisterMapperInterface::class);
 				}
 
 				$map = $mapper->findIdsBySlugs($tokens);

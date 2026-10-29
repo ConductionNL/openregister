@@ -27,7 +27,9 @@
 
 namespace OCA\OpenRegister\Service\Registers;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -54,9 +56,9 @@ class RegisterCacheHandler {
 	/**
 	 * Register mapper for clearing the request-scoped find cache
 	 *
-	 * @var RegisterMapper Register mapper instance.
+	 * @var RegisterMapperInterface<Register, Schema> Register mapper instance.
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Logger for invalidation audit
@@ -71,13 +73,13 @@ class RegisterCacheHandler {
 	 * Injects the register mapper (for cache clear) and logger (for audit
 	 * of every invalidation event).
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper to clear find cache on.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper to clear find cache on.
 	 * @param LoggerInterface $logger Logger for invalidation audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		LoggerInterface $logger,
 	) {
 		$this->registerMapper = $registerMapper;

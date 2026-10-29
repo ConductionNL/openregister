@@ -25,10 +25,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Mcp;
 
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -49,14 +51,14 @@ class McpResourcesService {
 	/**
 	 * McpResourcesService constructor
 	 *
-	 * @param RegisterMapper $registerMapper Register database mapper
-	 * @param SchemaMapper $schemaMapper Schema database mapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register database mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema database mapper
 	 * @param ObjectService $objectService Object service facade
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectService $objectService,
 		private readonly LoggerInterface $logger,
 	) {

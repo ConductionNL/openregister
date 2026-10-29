@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCP\IUserSession;
 
@@ -56,7 +56,7 @@ class PreparationHandler {
 	 * Constructor for PreparationHandler.
 	 *
 	 * @param SaveObject $saveHandler Handler for save operations.
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema operations.
 	 * @param BulkValidationHandler $bulkValidHandler Handler for schema analysis.
 	 * @param IUserSession $userSession User session for owner assignment.
 	 *
@@ -64,7 +64,7 @@ class PreparationHandler {
 	 */
 	public function __construct(
 		private readonly SaveObject $saveHandler,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly BulkValidationHandler $bulkValidHandler,
 		// REMOVED: private readonly.
 		private readonly IUserSession $userSession,

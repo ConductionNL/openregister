@@ -43,7 +43,8 @@ namespace OCA\OpenRegister\Service\ShippedBaseline;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -79,7 +80,7 @@ class ShippedConfigurationGuard {
 	 * @param ShippedBaselineStore   $baselines  Where the shipped definitions are kept.
 	 * @param GuardedDescriptorMerge $merge      The per-part merge.
 	 * @param DivergenceComparator   $comparator The four states.
-	 * @param AuditTrailMapper       $audit      The hash-chained trail.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity>       $audit      The hash-chained trail.
 	 * @param IUserSession           $session    Who is acting.
 	 * @param LoggerInterface        $logger     The logger.
 	 */
@@ -87,7 +88,7 @@ class ShippedConfigurationGuard {
 		private readonly ShippedBaselineStore $baselines,
 		private readonly GuardedDescriptorMerge $merge,
 		private readonly DivergenceComparator $comparator,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly IUserSession $session,
 		private readonly LoggerInterface $logger,
 	) {

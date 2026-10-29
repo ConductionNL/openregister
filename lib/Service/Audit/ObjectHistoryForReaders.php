@@ -42,11 +42,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use Throwable;
 
@@ -70,17 +71,17 @@ class ObjectHistoryForReaders {
 	 * Constructor.
 	 *
 	 * @param ObjectReadAccess    $access           Decides readability exactly as the object GET does.
-	 * @param AuditTrailMapper    $auditTrailMapper Reads the object's entries.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity>    $auditTrailMapper Reads the object's entries.
 	 * @param HistoryEntryRedactor $redactor        Removes what the reader may not see from each entry.
-	 * @param RegisterMapper      $registerMapper   Resolves the register for the doelbinding guard.
+	 * @param RegisterMapperInterface<Register, Schema>      $registerMapper   Resolves the register for the doelbinding guard.
 	 * @param PurposeGuard        $purposeGuard     The doelbinding guard the object GET runs.
 	 * @param ReadEventVisibility $readEvents       Whether this reader may see who read the object.
 	 */
 	public function __construct(
 		private readonly ObjectReadAccess $access,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly HistoryEntryRedactor $redactor,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly PurposeGuard $purposeGuard,
 		private readonly ReadEventVisibility $readEvents,
 	) {

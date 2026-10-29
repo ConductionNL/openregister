@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
@@ -81,12 +81,12 @@ class ObjectFileAccess {
 	 *
 	 * @param ObjectService     $objectService     Reads objects under the caller's RBAC.
 	 * @param PermissionHandler $permissionHandler Decides the update rule on one object.
-	 * @param SchemaMapper      $schemaMapper      Resolves the object's schema, which carries the rule.
+	 * @param SchemaMapperInterface<Schema>      $schemaMapper      Resolves the object's schema, which carries the rule.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

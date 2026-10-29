@@ -43,6 +43,7 @@ use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\IMcpScannableServices;
@@ -241,7 +242,7 @@ class AttributeMcpDiscoveryTest extends TestCase {
 		$bindings = array_merge(
 			[
 				'OCP\App\IAppManager' => $appManager,
-				AuditTrailMapper::class => $this->createMock(AuditTrailMapper::class),
+				AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapper::class),
 			],
 			$extra
 		);

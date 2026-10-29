@@ -34,9 +34,9 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -54,13 +54,13 @@ class ArchivalNominationListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param ArchivalNominationService $nominations  Derives and writes the nomination.
-	 * @param SchemaMapper              $schemaMapper Loads the transitioned object's schema.
+	 * @param SchemaMapperInterface<Schema>              $schemaMapper Loads the transitioned object's schema.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>               $objectMapper Persists the nominated record.
 	 * @param LoggerInterface           $logger       Where a failure is reported.
 	 */
 	public function __construct(
 		private readonly ArchivalNominationService $nominations,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {

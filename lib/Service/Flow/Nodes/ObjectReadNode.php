@@ -66,9 +66,9 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
@@ -127,16 +127,16 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * Constructor.
 	 *
 	 * @param ObjectService $objects Object reads, RBAC-enforcing.
-	 * @param RegisterMapper $registers Resolves the configured register.
-	 * @param SchemaMapper $schemas Resolves the configured schema.
+	 * @param RegisterMapperInterface<Register, Schema> $registers Resolves the configured register.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the configured schema.
 	 * @param IUserManager $userManager Resolves the run owner.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,

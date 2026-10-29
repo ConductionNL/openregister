@@ -41,14 +41,15 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -146,28 +147,28 @@ class MergeService implements ObjectMergerInterface {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
-	 * @param SchemaMapper $schemaMapper Schema lookup for the merge + survivorship annotations.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup for the merge + survivorship annotations.
 	 * @param SurvivorshipResolver $resolver Pure golden-record resolver, reused for recompute.
 	 * @param TrustTierResolver $trustResolver Pure trust-tier lookup + decay engine.
 	 * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
 	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire `ObjectsMergedEvent`.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param PropertyRbacHandler $propertyRbac Field-level security, to refuse a merge the caller cannot fully see.
-	 * @param AuditTrailMapper $auditTrailMapper Audit writer for a refused merge attempt.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit writer for a refused merge attempt.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.1
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SurvivorshipResolver $resolver,
 		private readonly TrustTierResolver $trustResolver,
 		private readonly SourceRecordResolver $sourceRecordResolver,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
 		private readonly PropertyRbacHandler $propertyRbac,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
 	}//end __construct()
 

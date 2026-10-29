@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
@@ -73,7 +74,7 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 		$container->method('get')
 			->willReturnCallback(
 				function (string $service) {
-					if ($service === RegisterMapper::class) {
+					if ($service === RegisterMapperInterface::class) {
 						return $this->registerMapper;
 					}
 

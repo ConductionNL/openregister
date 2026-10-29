@@ -32,9 +32,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -53,12 +54,12 @@ class HandoffLifecycleListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param HandoffService $handoffService The handoff engine.
-	 * @param SchemaMapper $schemaMapper Loads the transitioned object's schema.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Loads the transitioned object's schema.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
 		private readonly HandoffService $handoffService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 
