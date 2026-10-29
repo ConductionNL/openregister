@@ -185,8 +185,7 @@ class SubstantiveChangeEvaluator {
 	/**
 	 * The property names whose values differ between two versions.
 	 *
-	 * Compared on the decoded object body rather than a serialised string, so a
-	 * key reordering is not a change.
+	 * Compared by meaning rather than by storage: see normalised().
 	 *
 	 * @param ObjectEntity $new The object as it now stands.
 	 * @param ObjectEntity $old The object as it stood before.
@@ -204,7 +203,7 @@ class SubstantiveChangeEvaluator {
 				continue;
 			}
 
-			if (($newBody[$name] ?? null) !== ($oldBody[$name] ?? null)) {
+			if ($this->normalised(value: ($newBody[$name] ?? null)) !== $this->normalised(value: ($oldBody[$name] ?? null))) {
 				$changed[] = $name;
 			}
 		}
@@ -212,6 +211,47 @@ class SubstantiveChangeEvaluator {
 		return $changed;
 
 	}//end changedProperties()
+
+	/**
+	 * One value in the form a reader would see, so a re-save that only changes
+	 * how it is stored compares equal.
+	 *
+	 * An empty string and an empty list read as null, a list or map stored as
+	 * its JSON text reads as the decoded value, a whole float reads as the
+	 * integer, and a map's keys are sorted. A list keeps its order.
+	 *
+	 * @param mixed $value A property value.
+	 *
+	 * @return mixed The value in its normal form.
+	 */
+	private function normalised(mixed $value): mixed {
+		if ($value === '' || $value === []) {
+			return null;
+		}
+
+		if (is_string($value) === true && in_array($value[0], ['[', '{'], true) === true) {
+			$decoded = json_decode($value, true);
+			if (is_array($decoded) === true) {
+				return $this->normalised(value: $decoded);
+			}
+		}
+
+		if (is_float($value) === true && floor($value) === $value && abs($value) < PHP_INT_MAX) {
+			return (int) $value;
+		}
+
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$normal = array_map(fn ($entry): mixed => $this->normalised(value: $entry), $value);
+		if (array_is_list($normal) === false) {
+			ksort($normal);
+		}
+
+		return $normal;
+
+	}//end normalised()
 
 	/**
 	 * One object's decoded body.
