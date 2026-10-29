@@ -97,7 +97,7 @@
     "gridstack": "^13.2.0",
     "marked": "^18.1.1",
     "pinia": "^3.0.4",
-    "vue": "^3.5.43",
+    "vue": "^3.5.44",
     "vue-codemirror6": "^1.7.0",
     "vue-draggable-plus": "^0.6.0",
     "vue-loading-overlay": "^6.0.6",
@@ -153,7 +153,7 @@
     "vue-loader": "^17.4.2"
   },
   "peerDependencies": {
-    "vue": "^3.5.43"
+    "vue": "^3.5.44"
   },
   "engines": {
     "node": "^22.14 || ^24 || >=26",
