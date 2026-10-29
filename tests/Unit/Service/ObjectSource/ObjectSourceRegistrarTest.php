@@ -15,14 +15,13 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
+use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
-/**
- * @covers \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar
- */
 class ObjectSourceRegistrarTest extends TestCase {
 
 	/**
@@ -64,6 +63,36 @@ class ObjectSourceRegistrarTest extends TestCase {
 		);
 		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
 	}//end testRegistersTheServicesInOrder()
+
+	/**
+	 * Every factory builds an instance of the name it is registered under.
+	 *
+	 * The container hands each factory a test double for every service it asks
+	 * for, or, for a final class, the service its own factory builds.
+	 *
+	 * @return void
+	 */
+	public function testEveryFactoryBuildsItsService(): void {
+		$context = new RecordingRegistrationContext();
+		ObjectSourceRegistrar::register(context: $context);
+
+		$doubles   = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$doubles, &$container, $context) {
+				if (isset($doubles[$id]) === false) {
+					$final        = (new ReflectionClass(objectOrClass: $id))->isFinal();
+					$doubles[$id] = $final === true ? $context->factories[$id]($container) : $this->createMock(originalClassName: $id);
+				}
+
+				return $doubles[$id];
+			}
+		);
+
+		foreach ($context->factories as $name => $factory) {
+			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
+		}
+	}//end testEveryFactoryBuildsItsService()
 
 	/**
 	 * boot() adds every built-in provider to the registry, in order, and skips one that fails to resolve.

@@ -52,6 +52,8 @@ class PdfExtractor {
 	 * @return string|null The extracted text, or null when empty.
 	 *
 	 * @throws Exception When the PDF parser is unavailable or extraction fails.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	public function extract(File $file): ?string {
 		// Check if PdfParser library is available.
@@ -80,23 +82,7 @@ class PdfExtractor {
 				]
 			);
 
-			// Get file content.
-			$content = $file->getContent();
-
-			// Create temporary file for PdfParser (it requires a file path).
-			$tempFile = tmpfile();
-			$tempPath = stream_get_meta_data($tempFile)['uri'];
-			fwrite($tempFile, $content);
-
-			// Parse PDF.
-			$parser = new PdfParser();
-			$pdf = $parser->parseFile($tempPath);
-
-			// Extract text.
-			$text = $pdf->getText();
-
-			// Clean up.
-			fclose($tempFile);
+			$text = $this->extractText(pdfBytes: $file->getContent());
 
 			if ($text === '') {
 				$this->logger->warning(
@@ -134,4 +120,24 @@ class PdfExtractor {
 			throw new Exception('PDF extraction failed: ' . $e->getMessage());
 		}//end try
 	}//end extract()
+
+	/**
+	 * Extract the raw text layer from PDF bytes.
+	 *
+	 * This is the only place that talks to the PDF parsing library
+	 * (smalot/pdfparser, LGPL-3.0); other services call this method instead.
+	 *
+	 * @param string $pdfBytes Raw PDF content.
+	 *
+	 * @return string The extracted text, possibly empty.
+	 *
+	 * @throws Exception When the bytes cannot be parsed, for example a secured or malformed PDF.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	public function extractText(string $pdfBytes): string {
+		$parser = new PdfParser();
+
+		return $parser->parseContent($pdfBytes)->getText();
+	}//end extractText()
 }//end class
