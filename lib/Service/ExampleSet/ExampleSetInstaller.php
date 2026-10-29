@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use OCA\OpenRegister\Contract\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use Throwable;
 
 /**
