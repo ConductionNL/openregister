@@ -29,8 +29,8 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Contract\ObjectExporterInterface;
-use OCA\OpenRegister\Contract\ObjectImporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
