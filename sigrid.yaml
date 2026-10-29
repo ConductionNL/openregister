@@ -1,0 +1,194 @@
+# Sigrid analysis scope for OpenRegister.
+#
+# Every key below is documented at
+# https://docs.sigrid-says.com/reference/analysis-scope-configuration.html
+# Sigrid's default excludes (node_modules, vendor, build output, docs, migrations,
+# mocks and stubs) still apply on top of this file. ARCHITECTURE.md explains the
+# component map and the directory roles in prose.
+
+# Pin the maintainability model, so a yearly recalibration never changes the
+# rating without a deliberate change to this file.
+model: "2026"
+
+# The technologies we write. Listing them switches off automatic detection, so
+# shell and Python helper scripts under scripts/ are not analysed.
+languages:
+  - name: php
+    production:
+    test:
+      include:
+        - ".*/tests/.*[.]php"
+  - name: javascript
+    production:
+    test:
+      include:
+        - ".*/tests/.*"
+        - ".*/__tests__/.*"
+        - ".*/__mocks__/.*"
+        - ".*[.](spec|test)[.](js|mjs|cjs|ts)"
+        - ".*[.]mock[.](js|ts)"
+  - name: typescript
+    production:
+    test:
+      include:
+        - ".*/tests/.*"
+        - ".*/__tests__/.*"
+        - ".*/__mocks__/.*"
+        - ".*[.](spec|test)[.](js|mjs|cjs|ts)"
+        - ".*[.]mock[.](js|ts)"
+  - name: vue
+    production:
+    test:
+      include:
+        - ".*/tests/.*[.]vue"
+
+# Only code that is not ours, or that a tool writes, is excluded.
+exclude:
+  # Translation catalogues. l10n/<locale>.js is generated from l10n/<locale>.json
+  # (an OC.L10N.register() call around the same key/value pairs); neither holds logic.
+  - ".*/l10n/.*"
+
+# Functional components instead of the technical layers (Controller, Service, Db).
+# A file belongs to the first component whose pattern matches its class name or
+# directory; each component excludes the patterns of the components above it.
+components:
+  # Flows, BPMN/DMN, rules, calculations, tasks, cases and forms that act on objects.
+  - name: "Processes and rules"
+    include:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+  # Archiving, e-Depot, lifecycle, deletion, GDPR, audit trail and anonymisation.
+  - name: "Retention and compliance"
+    include:
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+  # File storage, text extraction, chunking and vectorisation of file content.
+  - name: "Files and text"
+    include:
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+  # Search, facets, aggregations and search back ends.
+  - name: "Search and aggregation"
+    include:
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+  # Events, listeners, notifications, webhooks, web push and activity.
+  - name: "Notifications and events"
+    include:
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+  # Configuration packages, import and export, example sets and shipped baselines.
+  - name: "Configuration and import"
+    include:
+      - ".*/lib/.*(Configuration|Config[A-Z/]|Import|Export|ExampleSet|ShippedBaseline|MigrationPack|Deployment|Oas|Settings).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+  # RBAC, authorisation, organisations, credentials, sharing and request middleware.
+  - name: "Access control"
+    include:
+      - ".*/lib/.*(Rbac|Authori[sz]|Auth[A-Z]|Permission|Organi[sz]ation|Credential|Sharing|Party|Quota|Middleware|Security|OAuth|Group|Tenant).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+      - ".*/lib/.*(Configuration|Config[A-Z/]|Import|Export|ExampleSet|ShippedBaseline|MigrationPack|Deployment|Oas|Settings).*[.]php"
+  # Schema and register definitions, vocabularies and object sources.
+  - name: "Schemas and registers"
+    include:
+      - ".*/lib/.*(Schema|Register|Registry|Vocabulary|ObjectSource|Source[A-Z]|View|Formats|JsonLd|ApiVersion|Dbal).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+      - ".*/lib/.*(Configuration|Config[A-Z/]|Import|Export|ExampleSet|ShippedBaseline|MigrationPack|Deployment|Oas|Settings).*[.]php"
+      - ".*/lib/.*(Rbac|Authori[sz]|Auth[A-Z]|Permission|Organi[sz]ation|Credential|Sharing|Party|Quota|Middleware|Security|OAuth|Group|Tenant).*[.]php"
+  # Object storage, validation, relations, history, merging and bulk actions.
+  - name: "Objects"
+    include:
+      - ".*/lib/.*(Object|MagicMapper|Merge|Survivorship|Relation|History|Timeline|Lock|Bulk|Resolver|Revert|Draft|Validat|RecordTemplate|Serializer|Sync).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+      - ".*/lib/.*(Configuration|Config[A-Z/]|Import|Export|ExampleSet|ShippedBaseline|MigrationPack|Deployment|Oas|Settings).*[.]php"
+      - ".*/lib/.*(Rbac|Authori[sz]|Auth[A-Z]|Permission|Organi[sz]ation|Credential|Sharing|Party|Quota|Middleware|Security|OAuth|Group|Tenant).*[.]php"
+      - ".*/lib/.*(Schema|Register|Registry|Vocabulary|ObjectSource|Source[A-Z]|View|Formats|JsonLd|ApiVersion|Dbal).*[.]php"
+  # Outward-facing APIs and Nextcloud integrations: MCP, GraphQL, DAV, calendar, contacts, chat, federation.
+  - name: "Integrations"
+    include:
+      - ".*/lib/.*(Integration|Mcp|Tool|GraphQL|Calendar|Contacts|Dav|ContextChat|Chat|Federation|Reference|Twig|ApiCaller|Outbound|Connection|Consumer|ExternalLink|Interaction|Translation|AppHost|Dashboard|Capabilit|WellKnown|Portal|n8n|N8n).*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+      - ".*/lib/.*(Configuration|Config[A-Z/]|Import|Export|ExampleSet|ShippedBaseline|MigrationPack|Deployment|Oas|Settings).*[.]php"
+      - ".*/lib/.*(Rbac|Authori[sz]|Auth[A-Z]|Permission|Organi[sz]ation|Credential|Sharing|Party|Quota|Middleware|Security|OAuth|Group|Tenant).*[.]php"
+      - ".*/lib/.*(Schema|Register|Registry|Vocabulary|ObjectSource|Source[A-Z]|View|Formats|JsonLd|ApiVersion|Dbal).*[.]php"
+      - ".*/lib/.*(Object|MagicMapper|Merge|Survivorship|Relation|History|Timeline|Lock|Bulk|Resolver|Revert|Draft|Validat|RecordTemplate|Serializer|Sync).*[.]php"
+  # Bootstrap, migrations, repair steps, commands, shared exceptions and helpers.
+  - name: "Application wiring"
+    include:
+      - ".*/lib/.*[.]php"
+      - ".*/appinfo/.*"
+      - ".*/templates/.*[.]php"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+      - ".*/lib/.*(Configuration|Config[A-Z/]|Import|Export|ExampleSet|ShippedBaseline|MigrationPack|Deployment|Oas|Settings).*[.]php"
+      - ".*/lib/.*(Rbac|Authori[sz]|Auth[A-Z]|Permission|Organi[sz]ation|Credential|Sharing|Party|Quota|Middleware|Security|OAuth|Group|Tenant).*[.]php"
+      - ".*/lib/.*(Schema|Register|Registry|Vocabulary|ObjectSource|Source[A-Z]|View|Formats|JsonLd|ApiVersion|Dbal).*[.]php"
+      - ".*/lib/.*(Object|MagicMapper|Merge|Survivorship|Relation|History|Timeline|Lock|Bulk|Resolver|Revert|Draft|Validat|RecordTemplate|Serializer|Sync).*[.]php"
+      - ".*/lib/.*(Integration|Mcp|Tool|GraphQL|Calendar|Contacts|Dav|ContextChat|Chat|Federation|Reference|Twig|ApiCaller|Outbound|Connection|Consumer|ExternalLink|Interaction|Translation|AppHost|Dashboard|Capabilit|WellKnown|Portal|n8n|N8n).*[.]php"
+  # The Vue front end and the hand-written static scripts in js/.
+  - name: "Web interface"
+    include:
+      - ".*/src/.*"
+      - ".*/js/[^/]*[.]js"
+    exclude:
+      - ".*/lib/.*(Flow|Bpmn|Dmn|Rules?/|Rule[A-Z]|WorkflowEngine|Workflow|Calculation|Task|Case|Decision|Timer|Transition|Handoff|Delegation|Deferral|Survey|Form[A-Z/]|Hinge|Actor).*[.]php"
+      - ".*/lib/.*(Archiv|Edepot|Lifecycle|Deletion|Destruction|Gdpr|Dsar|Retention|LegalHold|Audit|Anonymis|Consent|Hardening|Quality|Seal|Pseudonym).*[.]php"
+      - ".*/lib/.*(File|TextExtraction|Text[A-Z]|Chunk|Ocr|Blob|Vectori[sz]|Embedding|Attachment).*[.]php"
+      - ".*/lib/.*(Search|Solr|Elastic|Facet|Aggregat|Query|Index|Reporting|Geo).*[.]php"
+      - ".*/lib/.*(Notif|Webhook|WebPush|Push|Activity|/Event/|Event[A-Z]|EventListener|/Listener/|Subscription|Annotation|Presence).*[.]php"
+      - ".*/lib/.*(Configuration|Config[A-Z/]|Import|Export|ExampleSet|ShippedBaseline|MigrationPack|Deployment|Oas|Settings).*[.]php"
+      - ".*/lib/.*(Rbac|Authori[sz]|Auth[A-Z]|Permission|Organi[sz]ation|Credential|Sharing|Party|Quota|Middleware|Security|OAuth|Group|Tenant).*[.]php"
+      - ".*/lib/.*(Schema|Register|Registry|Vocabulary|ObjectSource|Source[A-Z]|View|Formats|JsonLd|ApiVersion|Dbal).*[.]php"
+      - ".*/lib/.*(Object|MagicMapper|Merge|Survivorship|Relation|History|Timeline|Lock|Bulk|Resolver|Revert|Draft|Validat|RecordTemplate|Serializer|Sync).*[.]php"
+      - ".*/lib/.*(Integration|Mcp|Tool|GraphQL|Calendar|Contacts|Dav|ContextChat|Chat|Federation|Reference|Twig|ApiCaller|Outbound|Connection|Consumer|ExternalLink|Interaction|Translation|AppHost|Dashboard|Capabilit|WellKnown|Portal|n8n|N8n).*[.]php"
+      - ".*/lib/.*[.]php"
+  # Build, quality and release tooling: helper scripts and root-level tool configuration.
+  - name: "Developer tooling"
+    include:
+      - ".*/scripts/.*"
+      - ".*/tools/.*"
+      - ".*/vendor-bin/.*"
+      - ".*/[^/]*[.]config[.]m?[jt]s"
+      - ".*/phpstan-bootstrap[.]php"
+      - ".*/[.]php-cs-fixer[.]dist[.]php"
+    exclude:
+      - ".*/lib/.*[.]php"
+      - ".*/src/.*"
