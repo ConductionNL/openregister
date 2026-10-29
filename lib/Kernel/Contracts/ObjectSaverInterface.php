@@ -20,9 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IUser;
 
 /**
@@ -33,8 +30,8 @@ interface ObjectSaverInterface {
 	/**
 	 * Saves an object.
 	 *
-	 * @param Register|int|string|null $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
+	 * @param RegisterInterface|int|string|null $register The register containing the object.
+	 * @param SchemaInterface|int|string $schema The schema to validate against.
 	 * @param array $data The object data to save.
 	 * @param string|null $uuid The UUID of the object to update (if updating).
 	 * @param int|null $folderId The folder ID to set on the object (optional).
@@ -50,7 +47,7 @@ interface ObjectSaverInterface {
 	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
 	 * @param string|null $_owner An explicit owner for a new object, such as a draft's scope value (decision 195).
 	 *
-	 * @return ObjectEntity The saved object entity.
+	 * @return ObjectRowInterface The saved object entity.
 	 *
 	 * @throws \Exception If there is an error during save.
 	 * @throws \OCA\OpenRegister\Exception\ObjectExistsException When $failIfExists is true and the identifier is already taken.
@@ -58,8 +55,8 @@ interface ObjectSaverInterface {
 	 *         strongly matches a stored object, and the caller may not override.
 	 */
 	public function saveObject(
-		Register|int|string|null $register,
-		Schema|int|string $schema,
+		RegisterInterface|int|string|null $register,
+		SchemaInterface|int|string $schema,
 		array $data,
 		?string $uuid = null,
 		?int $folderId = null,
@@ -74,5 +71,5 @@ interface ObjectSaverInterface {
 		bool $_unowned = false,
 		bool $_dedupOverride = false,
 		?string $_owner = null,
-	): ObjectEntity;
+	): ObjectRowInterface;
 }//end interface

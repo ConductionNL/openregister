@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * Lists the lifecycle actions an object allows and performs one. Implemented by TransitionEngine.
@@ -65,7 +64,7 @@ interface ObjectTransitionInterface {
 	 * @param string $action Transition action name.
 	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
 	 *
-	 * @return ObjectEntity The saved object after the transition.
+	 * @return ObjectRowInterface The saved object after the transition.
 	 *
 	 * @throws \RuntimeException When the object/schema/transition is missing,
 	 *                          the action is not allowed from the current
@@ -80,5 +79,5 @@ interface ObjectTransitionInterface {
 	 *                          hook ({@see HookStoppedException}) — exactly as
 	 *                          it would refuse any other object write.
 	 */
-	public function transition(string $objectId, string $action, array $data = []): ObjectEntity;
+	public function transition(string $objectId, string $action, array $data = []): ObjectRowInterface;
 }//end interface

@@ -24,6 +24,7 @@ use ReflectionClass;
  * Asserted from the caller, so the policy cannot be a guard with no call site.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\ValidationException

@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Webhook;
 use OCP\EventDispatcher\Event;
 use OCP\IRequest;
 
@@ -43,7 +42,7 @@ interface WebhookDeliveryInterface {
 	/**
 	 * Deliver webhook to target URL
 	 *
-	 * @param Webhook $webhook Webhook configuration
+	 * @param WebhookInterface $webhook Webhook configuration
 	 * @param string $eventName Event name
 	 * @param array $payload Payload data
 	 * @param int $attempt Current attempt number (for retries)
@@ -57,7 +56,7 @@ interface WebhookDeliveryInterface {
 	 * Fallback for connection errors without response
 	 */
 	public function deliverWebhook(
-		Webhook $webhook,
+		WebhookInterface $webhook,
 		string $eventName,
 		array $payload,
 		int $attempt = 1,
@@ -72,13 +71,13 @@ interface WebhookDeliveryInterface {
 	 * shaped it: a delivery whose mapping is missing or fails falls back to the
 	 * standard payload, and the preview must not show that fallback as mapped.
 	 *
-	 * @param Webhook $webhook   The webhook, saved or as the dialog holds it.
+	 * @param WebhookInterface $webhook   The webhook, saved or as the dialog holds it.
 	 * @param string  $eventName The event class the payload is for.
 	 * @param array   $payload   The event payload.
 	 *
 	 * @return array{payload: array, mapped: bool}
 	 */
-	public function previewPayload(Webhook $webhook, string $eventName, array $payload): array;
+	public function previewPayload(WebhookInterface $webhook, string $eventName, array $payload): array;
 
 	/**
 	 * Intercept request and send to webhooks

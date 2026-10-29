@@ -12,11 +12,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Db\Webhook;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -53,6 +57,8 @@ class StoredEntityTest extends TestCase {
 	public function testNullStaysNull(): void {
 		$this->assertNull(StoredEntity::schema(schema: null));
 		$this->assertNull(StoredEntity::register(register: null));
+		$this->assertNull(StoredEntity::object(object: null));
+		$this->assertNull(StoredEntity::webhook(webhook: null));
 	}//end testNullStaysNull()
 
 	/**
@@ -76,4 +82,39 @@ class StoredEntityTest extends TestCase {
 
 		StoredEntity::register(register: $this->createMock(RegisterInterface::class));
 	}//end testAForeignRegisterIsRefused()
+
+	/**
+	 * Stored ObjectEntity and Webhook rows come back as the same objects.
+	 *
+	 * @return void
+	 */
+	public function testAStoredObjectAndWebhookAreReturnedAsIs(): void {
+		$object  = new ObjectEntity();
+		$webhook = new Webhook();
+
+		$this->assertSame(expected: $object, actual: StoredEntity::object(object: $object));
+		$this->assertSame(expected: $webhook, actual: StoredEntity::webhook(webhook: $webhook));
+	}//end testAStoredObjectAndWebhookAreReturnedAsIs()
+
+	/**
+	 * Another ObjectRowInterface implementation is refused.
+	 *
+	 * @return void
+	 */
+	public function testAForeignObjectIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+
+		StoredEntity::object(object: $this->createMock(ObjectRowInterface::class));
+	}//end testAForeignObjectIsRefused()
+
+	/**
+	 * Another WebhookInterface implementation is refused.
+	 *
+	 * @return void
+	 */
+	public function testAForeignWebhookIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+
+		StoredEntity::webhook(webhook: $this->createMock(WebhookInterface::class));
+	}//end testAForeignWebhookIsRefused()
 }//end class

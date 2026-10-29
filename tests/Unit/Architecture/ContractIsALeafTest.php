@@ -46,47 +46,25 @@ class ContractIsALeafTest extends TestCase {
 	];
 
 	/**
-	 * The Kernel contracts that still name a Db entity instead of its Kernel interface.
+	 * A Kernel contract names a Kernel entity interface, never a Db class.
 	 *
-	 * The list only shrinks. Once it is empty lib/Kernel depends on nothing
-	 * in lib/Db, and lib/Db may implement Kernel interfaces without a cycle.
-	 *
-	 * @var array<int, string>
-	 */
-	private const KERNEL_NAMING_DB = [
-		'ObjectNotificationDispatcherInterface.php',
-		'ObjectSaverInterface.php',
-		'ObjectTransitionInterface.php',
-		'WebhookDeliveryInterface.php',
-	];
-
-	/**
-	 * A Kernel contract names a Kernel entity interface, never a Db class, unless it is still on the shrinking list.
+	 * This keeps lib/Kernel a leaf: lib/Db implements Kernel interfaces, so a
+	 * Kernel contract that named a Db class would close a Db-Kernel cycle.
 	 *
 	 * @return void
 	 */
-	public function testKernelContractsNameNoDbClassBeyondTheShrinkingList(): void {
+	public function testKernelContractsNameNoDbClass(): void {
 		$naming = [];
 		foreach ((array)glob(self::LIB . '/Kernel/Contracts/*.php') as $path) {
 			foreach ($this->referencedClasses(source: (string)file_get_contents((string)$path)) as $class) {
 				if (str_starts_with($class, 'OCA\\OpenRegister\\Db\\') === true) {
-					$naming[basename((string)$path)] = true;
+					$naming[] = basename((string)$path) . ' → ' . $class;
 				}
 			}
 		}
 
-		$unlisted = array_values(array_diff(array_keys($naming), self::KERNEL_NAMING_DB));
-		$this->assertSame(expected: [], actual: $unlisted, message: 'name the Kernel entity interface instead');
-
-		$stale = array_values(
-			array_filter(
-				self::KERNEL_NAMING_DB,
-				fn (string $file): bool => is_file(self::LIB . '/Kernel/Contracts/' . $file) === true
-					&& isset($naming[$file]) === false
-			)
-		);
-		$this->assertSame(expected: [], actual: $stale, message: 'no longer names lib/Db: remove it from KERNEL_NAMING_DB');
-	}//end testKernelContractsNameNoDbClassBeyondTheShrinkingList()
+		$this->assertSame(expected: [], actual: $naming, message: 'name the Kernel entity interface instead');
+	}//end testKernelContractsNameNoDbClass()
 
 	/**
 	 * Every OpenRegister class a contract names is a contract, an entity, an event or an exception.

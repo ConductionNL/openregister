@@ -30,6 +30,7 @@ use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -168,7 +169,7 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
+class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface, ObjectRowInterface {
 
 	/**
 	 * Lifecycle status: saved to carry on later, not yet received (decision 180).
