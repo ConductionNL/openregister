@@ -3978,12 +3978,7 @@ class ImportHandler {
 		// Only genuine reference targets get a pre-resolved identity, and the
 		// work is skipped entirely when no object references another.
 		$index = new SeedReferenceIndex(logger: $this->logger);
-		foreach ($objects as $objectData) {
-			if (is_array($objectData) === true) {
-				$index->collect(value: $objectData);
-			}
-		}
-
+		$index->collectFromObjects(objects: $objects);
 		if ($index->isEmpty() === true) {
 			return $data;
 		}
@@ -4002,13 +3997,7 @@ class ImportHandler {
 			$index->record(self: $objects[$position]['@self']);
 		}
 
-		foreach ($objects as $position => $objectData) {
-			if (is_array($objectData) === true) {
-				$objects[$position] = $index->replaceOutsideSelf(objectData: $objectData);
-			}
-		}
-
-		$data['components']['objects'] = $objects;
+		$data['components']['objects'] = $index->replaceInObjects(objects: $objects);
 		return $data;
 	}//end resolveSeedReferenceTokens()
 

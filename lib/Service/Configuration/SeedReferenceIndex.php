@@ -86,6 +86,42 @@ final class SeedReferenceIndex
 	}//end __construct()
 
 	/**
+	 * Record the slugs referenced by a list of seed objects.
+	 *
+	 * @param array $objects The seed objects; entries that are not arrays are skipped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function collectFromObjects(array $objects): void {
+		foreach ($objects as $objectData) {
+			if (is_array($objectData) === true) {
+				$this->collect(value: $objectData);
+			}
+		}
+	}//end collectFromObjects()
+
+	/**
+	 * Replace the tokens in every seed object of a list.
+	 *
+	 * @param array $objects The seed objects; entries that are not arrays stay as they are.
+	 *
+	 * @return array The list with its tokens replaced.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function replaceInObjects(array $objects): array {
+		foreach ($objects as $position => $objectData) {
+			if (is_array($objectData) === true) {
+				$objects[$position] = $this->replaceOutsideSelf(objectData: $objectData);
+			}
+		}
+
+		return $objects;
+	}//end replaceInObjects()
+
+	/**
 	 * Record the slugs referenced anywhere in a value.
 	 *
 	 * @param mixed $value A seed object or one of its values.
@@ -94,7 +130,7 @@ final class SeedReferenceIndex
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function collect(mixed $value): void {
+	private function collect(mixed $value): void {
 		if (is_array($value) === true) {
 			foreach ($value as $item) {
 				$this->collect(value: $item);
@@ -186,7 +222,7 @@ final class SeedReferenceIndex
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function replaceOutsideSelf(array $objectData): array {
+	private function replaceOutsideSelf(array $objectData): array {
 		$self = $objectData['@self'] ?? null;
 		unset($objectData['@self']);
 
