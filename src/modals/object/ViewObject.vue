@@ -1313,7 +1313,7 @@ import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
-import { dateToString, stringToDate } from '../../services/dateUtils.js'
+import { stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import { getTheme } from '../../services/getTheme.js'
 import {
@@ -1321,6 +1321,13 @@ import {
 	enumOptions,
 	readFileAsDataUri,
 } from '../../services/propertyEditor.js'
+import {
+	convertInputValue,
+	defaultValueFor,
+	inputTypeFor,
+	isValidDate,
+	isValidPropertyValue,
+} from '../../services/propertyValues.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -1476,29 +1483,7 @@ export default {
 				for (const [key, schemaProperty] of Object.entries(
 					schemaProperties,
 				)) {
-					// Add with appropriate default value based on type
-					let defaultValue
-					switch (schemaProperty.type) {
-						case 'string':
-							defaultValue = schemaProperty.const || ''
-							break
-						case 'number':
-						case 'integer':
-							defaultValue = 0
-							break
-						case 'boolean':
-							defaultValue = false
-							break
-						case 'array':
-							defaultValue = []
-							break
-						case 'object':
-							defaultValue = {}
-							break
-						default:
-							defaultValue = ''
-					}
-					defaultProperties.push([key, defaultValue])
+					defaultProperties.push([key, defaultValueFor(schemaProperty)])
 				}
 
 				return defaultProperties
@@ -1516,29 +1501,7 @@ export default {
 			const missingSchemaProperties = []
 			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
 				if (!Object.hasOwn(objectData, key)) {
-					// Add with appropriate default value based on type
-					let defaultValue
-					switch (schemaProperty.type) {
-						case 'string':
-							defaultValue = schemaProperty.const || ''
-							break
-						case 'number':
-						case 'integer':
-							defaultValue = 0
-							break
-						case 'boolean':
-							defaultValue = false
-							break
-						case 'array':
-							defaultValue = []
-							break
-						case 'object':
-							defaultValue = {}
-							break
-						default:
-							defaultValue = ''
-					}
-					missingSchemaProperties.push([key, defaultValue])
+					missingSchemaProperties.push([key, defaultValueFor(schemaProperty)])
 				}
 			}
 
@@ -2109,9 +2072,7 @@ export default {
 		 * @spec exclude client-side date validation helper
 		 */
 		isValidDate(value) {
-			if (!value) return false
-			const date = new Date(value)
-			return date instanceof Date && !isNaN(date)
+			return isValidDate(value)
 		},
 
 		/**
@@ -2664,48 +2625,10 @@ export default {
 		 * @spec exclude client-side property-value validation helper
 		 */
 		isValidPropertyValue(key, value, schemaProperty) {
-			// Handle null/undefined values
-			if (value === null || value === undefined || value === '') {
-				// Check if property is required
-				const isRequired =
-					this.currentSchema?.required?.includes(key)
-					|| schemaProperty.required
-				return !isRequired // Valid if not required, invalid if required
-			}
-
-			// Validate based on schema type
-			switch (schemaProperty.type) {
-				case 'string':
-					if (typeof value !== 'string') return false
-					// Check format constraints
-					if (schemaProperty.format === 'date-time') {
-						return this.isValidDate(value)
-					}
-					// Check const constraint
-					if (schemaProperty.const && value !== schemaProperty.const) {
-						return false
-					}
-					return true
-
-				case 'number':
-					return typeof value === 'number' && !isNaN(value)
-
-				case 'boolean':
-					return typeof value === 'boolean'
-
-				case 'array':
-					return Array.isArray(value)
-
-				case 'object':
-					return (
-						typeof value === 'object'
-						&& value !== null
-						&& !Array.isArray(value)
-					)
-
-				default:
-					return true // Unknown type, assume valid
-			}
+			const isRequired =
+				this.currentSchema?.required?.includes(key)
+				|| schemaProperty.required
+			return isValidPropertyValue(value, schemaProperty, isRequired)
 		},
 
 		/**
@@ -2879,36 +2802,7 @@ export default {
 
 			// Convert value based on schema property type
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			let convertedValue = newValue
-
-			if (schemaProperty) {
-				switch (schemaProperty.type) {
-					case 'number':
-						convertedValue =
-							newValue === '' ? null : parseFloat(newValue)
-						if (isNaN(convertedValue)) convertedValue = null
-						break
-					case 'integer':
-						convertedValue =
-							newValue === '' ? null : parseInt(newValue, 10)
-						if (isNaN(convertedValue)) convertedValue = null
-						break
-					case 'boolean':
-						convertedValue = Boolean(newValue)
-						break
-					case 'string':
-					default:
-						if (newValue instanceof Date && schemaProperty?.format) {
-							convertedValue = dateToString(
-								newValue,
-								schemaProperty.format,
-							)
-						} else {
-							convertedValue = newValue
-						}
-						break
-				}
-			}
+			const convertedValue = convertInputValue(newValue, schemaProperty)
 
 			// Update the form data using Vue 3 reactivity
 			this.formData = { ...this.formData, [key]: convertedValue }
@@ -3072,30 +2966,7 @@ export default {
 		 * @spec exclude display helper mapping schema type to input type
 		 */
 		getPropertyInputType(key) {
-			const schemaProperty = this.currentSchema?.properties?.[key]
-			if (!schemaProperty) return 'text'
-
-			const type = schemaProperty.type
-			const format = schemaProperty.format
-
-			// Handle different types and formats
-			switch (type) {
-				case 'string':
-					if (format === 'date') return 'date'
-					if (format === 'time') return 'time'
-					if (format === 'date-time') return 'datetime-local'
-					if (format === 'email') return 'email'
-					if (format === 'url' || format === 'uri') return 'url'
-					if (format === 'password') return 'password'
-					return 'text'
-				case 'number':
-				case 'integer':
-					return 'number'
-				case 'boolean':
-					return 'checkbox'
-				default:
-					return 'text'
-			}
+			return inputTypeFor(this.currentSchema?.properties?.[key])
 		},
 
 		/**
