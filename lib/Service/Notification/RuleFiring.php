@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\Schema;
  * by the dispatcher as the firing passes its gates, in that order.
  *
  * @SuppressWarnings(PHPMD.TooManyFields) One field per value the dispatch steps share.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class RuleFiring {
 
@@ -159,6 +161,8 @@ final class RuleFiring {
 	 * The rule's subject template; the rule name when it declares none.
 	 *
 	 * @return mixed
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function subjectTemplate(): mixed {
 		return ($this->spec['subject'] ?? $this->ruleId);
@@ -168,6 +172,8 @@ final class RuleFiring {
 	 * The rule's message template, or null.
 	 *
 	 * @return mixed
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function messageTemplate(): mixed {
 		return ($this->spec['message'] ?? null);
@@ -177,6 +183,8 @@ final class RuleFiring {
 	 * The rule's declared recipients.
 	 *
 	 * @return array<int|string, mixed>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function recipientsSpec(): array {
 		return (array)($this->spec['recipients'] ?? []);

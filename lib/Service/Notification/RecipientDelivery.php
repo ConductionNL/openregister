@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Notification;
 
 /**
  * The recipient, the text rendered for them and the channels they keep.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class RecipientDelivery {
 
