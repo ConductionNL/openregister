@@ -1321,6 +1321,39 @@ import {
 	enumOptions,
 	readFileAsDataUri,
 } from '../../services/propertyEditor.js'
+const BLANK_VALUES = {
+	string: () => '',
+	number: () => 0,
+	integer: () => 0,
+	boolean: () => false,
+	array: () => [],
+	object: () => ({}),
+}
+
+/**
+ * The blank value a new record gets for a property of this type, or null.
+ *
+ * @param {object} property The schema property.
+ * @return {unknown}
+ */
+function blankValueFor(property) {
+	return Object.hasOwn(BLANK_VALUES, property.type)
+		? BLANK_VALUES[property.type]()
+		: null
+}
+
+/**
+ * The id of a reference that is either an object with an id or the id itself.
+ *
+ * @param {unknown} reference The reference.
+ * @return {unknown}
+ */
+function idOf(reference) {
+	return typeof reference === 'object' && reference !== null
+		? reference.id
+		: reference
+}
+
 export default {
 	name: 'ViewObject',
 	components: {
@@ -2143,84 +2176,69 @@ export default {
 		 * @spec exclude form-state initializer seeding formData/jsonData
 		 */
 		initializeData() {
-			// Initialize with empty data for new objects
-			if (!objectStore.objectItem) {
-				const initialData = {
-					'@self': {
-						id: '',
-						uuid: '',
-						uri: '',
-						register: this.currentRegister?.id || '',
-						schema: this.currentSchema?.id || '',
-						relations: '',
-						files: '',
-						folder: '',
-						updated: '',
-						created: '',
-						locked: null,
-						owner: '',
-					},
-				}
-
-				// Add schema properties with default values
-				if (this.currentSchema?.properties) {
-					for (const [key, property] of Object.entries(
-						this.currentSchema.properties,
-					)) {
-						// Set default value based on property type
-						let defaultValue = null
-						if (property.type === 'string') {
-							defaultValue = ''
-						} else if (
-							property.type === 'number'
-							|| property.type === 'integer'
-						) {
-							defaultValue = 0
-						} else if (property.type === 'boolean') {
-							defaultValue = false
-						} else if (property.type === 'array') {
-							defaultValue = []
-						} else if (property.type === 'object') {
-							defaultValue = {}
-						}
-
-						initialData[key] =
-							property.default !== undefined
-								? property.default
-								: defaultValue
-					}
-				}
-
-				this.formData = initialData
-				this.jsonData = JSON.stringify(initialData, null, 2)
-				return
-			}
-
-			// For existing objects, use their complete data structure (like EditObject)
-			const initialData = { ...objectStore.objectItem }
+			const initialData = objectStore.objectItem
+				? { ...objectStore.objectItem }
+				: this.blankObjectData()
 			this.formData = initialData
 			this.jsonData = JSON.stringify(initialData, null, 2)
-
-			// Fetch files for the existing object
-			const rawRegister = objectStore.objectItem['@self']?.register
-			const rawSchema = objectStore.objectItem['@self']?.schema
-			const registerId =
-				typeof rawRegister === 'object' && rawRegister !== null
-					? rawRegister.id
-					: rawRegister
-			const schemaId =
-				typeof rawSchema === 'object' && rawSchema !== null
-					? rawSchema.id
-					: rawSchema
-			const objectId =
-				objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
-			if (registerId && schemaId && objectId) {
-				const type = `${registerId}-${schemaId}`
-				if (!objectStore.objectTypes?.includes(type)) {
-					objectStore.registerObjectType(type, schemaId, registerId)
-				}
-				objectStore.fetchFiles(type, objectId)
+			if (objectStore.objectItem) {
+				this.fetchObjectFiles(objectStore.objectItem)
 			}
+		},
+
+		/**
+		 * The form data of a new record: blank metadata and, per schema
+		 * property, its default or a blank value of its type.
+		 *
+		 * @return {object}
+		 * @spec exclude form-state helper seeding a new record
+		 */
+		blankObjectData() {
+			const initialData = {
+				'@self': {
+					id: '',
+					uuid: '',
+					uri: '',
+					register: this.currentRegister?.id || '',
+					schema: this.currentSchema?.id || '',
+					relations: '',
+					files: '',
+					folder: '',
+					updated: '',
+					created: '',
+					locked: null,
+					owner: '',
+				},
+			}
+			for (const [key, property] of Object.entries(
+				this.currentSchema?.properties || {},
+			)) {
+				initialData[key] =
+					property.default !== undefined
+						? property.default
+						: blankValueFor(property)
+			}
+			return initialData
+		},
+
+		/**
+		 * Fetch the files of an existing record under its register-schema type.
+		 *
+		 * @param {object} item The record.
+		 * @spec exclude store plumbing fetching a record's files
+		 */
+		fetchObjectFiles(item) {
+			const registerId = idOf(item['@self']?.register)
+			const schemaId = idOf(item['@self']?.schema)
+			const objectId = item['@self']?.id || item?.id
+			if (!registerId || !schemaId || !objectId) {
+				return
+			}
+			const type = `${registerId}-${schemaId}`
+			if (!objectStore.objectTypes?.includes(type)) {
+				objectStore.registerObjectType(type, schemaId, registerId)
+			}
+			objectStore.fetchFiles(type, objectId)
 		},
 
 		/**
