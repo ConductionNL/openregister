@@ -1,0 +1,432 @@
+{
+    "authorization bad entry": [
+        {
+            "code": "lifecycle-authorization-entry-malformed",
+            "message": "Transition \"open\" `authorization` entries must be non-empty group id strings or {\"role\":\"<name>\"} objects."
+        }
+    ],
+    "authorization empty": [
+        {
+            "code": "lifecycle-authorization-malformed",
+            "message": "Transition \"open\" `authorization` must be a non-empty array of group ids or {role} objects."
+        }
+    ],
+    "authorization scalar": [
+        {
+            "code": "lifecycle-authorization-malformed",
+            "message": "Transition \"open\" `authorization` must be a non-empty array of group ids or {role} objects."
+        }
+    ],
+    "authorization valid": [],
+    "auto when scalar": [
+        {
+            "code": "lifecycle-autowhen-malformed",
+            "message": "Transition \"open\" `autoWhen` must be a rule object, in the JSON AST such as {\"not\": {\"eq\": [{\"prop\": \"object.motivering\"}, null]}} or in the legacy JSONLogic such as {\"!!\": {\"var\": \"object.motivering\"}}. A string or other scalar is refused: it would evaluate as a literal and fire the transition on every write from its `from` state. The \"@self.field == 'value'\" form belongs on an `actions[]` entry, not here."
+        }
+    ],
+    "auto when valid": [],
+    "auto with required inputs": [
+        {
+            "code": "lifecycle-autowhen-requires-input",
+            "message": "Transition \"open\" declares `autoWhen` beside a required `inputs` entry. An automatic move carries no payload, so this transition could only ever be refused. Drop `required: true`, or drop `autoWhen`."
+        }
+    ],
+    "condition empty": [
+        {
+            "code": "lifecycle-condition-malformed",
+            "message": "Transition \"open\" `condition` must not be empty."
+        }
+    ],
+    "condition scalar": [
+        {
+            "code": "lifecycle-condition-malformed",
+            "message": "Transition \"open\" `condition` must be a rule object, in the JSON AST such as {\"not\": {\"eq\": [{\"prop\": \"object.motivering\"}, null]}} or in the legacy JSONLogic such as {\"!!\": {\"var\": \"object.motivering\"}}. A string or other scalar is refused: it would evaluate as a literal and allow every attempt. The \"@self.field == 'value'\" form belongs on an `actions[]` entry, not here."
+        }
+    ],
+    "condition valid": [],
+    "execution mode unknown": [
+        {
+            "code": "lifecycle-execution-mode-malformed",
+            "message": "Transition \"open\" `executionMode` \"later\" must be exactly \"sync\" or \"async\". Case variants are refused rather than normalised, so the lifecycle and the flow engine cannot drift into two spellings of the same two words."
+        }
+    ],
+    "field declared null": [
+        {
+            "code": "lifecycle-field-missing",
+            "message": "x-openregister-lifecycle.field \"status\" is not declared in `properties`."
+        }
+    ],
+    "field enum not a list": [
+        {
+            "code": "lifecycle-field-no-enum",
+            "message": "x-openregister-lifecycle.field \"status\" must declare an `enum` of allowed values."
+        }
+    ],
+    "field not a string": [
+        {
+            "code": "lifecycle-field-not-string",
+            "message": "x-openregister-lifecycle.field \"status\" must be type \"string\"."
+        }
+    ],
+    "field not declared": [
+        {
+            "code": "lifecycle-field-missing",
+            "message": "x-openregister-lifecycle.field \"state\" is not declared in `properties`."
+        }
+    ],
+    "field wins over property": [],
+    "field with empty enum and wrong type": [
+        {
+            "code": "lifecycle-field-not-string",
+            "message": "x-openregister-lifecycle.field \"status\" must be type \"string\"."
+        },
+        {
+            "code": "lifecycle-field-no-enum",
+            "message": "x-openregister-lifecycle.field \"status\" must declare an `enum` of allowed values."
+        }
+    ],
+    "field without enum": [
+        {
+            "code": "lifecycle-field-no-enum",
+            "message": "x-openregister-lifecycle.field \"status\" must declare an `enum` of allowed values."
+        }
+    ],
+    "final as string": [
+        {
+            "code": "lifecycle-final-malformed",
+            "message": "x-openregister-lifecycle.final must be a list of states, or an object with non-empty \"from\" (the schema the lifecycle field references) and \"field\" (the property on that row saying whether it is an end) strings."
+        }
+    ],
+    "final in enum": [],
+    "final not in enum": [
+        {
+            "code": "lifecycle-final-not-in-enum",
+            "message": "x-openregister-lifecycle.final value \"gone\" is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-final-not-in-enum",
+            "message": "x-openregister-lifecycle.final value \"lost\" is not in the field's enum."
+        }
+    ],
+    "final numeric values": [
+        {
+            "code": "lifecycle-final-not-in-enum",
+            "message": "x-openregister-lifecycle.final value \"1\" is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-final-not-in-enum",
+            "message": "x-openregister-lifecycle.final value \"2\" is not in the field's enum."
+        }
+    ],
+    "final reference form": [],
+    "final reference form incomplete": [
+        {
+            "code": "lifecycle-final-malformed",
+            "message": "x-openregister-lifecycle.final must be a list of states, or an object with non-empty \"from\" (the schema the lifecycle field references) and \"field\" (the property on that row saying whether it is an end) strings."
+        }
+    ],
+    "from as string": [],
+    "from empty list": [
+        {
+            "code": "lifecycle-from-missing",
+            "message": "Transition \"open\" must declare a non-empty `from` array."
+        }
+    ],
+    "from empty string": [
+        {
+            "code": "lifecycle-from-missing",
+            "message": "Transition \"open\" must declare a non-empty `from` array."
+        }
+    ],
+    "from missing": [
+        {
+            "code": "lifecycle-from-missing",
+            "message": "Transition \"open\" must declare a non-empty `from` array."
+        }
+    ],
+    "from not in enum": [
+        {
+            "code": "lifecycle-from-not-in-enum",
+            "message": "Transition \"open\" lists \"from\" state \"new\" which is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-from-not-in-enum",
+            "message": "Transition \"open\" lists \"from\" state \"old\" which is not in the field's enum."
+        }
+    ],
+    "graph empty falls back to static": [],
+    "graph mode": [
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"schema\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"parentField\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"parentFrom\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"orderField\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"finalField\"."
+        },
+        {
+            "code": "lifecycle-graph-allowedmoves-invalid",
+            "message": "x-openregister-lifecycle.graph.allowedMoves \"NULL\" must be one of forward|adjacent|any."
+        }
+    ],
+    "graph mode malformed": [
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"schema\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"parentField\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"parentFrom\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"orderField\"."
+        },
+        {
+            "code": "lifecycle-graph-missing-key",
+            "message": "x-openregister-lifecycle.graph is missing required string key \"finalField\"."
+        },
+        {
+            "code": "lifecycle-graph-allowedmoves-invalid",
+            "message": "x-openregister-lifecycle.graph.allowedMoves \"NULL\" must be one of forward|adjacent|any."
+        }
+    ],
+    "graph not an array falls back to static": [],
+    "initial not in enum": [
+        {
+            "code": "lifecycle-initial-not-in-enum",
+            "message": "x-openregister-lifecycle.initial \"new\" is not in the field's enum."
+        }
+    ],
+    "many transition problems": [
+        {
+            "code": "lifecycle-final-not-in-enum",
+            "message": "x-openregister-lifecycle.final value \"nope\" is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-from-not-in-enum",
+            "message": "Transition \"open\" lists \"from\" state \"new\" which is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-to-not-in-enum",
+            "message": "Transition \"open\" `to` value \"gone\" is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-requires-malformed",
+            "message": "Transition \"open\" `requires` must be a non-empty DI tag string."
+        },
+        {
+            "code": "lifecycle-authorization-malformed",
+            "message": "Transition \"open\" `authorization` must be a non-empty array of group ids or {role} objects."
+        },
+        {
+            "code": "lifecycle-condition-malformed",
+            "message": "Transition \"open\" `condition` must be a rule object, in the JSON AST such as {\"not\": {\"eq\": [{\"prop\": \"object.motivering\"}, null]}} or in the legacy JSONLogic such as {\"!!\": {\"var\": \"object.motivering\"}}. A string or other scalar is refused: it would evaluate as a literal and allow every attempt. The \"@self.field == 'value'\" form belongs on an `actions[]` entry, not here."
+        },
+        {
+            "code": "lifecycle-message-malformed",
+            "message": "Transition \"open\" `message` must be a non-empty string when present."
+        },
+        {
+            "code": "lifecycle-transition-malformed",
+            "message": "Transition \"broken\" must be an object with `from` and `to`."
+        }
+    ],
+    "message empty": [
+        {
+            "code": "lifecycle-message-malformed",
+            "message": "Transition \"open\" `message` must be a non-empty string when present."
+        }
+    ],
+    "message map": [],
+    "message map bad": [
+        {
+            "code": "lifecycle-message-malformed",
+            "message": "Transition \"open\" `message` for locale \"nl\" must be a non-empty string."
+        },
+        {
+            "code": "lifecycle-message-malformed",
+            "message": "Transition \"open\" `message` for locale \"xx-bad!\" must be a non-empty string."
+        }
+    ],
+    "message map default locale": [],
+    "message number": [
+        {
+            "code": "lifecycle-message-malformed",
+            "message": "Transition \"open\" `message` must be a string or a per-locale map."
+        }
+    ],
+    "message string": [],
+    "missing every key": [
+        {
+            "code": "lifecycle-missing-key",
+            "message": "x-openregister-lifecycle is missing required key \"field\"."
+        },
+        {
+            "code": "lifecycle-missing-key",
+            "message": "x-openregister-lifecycle is missing required key \"initial\"."
+        },
+        {
+            "code": "lifecycle-missing-key",
+            "message": "x-openregister-lifecycle is missing required key \"transitions\"."
+        }
+    ],
+    "missing initial and transitions": [
+        {
+            "code": "lifecycle-missing-key",
+            "message": "x-openregister-lifecycle is missing required key \"initial\"."
+        },
+        {
+            "code": "lifecycle-missing-key",
+            "message": "x-openregister-lifecycle is missing required key \"transitions\"."
+        }
+    ],
+    "no annotation": [],
+    "no properties at all": [
+        {
+            "code": "lifecycle-field-missing",
+            "message": "x-openregister-lifecycle.field \"status\" is not declared in `properties`."
+        }
+    ],
+    "numeric action": [
+        {
+            "code": "lifecycle-from-not-in-enum",
+            "message": "Transition \"3\" lists \"from\" state \"nope\" which is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-to-not-in-enum",
+            "message": "Transition \"3\" `to` value \"gone\" is not in the field's enum."
+        }
+    ],
+    "property alias": [],
+    "provider empty": [
+        {
+            "code": "lifecycle-provider-invalid",
+            "message": "x-openregister-lifecycle.provider must be a non-empty string naming a registered LifecycleActionProviderInterface service."
+        }
+    ],
+    "provider mode": [],
+    "provider with graph and no field": [
+        {
+            "code": "lifecycle-missing-key",
+            "message": "x-openregister-lifecycle is missing required key \"field\"."
+        },
+        {
+            "code": "lifecycle-provider-mode-conflict",
+            "message": "x-openregister-lifecycle declares both `provider` and `graph`. A field has one lifecycle mode: declare the transitions in the schema or in the provider, not both."
+        }
+    ],
+    "provider with states": [],
+    "provider with transitions": [
+        {
+            "code": "lifecycle-provider-mode-conflict",
+            "message": "x-openregister-lifecycle declares both `provider` and `transitions`. A field has one lifecycle mode: declare the transitions in the schema or in the provider, not both."
+        }
+    ],
+    "provider with undeclared field": [
+        {
+            "code": "lifecycle-field-missing",
+            "message": "x-openregister-lifecycle.field \"state\" is not declared in `properties`."
+        }
+    ],
+    "requires empty": [
+        {
+            "code": "lifecycle-requires-malformed",
+            "message": "Transition \"open\" `requires` must be a non-empty DI tag string."
+        }
+    ],
+    "requires not a string": [
+        {
+            "code": "lifecycle-requires-malformed",
+            "message": "Transition \"open\" `requires` must be a non-empty DI tag string."
+        }
+    ],
+    "requires null": [],
+    "requires valid": [],
+    "states block": [
+        {
+            "code": "lifecycle-state-unknown",
+            "message": "x-openregister-lifecycle.states declares state \"gone\" which is not in the field's enum."
+        }
+    ],
+    "states malformed": [
+        {
+            "code": "lifecycle-states-malformed",
+            "message": "x-openregister-lifecycle.states must be a non-empty map of state names to blocks."
+        }
+    ],
+    "states with inputs on hidden fields": [],
+    "to empty": [
+        {
+            "code": "lifecycle-to-missing",
+            "message": "Transition \"open\" must declare a string `to` value."
+        }
+    ],
+    "to missing": [
+        {
+            "code": "lifecycle-to-missing",
+            "message": "Transition \"open\" must declare a string `to` value."
+        }
+    ],
+    "to not a string": [
+        {
+            "code": "lifecycle-to-missing",
+            "message": "Transition \"open\" must declare a string `to` value."
+        }
+    ],
+    "to not in enum": [
+        {
+            "code": "lifecycle-to-not-in-enum",
+            "message": "Transition \"open\" `to` value \"opened\" is not in the field's enum."
+        }
+    ],
+    "transition not an object": [
+        {
+            "code": "lifecycle-transition-malformed",
+            "message": "Transition \"open\" must be an object with `from` and `to`."
+        },
+        {
+            "code": "lifecycle-transition-malformed",
+            "message": "Transition \"7\" must be an object with `from` and `to`."
+        }
+    ],
+    "transitions empty": [
+        {
+            "code": "lifecycle-transitions-empty",
+            "message": "x-openregister-lifecycle.transitions must declare at least one action."
+        }
+    ],
+    "transitions empty after initial error": [
+        {
+            "code": "lifecycle-initial-not-in-enum",
+            "message": "x-openregister-lifecycle.initial \"x\" is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-transitions-empty",
+            "message": "x-openregister-lifecycle.transitions must declare at least one action."
+        }
+    ],
+    "transitions not a map": [
+        {
+            "code": "lifecycle-transitions-empty",
+            "message": "x-openregister-lifecycle.transitions must declare at least one action."
+        }
+    ],
+    "valid minimal": []
+}
