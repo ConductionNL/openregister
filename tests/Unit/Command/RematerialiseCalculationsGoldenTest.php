@@ -53,6 +53,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Expressions the scripted evaluator understands: `const:<v>`, `throw`, `date`,
  * `ref` (reads `@ref.a`), `agg` (reads `@aggregate.n`), `self` (reads `@self.uuid`)
  * and `seq` (uses a sequence).
+ *
+ * @uses \OCA\OpenRegister\Command\RematerialiseRun
  */
 class RematerialiseCalculationsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/rematerialise-golden.json';
