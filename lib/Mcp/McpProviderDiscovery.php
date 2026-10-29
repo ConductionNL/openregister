@@ -20,12 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp;
 
-use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
@@ -372,7 +372,7 @@ class McpProviderDiscovery {
 				// both alias and instance resolution must go through the app's
 				// own container. Fail-soft: an app with no registered container
 				// (or a container whose resolution throws) is simply skipped.
-				$appContainer = $this->getRegisteredAppContainer(appId: $appId, logger: $logger);
+				$appContainer = $this->getRegisteredAppContainer(appId: $appId, container: $container);
 				if ($appContainer === null) {
 					continue;
 				}
@@ -424,27 +424,24 @@ class McpProviderDiscovery {
 	 * service instances) can be resolved from where the leaf app actually
 	 * registered them (#390).
 	 *
-	 * Wraps `\OC::$server->getRegisteredAppContainer($appId)`, which throws
-	 * when the app has no bootstrapped container. Fail-soft: any error (app
-	 * not registered, server seam unavailable) returns null so a single
-	 * misbehaving app never fatals the whole MCP catalog. Isolated behind
-	 * its own method so unit tests can override the app-container topology.
+	 * Asks the app container finder bound in OR's container. The finder is
+	 * fail-soft: an app without a bootstrapped container yields null, so a
+	 * single misbehaving app never fatals the whole MCP catalog. Isolated
+	 * behind its own method so unit tests can override the app-container
+	 * topology.
 	 *
 	 * @param string $appId The candidate app id.
-	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
+	 * @param ContainerInterface $container OR's container, which binds the finder.
 	 *
 	 * @return ContainerInterface|null The app's own container, or null when unavailable.
+	 *
+	 * @spec openspec/specs/apphost-observability/spec.md#requirement-a-leaf-apps-provider-must-be-resolved-from-that-apps-own-container
 	 */
 	protected function getRegisteredAppContainer(
 		string $appId,
-		\Psr\Log\LoggerInterface $logger,
+		ContainerInterface $container,
 	): ?ContainerInterface {
-		// Delegated so the `\OC::$server` reach lives in exactly one place.
-		// It used to be inlined here AND in ProviderMetricSource AND in
-		// HealthCheckExecutor — three copies of one rule, none of them
-		// substitutable, which is what made the tests around them depend on
-		// which apps happened to be installed.
-		return (new AppContainerLocator(logger: $logger))->find(appId: $appId);
+		return $container->get(AppContainerFinderInterface::class)->find(appId: $appId);
 	}//end getRegisteredAppContainer()
 
 	/**

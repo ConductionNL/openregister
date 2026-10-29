@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\AppHost\AppContainerLocator;
+use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
@@ -47,13 +49,14 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
-		FlowTimerControlInterface::class    => FlowTimerService::class,
-		McpCatalogueInterface::class        => McpDiscoveryService::class,
-		ObjectExporterInterface::class      => ExportService::class,
-		ObjectImporterInterface::class      => ImportService::class,
-		ObjectMergerInterface::class        => MergeService::class,
-		SchemaExplorationInterface::class   => SchemaService::class,
+		FlowTimerControlInterface::class => FlowTimerService::class,
+		McpCatalogueInterface::class => McpDiscoveryService::class,
+		ObjectExporterInterface::class => ExportService::class,
+		ObjectImporterInterface::class => ImportService::class,
+		ObjectMergerInterface::class => MergeService::class,
+		SchemaExplorationInterface::class => SchemaService::class,
 	];
 
 	/**
