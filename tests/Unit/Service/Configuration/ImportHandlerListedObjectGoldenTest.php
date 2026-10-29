@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses               \OCA\OpenRegister\Service\Configuration\ListedSeed
  * @uses               \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
  * @uses               \OCA\OpenRegister\Service\Configuration\ShippedSeedContent
  */
