@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
@@ -179,7 +180,7 @@ class CacheHandlerNameReadRightsTest extends TestCase {
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $class) => match ($class) {
-				MagicMapper::class => $this->objectMapper,
+				MagicMapperInterface::class => $this->objectMapper,
 				default => $this->createMock($class),
 			}
 		);

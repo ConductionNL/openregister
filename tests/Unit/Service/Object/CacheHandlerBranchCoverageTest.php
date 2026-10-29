@@ -7,6 +7,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -54,7 +55,7 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 		$objectMapperRef = $this->objectMapper;
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapperRef) {
-				if ($class === MagicMapper::class) {
+				if ($class === MagicMapperInterface::class) {
 					return $objectMapperRef;
 				}
 				return null;

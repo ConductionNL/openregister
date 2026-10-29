@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Listener\FrozenNodeWriteListener;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,7 +77,7 @@ class FrozenNodeWriteListenerTest extends TestCase {
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(
 			function (string $id): MagicMapper {
-				$this->assertSame(MagicMapper::class, $id);
+				$this->assertSame(MagicMapperInterface::class, $id);
 				$this->mapperRequests++;
 
 				return $this->objects;
