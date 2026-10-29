@@ -22,6 +22,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for {@see WordTextReader}.
+ *
+ * @covers \OCA\OpenRegister\Service\TextExtraction\WordTextReader
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\OoxmlPackage
  */
 class WordTextReaderTest extends TestCase {
 
@@ -77,6 +80,28 @@ class WordTextReaderTest extends TestCase {
 		$this->assertStringNotContainsString('12.000', $text);
 		$this->assertStringNotContainsString('Controleer', $text);
 	}//end testOdtHeadersFootersAndBody()
+
+	/**
+	 * ODT spaces, tabs and line breaks become whitespace.
+	 *
+	 * @return void
+	 */
+	public function testOdtWhitespaceElements(): void {
+		$content = '<?xml version="1.0" encoding="UTF-8"?>'
+			. '<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'
+			. ' xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">'
+			. '<office:body><office:text><text:p>a<text:s text:c="3"/>b<text:s/>c<text:tab/>d<text:line-break/>e</text:p>'
+			. '</office:text></office:body></office:document-content>';
+		$path = (string) tempnam(sys_get_temp_dir(), 'or-odt');
+		$zip = new \ZipArchive();
+		$zip->open($path, \ZipArchive::OVERWRITE);
+		$zip->addFromString('content.xml', $content);
+		$zip->close();
+		$bytes = (string) file_get_contents($path);
+		unlink($path);
+
+		$this->assertSame("a   b c\td\ne\n", (new WordTextReader())->read(bytes: $bytes, format: 'ODText'));
+	}//end testOdtWhitespaceElements()
 
 	/**
 	 * Legacy .doc and unreadable bytes give null.

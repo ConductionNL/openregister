@@ -28,6 +28,10 @@ use ReflectionMethod;
  * path a malformed real document takes. The MIME/extension to reader mapping
  * is checked through reflection. Real documents are covered by
  * {@see WordExtractorGoldenTest}.
+ *
+ * @covers \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\WordTextReader
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\OoxmlPackage
  */
 class WordExtractorTest extends TestCase {
 
@@ -182,5 +186,24 @@ class WordExtractorTest extends TestCase {
 		);
 
 		$this->assertNull($result);
+	}
+
+	/**
+	 * A file whose content cannot be read degrades to null and logs the failure.
+	 *
+	 * @return void
+	 */
+	public function testExtractReturnsNullWhenContentCannotBeRead(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getContent')->willThrowException(new \RuntimeException('storage gone'));
+		$file->method('getMimeType')->willReturn('application/vnd.oasis.opendocument.text');
+		$file->method('getName')->willReturn('gone.odt');
+		$file->method('getId')->willReturn(304);
+
+		$this->logger->expects($this->once())
+			->method('error')
+			->with($this->stringContains('[WordExtractor] Word extraction failed'));
+
+		$this->assertNull($this->extractor->extract(file: $file));
 	}
 }//end class

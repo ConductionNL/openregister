@@ -27,6 +27,10 @@ use Psr\Log\LoggerInterface;
  * tables, footnotes, lists, comments and tracked changes.
  *
  * Text is compared with whitespace collapsed, so line structure does not count.
+ *
+ * @covers \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\WordTextReader
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\OoxmlPackage
  */
 class WordExtractorGoldenTest extends TestCase {
 
