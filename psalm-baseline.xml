@@ -3,8 +3,6 @@
   <file src="lib/AppInfo/Application.php">
     <UnusedClosureParam>
       <code><![CDATA[$container]]></code>
-      <code><![CDATA[$container]]></code>
-      <code><![CDATA[$container]]></code>
     </UnusedClosureParam>
   </file>
   <file src="lib/Calendar/RegisterCalendarProvider.php">

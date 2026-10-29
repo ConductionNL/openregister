@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfStructureInspector;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -228,10 +229,9 @@ class PdfTextReplacerTest extends TestCase {
 		$this->assertStringStartsWith(prefix: '%PDF-', string: $output);
 		$this->assertStringEndsWith(suffix: "%%EOF\n", string: $output);
 
-		// Re-extract via smalot/pdfparser and assert the placeholder is
-		// present and the original entity text is gone.
-		$parser = new \Smalot\PdfParser\Parser();
-		$extracted = $parser->parseContent($output)->getText();
+		// Re-extract and assert the placeholder is present and the original
+		// entity text is gone.
+		$extracted = (new PdfExtractor(logger: $this->logger))->extractText(pdfBytes: $output);
 
 		$this->assertStringContainsString(needle: '[PERSON: 1]', haystack: $extracted);
 		$this->assertStringNotContainsString(needle: 'Jan Jansen', haystack: $extracted);
