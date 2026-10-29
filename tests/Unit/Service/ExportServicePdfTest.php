@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -43,7 +45,20 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 
+/**
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtWriter
+ * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
+ * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
+ */
 class ExportServicePdfTest extends TestCase {
+
+	/**
+	 * Office converter double that records the ODT it was given.
+	 *
+	 * @var NcOfficeConverterInterface
+	 */
+	private NcOfficeConverterInterface $converter;
 
 	/**
 	 * @var RegisterMapper&MockObject
@@ -85,15 +100,94 @@ class ExportServicePdfTest extends TestCase {
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 
-		$this->service = new ExportService(
+		$this->converter = new class implements NcOfficeConverterInterface {
+			public bool $available = true;
+
+			public string $lastOdt = '';
+
+			public function isAvailable(): bool {
+				return $this->available;
+			}
+
+			public function pdfToOdt(string $pdfBytes): string {
+				return '';
+			}
+
+			public function odtToPdf(string $odtBytes): string {
+				$this->lastOdt = $odtBytes;
+				return '%PDF-1.7 converted';
+			}
+		};
+
+		$this->service = $this->makeService(converter: $this->converter);
+	}
+
+	/**
+	 * Build the service with the given office converter.
+	 */
+	private function makeService(?NcOfficeConverterInterface $converter): ExportService {
+		return new ExportService(
 			$this->registerMapper,
 			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,
 			$this->propertyRbacHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class)
+			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+			$converter
 		);
+	}
+
+	/**
+	 * Text of content.xml in the ODT the converter received.
+	 */
+	private function convertedOdtText(): string {
+		$file = tempnam(sys_get_temp_dir(), 'odt');
+		file_put_contents($file, $this->converter->lastOdt);
+		$zip = new \ZipArchive();
+		$zip->open($file);
+		$xml = (string) $zip->getFromName('content.xml');
+		$zip->close();
+		unlink($file);
+
+		return strip_tags(str_replace('<', ' <', $xml));
+	}
+
+	// --- office server ---
+
+	/**
+	 * The PDF is the office server's conversion of an ODT holding the rows.
+	 */
+	public function testRenderRowsToPdfConvertsAnOdtOfTheRows(): void {
+		$pdf = $this->service->renderRowsToPdf(title: 'Uitkeringen', columns: ['naam' => 'Naam'], rows: [['naam' => 'Łukasz Żółć']]);
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertStringContainsString('Uitkeringen', $this->convertedOdtText());
+		$this->assertStringContainsString('Łukasz Żółć', $this->convertedOdtText());
+	}
+
+	/**
+	 * Without an office server, PDF export refuses with a clear error before reading anything.
+	 */
+	public function testWithoutOfficeServerPdfExportIsRefused(): void {
+		$this->converter->available = false;
+		$this->objectService->expects($this->never())->method('searchObjects');
+
+		$this->assertFalse($this->service->isPdfAvailable());
+
+		$this->expectException(OfficeServerRequiredException::class);
+		$this->service->exportToPdf(null, new Schema());
+	}
+
+	/**
+	 * Without any converter bound, PDF is not available either.
+	 */
+	public function testWithoutConverterPdfIsNotAvailable(): void {
+		$service = $this->makeService(converter: null);
+
+		$this->assertFalse($service->isPdfAvailable());
+		$this->expectException(OfficeServerRequiredException::class);
+		$service->renderRowsToPdf(title: 'T', columns: ['a' => 'A'], rows: []);
 	}
 
 	/**
