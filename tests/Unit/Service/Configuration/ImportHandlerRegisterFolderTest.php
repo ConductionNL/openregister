@@ -44,9 +44,12 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
  * @uses \OCA\OpenRegister\Db\Configuration
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
+ * @uses \OCA\OpenRegister\Service\Configuration\AppImport
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedConfigurationUpdate
  */
 class ImportHandlerRegisterFolderTest extends TestCase {
 
