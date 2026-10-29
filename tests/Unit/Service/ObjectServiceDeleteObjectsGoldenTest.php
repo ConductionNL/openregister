@@ -83,6 +83,26 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 				'delete' => ['d' => 'restrict', 'e' => false],
 				'cascade' => ['a' => 1, 'c' => 3],
 			]],
+			'current scope fallback: not batch resolved' => [['request' => ['a'], 'current' => true, 'rows' => ['a' => $row(['batch' => false])]]],
+			'current scope fallback: register unloadable' => [['request' => ['a'], 'current' => true, 'rows' => ['a' => $row(['register' => '66'])]]],
+			'current scope fallback: non numeric' => [['request' => ['a'], 'current' => true, 'rows' => ['a' => $row(['register' => 'slug'])]]],
+			'current scope: batch resolved' => [['request' => ['a'], 'current' => true, 'rows' => ['a' => $row()]]],
+			'null uuid without rbac and multitenancy' => [['request' => ['a', null, 'b'], 'rbac' => false, 'multi' => false, 'rows' => ['a' => $row(), 'b' => $row()]]],
+			'float uuid without filters' => [['request' => ['a', 1.5], 'rbac' => false, 'multi' => false, 'rows' => ['a' => $row()]]],
+			'bool uuid without filters' => [['request' => [true], 'rbac' => false, 'multi' => false, 'rows' => []]],
+			'int uuid without filters' => [['request' => [123], 'rbac' => false, 'multi' => false, 'rows' => ['123' => $row()]]],
+			'duplicate uuids' => [['request' => ['a', 'a'], 'rows' => ['a' => $row()], 'visible' => ['a']]],
+			'duplicate uuids second refused' => [['request' => ['a', 'a', 'b'], 'rows' => ['a' => $row(), 'b' => $row()], 'delete' => ['b' => false]]],
+			'draft from per-uuid find' => [['request' => ['a'], 'user' => 'alice', 'rows' => ['a' => $row(['batch' => false, 'draft' => true, 'owner' => 'bob'])]]],
+			'own draft from per-uuid find' => [['request' => ['a'], 'user' => 'alice', 'rows' => ['a' => $row(['batch' => false, 'draft' => true, 'owner' => 'alice', 'schema' => '5'])]]],
+			'draft with unresolvable schema' => [['request' => ['a'], 'user' => 'alice', 'rows' => ['a' => $row(['draft' => true, 'owner' => 'bob', 'schema' => '99'])]]],
+			'draft no user' => [['request' => ['a'], 'rows' => ['a' => $row(['draft' => true, 'owner' => 'bob'])]]],
+			'handler throws error' => [['request' => ['a', 'b'], 'rows' => ['a' => $row(), 'b' => $row()], 'delete' => ['b' => 'error']]],
+			'cascade count throws' => [['request' => ['a', 'b'], 'rows' => ['a' => $row(), 'b' => $row()], 'cascadeThrows' => ['a' => true]]],
+			'null register id' => [['request' => ['a'], 'rows' => ['a' => $row(['register' => null])]]],
+			'restrict then archival then ok' => [['request' => ['a', 'b', 'c'], 'rows' => ['a' => $row(), 'b' => $row(['schema' => '5']), 'c' => $row(['schema' => '5', 'register' => '9'])], 'delete' => ['a' => 'restrict']]],
+			'schema cache shared across rows' => [['request' => ['a', 'b', 'c'], 'rows' => ['a' => $row(['batch' => false]), 'b' => $row(), 'c' => $row(['batch' => false, 'schema' => '4'])]]],
+			'multitenancy only' => [['request' => ['a', 'z'], 'rbac' => false, 'rows' => ['a' => $row()], 'visible' => ['a']]],
 		];
 	}//end cases()
 
@@ -96,10 +116,15 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 		try {
 			$actual = ['result' => $service->deleteObjects($case['request'], $case['rbac'] ?? true, $case['multi'] ?? true)];
 		} catch (\Throwable $e) {
-			$actual = ['threw' => get_class($e), 'message' => $e->getMessage()];
+			$actual = ['threw' => get_class($e), 'message' => $this->describe($e->getMessage())];
 		}
 
-		$actual = json_decode(json_encode($actual + ['calls' => $this->calls]), true);
+		$after = [];
+		foreach (['currentRegister', 'currentSchema'] as $property) {
+			$after[$property] = $this->describe((new ReflectionClass(ObjectService::class))->getProperty($property)->getValue($service));
+		}
+
+		$actual = json_decode(json_encode($actual + ['calls' => $this->calls, 'after' => $after], JSON_PARTIAL_OUTPUT_ON_ERROR), true);
 
 		$golden = [];
 		if (is_file(self::FIXTURE) === true) {
@@ -155,8 +180,12 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 			}
 		);
 		$objectMapper->method('find')->willReturnCallback(
-			function (string|int $identifier, $register = null, $schema = null, bool $includeDeleted = false, bool $_rbac = true, bool $_multitenancy = true) use ($rows, $case): ObjectEntity {
+			function ($identifier, $register = null, $schema = null, bool $includeDeleted = false, bool $_rbac = true, bool $_multitenancy = true) use ($rows, $case): ObjectEntity {
 				$this->record('objectMapper.find', [$identifier, $register, $schema, $includeDeleted, $_rbac, $_multitenancy]);
+				if (is_string($identifier) === false && is_int($identifier) === false) {
+					throw new \TypeError('identifier type');
+				}
+
 				if (($case['rows'][$identifier]['findThrows'] ?? false) === true || isset($rows[$identifier]) === false) {
 					throw new Exception('not found');
 				}
@@ -196,6 +225,7 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 		);
 
 		$lastCascade = 0;
+		$cascadeThrows = ($case['cascadeThrows'] ?? []);
 		$deleteHandler = $this->createMock(DeleteObject::class);
 		$deleteHandler->method('deleteObject')->willReturnCallback(
 			function ($register, $schema, string $uuid, ?string $originalObjectId = null, bool $_rbac = true, bool $_multitenancy = true, bool $scoped = false, ?ObjectEntity $preResolved = null, bool $permanent = false) use ($case, &$lastCascade): bool {
@@ -206,6 +236,10 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 					throw new ReferentialIntegrityException(new DeletionAnalysis(deletable: false, blockers: [['uuid' => 'x'], ['uuid' => 'y']]));
 				}
 
+				if ($outcome === 'error') {
+					throw new \TypeError('typed boom');
+				}
+
 				if ($outcome === 'fail') {
 					throw new Exception('transaction rolled back');
 				}
@@ -214,8 +248,13 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 			}
 		);
 		$deleteHandler->method('getLastCascadeCount')->willReturnCallback(
-			function () use (&$lastCascade): int {
+			function () use (&$lastCascade, &$cascadeThrows): int {
 				$this->record('deleteHandler.getLastCascadeCount', []);
+				foreach (array_keys($cascadeThrows) as $failing) {
+					unset($cascadeThrows[$failing]);
+					throw new Exception('cascade read failed ' . $failing);
+				}
+
 				return $lastCascade;
 			}
 		);
@@ -265,6 +304,15 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 		$inject('logger', $logger);
 		$inject('userSession', $session);
 		$inject('groupManager', $groups);
+		if (($case['current'] ?? false) === true) {
+			$currentRegister = new Register();
+			$currentRegister->setId(1001);
+			$currentSchema = new Schema();
+			$currentSchema->setId(2002);
+			$inject('currentRegister', $currentRegister);
+			$inject('currentSchema', $currentSchema);
+		}
+
 		return $service;
 	}//end service()
 
@@ -303,6 +351,10 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 
 		if (is_array($value) === true) {
 			return array_map(fn ($item) => $this->describe($item), $value);
+		}
+
+		if (is_string($value) === true) {
+			return preg_replace(['/MockObject_(\w+?)_[0-9a-f]{8}/', '/, called in .* on line \d+/'], ['$1', ''], $value);
 		}
 
 		return $value;
