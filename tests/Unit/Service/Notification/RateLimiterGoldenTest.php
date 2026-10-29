@@ -33,6 +33,7 @@ use Psr\Log\LoggerInterface;
  * to regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Notification\RateLimiter
+ * @uses \OCA\OpenRegister\Service\Notification\TokenBucket
  */
 final class RateLimiterGoldenTest extends TestCase {
 
