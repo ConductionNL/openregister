@@ -3970,240 +3970,88 @@ class ImportHandler {
 	 * @return array The data with target `@self.id` populated and `@ref:` tokens resolved.
 	 */
 	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
-		if (($data['components']['objects'] ?? null) === null
-			|| is_array($data['components']['objects']) === false
-		) {
+		$objects = ($data['components']['objects'] ?? null);
+		if (is_array($objects) === false) {
 			return $data;
 		}
 
-		// Collect the slugs that are actually referenced, so we only resolve
-		// identities for genuine reference targets (and skip the work entirely
-		// when no object references another).
-		$referencedSlugs = [];
-		$refSchemaSlugs = [];
-		foreach ($data['components']['objects'] as $objectData) {
+		// Only genuine reference targets get a pre-resolved identity, and the
+		// work is skipped entirely when no object references another.
+		$index = new SeedReferenceIndex(logger: $this->logger);
+		foreach ($objects as $objectData) {
 			if (is_array($objectData) === true) {
-				$this->collectRefTargets(
-					value: $objectData,
-					bareSlugs: $referencedSlugs,
-					schemaSlugs: $refSchemaSlugs
-				);
+				$index->collect(value: $objectData);
 			}
 		}
 
-		if (count($referencedSlugs) === 0 && count($refSchemaSlugs) === 0) {
+		if ($index->isEmpty() === true) {
 			return $data;
 		}
 
-		// PASS 1 — assign a stable UUID to each referenced target and index it.
-		$uuidBySchemaSlug = [];
-		$uuidBySlug = [];
-		$ambiguousSlugs = [];
-
-		foreach ($data['components']['objects'] as &$targetData) {
-			if (is_array($targetData) === false) {
+		foreach ($objects as $position => $targetData) {
+			if (is_array($targetData) === false || $index->isReferenced(self: $targetData['@self'] ?? null) === false) {
 				continue;
 			}
 
-			$objectSlug = $targetData['@self']['slug'] ?? null;
-			if (empty($objectSlug) === true) {
+			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
+			if ($uuid === null) {
 				continue;
 			}
 
-			$schemaSlug = $targetData['@self']['schema'] ?? null;
-			$schemaSlugKey = null;
-			if (is_string($schemaSlug) === true && $schemaSlug !== '') {
-				$schemaSlugKey = $schemaSlug . ':' . $objectSlug;
+			$objects[$position]['@self']['id'] = $uuid;
+			$index->record(self: $objects[$position]['@self']);
+		}
+
+		foreach ($objects as $position => $objectData) {
+			if (is_array($objectData) === true) {
+				$objects[$position] = $index->replaceOutsideSelf(objectData: $objectData);
 			}
+		}
 
-			// Only objects that something references need a pre-resolved identity.
-			$isReferenced = (array_key_exists($objectSlug, $referencedSlugs) === true
-				|| ($schemaSlugKey !== null && array_key_exists($schemaSlugKey, $refSchemaSlugs) === true));
-			if ($isReferenced === false) {
-				continue;
-			}
-
-			// A target whose register/schema cannot be resolved will be skipped
-			// by the import loop and never persisted; pre-assigning it an id
-			// would leave referrers pointing at a dangling, never-stored UUID.
-			// Leave it unmapped so replaceRefTokens logs the unresolved reference
-			// instead of silently fabricating one.
-			[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
-			if ($registerObject === null || $schemaObject === null) {
-				continue;
-			}
-
-			// Prefer the UUID already persisted for this register+schema+slug so
-			// re-imports stay idempotent and resolved references always match the
-			// id the import loop will keep on update; fall back to an explicit
-			// seed id (first import), then a freshly minted one.
-			$uuid = $this->findExistingSeedUuid(
-				register: $registerObject,
-				schema: $schemaObject,
-				slug: $objectSlug
-			);
-			if (empty($uuid) === true) {
-				$uuid = $targetData['@self']['id'] ?? null;
-			}
-
-			if (empty($uuid) === true) {
-				$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-			}
-
-			$targetData['@self']['id'] = $uuid;
-
-			if ($schemaSlugKey !== null) {
-				$uuidBySchemaSlug[$schemaSlugKey] = $uuid;
-			}
-
-			$isDuplicateSlug = (array_key_exists($objectSlug, $uuidBySlug) === true
-				&& $uuidBySlug[$objectSlug] !== $uuid);
-			if ($isDuplicateSlug === true) {
-				$ambiguousSlugs[$objectSlug] = true;
-			}
-
-			if ($isDuplicateSlug === false) {
-				$uuidBySlug[$objectSlug] = $uuid;
-			}
-		}//end foreach
-
-		unset($targetData);
-
-		// PASS 2 — replace @ref: tokens in every object's property values.
-		foreach ($data['components']['objects'] as &$objectData) {
-			if (is_array($objectData) === false) {
-				continue;
-			}
-
-			$self = $objectData['@self'] ?? null;
-			unset($objectData['@self']);
-
-			$objectData = $this->replaceRefTokens(
-				value: $objectData,
-				uuidBySchemaSlug: $uuidBySchemaSlug,
-				uuidBySlug: $uuidBySlug,
-				ambiguousSlugs: $ambiguousSlugs
-			);
-
-			if ($self !== null) {
-				$objectData['@self'] = $self;
-			}
-		}//end foreach
-
-		unset($objectData);
-
+		$data['components']['objects'] = $objects;
 		return $data;
 	}//end resolveSeedReferenceTokens()
 
 	/**
-	 * Recursively collect the slugs referenced by `@ref:` tokens in a value.
+	 * The UUID a referenced seed target is stored under.
 	 *
-	 * @param mixed $value The property value to scan.
-	 * @param array $bareSlugs Accumulator of "objectSlug" => true (by reference).
-	 * @param array $schemaSlugs Accumulator of "schemaSlug:objectSlug" => true (by reference).
+	 * Prefers the UUID already persisted for its register+schema+slug, so
+	 * re-imports stay idempotent and references match the id the import loop
+	 * keeps on update; then an explicit seed id; then a freshly minted one.
 	 *
-	 * @return void
+	 * A target whose register or schema cannot be resolved is skipped by the
+	 * import loop and never stored, so it gets no UUID: a referrer would
+	 * otherwise point at an id that never exists, and the token is logged as
+	 * unresolved instead.
+	 *
+	 * @param array       $targetData The referenced seed object.
+	 * @param string|null $appId      The importing app, for the foreign-schema guard.
+	 *
+	 * @return mixed The UUID, or null when the target will not be stored.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function collectRefTargets(mixed $value, array &$bareSlugs, array &$schemaSlugs): void {
-		if (is_array($value) === true) {
-			foreach ($value as $item) {
-				$this->collectRefTargets(value: $item, bareSlugs: $bareSlugs, schemaSlugs: $schemaSlugs);
-			}
-
-			return;
+	private function seedReferenceTargetUuid(array $targetData, ?string $appId): mixed {
+		[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
+		if ($registerObject === null || $schemaObject === null) {
+			return null;
 		}
 
-		if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
-			return;
-		}
-
-		$reference = substr($value, strlen('@ref:'));
-		if (str_contains($reference, ':') === true) {
-			$schemaSlugs[$reference] = true;
-			return;
-		}
-
-		$bareSlugs[$reference] = true;
-	}//end collectRefTargets()
-
-	/**
-	 * Recursively replace `@ref:` tokens in a value with resolved target UUIDs.
-	 *
-	 * A token is matched only when it spans the whole string value, in one of:
-	 *  - `@ref:<slug>`               — resolved by slug (must be unambiguous).
-	 *  - `@ref:<schema-slug>:<slug>` — resolved by schema + slug (explicit).
-	 *
-	 * @param mixed $value The property value (scalar, list, or map).
-	 * @param array $uuidBySchemaSlug Map of "schemaSlug:objectSlug" => uuid.
-	 * @param array $uuidBySlug Map of "objectSlug" => uuid.
-	 * @param array $ambiguousSlugs Set of slugs that map to multiple objects.
-	 *
-	 * @return mixed The value with any `@ref:` tokens replaced.
-	 */
-	private function replaceRefTokens(
-		mixed $value,
-		array $uuidBySchemaSlug,
-		array $uuidBySlug,
-		array $ambiguousSlugs,
-	): mixed {
-		if (is_array($value) === true) {
-			foreach ($value as $key => $item) {
-				$value[$key] = $this->replaceRefTokens(
-					value: $item,
-					uuidBySchemaSlug: $uuidBySchemaSlug,
-					uuidBySlug: $uuidBySlug,
-					ambiguousSlugs: $ambiguousSlugs
-				);
-			}
-
-			return $value;
-		}
-
-		if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
-			return $value;
-		}
-
-		$reference = substr($value, strlen('@ref:'));
-		$schemaSlug = null;
-		$objectSlug = $reference;
-		if (str_contains($reference, ':') === true) {
-			[$schemaSlug, $objectSlug] = explode(':', $reference, 2);
-		}
-
-		if ($schemaSlug !== null && $schemaSlug !== '') {
-			if (array_key_exists($schemaSlug . ':' . $objectSlug, $uuidBySchemaSlug) === true) {
-				return $uuidBySchemaSlug[$schemaSlug . ':' . $objectSlug];
-			}
-
-			$this->logger->warning(
-				message: '[ImportHandler] Unresolved seed reference "' . $value . '" — no imported object for that schema+slug.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $value;
-		}
-
-		if (array_key_exists($objectSlug, $ambiguousSlugs) === true) {
-			$this->logger->warning(
-				message: '[ImportHandler] Ambiguous seed reference "' . $value . '"; slug exists in '
-					. 'multiple schemas — use @ref:<schema>:<slug>. Left unresolved.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $value;
-		}
-
-		if (array_key_exists($objectSlug, $uuidBySlug) === true) {
-			return $uuidBySlug[$objectSlug];
-		}
-
-		$this->logger->warning(
-			message: '[ImportHandler] Unresolved seed reference "' . $value . '" — no imported object with that slug.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
+		$uuid = $this->findExistingSeedUuid(
+			register: $registerObject,
+			schema: $schemaObject,
+			slug: $targetData['@self']['slug']
 		);
+		if (empty($uuid) === true) {
+			$uuid = $targetData['@self']['id'] ?? null;
+		}
 
-		return $value;
-	}//end replaceRefTokens()
+		if (empty($uuid) === true) {
+			$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+		}
+
+		return $uuid;
+	}//end seedReferenceTargetUuid()
 
 	/**
 	 * Resolve a seed object's `@self` register + schema slugs to their entities,
