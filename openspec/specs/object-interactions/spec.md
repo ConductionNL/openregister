@@ -69,7 +69,7 @@ The system SHALL register `"openregister"` as a valid entity type with Nextcloud
 
 #### Scenario: Listener registered in Application.php
 - **GIVEN** the OpenRegister `Application` class
-- **THEN** `CommentsEntityListener` MUST be registered as a listener for `CommentsEntityEvent` in `registerEventListeners()`
+- **THEN** `CommentsEntityListener` MUST be registered as a listener for `CommentsEntityEvent` in `ListenerRegistrar::register()`
 
 ### Requirement: Tasks on Objects via CalDAV VTODO
 

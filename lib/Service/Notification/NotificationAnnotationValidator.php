@@ -533,38 +533,46 @@ final class NotificationAnnotationValidator {
 			}
 		}
 
-		return array_merge($errors, $this->validateSubjectDefaultLocale(name: $name, subject: $subject));
+		$defaultLocale = $this->undeclaredDefaultLocale(map: $subject);
+		if ($defaultLocale !== null) {
+			$errors[] = [
+				'code' => 'notification-bad-default-locale',
+				'message' => sprintf('Notification "%s" defaultLocale "%s" is not declared in the subject map.', $name, $defaultLocale),
+			];
+		}
+
+		return $errors;
 	}//end validateSubjectMap()
 
 	/**
-	 * Errors for a subject map's `defaultLocale`, which must name a declared locale.
+	 * The declared `defaultLocale` of a subject or message map when it does
+	 * not name a locale the map declares, as it appears in a diagnostic.
 	 *
-	 * @param string              $name    The rule key.
-	 * @param array<mixed, mixed> $subject The declared subject map.
+	 * A non-scalar is named by its type, since casting it would only print
+	 * "Array".
 	 *
-	 * @return array<int, array<string, mixed>>
+	 * @param array<mixed, mixed> $map The subject or message map.
+	 *
+	 * @return string|null Null when the map declares no default or a declared one.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateSubjectDefaultLocale(string $name, array $subject): array {
-		if (isset($subject['defaultLocale']) === false) {
-			return [];
+	private function undeclaredDefaultLocale(array $map): ?string {
+		if (isset($map['defaultLocale']) === false) {
+			return null;
 		}
 
-		$defaultLocale     = $subject['defaultLocale'];
-		$defaultLocaleBad  = is_string($defaultLocale) === false;
-		$defaultLocaleBad |= isset($subject[$defaultLocale]) === false;
-		if ((bool)$defaultLocaleBad === false) {
-			return [];
+		$defaultLocale = $map['defaultLocale'];
+		if (is_string($defaultLocale) === true && isset($map[$defaultLocale]) === true) {
+			return null;
 		}
 
-		return [
-			[
-				'code' => 'notification-bad-default-locale',
-				'message' => sprintf('Notification "%s" defaultLocale "%s" is not declared in the subject map.', $name, (string)$defaultLocale),
-			],
-		];
-	}//end validateSubjectDefaultLocale()
+		if (is_scalar($defaultLocale) === true) {
+			return (string)$defaultLocale;
+		}
+
+		return get_debug_type($defaultLocale);
+	}//end undeclaredDefaultLocale()
 
 	/**
 	 * Errors for the settings a declared `webhook` or `talk` channel needs.
@@ -1030,20 +1038,16 @@ final class NotificationAnnotationValidator {
 			}
 		}
 
-		if (isset($message['defaultLocale']) === true) {
-			$defaultLocale = $message['defaultLocale'];
-			$defaultLocaleBad = is_string($defaultLocale) === false;
-			$defaultLocaleBad |= isset($message[$defaultLocale]) === false;
-			if ((bool)$defaultLocaleBad === true) {
-				$errors[] = [
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
-						$name,
-						(string)$defaultLocale
-					),
-				];
-			}
+		$defaultLocale = $this->undeclaredDefaultLocale(map: $message);
+		if ($defaultLocale !== null) {
+			$errors[] = [
+				'code' => $code,
+				'message' => sprintf(
+					'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
+					$name,
+					$defaultLocale
+				),
+			];
 		}
 
 		return $errors;
