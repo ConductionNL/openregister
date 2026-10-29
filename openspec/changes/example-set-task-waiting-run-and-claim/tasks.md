@@ -1,0 +1,5 @@
+- [ ] T01 Decide how a seeded waiting run stays out of the flow worker (open question 1)
+- [ ] T02 ExampleSetFlows accepts a waiting run on a human-task node
+- [ ] T03 ExampleSetValues resolves `{{flowRun:<flow>.<run>}}`; ExampleSetTasks accepts runUuid and nodeId and checks them against that run
+- [ ] T04 ExampleSetTasks accepts claimedBy and claimedAt and writes a claim audit entry through TaskService
+- [ ] T05 PHPUnit for each, including remove order
