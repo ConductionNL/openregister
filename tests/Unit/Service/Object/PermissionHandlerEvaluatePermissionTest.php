@@ -53,6 +53,20 @@ use Stringable;
  * the refusal.
  *
  * Expected values live in `fixtures/evaluate-permission.php`, one entry per case.
+ *
+ * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Event\CustomScopeEvaluatedEvent
+ * @uses   \OCA\OpenRegister\Event\CustomScopeEvaluatingEvent
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheck
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  */
 class PermissionHandlerEvaluatePermissionTest extends TestCase {
 

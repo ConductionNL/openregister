@@ -16,6 +16,8 @@
  * @link      https://github.com/ConductionNL/openregister
  */
 
+declare(strict_types=1);
+
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
