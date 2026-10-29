@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\TextExtraction;
 
 use Exception;
 use OCP\Files\File;
+use OCP\IAppConfig;
 use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 use Psr\Log\LoggerInterface;
 
@@ -42,10 +43,12 @@ class WordExtractor {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger Logger.
+	 * @param LoggerInterface $logger    Logger.
+	 * @param IAppConfig|null $appConfig App config, read for the experimental `word_text_reader` switch.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 	}//end __construct()
 
@@ -59,6 +62,11 @@ class WordExtractor {
 	 * @throws Exception When the PhpWord library is unavailable.
 	 */
 	public function extract(File $file): ?string {
+		$readerName = $this->resolveWordReader(mimeType: (string)$file->getMimeType(), fileName: (string)$file->getName());
+		if ($this->usesNativeReader(readerName: $readerName) === true) {
+			return $this->extractWithoutPhpWord(file: $file, readerName: $readerName);
+		}
+
 		// Check if PhpWord library is available (deployment error — still throws).
 		if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
 			$this->logger->warning(
@@ -73,8 +81,6 @@ class WordExtractor {
 			$msg .= 'Run: composer require phpoffice/phpword';
 			throw new Exception($msg);
 		}
-
-		$readerName = $this->resolveWordReader(mimeType: (string)$file->getMimeType(), fileName: (string)$file->getName());
 
 		$tempFile = null;
 		try {
@@ -165,6 +171,48 @@ class WordExtractor {
 			return null;
 		}//end try
 	}//end extract()
+
+	/**
+	 * Whether app config `word_text_reader` = `native` applies to this format (not legacy .doc).
+	 *
+	 * @param string $readerName The PhpWord reader name for the file.
+	 *
+	 * @return bool
+	 */
+	private function usesNativeReader(string $readerName): bool {
+		return $readerName !== 'MsDoc'
+			&& $this->appConfig?->getValueString('openregister', 'word_text_reader', 'phpword') === 'native';
+	}//end usesNativeReader()
+
+	/**
+	 * Extract DOCX or ODT text with {@see WordTextReader} instead of PhpWord.
+	 *
+	 * Experimental, enabled by app config `word_text_reader` = `native`.
+	 *
+	 * @param File   $file       The document.
+	 * @param string $readerName `Word2007` or `ODText`.
+	 *
+	 * @return string|null The text, or null when empty or unreadable.
+	 *
+	 * @spec openspec/specs/text-extraction-word/spec.md
+	 */
+	private function extractWithoutPhpWord(File $file, string $readerName): ?string {
+		try {
+			$text = (new WordTextReader())->read(bytes: $file->getContent(), format: $readerName);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[WordExtractor] Native Word extraction failed; returning null',
+				context: ['fileId' => $file->getId(), 'reader' => $readerName, 'exception' => get_class($e)]
+			);
+			return null;
+		}
+
+		if ($text === null || trim($text) === '') {
+			return null;
+		}
+
+		return $text;
+	}//end extractWithoutPhpWord()
 
 	/**
 	 * Recursively walk PhpWord elements accumulating their text.
