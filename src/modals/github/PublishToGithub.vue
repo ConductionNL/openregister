@@ -204,6 +204,9 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue setup hook — exposes navigationStore to the template.
+	 */
 	setup() {
 		return { navigationStore }
 	},
