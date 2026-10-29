@@ -1,0 +1,990 @@
+{
+    "ambiguous": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "a",
+                            "slug": "dup",
+                            "id": "UUID-A"
+                        }
+                    },
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "b",
+                            "slug": "dup",
+                            "id": "UUID-B"
+                        }
+                    },
+                    {
+                        "x": "@ref:dup",
+                        "y": "UUID-A",
+                        "z": "UUID-B",
+                        "@self": {
+                            "register": "r",
+                            "schema": "src",
+                            "slug": "s1"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "a"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 1,
+                        "slug": "dup"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "schema.find",
+                "b"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 1,
+                        "slug": "dup"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "warning",
+                "[ImportHandler] Ambiguous seed reference \"@ref:dup\"; slug exists in multiple schemas — use @ref:<schema>:<slug>. Left unresolved.",
+                []
+            ]
+        ]
+    },
+    "bare": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    {
+                        "shift": "UUID-SHIFT",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "shift-1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "empty-schema-prefix": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    {
+                        "x": "@ref::shift-1",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref::shift-1\" — no imported object with that slug.",
+                []
+            ]
+        ]
+    },
+    "foreign-schema": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "listing",
+                            "schema": "foreign",
+                            "slug": "f1",
+                            "id": "UF"
+                        }
+                    },
+                    {
+                        "f": "@ref:f1",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "listing"
+            ],
+            [
+                "schema.find",
+                "foreign"
+            ],
+            [
+                "warning",
+                "[ImportHandler] Skipping seed object: its schema belongs to another app and is not in its register",
+                {
+                    "appId": "mine",
+                    "registerSlug": "listing",
+                    "schemaSlug": "foreign",
+                    "schemaId": 7,
+                    "schemaApplication": "other"
+                }
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:f1\" — no imported object with that slug.",
+                []
+            ]
+        ]
+    },
+    "foreign-schema-own-app": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "listing",
+                            "schema": "foreign",
+                            "slug": "f1",
+                            "id": "UF"
+                        }
+                    },
+                    {
+                        "f": "UF",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "listing"
+            ],
+            [
+                "schema.find",
+                "foreign"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 7,
+                        "slug": "f1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "minted": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "fresh",
+                            "id": "MINTED-0"
+                        }
+                    },
+                    {
+                        "shift": "MINTED-0",
+                        "again": "MINTED-0",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "fresh"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "nested": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    {
+                        "a": {
+                            "b": [
+                                "UUID-SHIFT",
+                                "plain",
+                                7,
+                                null,
+                                [
+                                    "UUID-SHIFT"
+                                ]
+                            ]
+                        },
+                        "@self": {
+                            "register": "r",
+                            "schema": "rep",
+                            "slug": "r1"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "shift-1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "no-objects-key": {
+        "out": {
+            "components": []
+        },
+        "calls": []
+    },
+    "no-tokens": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        },
+                        "v": "plain",
+                        "n": 3
+                    }
+                ]
+            }
+        },
+        "calls": []
+    },
+    "objects-not-array": {
+        "out": {
+            "components": {
+                "objects": "x"
+            }
+        },
+        "calls": []
+    },
+    "odd-entries": {
+        "out": {
+            "components": {
+                "objects": [
+                    "not-an-array",
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "",
+                            "id": "NOSLUG"
+                        }
+                    },
+                    {
+                        "v": "UUID-SHIFT"
+                    },
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    7
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "shift-1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "persisted-entity": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "entity",
+                            "id": "FLAT-ID"
+                        }
+                    },
+                    {
+                        "shift": "FLAT-ID",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "entity"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "persisted-wins": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "persisted",
+                            "id": "PERSISTED"
+                        }
+                    },
+                    {
+                        "shift": "PERSISTED",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "persisted"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "qualified": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    {
+                        "shift": "UUID-SHIFT",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "shift-1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "qualified-only-referenced": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "other",
+                            "slug": "shift-1",
+                            "id": "UNREF"
+                        }
+                    },
+                    {
+                        "x": "UUID-SHIFT",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "shift-1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "register-missing": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "missing",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "U1"
+                        }
+                    },
+                    {
+                        "shift": "@ref:shift-1",
+                        "@self": {
+                            "register": "missing",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "missing"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:shift-1\" — no imported object with that slug.",
+                []
+            ]
+        ]
+    },
+    "same-slug-same-uuid": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "a",
+                            "slug": "dup",
+                            "id": "UUID-SAME"
+                        }
+                    },
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "b",
+                            "slug": "dup",
+                            "id": "UUID-SAME"
+                        }
+                    },
+                    {
+                        "x": "UUID-SAME",
+                        "@self": {
+                            "register": "r",
+                            "schema": "src",
+                            "slug": "s1"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "a"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 1,
+                        "slug": "dup"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "schema.find",
+                "b"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 1,
+                        "slug": "dup"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "schema-missing": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "gone",
+                            "slug": "shift-1",
+                            "id": "U1"
+                        }
+                    },
+                    {
+                        "shift": "@ref:shift-1",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "gone"
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:shift-1\" — no imported object with that slug.",
+                []
+            ]
+        ]
+    },
+    "search-throws": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "boom",
+                            "id": "UUID-BOOM"
+                        }
+                    },
+                    {
+                        "shift": "UUID-BOOM",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "boom"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "self-null": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "x": "UUID-SHIFT"
+                    },
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "shift-1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "target-without-schema": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "slug": "noschema",
+                            "id": "UNS"
+                        }
+                    },
+                    {
+                        "x": "@ref:noschema",
+                        "y": "@ref:drop:noschema",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:noschema\" — no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:drop:noschema\" — no imported object for that schema+slug.",
+                []
+            ]
+        ]
+    },
+    "token-inside-self": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d",
+                            "owner": "@ref:shift-1"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "r"
+            ],
+            [
+                "schema.find",
+                "shift"
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 5,
+                        "slug": "shift-1"
+                    },
+                    "_limit": 1
+                }
+            ]
+        ]
+    },
+    "unresolved-bare": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "shift": "@ref:nope",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:nope\" — no imported object with that slug.",
+                []
+            ]
+        ]
+    },
+    "unresolved-qualified": {
+        "out": {
+            "components": {
+                "objects": [
+                    {
+                        "@self": {
+                            "register": "r",
+                            "schema": "shift",
+                            "slug": "shift-1",
+                            "id": "UUID-SHIFT"
+                        }
+                    },
+                    {
+                        "shift": "@ref:other:shift-1",
+                        "@self": {
+                            "register": "r",
+                            "schema": "drop",
+                            "slug": "d"
+                        }
+                    }
+                ]
+            }
+        },
+        "calls": [
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:other:shift-1\" — no imported object for that schema+slug.",
+                []
+            ]
+        ]
+    }
+}
