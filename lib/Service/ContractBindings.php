@@ -20,16 +20,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Contract\ExampleSetInstallerInterface;
-use OCA\OpenRegister\Contract\FlowTimerControlInterface;
-use OCA\OpenRegister\Contract\McpCatalogueInterface;
-use OCA\OpenRegister\Contract\ObjectExporterInterface;
-use OCA\OpenRegister\Contract\ObjectImporterInterface;
-use OCA\OpenRegister\Contract\ObjectMergerInterface;
-use OCA\OpenRegister\Contract\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Merge\MergeService;
+use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\SaveObject;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -47,13 +56,18 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
-		FlowTimerControlInterface::class    => FlowTimerService::class,
-		McpCatalogueInterface::class        => McpDiscoveryService::class,
-		ObjectExporterInterface::class      => ExportService::class,
-		ObjectImporterInterface::class      => ImportService::class,
-		ObjectMergerInterface::class        => MergeService::class,
-		SchemaExplorationInterface::class   => SchemaService::class,
+		ExampleSetInstallerInterface::class          => ExampleSetInstaller::class,
+		FlowTimerControlInterface::class             => FlowTimerService::class,
+		McpCatalogueInterface::class                 => McpDiscoveryService::class,
+		ObjectExporterInterface::class               => ExportService::class,
+		ObjectImporterInterface::class               => ImportService::class,
+		ObjectMergerInterface::class                 => MergeService::class,
+		ObjectNotificationDispatcherInterface::class => AnnotationNotificationDispatcher::class,
+		ObjectRendererInterface::class               => RenderObject::class,
+		ObjectSaverInterface::class                  => SaveObject::class,
+		ObjectTransitionInterface::class             => TransitionEngine::class,
+		SchemaExplorationInterface::class            => SchemaService::class,
+		WebhookDeliveryInterface::class              => WebhookService::class,
 	];
 
 	/**

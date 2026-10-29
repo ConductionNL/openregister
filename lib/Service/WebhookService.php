@@ -32,6 +32,7 @@ use DateTime;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Webhook;
@@ -61,7 +62,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Webhook delivery requires mapping, formatting, and logging dependencies
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class WebhookService {
+class WebhookService implements WebhookDeliveryInterface {
 
 	/**
 	 * Webhook mapper

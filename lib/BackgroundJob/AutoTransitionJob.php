@@ -28,11 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
@@ -75,7 +75,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 * @param OrganisationService $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
-	 * @param TransitionEngine $engine The one path every automatic move goes through.
+	 * @param ObjectTransitionInterface $engine The one path every automatic move goes through.
 	 * @param AutoTransitionPass $pass The pass, resumed with the entry's carried lineage.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
@@ -87,7 +87,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 		OrganisationService $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly TransitionEngine $engine,
+		private readonly ObjectTransitionInterface $engine,
 		private readonly AutoTransitionPass $pass,
 	) {
 		parent::__construct(
