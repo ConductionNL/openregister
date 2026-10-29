@@ -96,34 +96,52 @@ class WordExtractorGoldenTest extends TestCase {
 	}//end testTrackedInsertionIsRead()
 
 	/**
-	 * The deleted text of a tracked change is indexed too.
+	 * The deleted text of a tracked change is not document text.
 	 *
 	 * @return void
 	 */
-	public function testTrackedDeletionIsRead(): void {
-		$this->assertStringContainsString('Het bedrag is 12.000 15.000 euro.', $this->extract(path: 'Word/concept-besluit-demostad.docx', mime: self::DOCX));
-	}//end testTrackedDeletionIsRead()
+	public function testTrackedDeletionIsSkipped(): void {
+		$this->assertStringContainsString('Het bedrag is 15.000 euro.', $this->extract(path: 'Word/concept-besluit-demostad.docx', mime: self::DOCX));
+		$this->assertStringNotContainsString('12.000', $this->extract(path: 'Word/concept-besluit-demostad.docx', mime: self::DOCX));
+		$this->assertStringNotContainsString('12.000', $this->extract(path: 'Word/word-structures.docx', mime: self::DOCX));
+	}//end testTrackedDeletionIsSkipped()
 
 	/**
-	 * A name split over two runs comes out split.
+	 * A name split over two runs is read as one word.
 	 *
 	 * @return void
 	 */
-	public function testNameSplitOverRunsIsSplit(): void {
-		$this->assertStringContainsString('Gesplitst: Ja n Jansen tekent.', $this->extract(path: 'Word/word-structures.docx', mime: self::DOCX));
-	}//end testNameSplitOverRunsIsSplit()
+	public function testNameSplitOverRunsIsJoined(): void {
+		$this->assertStringContainsString('Gesplitst: Jan Jansen tekent.', $this->extract(path: 'Word/word-structures.docx', mime: self::DOCX));
+	}//end testNameSplitOverRunsIsJoined()
 
 	/**
-	 * An ODT yields its body paragraphs, list and footnote.
+	 * Each footnote is read once.
 	 *
 	 * @return void
 	 */
-	public function testOdtBodyIsRead(): void {
+	public function testFootnoteIsReadOnce(): void {
+		$this->assertSame(1, substr_count($this->extract(path: 'Word/word-structures.docx', mime: self::DOCX), 'Voetnoot over Maria Bakker.'));
+	}//end testFootnoteIsReadOnce()
+
+	/**
+	 * An ODT yields its header, body, table cells (nested too), list, footnote and footer.
+	 *
+	 * @return void
+	 */
+	public function testOdtStructuresAreRead(): void {
 		$text = $this->extract(path: 'Word/word-structures.odt', mime: self::ODT);
 
 		foreach ([
+			'Gemeente Demostad kenmerk ZK-2026-0042',
+			'Behandelaar Jan Jansen telefoon 0612345678',
 			'Besluit op aanvraag',
-			'Maria',
+			'Aanvrager Maria Bakker woont aan de Kerkstraat 12 in Demostad.',
+			'Rol Naam',
+			'Gemachtigde Jan Jansen',
+			'Kind Sanne Bakker',
+			'Naam: Jan Jansen Tweede regel',
+			'Gesplitst: Jan Jansen tekent.',
 			'Het bedrag is 15.000 euro.',
 			'Contact via maria.bakker@example.nl',
 			'Voetnoot over Maria Bakker.',
@@ -134,21 +152,9 @@ class WordExtractorGoldenTest extends TestCase {
 		}
 
 		$this->assertStringNotContainsString('12.000', $text);
-	}//end testOdtBodyIsRead()
-
-	/**
-	 * The ODT header, footer, table cells and paragraph text around spans are dropped.
-	 *
-	 * @return void
-	 */
-	public function testOdtDropsHeaderFooterAndTables(): void {
-		$text = $this->extract(path: 'Word/word-structures.odt', mime: self::ODT);
-
-		$this->assertStringNotContainsString('Gemeente Demostad', $text);
-		$this->assertStringNotContainsString('Behandelaar Jan Jansen', $text);
-		$this->assertStringNotContainsString('Gemachtigde', $text);
-		$this->assertStringNotContainsString('woont aan de Kerkstraat', $text);
-	}//end testOdtDropsHeaderFooterAndTables()
+		$this->assertStringNotContainsString('Controleer de naam', $text, 'Comments are not document text.');
+		$this->assertStringNotContainsString('Piet de Vries', $text, 'Change and comment authors are not document text.');
+	}//end testOdtStructuresAreRead()
 
 	/**
 	 * A real Word document reads the same as before.
