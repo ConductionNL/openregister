@@ -32,8 +32,8 @@ use Psr\Log\LoggerInterface;
  * log line with `fixtures/rate-limiter-golden.json`. Set `OR_GOLDEN_WRITE=1`
  * to regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\RateLimiter
- * @uses \OCA\OpenRegister\Service\Notification\TokenBucket
+ * @covers \OCA\OpenRegister\Service\Notification\RateLimiter
+ * @covers \OCA\OpenRegister\Service\Notification\TokenBucket
  */
 final class RateLimiterGoldenTest extends TestCase {
 
@@ -129,8 +129,6 @@ final class RateLimiterGoldenTest extends TestCase {
 	 * @param string $name The scenario name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::tryConsume
 	 *
 	 * @dataProvider cases
 	 */
