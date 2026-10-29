@@ -5644,14 +5644,14 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Delete one row of a bulk delete, recording it as deleted or skipped with a reason.
      *
-     * @param string|int $uuid The UUID to delete.
+     * @param mixed $uuid The requested identifier, as the caller passed it.
      * @param array      $run  The bulk delete run: flags, pre-resolved rows, caches and outcome buckets.
      *
      * @return void
      *
      * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
      */
-    private function deleteBulkRow(string | int $uuid, array &$run): void
+    private function deleteBulkRow(mixed $uuid, array &$run): void
     {
         $reason = $this->bulkDeleteOutcome(uuid: $uuid, run: $run);
         if ($reason !== null) {
@@ -5663,14 +5663,14 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Delete one row of a bulk delete and say why it was skipped, if it was.
      *
-     * @param string|int $uuid The UUID to delete.
+     * @param mixed $uuid The requested identifier, as the caller passed it.
      * @param array      $run  The bulk delete run.
      *
      * @return array|null The skip reason, or null when the row was deleted.
      *
      * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
      */
-    private function bulkDeleteOutcome(string | int $uuid, array &$run): ?array
+    private function bulkDeleteOutcome(mixed $uuid, array &$run): ?array
     {
         try {
             $scope   = $this->resolveBulkDeleteScope(uuid: $uuid, run: $run);
@@ -5744,7 +5744,7 @@ class ObjectService implements ObjectServiceInterface
      * scope to the handler, so it skips its own cross-table re-find; when the
      * scope entities cannot be materialised the current scope is used.
      *
-     * @param string|int $uuid The UUID to resolve.
+     * @param mixed $uuid The requested identifier, as the caller passed it.
      * @param array      $run  The bulk delete run.
      *
      * @return array The scope: uuid, registerId, schemaId, row, the register and schema for the
@@ -5752,7 +5752,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
      */
-    private function resolveBulkDeleteScope(string | int $uuid, array &$run): array
+    private function resolveBulkDeleteScope(mixed $uuid, array &$run): array
     {
         $scope = [
             'uuid'        => $uuid,
