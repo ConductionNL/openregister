@@ -61,6 +61,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'candidateGroups',
 		'priority',
 		'dueAt',
+		'expiresAt',
 		'completedAt',
 		'completedBy',
 		'kind',
@@ -69,6 +70,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'checklist',
 		'taskKey',
 		'organisation',
+		'requester',
 	];
 
 
@@ -248,7 +250,9 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	}//end fieldsRefusal()
 
 	/**
-	 * An assignee or completer that is not one of the set's own accounts.
+	 * An assignee, completer or requester that is not one of the set's own accounts.
+	 *
+	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 *
 	 * @param array<string, mixed> $data  The filled task fields.
 	 * @param array<int, string>   $users The account ids the set creates or adopts.
@@ -256,10 +260,10 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @return string
 	 */
 	private function peopleRefusal(array $data, array $users): string {
-		$fields = ['assignee', 'completedBy'];
+		$fields = ['assignee', 'completedBy', 'requester'];
 		if (ExampleSetExternalTask::isExternal(data: $data) === true) {
 			// A party is checked by externalRefusal(), never against the set's accounts.
-			$fields = ['completedBy'];
+			$fields = ['completedBy', 'requester'];
 		}
 
 		foreach ($fields as $field) {
@@ -290,17 +294,25 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	}//end stateRefusal()
 
 	/**
-	 * A due or completion date that is not a date.
+	 * A due, expiry or completion date that is not a date, or an expiry before the due date.
+	 *
+	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 *
 	 * @param array<string, mixed> $data The filled task fields.
 	 *
 	 * @return string
 	 */
 	private function datesRefusal(array $data): string {
-		foreach (['dueAt', 'completedAt'] as $field) {
+		foreach (['dueAt', 'expiresAt', 'completedAt'] as $field) {
 			if (isset($data[$field]) === true && $this->moment(value: $data[$field]) === null) {
 				return $field.' "'.(string) $data[$field].'" is not a date';
 			}
+		}
+
+		if (isset($data['dueAt'], $data['expiresAt']) === true
+			&& $this->moment(value: $data['expiresAt']) < $this->moment(value: $data['dueAt'])
+		) {
+			return 'expiresAt lies before dueAt: a task that dies before it is due is a configuration error';
 		}
 
 		return '';

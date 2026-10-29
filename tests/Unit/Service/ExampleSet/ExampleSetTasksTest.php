@@ -191,6 +191,32 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'example-set:alpha/gewoon', actual: $this->taskImports[1]['data']['key'], message: 'without taskKey the set names it');
 	}//end testATaskKeepsTheKeyAndOrganisationItDeclares()
 
+	/**
+	 * A task may name who asked for it and when it expires: the requester is one of the set's people, the expiry a
+	 * date the loader resolves from the install day.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
+	 */
+	public function testATaskKeepsItsRequesterAndExpiry(): void {
+		$this->caseWithTasks(tasks: [
+			['key' => 'hoorzitting', 'data' => [
+				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'assignee' => '{{cast:esra.uid}}',
+				'requester' => '{{cast:sanne.uid}}', 'dueAt' => '{{date:5}}', 'expiresAt' => '{{datetime:9 17:00}}',
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$import = $this->taskImports[0]['data'];
+		$this->assertSame(expected: 'sanne.devries', actual: $import['requester']);
+		$this->assertSame(expected: '2026-10-22 17:00', actual: (new \DateTime($import['expiresAt']))->format('Y-m-d H:i'));
+	}//end testATaskKeepsItsRequesterAndExpiry()
+
 	public function testATaskThatDisappearedIsReportedMissing(): void {
 		$this->caseWithTasks([['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
 		$plan = $this->catalogue->gather(set: 'demo');
@@ -253,7 +279,15 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 			'a stranger'       => [['title' => 'T', 'objectUuid' => $on, 'assignee' => 'somebody.else'], 'assignee "somebody.else"'],
 			'an unknown state' => [['title' => 'T', 'objectUuid' => $on, 'state' => 'half-done'], "Unmapped task status 'half-done'"],
 			'not a date'       => [['title' => 'T', 'objectUuid' => $on, 'dueAt' => 'soon'], 'dueAt "soon" is not a date'],
-			'another field'    => [['title' => 'T', 'objectUuid' => $on, 'requester' => 'x'], 'field "requester"'],
+			'another field'    => [['title' => 'T', 'objectUuid' => $on, 'runUuid' => 'x'], 'field "runUuid"'],
+			'a stranger asked for it' => [['title' => 'T', 'objectUuid' => $on, 'requester' => 'somebody.else'], 'requester "somebody.else"'],
+			'an unknown requester' => [['title' => 'T', 'objectUuid' => $on, 'requester' => '{{cast:nobody.uid}}'], 'cannot resolve'],
+			'an expiry that is not a date' => [['title' => 'T', 'objectUuid' => $on, 'expiresAt' => 'later'], 'expiresAt "later" is not a date'],
+			'a malformed expiry token' => [['title' => 'T', 'objectUuid' => $on, 'expiresAt' => '{{datetime:9}}'], 'cannot resolve'],
+			'an expiry before the due date' => [
+				['title' => 'T', 'objectUuid' => $on, 'dueAt' => '{{date:9}}', 'expiresAt' => '{{date:5}}'],
+				'expiresAt lies before dueAt',
+			],
 			'an unknown object' => [['title' => 'T', 'objectUuid' => '{{object:nope.id}}'], 'cannot resolve'],
 			'an external task for an account' => [
 				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => '{{cast:sanne.uid}}'],
