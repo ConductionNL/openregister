@@ -42,7 +42,10 @@ function context() {
 	}
 	for (const [name, getter] of Object.entries(EditConfiguration.computed)) {
 		const fn = typeof getter === 'function' ? getter : getter.get
-		Object.defineProperty(ctx, name, { get: () => fn.call(ctx), enumerable: false })
+		Object.defineProperty(ctx, name, {
+			get: () => fn.call(ctx),
+			enumerable: false,
+		})
 	}
 	return ctx
 }
@@ -102,7 +105,11 @@ describe('EditConfiguration.loadExistingSelections', () => {
 	})
 
 	it('maps an unknown application and type to their fallbacks', async () => {
-		configurationStore.configurationItem = { application: 'gone', type: 'nope', sourceType: 'nope' }
+		configurationStore.configurationItem = {
+			application: 'gone',
+			type: 'nope',
+			sourceType: 'nope',
+		}
 		const ctx = context()
 		await ctx.loadExistingSelections()
 		expect(ctx.selectedApplication).toBeNull()
@@ -128,13 +135,25 @@ describe('EditConfiguration.loadExistingSelections', () => {
 		for (const [key, target] of Object.entries(LINKED)) {
 			expect(ctx[target].map((e) => e.id)).toEqual([`${key}-1`, `${key}-2`])
 		}
-		for (const flag of ['loadingRegisters', 'loadingSchemas', 'loadingObjects', 'loadingSources', 'loadingAgents', 'loadingViews', 'loadingApplications']) {
+		for (const flag of [
+			'loadingRegisters',
+			'loadingSchemas',
+			'loadingObjects',
+			'loadingSources',
+			'loadingAgents',
+			'loadingViews',
+			'loadingApplications',
+		]) {
 			expect(ctx[flag]).toBe(false)
 		}
 	})
 
 	it('skips empty and non-list links', async () => {
-		configurationStore.configurationItem = { registers: [], schemas: 'x', objects: null }
+		configurationStore.configurationItem = {
+			registers: [],
+			schemas: 'x',
+			objects: null,
+		}
 		const ctx = context()
 		const before = ctx.selectedRegisters
 		await ctx.loadExistingSelections()
@@ -143,13 +162,19 @@ describe('EditConfiguration.loadExistingSelections', () => {
 	})
 
 	it('logs a failed fetch, keeps the old selection and carries on', async () => {
-		configurationStore.configurationItem = { registers: ['broken'], schemas: ['s-1'] }
+		configurationStore.configurationItem = {
+			registers: ['broken'],
+			schemas: ['s-1'],
+		}
 		const ctx = context()
 		const before = ctx.selectedRegisters
 		await ctx.loadExistingSelections()
 		expect(ctx.selectedRegisters).toBe(before)
 		expect(ctx.loadingRegisters).toBe(false)
-		expect(console.error).toHaveBeenCalledWith('Error loading selected registers:', expect.any(Error))
+		expect(console.error).toHaveBeenCalledWith(
+			'Error loading selected registers:',
+			expect.any(Error),
+		)
 		expect(ctx.selectedSchemas.map((e) => e.id)).toEqual(['s-1'])
 	})
 })
