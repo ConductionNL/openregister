@@ -4577,8 +4577,10 @@ class MagicSearchHandler {
 			$propertyName          = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
 			$object[$propertyName] = $this->convertRowValue(
 				value: $value,
-				type: ($schemaMaps['types'][$propertyName] ?? 'string'),
-				format: ($propertyFormats[$propertyName] ?? null)
+				property: [
+					'type'   => ($schemaMaps['types'][$propertyName] ?? 'string'),
+					'format' => ($propertyFormats[$propertyName] ?? null),
+				]
 			);
 		}
 
@@ -4593,14 +4595,14 @@ class MagicSearchHandler {
 	 * so the value is normalised here, as MagicStatisticsHandler does. A `date-time` column
 	 * carries no offset and is read back in UTC, the timezone the write path stored it in.
 	 *
-	 * @param mixed       $value  The column value
-	 * @param string      $type   The schema property type
-	 * @param string|null $format The schema property format
+	 * @param mixed                                     $value    The column value
+	 * @param array{type: string, format: string|null} $property The schema property type and format
 	 *
 	 * @return mixed
 	 */
-	private function convertRowValue(mixed $value, string $type, ?string $format): mixed {
-		$value = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $type);
+	private function convertRowValue(mixed $value, array $property): mixed {
+		$format = $property['format'];
+		$value  = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $property['type']);
 		if ($value === null || is_string($value) === false || $format === null) {
 			return $value;
 		}
@@ -4631,67 +4633,64 @@ class MagicSearchHandler {
 	 */
 	private function applyRowMetadata(ObjectEntity $entity, array $metadata): void {
 		foreach (self::ROW_METADATA_KINDS as $field => $kind) {
-			if (($metadata[$field] ?? null) !== null) {
-				$this->applyRowMetadataField(entity: $entity, field: $field, kind: $kind, value: $metadata[$field]);
+			if (($metadata[$field] ?? null) === null) {
+				continue;
+			}
+
+			$setter = 'set'.str_replace('_', '', ucwords($field, '_'));
+			foreach ($this->rowMetadataValues(kind: $kind, value: $metadata[$field]) as $setterValue) {
+				$entity->$setter($setterValue);
 			}
 		}
 	}//end applyRowMetadata()
 
 	/**
-	 * Set one metadata column on the entity, read the way its kind is stored.
+	 * The values one metadata column sets on the entity, in the order they are set.
 	 *
-	 * @param ObjectEntity $entity The entity being hydrated
-	 * @param string       $field  The metadata field, without its prefix
-	 * @param string       $kind   The field's kind in {@see self::ROW_METADATA_KINDS}
-	 * @param mixed        $value  The column value, not null
+	 * A JSON column sets its fallback first, then the decoded array when it is one.
 	 *
-	 * @return void
+	 * @param string $kind  The field's kind in {@see self::ROW_METADATA_KINDS}
+	 * @param mixed  $value The column value, not null
+	 *
+	 * @return list<mixed>
 	 */
-	private function applyRowMetadataField(ObjectEntity $entity, string $field, string $kind, mixed $value): void {
-		$setter = 'set'.str_replace('_', '', ucwords($field, '_'));
-
+	private function rowMetadataValues(string $kind, mixed $value): array {
 		switch ($kind) {
 			case 'datetime':
-				$entity->$setter(new DateTime($value));
-				break;
+				return [new DateTime($value)];
 			case 'deleted':
-				$entity->setDeleted($this->deletedMarker(raw: $value));
-				break;
+				return [$this->deletedMarker(raw: $value)];
 			case 'float':
-				$entity->$setter((float)$value);
-				break;
+				return [(float)$value];
 			case 'json':
-				$this->applyRowJsonField(entity: $entity, setter: $setter, value: $value, fallback: []);
-				break;
+				return $this->rowJsonValues(value: $value, fallback: []);
 			case 'json-or-null':
-				$this->applyRowJsonField(entity: $entity, setter: $setter, value: $value, fallback: null);
-				break;
+				return $this->rowJsonValues(value: $value, fallback: null);
 			default:
-				$entity->$setter($value);
+				return [$value];
 		}
-	}//end applyRowMetadataField()
+	}//end rowMetadataValues()
 
 	/**
-	 * Set a JSON metadata column: the fallback first, then the decoded array when it is one.
+	 * The values a JSON metadata column sets: the fallback, then the decoded array when it is one.
 	 *
-	 * @param ObjectEntity $entity   The entity being hydrated
-	 * @param string       $setter   The entity setter
-	 * @param mixed        $value    The column value, a JSON string or already decoded
-	 * @param array|null   $fallback The value set when the column holds no array
+	 * @param mixed      $value    The column value, a JSON string or already decoded
+	 * @param array|null $fallback The value set when the column holds no array
 	 *
-	 * @return void
+	 * @return list<array|null>
 	 */
-	private function applyRowJsonField(ObjectEntity $entity, string $setter, mixed $value, ?array $fallback): void {
+	private function rowJsonValues(mixed $value, ?array $fallback): array {
 		$decoded = $value;
 		if (is_string($value) === true) {
 			$decoded = json_decode($value, true);
 		}
 
-		$entity->$setter($fallback);
 		if (is_array($decoded) === true) {
-			$entity->$setter($decoded);
+			return [$fallback, $decoded];
 		}
-	}//end applyRowJsonField()
+
+		return [$fallback];
+	}//end rowJsonValues()
 
 	/**
 	 * The `_deleted` column as the marker `ObjectEntity::setDeleted()` takes.
