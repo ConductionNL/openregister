@@ -224,18 +224,18 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 		];
 
 		$this->assertFalse(
-			$this->evaluatorFor()->isSubstantive(
+			condition: $this->evaluatorFor()->isSubstantive(
 				new: $this->objectWith(
-					[
+					body: [
 						'groupName' => '',
 						'attachments' => [],
-						'statusHistory' => json_encode($history),
+						'statusHistory' => json_encode(value: $history),
 						'daysRemaining' => 11,
 						'address' => ['city' => 'Zuiddrecht', 'street' => 'Parkweg'],
 					]
 				),
 				old: $this->objectWith(
-					[
+					body: [
 						'groupName' => null,
 						'statusHistory' => $history,
 						'daysRemaining' => 11.0,
@@ -258,21 +258,21 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 		$evaluator = $this->evaluatorFor();
 
 		$this->assertTrue(
-			$evaluator->isSubstantive(
-				new: $this->objectWith(['statusHistory' => json_encode([['status' => 'closed']])]),
-				old: $this->objectWith(['statusHistory' => [['status' => 'received']]])
+			condition: $evaluator->isSubstantive(
+				new: $this->objectWith(body: ['statusHistory' => json_encode(value: [['status' => 'closed']])]),
+				old: $this->objectWith(body: ['statusHistory' => [['status' => 'received']]])
 			)
 		);
 		$this->assertTrue(
-			$evaluator->isSubstantive(
-				new: $this->objectWith(['daysRemaining' => 0]),
-				old: $this->objectWith(['daysRemaining' => null])
+			condition: $evaluator->isSubstantive(
+				new: $this->objectWith(body: ['daysRemaining' => 0]),
+				old: $this->objectWith(body: ['daysRemaining' => null])
 			)
 		);
 		$this->assertTrue(
-			$evaluator->isSubstantive(
-				new: $this->objectWith(['steps' => ['b', 'a']]),
-				old: $this->objectWith(['steps' => ['a', 'b']])
+			condition: $evaluator->isSubstantive(
+				new: $this->objectWith(body: ['steps' => ['b', 'a']]),
+				old: $this->objectWith(body: ['steps' => ['a', 'b']])
 			)
 		);
 
