@@ -21,6 +21,7 @@
 
 namespace OCA\OpenRegister\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\File\Office\ConversionManagerConverter;
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
 
@@ -31,18 +32,21 @@ class WordExtractor {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger Logger.
+	 * @param LoggerInterface                 $logger          Logger.
+	 * @param ConversionManagerConverter|null $officeConverter Office server conversion, for legacy .doc.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ?ConversionManagerConverter $officeConverter = null,
 	) {
 	}//end __construct()
 
 	/**
 	 * Extract plain text from a Word-family document.
 	 *
-	 * DOCX and ODT are read by {@see WordTextReader}. Legacy binary .doc is
-	 * not supported and gives null.
+	 * DOCX and ODT are read by {@see WordTextReader}. A legacy binary .doc is
+	 * converted by the office server to DOCX (read the same way) or to plain
+	 * text; without an office server that converts it, it gives null.
 	 *
 	 * @param File $file The document to extract.
 	 *
@@ -52,7 +56,7 @@ class WordExtractor {
 	 */
 	public function extract(File $file): ?string {
 		$readerName = $this->resolveWordReader(mimeType: (string)$file->getMimeType(), fileName: (string)$file->getName());
-		if ($readerName === 'MsDoc') {
+		if ($readerName === 'MsDoc' && $this->officeConverter?->legacyDocTarget() === null) {
 			$this->logger->info(
 				message: '[WordExtractor] Legacy binary .doc is not supported; no text extracted',
 				context: ['fileId' => $file->getId()]
@@ -64,16 +68,16 @@ class WordExtractor {
 	}//end extract()
 
 	/**
-	 * Extract DOCX or ODT text with {@see WordTextReader}.
+	 * Extract the text, logging failures without document content.
 	 *
 	 * @param File   $file       The document.
-	 * @param string $readerName `Word2007` or `ODText`.
+	 * @param string $readerName `Word2007`, `ODText` or `MsDoc`.
 	 *
 	 * @return string|null The text, or null when empty or unreadable.
 	 */
 	private function extractPackage(File $file, string $readerName): ?string {
 		try {
-			$text = (new WordTextReader())->read(bytes: $file->getContent(), format: $readerName);
+			$text = $this->textOf(file: $file, readerName: $readerName);
 		} catch (\Throwable $e) {
 			$text = null;
 			$this->logger->error(
@@ -92,6 +96,30 @@ class WordExtractor {
 
 		return $text;
 	}//end extractPackage()
+
+	/**
+	 * The text of a document: DOCX and ODT directly, legacy .doc after conversion.
+	 *
+	 * @param File   $file       The document.
+	 * @param string $readerName `Word2007`, `ODText` or `MsDoc`.
+	 *
+	 * @return string|null
+	 *
+	 * @throws \RuntimeException When the office server cannot convert a .doc.
+	 */
+	private function textOf(File $file, string $readerName): ?string {
+		if ($readerName !== 'MsDoc' || $this->officeConverter === null) {
+			return (new WordTextReader())->read(bytes: $file->getContent(), format: $readerName);
+		}
+
+		$target = (string)$this->officeConverter->legacyDocTarget();
+		$converted = $this->officeConverter->convertLegacyDoc(docBytes: $file->getContent(), target: $target);
+		if ($target === 'docx') {
+			return (new WordTextReader())->read(bytes: $converted, format: 'Word2007');
+		}
+
+		return $converted;
+	}//end textOf()
 
 	/**
 	 * Map a Word-family MIME type (or filename extension) to a reader name.
