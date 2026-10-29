@@ -875,6 +875,36 @@
             ]
         ]
     },
+    "objects-empty": {
+        "out": {
+            "registers": [],
+            "schemas": [],
+            "objects": [],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": null,
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 0
+            }
+        },
+        "calls": [
+            [
+                "register.findAll"
+            ],
+            [
+                "schema.findAll"
+            ]
+        ]
+    },
     "objects-only": {
         "out": {
             "registers": [],

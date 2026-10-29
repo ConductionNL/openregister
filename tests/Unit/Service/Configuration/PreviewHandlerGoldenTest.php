@@ -86,6 +86,7 @@ class PreviewHandlerGoldenTest extends TestCase {
 			'everything' => ['version' => '3.0.0', 'components' => ['registers' => $registers, 'schemas' => $schemas, 'objects' => $objects]],
 			'info-version' => ['info' => ['version' => '4.0.0'], 'components' => ['registers' => $registers]],
 			'objects-only' => ['components' => ['objects' => $objects]],
+			'objects-empty' => ['components' => ['objects' => []]],
 			'objects-as-objects' => ['components' => ['objects' => [(object)['title' => 'Obj', '@self' => ['register' => 'zaken', 'schema' => 'zaaktype', 'slug' => 'obj']]]]],
 			'not-arrays' => ['components' => ['registers' => 'x', 'schemas' => 5, 'objects' => null]],
 			'components-scalar' => ['components' => 'x'],
