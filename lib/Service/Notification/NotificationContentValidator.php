@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Notification;
 
 /**
  * Validates the `actions` and `message` of one `x-openregister-notifications` rule.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class NotificationContentValidator {
 
