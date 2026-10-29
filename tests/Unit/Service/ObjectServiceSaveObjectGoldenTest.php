@@ -169,7 +169,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			);
 			$actual = ['result' => $this->describe($saved)];
 		} catch (\Throwable $e) {
-			$actual = ['threw' => get_class($e), 'message' => $this->describe($e->getMessage())];
+			$actual = ['threw' => get_class($e), 'message' => preg_replace('/, called in .*$/', '', (string)$this->describe($e->getMessage()))];
 		}
 
 		$actual['calls'] = $this->calls;

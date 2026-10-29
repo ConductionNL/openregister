@@ -3065,7 +3065,7 @@
     },
     "no schema": {
         "threw": "TypeError",
-        "message": "CascadingHandler::handlePreValidationCascading(): Argument #2 ($schema) must be of type OCA\\OpenRegister\\Db\\Schema, null given, called in /home/rubenlinde/sig-lanes/l6c-or/openregister/lib/Service/ObjectService.php on line 2411",
+        "message": "CascadingHandler::handlePreValidationCascading(): Argument #2 ($schema) must be of type OCA\\OpenRegister\\Db\\Schema, null given",
         "calls": [
             [
                 "logger.debug",
