@@ -1,0 +1,2283 @@
+{
+    "agent empty views with selection": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\nSource: Two\ntext o2\n\nSource: b.txt\nfile f2\n\nSource: Object #o3\ntext o3\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "o2",
+                    "type": "object",
+                    "name": "Two",
+                    "similarity": 1,
+                    "text": "text o2",
+                    "uuid": "u2",
+                    "register": 5,
+                    "schema": 6,
+                    "uri": null
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "o3",
+                    "type": "object",
+                    "name": "Object #o3",
+                    "similarity": 1,
+                    "text": "text o3",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Using user-selected views (agent has none)",
+                {
+                    "views": 1
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                []
+            ],
+            [
+                "inView",
+                {
+                    "_limit": 3
+                },
+                [
+                    true,
+                    true,
+                    [
+                        "u1",
+                        "u2",
+                        "o3"
+                    ],
+                    null,
+                    [
+                        "v3"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 8,
+                    "fileSources": 3,
+                    "objectSources": 3,
+                    "contextLength": 195,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "agent views all": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\nSource: b.txt\nfile f2\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Using all agent views",
+                {
+                    "views": 2
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                []
+            ],
+            [
+                "inView",
+                {
+                    "_limit": 3
+                },
+                [
+                    true,
+                    true,
+                    [
+                        "u1",
+                        "u2",
+                        "o3"
+                    ],
+                    null,
+                    [
+                        "v1",
+                        "v2"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 6,
+                    "fileSources": 3,
+                    "objectSources": 1,
+                    "contextLength": 146,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "agent views filtered by selection": {
+        "result": {
+            "text": "Source: a.pdf\nfile f1\n\nSource: Two\ntext o2\n\nSource: b.txt\nfile f2\n\nSource: Object #o3\ntext o3\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "o2",
+                    "type": "object",
+                    "name": "Two",
+                    "similarity": 1,
+                    "text": "text o2",
+                    "uuid": "u2",
+                    "register": 5,
+                    "schema": 6,
+                    "uri": null
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "o3",
+                    "type": "object",
+                    "name": "Object #o3",
+                    "similarity": 1,
+                    "text": "text o3",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Using filtered views",
+                {
+                    "agentViews": 2,
+                    "selectedViews": 2,
+                    "filteredViews": 1
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                []
+            ],
+            [
+                "inView",
+                {
+                    "_limit": 3
+                },
+                [
+                    true,
+                    true,
+                    [
+                        "u1",
+                        "u2",
+                        "o3"
+                    ],
+                    null,
+                    [
+                        "v2"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 7,
+                    "fileSources": 3,
+                    "objectSources": 2,
+                    "contextLength": 167,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "f1",
+                        "type": "file",
+                        "name": "a.pdf",
+                        "similarity": 0.8,
+                        "text": "file f1",
+                        "file_id": 11,
+                        "file_path": "/a.pdf",
+                        "mime_type": "application/pdf"
+                    }
+                }
+            ]
+        ]
+    },
+    "agent views none left": {
+        "result": {
+            "text": "Source: a.pdf\nfile f1\n\nSource: b.txt\nfile f2\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Using filtered views",
+                {
+                    "agentViews": 1,
+                    "selectedViews": 1,
+                    "filteredViews": 0
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                []
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 5,
+                    "fileSources": 3,
+                    "objectSources": 0,
+                    "contextLength": 118,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "f1",
+                        "type": "file",
+                        "name": "a.pdf",
+                        "similarity": 0.8,
+                        "text": "file f1",
+                        "file_id": 11,
+                        "file_path": "/a.pdf",
+                        "mime_type": "application/pdf"
+                    }
+                }
+            ]
+        ]
+    },
+    "files only": {
+        "result": {
+            "text": "Source: a.pdf\nfile f1\n\nSource: b.txt\nfile f2\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                {
+                    "entity_type": [
+                        "file"
+                    ]
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 5,
+                    "fileSources": 3,
+                    "objectSources": 0,
+                    "contextLength": 118,
+                    "searchMode": "semantic",
+                    "includeObjects": false,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "f1",
+                        "type": "file",
+                        "name": "a.pdf",
+                        "similarity": 0.8,
+                        "text": "file f1",
+                        "file_id": 11,
+                        "file_path": "/a.pdf",
+                        "mime_type": "application/pdf"
+                    }
+                }
+            ]
+        ]
+    },
+    "hybrid non-array results": {
+        "result": {
+            "text": "",
+            "sources": []
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": false,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "hybrid",
+                "find the thing",
+                [],
+                10
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Search returned non-array result",
+                {
+                    "searchMode": "hybrid",
+                    "resultType": "string",
+                    "resultValue": "oops"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 0,
+                    "fileSources": 0,
+                    "objectSources": 0,
+                    "contextLength": 0,
+                    "searchMode": "hybrid",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 0
+                }
+            ]
+        ]
+    },
+    "keyword mode": {
+        "result": {
+            "text": "Source: Object #k1\n{\"id\":\"k1\",\"title\":\"x\"}\n\n",
+            "sources": [
+                {
+                    "id": "k1",
+                    "type": "object",
+                    "name": "Object #k1",
+                    "similarity": 1,
+                    "text": "{\"id\":\"k1\",\"title\":\"x\"}",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 2
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 1,
+                    "fileSources": 0,
+                    "objectSources": 1,
+                    "contextLength": 44,
+                    "searchMode": "keyword",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 1,
+                    "numSourcesObjects": 1,
+                    "rawResultsCount": 2
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "k1",
+                        "type": "object",
+                        "name": "Object #k1",
+                        "similarity": 1,
+                        "text": "{\"id\":\"k1\",\"title\":\"x\"}",
+                        "uuid": null,
+                        "register": null,
+                        "schema": null,
+                        "uri": null
+                    }
+                }
+            ]
+        ]
+    },
+    "keyword throws": {
+        "result": {
+            "text": "",
+            "sources": []
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": false,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[ContextRetrievalHandler] Failed to retrieve context",
+                {
+                    "error": "index down"
+                }
+            ]
+        ]
+    },
+    "limits reached early": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 2
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                2,
+                []
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 2,
+                    "fileSources": 1,
+                    "objectSources": 1,
+                    "contextLength": 51,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 1,
+                    "numSourcesObjects": 1,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "no agent hybrid default": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\nSource: Two\ntext o2\n\nSource: b.txt\nfile f2\n\nSource: Object #o3\ntext o3\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "o2",
+                    "type": "object",
+                    "name": "Two",
+                    "similarity": 1,
+                    "text": "text o2",
+                    "uuid": "u2",
+                    "register": 5,
+                    "schema": 6,
+                    "uri": null
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "o3",
+                    "type": "object",
+                    "name": "Object #o3",
+                    "similarity": 1,
+                    "text": "text o3",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": false,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "hybrid",
+                "find the thing",
+                [
+                    {
+                        "entity_id": "k1",
+                        "entity_type": "object",
+                        "text": "{\"id\":\"k1\",\"_score\":2}",
+                        "score": 2
+                    },
+                    {
+                        "entity_id": "k2",
+                        "entity_type": "object",
+                        "text": "raw",
+                        "score": 1
+                    }
+                ],
+                10
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 8,
+                    "fileSources": 3,
+                    "objectSources": 3,
+                    "contextLength": 195,
+                    "searchMode": "hybrid",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "no agent hybrid without results key": {
+        "result": {
+            "text": "",
+            "sources": []
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": false,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "hybrid",
+                "find the thing",
+                [],
+                10
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 0,
+                    "fileSources": 0,
+                    "objectSources": 0,
+                    "contextLength": 0,
+                    "searchMode": "hybrid",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 0
+                }
+            ]
+        ]
+    },
+    "no agent with selection": {
+        "result": {
+            "text": "Source: a.pdf\nfile f1\n\nSource: b.txt\nfile f2\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": false,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Using user-selected views (agent has none)",
+                {
+                    "views": 1
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "hybrid",
+                "find the thing",
+                [],
+                10
+            ],
+            [
+                "inView",
+                {
+                    "_limit": 3
+                },
+                [
+                    true,
+                    true,
+                    [
+                        "u1",
+                        "u2",
+                        "o3"
+                    ],
+                    null,
+                    [
+                        "v3"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 5,
+                    "fileSources": 3,
+                    "objectSources": 0,
+                    "contextLength": 118,
+                    "searchMode": "hybrid",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "f1",
+                        "type": "file",
+                        "name": "a.pdf",
+                        "similarity": 0.8,
+                        "text": "file f1",
+                        "file_id": 11,
+                        "file_path": "/a.pdf",
+                        "mime_type": "application/pdf"
+                    }
+                }
+            ]
+        ]
+    },
+    "nothing included": {
+        "result": {
+            "text": "Source: Note #n1\n\n\n",
+            "sources": [
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                []
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 1,
+                    "fileSources": 0,
+                    "objectSources": 0,
+                    "contextLength": 19,
+                    "searchMode": "semantic",
+                    "includeObjects": false,
+                    "includeFiles": false,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "n1",
+                        "type": "note",
+                        "name": "Note #n1",
+                        "similarity": 1,
+                        "text": ""
+                    }
+                }
+            ]
+        ]
+    },
+    "objects only": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: Two\ntext o2\n\nSource: Object #o3\ntext o3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "o2",
+                    "type": "object",
+                    "name": "Two",
+                    "similarity": 1,
+                    "text": "text o2",
+                    "uuid": "u2",
+                    "register": 5,
+                    "schema": 6,
+                    "uri": null
+                },
+                {
+                    "id": "o3",
+                    "type": "object",
+                    "name": "Object #o3",
+                    "similarity": 1,
+                    "text": "text o3",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                {
+                    "entity_type": [
+                        "object"
+                    ]
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 5,
+                    "fileSources": 0,
+                    "objectSources": 3,
+                    "contextLength": 121,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": false,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "rag settings exclude objects": {
+        "result": {
+            "text": "Source: a.pdf\nfile f1\n\nSource: b.txt\nfile f2\n\n",
+            "sources": [
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": false,
+                    "ragSettings": {
+                        "includeObjects": false,
+                        "numSourcesFiles": 2
+                    }
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "hybrid",
+                "find the thing",
+                [],
+                10
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 2,
+                    "fileSources": 2,
+                    "objectSources": 0,
+                    "contextLength": 46,
+                    "searchMode": "hybrid",
+                    "includeObjects": false,
+                    "includeFiles": true,
+                    "numSourcesFiles": 2,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "f1",
+                        "type": "file",
+                        "name": "a.pdf",
+                        "similarity": 0.8,
+                        "text": "file f1",
+                        "file_id": 11,
+                        "file_path": "/a.pdf",
+                        "mime_type": "application/pdf"
+                    }
+                }
+            ]
+        ]
+    },
+    "rag settings override": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\nSource: Two\ntext o2\n\nSource: Object #o3\ntext o3\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "o2",
+                    "type": "object",
+                    "name": "Two",
+                    "similarity": 1,
+                    "text": "text o2",
+                    "uuid": "u2",
+                    "register": 5,
+                    "schema": 6,
+                    "uri": null
+                },
+                {
+                    "id": "o3",
+                    "type": "object",
+                    "name": "Object #o3",
+                    "similarity": 1,
+                    "text": "text o3",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": {
+                        "includeFiles": true,
+                        "numSourcesFiles": 1,
+                        "numSourcesObjects": 3
+                    }
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 6
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                6,
+                []
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 4,
+                    "fileSources": 1,
+                    "objectSources": 3,
+                    "contextLength": 100,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 1,
+                    "numSourcesObjects": 3,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "semantic mode": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\nSource: Two\ntext o2\n\nSource: b.txt\nfile f2\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "o2",
+                    "type": "object",
+                    "name": "Two",
+                    "similarity": 1,
+                    "text": "text o2",
+                    "uuid": "u2",
+                    "register": 5,
+                    "schema": 6,
+                    "uri": null
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 4
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                4,
+                []
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 4,
+                    "fileSources": 2,
+                    "objectSources": 2,
+                    "contextLength": 95,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 2,
+                    "numSourcesObjects": 2,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "semantic throws": {
+        "result": {
+            "text": "",
+            "sources": []
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                []
+            ],
+            [
+                "log",
+                "error",
+                "[ContextRetrievalHandler] Failed to retrieve context",
+                {
+                    "error": "vector store down"
+                }
+            ]
+        ]
+    },
+    "source name fallbacks": {
+        "result": {
+            "text": "Source: Meta title\n\n\nSource: Object #abcdefgh\n\n\nSource: Named\n\n\nSource: Unknown Source\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "abcdefghijkl",
+                    "type": "object",
+                    "name": "Meta title",
+                    "similarity": 1,
+                    "text": "",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "abcdefghijkl",
+                    "type": "object",
+                    "name": "Object #abcdefgh",
+                    "similarity": 1,
+                    "text": "",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "",
+                    "type": "object",
+                    "name": "Named",
+                    "similarity": 1,
+                    "text": "",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": null,
+                    "type": "file",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": "",
+                    "file_id": null,
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": null,
+                    "type": "object",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": "",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 20
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                20,
+                []
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 5,
+                    "fileSources": 1,
+                    "objectSources": 4,
+                    "contextLength": 114,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 10,
+                    "numSourcesObjects": 10,
+                    "rawResultsCount": 5
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "abcdefghijkl",
+                        "type": "object",
+                        "name": "Meta title",
+                        "similarity": 1,
+                        "text": "",
+                        "uuid": null,
+                        "register": null,
+                        "schema": null,
+                        "uri": null
+                    }
+                }
+            ]
+        ]
+    },
+    "unknown mode keeps keyword": {
+        "result": {
+            "text": "Source: Object #k1\n{\"id\":\"k1\"}\n\n",
+            "sources": [
+                {
+                    "id": "k1",
+                    "type": "object",
+                    "name": "Object #k1",
+                    "similarity": 1,
+                    "text": "{\"id\":\"k1\"}",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 1,
+                    "fileSources": 0,
+                    "objectSources": 1,
+                    "contextLength": 32,
+                    "searchMode": "fuzzy",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 1
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "k1",
+                        "type": "object",
+                        "name": "Object #k1",
+                        "similarity": 1,
+                        "text": "{\"id\":\"k1\"}",
+                        "uuid": null,
+                        "register": null,
+                        "schema": null,
+                        "uri": null
+                    }
+                }
+            ]
+        ]
+    },
+    "view lookup fails": {
+        "result": {
+            "text": "Source: a.pdf\nfile f1\n\nSource: b.txt\nfile f2\n\nSource: Third file\nfile f3\n\nSource: Note #n1\n\n\nSource: Unknown Source\n\n\n",
+            "sources": [
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "f2",
+                    "type": "file",
+                    "name": "b.txt",
+                    "similarity": 1,
+                    "text": "file f2",
+                    "file_id": "f2",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "f3",
+                    "type": "file",
+                    "name": "Third file",
+                    "similarity": 1,
+                    "text": "file f3",
+                    "file_id": "f3",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": "n1",
+                    "type": "note",
+                    "name": "Note #n1",
+                    "similarity": 1,
+                    "text": ""
+                },
+                {
+                    "id": null,
+                    "type": "unknown",
+                    "name": "Unknown Source",
+                    "similarity": 1,
+                    "text": ""
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Using all agent views",
+                {
+                    "views": 1
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 10
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                10,
+                []
+            ],
+            [
+                "inView",
+                {
+                    "_limit": 3
+                },
+                [
+                    true,
+                    true,
+                    [
+                        "u1",
+                        "u2",
+                        "o3"
+                    ],
+                    null,
+                    [
+                        "v1"
+                    ],
+                    true
+                ]
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Agent views could not be applied; objects withheld",
+                {
+                    "error": "view gone"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[ContextRetrievalHandler] Skipping non-array result",
+                {
+                    "resultType": "string",
+                    "resultValue": "not an array"
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 5,
+                    "fileSources": 3,
+                    "objectSources": 0,
+                    "contextLength": 118,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 5,
+                    "numSourcesObjects": 5,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "f1",
+                        "type": "file",
+                        "name": "a.pdf",
+                        "similarity": 0.8,
+                        "text": "file f1",
+                        "file_id": 11,
+                        "file_path": "/a.pdf",
+                        "mime_type": "application/pdf"
+                    }
+                }
+            ]
+        ]
+    }
+}
