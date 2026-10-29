@@ -43,7 +43,11 @@ use Psr\Log\LoggerInterface;
  * `fixtures/app-configuration-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ImportHandlerAppConfigurationGoldenTest extends TestCase {
 
@@ -122,8 +126,6 @@ class ImportHandlerAppConfigurationGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::createOrUpdateConfiguration
 	 *
 	 * @dataProvider cases
 	 */
