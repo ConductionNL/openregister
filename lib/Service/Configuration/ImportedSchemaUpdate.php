@@ -45,6 +45,8 @@ final class ImportedSchemaUpdate {
 	 * The version the import ships, `0.0.0` when it declares none.
 	 *
 	 * @return mixed
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function incomingVersion(): mixed {
 		return ($this->data['version'] ?? '0.0.0');
@@ -54,6 +56,8 @@ final class ImportedSchemaUpdate {
 	 * The stored version, `0.0.0` when the schema has none.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function existingVersion(): string {
 		return ($this->existing->getVersion() ?? '0.0.0');

@@ -44,6 +44,8 @@ final class ImportReferenceMap {
 	 * @param array<string, mixed> $entities  Known registers or schemas by slug.
 	 *
 	 * @return mixed The id, or the reference unchanged when nothing maps it.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function resolve(mixed $reference, array $entities): mixed {
 		if (($this->slugsAndIds[$reference] ?? null) !== null) {
