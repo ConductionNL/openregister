@@ -12092,9 +12092,6 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return array<string, mixed>
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
 	 */
@@ -12107,158 +12104,205 @@ class MagicMapper extends AbstractObjectMapper {
 		?array $ids = null,
 		?string $uses = null,
 	): array {
-		$registerId = $searchQuery['@self']['register'] ?? $searchQuery['_register'] ?? $searchQuery['register'] ?? null;
-		$schemaId = $searchQuery['@self']['schema'] ?? $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
-		$schemaIds = $searchQuery['@self']['schemas'] ?? $searchQuery['_schemas'] ?? null;
+		$request = [
+			'search'        => $searchQuery,
+			'count'         => $countQuery,
+			'activeOrgUuid' => $_activeOrgUuid,
+			'rbac'          => $_rbac,
+			'multitenancy'  => $_multitenancy,
+			'ids'           => $ids,
+			'uses'          => $uses,
+		];
+		$scope   = $this->paginatedSearchScope(searchQuery: $searchQuery);
 
-		// Handle case where @self.schema is an array.
+		return ($this->searchMultiSchema(request: $request, scope: $scope)
+			?? $this->searchSingleSchema(request: $request, scope: $scope)
+			?? $this->searchWithoutSchema(request: $request, scope: $scope));
+	}//end searchObjectsPaginated()
+
+	/**
+	 * A multi-schema search, or null when the scope does not name a set of schemas.
+	 *
+	 * Fires whenever a non-empty set of schema ids is given, even with NO register
+	 * filter. The unified-search provider passes a searchable-schema set and no
+	 * register; previously that fell through to the (empty) central table and returned
+	 * nothing. Without a register filter the register list is left empty and
+	 * searchObjectsPaginatedMultiSchema() resolves each schema's owning register.
+	 *
+	 * @param array $request The search request: queries and flags
+	 * @param array $scope   The search scope
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function searchMultiSchema(array $request, array $scope): ?array {
+		if ($scope['schemaId'] !== null || is_array($scope['schemaIds']) === false || count($scope['schemaIds']) === 0) {
+			return null;
+		}
+
+		return $this->searchObjectsPaginatedMultiSchema(
+			searchQuery: $request['search'],
+			countQuery: $request['count'],
+			registerIds: $this->multiSchemaRegisterIds(scope: $scope),
+			schemaIds: $scope['schemaIds'],
+			activeOrgUuid: $request['activeOrgUuid'],
+			_rbac: $request['rbac'],
+			_multitenancy: $request['multitenancy'],
+			ids: $request['ids'],
+			uses: $request['uses']
+		);
+	}//end searchMultiSchema()
+
+	/**
+	 * The register and schema filters of a paginated search, from `@self`, `_` or plain keys.
+	 *
+	 * A schema given as a list in `@self.schema` is a multi-schema search.
+	 *
+	 * @param array $searchQuery The search query
+	 *
+	 * @return array{registerId: mixed, schemaId: mixed, schemaIds: mixed, registerIds: mixed}
+	 */
+	private function paginatedSearchScope(array $searchQuery): array {
+		$schemaId  = $searchQuery['@self']['schema'] ?? $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
+		$schemaIds = $searchQuery['@self']['schemas'] ?? $searchQuery['_schemas'] ?? null;
 		if (is_array($schemaId) === true && count($schemaId) > 0) {
 			$schemaIds = $schemaId;
-			$schemaId = null;
+			$schemaId  = null;
 		}
 
-		$register = null;
-		$schema = null;
-		$registersCache = [];
-		$schemasCache = [];
+		return [
+			'registerId'  => ($searchQuery['@self']['register'] ?? $searchQuery['_register'] ?? $searchQuery['register'] ?? null),
+			'schemaId'    => $schemaId,
+			'schemaIds'   => $schemaIds,
+			'registerIds' => ($searchQuery['@self']['registers'] ?? $searchQuery['_registers'] ?? null),
+		];
+	}//end paginatedSearchScope()
 
-		$registerIds = $searchQuery['@self']['registers'] ?? $searchQuery['_registers'] ?? null;
-
-		// Multi-schema search. Fires whenever a non-empty set of schema ids is
-		// given — even with NO register filter. The unified-search provider
-		// passes a searchable-schema set and no register; previously that fell
-		// through to the (empty) central table and returned nothing. When no
-		// register filter is present, registerIds is left empty and
-		// searchObjectsPaginatedMultiSchema resolves each schema's real owning
-		// register from a schema->register map. See the method docblock's spec tag.
-		$isMultiSchemaSearch = $schemaId === null
-			&& $schemaIds !== null
-			&& is_array($schemaIds) === true
-			&& count($schemaIds) > 0;
-		if ($isMultiSchemaSearch === true) {
-			$allRegisterIds = [];
-			if ($registerId !== null) {
-				$allRegisterIds = [(int)$registerId];
-			}
-
-			if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
-				$allRegisterIds = array_map('intval', $registerIds);
-			}
-
-			return $this->searchObjectsPaginatedMultiSchema(
-				searchQuery: $searchQuery,
-				countQuery: $countQuery,
-				registerIds: $allRegisterIds,
-				schemaIds: $schemaIds,
-				activeOrgUuid: $_activeOrgUuid,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				ids: $ids,
-				uses: $uses
-			);
-		}//end if
-
-		// Single schema search.
-		if ($registerId !== null && $schemaId !== null) {
-			try {
-				$register = $this->registerMapper->find((int)$registerId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
-
-				$registersCache[$register->getId()] = $register->jsonSerialize();
-				$schemasCache[$schema->getId()] = $schema->jsonSerialize();
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[MagicMapper] Failed to resolve register/schema',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-			}
+	/**
+	 * The registers a multi-schema search is limited to: the register list, else the
+	 * single register, else none (each schema's owning register is then looked up).
+	 *
+	 * @param array $scope The search scope
+	 *
+	 * @return int[]
+	 */
+	private function multiSchemaRegisterIds(array $scope): array {
+		if (is_array($scope['registerIds']) === true && count($scope['registerIds']) > 0) {
+			return array_map('intval', $scope['registerIds']);
 		}
 
-		if ($register !== null && $schema !== null) {
-			$searchQuery['_rbac'] = $_rbac;
-			$searchQuery['_multitenancy'] = $_multitenancy;
+		if ($scope['registerId'] !== null) {
+			return [(int)$scope['registerId']];
+		}
 
-			$searchStart = microtime(true);
-			$results = $this->searchObjectsInRegisterSchemaTable(
-				query: $searchQuery,
-				register: $register,
-				schema: $schema
-			);
-			$searchTime = round((microtime(true) - $searchStart) * 1000, 2);
+		return [];
+	}//end multiSchemaRegisterIds()
 
-			$countQuery['_rbac'] = $_rbac;
-			$countQuery['_multitenancy'] = $_multitenancy;
+	/**
+	 * Search and count one register and schema table, or null when the scope does not name both.
+	 *
+	 * @param array $request The search request: queries and flags
+	 * @param array $scope   The search scope
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function searchSingleSchema(array $request, array $scope): ?array {
+		if ($scope['registerId'] === null || $scope['schemaId'] === null) {
+			return null;
+		}
 
-			$countStart = microtime(true);
-			$total = $this->countObjectsInRegisterSchemaTable(
-				query: $countQuery,
-				register: $register,
-				schema: $schema
-			);
-			$countTime = round((microtime(true) - $countStart) * 1000, 2);
-
-			$ignoredFilters = $this->getIgnoredFilters();
-
-			return [
-				'results' => $results,
-				'total' => $total,
-				'registers' => $registersCache,
-				'schemas' => $schemasCache,
-				'ignoredFilters' => $ignoredFilters,
-				'metrics' => [
-					'search_ms' => $searchTime,
-					'count_ms' => $countTime,
-				],
+		try {
+			$register = $this->registerMapper->find((int)$scope['registerId'], _multitenancy: false, _rbac: false);
+			$schema   = $this->schemaMapper->find((int)$scope['schemaId'], _multitenancy: false, _rbac: false);
+			$pair     = [
+				'register'  => $register,
+				'schema'    => $schema,
+				'registers' => [$register->getId() => $register->jsonSerialize()],
+				'schemas'   => [$schema->getId() => $schema->jsonSerialize()],
 			];
-		}//end if
-
-		// ID search across all tables.
-		$queryIds = $searchQuery['_ids'] ?? null;
-		$isIdSearch = $queryIds !== null
-			&& is_array($queryIds) === true
-			&& count($queryIds) > 0;
-
-		if ($isIdSearch === true) {
-			$idResults = $this->findMultipleAcrossAllMagicTables(
-				uuids: $queryIds,
-				includeDeleted: false
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Failed to resolve register/schema',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-
-			return $this->getGlobalSearchResult(results: $idResults, searchQuery: $searchQuery, _rbac: $_rbac);
+			return null;
 		}
 
-		// Global relations search.
+		return $this->searchRegisterSchemaPage(request: $request, pair: $pair);
+	}//end searchSingleSchema()
+
+	/**
+	 * One page of a register and schema table with its total, both timed.
+	 *
+	 * @param array $request The search request: queries and flags
+	 * @param array $pair    The register and schema, and both serialised for the response
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchRegisterSchemaPage(array $request, array $pair): array {
+		$flags = ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']];
+
+		$searchStart = microtime(true);
+		$results     = $this->searchObjectsInRegisterSchemaTable(
+			query: array_replace($request['search'], $flags),
+			register: $pair['register'],
+			schema: $pair['schema']
+		);
+		$searchTime  = round((microtime(true) - $searchStart) * 1000, 2);
+
+		$countStart = microtime(true);
+		$total      = $this->countObjectsInRegisterSchemaTable(
+			query: array_replace($request['count'], $flags),
+			register: $pair['register'],
+			schema: $pair['schema']
+		);
+		$countTime  = round((microtime(true) - $countStart) * 1000, 2);
+
+		return [
+			'results' => $results,
+			'total' => $total,
+			'registers' => $pair['registers'],
+			'schemas' => $pair['schemas'],
+			'ignoredFilters' => $this->getIgnoredFilters(),
+			'metrics' => [
+				'search_ms' => $searchTime,
+				'count_ms' => $countTime,
+			],
+		];
+	}//end searchRegisterSchemaPage()
+
+	/**
+	 * A search without a resolved register and schema: by ids, by relation, or by text
+	 * across every table; an empty answer and a warning otherwise.
+	 *
+	 * @param array $request The search request: queries and flags
+	 * @param array $scope   The search scope
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchWithoutSchema(array $request, array $scope): array {
+		$searchQuery = $request['search'];
+		$queryIds    = $searchQuery['_ids'] ?? null;
+		if (is_array($queryIds) === true && count($queryIds) > 0) {
+			$idResults = $this->findMultipleAcrossAllMagicTables(uuids: $queryIds, includeDeleted: false);
+			return $this->getGlobalSearchResult(results: $idResults, searchQuery: $searchQuery, _rbac: $request['rbac']);
+		}
+
+		$unscoped = ($scope['registerId'] === null && $scope['schemaId'] === null);
+
 		$relationsContains = $searchQuery['_relations_contains'] ?? null;
-		$isGlobalRelSearch = $registerId === null
-			&& $schemaId === null
-			&& $relationsContains !== null
-			&& is_string($relationsContains) === true
-			&& empty($relationsContains) === false;
-
-		if ($isGlobalRelSearch === true) {
-			$relResults = $this->findByRelationAcrossAllMagicTables(
-				uuid: $relationsContains,
-				includeDeleted: false
-			);
-
-			return $this->getGlobalSearchResult(results: $relResults, searchQuery: $searchQuery, _rbac: $_rbac);
+		if ($unscoped === true && is_string($relationsContains) === true && empty($relationsContains) === false) {
+			$relResults = $this->findByRelationAcrossAllMagicTables(uuid: $relationsContains, includeDeleted: false);
+			return $this->getGlobalSearchResult(results: $relResults, searchQuery: $searchQuery, _rbac: $request['rbac']);
 		}
 
-		// Global text search.
 		$searchTerm = $searchQuery['_search'] ?? null;
-		$isGlobalTextSearch = $registerId === null
-			&& $schemaId === null
-			&& $searchTerm !== null
-			&& is_string($searchTerm) === true
-			&& trim($searchTerm) !== '';
-
-		if ($isGlobalTextSearch === true) {
+		if ($unscoped === true && is_string($searchTerm) === true && trim($searchTerm) !== '') {
 			return $this->searchObjectsGloballyBySearch(
 				searchQuery: $searchQuery,
-				countQuery: $countQuery,
-				activeOrgUuid: $_activeOrgUuid,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
+				countQuery: $request['count'],
+				activeOrgUuid: $request['activeOrgUuid'],
+				_rbac: $request['rbac'],
+				_multitenancy: $request['multitenancy']
 			);
 		}
 
@@ -12267,13 +12311,8 @@ class MagicMapper extends AbstractObjectMapper {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		return [
-			'results' => [],
-			'total' => 0,
-			'registers' => $registersCache,
-			'schemas' => $schemasCache,
-		];
-	}//end searchObjectsPaginated()
+		return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
+	}//end searchWithoutSchema()
 
 	/**
 	 * Extract integer schema ids from a register's `schemas` membership list.
