@@ -252,12 +252,12 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	/**
 	 * An assignee, completer or requester that is not one of the set's own accounts.
 	 *
-	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
-	 *
 	 * @param array<string, mixed> $data  The filled task fields.
 	 * @param array<int, string>   $users The account ids the set creates or adopts.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	private function peopleRefusal(array $data, array $users): string {
 		$fields = ['assignee', 'completedBy', 'requester'];
@@ -296,11 +296,11 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	/**
 	 * A due, expiry or completion date that is not a date, or an expiry before the due date.
 	 *
-	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
-	 *
 	 * @param array<string, mixed> $data The filled task fields.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	private function datesRefusal(array $data): string {
 		foreach (['dueAt', 'expiresAt', 'completedAt'] as $field) {
