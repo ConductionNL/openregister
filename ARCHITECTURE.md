@@ -35,7 +35,7 @@ OpenRegister runs inside a Nextcloud server as an app, in PHP on the server and 
 
 ## Functional components
 
-We group the code by what it does, not by technical layer. A controller, its service and its mapper for one capability sit in the same component. The class name or its directory decides the component; `sigrid.yaml` holds the exact patterns.
+We group the code by what it does, not by technical layer. A controller, its service and its mapper for one capability sit in the same component. The class name or its directory decides the component.
 
 | Component | What it covers | PHP lines |
 |---|---|---|
@@ -54,11 +54,11 @@ We group the code by what it does, not by technical layer. A controller, its ser
 
 Counts exclude `lib/Migration/`, which SIG leaves out by default.
 
-### Boundaries and known coupling
+### Boundaries
 
 Every component depends on **Objects** and **Schemas and registers**: they are the data model. Every component also uses **Application wiring** for shared exceptions and helpers. Those dependencies are intended.
 
-The coupling we do not want yet exists. Measured on `lib/` in October 2026, about half of the PHP code is called from another component, and most pairs of components call each other both ways. The biggest sources are a few central classes: `ObjectEntity`, `Schema`, `SchemaMapper`, `ObjectService` and `RegisterMapper` each have more than 150 incoming dependencies. Narrowing those classes to small interfaces per component is the main architectural work ahead.
+Decoupling between components is in progress. The aim is that each component reaches the data model through a small interface of its own.
 
 ## How a request flows
 
@@ -79,7 +79,7 @@ SIG's Sigrid excludes `vendor/`, `node_modules/`, `docs/`, migrations, mocks and
 - `l10n/*.js`: generated translation catalogues that would count as JavaScript.
 - `scripts/` and `tools/`: developer tooling that would count as production code.
 
-`sigrid.yaml` handles both. It also pins the model version and maps the components above.
+`sigrid.yaml` excludes both and pins the model version. Components are left to Sigrid's automatic detection.
 
 ## Licence
 
