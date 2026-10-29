@@ -40,8 +40,8 @@ use Psr\Log\LoggerInterface;
  * `fixtures/github-publish-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\GitHubHandler
- * @uses \OCA\OpenRegister\Service\Configuration\GitHubFileLocation
+ * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\GitHubFileLocation
  */
 class GitHubHandlerPublishGoldenTest extends TestCase {
 
@@ -102,8 +102,6 @@ class GitHubHandlerPublishGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::publishConfiguration
 	 *
 	 * @dataProvider cases
 	 */
