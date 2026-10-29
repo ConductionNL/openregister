@@ -1849,9 +1849,9 @@ class ObjectsControllerCoverageTest extends TestCase {
 	 * @return MagicMapper&MockObject
 	 */
 	private function wireMagicListing(array $params, array $query, array $ignoredFilters = []): MagicMapper&MockObject {
-		$registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2']);
-		$schemaEntity   = $this->createSchemaMock(2, 'sch');
-		$this->registerDiMappersWithEntities($registerEntity, $schemaEntity);
+		$registerEntity = $this->createMagicMappedRegister(id: 1, slug: 'reg', magicSchemas: ['2']);
+		$schemaEntity   = $this->createSchemaMock(id: 2, slug: 'sch');
+		$this->registerDiMappersWithEntities(registerEntity: $registerEntity, schemaEntity: $schemaEntity);
 
 		$this->request->method('getParams')->willReturn($params);
 		$this->request->method('getRequestUri')->willReturn('/api/objects/reg/sch');
@@ -1862,12 +1862,12 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('buildSearchQuery')->willReturn($query);
 
-		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper = $this->createMock(originalClassName: MagicMapper::class);
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([]);
 		$magicMapper->method('getIgnoredFilters')->willReturn($ignoredFilters);
-		$this->registerService(MagicMapper::class, fn () => $magicMapper);
-		$renderHandler = $this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, fn () => $renderHandler);
+		$this->registerService(id: MagicMapper::class, factory: fn () => $magicMapper);
+		$renderHandler = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\RenderObject::class);
+		$this->registerService(id: \OCA\OpenRegister\Service\Object\RenderObject::class, factory: fn () => $renderHandler);
 
 		return $magicMapper;
 	}//end wireMagicListing()
@@ -1884,19 +1884,19 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertSame(['results', 'total', 'pages', 'page', 'limit', '@self'], array_keys($data));
-		$this->assertSame([[], 45, 5, 3, 10], [$data['results'], $data['total'], $data['pages'], $data['page'], $data['limit']]);
+		$this->assertSame(expected: ['results', 'total', 'pages', 'page', 'limit', '@self'], actual: array_keys($data));
+		$this->assertSame(expected: [[], 45, 5, 3, 10], actual: [$data['results'], $data['total'], $data['pages'], $data['page'], $data['limit']]);
 		$this->assertSame(
-			['source', 'register', 'schema', 'query', 'rbac', 'multi', 'deleted', 'activeOrganisation', 'lenses'],
-			array_keys($data['@self'])
+			expected: ['source', 'register', 'schema', 'query', 'rbac', 'multi', 'deleted', 'activeOrganisation', 'lenses'],
+			actual: array_keys($data['@self'])
 		);
-		$this->assertSame('magic_mapper', $data['@self']['source']);
-		$this->assertSame(['reg', 'sch'], [$data['@self']['register'], $data['@self']['schema']]);
-		$this->assertTrue($data['@self']['query']['_rbac']);
-		$this->assertTrue($data['@self']['query']['_multitenancy']);
-		$this->assertFalse($data['@self']['query']['_multitenancy_explicit']);
-		$this->assertSame([true, true, false], [$data['@self']['rbac'], $data['@self']['multi'], $data['@self']['deleted']]);
-		$this->assertSame(['recent' => ['answered' => false]], $data['@self']['lenses']);
+		$this->assertSame(expected: 'magic_mapper', actual: $data['@self']['source']);
+		$this->assertSame(expected: ['reg', 'sch'], actual: [$data['@self']['register'], $data['@self']['schema']]);
+		$this->assertTrue(condition: $data['@self']['query']['_rbac']);
+		$this->assertTrue(condition: $data['@self']['query']['_multitenancy']);
+		$this->assertFalse(condition: $data['@self']['query']['_multitenancy_explicit']);
+		$this->assertSame(expected: [true, true, false], actual: [$data['@self']['rbac'], $data['@self']['multi'], $data['@self']['deleted']]);
+		$this->assertSame(expected: ['recent' => ['answered' => false]], actual: $data['@self']['lenses']);
 	}//end testIndexMagicMapperResponseShape()
 
 	/**
@@ -1910,7 +1910,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertSame([null, 1, 4], [$data['total'], $data['pages'], $data['page']]);
+		$this->assertSame(expected: [null, 1, 4], actual: [$data['total'], $data['pages'], $data['page']]);
 	}//end testIndexMagicMapperNoTotalSkipsTheCount()
 
 	/**
@@ -1924,8 +1924,8 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertNull($data['total']);
-		$this->assertSame(1, $data['page']);
+		$this->assertNull(actual: $data['total']);
+		$this->assertSame(expected: 1, actual: $data['page']);
 	}//end testIndexMagicMapperCountFalseSkipsTheCount()
 
 	/**
@@ -1939,7 +1939,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			->method('countObjectsInRegisterSchemaTable')
 			->with(
 				$this->callback(
-					fn (array $countQuery): bool => isset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']) === false
+					callback: fn (array $countQuery): bool => isset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']) === false
 						&& $countQuery['status'] === 'open'
 				)
 			)
@@ -1947,7 +1947,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertSame([7, 2, 2], [$data['total'], $data['pages'], $data['page']]);
+		$this->assertSame(expected: [7, 2, 2], actual: [$data['total'], $data['pages'], $data['page']]);
 	}//end testIndexMagicMapperCountsWithoutPagination()
 
 	/**
@@ -1961,11 +1961,11 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertSame(['limit', 'filter', 'sort'], $data['@self']['ignoredFilters']);
+		$this->assertSame(expected: ['limit', 'filter', 'sort'], actual: $data['@self']['ignoredFilters']);
 		$this->assertSame(
-			'Query returned 0 results because limit, sort was treated as an object property filter.'
+			expected: 'Query returned 0 results because limit, sort was treated as an object property filter.'
 			.' Did you mean _limit, _sort? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).',
-			$data['@self']['hint']
+			actual: $data['@self']['hint']
 		);
 	}//end testIndexMagicMapperHintNamesTheMistakenParameters()
 
@@ -1980,8 +1980,8 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertSame(['filter'], $data['@self']['ignoredFilters']);
-		$this->assertArrayNotHasKey('hint', $data['@self']);
+		$this->assertSame(expected: ['filter'], actual: $data['@self']['ignoredFilters']);
+		$this->assertArrayNotHasKey(key: 'hint', array: $data['@self']);
 	}//end testIndexMagicMapperIgnoredFilterWithoutHint()
 
 	/**
