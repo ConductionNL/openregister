@@ -67,7 +67,7 @@ final class NotificationRecipientValidator {
 
 		$errors = [];
 		foreach ($recipients as $index => $recipient) {
-			$errors = array_merge($errors, $this->validateRecipient(rule: $rule, index: $index, recipient: $recipient));
+			$errors = array_merge($errors, $this->validateRecipient(entry: new RecipientEntry(rule: $rule, index: $index), recipient: $recipient));
 		}
 
 		return $errors;
@@ -80,23 +80,22 @@ final class NotificationRecipientValidator {
 	 * `kind`. Anything but boolean true is refused rather than coerced: a rule
 	 * that addresses nobody should say so at save time.
 	 *
-	 * @param NotificationRuleContext $rule      The rule.
-	 * @param int|string              $index     The entry's index.
-	 * @param mixed                   $recipient The entry.
+	 * @param RecipientEntry $entry     The entry's rule and index.
+	 * @param mixed          $recipient The entry.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateRecipient(NotificationRuleContext $rule, int|string $index, mixed $recipient): array {
+	private function validateRecipient(RecipientEntry $entry, mixed $recipient): array {
 		if (is_array($recipient) === false) {
-			return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-malformed', detail: 'must be an object.')];
+			return [$entry->error(code: 'notification-recipient-malformed', detail: 'must be an object.')];
 		}
 
 		if (array_key_exists('watchers', $recipient) === true) {
 			if ($recipient['watchers'] !== true) {
 				$detail = 'watchers must be boolean true.';
-				return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-watchers-not-true', detail: $detail)];
+				return [$entry->error(code: 'notification-recipient-watchers-not-true', detail: $detail)];
 			}
 
 			return [];
@@ -105,36 +104,19 @@ final class NotificationRecipientValidator {
 		$kind = (string)($recipient['kind'] ?? '');
 		if (in_array($kind, self::VALID_RECIPIENT_KINDS, true) === false) {
 			$detail = sprintf('kind "%s" not in [%s].', $kind, implode(', ', self::VALID_RECIPIENT_KINDS));
-			return [$this->recipientError(rule: $rule, index: $index, code: 'notification-bad-recipient-kind', detail: $detail)];
+			return [$entry->error(code: 'notification-bad-recipient-kind', detail: $detail)];
 		}
 
 		return match ($kind) {
-			'groups', 'users' => $this->namedListErrors(rule: $rule, index: $index, recipient: $recipient, kind: $kind),
-			'field' => $this->fieldRecipientErrors(rule: $rule, index: $index, recipient: $recipient),
-			ReferencedAddressNotifier::KIND => $this->emailRecipientErrors(rule: $rule, index: (int)$index, recipient: $recipient),
-			'object-acl' => $this->aclRecipientErrors(rule: $rule, index: $index, recipient: $recipient),
-			'role' => $this->roleRecipientErrors(rule: $rule, index: $index, recipient: $recipient),
-			'expression' => $this->expressionRecipientErrors(rule: $rule, index: $index, recipient: $recipient),
+			'groups', 'users' => $this->namedListErrors(entry: $entry, recipient: $recipient),
+			'field' => $this->fieldRecipientErrors(entry: $entry, recipient: $recipient),
+			ReferencedAddressNotifier::KIND => $this->emailRecipientErrors(entry: $entry, recipient: $recipient),
+			'object-acl' => $this->aclRecipientErrors(entry: $entry, recipient: $recipient),
+			'role' => $this->roleRecipientErrors(entry: $entry, recipient: $recipient),
+			'expression' => $this->expressionRecipientErrors(entry: $entry, recipient: $recipient),
 			default => [],
 		};
 	}//end validateRecipient()
-
-	/**
-	 * One recipient error, prefixed with the rule name and entry index.
-	 *
-	 * @param NotificationRuleContext $rule   The rule.
-	 * @param int|string              $index  The entry's index.
-	 * @param string                  $code   The error code.
-	 * @param string                  $detail The message after `recipient[n] `.
-	 *
-	 * @return array{code: string, message: string}
-	 */
-	private function recipientError(NotificationRuleContext $rule, int|string $index, string $code, string $detail): array {
-		return [
-			'code' => $code,
-			'message' => sprintf('Notification "%s" recipient[%d] ', $rule->name, $index).$detail,
-		];
-	}//end recipientError()
 
 	/**
 	 * Errors for a `groups` or `users` entry that names nobody.
@@ -144,16 +126,15 @@ final class NotificationRecipientValidator {
 	 * refused: declared groups ship empty on purpose, and that case is
 	 * recorded at dispatch instead (see RuleReachRecorder).
 	 *
-	 * @param NotificationRuleContext $rule      The rule.
-	 * @param int|string              $index     The entry's index.
-	 * @param array<string, mixed>    $recipient The entry.
-	 * @param string                  $kind      `groups` or `users`, also the list key.
+	 * @param RecipientEntry $entry     The entry's rule and index.
+	 * @param array<string, mixed> $recipient The entry.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function namedListErrors(NotificationRuleContext $rule, int|string $index, array $recipient, string $kind): array {
+	private function namedListErrors(RecipientEntry $entry, array $recipient): array {
+		$kind = (string)$recipient['kind'];
 		$named = ($recipient[$kind] ?? null);
 		if (is_array($named) === true && $named !== []) {
 			return [];
@@ -166,68 +147,65 @@ final class NotificationRecipientValidator {
 			$kind
 		);
 
-		return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-names-nobody', detail: $detail)];
+		return [$entry->error(code: 'notification-recipient-names-nobody', detail: $detail)];
 	}//end namedListErrors()
 
 	/**
 	 * Errors for a `field` entry, whose field must be declared on the schema.
 	 *
-	 * @param NotificationRuleContext $rule      The rule.
-	 * @param int|string              $index     The entry's index.
-	 * @param array<string, mixed>    $recipient The entry.
+	 * @param RecipientEntry $entry     The entry's rule and index.
+	 * @param array<string, mixed> $recipient The entry.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function fieldRecipientErrors(NotificationRuleContext $rule, int|string $index, array $recipient): array {
+	private function fieldRecipientErrors(RecipientEntry $entry, array $recipient): array {
 		$field = (string)($recipient['field'] ?? '');
-		if ($field !== '' && in_array($field, $rule->schema->propKeys, true) === true) {
+		if ($field !== '' && in_array($field, $entry->rule->schema->propKeys, true) === true) {
 			return [];
 		}
 
 		$detail = sprintf('field "%s" is not declared on the schema.', $field);
-		return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-field-unknown', detail: $detail)];
+		return [$entry->error(code: 'notification-recipient-field-unknown', detail: $detail)];
 	}//end fieldRecipientErrors()
 
 	/**
 	 * Errors for an `object-acl` entry, whose permission must be read or manage.
 	 *
-	 * @param NotificationRuleContext $rule      The rule.
-	 * @param int|string              $index     The entry's index.
-	 * @param array<string, mixed>    $recipient The entry.
+	 * @param RecipientEntry $entry     The entry's rule and index.
+	 * @param array<string, mixed> $recipient The entry.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function aclRecipientErrors(NotificationRuleContext $rule, int|string $index, array $recipient): array {
+	private function aclRecipientErrors(RecipientEntry $entry, array $recipient): array {
 		$perm = (string)($recipient['permission'] ?? '');
 		if (in_array($perm, ['read', 'manage'], true) === true) {
 			return [];
 		}
 
 		$detail = sprintf('kind=object-acl requires permission in [read, manage]; got "%s".', $perm);
-		return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-acl-bad-permission', detail: $detail)];
+		return [$entry->error(code: 'notification-recipient-acl-bad-permission', detail: $detail)];
 	}//end aclRecipientErrors()
 
 	/**
 	 * Errors for a `role` entry: a role name, assigned by the schema when it assigns any.
 	 *
-	 * @param NotificationRuleContext $rule      The rule.
-	 * @param int|string              $index     The entry's index.
-	 * @param array<string, mixed>    $recipient The entry.
+	 * @param RecipientEntry $entry     The entry's rule and index.
+	 * @param array<string, mixed> $recipient The entry.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function roleRecipientErrors(NotificationRuleContext $rule, int|string $index, array $recipient): array {
+	private function roleRecipientErrors(RecipientEntry $entry, array $recipient): array {
 		$role     = (string)($recipient['role'] ?? '');
-		$declared = $rule->schema->declaredRoles;
+		$declared = $entry->rule->schema->declaredRoles;
 		if ($role === '') {
 			$detail = 'kind=role requires a non-empty role name.';
-			return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-role-missing', detail: $detail)];
+			return [$entry->error(code: 'notification-recipient-role-missing', detail: $detail)];
 		}
 
 		if ($declared === [] || in_array($role, $declared, true) === true) {
@@ -235,27 +213,26 @@ final class NotificationRecipientValidator {
 		}
 
 		$detail = sprintf('role "%s" is not assigned by the schema authorization; declared: [%s].', $role, implode(', ', $declared));
-		return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-role-unknown', detail: $detail)];
+		return [$entry->error(code: 'notification-recipient-role-unknown', detail: $detail)];
 	}//end roleRecipientErrors()
 
 	/**
 	 * Errors for an `expression` entry, which must name a resolver.
 	 *
-	 * @param NotificationRuleContext $rule      The rule.
-	 * @param int|string              $index     The entry's index.
-	 * @param array<string, mixed>    $recipient The entry.
+	 * @param RecipientEntry $entry     The entry's rule and index.
+	 * @param array<string, mixed> $recipient The entry.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function expressionRecipientErrors(NotificationRuleContext $rule, int|string $index, array $recipient): array {
+	private function expressionRecipientErrors(RecipientEntry $entry, array $recipient): array {
 		if ((string)($recipient['resolver'] ?? '') !== '') {
 			return [];
 		}
 
 		$detail = 'kind=expression requires a resolver string (DI tag or FQCN).';
-		return [$this->recipientError(rule: $rule, index: $index, code: 'notification-recipient-expression-no-resolver', detail: $detail)];
+		return [$entry->error(code: 'notification-recipient-expression-no-resolver', detail: $detail)];
 	}//end expressionRecipientErrors()
 
 	/**
@@ -269,51 +246,44 @@ final class NotificationRecipientValidator {
 	 * send e-mail: an `email` entry on a rule without the email channel would
 	 * reach nobody, every time, in silence.
 	 *
-	 * @param NotificationRuleContext $rule      The rule.
-	 * @param int                     $index     The entry's index, for messages.
-	 * @param array<string, mixed>    $recipient The entry.
+	 * @param RecipientEntry $entry     The entry's rule and index.
+	 * @param array<string, mixed> $recipient The entry.
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	private function emailRecipientErrors(NotificationRuleContext $rule, int $index, array $recipient): array {
+	private function emailRecipientErrors(RecipientEntry $entry, array $recipient): array {
 		$errors = [];
 		$path = trim((string)($recipient['field'] ?? ''));
-		$segments = array_values(array_filter(explode('.', $path), static fn (string $segment): bool => $segment !== ''));
+		$segments = $this->pathSegments(path: $path);
 		if ($segments === []) {
 			return [[
 				'code' => 'notification-recipient-email-field-missing',
 				'message' => sprintf(
 					'Notification "%s" recipient[%d] kind=email requires a `field` naming the address, e.g. "supplierRef.contactEmail".',
-					$rule->name,
-					$index
+					$entry->rule->name,
+					$entry->index
 				),
 			]];
 		}
 
-		if (in_array($segments[0], $rule->schema->propKeys, true) === false) {
+		if (in_array($segments[0], $entry->rule->schema->propKeys, true) === false) {
 			$errors[] = [
 				'code' => 'notification-recipient-field-unknown',
 				'message' => sprintf(
 					'Notification "%s" recipient[%d] field "%s" is not declared on the schema.',
-					$rule->name,
-					$index,
+					$entry->rule->name,
+					$entry->index,
 					$segments[0]
 				),
 			];
 		}
 
-		if (count($segments) > 1 && in_array($segments[0], $rule->schema->propKeys, true) === true) {
+		if (count($segments) > 1 && in_array($segments[0], $entry->rule->schema->propKeys, true) === true) {
 			$errors = array_merge(
 				$errors,
-				$this->referenceWithoutRefErrors(
-					declared: ($rule->schema->properties[$segments[0]] ?? null),
-					path: $path,
-					first: $segments[0],
-					name: $rule->name,
-					index: $index
-				)
+				$this->referenceWithoutRefErrors(entry: $entry, path: $path)
 			);
 		}
 
@@ -322,21 +292,21 @@ final class NotificationRecipientValidator {
 				'code' => 'notification-recipient-email-path-too-deep',
 				'message' => sprintf(
 					'Notification "%s" recipient[%d] field "%s" follows more than %d references.',
-					$rule->name,
-					$index,
+					$entry->rule->name,
+					$entry->index,
 					$path,
 					ReferencedAddressNotifier::MAX_HOPS
 				),
 			];
 		}
 
-		if (in_array('email', (array)($rule->spec['channels'] ?? []), true) === false) {
+		if (in_array('email', (array)($entry->rule->spec['channels'] ?? []), true) === false) {
 			$errors[] = [
 				'code' => 'notification-recipient-email-needs-email-channel',
 				'message' => sprintf(
 					'Notification "%s" recipient[%d] is kind=email but the rule has no "email" channel, so it would reach nobody.',
-					$rule->name,
-					$index
+					$entry->rule->name,
+					$entry->index
 				),
 			];
 		}
@@ -347,15 +317,14 @@ final class NotificationRecipientValidator {
 	/**
 	 * The error for an e-mail path whose first segment goes through a reference that declares no `$ref`.
 	 *
-	 * @param mixed  $declared The property definition of the first segment.
-	 * @param string $path     The whole path, for the message.
-	 * @param string $first    The first segment.
-	 * @param string $name     The rule name, for messages.
-	 * @param int    $index    The entry's index, for messages.
+	 * @param RecipientEntry $entry The entry's rule and index.
+	 * @param string         $path  The whole path; its first segment is a declared property.
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 */
-	private function referenceWithoutRefErrors(mixed $declared, string $path, string $first, string $name, int $index): array {
+	private function referenceWithoutRefErrors(RecipientEntry $entry, string $path): array {
+		$first = $this->pathSegments(path: $path)[0];
+		$declared = ($entry->rule->schema->properties[$first] ?? null);
 		$ref = null;
 		if (is_array($declared) === true) {
 			$ref = ($declared['$ref'] ?? null);
@@ -370,11 +339,22 @@ final class NotificationRecipientValidator {
 			'message' => sprintf(
 				'Notification "%s" recipient[%d] field "%s" goes through "%s", which declares no `$ref`: '
 				. 'the referenced object cannot be checked against a schema, so the rule would never send.',
-				$name,
-				$index,
+				$entry->rule->name,
+				$entry->index,
 				$path,
 				$first
 			),
 		]];
 	}//end referenceWithoutRefErrors()
+
+	/**
+	 * The non-empty dot-separated segments of an address path.
+	 *
+	 * @param string $path The path, e.g. `supplierRef.contactEmail`.
+	 *
+	 * @return array<int, string>
+	 */
+	private function pathSegments(string $path): array {
+		return array_values(array_filter(explode('.', $path), static fn (string $segment): bool => $segment !== ''));
+	}//end pathSegments()
 }//end class

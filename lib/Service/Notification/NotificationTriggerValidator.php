@@ -72,17 +72,16 @@ final class NotificationTriggerValidator {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function validate(string $name, mixed $trigger): array {
-		if (is_array($trigger) === false) {
-			$appEvent = null;
-			if (is_string($trigger) === true) {
-				$appEvent = $trigger;
-			}
+		if (is_string($trigger) === true) {
+			return $this->validateAppEvent(ruleKey: $name, event: $trigger);
+		}
 
-			return $this->validateTriggerKind(name: $name, triggerType: '', appEvent: $appEvent);
+		if (is_array($trigger) === false) {
+			return $this->knownTypeErrors(name: $name, triggerType: '');
 		}
 
 		$triggerType = (string)($trigger['type'] ?? '');
-		$errors      = $this->validateTriggerKind(name: $name, triggerType: $triggerType, appEvent: ($trigger['event'] ?? null));
+		$errors      = $this->validateTriggerKind(name: $name, trigger: $trigger);
 		$typeErrors  = match ($triggerType) {
 			'scheduled' => $this->validateScheduledTrigger(name: $name, trigger: $trigger),
 			'threshold' => $this->validateThresholdTrigger(name: $name, trigger: $trigger),
@@ -96,19 +95,32 @@ final class NotificationTriggerValidator {
 	/**
 	 * Errors for the trigger kind: a well-formed app event or a known type.
 	 *
-	 * @param string $name        The rule key.
-	 * @param string $triggerType The declared `trigger.type`, empty when absent.
-	 * @param mixed  $appEvent    The declared app event, null when absent.
+	 * @param string               $name    The rule key.
+	 * @param array<string, mixed> $trigger The declared trigger object.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateTriggerKind(string $name, string $triggerType, mixed $appEvent): array {
-		if ($appEvent !== null) {
-			return $this->validateAppEvent(ruleKey: $name, event: $appEvent);
+	private function validateTriggerKind(string $name, array $trigger): array {
+		if (($trigger['event'] ?? null) !== null) {
+			return $this->validateAppEvent(ruleKey: $name, event: $trigger['event']);
 		}
 
+		return $this->knownTypeErrors(name: $name, triggerType: (string)($trigger['type'] ?? ''));
+	}//end validateTriggerKind()
+
+	/**
+	 * Errors for a `trigger.type` that is not a reserved trigger type.
+	 *
+	 * @param string $name        The rule key.
+	 * @param string $triggerType The declared `trigger.type`, empty when absent.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function knownTypeErrors(string $name, string $triggerType): array {
 		if (in_array($triggerType, self::VALID_TRIGGERS, true) === true) {
 			return [];
 		}
@@ -124,7 +136,7 @@ final class NotificationTriggerValidator {
 				),
 			],
 		];
-	}//end validateTriggerKind()
+	}//end knownTypeErrors()
 
 	/**
 	 * Validate an app-defined trigger event name.
@@ -358,7 +370,8 @@ final class NotificationTriggerValidator {
 
 		foreach (['condition', 'previously'] as $clauseKey) {
 			$clause = ($trigger[$clauseKey] ?? null);
-			$errors = array_merge($errors, $this->validateCalculatedChangeClause(name: $name, clauseKey: $clauseKey, clause: $clause));
+			$label  = sprintf('Notification "%s" trigger.%s', $name, $clauseKey);
+			$errors = array_merge($errors, $this->validateCalculatedChangeClause(label: $label, clause: $clause));
 		}
 
 		return $errors;
@@ -367,15 +380,14 @@ final class NotificationTriggerValidator {
 	/**
 	 * Errors for one optional `calculatedChange` operator clause.
 	 *
-	 * @param string $name      The rule key.
-	 * @param string $clauseKey `condition` or `previously`.
-	 * @param mixed  $clause    The declared clause, null when absent.
+	 * @param string $label  `Notification "<rule>" trigger.<clause>`, the start of each message.
+	 * @param mixed  $clause The declared clause, null when absent.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateCalculatedChangeClause(string $name, string $clauseKey, mixed $clause): array {
+	private function validateCalculatedChangeClause(string $label, mixed $clause): array {
 		if ($clause === null) {
 			return [];
 		}
@@ -384,7 +396,7 @@ final class NotificationTriggerValidator {
 			return [
 				[
 					'code' => 'notification-calculated-change-bad-clause',
-					'message' => sprintf('Notification "%s" trigger.%s must be a non-empty operator map.', $name, $clauseKey),
+					'message' => $label.' must be a non-empty operator map.',
 				],
 			];
 		}
@@ -394,10 +406,8 @@ final class NotificationTriggerValidator {
 			if (in_array((string)$op, self::CALCULATED_CHANGE_OPS, true) === false) {
 				$errors[] = [
 					'code' => 'notification-calculated-change-bad-op',
-					'message' => sprintf(
-						'Notification "%s" trigger.%s operator "%s" must be one of [%s].',
-						$name,
-						$clauseKey,
+					'message' => $label.sprintf(
+						' operator "%s" must be one of [%s].',
 						(string)$op,
 						implode(', ', self::CALCULATED_CHANGE_OPS)
 					),

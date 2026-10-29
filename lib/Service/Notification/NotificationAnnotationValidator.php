@@ -148,24 +148,29 @@ final class NotificationAnnotationValidator {
 		$facts  = new NotificationSchemaFacts(schema: $schema);
 		$errors = [];
 		foreach ($notifications as $name => $spec) {
-			$errors = array_merge($errors, $this->validateRule(name: $name, spec: $spec, schema: $facts));
+			$shapeErrors = $this->ruleShapeErrors(name: $name, spec: $spec);
+			if ($shapeErrors !== []) {
+				$errors = array_merge($errors, $shapeErrors);
+				continue;
+			}
+
+			$errors = array_merge($errors, $this->validateRule(rule: new NotificationRuleContext(name: $name, spec: $spec, schema: $facts)));
 		}
 
 		return $errors;
 	}//end validate()
 
 	/**
-	 * Errors for one entry of the annotation.
+	 * Errors for an annotation entry that is not a named object.
 	 *
-	 * @param int|string              $name   The rule key.
-	 * @param mixed                   $spec   The rule declaration.
-	 * @param NotificationSchemaFacts $schema The schema the rule is declared on.
+	 * @param int|string $name The rule key.
+	 * @param mixed      $spec The rule declaration.
 	 *
-	 * @return array<int, array<string, mixed>>
+	 * @return array<int, array<string, mixed>> Errors, empty when the entry is a named object.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateRule(int|string $name, mixed $spec, NotificationSchemaFacts $schema): array {
+	private function ruleShapeErrors(int|string $name, mixed $spec): array {
 		if (is_string($name) === false || $name === '') {
 			return [['code' => 'notification-bad-name', 'message' => 'Notification names must be non-empty strings.']];
 		}
@@ -174,15 +179,30 @@ final class NotificationAnnotationValidator {
 			return [['code' => 'notification-malformed', 'message' => sprintf('Notification "%s" must be an object.', $name)]];
 		}
 
+		return [];
+	}//end ruleShapeErrors()
+
+	/**
+	 * Errors for one rule of the annotation.
+	 *
+	 * @param NotificationRuleContext $rule The rule and its schema.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateRule(NotificationRuleContext $rule): array {
+		$name = $rule->name;
+		$spec = $rule->spec;
+
 		return array_merge(
 			$this->triggers->validate(name: $name, trigger: ($spec['trigger'] ?? null)),
 			$this->validateDelivery(name: $name, spec: $spec),
 			$this->validateContent(name: $name, spec: $spec),
 			$this->validateScope(name: $name, spec: $spec),
 			$this->validateCriticalAndDigest(spec: $spec, name: $name),
-			$this->recipients->validate(rule: new NotificationRuleContext(name: $name, spec: $spec, schema: $schema))
+			$this->recipients->validate(rule: $rule)
 		);
-
 	}//end validateRule()
 
 	/**
@@ -204,8 +224,7 @@ final class NotificationAnnotationValidator {
 			$this->validateMessageCategory(name: $name, category: ($spec['messageCategory'] ?? '')),
 			$this->validateOriginApp(name: $name, spec: $spec),
 			$this->validateIfDeclared(
-				spec: $spec,
-				key: 'actions',
+				declaration: array_intersect_key($spec, ['actions' => true]),
 				check: fn (mixed $actions): array => $this->validateActions(actions: $actions, name: $name)
 			)
 		);
@@ -226,8 +245,7 @@ final class NotificationAnnotationValidator {
 		return array_merge(
 			$this->validateSubject(name: $name, subject: ($spec['subject'] ?? null)),
 			$this->validateIfDeclared(
-				spec: $spec,
-				key: 'message',
+				declaration: array_intersect_key($spec, ['message' => true]),
 				check: fn (mixed $message): array => $this->validateMessage(message: $message, name: $name)
 			),
 			$this->validateChannelTargets(name: $name, spec: $spec)
@@ -247,14 +265,12 @@ final class NotificationAnnotationValidator {
 	private function validateScope(string $name, array $spec): array {
 		return array_merge(
 			$this->validateIfDeclared(
-				spec: $spec,
-				key: 'organisation',
-				check: fn (mixed $org): array => $this->organisationErrors(org: $org, name: $name)
+				declaration: array_intersect_key($spec, ['organisation' => true]),
+				check: fn (mixed $org): array => array_filter([$this->validateOrganisationGate(org: $org, name: $name)])
 			),
 			$this->validateDomain(name: $name, spec: $spec),
 			$this->validateIfDeclared(
-				spec: $spec,
-				key: 'transports',
+				declaration: array_intersect_key($spec, ['transports' => true]),
 				check: fn (mixed $transports): array => $this->validateTransports(transports: $transports, name: $name)
 			)
 		);
@@ -263,20 +279,19 @@ final class NotificationAnnotationValidator {
 	/**
 	 * Run a check on an optional rule key, only when the rule declares it.
 	 *
-	 * @param array<string, mixed>                          $spec  The rule declaration.
-	 * @param string                                        $key   The optional key.
-	 * @param callable(mixed): array<int, array<string, mixed>> $check The check for the key's value.
+	 * @param array<string, mixed>                              $declaration The key and its value, empty when not declared.
+	 * @param callable(mixed): array<int, array<string, mixed>> $check       The check for the key's value.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateIfDeclared(array $spec, string $key, callable $check): array {
-		if (array_key_exists($key, $spec) === false) {
-			return [];
+	private function validateIfDeclared(array $declaration, callable $check): array {
+		foreach ($declaration as $value) {
+			return $check($value);
 		}
 
-		return $check($spec[$key]);
+		return [];
 	}//end validateIfDeclared()
 
 	/**
@@ -625,28 +640,6 @@ final class NotificationAnnotationValidator {
 
 		return empty($talk['token']) === true || is_string($talk['token']) === false;
 	}//end isTalkTokenMissing()
-
-	/**
-	 * The organisation gate's error as a list.
-	 *
-	 * The dispatcher skips the rule unless the saved object's organisation
-	 * matches: one string (UUID or slug) or a list of strings (any-of).
-	 *
-	 * @param mixed  $org  The declared organisation gate.
-	 * @param string $name The rule key.
-	 *
-	 * @return array<int, array<string, mixed>>
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function organisationErrors(mixed $org, string $name): array {
-		$error = $this->validateOrganisationGate(org: $org, name: $name);
-		if ($error === null) {
-			return [];
-		}
-
-		return [$error];
-	}//end organisationErrors()
 
 	/**
 	 * Errors for the optional `domain`, the leaf app's own word for a slice of its work.
