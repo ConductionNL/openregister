@@ -497,7 +497,7 @@ class LeafRegistryTest extends TestCase {
 		);
 
 		// Wire the lazy loader: reading the IntegrationRegistry now triggers
-		// leaf collection, exactly as Application::bootLeafRegistry() sets up.
+		// leaf collection, exactly as IntegrationRegistrar::bootLeafRegistry() sets up.
 		$integrationRegistry->setLeafLoader(fn () => $leafReg->getDescriptors());
 
 		// Built-in present alongside the announced leaf's provider.
