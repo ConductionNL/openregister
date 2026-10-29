@@ -38,10 +38,10 @@ namespace OCA\OpenRegister\Service\Task;
 use OCA\OpenRegister\Db\AbstractObjectMapper;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
-use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskBlockerMapper;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -155,7 +155,7 @@ class TaskInboxService {
 	 * subject context, and a display title that is synthesized when the
 	 * stored title is null — and never written back.
 	 *
-	 * @param Task $task The task.
+	 * @param TaskInterface $task The task.
 	 * @param array<string, array<string, mixed>> $subjects Subject context by object uuid.
 	 * @param \DateTimeInterface $now The clock instant for the projection.
 	 * @param array<int, string>|null $openBlockers The page's blocker uuids that
@@ -167,7 +167,7 @@ class TaskInboxService {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function row(Task $task, array $subjects, \DateTimeInterface $now, ?array $openBlockers = null): array {
+	public function row(TaskInterface $task, array $subjects, \DateTimeInterface $now, ?array $openBlockers = null): array {
 		$row = $task->jsonSerialize();
 
 		// Derived, never stored: blocked while the named blocker is open.
@@ -190,7 +190,7 @@ class TaskInboxService {
 		$row['daysUntilDue'] = $projection['daysUntilDue'];
 		$row['daysOverdue'] = $projection['daysOverdue'];
 
-		if ((string)$task->getPerformerType() === Task::PERFORMER_EXTERNAL) {
+		if ((string)$task->getPerformerType() === TaskInterface::PERFORMER_EXTERNAL) {
 			$row['delivery'] = $this->deliveryState(task: $task);
 		}
 
@@ -206,13 +206,13 @@ class TaskInboxService {
 	 * exists at all (the outage case the spec wants visible). Never throws:
 	 * the task list does not fail over a delivery lookup.
 	 *
-	 * @param Task $task The external task.
+	 * @param TaskInterface $task The external task.
 	 *
 	 * @return array<string, mixed> {state, channels, requestedAt, deliveredAt}.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
 	 */
-	public function deliveryState(Task $task): array {
+	public function deliveryState(TaskInterface $task): array {
 		$unknown = [
 			'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
 			'channels' => [],
@@ -241,7 +241,7 @@ class TaskInboxService {
 	 * Subject context for a set of tasks, for readers outside this service
 	 * (the portal seam lists a subject's tasks WITH their case context).
 	 *
-	 * @param array<int, Task> $tasks The tasks.
+	 * @param array<int, TaskInterface> $tasks The tasks.
 	 *
 	 * @return array<string, array<string, mixed>> Context by object uuid.
 	 *
@@ -259,13 +259,13 @@ class TaskInboxService {
 	 * display title or a derived overdue flag cannot differ between the
 	 * inbox and the notification about it.
 	 *
-	 * @param Task $task The task.
+	 * @param TaskInterface $task The task.
 	 *
 	 * @return array<string, mixed> The row.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-truth-flows-one-way-and-the-one-path-back-is-a-gate
 	 */
-	public function enrich(Task $task): array {
+	public function enrich(TaskInterface $task): array {
 		return $this->row(task: $task, subjects: $this->subjectContexts(tasks: [$task]), now: $this->temporal->now());
 	}//end enrich()
 
@@ -275,7 +275,7 @@ class TaskInboxService {
 	 * Never throws: a failed lookup reads as "not blocked", logged at debug,
 	 * because the inbox does not fail over a derived flag.
 	 *
-	 * @param array<int, Task> $tasks The page.
+	 * @param array<int, TaskInterface> $tasks The page.
 	 *
 	 * @return array<int, string> The open blocker uuids.
 	 *
@@ -309,14 +309,14 @@ class TaskInboxService {
 	 * A stored synthesized title would go stale the moment the subject is
 	 * renamed, which is why the spec forbids persisting it.
 	 *
-	 * @param Task $task The task.
+	 * @param TaskInterface $task The task.
 	 * @param array<string, mixed>|null $subject The subject context, when resolved.
 	 *
 	 * @return string A non-empty display title.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
-	public function displayTitle(Task $task, ?array $subject): string {
+	public function displayTitle(TaskInterface $task, ?array $subject): string {
 		$stored = trim((string)$task->getTitle());
 		if ($stored !== '') {
 			return $stored;
@@ -345,7 +345,7 @@ class TaskInboxService {
 	 * A failed or absent object store yields empty context, logged at debug:
 	 * the inbox never fails over enrichment, and never fires a query per row.
 	 *
-	 * @param array<int, Task> $tasks The page.
+	 * @param array<int, TaskInterface> $tasks The page.
 	 *
 	 * @return array<string, array<string, mixed>> Context by object uuid:
 	 *         {uuid, registerId, schemaId, title}.
@@ -385,7 +385,7 @@ class TaskInboxService {
 	 * The subject objects of a page: located ones from their own tables, the
 	 * rest through the cross-table search.
 	 *
-	 * @param array<int, Task> $tasks The page.
+	 * @param array<int, TaskInterface> $tasks The page.
 	 * @param array<int, string> $uuids The page's subject uuids.
 	 *
 	 * @return array<array-key, mixed> The subject objects.

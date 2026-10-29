@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCP\IGroupManager;
@@ -200,7 +201,7 @@ class TaskAuthorizationService {
 	 * Boolean rather than asserting because reads legitimately branch
 	 * (404 vs body), while VERBS must not be able to ignore a denial.
 	 *
-	 * @param Task $task The task read.
+	 * @param TaskInterface $task The task read.
 	 * @param string|null $uid The reading identity.
 	 *
 	 * @return boolean True when visible; false otherwise, including every
@@ -208,7 +209,7 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	public function mayRead(Task $task, ?string $uid): bool {
+	public function mayRead(TaskInterface $task, ?string $uid): bool {
 		if ($uid === null || trim($uid) === '') {
 			return false;
 		}
@@ -458,7 +459,7 @@ class TaskAuthorizationService {
 	 * never "no check applicable".
 	 *
 	 * @param string $verb The verb, for the denial message.
-	 * @param Task $task The task acted on.
+	 * @param TaskInterface $task The task acted on.
 	 * @param string $uid The acting identity.
 	 *
 	 * @return void
@@ -467,7 +468,7 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function assertPoolMember(string $verb, Task $task, string $uid): void {
+	private function assertPoolMember(string $verb, TaskInterface $task, string $uid): void {
 		$users = ($task->getCandidateUsers() ?? []);
 		if (in_array($uid, $users, true) === true) {
 			return;
@@ -513,7 +514,7 @@ class TaskAuthorizationService {
 	 * has already been read by the legacy branches above, under the wider
 	 * meaning every stored task was written against.
 	 *
-	 * @param Task   $task The task acted on.
+	 * @param TaskInterface   $task The task acted on.
 	 * @param string $uid  The acting identity.
 	 *
 	 * @return boolean True when a typed candidate resolves to the caller.
@@ -527,7 +528,7 @@ class TaskAuthorizationService {
 	 * be worse design chosen by a linter: the type has no dependencies, no
 	 * state and nothing to stub.
 	 */
-	private function matchesTypedCandidate(Task $task, string $uid): bool {
+	private function matchesTypedCandidate(TaskInterface $task, string $uid): bool {
 		if ($this->principals === null) {
 			// Fail closed, like every other branch here: without a resolver a
 			// typed candidate cannot be affirmed, so it is not affirmed.

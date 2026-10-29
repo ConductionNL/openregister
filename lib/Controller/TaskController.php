@@ -43,7 +43,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -51,6 +50,7 @@ use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
@@ -382,7 +382,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->create(data: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid()),
 			successStatus: Http::STATUS_CREATED
 		);
 	}//end create()
@@ -400,7 +400,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function offer(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end offer()
@@ -418,7 +418,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function claim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end claim()
@@ -436,7 +436,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function unclaim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end unclaim()
@@ -455,7 +455,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function assign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end assign()
@@ -474,7 +474,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end reassign()
@@ -494,7 +494,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end delegate()
@@ -514,7 +514,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end resolve()
@@ -552,7 +552,7 @@ class TaskController extends Controller {
 		}
 
 		return $this->respondWith(
-			verb: fn (): Task => $this->completion->complete(
+			verb: fn (): TaskInterface => $this->completion->complete(
 				uuid: $uuid,
 				outcome: $outcome,
 				resultText: $resultText,
@@ -578,7 +578,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end cancel()
@@ -600,7 +600,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function edit(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->edit(uuid: $uuid, changes: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->edit(uuid: $uuid, changes: $this->body(), actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end edit()
@@ -623,7 +623,7 @@ class TaskController extends Controller {
 		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
 
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end checkItem()
@@ -641,7 +641,7 @@ class TaskController extends Controller {
 	 * never the exception text, which for a database failure carries SQL and
 	 * bound parameters.
 	 *
-	 * @param callable(): Task $verb The service call.
+	 * @param callable(): TaskInterface $verb The service call.
 	 * @param int $successStatus The status of the happy path.
 	 * @param string|null $uuid The task acted on, for the denial mapping.
 	 *

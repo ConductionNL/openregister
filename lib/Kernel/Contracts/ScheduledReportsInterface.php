@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\ScheduledReport;
 
 /**
  * Creates, reads, updates, deletes and runs scheduled reports, and guards them by owner. Implemented by ScheduledReportService.
@@ -31,7 +30,7 @@ interface ScheduledReportsInterface {
 	/**
 	 * Assert the caller owns the report or is an admin.
 	 *
-	 * @param ScheduledReport $report The report.
+	 * @param ScheduledReportInterface $report The report.
 	 * @param string $callerUid The calling user's uid.
 	 * @param bool $callerIsAdmin Whether the caller is an admin.
 	 *
@@ -41,7 +40,7 @@ interface ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function assertOwnerOrAdmin(ScheduledReport $report, string $callerUid, bool $callerIsAdmin): void;
+	public function assertOwnerOrAdmin(ScheduledReportInterface $report, string $callerUid, bool $callerIsAdmin): void;
 
 	/**
 	 * Create a scheduled report owned by the given user.
@@ -49,13 +48,13 @@ interface ScheduledReportsInterface {
 	 * @param array<string,mixed> $data Request payload.
 	 * @param string $ownerUid The owning uid (always the caller — self-service creation).
 	 *
-	 * @return ScheduledReport
+	 * @return ScheduledReportInterface
 	 *
 	 * @throws \InvalidArgumentException When validation fails.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function create(array $data, string $ownerUid): ScheduledReport;
+	public function create(array $data, string $ownerUid): ScheduledReportInterface;
 
 	/**
 	 * Delete a scheduled report. Only the owner or an admin may delete.
@@ -78,18 +77,18 @@ interface ScheduledReportsInterface {
 	 *
 	 * @param int $id The scheduled report id.
 	 *
-	 * @return ScheduledReport
+	 * @return ScheduledReportInterface
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function find(int $id): ScheduledReport;
+	public function find(int $id): ScheduledReportInterface;
 
 	/**
 	 * List every scheduled report (admin listing).
 	 *
-	 * @return ScheduledReport[]
+	 * @return ScheduledReportInterface[]
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
@@ -100,7 +99,7 @@ interface ScheduledReportsInterface {
 	 *
 	 * @param string $ownerUid The owning uid.
 	 *
-	 * @return ScheduledReport[]
+	 * @return ScheduledReportInterface[]
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
@@ -113,14 +112,14 @@ interface ScheduledReportsInterface {
 	 * or when at least a full schedule period has elapsed since the last run.
 	 * Disabled reports are never due.
 	 *
-	 * @param ScheduledReport $report The report to check.
+	 * @param ScheduledReportInterface $report The report to check.
 	 * @param DateTimeInterface $now The reference time.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function isDue(ScheduledReport $report, DateTimeInterface $now): bool;
+	public function isDue(ScheduledReportInterface $report, DateTimeInterface $now): bool;
 
 	/**
 	 * Execute a single scheduled report: export as the owner, deliver per
@@ -138,14 +137,14 @@ interface ScheduledReportsInterface {
 	 * email leg fails outright, the run is marked `failed` since nothing was
 	 * delivered.
 	 *
-	 * @param ScheduledReport $report The report to run.
+	 * @param ScheduledReportInterface $report The report to run.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function runOne(ScheduledReport $report): void;
+	public function runOne(ScheduledReportInterface $report): void;
 
 	/**
 	 * Update an existing scheduled report. Only the owner or an admin may update.
@@ -155,7 +154,7 @@ interface ScheduledReportsInterface {
 	 * @param string $callerUid The calling user's uid.
 	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
 	 *
-	 * @return ScheduledReport
+	 * @return ScheduledReportInterface
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
 	 * @throws \RuntimeException When the caller does not own the row and is not an admin.
@@ -163,5 +162,5 @@ interface ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReport;
+	public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReportInterface;
 }//end interface

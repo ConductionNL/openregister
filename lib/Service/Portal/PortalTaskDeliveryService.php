@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Portal;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -71,7 +72,7 @@ class PortalTaskDeliveryService {
 	 * apart. Never throws: each failure is logged with the task, and the
 	 * rows that could be written are returned.
 	 *
-	 * @param Task $task The external task.
+	 * @param TaskInterface $task The external task.
 	 * @param string $kind `ask`, `re-ask` or `reminder`.
 	 * @param array<string, mixed> $message What portaliq renders.
 	 *
@@ -79,7 +80,7 @@ class PortalTaskDeliveryService {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	public function request(Task $task, string $kind, array $message): array {
+	public function request(TaskInterface $task, string $kind, array $message): array {
 		$written = [];
 		foreach (PortalTaskDelivery::CHANNELS as $channel) {
 			$row = new PortalTaskDelivery();
@@ -109,14 +110,14 @@ class PortalTaskDeliveryService {
 	 * Descriptors and the case anchor, never case data: portaliq reads the
 	 * case itself through its subject-scoped readers (ADR-046 rule 3).
 	 *
-	 * @param Task $task The external task.
+	 * @param TaskInterface $task The external task.
 	 * @param string|null $reason The re-ask reason, when this is a re-ask.
 	 *
 	 * @return array<string, mixed> The message.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	public function messageFor(Task $task, ?string $reason = null): array {
+	public function messageFor(TaskInterface $task, ?string $reason = null): array {
 		$metadata = ($task->getMetadata() ?? []);
 
 		return [

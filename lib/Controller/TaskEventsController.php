@@ -61,7 +61,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
@@ -354,11 +354,11 @@ class TaskEventsController extends Controller {
 	 *
 	 * @param string $uuid The task uuid.
 	 *
-	 * @return Task|null The readable task, or null.
+	 * @return TaskInterface|null The readable task, or null.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function readableTask(string $uuid): ?Task {
+	private function readableTask(string $uuid): ?TaskInterface {
 		try {
 			$task = $this->tasks->get(uuid: $uuid);
 		} catch (Throwable) {
