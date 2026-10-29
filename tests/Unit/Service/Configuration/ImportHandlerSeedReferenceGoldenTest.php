@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
  */
 class ImportHandlerSeedReferenceGoldenTest extends TestCase {
 
