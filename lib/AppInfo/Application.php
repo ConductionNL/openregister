@@ -43,6 +43,7 @@ use OCA\OpenRegister\AppHost\Service\FeatureToggleService;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
+use OCA\OpenRegister\Contract\AppIdentity;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Controller\AnalyticsSeriesController;
@@ -377,7 +378,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @var string
 	 */
-	public const APP_ID = 'openregister';
+	public const APP_ID = AppIdentity::APP_ID;
 
 	/**
 	 * Distributed-cache prefix for the per-app MCP provider discovery map.
