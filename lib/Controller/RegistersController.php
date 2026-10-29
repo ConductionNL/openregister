@@ -1428,6 +1428,8 @@ class RegistersController extends Controller {
 	 * @param int|string $id The ID, UUID or slug of the register
 	 *
 	 * @return Register|null The register, or null when none matches
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function findImportRegister(int|string $id): ?Register {
 		try {
@@ -1447,6 +1449,8 @@ class RegistersController extends Controller {
 	 * @param mixed         $type     The resolved import type
 	 *
 	 * @return bool True when the import must answer 404
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function isImportRegisterMissing(?Register $register, mixed $type): bool {
 		if ($register !== null) {
@@ -1466,6 +1470,8 @@ class RegistersController extends Controller {
 	 * @param array $uploadedFile The uploaded file entry
 	 *
 	 * @return mixed One of excel, csv, json or configuration, or the given type
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function resolveImportType(array $uploadedFile): mixed {
 		$type = $this->request->getParam('type');
@@ -1497,6 +1503,8 @@ class RegistersController extends Controller {
 	 * @param array $uploadedFile The uploaded file entry
 	 *
 	 * @return string Either json or configuration
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function jsonImportType(array $uploadedFile): string {
 		$peekRaw = '';
@@ -1526,6 +1534,8 @@ class RegistersController extends Controller {
 	 * every row through it. `dryRun` maps and validates every row and saves nothing.
 	 *
 	 * @return array|JSONResponse The options, or a 400 response for an unknown pack
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function readImportOptions(): array|JSONResponse {
 		$options = [
@@ -1558,6 +1568,8 @@ class RegistersController extends Controller {
 	 * @param array $options The import options
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function logImportOptions(array $options): void {
 		$this->logger->debug(
@@ -1580,6 +1592,8 @@ class RegistersController extends Controller {
 	 * @param array $options The import options, including type, register and file
 	 *
 	 * @return array|JSONResponse The import summary, or an error response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function runImport(array $options): array|JSONResponse {
 		switch ($options['type']) {
@@ -1604,6 +1618,8 @@ class RegistersController extends Controller {
 	 * @param array $options The import options
 	 *
 	 * @return array Named arguments for ImportService
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function rowImportArguments(array $options): array {
 		return [
@@ -1625,6 +1641,8 @@ class RegistersController extends Controller {
 	 * @param array $options The import options
 	 *
 	 * @return array|JSONResponse The sheet-based summary, or a 400 response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function importExcel(array $options): array|JSONResponse {
 		if ($options['pack'] !== null) {
@@ -1643,6 +1661,11 @@ class RegistersController extends Controller {
 	 * @param array $options The import options
 	 *
 	 * @return array|JSONResponse The sheet-based summary, or a 400 response
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If several schemas match
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function importCsv(array $options): array|JSONResponse {
 		$schemaId = $this->request->getParam('schema');
@@ -1673,6 +1696,11 @@ class RegistersController extends Controller {
 	 * @param array $options The import options
 	 *
 	 * @return array|JSONResponse The summary, or a 400 response without a schema
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If several schemas match
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function importJsonObjects(array $options): array|JSONResponse {
 		$peek = json_decode((string)file_get_contents($options['file']['tmp_name']), true);
@@ -1711,6 +1739,8 @@ class RegistersController extends Controller {
 	 * @param mixed $peek The decoded upload
 	 *
 	 * @return bool True for a non-empty `components.registers` map
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function isRegisterBundle(mixed $peek): bool {
 		return is_array($peek) === true
@@ -1726,6 +1756,8 @@ class RegistersController extends Controller {
 	 * @param array $options The import options
 	 *
 	 * @return array|JSONResponse The summary, or an error response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function importConfigurationBundle(array $options): array|JSONResponse {
 		if ($options['pack'] !== null) {
@@ -1771,6 +1803,8 @@ class RegistersController extends Controller {
 	 * @param Register $register The register the import targeted
 	 *
 	 * @return array The summary under the `configuration` sheet
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function configurationImportSummary(array $result, Register $register): array {
 		$summary = [
@@ -1810,6 +1844,11 @@ class RegistersController extends Controller {
 	 * @param array      $schemas The created schema entities
 	 *
 	 * @return void
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the register does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If several registers match
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function addCreatedSchemasToRegister(int|string $id, array $schemas): void {
 		$createdSchemas = [];
@@ -1832,6 +1871,8 @@ class RegistersController extends Controller {
 	 * @param array $summary The import summary
 	 *
 	 * @return JSONResponse The success response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function importSuccessResponse(array $summary): JSONResponse {
 		$errorsCsv = $this->importService->serializeErrorsToCsv(summary: $summary);
