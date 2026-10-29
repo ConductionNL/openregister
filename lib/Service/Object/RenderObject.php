@@ -3649,7 +3649,10 @@ class RenderObject {
 		}
 
 		if (empty($uuidsToPreload) === false) {
-			$preloadedObjects = $this->objectCacheService->preloadObjects($uuidsToPreload);
+			$preloadedObjects = $this->objectCacheService->preloadObjects(
+				identifiers: $uuidsToPreload,
+				registerId: $this->registerIdOf(entity: $entity)
+			);
 			// Add preloaded objects to local cache for immediate access.
 			foreach ($preloadedObjects as $object) {
 				$this->objectsCache[$object->getUuid()] = $object;
@@ -3678,6 +3681,47 @@ class RenderObject {
 
 		return $objectDataDot;
 	}//end extendObject()
+
+	/**
+	 * The register id an entity lives in, or null when it has none.
+	 *
+	 * @param ObjectEntity $entity The entity.
+	 *
+	 * @return int|null The register id.
+	 */
+	private function registerIdOf(ObjectEntity $entity): ?int {
+		$register = $entity->getRegister();
+		if ($register === null || is_numeric($register) === false) {
+			return null;
+		}
+
+		return (int)$register;
+	}//end registerIdOf()
+
+	/**
+	 * The register every entity on a page lives in, or null when they differ.
+	 *
+	 * @param array<int, mixed> $entities The page's entities.
+	 *
+	 * @return int|null The shared register id.
+	 */
+	private function sharedRegisterIdOf(array $entities): ?int {
+		$shared = null;
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === false) {
+				continue;
+			}
+
+			$registerId = $this->registerIdOf(entity: $entity);
+			if ($registerId === null || ($shared !== null && $shared !== $registerId)) {
+				return null;
+			}
+
+			$shared = $registerId;
+		}
+
+		return $shared;
+	}//end sharedRegisterIdOf()
 
 	/**
 	 * Resolve explicitly-extended `$ref` properties whose target schema is
@@ -4843,7 +4887,10 @@ class RenderObject {
 			);
 
 			if (empty($allUuidsToPreload) === false) {
-				$preloadedObjects = $this->objectCacheService->preloadObjects($allUuidsToPreload);
+				$preloadedObjects = $this->objectCacheService->preloadObjects(
+					identifiers: $allUuidsToPreload,
+					registerId: $this->sharedRegisterIdOf(entities: $entities)
+				);
 
 				// Add preloaded objects to local cache for immediate access during rendering.
 				foreach ($preloadedObjects as $object) {

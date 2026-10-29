@@ -369,6 +369,7 @@ class ExampleSetCatalogue {
 			'talkConversations' => $this->keyedRows(file: $file, declared: (array) ($fragment['talkConversations'] ?? []), noun: 'talk conversation'),
 			'auditEntries'    => $this->keyedRows(file: $file, declared: (array) ($fragment['auditEntries'] ?? []), noun: 'audit entry'),
 			'timelineEntries' => $this->keyedRows(file: $file, declared: (array) ($fragment['timelineEntries'] ?? []), noun: 'timeline entry'),
+			'emailLinks'      => $this->keyedRows(file: $file, declared: (array) ($fragment['emailLinks'] ?? []), noun: 'email link'),
 			'archival'        => $this->archival(app: $app, file: $file, declared: (array) ($fragment['archival'] ?? [])),
 		];
 	}//end fragment()
@@ -490,11 +491,41 @@ class ExampleSetCatalogue {
 				'value'    => ($entry['value'] ?? ''),
 				'generate' => $generate,
 				'type'     => $this->appConfigType(file: $file, index: (int) $index, entry: $entry, generate: $generate),
+				'atLeast'  => $this->appConfigFloor(file: $file, index: (int) $index, entry: $entry, generate: $generate),
 			];
 		}
 
 		return $entries;
 	}//end appConfig()
+
+	/**
+	 * Whether an app config entry is a floor (`atLeast`): a running counter the set raises to its value but never
+	 * lowers, which the app may move on after the install.
+	 *
+	 * @param string               $file     The fragment file, for messages.
+	 * @param int                  $index    The entry's position, for messages.
+	 * @param array<string, mixed> $entry    The declared entry.
+	 * @param bool                 $generate Whether the set generates the value.
+	 *
+	 * @return bool
+	 *
+	 * @throws ExampleSetException When a floor is not a written integer.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the value is generated is the entry's own fact.
+	 *
+	 * @spec openspec/changes/example-set-app-config-at-least/specs/example-sets/spec.md#requirement-an-integer-app-config-entry-may-be-a-floor
+	 */
+	private function appConfigFloor(string $file, int $index, array $entry, bool $generate): bool {
+		if (($entry['atLeast'] ?? false) !== true) {
+			return false;
+		}
+
+		if ($generate === true || (string) ($entry['type'] ?? 'string') !== 'int') {
+			throw new ExampleSetException($file.': app config '.$index.' ("'.(string) $entry['key'].'") is atLeast; only a written int can be a floor.');
+		}
+
+		return true;
+	}//end appConfigFloor()
 
 	/**
 	 * The type an app config entry is written with: `string`, or `int` for a key its app reads as an integer.

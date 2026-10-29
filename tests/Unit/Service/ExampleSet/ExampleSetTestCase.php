@@ -62,6 +62,9 @@ use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
+use OCA\OpenRegister\Db\EmailLink;
+use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -114,6 +117,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetAccounts;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetRegisters;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetStore;
+use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeLockingProvider;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetLock;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -137,6 +142,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	protected FakeExampleSetStore $store;
 
 	protected FakeExampleSetAccounts $accounts;
+
+	/** Locks held by the runs under test and by the "other process" a test plays. */
+	protected FakeLockingProvider $locks;
 
 	protected FakeExampleSetRegisters $registers;
 
@@ -211,6 +219,9 @@ abstract class ExampleSetTestCase extends TestCase {
 
 	/** @var array<string, TimelineEntry> The timeline entries, by uuid. */
 	protected array $timelineEntries = [];
+
+	/** @var array<int, EmailLink> The email links, by id. */
+	protected array $emailLinks = [];
 
 	/** @var array<int, string> The timeline kinds the fake knows. */
 	protected array $timelineKinds = ['statuswijziging', 'contactmoment'];
@@ -292,6 +303,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
+			EmailLinkMapper::class    => $this->emailLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
 			CasePlanService::class    => $this->casePlans(),
@@ -336,6 +348,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			unset($this->config[$key], $this->lazyKeys[$key]);
 		});
 		$this->record = new ExampleSetRecord(appConfig: $appConfig);
+		$this->locks  = new FakeLockingProvider();
 
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getEnabledApps')->willReturnCallback(fn (): array => array_keys($this->apps));
@@ -370,8 +383,10 @@ abstract class ExampleSetTestCase extends TestCase {
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container)
-			)
+				timelineEntries: new ExampleSetTimelineEntries(container: $container),
+				emailLinks: new ExampleSetEmailLinks(container: $container)
+			),
+			lock: new ExampleSetLock(locks: $this->locks)
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
@@ -399,8 +414,10 @@ abstract class ExampleSetTestCase extends TestCase {
 				collectivesPages: new ExampleSetCollectivesPages(container: $container),
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container)
-			)
+				timelineEntries: new ExampleSetTimelineEntries(container: $container),
+				emailLinks: new ExampleSetEmailLinks(container: $container)
+			),
+			lock: new ExampleSetLock(locks: $this->locks)
 		);
 	}
 
@@ -460,6 +477,13 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
 		$service->method('import')->willReturnCallback(function (array $data, ?string $actor): Task {
+			foreach ($this->engineTasks as $held) {
+				if ($held->getTaskKey() === (string) $data['key']) {
+					// The task key is unique in the engine (or_tasks_key_uniq).
+					throw new \RuntimeException('duplicate key value violates unique constraint "or_tasks_key_uniq"');
+				}
+			}
+
 			$this->taskImports[] = ['data' => $data, 'actor' => $actor];
 			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
 			$task  = new Task();
@@ -486,6 +510,9 @@ abstract class ExampleSetTestCase extends TestCase {
 		$mapper = $this->createMock(TaskMapper::class);
 		$mapper->method('findByUuid')->willReturnCallback(
 			fn (string $uuid): Task => ($this->engineTasks[$uuid] ?? throw new DoesNotExistException('no task '.$uuid))
+		);
+		$mapper->method('findByKey')->willReturnCallback(
+			fn (string $key): array => array_values(array_filter($this->engineTasks, static fn (Task $task): bool => $task->getTaskKey() === $key))
 		);
 		$mapper->method('update')->willReturnCallback(function (Task $task): Task {
 			$this->engineTasks[(string) $task->getUuid()] = $task;
@@ -588,8 +615,21 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function flowVersions(): FlowVersionService {
 		$versions = $this->createMock(FlowVersionService::class);
 		$versions->method('publish')->willReturnCallback(function (Flow $flow) {
+			// As the real service: only a draft head can be published.
+			if ($flow->getLifecycleStatus() === 'published') {
+				throw new \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused(
+					reason: \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused::REASON_NOT_A_DRAFT,
+					flowId: (string) $flow->getUuid(),
+					state: 'published'
+				);
+			}
+
 			$this->publishedFlows[] = (string) $flow->getUuid();
 			$flow->setLifecycleStatus('published');
+			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
+		});
+		$versions->method('publishShippedUpdate')->willReturnCallback(function (Flow $flow) {
+			$this->publishedFlows[] = (string) $flow->getUuid();
 			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
 		});
 
@@ -981,6 +1021,33 @@ abstract class ExampleSetTestCase extends TestCase {
 
 		return $mapper;
 	}
+
+	/**
+	 * An email link mapper over $emailLinks.
+	 *
+	 * @return EmailLinkMapper
+	 */
+	private function emailLinkMapper(): EmailLinkMapper {
+		$mapper = $this->createMock(originalClassName: EmailLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (EmailLink $link): EmailLink {
+			$link->setId(count($this->emailLinks) + 1);
+			$this->emailLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('find')->willReturnCallback(function (int $id): EmailLink {
+			if (isset($this->emailLinks[$id]) === false) {
+				throw new DoesNotExistException('no email link '.$id);
+			}
+
+			return $this->emailLinks[$id];
+		});
+		$mapper->method('delete')->willReturnCallback(function (EmailLink $link): EmailLink {
+			unset($this->emailLinks[$link->getId()]);
+			return $link;
+		});
+
+		return $mapper;
+	}//end emailLinkMapper()
 
 	/**
 	 * A flow run mapper over $flowRuns, keyed by uuid.

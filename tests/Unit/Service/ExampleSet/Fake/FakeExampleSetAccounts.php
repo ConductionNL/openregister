@@ -35,6 +35,9 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 	/** @var array<string, array<int, string>> Sub-admins by gid. */
 	public array $subAdmins = [];
 
+	/** @var array<int, string> Accounts that exist but userExists() does not see yet (another writer made them). */
+	public array $unseenUsers = [];
+
 	/** @var int Number of accounts created. */
 	public int $userCreates = 0;
 
@@ -58,6 +61,12 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 	}
 
 	public function createUser(string $uid, string $displayName, string $email, string $password): string {
+		if (in_array($uid, $this->unseenUsers, true) === true) {
+			$this->unseenUsers = array_values(array_diff($this->unseenUsers, [$uid]));
+			$this->users[$uid] = ['displayName' => $displayName, 'email' => $email, 'password' => 'theirs'];
+			return ExampleSetAccounts::ALREADY_EXISTS;
+		}
+
 		$this->userCreates++;
 		$this->users[$uid] = ['displayName' => $displayName, 'email' => $email, 'password' => $password];
 

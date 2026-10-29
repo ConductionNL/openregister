@@ -251,17 +251,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			$flow = new Flow();
 			$flow->setUuid($this->newUuid());
 			$flow->setApp($app);
-			$flow->setName((string) $data['name']);
-			$flow->setDescription(($data['description'] ?? null));
-			$flow->setTrigger(($data['trigger'] ?? null));
-			$flow->setTriggerRegister(($data['triggerRegister'] ?? null));
-			$flow->setTriggerSchema(($data['triggerSchema'] ?? null));
-			$flow->setCron(($data['cron'] ?? null));
-			$flow->setExecutionMode((string) ($data['executionMode'] ?? Flow::MODE_ASYNC));
-			$flow->setNodes((array) $data['nodes']);
-			$flow->setEdges((array) ($data['edges'] ?? []));
-			$flow->setAnnotations((array) ($data['annotations'] ?? []));
-			$flow->setLimits((array) ($data['limits'] ?? []));
+			$this->declare(flow: $flow, data: $data);
 			$flow->setEnabled(false);
 			$flow->setOwner(null);
 			$flow->setOrganisation($this->container->get(OrganisationService::class)->getOrganisationForNewEntity());
@@ -283,6 +273,106 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 
 		return ['error' => '', 'entry' => ['uuid' => (string) $stored->getUuid()]];
 	}//end write()
+
+	/**
+	 * A refresh updates a held flow where it is, so its uuid (and the pages that
+	 * open it by that uuid) stays.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 */
+	public function updatesInPlace(): bool {
+		return true;
+	}//end updatesInPlace()
+
+	/**
+	 * Update the flow the record holds to its declaration, and publish it again
+	 * when what it declares changed; a flow that is gone is written again. The
+	 * flow stays switched on or off as it is, and keeps its runs.
+	 *
+	 * @param array<string, mixed> $entry The record entry, with the flow's uuid.
+	 * @param string               $app   The app that ships the fragment.
+	 * @param string               $key   The flow's key in the fragment.
+	 * @param array<string, mixed> $data  The filled fields.
+	 *
+	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the update failed.
+	 *
+	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 */
+	public function update(array $entry, string $app, string $key, array $data): array {
+		$uuid = (string) ($entry['uuid'] ?? '');
+		try {
+			$flow = $this->container->get(FlowMapper::class)->findByUuid($uuid);
+		} catch (DoesNotExistException) {
+			return $this->write(app: $app, key: $key, data: $data);
+		}
+
+		try {
+			if ($this->declare(flow: $flow, data: $data) === true) {
+				$flow->setUpdated(new DateTime());
+				$this->container->get(FlowMapper::class)->update($flow);
+				if (($data['publish'] ?? true) === true) {
+					// The held flow is published already: its changed head goes out as the next version.
+					$this->container->get(FlowVersionService::class)->publishShippedUpdate(flow: $flow);
+				}
+			}
+		} catch (Throwable $e) {
+			return ['error' => $e->getMessage(), 'entry' => null];
+		}
+
+		return ['error' => '', 'entry' => ['uuid' => $uuid]];
+	}//end update()
+
+	/**
+	 * Set the declared fields on a flow.
+	 *
+	 * @param Flow                 $flow The flow.
+	 * @param array<string, mixed> $data The filled fields.
+	 *
+	 * @return bool Whether a field changed.
+	 */
+	private function declare(Flow $flow, array $data): bool {
+		$before = $this->declared(flow: $flow);
+		$flow->setName((string) $data['name']);
+		$flow->setDescription(($data['description'] ?? null));
+		$flow->setTrigger(($data['trigger'] ?? null));
+		$flow->setTriggerRegister(($data['triggerRegister'] ?? null));
+		$flow->setTriggerSchema(($data['triggerSchema'] ?? null));
+		$flow->setCron(($data['cron'] ?? null));
+		$flow->setExecutionMode((string) ($data['executionMode'] ?? Flow::MODE_ASYNC));
+		$flow->setNodes((array) $data['nodes']);
+		$flow->setEdges((array) ($data['edges'] ?? []));
+		$flow->setAnnotations((array) ($data['annotations'] ?? []));
+		$flow->setLimits((array) ($data['limits'] ?? []));
+
+		return $this->declared(flow: $flow) !== $before;
+	}//end declare()
+
+	/**
+	 * The declarable fields of a flow, as one comparable string.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return string
+	 */
+	private function declared(Flow $flow): string {
+		return (string) json_encode(
+			value: [
+				$flow->getName(),
+				$flow->getDescription(),
+				$flow->getTrigger(),
+				$flow->getTriggerRegister(),
+				$flow->getTriggerSchema(),
+				$flow->getCron(),
+				$flow->getExecutionMode(),
+				$flow->getNodes(),
+				$flow->getEdges(),
+				$flow->getAnnotations(),
+				$flow->getLimits(),
+			]
+		);
+	}//end declared()
 
 	/**
 	 * Whether a written flow is no longer there.

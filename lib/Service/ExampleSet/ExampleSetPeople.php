@@ -399,6 +399,14 @@ class ExampleSetPeople {
 			email: '',
 			password: $this->accounts->newPassword().$this->accounts->newPassword()
 		);
+		if ($error === ExampleSetAccounts::ALREADY_EXISTS && isset($record['users'][$uid]) === false) {
+			// Another writer made the declared account in between: the set adopts it, so remove leaves it.
+			$record['users'][$uid] = 'adopted';
+			$report['users'][$uid] = 'adopted';
+			$this->record->write(set: $set, record: $record);
+			return $report;
+		}
+
 		if ($error !== '') {
 			$report['dropped'][] = 'service account '.$uid.': '.$error;
 			return $report;

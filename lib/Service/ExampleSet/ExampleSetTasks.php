@@ -61,6 +61,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'candidateGroups',
 		'priority',
 		'dueAt',
+		'expiresAt',
 		'completedAt',
 		'completedBy',
 		'kind',
@@ -69,6 +70,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'checklist',
 		'taskKey',
 		'organisation',
+		'requester',
 	];
 
 
@@ -151,6 +153,13 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		$fields['key'] = (string) ($data['taskKey'] ?? 'example-set:'.$app.'/'.$key);
 		$fields['appId'] = $app;
 		$fields += ExampleSetExternalTask::metadata(data: $data);
+
+		// The task key is unique in the engine: a task that already holds it (the record lost track of it) is
+		// adopted, not written a second time.
+		$holder = $this->holderOf(key: (string) $fields['key']);
+		if ($holder !== null) {
+			return ['error' => '', 'entry' => ['uuid' => $holder]];
+		}
 
 		$actor = (string) ($data['completedBy'] ?? $data['assignee'] ?? '');
 		if ($actor === '' || ExampleSetExternalTask::isExternal(data: $data) === true) {
@@ -241,18 +250,20 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	}//end fieldsRefusal()
 
 	/**
-	 * An assignee or completer that is not one of the set's own accounts.
+	 * An assignee, completer or requester that is not one of the set's own accounts.
 	 *
 	 * @param array<string, mixed> $data  The filled task fields.
 	 * @param array<int, string>   $users The account ids the set creates or adopts.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	private function peopleRefusal(array $data, array $users): string {
-		$fields = ['assignee', 'completedBy'];
+		$fields = ['assignee', 'completedBy', 'requester'];
 		if (ExampleSetExternalTask::isExternal(data: $data) === true) {
 			// A party is checked by externalRefusal(), never against the set's accounts.
-			$fields = ['completedBy'];
+			$fields = ['completedBy', 'requester'];
 		}
 
 		foreach ($fields as $field) {
@@ -283,17 +294,25 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	}//end stateRefusal()
 
 	/**
-	 * A due or completion date that is not a date.
+	 * A due, expiry or completion date that is not a date, or an expiry before the due date.
 	 *
 	 * @param array<string, mixed> $data The filled task fields.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	private function datesRefusal(array $data): string {
-		foreach (['dueAt', 'completedAt'] as $field) {
+		foreach (['dueAt', 'expiresAt', 'completedAt'] as $field) {
 			if (isset($data[$field]) === true && $this->moment(value: $data[$field]) === null) {
 				return $field.' "'.(string) $data[$field].'" is not a date';
 			}
+		}
+
+		if (isset($data['dueAt'], $data['expiresAt']) === true
+			&& $this->moment(value: $data['expiresAt']) < $this->moment(value: $data['dueAt'])
+		) {
+			return 'expiresAt lies before dueAt: a task that dies before it is due is a configuration error';
 		}
 
 		return '';
@@ -317,6 +336,27 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 			return null;
 		}
 	}//end moment()
+
+	/**
+	 * The uuid of the task that holds a key, null when none does or it cannot be read.
+	 *
+	 * @param string $key The task key.
+	 *
+	 * @return string|null
+	 */
+	private function holderOf(string $key): ?string {
+		try {
+			$held = $this->mapper()->findByKey($key);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($held === []) {
+			return null;
+		}
+
+		return (string) $held[0]->getUuid();
+	}//end holderOf()
 
 	/**
 	 * The task service.

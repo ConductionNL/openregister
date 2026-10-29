@@ -75,7 +75,7 @@ class ExampleSetProfiles {
 	 * @param array<string, mixed> $person The cast person.
 	 * @param DateTimeImmutable    $today  The install day.
 	 *
-	 * @return array{headline: string, role: string, absence: array<string, string>|null, status: array<string, string>|null}
+	 * @return array{headline: string, role: string, organisation: string, absence: array<string, string>|null, status: array<string, string>|null}
 	 *
 	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
@@ -107,10 +107,11 @@ class ExampleSetProfiles {
 		}
 
 		return [
-			'headline' => (string) ($person['function'] ?? ''),
-			'role'     => (string) $roles,
-			'absence'  => $absence,
-			'status'   => $status,
+			'headline'     => (string) ($person['function'] ?? ''),
+			'role'         => (string) $roles,
+			'organisation' => (string) ($person['department'] ?? ''),
+			'absence'      => $absence,
+			'status'       => $status,
 		];
 	}//end fromPerson()
 
@@ -162,7 +163,7 @@ class ExampleSetProfiles {
 		try {
 			$account = $this->profiles->getAccount($user);
 			$missing = [];
-			foreach ([IAccountManager::PROPERTY_HEADLINE => $profile['headline'], IAccountManager::PROPERTY_ROLE => $profile['role']] as $name => $value) {
+			foreach ($this->propertyValues(profile: $profile) as $name => $value) {
 				if ($value !== '' && trim((string) $account->getProperty($name)->getValue()) === '') {
 					$missing[$name] = $value;
 				}
@@ -185,7 +186,25 @@ class ExampleSetProfiles {
 	}//end fillMissing()
 
 	/**
-	 * Write the headline and role; '' when written or when there is nothing to write.
+	 * The profile properties a cast person fills: function as headline, roles
+	 * as role, department as organisation.
+	 *
+	 * @param array<string, mixed> $profile The profile, as fromPerson() gives it.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+	 */
+	private function propertyValues(array $profile): array {
+		return [
+			IAccountManager::PROPERTY_HEADLINE     => (string) ($profile['headline'] ?? ''),
+			IAccountManager::PROPERTY_ROLE         => (string) ($profile['role'] ?? ''),
+			IAccountManager::PROPERTY_ORGANISATION => (string) ($profile['organisation'] ?? ''),
+		];
+	}//end propertyValues()
+
+	/**
+	 * Write the headline, role and organisation; '' when written or when there is nothing to write.
 	 *
 	 * @param IUser                $user    The account.
 	 * @param array<string, mixed> $profile The profile.
@@ -193,13 +212,13 @@ class ExampleSetProfiles {
 	 * @return string
 	 */
 	private function writeProperties(IUser $user, array $profile): string {
-		if ($profile['headline'] === '' && $profile['role'] === '') {
+		if (array_filter($this->propertyValues(profile: $profile)) === []) {
 			return '';
 		}
 
 		try {
 			$account = $this->profiles->getAccount($user);
-			foreach ([IAccountManager::PROPERTY_HEADLINE => $profile['headline'], IAccountManager::PROPERTY_ROLE => $profile['role']] as $name => $value) {
+			foreach ($this->propertyValues(profile: $profile) as $name => $value) {
 				if ($value !== '') {
 					$account->setProperty($name, $value, IAccountManager::SCOPE_LOCAL, IAccountManager::NOT_VERIFIED);
 				}

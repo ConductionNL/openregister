@@ -356,12 +356,12 @@ class ExampleSetChanges {
 			$path = (string) $set['path'];
 			$want = $resolved['set'][$path];
 			$held = $this->paths->atPath(row: $resolved['row'], path: $path);
-			if ($held['found'] === true && $held['value'] === $want) {
+			if ($held['found'] === true && $this->sameAs(stored: $held['value'], value: $want) === true) {
 				continue;
 			}
 
-			$undone = (($held['found'] === (bool) $set['had']) && $held['value'] === $set['old']);
-			$moved  = ($held['found'] === true && $held['value'] === $set['new']);
+			$undone = (($held['found'] === (bool) $set['had']) && $this->sameAs(stored: $held['value'], value: $set['old']) === true);
+			$moved  = ($held['found'] === true && $this->sameAs(stored: $held['value'], value: $set['new']) === true);
 			if ($undone === true || $moved === true) {
 				$again[$path] = $want;
 			}
@@ -369,6 +369,28 @@ class ExampleSetChanges {
 
 		return $again;
 	}//end writtenAgain()
+
+	/**
+	 * Whether a stored value is the given value as the store keeps it: the same keys and values in any key order,
+	 * JSON text read as its structure, and nothing more or less on either side.
+	 *
+	 * @param mixed $stored The value as read back.
+	 * @param mixed $value  The value a declaration or the record names.
+	 *
+	 * @return bool
+	 */
+	private function sameAs(mixed $stored, mixed $value): bool {
+		$read = $stored;
+		if (is_string($stored) === true) {
+			$decoded = json_decode($stored, true);
+			if (is_array($decoded) === true) {
+				$read = $decoded;
+			}
+		}
+
+		return $this->proof->lostPaths(declared: $value, stored: $stored) === []
+			&& $this->proof->lostPaths(declared: $read, stored: $value) === [];
+	}//end sameAs()
 
 	/**
 	 * Bring top-level fields of an object the set wrote earlier to the values its declaration resolves to now.
@@ -394,7 +416,7 @@ class ExampleSetChanges {
 		$change['jsonFields'] = array_values(array_unique(array_merge($change['jsonFields'], $this->structuredText(change: $change, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
 
-		$same = static fn (mixed $first, mixed $second): bool => json_encode($first) === json_encode($second);
+		$same = fn (mixed $first, mixed $second): bool => $this->sameAs(stored: $first, value: $second);
 		$todo = [];
 		$left = [];
 		foreach ($values as $field => $value) {

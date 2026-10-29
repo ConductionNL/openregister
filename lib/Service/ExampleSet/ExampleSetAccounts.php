@@ -43,6 +43,13 @@ use Throwable;
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
  */
 class ExampleSetAccounts {
+
+	/**
+	 * What createUser() answers when the account id is already taken: the user backend may have cached the
+	 * account as absent, so userExists() cannot be asked again in the same run.
+	 */
+	public const ALREADY_EXISTS = 'the account already exists';
+
 	/**
 	 * Length of a generated password, before the suffix that satisfies common password policies.
 	 */
@@ -108,6 +115,10 @@ class ExampleSetAccounts {
 		try {
 			$user = $this->users->createUser($uid, $password);
 		} catch (Throwable $e) {
+			if (self::isDuplicate(error: $e) === true) {
+				return self::ALREADY_EXISTS;
+			}
+
 			$this->logger->warning('OpenRegister: an example set account was not created', ['uid' => $uid, 'reason' => $e->getMessage()]);
 			return $e->getMessage();
 		}
@@ -353,4 +364,24 @@ class ExampleSetAccounts {
 
 		return true;
 	}//end removeSubAdmin()
+	/**
+	 * Whether creating an account failed because the id is taken (a unique key on the users table).
+	 *
+	 * @param Throwable $error What createUser threw.
+	 *
+	 * @return bool
+	 */
+	private static function isDuplicate(Throwable $error): bool {
+		for ($cause = $error; $cause !== null; $cause = $cause->getPrevious()) {
+			if ($cause instanceof \OCP\DB\Exception && $cause->getReason() === \OCP\DB\Exception::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+				return true;
+			}
+
+			if (preg_match('/unique constraint|duplicate entry|duplicate key/i', $cause->getMessage()) === 1) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isDuplicate()
 }//end class

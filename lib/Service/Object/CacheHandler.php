@@ -769,7 +769,13 @@ class CacheHandler {
 	 * This method loads multiple objects in a single database query and caches them
 	 * all, significantly improving performance for operations that access many objects.
 	 *
-	 * @param array $identifiers Array of object IDs/UUIDs to preload
+	 * With a register, the identifiers are looked up in that register's tables
+	 * first and only the ones not found there in every table. A reference
+	 * nearly always points into its own register, and one lookup across every
+	 * magic table is a UNION over all of them (1.7k tables: 1.5-3.6 s).
+	 *
+	 * @param array    $identifiers Array of object IDs/UUIDs to preload
+	 * @param int|null $registerId  The register to look in first, or null for every table.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -783,7 +789,7 @@ class CacheHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function preloadObjects(array $identifiers): array {
+	public function preloadObjects(array $identifiers, ?int $registerId = null): array {
 		if (empty($identifiers) === true) {
 			return [];
 		}
@@ -807,7 +813,7 @@ class CacheHandler {
 
 		// Bulk load from database.
 		try {
-			$objects = $this->getObjectMapper()->findMultiple($identifiersToLoad);
+			$objects = $this->findForPreload(identifiers: array_values($identifiersToLoad), registerId: $registerId);
 
 			// Cache all loaded objects.
 			foreach ($objects as $object) {
@@ -830,6 +836,40 @@ class CacheHandler {
 			return [];
 		}//end try
 	}//end preloadObjects()
+
+	/**
+	 * Load objects by identifier, from one register's tables first when given.
+	 *
+	 * @param array<int|string> $identifiers The identifiers to load.
+	 * @param int|null          $registerId  The register to look in first.
+	 *
+	 * @return ObjectEntity[] The objects found.
+	 */
+	private function findForPreload(array $identifiers, ?int $registerId): array {
+		$mapper = $this->getObjectMapper();
+		if ($registerId === null) {
+			return $mapper->findMultiple($identifiers);
+		}
+
+		$objects = $mapper->findMultipleAcrossAllMagicTables(uuids: $identifiers, registerIdScope: $registerId);
+		$found = [];
+		foreach ($objects as $object) {
+			$found[(string)$object->getUuid()] = true;
+			$found[(string)$object->getId()] = true;
+		}
+
+		$missing = array_values(
+			array_filter(
+				$identifiers,
+				fn ($id) => isset($found[(string)$id]) === false
+			)
+		);
+		if ($missing === []) {
+			return $objects;
+		}
+
+		return array_merge($objects, $mapper->findMultiple($missing));
+	}//end findForPreload()
 
 	/**
 	 * Cache an object with memory management

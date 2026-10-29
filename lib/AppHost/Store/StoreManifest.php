@@ -154,6 +154,8 @@ class StoreManifest {
 	 * @param array<int, string>         $topics      GitHub topics searched when $source is `github`.
 	 * @param string                     $installAuth Who may install: see self::INSTALL_AUTH.
 	 * @param array<int, string>         $configurable Config keys an install may write.
+	 * @param array<int, string>         $publishFields Item properties a publish may send, next to the slug.
+	 * @param array<int, string>         $publishGroups Groups whose members may publish.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
 	 * mirroring the manifest's `store` block one key to one parameter, so the
@@ -176,6 +178,8 @@ class StoreManifest {
 		public readonly array $topics = [],
 		public readonly string $installAuth = self::DEFAULT_INSTALL_AUTH,
 		public readonly array $configurable = [],
+		public readonly array $publishFields = [],
+		public readonly array $publishGroups = [],
 	) {
 	}//end __construct()
 
@@ -262,6 +266,10 @@ class StoreManifest {
 			// shareable. An app that declares none keeps the remote objects
 			// API it has today, so nothing that ships now changes.
 			types: self::stringList(value: ($block['types'] ?? [])),
+			// What a publish may send and who may send it. Both empty, the
+			// default, keeps the store read-only (StoreDescriptor::isPublishable).
+			publishFields: self::stringList(value: ($block['publish']['fields'] ?? [])),
+			publishGroups: self::stringList(value: ($block['publish']['groups'] ?? [])),
 		);
 	}//end fromManifest()
 

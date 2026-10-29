@@ -43,6 +43,7 @@ use OCA\OpenRegister\AppHost\Service\FeatureToggleService;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
+use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Controller\AnalyticsSeriesController;
 use OCA\OpenRegister\Controller\CaseTokenController;
@@ -186,6 +187,7 @@ use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
@@ -665,6 +667,14 @@ class Application extends App implements IBootstrap {
 			RegisterSlugResolverInterface::class,
 			function ($c) {
 				return $c->get(RegisterSlugResolver::class);
+			}
+		);
+
+		// The published read of an object's linked emails, for consuming apps.
+		$context->registerService(
+			EmailLinkReaderInterface::class,
+			function ($c) {
+				return $c->get(EmailLinkService::class);
 			}
 		);
 

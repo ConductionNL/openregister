@@ -1,0 +1,5 @@
+- [x] tests: EmailLinkTest, EmailServiceTest::testLinkEmailKeepsTheSenderNameFromMail, ExampleSetEmailLinksTest (red first)
+- [x] migration sender_name
+- [x] EmailLink senderName + details()
+- [x] EmailService keeps the From label
+- [x] example sets write senderName and the details
