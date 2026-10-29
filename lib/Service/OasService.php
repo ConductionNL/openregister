@@ -650,6 +650,7 @@ class OasService {
 	 *     type?: 'string'|mixed
 	 * }
 	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function sanitizePropertyDefinition($propertyDefinition): array {
 		// If it's not an array, convert to basic string type.
@@ -688,6 +689,8 @@ class OasService {
 	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
 	 *
 	 * @return array<string, mixed> The definition with sanitized nested definitions
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function sanitizeNestedDefinitions(array $cleanDef): array {
 		if (is_array($cleanDef['items'] ?? null) === true) {
@@ -724,6 +727,8 @@ class OasService {
 	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
 	 *
 	 * @return array<string, mixed> The definition without invalid keywords
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function dropInvalidKeywords(array $cleanDef): array {
 		foreach (['oneOf', 'anyOf', 'enum'] as $listKeyword) {
@@ -750,6 +755,8 @@ class OasService {
 	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
 	 *
 	 * @return array<string, mixed> The definition with a valid or no allOf
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function keepValidAllOfItems(array $cleanDef): array {
 		if (isset($cleanDef['allOf']) === false) {
@@ -780,6 +787,8 @@ class OasService {
 	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
 	 *
 	 * @return array<string, mixed> The definition with a valid or no $ref
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function normalisePropertyRef(array $cleanDef): array {
 		if (isset($cleanDef['$ref']) === false) {
@@ -806,6 +815,8 @@ class OasService {
 	 * @param array<string, mixed> $cleanDef The definition without invalid keywords
 	 *
 	 * @return array<string, mixed> The definition with a valid type and items
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function normalisePropertyType(array $cleanDef): array {
 		if (is_string($cleanDef['type'] ?? null) === true
