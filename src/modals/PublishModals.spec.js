@@ -116,13 +116,24 @@ function markup(wrapper) {
 }
 
 /**
+ * The component that holds the modal's state: the publish form itself.
+ *
+ * @param {object} wrapper The mounted modal.
+ * @return {object}
+ */
+function state(wrapper) {
+	const form = wrapper.findComponent({ name: 'PublishToGithub' })
+	return form.exists() ? form.vm : wrapper.vm
+}
+
+/**
  * Everything a scenario observes.
  *
  * @param {object} wrapper The mounted modal.
  * @return {object}
  */
 function observe(wrapper) {
-	const vm = wrapper.vm
+	const vm = state(wrapper)
 	return {
 		html: markup(wrapper),
 		fetch: global.fetch.mock.calls,
@@ -146,14 +157,12 @@ const MODALS = {
 	register: {
 		component: PublishRegister,
 		modal: 'publishRegister',
-		publish: 'publishRegister',
 		setItem: (item) => { registerStore.registerItem = item },
 		item: { id: 3, title: 'Parks', slug: 'parks', githubRepo: 'acme/site', githubBranch: 'dev', githubPath: 'x.json' },
 	},
 	configuration: {
 		component: PublishConfiguration,
 		modal: 'publishConfiguration',
-		publish: 'publishConfiguration',
 		setItem: (item) => { configurationStore.configurationItem = item },
 		item: { id: 8, title: 'Base', slug: 'base', githubRepo: 'acme/site', githubBranch: 'dev', githubPath: 'lib/settings/base.json' },
 	},
@@ -202,25 +211,25 @@ describe.each(Object.keys(MODALS))('%s publish modal', (kind) => {
 		const steps = [observe(wrapper)]
 
 		if ('pick' in scenario) {
-			wrapper.vm.selectedRepository = scenario.pick
+			state(wrapper).selectedRepository = scenario.pick
 			await flush()
 			steps.push(observe(wrapper))
 		}
 
 		if ('path' in scenario) {
-			wrapper.vm.filePath = scenario.path
+			state(wrapper).filePath = scenario.path
 		}
 
 		if ('commit' in scenario) {
-			wrapper.vm.commitMessage = scenario.commit
+			state(wrapper).commitMessage = scenario.commit
 		}
 
 		if (scenario.publish) {
-			if (!wrapper.vm.filePath && !('path' in scenario)) {
-				wrapper.vm.filePath = 'out/openapi.json'
+			if (!state(wrapper).filePath && !('path' in scenario)) {
+				state(wrapper).filePath = 'out/openapi.json'
 			}
 
-			await wrapper.vm[modal.publish]()
+			await wrapper.findAll('[data-nc="NcButton"]')[0].trigger('click')
 			await flush()
 			steps.push(observe(wrapper))
 			jest.advanceTimersByTime(4000)
@@ -228,8 +237,8 @@ describe.each(Object.keys(MODALS))('%s publish modal', (kind) => {
 		}
 
 		if (scenario.close) {
-			wrapper.vm.loading = scenario.loading === true
-			wrapper.vm.closeModal()
+			state(wrapper).loading = scenario.loading === true
+			state(wrapper).closeModal()
 			steps.push(observe(wrapper))
 		}
 
