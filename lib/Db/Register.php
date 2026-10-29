@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -99,7 +100,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class Register extends Entity implements JsonSerializable {
+class Register extends Entity implements JsonSerializable, RegisterInterface {
 
 	/**
 	 * Unique identifier for the register

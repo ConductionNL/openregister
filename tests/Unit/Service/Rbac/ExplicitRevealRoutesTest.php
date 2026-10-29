@@ -42,6 +42,7 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @covers \OCA\OpenRegister\Service\ExportService
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Service\Sharing\AccessLinkReader
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  */
