@@ -26,10 +26,19 @@ use OCA\OpenRegister\Contract\McpCatalogueInterface;
 use OCA\OpenRegister\Contract\ObjectExporterInterface;
 use OCA\OpenRegister\Contract\ObjectImporterInterface;
 use OCA\OpenRegister\Contract\ObjectMergerInterface;
+use OCA\OpenRegister\Contract\ObjectNotificationDispatcherInterface;
+use OCA\OpenRegister\Contract\ObjectRendererInterface;
+use OCA\OpenRegister\Contract\ObjectSaverInterface;
+use OCA\OpenRegister\Contract\ObjectTransitionInterface;
 use OCA\OpenRegister\Contract\SchemaExplorationInterface;
+use OCA\OpenRegister\Contract\WebhookDeliveryInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Merge\MergeService;
+use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\SaveObject;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -47,13 +56,18 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
-		FlowTimerControlInterface::class    => FlowTimerService::class,
-		McpCatalogueInterface::class        => McpDiscoveryService::class,
-		ObjectExporterInterface::class      => ExportService::class,
-		ObjectImporterInterface::class      => ImportService::class,
-		ObjectMergerInterface::class        => MergeService::class,
-		SchemaExplorationInterface::class   => SchemaService::class,
+		ExampleSetInstallerInterface::class          => ExampleSetInstaller::class,
+		FlowTimerControlInterface::class             => FlowTimerService::class,
+		McpCatalogueInterface::class                 => McpDiscoveryService::class,
+		ObjectExporterInterface::class               => ExportService::class,
+		ObjectImporterInterface::class               => ImportService::class,
+		ObjectMergerInterface::class                 => MergeService::class,
+		ObjectNotificationDispatcherInterface::class => AnnotationNotificationDispatcher::class,
+		ObjectRendererInterface::class               => RenderObject::class,
+		ObjectSaverInterface::class                  => SaveObject::class,
+		ObjectTransitionInterface::class             => TransitionEngine::class,
+		SchemaExplorationInterface::class            => SchemaService::class,
+		WebhookDeliveryInterface::class              => WebhookService::class,
 	];
 
 	/**
