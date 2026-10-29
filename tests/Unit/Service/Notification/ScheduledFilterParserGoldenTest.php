@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Notification\ScheduledFilterParser
  * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterGrammar
+ * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterPosition
  */
 final class ScheduledFilterParserGoldenTest extends TestCase {
 
