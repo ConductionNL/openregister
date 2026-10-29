@@ -3670,13 +3670,7 @@ class ImportHandler {
 			return null;
 		}
 
-		return new ListedSeed(
-			register: $registerObject,
-			schema: $schemaObject,
-			slug: $slug,
-			appId: $actor['appId'],
-			actingUser: $actor['user']
-		);
+		return new ListedSeed(register: $registerObject, schema: $schemaObject, context: $actor + ['slug' => $slug]);
 	}//end listedSeed()
 
 	/**

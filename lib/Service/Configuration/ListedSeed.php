@@ -36,21 +36,41 @@ final class ListedSeed
 {
 
 	/**
+	 * The object's `@self` slug.
+	 *
+	 * @var mixed
+	 */
+	public readonly mixed $slug;
+
+	/**
+	 * The importing app.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $appId;
+
+	/**
+	 * The user the save acts as.
+	 *
+	 * @var IUser|null
+	 */
+	public readonly ?IUser $actingUser;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Register   $register   The register the object lives in.
-	 * @param Schema     $schema     The object's schema.
-	 * @param mixed      $slug       The object's `@self` slug.
-	 * @param string|null $appId      The importing app.
-	 * @param IUser|null $actingUser The user the save acts as.
+	 * @param Register                                         $register The register the object lives in.
+	 * @param Schema                                           $schema   The object's schema.
+	 * @param array{slug: mixed, appId: ?string, user: ?IUser} $context  The slug, the importing app and the acting user.
 	 */
 	public function __construct(
 		public readonly Register $register,
 		public readonly Schema $schema,
-		public readonly mixed $slug,
-		public readonly ?string $appId,
-		public readonly ?IUser $actingUser,
+		array $context,
 	) {
+		$this->slug = $context['slug'];
+		$this->appId = $context['appId'];
+		$this->actingUser = $context['user'];
 	}//end __construct()
 
 	/**
