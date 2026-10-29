@@ -36,8 +36,8 @@ namespace OCA\OpenRegister\Service\File\Pdf;
 
 use ddn\sapp\PDFDoc;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
 use Psr\Log\LoggerInterface;
-use Smalot\PdfParser\Parser as PdfParser;
 use Throwable;
 
 /**
@@ -83,6 +83,13 @@ class PdfTextReplacer {
 	private readonly PdfStructureInspector $structureInspector;
 
 	/**
+	 * Text extractor used to re-read the output for residual entity text.
+	 *
+	 * @var PdfExtractor
+	 */
+	private readonly PdfExtractor $pdfExtractor;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger for diagnostic surfaces (PII-free).
@@ -97,6 +104,7 @@ class PdfTextReplacer {
 		?PdfStructureInspector $structureInspector = null,
 	) {
 		$this->structureInspector = $structureInspector ?? new PdfStructureInspector();
+		$this->pdfExtractor = new PdfExtractor(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -318,9 +326,7 @@ class PdfTextReplacer {
 	 */
 	public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats = [], bool $strict = false): array {
 		try {
-			$parser = new PdfParser();
-			$parsedPdf = $parser->parseContent($outputBytes);
-			$extracted = $parsedPdf->getText();
+			$extracted = $this->pdfExtractor->extractText(pdfBytes: $outputBytes);
 		} catch (Throwable $e) {
 			// The post-extraction is diagnostic only (parity with docx, which
 			// has no validation gate at all). When smalot can't re-parse the
