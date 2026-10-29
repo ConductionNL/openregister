@@ -2434,15 +2434,8 @@ class AggregationRunner {
 	 *                                      |array{groups: array<int, array{key: mixed, value: int|float|null, cumulative?: int|float}>}
 	 *                                      |null
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)  rowRbac threads the bypassRbac decision down to the SQL.
-	 * @SuppressWarnings(PHPMD.ElseExpression)
-	 *   The platform-branch is genuinely binary (postgres vs non-postgres
-	 *   for both the soft-delete predicate and the aggregate-cast block,
-	 *   mysql vs sqlite for the bucket expression). Else clauses make
-	 *   the mutual-exclusion read at the call site.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)     cumulative and rowRbac are request flags
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 * @spec openspec/specs/aggregation-api/spec.md
@@ -2460,556 +2453,806 @@ class AggregationRunner {
 		bool $cumulative = false,
 		bool $rowRbac = true,
 	): ?array {
-		// A per-metric `condition` (or an `as` alias) is NOT expressible on the
-		// native path — tryNativeMultiMetric() emits one SQL aggregate per
-		// entry against the SAME filtered row set and keys the result from
-		// metric+field. Letting it run a conditional spec would silently ignore
-		// the condition and return the unconditioned figure: a debit total
-		// reported as a credit total, with nothing to indicate it. Bail to the
-		// PHP path, which honours both, rather than answer wrongly and fast.
-		if (is_array($metrics) === true && $this->metricsNeedPhpPath(metrics: $metrics) === true) {
+		return $this->tryNativeWithSpec(
+			register: $register,
+			schema: $schema,
+			spec: [
+				'metric'     => $metric,
+				'field'      => $field,
+				'filter'     => $filter,
+				'groupBy'    => $groupBy,
+				'dateBucket' => $dateBucket,
+				'metrics'    => $metrics,
+				'cumulative' => $cumulative,
+				'rowRbac'    => $rowRbac,
+			]
+		);
+	}//end tryNativeAggregation()
+
+	/**
+	 * Dispatch a native aggregation request to the multi-metric or single-metric path.
+	 *
+	 * @param Register $register The register
+	 * @param Schema   $schema   The schema
+	 * @param array    $spec     The aggregation request: metric, field, filter,
+	 *                           groupBy, dateBucket, metrics, cumulative, rowRbac
+	 *
+	 * @return array|null Null sends the caller to the PHP path
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function tryNativeWithSpec(Register $register, Schema $schema, array $spec): ?array {
+		if ($this->nativePathCannotExpress(metrics: $spec['metrics'], groupBy: $spec['groupBy']) === true) {
 			return null;
 		}
 
-		// A join-qualified group field cannot run natively either. The SQL is
-		// emitted against the parent table alone, so `AnalyticalDimension.
-		// parentCode` would be a column no row has — every row landing in one
-		// null bucket, reported as a working total. The PHP path projects the
-		// value through the join first; bail to it.
-		foreach ($this->resolveGroupFields(groupBy: $groupBy) as $groupField) {
-			if (str_contains($groupField, '.') === true) {
-				return null;
-			}
-		}
-
-		if (is_array($metrics) === true && count($metrics) > 1) {
+		if (is_array($spec['metrics']) === true && count($spec['metrics']) > 1) {
 			return $this->tryNativeMultiMetric(
 				register: $register,
 				schema: $schema,
-				filter: $filter,
-				groupBy: $groupBy,
-				metrics: $metrics,
-				rowRbac: $rowRbac
+				filter: $spec['filter'],
+				groupBy: $spec['groupBy'],
+				metrics: $spec['metrics'],
+				rowRbac: $spec['rowRbac']
 			);
 		}
 
+		return $this->tryNativeSingleMetric(register: $register, schema: $schema, spec: $spec);
+	}//end tryNativeWithSpec()
+
+	/**
+	 * Run one metric natively, or answer null to send the caller to the PHP path.
+	 *
+	 * @param Register $register The register
+	 * @param Schema   $schema   The schema
+	 * @param array    $spec     The aggregation request: metric, field, filter,
+	 *                           groupBy, dateBucket, metrics, cumulative, rowRbac
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function tryNativeSingleMetric(Register $register, Schema $schema, array $spec): ?array {
 		$platformName = $this->detectDatabasePlatform();
-
-		// Ordered list of categorical group fields (single-field, multi-field
-		// cross-tab, or plain-list shape all normalise here).
-		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
-
-		// Postgres handles every query shape natively. MySQL and SQLite
-		// support the time-bucket path AND the categorical groupBy path
-		// (single- or multi-field) — both reuse the platform-branched
-		// aggregate SQL + identifier quoting below. The remaining
-		// non-Postgres gap is the *ungrouped* scalar path, which still
-		// depends on the Postgres-specific numeric cast and falls through
-		// to the PHP fallback.
-		if ($platformName === 'unknown') {
-			return null;
-		}
-
-		if ($platformName !== 'postgres' && $dateBucket === null && count($groupFields) === 0) {
-			return null;
-		}
-
-		if (in_array($metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
-			return null;
-		}
-
-		// BUG-SVC-7: value metrics (sum/avg/min/max) operate on a column, so a
-		// null/empty $field would build malformed SQL (e.g. SUM(NULLIF(::text,
-		// ''))). Bail to the PHP fallback when no field is supplied for a
-		// value metric; only `count` is valid without a field.
-		if (in_array($metric, ['sum', 'avg', 'min', 'max'], true) === true
-			&& ($field === null || $field === '')
+		$groupFields  = $this->resolveGroupFields(groupBy: $spec['groupBy']);
+		if (self::nativeShapeSupported(platform: $platformName, dateBucket: $spec['dateBucket'], groupFields: $groupFields) === false
+			|| self::nativeMetricSupported(metric: $spec['metric'], field: $spec['field']) === false
+			|| self::nativeFilterSupported(filter: $spec['filter'], schema: $schema) === false
 		) {
 			return null;
 		}
 
-		// Validate filter shapes are translatable. Supported:
-		// {field: scalar}              → field = ?
-		// {field: [...]}               → implicit `in` (any-of), REQ-AGG-106 / #2027
-		// {field: {in: [...]}}         → field IN (?, ?, ?)
-		// {field: {notIn: [...]}}      → field NOT IN (?, ?, ?)
-		// {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
-		// {field: {ne: x}}             → field <> ?
-		// {field: 'IS NULL'}, {field: {isnull: true}} → field IS NULL (and the NOT NULL forms)
-		// Reject anything else.
-		foreach ($filter as $value) {
-			if (is_array($value) === true && array_is_list($value) === false) {
-				foreach (array_keys($value) as $op) {
-					if (in_array((string)$op, ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne', NullFilter::ISNULL_OPERATOR], true) === false) {
-						return null;
-					}
-				}
-			}
-		}
-
-		// REQ-AGG-106 / #2027: a multi-value (array-type) schema property
-		// can't be correctly filtered with a simple `= ?` / `IN (...)`
-		// predicate — the magic-table column holds the WHOLE JSON array, so
-		// equality/IN would compare serialised array text, not test
-		// membership. Defer to the PHP fallback (which DOES implement
-		// any-overlap via valueMatchesAnyOf()) for genuinely correct
-		// semantics on these fields, rather than emit SQL that looks
-		// plausible but silently mismatches — the same documented-fallback
-		// posture already used for cross-dialect time-bucket gaps.
-		$properties = ($schema->getProperties() ?? []);
-		foreach (array_keys($filter) as $filterField) {
-			$propertyType = ($properties[(string)$filterField]['type'] ?? null);
-			if ($propertyType === 'array') {
-				return null;
-			}
-		}
-
-		$tableName = $this->magicMapper->getTableNameForRegisterSchema(
-			register: $register,
-			schema: $schema
-		);
+		$tableName = $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		if ($tableName === null || $tableName === '') {
 			return null;
 		}
 
-		$quote = $this->identifierQuote(platform: $platformName);
-		$fullTable = $quote . 'oc_' . $tableName . $quote;
-		$whereParts = [];
+		$query = new NativeAggregationQuery(
+			platform: $platformName,
+			quote: $this->identifierQuote(platform: $platformName),
+			tableName: $tableName,
+			metric: $spec['metric']
+		);
+		if ($this->buildNativeWhere(query: $query, register: $register, schema: $schema, rowRbac: $spec['rowRbac']) === false) {
+			return null;
+		}
+
+		$this->addNativeFilterPredicates(query: $query, filter: $spec['filter']);
+
+		return $this->runNativeQuery(
+			query: $query,
+			aggSql: $this->nativeAggregateSql(query: $query, field: $spec['field']),
+			groupFields: $groupFields,
+			bucket: ['dateBucket' => $spec['dateBucket'], 'cumulative' => $spec['cumulative']]
+		);
+	}//end tryNativeSingleMetric()
+
+	/**
+	 * Whether the request holds something the native SQL cannot express.
+	 *
+	 * A per-metric `condition` (or an `as` alias) cannot run natively:
+	 * tryNativeMultiMetric() emits one aggregate per entry over the same row set,
+	 * so a condition would be silently ignored. A join-qualified group field
+	 * cannot either: the SQL runs against the parent table alone, so every row
+	 * would land in one null bucket. The PHP path honours both.
+	 *
+	 * @param array|null $metrics The multi-metric list
+	 * @param array|null $groupBy The group spec
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativePathCannotExpress(?array $metrics, ?array $groupBy): bool {
+		if (is_array($metrics) === true && $this->metricsNeedPhpPath(metrics: $metrics) === true) {
+			return true;
+		}
+
+		foreach ($this->resolveGroupFields(groupBy: $groupBy) as $groupField) {
+			if (str_contains($groupField, '.') === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end nativePathCannotExpress()
+
+	/**
+	 * Whether the platform runs this query shape natively.
+	 *
+	 * Postgres runs every shape. MySQL and SQLite run the time-bucket and the
+	 * grouped shapes; the ungrouped scalar shape depends on the Postgres numeric
+	 * cast and falls through to the PHP path.
+	 *
+	 * @param string     $platform    The platform short name
+	 * @param array|null $dateBucket  The time-bucket spec
+	 * @param array      $groupFields The categorical group fields
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function nativeShapeSupported(string $platform, ?array $dateBucket, array $groupFields): bool {
+		if ($platform === 'unknown') {
+			return false;
+		}
+
+		return $platform === 'postgres' || $dateBucket !== null || count($groupFields) > 0;
+	}//end nativeShapeSupported()
+
+	/**
+	 * Whether the metric runs natively.
+	 *
+	 * A value metric (sum/avg/min/max) needs a field: without one the SQL
+	 * would be malformed (BUG-SVC-7). Only `count` runs without a field.
+	 *
+	 * @param string      $metric The metric
+	 * @param string|null $field  The field the metric aggregates
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function nativeMetricSupported(string $metric, ?string $field): bool {
+		if (in_array($metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
+			return false;
+		}
+
+		return $metric === 'count' || ($field !== null && $field !== '');
+	}//end nativeMetricSupported()
+
+	/**
+	 * Whether every filter translates to native SQL.
+	 *
+	 * Supported: a scalar, a list (implicit `in`, REQ-AGG-106 / #2027), and an
+	 * operator map of in, notIn, gt, gte, lt, lte, ne and isnull. A filter on an
+	 * array-type property is refused: its column holds the whole JSON array, so
+	 * `=` or `IN` would compare serialised text instead of testing membership;
+	 * the PHP path implements the any-overlap semantics.
+	 *
+	 * @param array  $filter The placeholder-resolved filter map
+	 * @param Schema $schema The schema
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function nativeFilterSupported(array $filter, Schema $schema): bool {
+		$operators = ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne', NullFilter::ISNULL_OPERATOR];
+		foreach ($filter as $value) {
+			if (is_array($value) === true && array_is_list($value) === false
+				&& array_diff(array_map('strval', array_keys($value)), $operators) !== []
+			) {
+				return false;
+			}
+		}
+
+		$properties = ($schema->getProperties() ?? []);
+		foreach (array_keys($filter) as $filterField) {
+			if (($properties[(string) $filterField]['type'] ?? null) === 'array') {
+				return false;
+			}
+		}
+
+		return true;
+	}//end nativeFilterSupported()
+
+	/**
+	 * Add the predicates every native aggregation applies before the caller's filters.
+	 *
+	 * This fast path bypasses MagicMapper, so it reproduces the list path's own
+	 * rules: the soft-delete and archive defaults, the draft lens, the
+	 * organisation boundary and the row-level read rule.
+	 *
+	 * @param NativeAggregationQuery $query    The query being built
+	 * @param Register               $register The register
+	 * @param Schema                 $schema   The schema
+	 * @param bool                   $rowRbac  Whether the caller's read rule applies
+	 *
+	 * @return bool False when the organisation scope cannot be expressed in SQL
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rowRbac threads the bypassRbac decision down to the SQL
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function buildNativeWhere(NativeAggregationQuery $query, Register $register, Schema $schema, bool $rowRbac): bool {
+		$this->addLifecyclePredicates(query: $query, schema: $schema);
+
+		$orgScope = $this->nativeOrganisationScope(register: $register, schema: $schema, rowRbac: $rowRbac);
+		if (self::addOrganisationPredicate(query: $query, orgScope: $orgScope) === false) {
+			return false;
+		}
+
+		if ($rowRbac === true) {
+			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read', register: $register);
+			if ($rowPredicate !== null) {
+				$query->where(predicate: $rowPredicate);
+			}
+		}
+
+		return true;
+	}//end buildNativeWhere()
+
+	/**
+	 * Add the soft-delete, archive and draft predicates.
+	 *
+	 * Postgres stores the metadata columns as jsonb; MySQL and SQLite as JSON
+	 * text, where the empty marker is the string 'null', '' or NULL.
+	 *
+	 * @param NativeAggregationQuery $query  The query being built
+	 * @param Schema                 $schema The schema
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function addLifecyclePredicates(NativeAggregationQuery $query, Schema $schema): void {
+		foreach (['_deleted', '_archived'] as $column) {
+			if ($query->isPostgres() === true) {
+				$query->where(predicate: "({$column} IS NULL OR {$column} = 'null'::jsonb)");
+				continue;
+			}
+
+			$query->where(predicate: "({$column} IS NULL OR {$column} = 'null' OR {$column} = '')");
+		}
+
+		$this->addDraftPredicate(query: $query, schema: $schema);
+	}//end addLifecyclePredicates()
+
+	/**
+	 * Add DraftListLens's clause for the mode a list with no query uses.
+	 *
+	 * Left out of a table that has no `_status` column (REQ-MTH-002).
+	 *
+	 * @param NativeAggregationQuery $query  The query being built
+	 * @param Schema                 $schema The schema
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function addDraftPredicate(NativeAggregationQuery $query, Schema $schema): void {
+		$draftLens     = new DraftListLens();
+		$statusMissing = in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $query->tableName), true);
+		if ($statusMissing === true) {
+			return;
+		}
+
+		$draftOwner   = $this->userSession->getUser()?->getUID();
+		$ownerBinding = null;
+		if ($draftOwner !== null && $draftOwner !== '') {
+			$ownerBinding = '?';
+		}
+
+		$draftPredicate = $draftLens->sql(
+			mode: $draftLens->modeFor(query: [], schema: $schema),
+			columnPrefix: '',
+			owner: $ownerBinding
+		);
+		if ($draftPredicate === null) {
+			return;
+		}
+
 		$bindings = [];
-
-		// Soft-delete predicate. Postgres uses jsonb; MySQL/SQLite store
-		// the metadata cols as JSON-string text where the empty/null marker
-		// is the literal string 'null' or actual NULL.
-		if ($platformName === 'postgres') {
-			$whereParts[] = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
-		} else {
-			$whereParts[] = "(_deleted IS NULL OR _deleted = 'null' OR _deleted = '')";
+		if ($ownerBinding !== null && str_contains($draftPredicate, '?') === true) {
+			$bindings[] = $draftOwner;
 		}
 
-		// Archive predicate, in the same shapes and for the same reason as the
-		// organisation rule two comments below: this fast path bypasses
-		// MagicMapper, so it has to reproduce the list path's default rather
-		// than answer a different question with a confident number. A tile that
-		// counts archived records while the page under it hides them is a
-		// disagreement nobody reads as a bug — they read it as the tile being
-		// right.
-		if ($platformName === 'postgres') {
-			$whereParts[] = "(_archived IS NULL OR _archived = 'null'::jsonb)";
-		} else {
-			$whereParts[] = "(_archived IS NULL OR _archived = 'null' OR _archived = '')";
-		}
+		$query->where(predicate: $draftPredicate, bindings: $bindings);
+	}//end addDraftPredicate()
 
-		// Draft lens. A list hides drafts by default (and, for a schema with
-		// `draftsListed: false`, the caller's own as well); a count over the
-		// same rows has to agree with it, or a tile reads higher than the page
-		// under it. The clause is DraftListLens's own, for the mode a list with
-		// no query would use, and is left out of a table that could not be
-		// given its `_status` column (REQ-MTH-002).
-		$draftLens = new DraftListLens();
-		$statusMissing = in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $tableName), true);
-		if ($statusMissing === false) {
-			$draftOwner = $this->userSession->getUser()?->getUID();
-			$ownerBinding = null;
-			if ($draftOwner !== null && $draftOwner !== '') {
-				$ownerBinding = '?';
-			}
-
-			$draftPredicate = $draftLens->sql(
-				mode: $draftLens->modeFor(query: [], schema: $schema),
-				columnPrefix: '',
-				owner: $ownerBinding
-			);
-			if ($draftPredicate !== null) {
-				$whereParts[] = $draftPredicate;
-				if ($ownerBinding !== null && str_contains($draftPredicate, '?') === true) {
-					$bindings[] = $draftOwner;
-				}
-			}
-		}
-
-		// SECURITY: the organisation boundary. This fast path bypasses
-		// MagicMapper entirely, so it must reproduce the SAME rule the list
-		// path applies — no wider, and no narrower.
-		//
-		// It used to carry its own flattened copy: a bare
-		// `_organisation = :activeOrg`. That was narrower in a way nobody saw,
-		// because SQL `=` never matches NULL: every object with no
-		// organisation was invisible here while the list API returned it.
-		// Measured 2026-08-30 on decidiq/meeting — four meetings listed, one
-		// org-less, `count` answered 3, and `filter[lifecycle]=closed`
-		// answered 0 for a meeting that plainly exists. Every KPI tile in the
-		// fleet reads this endpoint, so every one of them under-reported.
-		//
-		// The rule now has one home: MagicOrganizationHandler decides, and
-		// both paths render that decision. A mode this SQL cannot express is
-		// a refusal (`return null` ⇒ the PHP fallback, which goes through
-		// MagicMapper), never an approximation.
-		// Column is `_organisation` — magic tables prefix metadata cols with
-		// `_` (see MagicMapper::METADATA_PREFIX).
-		// The register+schema pair goes with the question. A shared master data
-		// declaration (REQ-SLE-001) widens the readable set for exactly this
-		// pair, and an aggregation that resolved the scope without naming the
-		// pair would count a narrower set than the list path returns — the same
-		// class of silent disagreement the SCOPE_* constants were extracted to
-		// end.
+	/**
+	 * The organisation scope the list path would apply to this register and schema.
+	 *
+	 * MagicOrganizationHandler decides; both paths render that decision. The
+	 * register+schema pair goes with the question because a shared master-data
+	 * declaration (REQ-SLE-001) widens the readable set for exactly that pair.
+	 * Like the list (MagicSearchHandler::multitenancyApplies()), the boundary is
+	 * waived when the caller reaches the rows through an RBAC rule, and widened
+	 * by the org-less rows for a grant from the register cascade; both only
+	 * together with the row predicate.
+	 *
+	 * @param Register $register The register
+	 * @param Schema   $schema   The schema
+	 * @param bool     $rowRbac  Whether the caller's read rule applies
+	 *
+	 * @return array{mode: string, uuids: array<int, string>}
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rowRbac threads the bypassRbac decision down to the SQL
+	 * @SuppressWarnings(PHPMD.StaticAccess)        admitOrganisationless is a pure scope transformation
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeOrganisationScope(Register $register, Schema $schema, bool $rowRbac): array {
 		$orgScope = $this->organizationHandler->resolveOrganizationScope(
 			registerId: $register->getId(),
 			schemaId: $schema->getId()
 		);
-
-		// AND THE LIST'S DECISION WHETHER THE BOUNDARY APPLIES AT ALL. A
-		// default list read waives the organisation filter when the caller
-		// reaches the rows through an RBAC rule (MagicSearchHandler::
-		// multitenancyApplies()), and lets RBAC decide instead. This path
-		// applied the boundary regardless, so once a non-admin could
-		// aggregate at all, a teacher whose list shows 1189 attendance
-		// records was counted 0 (learniq, measured 2026-10-02). Waived only
-		// together with the row predicate below, which is what then governs.
-		if ($rowRbac === true && $this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
-			$orgScope = ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
-		} else if ($rowRbac === true && $this->magicMapper->organisationlessRowsAdmittedByRbac(schema: $schema) === true) {
-			// A grant from the register cascade keeps the boundary and only
-			// widens it by the org-less rows, exactly as the list does.
-			$orgScope = MagicOrganizationHandler::admitOrganisationless(scope: $orgScope);
+		if ($rowRbac === false) {
+			return $orgScope;
 		}
 
-		$orgColumn = $quote . '_organisation' . $quote;
+		if ($this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
+			return ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+		}
+
+		if ($this->magicMapper->organisationlessRowsAdmittedByRbac(schema: $schema) === true) {
+			return MagicOrganizationHandler::admitOrganisationless(scope: $orgScope);
+		}
+
+		return $orgScope;
+	}//end nativeOrganisationScope()
+
+	/**
+	 * Add the organisation boundary on the `_organisation` column.
+	 *
+	 * SQL `=` never matches NULL, so the org-less modes are spelled out rather
+	 * than flattened into an equality.
+	 *
+	 * @param NativeAggregationQuery                     $query    The query being built
+	 * @param array{mode: string, uuids: array<int, string>} $orgScope The organisation scope
+	 *
+	 * @return bool False for a mode this SQL cannot express, which the caller refuses
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function addOrganisationPredicate(NativeAggregationQuery $query, array $orgScope): bool {
+		$orgColumn = $query->quoted(column: '_organisation');
 		switch ($orgScope['mode']) {
 			case MagicOrganizationHandler::SCOPE_ALL:
-				break;
+				return true;
 			case MagicOrganizationHandler::SCOPE_NONE:
-				$whereParts[] = '1 = 0';
-				break;
+				$query->where(predicate: '1 = 0');
+				return true;
 			case MagicOrganizationHandler::SCOPE_NULL_ONLY:
-				$whereParts[] = $orgColumn . ' IS NULL';
-				break;
+				$query->where(predicate: $orgColumn.' IS NULL');
+				return true;
 			case MagicOrganizationHandler::SCOPE_IN:
 			case MagicOrganizationHandler::SCOPE_IN_OR_NULL:
-				$placeholders = implode(', ', array_fill(0, count($orgScope['uuids']), '?'));
-				$inClause = $orgColumn . ' IN (' . $placeholders . ')';
+				$inClause = $orgColumn.' IN ('.self::placeholders(count: count($orgScope['uuids'])).')';
 				if ($orgScope['mode'] === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
-					$inClause = '(' . $inClause . ' OR ' . $orgColumn . ' IS NULL)';
+					$inClause = '('.$inClause.' OR '.$orgColumn.' IS NULL)';
 				}
 
-				$whereParts[] = $inClause;
-				foreach ($orgScope['uuids'] as $orgUuid) {
-					$bindings[] = $orgUuid;
-				}
-				break;
+				$query->where(predicate: $inClause, bindings: array_values($orgScope['uuids']));
+				return true;
 			default:
-				// An unknown mode is not something to guess at.
-				return null;
+				return false;
 		}//end switch
+	}//end addOrganisationPredicate()
 
-		// SECURITY: the row-level read rule. Like the organisation boundary
-		// above, this fast path bypasses MagicMapper, so it must apply the
-		// SAME access predicate the list path applies. Without it a caller
-		// whose read rule is conditional (`{group, match: {learnerId:
-		// $userId}}`) would be counted over every row of the table, which
-		// discloses the counts of rows it may not read. The predicate is
-		// MagicRbacHandler's own (via MagicMapper), not a copy. Null means no
-		// restriction (an admin); internal callers that already decided who
-		// may see the figure pass `rowRbac: false`.
-		if ($rowRbac === true) {
-			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read', register: $register);
-			if ($rowPredicate !== null) {
-				$whereParts[] = $rowPredicate;
+	/**
+	 * A comma-separated list of `count` placeholders.
+	 *
+	 * @param int $count The number of placeholders
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function placeholders(int $count): string {
+		return implode(', ', array_fill(0, $count, '?'));
+	}//end placeholders()
+
+	/**
+	 * Add one predicate per filter, in filter order.
+	 *
+	 * @param NativeAggregationQuery $query  The query being built
+	 * @param array                  $filter The filter map, already checked by nativeFilterSupported()
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function addNativeFilterPredicates(NativeAggregationQuery $query, array $filter): void {
+		foreach ($filter as $name => $value) {
+			$column    = $query->quoted(column: $this->sanitizeColumnName(name: (string) $name));
+			$wantsNull = NullFilter::nullCheck(criterion: $value);
+			if ($wantsNull !== null) {
+				$query->where(predicate: $column.$this->nullPredicate(wantsNull: $wantsNull));
+				continue;
 			}
+
+			if (is_array($value) === false) {
+				$query->where(predicate: $column.' = ?', bindings: [$this->bindValue(value: $value)]);
+				continue;
+			}
+
+			if (array_is_list($value) === true) {
+				$this->addListPredicate(query: $query, column: $column, list: $value, negate: false);
+				continue;
+			}
+
+			$this->addOperatorPredicates(query: $query, column: $column, operators: $value);
+		}
+	}//end addNativeFilterPredicates()
+
+	/**
+	 * Add an `IN` or `NOT IN` predicate over a list.
+	 *
+	 * An empty `IN` matches nothing and an empty `NOT IN` excludes nothing.
+	 *
+	 * @param NativeAggregationQuery $query  The query being built
+	 * @param string                 $column The quoted column
+	 * @param array                  $list   The values
+	 * @param bool                   $negate True for `NOT IN`
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Selects IN or NOT IN
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function addListPredicate(NativeAggregationQuery $query, string $column, array $list, bool $negate): void {
+		$operator = 'IN';
+		$noValues = '1 = 0';
+		if ($negate === true) {
+			$operator = 'NOT IN';
+			$noValues = '1 = 1';
 		}
 
-		foreach ($filter as $f => $v) {
-			$col = $this->sanitizeColumnName(name: (string)$f);
+		if (count($list) === 0) {
+			$query->where(predicate: $noValues);
+			return;
+		}
 
-			$wantsNull = NullFilter::nullCheck(criterion: $v);
-			if ($wantsNull !== null) {
-				$whereParts[] = $quote . $col . $quote . $this->nullPredicate(wantsNull: $wantsNull);
+		$query->where(
+			predicate: $column.' '.$operator.' ('.self::placeholders(count: count($list)).')',
+			bindings: array_map(fn (mixed $item): string => $this->bindValue(value: $item), array_values($list))
+		);
+	}//end addListPredicate()
+
+	/**
+	 * Add the predicates of an operator map such as `{gte: 1, lt: 5}`, in map order.
+	 *
+	 * @param NativeAggregationQuery $query     The query being built
+	 * @param string                 $column    The quoted column
+	 * @param array                  $operators The operator map
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function addOperatorPredicates(NativeAggregationQuery $query, string $column, array $operators): void {
+		$comparisons = ['gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<=', 'ne' => '<>'];
+		foreach ($operators as $op => $operand) {
+			$op = (string) $op;
+			if ($op === 'in' || $op === 'notIn') {
+				$list = [];
+				if (is_array($operand) === true) {
+					$list = $operand;
+				}
+
+				$this->addListPredicate(query: $query, column: $column, list: $list, negate: $op === 'notIn');
 				continue;
 			}
 
-			// Bare array value — implicit `in` (any-of), REQ-AGG-106 / #2027.
-			// A plain list (non-associative) is distinguished from an
-			// operator map (`{in: [...]}`) by array_is_list(); the operator
-			// map is handled by the loop below.
-			if (is_array($v) === true && array_is_list($v) === true) {
-				if (count($v) === 0) {
-					// An implicit `in` over an empty list never matches.
-					$whereParts[] = '1 = 0';
-					continue;
-				}
-
-				$placeholders = implode(', ', array_fill(0, count($v), '?'));
-				$whereParts[] = $quote . $col . $quote . ' IN (' . $placeholders . ')';
-				foreach ($v as $item) {
-					$bindings[] = $this->bindValue(value: $item);
-				}
-
+			if ($op === NullFilter::ISNULL_OPERATOR) {
+				$query->where(
+					predicate: $column.$this->nullPredicate(wantsNull: NullFilter::isNullOperatorAsksForNull(value: $operand))
+				);
 				continue;
 			}
 
-			if (is_array($v) === false) {
-				$whereParts[] = $quote . $col . $quote . ' = ?';
-				$bindings[] = $this->bindValue(value: $v);
-				continue;
+			if (isset($comparisons[$op]) === true) {
+				$query->where(predicate: $column.' '.$comparisons[$op].' ?', bindings: [$this->bindValue(value: $operand)]);
 			}
-
-			foreach ($v as $op => $onValue) {
-				if ($op === 'in') {
-					$list = [];
-					if (is_array($onValue) === true) {
-						$list = $onValue;
-					}
-
-					if (count($list) === 0) {
-						// `in` with empty list never matches; emit a no-op
-						// condition that returns no rows.
-						$whereParts[] = '1 = 0';
-						continue;
-					}
-
-					$placeholders = implode(', ', array_fill(0, count($list), '?'));
-					$whereParts[] = $quote . $col . $quote . ' IN (' . $placeholders . ')';
-					foreach ($list as $item) {
-						$bindings[] = $this->bindValue(value: $item);
-					}
-
-					continue;
-				}//end if
-
-				if ($op === 'notIn') {
-					$list = [];
-					if (is_array($onValue) === true) {
-						$list = $onValue;
-					}
-
-					if (count($list) === 0) {
-						// `notIn` with an empty exclusion list excludes
-						// nothing — emit an always-true condition so every
-						// row is retained (mirrors SQL `NOT IN ()` intent).
-						$whereParts[] = '1 = 1';
-						continue;
-					}
-
-					$placeholders = implode(', ', array_fill(0, count($list), '?'));
-					$whereParts[] = $quote . $col . $quote . ' NOT IN (' . $placeholders . ')';
-					foreach ($list as $item) {
-						$bindings[] = $this->bindValue(value: $item);
-					}
-
-					continue;
-				}//end if
-
-				if ((string)$op === NullFilter::ISNULL_OPERATOR) {
-					$whereParts[] = $quote . $col . $quote . $this->nullPredicate(
-						wantsNull: NullFilter::isNullOperatorAsksForNull(value: $onValue)
-					);
-					continue;
-				}
-
-				$sqlOn = match ((string)$op) {
-					'gt' => '>',
-					'gte' => '>=',
-					'lt' => '<',
-					'lte' => '<=',
-					'ne' => '<>',
-					default => null,
-				};
-
-				if ($sqlOn === null) {
-					continue;
-				}
-
-				$whereParts[] = $quote . $col . $quote . ' ' . $sqlOn . ' ?';
-				$bindings[] = $this->bindValue(value: $onValue);
-			}//end foreach
 		}//end foreach
+	}//end addOperatorPredicates()
 
-		$whereSql = implode(' AND ', $whereParts);
+	/**
+	 * The aggregate expression of the query's metric over a field.
+	 *
+	 * Postgres needs explicit `::numeric` casts because magic-table data columns
+	 * are jsonb-shaped; MySQL and SQLite convert implicitly. NULLIF guards
+	 * against the empty strings a jsonb-to-text cast produces.
+	 *
+	 * @param NativeAggregationQuery $query The query being built
+	 * @param string|null            $field The field to aggregate
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeAggregateSql(NativeAggregationQuery $query, ?string $field): string {
+		if ($query->metric === 'count') {
+			return 'COUNT(*)';
+		}
 
-		// Aggregate clause. Postgres needs explicit `::numeric` casts because
-		// magic-table data columns are jsonb-shaped. MySQL/SQLite handle the
-		// implicit conversion in the engine. NULLIF guards against empty
-		// strings produced by jsonb-to-text casts.
 		$aggCol = null;
 		if ($field !== null) {
-			$aggCol = $quote . $this->sanitizeColumnName(name: $field) . $quote;
+			$aggCol = $query->quoted(column: $this->sanitizeColumnName(name: $field));
 		}
 
-		if ($platformName === 'postgres') {
-			$aggSql = match ($metric) {
-				'count' => 'COUNT(*)',
-				'sum' => 'SUM(NULLIF(' . $aggCol . '::text, \'\')::numeric)',
-				'avg' => 'AVG(NULLIF(' . $aggCol . '::text, \'\')::numeric)',
-				'min' => 'MIN(NULLIF(' . $aggCol . '::text, \'\')::numeric)',
-				'max' => 'MAX(NULLIF(' . $aggCol . '::text, \'\')::numeric)',
-			};
-		} else {
-			$aggSql = match ($metric) {
-				'count' => 'COUNT(*)',
-				'sum' => 'SUM(NULLIF(' . $aggCol . ', \'\') + 0)',
-				'avg' => 'AVG(NULLIF(' . $aggCol . ', \'\') + 0)',
-				'min' => 'MIN(NULLIF(' . $aggCol . ', \'\') + 0)',
-				'max' => 'MAX(NULLIF(' . $aggCol . ', \'\') + 0)',
-			};
+		$function = strtoupper($query->metric);
+		if ($query->isPostgres() === true) {
+			return $function.'(NULLIF('.$aggCol.'::text, \'\')::numeric)';
 		}
 
+		return $function.'(NULLIF('.$aggCol.', \'\') + 0)';
+	}//end nativeAggregateSql()
+
+	/**
+	 * Run the native statement for the query's shape.
+	 *
+	 * A failing statement (missing table or column) answers null, which sends
+	 * the caller to the PHP path.
+	 *
+	 * @param NativeAggregationQuery $query       The built query
+	 * @param string                 $aggSql      The aggregate expression
+	 * @param array                  $groupFields The categorical group fields
+	 * @param array                  $bucket      The `dateBucket` spec (or null) and the `cumulative` flag
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function runNativeQuery(NativeAggregationQuery $query, string $aggSql, array $groupFields, array $bucket): ?array {
 		try {
-			// Time-bucket path: emit a platform-specific bucketing
-			// expression (date_trunc / DATE_FORMAT / strftime), add
-			// `WHERE "$field" >= ? AND "$field" < ?` bounds from the
-			// dateBucket spec, and group on the bucket. Mutual exclusion
-			// with $groupBy is guaranteed by AggregationQuery::create()
-			// upstream.
-			if ($dateBucket !== null) {
-				$bucketField = (string)$dateBucket['field'];
-				$bucketCol = $quote . $this->sanitizeColumnName(name: $bucketField) . $quote;
-				$gap = (string)$dateBucket['gap'];
-
-				$boundedWhere = $whereSql . ' AND ' . $bucketCol . ' >= ? AND ' . $bucketCol . ' < ?';
-
-				if ($platformName === 'postgres') {
-					// Prepend the bucket bounds to the binding list so
-					// they appear in placeholder order: first the gap
-					// (for the Postgres date_trunc call), then the
-					// existing WHERE clause bindings, then the dateBucket
-					// bounds.
-					$bindings[] = $this->bindValue(value: $dateBucket['start']);
-					$bindings[] = $this->bindValue(value: $dateBucket['end']);
-					array_unshift($bindings, $gap);
-					$bucketExpr = 'date_trunc(?, ' . $bucketCol . ')::text';
-				} else {
-					// MySQL / SQLite emit literal format strings — the
-					// gap vocabulary is closed (seven entries) and
-					// validated upstream by AggregationQuery::create().
-					$bindings[] = $this->bindValue(value: $dateBucket['start']);
-					$bindings[] = $this->bindValue(value: $dateBucket['end']);
-					if ($platformName === 'mysql') {
-						$bucketExpr = $this->mysqlBucketExpression(column: $bucketCol, gap: $gap);
-					} else {
-						$bucketExpr = $this->sqliteBucketExpression(column: $bucketCol, gap: $gap);
-					}
-				}//end if
-
-				// REQ-AGG-103 / design D3: on Postgres, compute the
-				// running total natively via a window function over the
-				// already-grouped/ordered buckets — `SUM(...) OVER
-				// (ORDER BY bucket)` reads the `bucket` OUTPUT alias
-				// (the same alias `GROUP BY`/`ORDER BY` above already
-				// reference), so no extra bind parameter is introduced.
-				// MySQL/SQLite do NOT get a window column here; they (and
-				// the PHP fallback) instead go through the
-				// addCumulativeColumn() PHP post-pass below — the two
-				// MUST produce identical numbers for the same data
-				// (pinned by AggregationRunnerCumulativeTest).
-				$cumulativeSelect = '';
-				if ($platformName === 'postgres' && $cumulative === true) {
-					$cumulativeSelect = ", SUM({$aggSql}) OVER (ORDER BY bucket) AS cumulative_agg";
-				}
-
-				$sql = "SELECT {$bucketExpr} AS bucket, {$aggSql} AS agg{$cumulativeSelect}
-                         FROM {$fullTable}
-                         WHERE {$boundedWhere}
-                         GROUP BY bucket
-                         ORDER BY bucket";
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute($bindings);
-				$groups = [];
-				while (($row = $stmt->fetch()) !== false) {
-					$value = $this->coerceAggregateValue(raw: $row['agg'], metric: $metric);
-
-					$group = [
-						'key' => $this->coerceBucketKey(raw: $row['bucket']),
-						'value' => $value,
-					];
-
-					if ($cumulativeSelect !== '') {
-						$group['cumulative'] = $this->coerceAggregateValue(raw: ($row['cumulative_agg'] ?? null), metric: $metric);
-					}
-
-					$groups[] = $group;
-				}//end while
-
-				// Non-Postgres engines (and the PHP-fallback caller of
-				// this method's sibling, bucketInPhp()) compute the
-				// running total in PHP instead of a native SQL window.
-				if ($cumulative === true && $platformName !== 'postgres') {
-					$groups = $this->addCumulativeColumn(groups: $groups);
-				}
-
-				return ['groups' => $groups];
-			}//end if
+			if ($bucket['dateBucket'] !== null) {
+				return $this->runNativeBucketQuery(
+					query: $query,
+					aggSql: $aggSql,
+					dateBucket: $bucket['dateBucket'],
+					cumulative: $bucket['cumulative']
+				);
+			}
 
 			if (count($groupFields) > 0) {
-				$isMulti = (count($groupFields) > 1);
-				$selectParts = [];
-				$groupCols = [];
-				foreach ($groupFields as $index => $groupField) {
-					$groupCol = $quote . $this->sanitizeColumnName(name: $groupField) . $quote;
-					$groupCols[] = $groupCol;
-					$selectParts[] = $groupCol . ' AS g' . $index;
-				}
-
-				$selectSql = implode(', ', $selectParts);
-				$groupSql = implode(', ', $groupCols);
-				$sql = "SELECT {$selectSql}, {$aggSql} AS agg
-                             FROM {$fullTable}
-                             WHERE {$whereSql}
-                             GROUP BY {$groupSql}";
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute($bindings);
-				$groups = [];
-				while (($row = $stmt->fetch()) !== false) {
-					$value = $row['agg'];
-					if ($metric !== 'count' && is_string($value) === true) {
-						$value = (float)$value;
-					} elseif ($value !== null) {
-						$value = (int)$value;
-					}
-
-					if ($isMulti === true) {
-						$keys = [];
-						foreach ($groupFields as $index => $groupField) {
-							$keys[$groupField] = ($row['g' . $index] ?? null);
-						}
-
-						$groups[] = ['keys' => $keys, 'value' => $value];
-						continue;
-					}
-
-					$groups[] = ['key' => ($row['g0'] ?? null), 'value' => $value];
-				}//end while
-
-				return ['groups' => $groups];
-			}//end if
-
-			$sql = "SELECT {$aggSql} AS agg FROM {$fullTable} WHERE {$whereSql}";
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute($bindings);
-			$row = $stmt->fetch();
-			$value = null;
-			if ($row !== false) {
-				$value = $row['agg'];
+				return $this->runNativeGroupedQuery(query: $query, aggSql: $aggSql, groupFields: $groupFields);
 			}
 
-			if ($metric === 'count') {
-				return ['value' => (int)($value ?? 0)];
-			}
-
-			if ($value === null) {
-				return ['value' => null];
-			}
-
-			$floatValue = $value;
-			if (is_string($value) === true) {
-				$floatValue = (float)$value;
-			}
-
-			return ['value' => $floatValue];
+			return $this->runNativeScalarQuery(query: $query, aggSql: $aggSql);
 		} catch (\Throwable $e) {
-			// Native path failed (table not found, column not found, etc) —
-			// tell the caller to fall back to PHP.
 			return null;
-		}//end try
-	}//end tryNativeAggregation()
+		}
+	}//end runNativeQuery()
+
+	/**
+	 * Run a time-bucketed series.
+	 *
+	 * The bucket bounds are added as `field >= start AND field < end`. On
+	 * Postgres the running total is a `SUM(...) OVER (ORDER BY bucket)` window
+	 * column (REQ-AGG-103); MySQL and SQLite compute it in the
+	 * addCumulativeColumn() PHP post-pass, and the two must agree bucket for
+	 * bucket (design D3, pinned by AggregationRunnerCumulativeTest).
+	 *
+	 * @param NativeAggregationQuery $query      The built query
+	 * @param string                 $aggSql     The aggregate expression
+	 * @param array                  $dateBucket The time-bucket spec ({field, start, end, gap})
+	 * @param bool                   $cumulative Whether to add a running total
+	 *
+	 * @return array{groups: array<int, array{key: string, value: int|float|null, cumulative?: int|float|null}>}
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Running-total flag (REQ-AGG-103)
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function runNativeBucketQuery(NativeAggregationQuery $query, string $aggSql, array $dateBucket, bool $cumulative): array {
+		$bucketCol = $query->quoted(column: $this->sanitizeColumnName(name: (string) $dateBucket['field']));
+		$gap       = (string) $dateBucket['gap'];
+
+		$cumulativeSelect = '';
+		if ($query->isPostgres() === true && $cumulative === true) {
+			$cumulativeSelect = ", SUM({$aggSql}) OVER (ORDER BY bucket) AS cumulative_agg";
+		}
+
+		$bucketExpr   = $this->nativeBucketExpression(query: $query, column: $bucketCol, gap: $gap);
+		$boundedWhere = $query->whereSql().' AND '.$bucketCol.' >= ? AND '.$bucketCol.' < ?';
+		$stmt         = $this->db->prepare(
+			"SELECT {$bucketExpr} AS bucket, {$aggSql} AS agg{$cumulativeSelect}
+                         FROM {$query->table()}
+                         WHERE {$boundedWhere}
+                         GROUP BY bucket
+                         ORDER BY bucket"
+		);
+		$stmt->execute($this->nativeBucketBindings(query: $query, dateBucket: $dateBucket));
+
+		$groups = [];
+		while (($row = $stmt->fetch()) !== false) {
+			$groups[] = $this->nativeBucketRow(row: $row, metric: $query->metric, withCumulative: $cumulativeSelect !== '');
+		}
+
+		if ($cumulative === true && $query->isPostgres() === false) {
+			$groups = $this->addCumulativeColumn(groups: $groups);
+		}
+
+		return ['groups' => $groups];
+	}//end runNativeBucketQuery()
+
+	/**
+	 * The bindings of a time-bucketed series in placeholder order.
+	 *
+	 * The WHERE bindings come first and the bucket bounds last; on Postgres the
+	 * gap goes in front, for the `date_trunc(?, ...)` in the SELECT list.
+	 *
+	 * @param NativeAggregationQuery $query      The built query
+	 * @param array                  $dateBucket The time-bucket spec ({field, start, end, gap})
+	 *
+	 * @return array<int, mixed>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeBucketBindings(NativeAggregationQuery $query, array $dateBucket): array {
+		$bindings   = $query->bindings();
+		$bindings[] = $this->bindValue(value: $dateBucket['start']);
+		$bindings[] = $this->bindValue(value: $dateBucket['end']);
+		if ($query->isPostgres() === true) {
+			array_unshift($bindings, (string) $dateBucket['gap']);
+		}
+
+		return $bindings;
+	}//end nativeBucketBindings()
+
+	/**
+	 * One bucket of a time-bucketed series.
+	 *
+	 * @param array  $row            The fetched row
+	 * @param string $metric         The metric
+	 * @param bool   $withCumulative Whether the row carries a native running total
+	 *
+	 * @return array{key: string, value: int|float|null, cumulative?: int|float|null}
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the SQL selected the window column
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeBucketRow(array $row, string $metric, bool $withCumulative): array {
+		$group = [
+			'key'   => $this->coerceBucketKey(raw: $row['bucket']),
+			'value' => $this->coerceAggregateValue(raw: $row['agg'], metric: $metric),
+		];
+		if ($withCumulative === true) {
+			$group['cumulative'] = $this->coerceAggregateValue(raw: ($row['cumulative_agg'] ?? null), metric: $metric);
+		}
+
+		return $group;
+	}//end nativeBucketRow()
+
+	/**
+	 * The platform's bucketing expression for a column and gap.
+	 *
+	 * Postgres binds the gap into `date_trunc`; MySQL and SQLite emit literal
+	 * format strings from the closed gap vocabulary AggregationQuery::create() validates.
+	 *
+	 * @param NativeAggregationQuery $query  The built query
+	 * @param string                 $column The quoted bucket column
+	 * @param string                 $gap    The bucket gap
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeBucketExpression(NativeAggregationQuery $query, string $column, string $gap): string {
+		if ($query->isPostgres() === true) {
+			return 'date_trunc(?, '.$column.')::text';
+		}
+
+		if ($query->platform === 'mysql') {
+			return $this->mysqlBucketExpression(column: $column, gap: $gap);
+		}
+
+		return $this->sqliteBucketExpression(column: $column, gap: $gap);
+	}//end nativeBucketExpression()
+
+	/**
+	 * Run a categorical grouped aggregate, single-field or multi-field.
+	 *
+	 * @param NativeAggregationQuery $query       The built query
+	 * @param string                 $aggSql      The aggregate expression
+	 * @param array                  $groupFields The ordered group fields
+	 *
+	 * @return array{groups: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function runNativeGroupedQuery(NativeAggregationQuery $query, string $aggSql, array $groupFields): array {
+		$selectParts = [];
+		$groupCols   = [];
+		foreach ($groupFields as $index => $groupField) {
+			$groupCol      = $query->quoted(column: $this->sanitizeColumnName(name: $groupField));
+			$groupCols[]   = $groupCol;
+			$selectParts[] = $groupCol.' AS g'.$index;
+		}
+
+		$selectSql = implode(', ', $selectParts);
+		$groupSql  = implode(', ', $groupCols);
+		$stmt      = $this->db->prepare(
+			"SELECT {$selectSql}, {$aggSql} AS agg
+                             FROM {$query->table()}
+                             WHERE {$query->whereSql()}
+                             GROUP BY {$groupSql}"
+		);
+		$stmt->execute($query->bindings());
+
+		$groups = [];
+		while (($row = $stmt->fetch()) !== false) {
+			$groups[] = self::nativeGroupRow(row: $row, groupFields: $groupFields, metric: $query->metric);
+		}
+
+		return ['groups' => $groups];
+	}//end runNativeGroupedQuery()
+
+	/**
+	 * One group of a grouped aggregate: `{key, value}`, or `{keys, value}` for several group fields.
+	 *
+	 * @param array  $row         The fetched row
+	 * @param array  $groupFields The ordered group fields
+	 * @param string $metric      The metric
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function nativeGroupRow(array $row, array $groupFields, string $metric): array {
+		$value = $row['agg'];
+		if ($metric !== 'count' && is_string($value) === true) {
+			$value = (float) $value;
+		} elseif ($value !== null) {
+			$value = (int) $value;
+		}
+
+		if (count($groupFields) === 1) {
+			return ['key' => ($row['g0'] ?? null), 'value' => $value];
+		}
+
+		$keys = [];
+		foreach ($groupFields as $index => $groupField) {
+			$keys[$groupField] = ($row['g'.$index] ?? null);
+		}
+
+		return ['keys' => $keys, 'value' => $value];
+	}//end nativeGroupRow()
+
+	/**
+	 * Run an ungrouped aggregate.
+	 *
+	 * @param NativeAggregationQuery $query  The built query
+	 * @param string                 $aggSql The aggregate expression
+	 *
+	 * @return array{value: int|float|string|null}
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function runNativeScalarQuery(NativeAggregationQuery $query, string $aggSql): array {
+		$stmt = $this->db->prepare("SELECT {$aggSql} AS agg FROM {$query->table()} WHERE {$query->whereSql()}");
+		$stmt->execute($query->bindings());
+		$row   = $stmt->fetch();
+		$value = null;
+		if ($row !== false) {
+			$value = $row['agg'];
+		}
+
+		if ($query->metric === 'count') {
+			return ['value' => (int) ($value ?? 0)];
+		}
+
+		if (is_string($value) === true) {
+			$value = (float) $value;
+		}
+
+		return ['value' => $value];
+	}//end runNativeScalarQuery()
 
 	/**
 	 * Multi-metric native dispatch (REQ-AGG-102).
