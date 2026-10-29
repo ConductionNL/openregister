@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
+use OCP\AppFramework\IAppContainer;
 
 class ConfigurationServiceRegistrarTest extends TestCase {
 
@@ -52,6 +53,31 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 			actual: $context->services
 		);
 	}//end testRegistersTheServicesInOrder()
+
+	/**
+	 * Every factory builds an instance of the name it is registered under.
+	 *
+	 * The container hands each factory a test double for every service it asks for.
+	 *
+	 * @return void
+	 */
+	public function testEveryFactoryBuildsItsService(): void {
+		$context = new RecordingRegistrationContext();
+		ConfigurationServiceRegistrar::register(context: $context);
+
+		$doubles   = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$doubles) {
+				$doubles[$id] ??= $this->createMock(originalClassName: $id);
+				return $doubles[$id];
+			}
+		);
+
+		foreach ($context->factories as $name => $factory) {
+			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
+		}
+	}//end testEveryFactoryBuildsItsService()
 
 	/**
 	 * The registrar registers services only; listeners stay with ListenerRegistrar.
