@@ -24,7 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -47,9 +50,9 @@ class CommentsEntityListener implements IEventListener {
 	/**
 	 * Object entity mapper for validating object existence.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>
 	 */
-	private readonly MagicMapper $objectEntityMapper;
+	private readonly MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Logger for error reporting.
@@ -61,7 +64,7 @@ class CommentsEntityListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object validation
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object validation
 	 * @param LoggerInterface $logger Logger for error reporting
 	 *
 	 * @return void
@@ -69,7 +72,7 @@ class CommentsEntityListener implements IEventListener {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		LoggerInterface $logger,
 	) {
 		$this->objectEntityMapper = $objectEntityMapper;

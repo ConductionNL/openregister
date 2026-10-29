@@ -35,8 +35,9 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -90,7 +91,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Nextcloud time factory.
 	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
-	 * @param MagicMapper $objectMapper Magic object mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Magic object mapper.
 	 * @param ObjectNotificationDispatcherInterface $dispatcher Notification dispatcher.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param ICacheFactory $cacheFactory Distributed cache factory.
@@ -103,7 +104,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly ObjectNotificationDispatcherInterface $dispatcher,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,

@@ -28,12 +28,13 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use Psr\Log\LoggerInterface;
 
@@ -67,9 +68,9 @@ class ExportHandler {
 	/**
 	 * Object mapper instance for handling object operations.
 	 *
-	 * @var MagicMapper The object mapper instance.
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema> The object mapper instance.
 	 */
-	private readonly MagicMapper $objectEntityMapper;
+	private readonly MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
@@ -131,7 +132,7 @@ class ExportHandler {
 	 *
 	 * @param SchemaMapper $schemaMapper The schema mapper.
 	 * @param RegisterMapper $registerMapper The register mapper.
-	 * @param MagicMapper $objectEntityMapper The object entity mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
 	 * @param LoggerInterface $logger The logger interface.
@@ -139,7 +140,7 @@ class ExportHandler {
 	public function __construct(
 		SchemaMapper $schemaMapper,
 		RegisterMapper $registerMapper,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
 		LoggerInterface $logger,

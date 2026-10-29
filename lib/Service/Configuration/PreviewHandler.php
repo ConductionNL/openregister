@@ -26,9 +26,12 @@ namespace OCA\OpenRegister\Service\Configuration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -82,9 +85,9 @@ class PreviewHandler {
 	/**
 	 * Object mapper, to find the local object a remote one would update.
 	 *
-	 * @var MagicMapper The object mapper.
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema> The object mapper.
 	 */
-	private readonly MagicMapper $objectMapper;
+	private readonly MagicMapperInterface $objectMapper;
 
 	/**
 	 * Constructor for PreviewHandler.
@@ -93,14 +96,15 @@ class PreviewHandler {
 	 * @param SchemaMapper $schemaMapper The schema mapper.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param FetchHandler $fetchHandler The fetch handler for remote data fetching.
-	 * @param MagicMapper $objectMapper The object mapper, to find the local object a remote one would update.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object mapper, to find the local object a remote one would
+	 *        update.
 	 */
 	public function __construct(
 		RegisterMapper $registerMapper,
 		SchemaMapper $schemaMapper,
 		LoggerInterface $logger,
 		FetchHandler $fetchHandler,
-		MagicMapper $objectMapper,
+		MagicMapperInterface $objectMapper,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;

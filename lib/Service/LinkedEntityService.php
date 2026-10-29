@@ -24,7 +24,6 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -32,6 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use Psr\Log\LoggerInterface;
@@ -66,7 +66,7 @@ class LinkedEntityService {
 	 * a known linked-type is the type id itself — historically the
 	 * removed map was a verbatim identity for every entry.
 	 *
-	 * @param MagicMapper $magicMapper Magic mapper for object operations
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic mapper for object operations
 	 * @param SchemaMapper $schemaMapper Schema mapper
 	 * @param RegisterMapper $registerMapper Register mapper
 	 * @param OrganisationMapper $organisationMapper Organisation mapper
@@ -77,7 +77,7 @@ class LinkedEntityService {
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep-link registry service for cross-app deep links
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly OrganisationMapper $organisationMapper,

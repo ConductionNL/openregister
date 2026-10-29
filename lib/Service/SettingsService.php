@@ -26,9 +26,12 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -217,9 +220,9 @@ class SettingsService {
 	/**
 	 * REMOVED: Object mapper (unused, caused circular dependency)
 	 *
-	 * @var MagicMapper|null
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>|null
 	 */
-	// Private ?MagicMapper $objectMapper;.
+	// Private ?MagicMapperInterface $objectMapper;.
 
 	/**
 	 * Organisation mapper
@@ -880,7 +883,7 @@ class SettingsService {
 		// CIRCULAR DEPENDENCY FIX: Cannot lazy-load ObjectService from SettingsService.
 		$objectService = null;
 		// $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-		$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$objectMapper = $this->container->get(MagicMapperInterface::class);
 
 		// Get total object count.
 		$totalObjects = $objectMapper->countSearchObjects(
@@ -1089,7 +1092,7 @@ class SettingsService {
 	 * Process batch jobs in serial mode
 	 *
 	 * @param array $batchJobs Array of batch job definitions.
-	 * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper The object entity mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object entity mapper.
 	 * @param ObjectService|null $objectService The object service instance.
 	 * @param array $results Results array to update.
 	 * @param bool $collectErrors Whether to collect all errors.
@@ -1102,7 +1105,7 @@ class SettingsService {
 	 */
 	private function processJobsSerial(
 		array $batchJobs,
-		\OCA\OpenRegister\Db\MagicMapper $objectMapper,
+		MagicMapperInterface $objectMapper,
 		?\OCA\OpenRegister\Service\ObjectService $objectService,
 		array &$results,
 		bool $collectErrors,
@@ -1224,7 +1227,7 @@ class SettingsService {
 	 * Process batch jobs in parallel mode
 	 *
 	 * @param array $batchJobs Array of batch job definitions.
-	 * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper The object entity mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object entity mapper.
 	 * @param ObjectService|null $objectService The object service instance.
 	 * @param array $results Results array to update.
 	 * @param bool $collectErrors Whether to collect all errors.
@@ -1236,7 +1239,7 @@ class SettingsService {
 	 */
 	private function processJobsParallel(
 		array $batchJobs,
-		\OCA\OpenRegister\Db\MagicMapper $objectMapper,
+		MagicMapperInterface $objectMapper,
 		?\OCA\OpenRegister\Service\ObjectService $objectService,
 		array &$results,
 		bool $collectErrors,
@@ -1302,7 +1305,7 @@ class SettingsService {
 	/**
 	 * Process a single batch directly
 	 *
-	 * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper The object entity mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object entity mapper.
 	 * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
 	 * @param array $job Batch job definition.
 	 * @param bool $collectErrors Whether to collect all errors.
@@ -1317,7 +1320,7 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	private function processBatchDirectly(
-		\OCA\OpenRegister\Db\MagicMapper $objectMapper,
+		MagicMapperInterface $objectMapper,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
 		array $job,
 		bool $collectErrors,

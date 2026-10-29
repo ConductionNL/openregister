@@ -27,14 +27,16 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
@@ -170,7 +172,7 @@ class RegistersController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param RegisterService $registerService Register service for business logic
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity mapper for database operations
 	 * @param UploadService $uploadService Upload service for file uploads
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param IUserSession $userSession User session service
@@ -197,7 +199,7 @@ class RegistersController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly RegisterService $registerService,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly UploadService $uploadService,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,

@@ -33,13 +33,13 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
@@ -146,7 +146,7 @@ class ReferentialIntegrityService {
 	 *
 	 * @param SchemaMapper $schemaMapper Schema data mapper.
 	 * @param RegisterMapper $registerMapper Register data mapper.
-	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity data mapper.
 	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for integrity action logging.
 	 * @param LoggerInterface $logger Logger for debugging.
 	 * @param IDBConnection $db Database connection for raw SQL queries.
@@ -158,7 +158,7 @@ class ReferentialIntegrityService {
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IDBConnection $db,

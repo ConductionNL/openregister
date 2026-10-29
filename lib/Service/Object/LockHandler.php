@@ -30,12 +30,12 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -61,7 +61,7 @@ class LockHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param MagicMapper $magicMapper Magic mapper for magic table operations
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic mapper for magic table operations
 	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging actions
 	 * @param LoggerInterface $logger PSR-3 logger
 	 * @param IUserSession $userSession User session for authorization checks
@@ -71,7 +71,7 @@ class LockHandler {
 	 * @param RunLockRegistry|null $runLocks Bookkeeping for run-held locks, so the terminal listener and the sweep can find them without reading objects
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,

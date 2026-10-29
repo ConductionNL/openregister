@@ -26,8 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
@@ -73,7 +75,7 @@ class ComputedFieldHandler {
 	/**
 	 * Constructor for ComputedFieldHandler.
 	 *
-	 * @param MagicMapper $objectMapper Mapper for fetching referenced objects.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Mapper for fetching referenced objects.
 	 * @param MappingExtension $mappingExtension Twig extension with custom filters and functions.
 	 * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
@@ -82,7 +84,7 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly MappingExtension $mappingExtension,
 		private readonly MappingRuntimeLoader $mappingRuntimeLoader,
 		private readonly LoggerInterface $logger,

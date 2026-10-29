@@ -50,6 +50,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class MagicMapperUnionRoutingTest extends TestCase {
 

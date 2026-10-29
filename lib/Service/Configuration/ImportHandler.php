@@ -37,7 +37,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -47,6 +46,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
@@ -127,23 +127,23 @@ class ImportHandler {
 	/**
 	 * Object mapper instance for handling object operations.
 	 *
-	 * @var MagicMapper The object mapper instance.
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema> The object mapper instance.
 	 */
-	private readonly MagicMapper $objectEntityMapper;
+	private readonly MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Magic mapper instance for handling magic table operations.
 	 *
-	 * @var MagicMapper|null The magic mapper instance (optional, set via setter).
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>|null The magic mapper instance (optional, set via setter).
 	 */
-	private ?MagicMapper $magicMapper = null;
+	private ?MagicMapperInterface $magicMapper = null;
 
 	/**
 	 * MagicMapper for routing objects to correct magic table.
 	 *
-	 * @var MagicMapper|null The object mapper instance (optional, set via setObjectMapper).
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>|null The object mapper instance (optional, set via setObjectMapper).
 	 */
-	private ?MagicMapper $routingMapper = null;
+	private ?MagicMapperInterface $routingMapper = null;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
@@ -334,7 +334,7 @@ class ImportHandler {
 	 *
 	 * @param SchemaMapper $schemaMapper The schema mapper.
 	 * @param RegisterMapper $registerMapper The register mapper.
-	 * @param MagicMapper $objectEntityMapper The object entity mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
 	 * @param Client $client The HTTP client for URL fetching.
@@ -355,7 +355,7 @@ class ImportHandler {
 	public function __construct(
 		SchemaMapper $schemaMapper,
 		RegisterMapper $registerMapper,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
 		Client $client,
@@ -690,13 +690,13 @@ class ImportHandler {
 	 * This method allows setting the MagicMapper after construction for
 	 * pre-creating magic mapper tables before seed data import.
 	 *
-	 * @param MagicMapper $magicMapper The magic mapper instance.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper The magic mapper instance.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function setMagicMapper(MagicMapper $magicMapper): void {
+	public function setMagicMapper(MagicMapperInterface $magicMapper): void {
 		$this->magicMapper = $magicMapper;
 	}//end setMagicMapper()
 
@@ -706,13 +706,13 @@ class ImportHandler {
 	 * This method allows setting the MagicMapper after construction for
 	 * routing seed data objects to the correct magic table.
 	 *
-	 * @param MagicMapper $objectMapper The object mapper instance.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object mapper instance.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function setObjectMapper(MagicMapper $objectMapper): void {
+	public function setObjectMapper(MagicMapperInterface $objectMapper): void {
 		$this->routingMapper = $objectMapper;
 	}//end setObjectMapper()
 

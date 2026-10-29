@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
-use OCA\OpenRegister\Db\AbstractObjectMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\PortalPartyNotFoundException;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
@@ -103,7 +103,7 @@ class PortalPartyResolverTest extends TestCase {
 	public function testResolutionByUuidReadsTheCaseFromTheStore(): void {
 		$object = $this->createMock(ObjectEntity::class);
 		$object->method('getObject')->willReturn(['initiator' => ['subjectRef' => 'sub-9']]);
-		$objects = $this->createMock(AbstractObjectMapper::class);
+		$objects = $this->createMock(MagicMapperInterface::class);
 		$objects->expects($this->once())
 			->method('find')
 			->with('case-7', null, null, false, false, false)
@@ -118,7 +118,7 @@ class PortalPartyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableCaseOrAbsentStoreRefuses(): void {
-		$objects = $this->createMock(AbstractObjectMapper::class);
+		$objects = $this->createMock(MagicMapperInterface::class);
 		$objects->method('find')->willThrowException(new DoesNotExistException('gone'));
 		try {
 			(new PortalPartyResolver(objects: $objects))->resolveFromObject(objectUuid: 'case-7', role: 'initiator');

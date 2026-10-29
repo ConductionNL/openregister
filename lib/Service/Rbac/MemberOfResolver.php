@@ -36,10 +36,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -269,7 +269,7 @@ class MemberOfResolver {
 
 			$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
 
-			$rows = $this->container->get(MagicMapper::class)->searchObjects(
+			$rows = $this->container->get(MagicMapperInterface::class)->searchObjects(
 				query: [
 					'@self'        => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
 					$spec['match'] => $userId,

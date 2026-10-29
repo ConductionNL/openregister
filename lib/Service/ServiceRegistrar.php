@@ -22,10 +22,10 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
@@ -306,11 +306,10 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function registerObjectServices(IRegistrationContext $context): void {
-		// The task inbox and the portal party resolver read the object store
-		// through AbstractObjectMapper, which the autowirer cannot build (it is
-		// abstract) and would silently default to null: an inbox row without
-		// subject context, and a portal task that can match nobody. Both are
-		// wired to the MagicMapper explicitly for that reason.
+		// The task inbox and the portal party resolver take the object store as
+		// an optional argument, which the autowirer would silently default to
+		// null: an inbox row without subject context, and a portal task that
+		// can match nobody. Both are wired to the MagicMapper explicitly.
 		$context->registerService(
 			TaskInboxService::class,
 			function (ContainerInterface $container) {
@@ -318,7 +317,7 @@ final class ServiceRegistrar {
 					tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
 					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					objects: $container->get(MagicMapper::class),
+					objects: $container->get(MagicMapperInterface::class),
 					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
 					// Reads a located task's subject from its own table instead
 					// of searching every magic table for it.
@@ -331,7 +330,7 @@ final class ServiceRegistrar {
 			PortalPartyResolver::class,
 			function (ContainerInterface $container) {
 				return new PortalPartyResolver(
-					objects: $container->get(MagicMapper::class)
+					objects: $container->get(MagicMapperInterface::class)
 				);
 			}
 		);
@@ -358,7 +357,7 @@ final class ServiceRegistrar {
 			function (ContainerInterface $container) {
 				return new FolderManagementHandler(
 					rootFolder: $container->get('OCP\Files\IRootFolder'),
-					objectEntityMapper: $container->get(MagicMapper::class),
+					objectEntityMapper: $container->get(MagicMapperInterface::class),
 					registerMapper: $container->get(RegisterMapper::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),

@@ -26,12 +26,12 @@ use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
@@ -139,7 +139,7 @@ final class ConfigurationServiceRegistrar {
 				$exportHandler = new ConfigurationExportHandler(
 					schemaMapper: $container->get(SchemaMapper::class),
 					registerMapper: $container->get(RegisterMapper::class),
-					objectEntityMapper: $container->get(MagicMapper::class),
+					objectEntityMapper: $container->get(MagicMapperInterface::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					mappingMapper: $container->get(MappingMapper::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
@@ -236,7 +236,7 @@ final class ConfigurationServiceRegistrar {
 		$importHandler = new ConfigurationImportHandler(
 			schemaMapper: $container->get(SchemaMapper::class),
 			registerMapper: $container->get(RegisterMapper::class),
-			objectEntityMapper: $container->get(MagicMapper::class),
+			objectEntityMapper: $container->get(MagicMapperInterface::class),
 			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 			mappingMapper: $container->get(MappingMapper::class),
 			client: new Client(),
@@ -252,8 +252,8 @@ final class ConfigurationServiceRegistrar {
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed
 		// data import, and for routing seed data to the correct magic table.
-		$importHandler->setMagicMapper($container->get(MagicMapper::class));
-		$importHandler->setObjectMapper($container->get(MagicMapper::class));
+		$importHandler->setMagicMapper($container->get(MagicMapperInterface::class));
+		$importHandler->setObjectMapper($container->get(MagicMapperInterface::class));
 
 		self::attachOptionalImportServices(
 			importHandler: $importHandler,

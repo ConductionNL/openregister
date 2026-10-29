@@ -33,9 +33,9 @@ use Adbar\Dot;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
@@ -315,8 +315,8 @@ class SaveObject implements ObjectSaverInterface {
 	/**
 	 * Constructor for SaveObject handler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity mapper
-	 * @param MagicMapper $unifiedObjectMapper Unified object mapper
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity mapper
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $unifiedObjectMapper Unified object mapper
 	 * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
 	 * @param FilePropertyHandler $filePropertyHandler Handler for file property operations
 	 * @param LinkedEntityPropertyHandler $linkedEntityHandler Linked entity property handler
@@ -352,8 +352,8 @@ class SaveObject implements ObjectSaverInterface {
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly MagicMapper $unifiedObjectMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly MagicMapperInterface $unifiedObjectMapper,
 		private readonly MetadataHydrationHandler $metaHydrationHandler,
 		private readonly FilePropertyHandler $filePropertyHandler,
 		private readonly LinkedEntityPropertyHandler $linkedEntityHandler,

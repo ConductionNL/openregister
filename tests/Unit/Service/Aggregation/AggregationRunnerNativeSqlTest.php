@@ -26,7 +26,6 @@ use Doctrine\DBAL\Platforms\OraclePlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -252,12 +251,9 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 			}
 		);
 
-		$healer = $this->createMock(MagicMetadataColumnHealer::class);
-		$healer->method('missingFor')->willReturn(($case['statusMissing'] ?? false) === true ? ['_status'] : []);
-
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('getTableNameForRegisterSchema')->willReturn($case['table'] ?? 'register_1_schema_case');
-		$magicMapper->method('getMetadataColumnHealer')->willReturn($healer);
+		$magicMapper->method('missingMetadataColumns')->willReturn(($case['statusMissing'] ?? false) === true ? ['_status'] : []);
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($case['waived'] ?? false);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($case['admitted'] ?? false);
 		$magicMapper->method('rbacRowPredicateSql')->willReturn($case['rowPredicate'] ?? null);

@@ -31,7 +31,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -42,6 +41,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -294,7 +294,7 @@ class PermissionHandler {
 	 * @param IUserManager $userManager User manager for getting user objects.
 	 * @param IGroupManager $groupManager Group manager for checking user groups.
 	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity operations.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entity operations.
 	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011).
 	 * @param IAppConfig $appConfig App config for the inheritFromPublic tenant default and
 	 *                              the `enforce_default_closed` opt-in flag (Wave-12 Fix
@@ -322,7 +322,7 @@ class PermissionHandler {
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

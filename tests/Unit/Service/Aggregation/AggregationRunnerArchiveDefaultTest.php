@@ -225,9 +225,7 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 	public function testADegradedTableGetsNoDraftClause(): void {
 		$this->wirePlatform(platform: $this->createMock(MySQLPlatform::class));
 		$captured = $this->captureSql();
-		$healer = $this->createMock(\OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer::class);
-		$healer->method('missingFor')->willReturn(['_status']);
-		$this->magicMapper->method('getMetadataColumnHealer')->willReturn($healer);
+		$this->magicMapper->method('missingMetadataColumns')->willReturn(['_status']);
 
 		$this->makeRunner()->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $this->dayBucketQuery());
 

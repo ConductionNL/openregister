@@ -36,9 +36,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use Throwable;
 
@@ -59,13 +61,13 @@ class ConceptDeleteGuard {
 	 *
 	 * @param ConceptLifecycle $lifecycle Answers whether a value is system-defined.
 	 * @param SchemaMapper $schemas Finds the schemas whose properties bind to a scheme.
-	 * @param MagicMapper $objects Counts the objects holding a value.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objects Counts the objects holding a value.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
 		private readonly ConceptLifecycle $lifecycle,
 		private readonly SchemaMapper $schemas,
-		private readonly MagicMapper $objects,
+		private readonly MagicMapperInterface $objects,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 

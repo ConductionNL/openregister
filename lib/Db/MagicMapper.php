@@ -44,6 +44,10 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
@@ -166,8 +170,10 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
+ *
+ * @implements MagicMapperInterface<ObjectEntity, Register, Schema>
  */
-class MagicMapper extends AbstractObjectMapper {
+class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Hard ceiling on a NUMERIC page size, per the objects-crud requirement
 	 * "List page size is bounded by a hard maximum".
@@ -183,15 +189,6 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @var int
 	 */
 	private const MAX_PAGE_SIZE = 1000;
-
-	/**
-	 * Table name prefix for register+schema-specific tables.
-	 *
-	 * NOTE: Does NOT include 'oc_' prefix as Nextcloud's QueryBuilder adds that automatically.
-	 *
-	 * @internal Used by MagicTableHandler
-	 */
-	public const TABLE_PREFIX = 'openregister_table_';
 
 	/**
 	 * Metadata column prefix to avoid conflicts with schema properties
@@ -894,6 +891,19 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end healMetadataColumns()
 
 	/**
+	 * The metadata columns this process knows a magic table lacks, without any I/O.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 *
+	 * @return list<string> Missing metadata column names, empty when complete or unknown.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	public function missingMetadataColumns(string $tableName): array {
+		return $this->getMetadataColumnHealer()->missingFor(tableName: $tableName);
+	}//end missingMetadataColumns()
+
+	/**
 	 * The shared metadata-column healer.
 	 *
 	 * @return MagicMetadataColumnHealer The healer.
@@ -1053,8 +1063,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * This method analyzes the JSON schema and creates/updates the corresponding
 	 * database table with appropriate columns, indexes, and constraints.
 	 *
-	 * @param Register $register The register context for the table
-	 * @param Schema $schema The schema to create/update table for
+	 * @param RegisterInterface $register The register context for the table
+	 * @param SchemaInterface $schema The schema to create/update table for
 	 * @param bool $force Whether to force recreation even if table exists
 	 *
 	 * @throws Exception If table creation/update fails
@@ -1063,19 +1073,25 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
 	 */
-	public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force = false): bool {
+	public function ensureTableForRegisterSchema(RegisterInterface $register, SchemaInterface $schema, bool $force = false): bool {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->tableHandler->ensureTableForRegisterSchema(register: $register, schema: $schema, force: $force);
 	}//end ensureTableForRegisterSchema()
 
 	/**
 	 * Get table name for a specific register+schema combination
 	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema context
+	 * @param RegisterInterface $register The register context
+	 * @param SchemaInterface $schema The schema context
 	 *
 	 * @return string The table name for the register+schema combination
 	 */
-	public function getTableNameForRegisterSchema(Register $register, Schema $schema): string {
+	public function getTableNameForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): string {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema);
 	}//end getTableNameForRegisterSchema()
 
@@ -1086,12 +1102,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 * to avoid repeated database calls. Cache is automatically invalidated
 	 * when tables are created, updated, or dropped.
 	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema context
+	 * @param RegisterInterface $register The register context
+	 * @param SchemaInterface $schema The schema context
 	 *
 	 * @return bool True if specialized table exists, false if should use generic storage
 	 */
-	public function existsTableForRegisterSchema(Register $register, Schema $schema): bool {
+	public function existsTableForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): bool {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->tableHandler->existsTableForRegisterSchema(register: $register, schema: $schema);
 	}//end existsTableForRegisterSchema()
 
@@ -1170,8 +1189,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Search objects in register+schema-specific table
 	 *
 	 * @param array $query Search query parameters
-	 * @param Register $register The register context for table selection
-	 * @param Schema $schema The schema for table selection
+	 * @param RegisterInterface $register The register context for table selection
+	 * @param SchemaInterface $schema The schema for table selection
 	 *
 	 * @throws Exception If search operation fails
 	 *
@@ -1179,7 +1198,10 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @psalm-return list<ObjectEntity>
 	 */
-	public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array {
+	public function searchObjectsInRegisterSchemaTable(array $query, RegisterInterface $register, SchemaInterface $schema): array {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		// Use fast cached existence check.
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
 			// Check if magic mapping is enabled for this schema.
@@ -1267,12 +1289,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 * number uses countObjectsOrFail() instead.
 	 *
 	 * @param array    $query    Search parameters for filtering (excluding pagination).
-	 * @param Register $register The register context for table selection.
-	 * @param Schema   $schema   The schema for table selection.
+	 * @param RegisterInterface $register The register context for table selection.
+	 * @param SchemaInterface   $schema   The schema for table selection.
 	 *
 	 * @return int Count of matching objects.
 	 */
-	public function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): int {
+	public function countObjectsInRegisterSchemaTable(array $query, RegisterInterface $register, SchemaInterface $schema): int {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$tableName = $this->resolveCountTable(register: $register, schema: $schema);
 		if ($tableName === null) {
 			return 0;
@@ -1328,8 +1353,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * for an empty table (live pass O10).
 	 *
 	 * @param array    $query    Search parameters for filtering (excluding pagination).
-	 * @param Register $register The register context for table selection.
-	 * @param Schema   $schema   The schema for table selection.
+	 * @param RegisterInterface $register The register context for table selection.
+	 * @param SchemaInterface   $schema   The schema for table selection.
 	 *
 	 * @return int Count of matching objects.
 	 *
@@ -1338,7 +1363,10 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
-	public function countObjectsOrFail(array $query, Register $register, Schema $schema): int {
+	public function countObjectsOrFail(array $query, RegisterInterface $register, SchemaInterface $schema): int {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$tableName = $this->resolveCountTable(register: $register, schema: $schema);
 		if ($tableName === null) {
 			return 0;
@@ -3074,14 +3102,17 @@ class MagicMapper extends AbstractObjectMapper {
 	 * - Make obsolete columns nullable
 	 * - Update indexes for relations and facetable fields
 	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema definition
+	 * @param RegisterInterface $register The register context
+	 * @param SchemaInterface $schema The schema definition
 	 *
 	 * @return array Statistics about what was changed
 	 *
 	 * @throws Exception If table sync fails
 	 */
-	public function syncTableForRegisterSchema(Register $register, Schema $schema): array {
+	public function syncTableForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): array {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->tableHandler->syncTableForRegisterSchema(register: $register, schema: $schema);
 	}//end syncTableForRegisterSchema()
 
@@ -3091,11 +3122,13 @@ class MagicMapper extends AbstractObjectMapper {
 	 * This method analyzes the JSON schema and creates appropriate SQL column
 	 * definitions for each property, plus all metadata columns from ObjectEntity.
 	 *
-	 * @param Schema $schema The schema to analyze
+	 * @param SchemaInterface $schema The schema to analyze
 	 *
 	 * @return (bool|int|mixed|null|string)[][] Column definitions.
 	 */
-	public function buildTableColumnsFromSchema(Schema $schema): array {
+	public function buildTableColumnsFromSchema(SchemaInterface $schema): array {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$columns = [];
 
 		// Add all metadata columns from ObjectEntity with underscore prefix.
@@ -5160,28 +5193,31 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Delegates to MagicStatisticsHandler.
 	 *
 	 * @param array $row Database row
-	 * @param Register $_register Register context
-	 * @param Schema $_schema Schema context
+	 * @param RegisterInterface $_register Register context
+	 * @param SchemaInterface $_schema Schema context
 	 *
 	 * @return ObjectEntity|null Converted entity or null on failure
 	 */
-	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
+	public function convertRowToObjectEntity(array $row, RegisterInterface $_register, SchemaInterface $_schema): ?ObjectEntity {
 		return $this->statisticsHandler->convertRowToObjectEntity(
 			row: $row,
-			_register: $_register,
-			_schema: $_schema
+			_register: StoredEntity::register(register: $_register),
+			_schema: StoredEntity::schema(schema: $_schema)
 		);
 	}//end convertRowToObjectEntity()
 
 	/**
 	 * Check if register+schema table exists (with caching)
 	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema context
+	 * @param RegisterInterface $register The register context
+	 * @param SchemaInterface $schema The schema context
 	 *
 	 * @return bool True if table exists
 	 */
-	public function tableExistsForRegisterSchema(Register $register, Schema $schema): bool {
+	public function tableExistsForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): bool {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->tableHandler->tableExistsForRegisterSchema(register: $register, schema: $schema);
 	}//end tableExistsForRegisterSchema()
 
@@ -6729,8 +6765,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * This method provides ObjectEntity compatibility for the public find() method.
 	 *
 	 * @param string|int $identifier Object identifier (ID, UUID, slug, or URI).
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface $schema The schema context.
 	 * @param bool $_rbac Whether to apply RBAC.
 	 * @param bool $_multitenancy Whether to apply multi-tenancy.
 	 * @param bool $includeDeleted Whether to include soft-deleted objects.
@@ -6742,12 +6778,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	public function findInRegisterSchemaTable(
 		string|int $identifier,
-		Register $register,
-		Schema $schema,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $includeDeleted = false,
 	): ObjectEntity {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		// Ensure table exists if magic mapping is enabled.
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
 			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
@@ -6897,19 +6936,22 @@ class MagicMapper extends AbstractObjectMapper {
 	 * entity's owner, exactly as the per-row lookup it replaces did with
 	 * `_rbac: false, _multitenancy: false`.
 	 *
-	 * @param Register $register The register whose table to search.
-	 * @param Schema $schema The schema whose table to search.
+	 * @param RegisterInterface $register The register whose table to search.
+	 * @param SchemaInterface $schema The schema whose table to search.
 	 * @param array<int, string> $uuids The uuids to look for.
 	 * @param bool $includeDeleted Whether to include soft-deleted rows.
 	 *
 	 * @return array<string, ObjectEntity> Found entities keyed by uuid; missing uuids are simply absent.
 	 */
 	public function findObjectsByUuidsInRegisterSchema(
-		Register $register,
-		Schema $schema,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		array $uuids,
 		bool $includeDeleted = false,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		if (empty($uuids) === true) {
 			return [];
 		}
@@ -8404,8 +8446,8 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Find all objects in register+schema table with filtering and pagination.
 	 *
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface $schema The schema context.
 	 * @param int|null $limit Maximum number of results.
 	 * @param int|null $offset Offset for pagination.
 	 * @param array|null $filters Filters to apply.
@@ -8416,13 +8458,16 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @psalm-return list<ObjectEntity>
 	 */
 	public function findAllInRegisterSchemaTable(
-		Register $register,
-		Schema $schema,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		?int $limit = null,
 		?int $offset = null,
 		?array $filters = null,
 		array $sort = [],
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$query = [];
 
 		if ($limit !== null) {
@@ -8453,9 +8498,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 * the list and the raw query cannot drift apart. Columns are unqualified:
 	 * the query must read the magic table without an alias.
 	 *
-	 * @param Schema        $schema   The schema of the table being read.
+	 * @param SchemaInterface        $schema   The schema of the table being read.
 	 * @param string        $action   The action the rows are filtered for (default: 'read').
-	 * @param Register|null $register The register of the table, so a metadata column the table could not
+	 * @param RegisterInterface|null $register The register of the table, so a metadata column the table could not
 	 *                                be given is left out of the predicate. Null keeps every predicate.
 	 *
 	 * @return string|null Null when no row restriction applies (an admin); otherwise
@@ -8463,7 +8508,10 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function rbacRowPredicateSql(Schema $schema, string $action = 'read', ?Register $register = null): ?string {
+	public function rbacRowPredicateSql(SchemaInterface $schema, string $action = 'read', ?RegisterInterface $register = null): ?string {
+		$schema = StoredEntity::schema(schema: $schema);
+		$register = StoredEntity::register(register: $register);
+
 		$tableName = null;
 		if ($register !== null) {
 			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
@@ -8475,7 +8523,7 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Whether the current caller qualifies for at least one rule of an action.
 	 *
-	 * @param Schema $schema The schema whose rules to consult.
+	 * @param SchemaInterface $schema The schema whose rules to consult.
 	 * @param string $action The action (default: 'read').
 	 *
 	 * @return bool True when a rule for the action admits the caller.
@@ -8484,7 +8532,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function callerQualifiesForAction(Schema $schema, string $action = 'read'): bool {
+	public function callerQualifiesForAction(SchemaInterface $schema, string $action = 'read'): bool {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->rbacHandler->callerQualifiesForAction(schema: $schema, action: $action);
 	}//end callerQualifiesForAction()
 
@@ -8492,7 +8542,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Whether a default list read waives the organisation boundary for this
 	 * caller because RBAC governs the rows instead.
 	 *
-	 * @param Schema $schema The schema being read.
+	 * @param SchemaInterface $schema The schema being read.
 	 *
 	 * @return bool True when the list would not apply the organisation filter.
 	 *
@@ -8500,7 +8550,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function organisationBoundaryWaivedByRbac(Schema $schema): bool {
+	public function organisationBoundaryWaivedByRbac(SchemaInterface $schema): bool {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->searchHandler->organisationBoundaryWaivedByRbac(schema: $schema);
 	}//end organisationBoundaryWaivedByRbac()
 
@@ -8509,7 +8561,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * rows with no organisation, because the caller's grant comes from the
 	 * register cascade.
 	 *
-	 * @param Schema $schema The schema being read.
+	 * @param SchemaInterface $schema The schema being read.
 	 *
 	 * @return bool True when the list's organisation filter also admits org-less rows.
 	 *
@@ -8517,7 +8569,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
-	public function organisationlessRowsAdmittedByRbac(Schema $schema): bool {
+	public function organisationlessRowsAdmittedByRbac(SchemaInterface $schema): bool {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		return $this->searchHandler->organisationlessRowsAdmittedByRbac(schema: $schema);
 	}//end organisationlessRowsAdmittedByRbac()
 
@@ -8662,21 +8716,26 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Update ObjectEntity in register+schema table.
 	 *
-	 * @param ObjectEntity $entity The object entity to update.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
-	 * @param ObjectEntity|null $oldEntity The old entity for comparison.
+	 * @param ObjectRowInterface $entity The object entity to update.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface $schema The schema context.
+	 * @param ObjectRowInterface|null $oldEntity The old entity for comparison.
 	 *
 	 * @throws Exception If update fails.
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 */
 	public function updateObjectEntity(
-		ObjectEntity $entity,
-		Register $register,
-		Schema $schema,
-		?ObjectEntity $oldEntity = null,
+		ObjectRowInterface $entity,
+		RegisterInterface $register,
+		SchemaInterface $schema,
+		?ObjectRowInterface $oldEntity = null,
 	): ObjectEntity {
+		$entity = StoredEntity::object(object: $entity);
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+		$oldEntity = StoredEntity::object(object: $oldEntity);
+
 		// Use provided oldEntity or fetch from database.
 		$oldObject = $oldEntity;
 		if ($oldEntity === null) {
@@ -8772,9 +8831,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * Supports both soft delete (sets _deleted field) and hard delete (removes from table).
 	 *
-	 * @param ObjectEntity $entity The object entity to delete.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param ObjectRowInterface $entity The object entity to delete.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface $schema The schema context.
 	 * @param bool $hardDelete Whether to perform hard delete (default: false for soft delete).
 	 * @param bool $dispatchEvents Whether to dispatch events.
 	 *
@@ -8785,12 +8844,16 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
 	 */
 	public function deleteObjectEntity(
-		ObjectEntity $entity,
-		Register $register,
-		Schema $schema,
+		ObjectRowInterface $entity,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		bool $hardDelete = false,
 		bool $dispatchEvents = true,
 	): ObjectEntity {
+		$entity = StoredEntity::object(object: $entity);
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		// Dispatch deleting event (pre-save hook).
 		if ($dispatchEvents === true) {
 			$deletingEvent = new ObjectDeletingEvent(object: $entity);
@@ -9099,8 +9162,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * This method performs an optimized bulk deletion from the magic table
 	 * for all objects belonging to a given register/schema combination.
 	 *
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface $schema The schema context.
 	 * @param bool $hardDelete Whether to perform a hard delete (default: false for soft delete).
 	 *
 	 * @throws Exception If deletion fails.
@@ -9110,10 +9173,13 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
 	 */
 	public function deleteObjectsBySchema(
-		Register $register,
-		Schema $schema,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		bool $hardDelete = false,
 	): int {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		$registerId = $register->getId();
 		$schemaId = $schema->getId();
@@ -9242,8 +9308,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * retention the expiry expresses. Rows with a NULL `_expires` are never
 	 * touched. A table that does not exist yet has nothing to purge and answers 0.
 	 *
-	 * @param Register $register The register context.
-	 * @param Schema   $schema   The schema context.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface   $schema   The schema context.
 	 *
 	 * @return int The number of rows removed.
 	 *
@@ -9251,7 +9317,10 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
-	public function purgeExpired(Register $register, Schema $schema): int {
+	public function purgeExpired(RegisterInterface $register, SchemaInterface $schema): int {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
 			return 0;
 		}
@@ -9325,9 +9394,9 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Lock object in register+schema table.
 	 *
-	 * @param ObjectEntity $entity The object entity to lock.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param ObjectRowInterface $entity The object entity to lock.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface $schema The schema context.
 	 * @param int|null $lockDuration Lock duration in seconds (null for default).
 	 * @param string|null $process What the lock was taken for.
 	 * @param string|null $runUuid Flow run taking the lock, for a run-scoped lock.
@@ -9337,13 +9406,17 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return ObjectEntity The locked object entity.
 	 */
 	public function lockObjectEntity(
-		ObjectEntity $entity,
-		Register $register,
-		Schema $schema,
+		ObjectRowInterface $entity,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		?int $lockDuration = null,
 		?string $process = null,
 		?string $runUuid = null,
 	): ObjectEntity {
+		$entity = StoredEntity::object(object: $entity);
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		// Lock using entity method.
 		//
 		// `$process` used to be dropped here: this method hardcoded the
@@ -9380,9 +9453,9 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Unlock object in register+schema table.
 	 *
-	 * @param ObjectEntity $entity The object entity to unlock.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param ObjectRowInterface $entity The object entity to unlock.
+	 * @param RegisterInterface $register The register context.
+	 * @param SchemaInterface $schema The schema context.
 	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock.
 	 * @param bool $break Release regardless of holder (administrator break-lock).
 	 *
@@ -9391,12 +9464,16 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return ObjectEntity The unlocked object entity.
 	 */
 	public function unlockObjectEntity(
-		ObjectEntity $entity,
-		Register $register,
-		Schema $schema,
+		ObjectRowInterface $entity,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		?string $runUuid = null,
 		bool $break = false,
 	): ObjectEntity {
+		$entity = StoredEntity::object(object: $entity);
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		// Unlock using entity method.
 		$entity->unlock($this->userSession, $runUuid, $break);
 
@@ -9421,8 +9498,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * It delegates to MagicBulkHandler for the actual database operations.
 	 *
 	 * @param array $objects Array of object data in standard format
-	 * @param Register $register Register context
-	 * @param Schema $schema Schema context
+	 * @param RegisterInterface $register Register context
+	 * @param SchemaInterface $schema Schema context
 	 * @param string $tableName Target table name
 	 * @param bool $needsPreUpdateState Whether anything downstream will read the
 	 *                                  pre-update rows (audit changeset or update
@@ -9436,11 +9513,14 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	public function bulkUpsert(
 		array $objects,
-		Register $register,
-		Schema $schema,
+		RegisterInterface $register,
+		SchemaInterface $schema,
 		string $tableName,
 		bool $needsPreUpdateState = true,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$this->logger->debug(
 			message: '[MagicMapper] Delegating bulk upsert to MagicBulkHandler',
 			context: [
@@ -9715,13 +9795,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Used for reverse lookups: "find all objects linked to mail 1/6".
 	 * The linked type columns (_mail, _contacts, etc.) store JSON arrays of string IDs.
 	 *
-	 * @param Schema $schema The schema whose magic table to search
+	 * @param SchemaInterface $schema The schema whose magic table to search
 	 * @param string $columnName The column name (e.g., '_mail', '_contacts')
 	 * @param string $entityId The entity ID to search for
 	 *
 	 * @return array Array of ObjectEntity objects
 	 */
-	public function findByLinkedEntity(Schema $schema, string $columnName, string $entityId): array {
+	public function findByLinkedEntity(SchemaInterface $schema, string $columnName, string $entityId): array {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$results = [];
 		$tableName = $this->getTableName(schema: $schema);
 
@@ -10469,8 +10551,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Otherwise searches across all magic tables.
 	 *
 	 * @param string|int $identifier Object identifier (ID, UUID, slug, or URI).
-	 * @param Register|null $register Optional register to filter by.
-	 * @param Schema|null $schema Optional schema to filter by.
+	 * @param RegisterInterface|null $register Optional register to filter by.
+	 * @param SchemaInterface|null $schema Optional schema to filter by.
 	 * @param bool $includeDeleted Whether to include deleted objects.
 	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering (default: true).
@@ -10484,12 +10566,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	public function find(
 		string|int $identifier,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $includeDeleted = false,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): ObjectEntity {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		if ($register !== null && $schema !== null) {
 			$entity = $this->findInRegisterSchemaTable(
 				identifier: $identifier,
@@ -10571,8 +10656,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param array|null $ids Array of IDs or UUIDs to filter by.
 	 * @param string|null $uses Value that must be present in relations.
 	 * @param bool $includeDeleted Whether to include deleted objects.
-	 * @param Register|null $register Optional register to filter objects.
-	 * @param Schema|null $schema Optional schema to filter objects.
+	 * @param RegisterInterface|null $register Optional register to filter objects.
+	 * @param SchemaInterface|null $schema Optional schema to filter objects.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -10594,9 +10679,12 @@ class MagicMapper extends AbstractObjectMapper {
 		?array $ids = null,
 		?string $uses = null,
 		bool $includeDeleted = false,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		if ($register === null || $schema === null) {
 			$this->logger->warning(
 				message: '[MagicMapper] findAll() called without register/schema context',
@@ -10812,15 +10900,18 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Insert a new object entity with event dispatching.
 	 *
 	 * @param Entity $entity Entity to insert.
-	 * @param Register|null $register Optional register for routing.
-	 * @param Schema|null $schema Optional schema for routing.
+	 * @param RegisterInterface|null $register Optional register for routing.
+	 * @param SchemaInterface|null $schema Optional schema for routing.
 	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
 	 *
 	 * @return ObjectEntity Inserted entity.
 	 *
 	 * @throws Exception If insertion fails.
 	 */
-	public function insert(Entity $entity, ?Register $register = null, ?Schema $schema = null, bool $failIfExists = false): Entity {
+	public function insert(Entity $entity, ?RegisterInterface $register = null, ?SchemaInterface $schema = null, bool $failIfExists = false): Entity {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		if ($entity instanceof ObjectEntity === false) {
 			throw new Exception('Entity must be an instance of ObjectEntity');
 		}
@@ -10940,9 +11031,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Update an existing object entity with event dispatching.
 	 *
 	 * @param Entity $entity Entity to update.
-	 * @param Register|null $register Optional register for routing.
-	 * @param Schema|null $schema Optional schema for routing.
-	 * @param ObjectEntity|null $oldEntity Old entity for comparison.
+	 * @param RegisterInterface|null $register Optional register for routing.
+	 * @param SchemaInterface|null $schema Optional schema for routing.
+	 * @param ObjectRowInterface|null $oldEntity Old entity for comparison.
 	 *
 	 * @return ObjectEntity Updated entity.
 	 *
@@ -10952,10 +11043,14 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	public function update(
 		Entity $entity,
-		?Register $register = null,
-		?Schema $schema = null,
-		?ObjectEntity $oldEntity = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
+		?ObjectRowInterface $oldEntity = null,
 	): Entity {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+		$oldEntity = StoredEntity::object(object: $oldEntity);
+
 		if ($entity instanceof ObjectEntity === false) {
 			throw new Exception('Entity must be an instance of ObjectEntity');
 		}
@@ -11221,7 +11316,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * what the caller read, so it never repoints a folder another request
 	 * recorded first. It mirrors RegisterFolderRecorder for registers.
 	 *
-	 * @param ObjectEntity $entity The object whose folder was made.
+	 * @param ObjectRowInterface $entity The object whose folder was made.
 	 * @param string|null $expected The folder value read before the folder was made: null or '' for none,
 	 *                              or the legacy path that no longer resolves.
 	 * @param string $folderId The node id of the folder the file service made or found.
@@ -11232,7 +11327,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-recording-an-objects-folder-id-is-bookkeeping-req-ofib-001
 	 */
-	public function recordFolder(ObjectEntity $entity, ?string $expected, string $folderId): bool {
+	public function recordFolder(ObjectRowInterface $entity, ?string $expected, string $folderId): bool {
+		$entity = StoredEntity::object(object: $entity);
+
 		$uuid = $entity->getUuid();
 		if ($uuid === null || $uuid === '') {
 			throw new Exception('Cannot record an object folder without the object uuid');
@@ -11265,8 +11362,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @param array $insertObjects Objects to insert/upsert
 	 * @param array $updateObjects Objects to update (legacy parameter)
-	 * @param Register|null $register Optional register context
-	 * @param Schema|null $schema Optional schema context
+	 * @param RegisterInterface|null $register Optional register context
+	 * @param SchemaInterface|null $schema Optional schema context
 	 * @param bool $needsPreUpdateState Whether anything downstream will read the
 	 *                                  pre-update rows (audit changeset or update
 	 *                                  event). False narrows the fetch to the uuid.
@@ -11282,10 +11379,13 @@ class MagicMapper extends AbstractObjectMapper {
 	public function ultraFastBulkSave(
 		array $insertObjects = [],
 		array $updateObjects = [],
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $needsPreUpdateState = true,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$this->logger->debug(
 			message: '[MagicMapper] ultraFastBulkSave called',
 			context: [
@@ -11989,14 +12089,17 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Count all objects with optional filtering.
 	 *
 	 * @param array|null $_filters Filters
-	 * @param Schema|null $schema Schema filter
-	 * @param Register|null $register Register filter
+	 * @param SchemaInterface|null $schema Schema filter
+	 * @param RegisterInterface|null $register Register filter
 	 *
 	 * @return int Object count
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	public function countAll(?array $_filters = null, ?Schema $schema = null, ?Register $register = null): int {
+	public function countAll(?array $_filters = null, ?SchemaInterface $schema = null, ?RegisterInterface $register = null): int {
+		$schema = StoredEntity::schema(schema: $schema);
+		$register = StoredEntity::register(register: $register);
+
 		// If register+schema context provided, count in the specific table.
 		if ($register !== null && $schema !== null) {
 			return $this->countObjectsInRegisterSchemaTable(

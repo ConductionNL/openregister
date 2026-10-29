@@ -25,9 +25,12 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use SimpleXMLElement;
 
 /**
@@ -64,9 +67,9 @@ class LogService {
 	 *
 	 * Used to find objects across all magic tables.
 	 *
-	 * @var MagicMapper Unified object mapper instance
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema> Unified object mapper instance
 	 */
-	private readonly MagicMapper $unifiedObjectMapper;
+	private readonly MagicMapperInterface $unifiedObjectMapper;
 
 	/**
 	 * Register mapper
@@ -93,7 +96,7 @@ class LogService {
 	 * audit trail logs and related entities.
 	 *
 	 * @param AuditTrailMapper $auditTrailMapper Mapper for audit trail database operations.
-	 * @param MagicMapper $unifiedObjectMapper Mapper for unified object database operations.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $unifiedObjectMapper Mapper for unified object database operations.
 	 * @param RegisterMapper $registerMapper Mapper for register database operations.
 	 * @param SchemaMapper $schemaMapper Mapper for schema database operations.
 	 *
@@ -101,7 +104,7 @@ class LogService {
 	 */
 	public function __construct(
 		AuditTrailMapper $auditTrailMapper,
-		MagicMapper $unifiedObjectMapper,
+		MagicMapperInterface $unifiedObjectMapper,
 		RegisterMapper $registerMapper,
 		SchemaMapper $schemaMapper,
 	) {

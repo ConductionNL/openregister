@@ -40,9 +40,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -54,12 +55,12 @@ class ObjectOwnerWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $mapper Resolves the magic table a register and schema store in.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $mapper Resolves the magic table a register and schema store in.
 	 * @param IDBConnection   $db     The database.
 	 * @param LoggerInterface $logger Where the write is noted.
 	 */
 	public function __construct(
-		private readonly MagicMapper $mapper,
+		private readonly MagicMapperInterface $mapper,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 	) {

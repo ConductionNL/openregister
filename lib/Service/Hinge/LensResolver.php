@@ -25,10 +25,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -62,7 +63,7 @@ class LensResolver {
 	/**
 	 * Wire the lookups a lens resolves through.
 	 *
-	 * @param MagicMapper       $magicMapper       Object storage, to read the referenced record.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>       $magicMapper       Object storage, to read the referenced record.
 	 * @param SchemaMapper      $schemaMapper      Schema lookup for the referenced record.
 	 * @param PermissionHandler $permissionHandler The read check over the referenced record.
 	 * @param IUserSession      $userSession       The caller, for that check.
@@ -73,7 +74,7 @@ class LensResolver {
 	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,

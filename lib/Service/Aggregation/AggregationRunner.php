@@ -38,11 +38,12 @@ namespace OCA\OpenRegister\Service\Aggregation;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -137,7 +138,7 @@ class AggregationRunner {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic-table mapper used for the PHP fallback path.
 	 * @param RegisterMapper $registerMapper Register loader.
 	 * @param SchemaMapper $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
@@ -164,7 +165,7 @@ class AggregationRunner {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,
@@ -2733,7 +2734,7 @@ class AggregationRunner {
 	 */
 	private function addDraftPredicate(NativeAggregationQuery $query, Schema $schema): void {
 		$draftLens     = new DraftListLens();
-		$statusMissing = in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $query->tableName), true);
+		$statusMissing = in_array('_status', $this->magicMapper->missingMetadataColumns(tableName: $query->tableName), true);
 		if ($statusMissing === true) {
 			return;
 		}

@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
@@ -1279,7 +1280,7 @@ class EntityRecognitionHandler {
 		}
 
 		try {
-			$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+			$objectMapper = $this->container->get(MagicMapperInterface::class);
 			$object = $objectMapper->find(
 				$objectId,
 				_rbac: false,

@@ -28,9 +28,12 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -43,13 +46,13 @@ class OrganisationUsageService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $magicMapper  Reads the folders of the organisation's objects.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $magicMapper  Reads the folders of the organisation's objects.
 	 * @param FileMapper      $fileMapper   Sums file cache sizes.
 	 * @param LoggerInterface $logger       Logger.
 	 * @param SchemaMapper    $schemaMapper Resolves the schema slug an object quota counts.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly FileMapper $fileMapper,
 		private readonly LoggerInterface $logger,
 		private readonly SchemaMapper $schemaMapper,

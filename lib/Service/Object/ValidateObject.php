@@ -34,8 +34,9 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectHandling;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
 use OCA\OpenRegister\Formats\CronFormat;
 use OCA\OpenRegister\Formats\SemVerFormat;
 use OCA\OpenRegister\Formats\UserFormat;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -376,7 +378,7 @@ class ValidateObject {
 	 * Constructor for ValidateObject
 	 *
 	 * @param IAppConfig $config Configuration service.
-	 * @param MagicMapper $objectMapper Object mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object mapper.
 	 * @param SchemaMapper $schemaMapper Schema mapper.
 	 * @param IURLGenerator $urlGenerator URL generator.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -387,7 +389,7 @@ class ValidateObject {
 	 */
 	public function __construct(
 		private IAppConfig $config,
-		private MagicMapper $objectMapper,
+		private MagicMapperInterface $objectMapper,
 		private SchemaMapper $schemaMapper,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,

@@ -24,9 +24,12 @@ namespace OCA\OpenRegister\Service\TextExtraction;
 
 use Exception;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -39,14 +42,14 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object mapper.
 	 * @param ChunkMapper $chunkMapper Chunk mapper.
 	 * @param SchemaMapper $schemaMapper Schema mapper.
 	 * @param RegisterMapper $registerMapper Register mapper.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,

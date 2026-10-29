@@ -41,10 +41,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -71,14 +73,14 @@ class DestructionListRepository {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper            $objectMapper    Destruction lists are register objects.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>            $objectMapper    Destruction lists are register objects.
 	 * @param RegisterMapper         $registerMapper  Resolves the configured register.
 	 * @param SchemaMapper           $schemaMapper    Resolves the configured schema.
 	 * @param ObjectRetentionHandler $settingsHandler Says which register and schema they live in.
 	 * @param LoggerInterface        $logger          Logger for a lookup that fails.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ObjectRetentionHandler $settingsHandler,

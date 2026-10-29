@@ -25,12 +25,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -59,7 +59,7 @@ class RelationCascadeHandler {
 	/**
 	 * Constructor for RelationCascadeHandler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity data mapper.
 	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations.
 	 * @param RegisterMapper $registerMapper Register mapper for register operations.
 	 * @param LoggerInterface $logger Logger interface for logging operations.
@@ -67,7 +67,7 @@ class RelationCascadeHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly LoggerInterface $logger,

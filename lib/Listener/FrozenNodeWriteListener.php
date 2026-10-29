@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -234,7 +234,7 @@ class FrozenNodeWriteListener implements IEventListener {
 	 */
 	private function owningObjectOf(Node $node, string $path, array $candidate): ObjectEntity|ObjectStateWriteException|null {
 		try {
-			$found = $this->container->get(MagicMapper::class)->findAcrossAllSources(
+			$found = $this->container->get(MagicMapperInterface::class)->findAcrossAllSources(
 				identifier: $candidate['uuid'],
 				_rbac: false,
 				_multitenancy: false

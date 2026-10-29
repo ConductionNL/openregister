@@ -50,6 +50,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
@@ -259,7 +260,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+			$magicMapper = $this->container->get(MagicMapperInterface::class);
 			$context = $magicMapper->findAcrossAllSources(
 				identifier: $id,
 				includeDeleted: true,
@@ -947,7 +948,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
-		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(MagicMapperInterface::class);
 		$registerMapper = $this->registerMapper;
 		$schemaMapper = $this->schemaMapper;
 
@@ -1602,7 +1603,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function indexFromMagicTable(array $listing, ObjectService $objectService): JSONResponse {
-		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(MagicMapperInterface::class);
 		$registerEntity = $listing['resolved']['registerEntity'];
 		$schemaEntity = $listing['resolved']['schemaEntity'];
 
@@ -2277,7 +2278,7 @@ class ObjectsController extends Controller {
 			);
 
 			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
-				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+				$magicMapper = $this->container->get(MagicMapperInterface::class);
 
 				$countQuery = $query;
 				unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
@@ -2820,7 +2821,7 @@ class ObjectsController extends Controller {
 						|| in_array($schemaSlug, $magicMappingSchemas, true) === true)
 					) {
 						// Use MagicMapper for magic-mapped schemas.
-						$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+						$magicMapper = $this->container->get(MagicMapperInterface::class);
 
 						// Build search query with resolved numeric IDs.
 						$query = $objectService->buildSearchQuery(

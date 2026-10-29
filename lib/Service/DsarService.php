@@ -39,9 +39,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -87,7 +89,7 @@ class DsarService {
 	 *                          GdprEntity +
 	 *                          entity_relations
 	 *                          lookup.
-	 * @param MagicMapper $objectMapper Object-routing
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object-routing
 	 *                                  mapper used to
 	 *                                  load found
 	 *                                  objects.
@@ -110,7 +112,7 @@ class DsarService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,

@@ -60,11 +60,11 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -178,7 +178,7 @@ class SaveObjects {
 	/**
 	 * Constructor for SaveObjects handler
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entity database operations
 	 * @param SchemaMapper $schemaMapper Mapper for schema operations
 	 * @param RegisterMapper $registerMapper Mapper for register operations
 	 * @param SaveObject $saveHandler Handler for individual object operations
@@ -200,7 +200,7 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SaveObject $saveHandler,

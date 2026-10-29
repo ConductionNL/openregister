@@ -37,13 +37,13 @@ use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -131,7 +131,7 @@ class DeleteObject {
 	/**
 	 * Constructor for DeleteObject handler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity data mapper.
 	 * @param CacheHandler $cacheHandler Object entity and query cache
 	 * @param IUserSession $userSession User session service
 	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logs
@@ -150,7 +150,7 @@ class DeleteObject {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor wires all delete-path collaborators
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly CacheHandler $cacheHandler,
 		private readonly IUserSession $userSession,
 		AuditTrailMapper $auditTrailMapper,

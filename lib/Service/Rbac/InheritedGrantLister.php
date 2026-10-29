@@ -22,8 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\Files\Folder;
 use OCP\Share\IManager;
@@ -81,14 +83,14 @@ class InheritedGrantLister {
 	 * Constructor.
 	 *
 	 * @param HierarchyDescender      $hierarchy    Resolves an object's ancestors.
-	 * @param MagicMapper             $mapper       Reads an ancestor object.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>             $mapper       Reads an ancestor object.
 	 * @param FolderManagementHandler $folders      Resolves an object's NC folder.
 	 * @param IManager                $shareManager Core share manager.
 	 * @param LoggerInterface         $logger       Where an unreadable ancestor is noted.
 	 */
 	public function __construct(
 		private readonly HierarchyDescender $hierarchy,
-		private readonly MagicMapper $mapper,
+		private readonly MagicMapperInterface $mapper,
 		private readonly FolderManagementHandler $folders,
 		private readonly IManager $shareManager,
 		private readonly LoggerInterface $logger,

@@ -34,9 +34,12 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
@@ -140,7 +143,7 @@ class TextExtractionService {
 	 * @param IRootFolder $rootFolder Nextcloud root folder
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities
 	 * @param SchemaMapper $schemaMapper Mapper for schemas
 	 * @param RegisterMapper $registerMapper Mapper for registers
 	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
@@ -165,7 +168,7 @@ class TextExtractionService {
 		private readonly IRootFolder $rootFolder,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly EntityRecognitionHandler $entityHandler,

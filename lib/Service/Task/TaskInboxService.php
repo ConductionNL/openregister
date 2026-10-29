@@ -35,12 +35,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\Db\AbstractObjectMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskBlockerMapper;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,7 +64,7 @@ class TaskInboxService {
 	 * @param TaskMapper $tasks The datastore queries.
 	 * @param TaskTemporalProjection $temporal The ONE overdue derivation.
 	 * @param LoggerInterface $logger Failure reporting.
-	 * @param AbstractObjectMapper|null $objects Resolves subject objects for
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>|null $objects Resolves subject objects for
 	 *                                           row context. Nullable so the
 	 *                                           service stays constructible
 	 *                                           without the object store; a
@@ -92,7 +95,7 @@ class TaskInboxService {
 		private readonly TaskMapper $tasks,
 		private readonly TaskTemporalProjection $temporal,
 		private readonly LoggerInterface $logger,
-		private readonly ?AbstractObjectMapper $objects = null,
+		private readonly ?MagicMapperInterface $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 		private readonly ?TaskSubjectLocator $locator = null,
 		private readonly ?TaskBlockerMapper $blockers = null,

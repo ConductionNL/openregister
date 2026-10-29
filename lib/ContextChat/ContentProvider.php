@@ -30,11 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\ContextChat;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\ContextChat\IContentProvider;
@@ -76,7 +77,7 @@ class ContentProvider implements IContentProvider {
 	 * @param ContextChatSubmissionListener $submissionListener Shared submission logic (single object).
 	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
 	 * @param RegisterMapper $registerMapper Register lookup mapper.
-	 * @param MagicMapper $magicMapper Object lookup/walk mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Object lookup/walk mapper.
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for `getItemUrl`.
 	 * @param IURLGenerator $urlGenerator URL generator for the fallback route.
 	 * @param LoggerInterface $logger PSR logger.
@@ -89,7 +90,7 @@ class ContentProvider implements IContentProvider {
 		private readonly ContextChatSubmissionListener $submissionListener,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly DeepLinkRegistryService $deepLinkRegistry,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,

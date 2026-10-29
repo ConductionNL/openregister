@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use DateTime;
-use OCA\OpenRegister\Db\AbstractObjectMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
@@ -208,7 +208,7 @@ class TaskInboxServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testSubjectContextCarriesTheSubjectsIdentifier(): void {
-		$objects = $this->createMock(originalClassName: AbstractObjectMapper::class);
+		$objects = $this->createMock(originalClassName: MagicMapperInterface::class);
 		$objects->method('findMultiple')->willReturnCallback(
 			function (array $ids): array {
 				$case = new ObjectEntity();
@@ -250,7 +250,7 @@ class TaskInboxServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testSubjectContextIsBatchedForThePage(): void {
-		$objects = $this->createMock(originalClassName: AbstractObjectMapper::class);
+		$objects = $this->createMock(originalClassName: MagicMapperInterface::class);
 		$objects->expects($this->once())->method('findMultiple')->willReturnCallback(
 			function (array $ids): array {
 				$this->assertEqualsCanonicalizing(['obj-1', 'obj-2'], $ids);
@@ -379,7 +379,7 @@ class TaskInboxServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFlatSerialisingStoreStillResolvesThroughTheFallbacks(): void {
-		$objects = $this->createMock(originalClassName: AbstractObjectMapper::class);
+		$objects = $this->createMock(originalClassName: MagicMapperInterface::class);
 		$objects->method('findMultiple')->willReturn(
 			[
 				new class () implements \JsonSerializable {
@@ -409,7 +409,7 @@ class TaskInboxServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingObjectStoreLeavesContextNull(): void {
-		$objects = $this->createMock(originalClassName: AbstractObjectMapper::class);
+		$objects = $this->createMock(originalClassName: MagicMapperInterface::class);
 		$objects->method('findMultiple')->willThrowException(new \RuntimeException('store down'));
 		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
 

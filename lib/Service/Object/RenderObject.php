@@ -30,9 +30,9 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
 use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -209,7 +209,7 @@ class RenderObject implements ObjectRendererInterface {
 	 * Constructor for RenderObject handler.
 	 *
 	 * @param FileMapper $fileMapper File mapper for database operations.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity mapper for database operations.
 	 * @param RegisterMapper $registerMapper Register mapper for database operations.
 	 * @param SchemaMapper $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
@@ -248,7 +248,7 @@ class RenderObject implements ObjectRendererInterface {
 	 */
 	public function __construct(
 		private readonly FileMapper $fileMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,

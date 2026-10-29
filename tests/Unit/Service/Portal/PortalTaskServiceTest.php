@@ -402,7 +402,7 @@ class PortalTaskServiceTest extends TestCase {
 		$case->setSchema('9');
 		$case->setObject(['name' => 'passport renewal', 'initiator' => 'bsn-1']);
 
-		$objects = $this->createMock(\OCA\OpenRegister\Db\AbstractObjectMapper::class);
+		$objects = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface::class);
 		$objects->method('findMultiple')->willReturn([$case]);
 
 		$inbox = new TaskInboxService(

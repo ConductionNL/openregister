@@ -27,10 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -72,7 +73,7 @@ class SearchIndexMaintenance {
 	 *
 	 * @param IDBConnection   $db            The database connection.
 	 * @param RegisterMapper  $registerMapper Resolves the registers to walk.
-	 * @param MagicMapper     $magicMapper   Resolves a register and schema to its table.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $magicMapper   Resolves a register and schema to its table.
 	 * @param IAppConfig      $appConfig     Stores the report of the last run.
 	 * @param IConfig         $config        Reads the configured table prefix.
 	 * @param LoggerInterface $logger        Reports progress and failure.
@@ -80,7 +81,7 @@ class SearchIndexMaintenance {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly IConfig $config,
 		private readonly LoggerInterface $logger,

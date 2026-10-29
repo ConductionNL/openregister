@@ -27,9 +27,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\Calendar\ICalendarProvider;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -64,9 +67,9 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * The MagicMapper for querying objects
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>
 	 */
-	private MagicMapper $magicMapper;
+	private MagicMapperInterface $magicMapper;
 
 	/**
 	 * The user session for authentication context
@@ -101,7 +104,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	 *
 	 * @param SchemaMapper $schemaMapper The schema mapper
 	 * @param RegisterMapper $registerMapper The register mapper
-	 * @param MagicMapper $magicMapper The MagicMapper
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper The MagicMapper
 	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger Logger instance
 	 * @param CalendarEventTransformer $transformer The event transformer
@@ -109,7 +112,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	public function __construct(
 		SchemaMapper $schemaMapper,
 		RegisterMapper $registerMapper,
-		MagicMapper $magicMapper,
+		MagicMapperInterface $magicMapper,
 		IUserSession $userSession,
 		LoggerInterface $logger,
 		CalendarEventTransformer $transformer,
