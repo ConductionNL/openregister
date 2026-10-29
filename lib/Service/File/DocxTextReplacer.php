@@ -138,6 +138,25 @@ class DocxTextReplacer {
 			return;
 		}
 
+		$dom = $this->loadPart(xml: $xml);
+		$this->xpath = new DOMXPath($dom);
+		$this->xpath->registerNamespace('w', self::NS_W);
+
+		if ($this->replaceInParagraphs() === true) {
+			$zip->addFromString($part, (string) $dom->saveXML());
+		}
+	}//end replaceInPart()
+
+	/**
+	 * Parse one package part.
+	 *
+	 * @param string $xml The part's XML.
+	 *
+	 * @return DOMDocument
+	 *
+	 * @throws RuntimeException When the part is not well-formed XML or declares a DOCTYPE.
+	 */
+	private function loadPart(string $xml): DOMDocument {
 		$dom = new DOMDocument();
 		$dom->preserveWhiteSpace = true;
 		$previous = libxml_use_internal_errors(true);
@@ -148,9 +167,15 @@ class DocxTextReplacer {
 			throw new RuntimeException('A document part is not well-formed XML');
 		}
 
-		$this->xpath = new DOMXPath($dom);
-		$this->xpath->registerNamespace('w', self::NS_W);
+		return $dom;
+	}//end loadPart()
 
+	/**
+	 * Apply the replacements to every paragraph of the part in {@see $xpath}.
+	 *
+	 * @return bool Whether any text changed.
+	 */
+	private function replaceInParagraphs(): bool {
 		$changed = false;
 		foreach ($this->xpath->query('//w:p') as $paragraph) {
 			if (($paragraph instanceof DOMElement) === false) {
@@ -163,10 +188,8 @@ class DocxTextReplacer {
 			}
 		}
 
-		if ($changed === true) {
-			$zip->addFromString($part, (string) $dom->saveXML());
-		}
-	}//end replaceInPart()
+		return $changed;
+	}//end replaceInParagraphs()
 
 	/**
 	 * Text elements of one paragraph, without those of paragraphs nested inside it.
