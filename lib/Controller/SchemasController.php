@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Contract\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;

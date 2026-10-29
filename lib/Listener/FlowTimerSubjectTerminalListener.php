@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Contract\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCP\EventDispatcher\Event;
