@@ -5,7 +5,10 @@ import SearchTrailSideBar from './SearchTrailSideBar.vue'
 jest.mock('../../store/store.js', () => ({}))
 jest.mock('../../eventBus.js', () => ({}))
 jest.mock('@nextcloud/vue', () => ({}))
-jest.mock('@nextcloud/l10n', () => ({ translate: (app, s) => s, translatePlural: (app, s) => s }))
+jest.mock('@nextcloud/l10n', () => ({
+	translate: (app, s) => s,
+	translatePlural: (app, s) => s,
+}))
 jest.mock('vue-material-design-icons/ChartLine.vue', () => ({}))
 jest.mock('vue-material-design-icons/DatabaseOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOffOutline.vue', () => ({}))
@@ -36,7 +39,10 @@ describe('SearchTrailSideBar.formatActivityPeriod', () => {
 		['hourly', date.toLocaleString()],
 		['daily', date.toLocaleDateString()],
 		['weekly', `Week of ${date.toLocaleDateString()}`],
-		['monthly', date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' })],
+		[
+			'monthly',
+			date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' }),
+		],
 		['yearly', PERIOD],
 		['toString', PERIOD],
 	])('%s', (granularity, expected) => {
