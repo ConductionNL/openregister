@@ -133,7 +133,7 @@ function state(wrapper) {
  * @return {object}
  */
 function observe(wrapper) {
-	const vm = state(wrapper)
+	const vm = state(wrapper).$data
 	return {
 		html: markup(wrapper),
 		fetch: global.fetch.mock.calls,
@@ -211,22 +211,22 @@ describe.each(Object.keys(MODALS))('%s publish modal', (kind) => {
 		const steps = [observe(wrapper)]
 
 		if ('pick' in scenario) {
-			state(wrapper).selectedRepository = scenario.pick
+			state(wrapper).$data.selectedRepository = scenario.pick
 			await flush()
 			steps.push(observe(wrapper))
 		}
 
 		if ('path' in scenario) {
-			state(wrapper).filePath = scenario.path
+			state(wrapper).$data.filePath = scenario.path
 		}
 
 		if ('commit' in scenario) {
-			state(wrapper).commitMessage = scenario.commit
+			state(wrapper).$data.commitMessage = scenario.commit
 		}
 
 		if (scenario.publish) {
-			if (!state(wrapper).filePath && !('path' in scenario)) {
-				state(wrapper).filePath = 'out/openapi.json'
+			if (!state(wrapper).$data.filePath && !('path' in scenario)) {
+				state(wrapper).$data.filePath = 'out/openapi.json'
 			}
 
 			await wrapper.findAll('[data-nc="NcButton"]')[0].trigger('click')
@@ -237,7 +237,7 @@ describe.each(Object.keys(MODALS))('%s publish modal', (kind) => {
 		}
 
 		if (scenario.close) {
-			state(wrapper).loading = scenario.loading === true
+			state(wrapper).$data.loading = scenario.loading === true
 			state(wrapper).closeModal()
 			steps.push(observe(wrapper))
 		}

@@ -31,6 +31,15 @@ exports[`configuration publish modal branches fail 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -114,6 +123,15 @@ exports[`configuration publish modal branches fail 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -128,26 +146,22 @@ exports[`configuration publish modal branches fail 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" modelvalue="acme/site" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" modelvalue="acme/secret" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
       <div class="formSection formSection--inline">
         <h3>Branch</h3>
-        <div data-nc="NcSelect" options="" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection" modelvalue="dev"></div>
+        <div data-nc="NcSelect" options="" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
         <p class="formHint">Select the branch to publish to</p>
       </div>
     </div>
-    <div class="formSection">
-      <h3>File Path</h3>
-      <div data-nc="NcTextField" modelvalue="lib/settings/base.json" placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
-      <p class="formHint">Path where the configuration file will be saved in the repository</p>
-    </div>
+    <!--v-if-->
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="false">
+      <div data-nc="NcButton" variant="primary" disabled="true">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -162,7 +176,7 @@ exports[`configuration publish modal branches fail 1`] = `
       "error": "Failed to load branches",
       "filePath": "lib/settings/base.json",
       "loading": false,
-      "selectedBranch": "dev",
+      "selectedBranch": null,
       "selectedRepository": "acme/secret",
       "success": false,
       "successMessage": "",
@@ -295,26 +309,18 @@ exports[`configuration publish modal clear the repository 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" modelvalue="acme/site" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <div class="formSection formSection--inline">
-        <h3>Branch</h3>
-        <div data-nc="NcSelect" modelvalue="dev" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
-        <p class="formHint">Select the branch to publish to</p>
-      </div>
+      <!--v-if-->
     </div>
-    <div class="formSection">
-      <h3>File Path</h3>
-      <div data-nc="NcTextField" modelvalue="lib/settings/base.json" placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
-      <p class="formHint">Path where the configuration file will be saved in the repository</p>
-    </div>
+    <!--v-if-->
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="false">
+      <div data-nc="NcButton" variant="primary" disabled="true">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -329,7 +335,7 @@ exports[`configuration publish modal clear the repository 1`] = `
       "error": null,
       "filePath": "lib/settings/base.json",
       "loading": false,
-      "selectedBranch": "dev",
+      "selectedBranch": null,
       "selectedRepository": null,
       "success": false,
       "successMessage": "",
@@ -584,11 +590,7 @@ exports[`configuration publish modal close while loading 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
+    "setModal": [],
     "state": {
       "commitMessage": "Update configuration: Base",
       "error": null,
@@ -669,11 +671,7 @@ exports[`configuration publish modal close while loading 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
+    "setModal": [],
     "state": {
       "commitMessage": "Update configuration: Base",
       "error": null,
@@ -1005,6 +1003,15 @@ exports[`configuration publish modal pick a repository 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -1086,6 +1093,15 @@ exports[`configuration publish modal pick a repository 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -1098,12 +1114,12 @@ exports[`configuration publish modal pick a repository 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" modelvalue="acme/site" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" modelvalue="acme/secret" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
       <div class="formSection formSection--inline">
         <h3>Branch</h3>
-        <div data-nc="NcSelect" modelvalue="dev" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
         <p class="formHint">Select the branch to publish to</p>
       </div>
     </div>
@@ -1132,7 +1148,7 @@ exports[`configuration publish modal pick a repository 1`] = `
       "error": null,
       "filePath": "lib/settings/base.json",
       "loading": false,
-      "selectedBranch": "dev",
+      "selectedBranch": "master",
       "selectedRepository": "acme/secret",
       "success": false,
       "successMessage": "",
@@ -1172,6 +1188,15 @@ exports[`configuration publish modal pick a repository object with main branch 1
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -1253,6 +1278,15 @@ exports[`configuration publish modal pick a repository object with main branch 1
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -1265,12 +1299,12 @@ exports[`configuration publish modal pick a repository object with main branch 1
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" modelvalue="acme/site" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" modelvalue="[object Object]" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
       <div class="formSection formSection--inline">
         <h3>Branch</h3>
-        <div data-nc="NcSelect" modelvalue="dev" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <div data-nc="NcSelect" modelvalue="main" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
         <p class="formHint">Select the branch to publish to</p>
       </div>
     </div>
@@ -1299,7 +1333,7 @@ exports[`configuration publish modal pick a repository object with main branch 1
       "error": null,
       "filePath": "lib/settings/base.json",
       "loading": false,
-      "selectedBranch": "dev",
+      "selectedBranch": "main",
       "selectedRepository": {
         "value": "acme/secret",
       },
@@ -1341,6 +1375,15 @@ exports[`configuration publish modal pick a repository without branches 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -1422,6 +1465,15 @@ exports[`configuration publish modal pick a repository without branches 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -1434,26 +1486,22 @@ exports[`configuration publish modal pick a repository without branches 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" modelvalue="acme/site" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" modelvalue="acme/secret" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
       <div class="formSection formSection--inline">
         <h3>Branch</h3>
-        <div data-nc="NcSelect" options="" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection" modelvalue="dev"></div>
+        <div data-nc="NcSelect" options="" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
         <p class="formHint">Select the branch to publish to</p>
       </div>
     </div>
-    <div class="formSection">
-      <h3>File Path</h3>
-      <div data-nc="NcTextField" modelvalue="lib/settings/base.json" placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
-      <p class="formHint">Path where the configuration file will be saved in the repository</p>
-    </div>
+    <!--v-if-->
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="false">
+      <div data-nc="NcButton" variant="primary" disabled="true">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -1468,7 +1516,7 @@ exports[`configuration publish modal pick a repository without branches 1`] = `
       "error": null,
       "filePath": "lib/settings/base.json",
       "loading": false,
-      "selectedBranch": "dev",
+      "selectedBranch": null,
       "selectedRepository": "acme/secret",
       "success": false,
       "successMessage": "",
@@ -2875,7 +2923,7 @@ exports[`configuration publish modal publish with note and empty commit message 
     </div>
     <div class="formSection">
       <h3>Commit Message</h3>
-      <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
+      <div data-nc="NcTextField" modelvalue="" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
       <div data-nc="NcButton" variant="primary" disabled="false">
@@ -2976,7 +3024,7 @@ Indexed in an hour.",
     </div>
     <div class="formSection">
       <h3>Commit Message</h3>
-      <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
+      <div data-nc="NcTextField" modelvalue="" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
       <div data-nc="NcButton" variant="primary" disabled="false">
@@ -3040,14 +3088,85 @@ exports[`configuration publish modal publish without a path 1`] = `
           "method": "GET",
         },
       ],
+    ],
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+  <!--v-if-->
+  <!--v-if-->
+  <div class="publishForm">
+    <div class="formRow">
+      <div class="formSection formSection--inline formSection--config">
+        <h3>Configuration</h3>
+        <p class="formDescription">Base</p>
+      </div>
+      <div class="formSection formSection--inline">
+        <h3>Repository</h3>
+        <div data-nc="NcSelect" modelvalue="acme/site" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <p class="formHint">Select a repository you have write access to</p>
+      </div>
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="dev" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
+    </div>
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="lib/settings/base.json" placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the configuration file will be saved in the repository</p>
+    </div>
+    <div class="formSection">
+      <h3>Commit Message</h3>
+      <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
+    </div>
+    <div class="formActions">
+      <div data-nc="NcButton" variant="primary" disabled="false">
+        <!----> Publish
+      </div>
+      <div data-nc="NcButton" disabled="false">Cancel</div>
+    </div>
+  </div>
+</div>",
+    "refreshConfigurations": 0,
+    "refreshRegisters": 0,
+    "setModal": [],
+    "state": {
+      "commitMessage": "Update configuration: Base",
+      "error": null,
+      "filePath": "lib/settings/base.json",
+      "loading": false,
+      "selectedBranch": "dev",
+      "selectedRepository": "acme/site",
+      "success": false,
+      "successMessage": "",
+    },
+  },
+  {
+    "fetch": [
       [
-        "/index.php/apps/openregister/api/configurations/8/publish/github",
+        "/index.php/apps/openregister/api/configurations/github/repositories",
         {
-          "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
           },
-          "method": "POST",
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
         },
       ],
     ],
@@ -3090,11 +3209,7 @@ exports[`configuration publish modal publish without a path 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
+    "setModal": [],
     "state": {
       "commitMessage": "Update configuration: Base",
       "error": null,
@@ -3135,16 +3250,6 @@ exports[`configuration publish modal publish without a path 1`] = `
           "method": "GET",
         },
       ],
-      [
-        "/index.php/apps/openregister/api/configurations/8/publish/github",
-        {
-          "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "POST",
-        },
-      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -3168,7 +3273,7 @@ exports[`configuration publish modal publish without a path 1`] = `
     </div>
     <div class="formSection">
       <h3>File Path</h3>
-      <div data-nc="NcTextField" modelvalue="lib/settings/base.json" placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
+      <div data-nc="NcTextField" modelvalue="  " placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
       <p class="formHint">Path where the configuration file will be saved in the repository</p>
     </div>
     <div class="formSection">
@@ -3176,7 +3281,7 @@ exports[`configuration publish modal publish without a path 1`] = `
       <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="false">
+      <div data-nc="NcButton" variant="primary" disabled="true">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -3185,15 +3290,11 @@ exports[`configuration publish modal publish without a path 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
+    "setModal": [],
     "state": {
       "commitMessage": "Update configuration: Base",
       "error": null,
-      "filePath": "lib/settings/base.json",
+      "filePath": "  ",
       "loading": false,
       "selectedBranch": "dev",
       "selectedRepository": "acme/site",
@@ -3230,21 +3331,9 @@ exports[`configuration publish modal publish without a path 1`] = `
           "method": "GET",
         },
       ],
-      [
-        "/index.php/apps/openregister/api/configurations/8/publish/github",
-        {
-          "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "POST",
-        },
-      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
-  <div data-nc="NcNoteCard" type="success">
-    <p>Configuration published successfully! Commit: abcdef1</p>
-  </div>
+  <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
     <div class="formRow">
@@ -3265,7 +3354,7 @@ exports[`configuration publish modal publish without a path 1`] = `
     </div>
     <div class="formSection">
       <h3>File Path</h3>
-      <div data-nc="NcTextField" modelvalue="lib/settings/base.json" placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
+      <div data-nc="NcTextField" modelvalue="  " placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
       <p class="formHint">Path where the configuration file will be saved in the repository</p>
     </div>
     <div class="formSection">
@@ -3273,20 +3362,16 @@ exports[`configuration publish modal publish without a path 1`] = `
       <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="false">
+      <div data-nc="NcButton" variant="primary" disabled="true">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
     </div>
   </div>
 </div>",
-    "refreshConfigurations": 1,
+    "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
+    "setModal": [],
     "state": {
       "commitMessage": "Update configuration: Base",
       "error": null,
@@ -3294,105 +3379,8 @@ exports[`configuration publish modal publish without a path 1`] = `
       "loading": false,
       "selectedBranch": "dev",
       "selectedRepository": "acme/site",
-      "success": true,
-      "successMessage": "Configuration published successfully! Commit: abcdef1",
-    },
-  },
-  {
-    "fetch": [
-      [
-        "/index.php/apps/openregister/api/configurations/github/repositories",
-        {
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "GET",
-        },
-      ],
-      [
-        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
-        {
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "GET",
-        },
-      ],
-      [
-        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
-        {
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "GET",
-        },
-      ],
-      [
-        "/index.php/apps/openregister/api/configurations/8/publish/github",
-        {
-          "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "POST",
-        },
-      ],
-    ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
-  <div data-nc="NcNoteCard" type="success">
-    <p>Configuration published successfully! Commit: abcdef1</p>
-  </div>
-  <!--v-if-->
-  <div class="publishForm">
-    <div class="formRow">
-      <div class="formSection formSection--inline formSection--config">
-        <h3>Configuration</h3>
-        <p class="formDescription">Base</p>
-      </div>
-      <div class="formSection formSection--inline">
-        <h3>Repository</h3>
-        <div data-nc="NcSelect" modelvalue="acme/site" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
-        <p class="formHint">Select a repository you have write access to</p>
-      </div>
-      <div class="formSection formSection--inline">
-        <h3>Branch</h3>
-        <div data-nc="NcSelect" modelvalue="dev" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
-        <p class="formHint">Select the branch to publish to</p>
-      </div>
-    </div>
-    <div class="formSection">
-      <h3>File Path</h3>
-      <div data-nc="NcTextField" modelvalue="lib/settings/base.json" placeholder="e.g., lib/settings/config.json" disabled="false" label="Path in repository"></div>
-      <p class="formHint">Path where the configuration file will be saved in the repository</p>
-    </div>
-    <div class="formSection">
-      <h3>Commit Message</h3>
-      <div data-nc="NcTextField" modelvalue="Update configuration: Base" placeholder="Update configuration: ..." disabled="false" label="Commit message"></div>
-    </div>
-    <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="false">
-        <!----> Publish
-      </div>
-      <div data-nc="NcButton" disabled="false">Cancel</div>
-    </div>
-  </div>
-</div>",
-    "refreshConfigurations": 1,
-    "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
-    "state": {
-      "commitMessage": "Update configuration: Base",
-      "error": null,
-      "filePath": "  ",
-      "loading": false,
-      "selectedBranch": "dev",
-      "selectedRepository": "acme/site",
-      "success": true,
-      "successMessage": "Configuration published successfully! Commit: abcdef1",
+      "success": false,
+      "successMessage": "",
     },
   },
 ]
@@ -3470,6 +3458,15 @@ exports[`register publish modal branches fail 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -3525,10 +3522,21 @@ exports[`register publish modal branches fail 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="error">
+    <p>Failed to load branches</p>
+  </div>
   <div class="publishForm">
     <div class="formRow">
       <div class="formSection formSection--inline formSection--register">
@@ -3537,10 +3545,14 @@ exports[`register publish modal branches fail 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/secret"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" options="" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
     <!--v-if-->
     <div class="formSection">
@@ -3560,7 +3572,7 @@ exports[`register publish modal branches fail 1`] = `
     "setModal": [],
     "state": {
       "commitMessage": "Update register OAS: Parks",
-      "error": null,
+      "error": "Failed to load branches",
       "filePath": "parks_openregister.json",
       "loading": false,
       "selectedBranch": null,
@@ -3855,11 +3867,7 @@ exports[`register publish modal close while loading 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
+    "setModal": [],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
@@ -3914,11 +3922,7 @@ exports[`register publish modal close while loading 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [
-      [
-        null,
-      ],
-    ],
+    "setModal": [],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
@@ -4191,6 +4195,15 @@ exports[`register publish modal pick a repository 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4246,6 +4259,15 @@ exports[`register publish modal pick a repository 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4258,18 +4280,26 @@ exports[`register publish modal pick a repository 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/secret"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4284,7 +4314,7 @@ exports[`register publish modal pick a repository 1`] = `
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/secret",
       "success": false,
       "successMessage": "",
@@ -4306,6 +4336,15 @@ exports[`register publish modal pick a repository object with main branch 1`] = 
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4361,6 +4400,15 @@ exports[`register publish modal pick a repository object with main branch 1`] = 
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4373,18 +4421,26 @@ exports[`register publish modal pick a repository object with main branch 1`] = 
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="[object Object]"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="main" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4399,7 +4455,7 @@ exports[`register publish modal pick a repository object with main branch 1`] = 
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "main",
       "selectedRepository": {
         "value": "acme/secret",
       },
@@ -4423,6 +4479,15 @@ exports[`register publish modal pick a repository without branches 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4478,6 +4543,15 @@ exports[`register publish modal pick a repository without branches 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=secret",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4490,10 +4564,14 @@ exports[`register publish modal pick a repository without branches 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/secret"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" options="" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
     <!--v-if-->
     <div class="formSection">
@@ -4538,6 +4616,25 @@ exports[`register publish modal publish 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4570,7 +4667,11 @@ exports[`register publish modal publish 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [],
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
@@ -4593,6 +4694,25 @@ exports[`register publish modal publish 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4605,18 +4725,26 @@ exports[`register publish modal publish 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4625,13 +4753,17 @@ exports[`register publish modal publish 1`] = `
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [],
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -4648,9 +4780,30 @@ exports[`register publish modal publish 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="success">
+    <p>Register OAS published successfully! Commit: abcdef1</p>
+  </div>
   <!--v-if-->
   <div class="publishForm">
     <div class="formRow">
@@ -4660,18 +4813,26 @@ exports[`register publish modal publish 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4679,17 +4840,21 @@ exports[`register publish modal publish 1`] = `
   </div>
 </div>",
     "refreshConfigurations": 0,
-    "refreshRegisters": 0,
-    "setModal": [],
+    "refreshRegisters": 1,
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
-      "success": false,
-      "successMessage": "",
+      "success": true,
+      "successMessage": "Register OAS published successfully! Commit: abcdef1",
     },
   },
   {
@@ -4703,9 +4868,30 @@ exports[`register publish modal publish 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="success">
+    <p>Register OAS published successfully! Commit: abcdef1</p>
+  </div>
   <!--v-if-->
   <div class="publishForm">
     <div class="formRow">
@@ -4715,18 +4901,26 @@ exports[`register publish modal publish 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4734,17 +4928,21 @@ exports[`register publish modal publish 1`] = `
   </div>
 </div>",
     "refreshConfigurations": 0,
-    "refreshRegisters": 0,
-    "setModal": [],
+    "refreshRegisters": 1,
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
-      "success": false,
-      "successMessage": "",
+      "success": true,
+      "successMessage": "Register OAS published successfully! Commit: abcdef1",
     },
   },
 ]
@@ -4763,6 +4961,25 @@ exports[`register publish modal publish fails 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4818,6 +5035,25 @@ exports[`register publish modal publish fails 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -4830,18 +5066,26 @@ exports[`register publish modal publish fails 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4856,7 +5100,7 @@ exports[`register publish modal publish fails 1`] = `
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -4873,10 +5117,31 @@ exports[`register publish modal publish fails 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="error">
+    <p>push rejected</p>
+  </div>
   <div class="publishForm">
     <div class="formRow">
       <div class="formSection formSection--inline formSection--register">
@@ -4885,18 +5150,26 @@ exports[`register publish modal publish fails 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4908,10 +5181,10 @@ exports[`register publish modal publish fails 1`] = `
     "setModal": [],
     "state": {
       "commitMessage": "Update register OAS: Parks",
-      "error": null,
+      "error": "push rejected",
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -4928,10 +5201,31 @@ exports[`register publish modal publish fails 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="error">
+    <p>push rejected</p>
+  </div>
   <div class="publishForm">
     <div class="formRow">
       <div class="formSection formSection--inline formSection--register">
@@ -4940,18 +5234,26 @@ exports[`register publish modal publish fails 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -4963,10 +5265,10 @@ exports[`register publish modal publish fails 1`] = `
     "setModal": [],
     "state": {
       "commitMessage": "Update register OAS: Parks",
-      "error": null,
+      "error": "push rejected",
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -4988,6 +5290,25 @@ exports[`register publish modal publish fails without message 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -5043,6 +5364,25 @@ exports[`register publish modal publish fails without message 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -5055,18 +5395,26 @@ exports[`register publish modal publish fails without message 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -5081,7 +5429,7 @@ exports[`register publish modal publish fails without message 1`] = `
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -5098,10 +5446,31 @@ exports[`register publish modal publish fails without message 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="error">
+    <p>Failed to publish register OAS</p>
+  </div>
   <div class="publishForm">
     <div class="formRow">
       <div class="formSection formSection--inline formSection--register">
@@ -5110,18 +5479,26 @@ exports[`register publish modal publish fails without message 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -5133,10 +5510,10 @@ exports[`register publish modal publish fails without message 1`] = `
     "setModal": [],
     "state": {
       "commitMessage": "Update register OAS: Parks",
-      "error": null,
+      "error": "Failed to publish register OAS",
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -5153,10 +5530,31 @@ exports[`register publish modal publish fails without message 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="error">
+    <p>Failed to publish register OAS</p>
+  </div>
   <div class="publishForm">
     <div class="formRow">
       <div class="formSection formSection--inline formSection--register">
@@ -5165,18 +5563,26 @@ exports[`register publish modal publish fails without message 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -5188,10 +5594,10 @@ exports[`register publish modal publish fails without message 1`] = `
     "setModal": [],
     "state": {
       "commitMessage": "Update register OAS: Parks",
-      "error": null,
+      "error": "Failed to publish register OAS",
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -5213,6 +5619,25 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -5245,7 +5670,11 @@ exports[`register publish modal publish with note and empty commit message 1`] =
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [],
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
@@ -5268,6 +5697,25 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -5280,18 +5728,26 @@ exports[`register publish modal publish with note and empty commit message 1`] =
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -5300,13 +5756,17 @@ exports[`register publish modal publish with note and empty commit message 1`] =
 </div>",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
-    "setModal": [],
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "Update register OAS: Parks",
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -5323,9 +5783,32 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="success">
+    <p>Register OAS published successfully! Commit: abcdef1</p>
+    <p></p>
+    <p>Indexed in an hour.</p>
+  </div>
   <!--v-if-->
   <div class="publishForm">
     <div class="formRow">
@@ -5335,18 +5818,26 @@ exports[`register publish modal publish with note and empty commit message 1`] =
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
-      <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
+      <div data-nc="NcTextField" modelvalue="" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -5354,17 +5845,23 @@ exports[`register publish modal publish with note and empty commit message 1`] =
   </div>
 </div>",
     "refreshConfigurations": 0,
-    "refreshRegisters": 0,
-    "setModal": [],
+    "refreshRegisters": 1,
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "",
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
-      "success": false,
-      "successMessage": "",
+      "success": true,
+      "successMessage": "Register OAS published successfully! Commit: abcdef1
+
+Indexed in an hour.",
     },
   },
   {
@@ -5378,9 +5875,32 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/registers/3/publish/github",
+        {
+          "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "POST",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
-  <!--v-if-->
+  <div data-nc="NcNoteCard" type="success">
+    <p>Register OAS published successfully! Commit: abcdef1</p>
+    <p></p>
+    <p>Indexed in an hour.</p>
+  </div>
   <!--v-if-->
   <div class="publishForm">
     <div class="formRow">
@@ -5390,18 +5910,26 @@ exports[`register publish modal publish with note and empty commit message 1`] =
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
-      <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
+      <div data-nc="NcTextField" modelvalue="" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -5409,17 +5937,23 @@ exports[`register publish modal publish with note and empty commit message 1`] =
   </div>
 </div>",
     "refreshConfigurations": 0,
-    "refreshRegisters": 0,
-    "setModal": [],
+    "refreshRegisters": 1,
+    "setModal": [
+      [
+        null,
+      ],
+    ],
     "state": {
       "commitMessage": "",
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
-      "success": false,
-      "successMessage": "",
+      "success": true,
+      "successMessage": "Register OAS published successfully! Commit: abcdef1
+
+Indexed in an hour.",
     },
   },
 ]
@@ -5438,6 +5972,15 @@ exports[`register publish modal publish without a path 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -5493,6 +6036,15 @@ exports[`register publish modal publish without a path 1`] = `
           "method": "GET",
         },
       ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
     ],
     "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
   <!--v-if-->
@@ -5505,18 +6057,26 @@ exports[`register publish modal publish without a path 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="parks_openregister.json" placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
     </div>
     <div class="formActions">
-      <div data-nc="NcButton" variant="primary" disabled="true">
+      <div data-nc="NcButton" variant="primary" disabled="false">
         <!----> Publish
       </div>
       <div data-nc="NcButton" disabled="false">Cancel</div>
@@ -5531,7 +6091,7 @@ exports[`register publish modal publish without a path 1`] = `
       "error": null,
       "filePath": "parks_openregister.json",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -5541,6 +6101,15 @@ exports[`register publish modal publish without a path 1`] = `
     "fetch": [
       [
         "/index.php/apps/openregister/api/configurations/github/repositories",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
         {
           "headers": {
             "Content-Type": "application/json",
@@ -5560,12 +6129,20 @@ exports[`register publish modal publish without a path 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="  " placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
@@ -5586,7 +6163,7 @@ exports[`register publish modal publish without a path 1`] = `
       "error": null,
       "filePath": "  ",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
@@ -5596,6 +6173,15 @@ exports[`register publish modal publish without a path 1`] = `
     "fetch": [
       [
         "/index.php/apps/openregister/api/configurations/github/repositories",
+        {
+          "headers": {
+            "Content-Type": "application/json",
+          },
+          "method": "GET",
+        },
+      ],
+      [
+        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
         {
           "headers": {
             "Content-Type": "application/json",
@@ -5615,12 +6201,20 @@ exports[`register publish modal publish without a path 1`] = `
       </div>
       <div class="formSection formSection--inline">
         <h3>Repository</h3>
-        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection"></div>
+        <div data-nc="NcSelect" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a repository" disabled="false" labeloutside="true" aria-label-combobox="Repository selection" modelvalue="acme/site"></div>
         <p class="formHint">Select a repository you have write access to</p>
       </div>
-      <!--v-if-->
+      <div class="formSection formSection--inline">
+        <h3>Branch</h3>
+        <div data-nc="NcSelect" modelvalue="master" options="[object Object],[object Object]" label="label" trackby="value" placeholder="Select a branch" disabled="false" labeloutside="true" aria-label-combobox="Branch selection"></div>
+        <p class="formHint">Select the branch to publish to</p>
+      </div>
     </div>
-    <!--v-if-->
+    <div class="formSection">
+      <h3>File Path</h3>
+      <div data-nc="NcTextField" modelvalue="  " placeholder="e.g., lib/settings/register.json" disabled="false" label="Path in repository"></div>
+      <p class="formHint">Path where the register OAS file will be saved in the repository</p>
+    </div>
     <div class="formSection">
       <h3>Commit Message</h3>
       <div data-nc="NcTextField" modelvalue="Update register OAS: Parks" placeholder="Update register OAS: ..." disabled="false" label="Commit message"></div>
@@ -5641,7 +6235,7 @@ exports[`register publish modal publish without a path 1`] = `
       "error": null,
       "filePath": "  ",
       "loading": false,
-      "selectedBranch": null,
+      "selectedBranch": "master",
       "selectedRepository": "acme/site",
       "success": false,
       "successMessage": "",
