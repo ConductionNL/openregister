@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -191,5 +194,63 @@ class FileSettingsControllerBranchTest extends TestCase {
 		$this->assertTrue($data['success']);
 		$this->assertSame(0, $data['totalFiles']);
 		$this->assertSame(0, $data['processedFiles']);
+	}
+
+	/**
+	 * The stats come from the file cache, the extraction stats and the chunk table.
+	 *
+	 * @return void
+	 */
+	public function testGetFileExtractionStatsReadsTheChunkTable(): void {
+		$fileMapper = $this->createMock(originalClassName: FileMapper::class);
+		$fileMapper->method('countAllFiles')->willReturn(120);
+		$fileMapper->method('getTotalFilesSize')->willReturn(3 * 1024 * 1024);
+
+		$chunkMapper = $this->createMock(originalClassName: ChunkMapper::class);
+		$chunkMapper->method('countFileSourceSummaries')->willReturn(40);
+		$chunkMapper->method('countIndexed')->willReturn(300);
+		$chunkMapper->method('countVectorized')->willReturn(250);
+
+		$textExtraction = $this->createMock(originalClassName: TextExtractionService::class);
+		$textExtraction->method('getStats')->willReturn(
+			[
+				'totalFiles' => 75,
+				'untrackedFiles' => 15,
+				'totalChunks' => 60,
+				'totalObjects' => 0,
+				'totalEntities' => 9,
+			]
+		);
+
+		$this->container->method('get')->willReturnMap(
+			[
+				[FileMapper::class, $fileMapper],
+				[ChunkMapper::class, $chunkMapper],
+				[TextExtractionService::class, $textExtraction],
+			]
+		);
+
+		$data = $this->controller->getFileExtractionStats()->getData();
+
+		$this->assertArrayNotHasKey(key: 'error', array: $data);
+		$this->assertSame(
+			expected: [
+				'success' => true,
+				'totalFiles' => 120,
+				'processedFiles' => 40,
+				'pendingFiles' => 0,
+				'untrackedFiles' => 15,
+				'extractedTextStorageMB' => '0.00',
+				'totalFilesStorageMB' => '3.00',
+				'completed' => 40,
+				'failed' => 0,
+				'indexed' => 300,
+				'processing' => 0,
+				'vectorized' => 250,
+				'totalChunks' => 60,
+				'totalEntities' => 9,
+			],
+			actual: $data
+		);
 	}
 }
