@@ -26,7 +26,6 @@ use OCA\OpenRegister\Db\AnonymisationLog;
 use OCA\OpenRegister\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
-use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\FileService;
@@ -1227,8 +1226,8 @@ class DocumentProcessingHandler {
 	 * Replace words in a PDF document via the SAPP byte-level pipeline.
 	 *
 	 * Routes to {@see PdfTextReplacer} (text replacement with font switch
-	 * + Helvetica fallback) and {@see PdfMetadataSanitizer} (/Info and
-	 * XMP stripping). The output is re-extracted post-replacement; residual
+	 * + Helvetica fallback, then /Info and XMP stripping via
+	 * {@see PdfTextReplacer::sanitizeMetadata()}). The output is re-extracted post-replacement; residual
 	 * substitution-map keys are always logged as a PII-free warning, and the
 	 * `$strict` flag then decides the outcome: lenient (default, ad-hoc
 	 * replace) writes the partial PDF for docx parity, strict (entity
@@ -1331,7 +1330,6 @@ class DocumentProcessingHandler {
 		}
 
 		$replacer = new PdfTextReplacer(logger: $this->logger);
-		$sanitizer = new PdfMetadataSanitizer(logger: $this->logger);
 
 		// Run text replacement first; metadata sanitisation operates on
 		// the result so /Info / XMP changes survive the rebuild.
@@ -1379,31 +1377,7 @@ class DocumentProcessingHandler {
 		}
 
 		try {
-			// Fail CLOSED: if SAPP cannot reparse the replaced bytes (returns
-			// false rather than throwing) we must NOT fall through and write
-			// the un-sanitised `$replacedBytes` — that still carries the
-			// original `/Info` dict + XMP stream (document PII), defeating the
-			// sanitiser. Treat a false/empty result as a hard pipeline error.
-			$doc = \ddn\sapp\PDFDoc::from_string(buffer: $replacedBytes);
-			if ($doc === false) {
-				throw new PdfAnonymisationException(
-					reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-					message: 'SAPP failed to reparse replaced PDF for metadata sanitisation',
-					diagnostic: ['stage' => 'sanitize.reparse']
-				);
-			}
-
-			$sanitizer->sanitize(doc: $doc);
-			$serialised = $doc->to_pdf_file_s(rebuild: true);
-			if ($serialised === false || $serialised === '') {
-				throw new PdfAnonymisationException(
-					reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-					message: 'SAPP serialise after metadata sanitisation returned empty',
-					diagnostic: ['stage' => 'sanitize.serialise']
-				);
-			}
-
-			$replacedBytes = $serialised;
+			$replacedBytes = $replacer->sanitizeMetadata(pdfBytes: $replacedBytes);
 		} catch (PdfAnonymisationException $e) {
 			// Sanitiser-raised (or the fail-closed guards above) — surface to the caller.
 			throw $e;
