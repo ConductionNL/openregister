@@ -37,13 +37,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\AnnotationNotificationDispatchJob;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -67,14 +67,14 @@ class AnnotationNotificationListener implements IEventListener {
 	/**
 	 * Wire the notification dispatcher and the deferral contract.
 	 *
-	 * @param AnnotationNotificationDispatcher $dispatcher Dispatcher used to fire notifications.
+	 * @param ObjectNotificationDispatcherInterface $dispatcher Dispatcher used to fire notifications.
 	 * @param SchemaMapper $schemaMapper Schema lookup (request-cached) for the enqueue gate.
 	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly ObjectNotificationDispatcherInterface $dispatcher,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ListenerDeferralService $deferral,
 	) {

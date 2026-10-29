@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
@@ -63,7 +64,6 @@ use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
-use OCA\OpenRegister\Service\WebhookService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -131,9 +131,9 @@ class WebhookEventListener implements IEventListener {
 	/**
 	 * Webhook service
 	 *
-	 * @var WebhookService
+	 * @var WebhookDeliveryInterface
 	 */
-	private WebhookService $webhookService;
+	private WebhookDeliveryInterface $webhookService;
 
 	/**
 	 * Logger
@@ -145,13 +145,13 @@ class WebhookEventListener implements IEventListener {
 	/**
 	 * Constructor
 	 *
-	 * @param WebhookService $webhookService Webhook service
+	 * @param WebhookDeliveryInterface $webhookService Webhook service
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		WebhookService $webhookService,
+		WebhookDeliveryInterface $webhookService,
 		LoggerInterface $logger,
 	) {
 		$this->webhookService = $webhookService;

@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -152,7 +153,7 @@ use Twig\Loader\ArrayLoader;
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
  */
-class SaveObject {
+class SaveObject implements ObjectSaverInterface {
 	private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
 
 	/**

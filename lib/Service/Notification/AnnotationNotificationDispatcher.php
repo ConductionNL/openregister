@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
@@ -76,7 +77,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
  */
-class AnnotationNotificationDispatcher {
+class AnnotationNotificationDispatcher implements ObjectNotificationDispatcherInterface {
 
 	/**
 	 * The nc-notification channel unit — injected, or lazily built.
