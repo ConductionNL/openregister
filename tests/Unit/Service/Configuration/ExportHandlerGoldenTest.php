@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ExportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\ExportSlugMaps
  */
 class ExportHandlerGoldenTest extends TestCase {
 
