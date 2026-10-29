@@ -45,8 +45,6 @@ use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Controller\AnalyticsSeriesController;
-use OCA\OpenRegister\Controller\CaseTokenController;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -162,12 +160,7 @@ use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Notification\Notifier;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Search\ObjectsProvider;
-use OCA\OpenRegister\Service\ActivityFilterService;
-use OCA\OpenRegister\Service\AnalyticsLinkService;
-use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\CaseTokenService;
-use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
@@ -182,7 +175,6 @@ use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
-use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
@@ -191,7 +183,6 @@ use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
-use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -212,33 +203,23 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
 use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
-use OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
-use OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
-use OCA\OpenRegister\Service\Integration\Providers\CospendProvider;
 use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
-use OCA\OpenRegister\Service\Integration\Providers\FlowProvider;
-use OCA\OpenRegister\Service\Integration\Providers\FormsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
-use OCA\OpenRegister\Service\Integration\Providers\MapsProvider;
-use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
-use OCA\OpenRegister\Service\Integration\Providers\PhotosProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
-use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
-use OCA\OpenRegister\Service\MapLinkService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
@@ -261,10 +242,8 @@ use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
-use OCA\OpenRegister\Service\PhotoLinkService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
@@ -277,10 +256,6 @@ use OCA\OpenRegister\Service\RegisterSlugResolver;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
-use OCA\OpenRegister\Service\Schema\SchemaDiffService;
-use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
-use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
-use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -293,7 +268,6 @@ use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
-use OCA\OpenRegister\Service\ShareLinkService;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
@@ -301,12 +275,10 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
-use OCA\OpenRegister\Service\TalkLinkService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TenantKeyService;
-use OCA\OpenRegister\Service\TimeTrackerLinkService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\UserService;
@@ -315,7 +287,6 @@ use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\WebPush\HexIconService;
-use OCA\OpenRegister\Service\XwikiLinkService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -2172,13 +2143,11 @@ class Application extends App implements IBootstrap {
 	}//end registerObjectSourceProviders()
 
 	/**
-	 * Register the 5 BuiltinProviders/* services so they can be
-	 * resolved lazily from the container.
+	 * Register the integration providers and link services listed in
+	 * BuiltinIntegrationServices so they resolve lazily from the container.
 	 *
-	 * Each provider wraps an existing OR service and exposes it
-	 * through the IntegrationProvider contract. They self-register
-	 * with the IntegrationRegistry during `boot()` —
-	 * `bootBuiltinIntegrationProviders()` walks this same list.
+	 * The providers self-register with the IntegrationRegistry during
+	 * `boot()` through `bootBuiltinIntegrationProviders()`.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -2187,817 +2156,14 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	private function registerBuiltinIntegrationProviders(IRegistrationContext $context): void {
-		$context->registerService(
-			FilesProvider::class,
-			function (ContainerInterface $container) {
-				return new FilesProvider(
-					fileService: $container->get(\OCA\OpenRegister\Service\FileService::class),
-					container: $container,
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		$context->registerService(
-			NotesProvider::class,
-			function (ContainerInterface $container) {
-				return new NotesProvider(
-					noteService: $container->get(\OCA\OpenRegister\Service\NoteService::class),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		$context->registerService(
-			TasksProvider::class,
-			function (ContainerInterface $container) {
-				return new TasksProvider(
-					taskService: $container->get(\OCA\OpenRegister\Service\TaskService::class),
-					registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		$context->registerService(
-			TagsProvider::class,
-			function (ContainerInterface $container) {
-				return new TagsProvider(
-					tagManager: $container->get('OCP\SystemTag\ISystemTagManager'),
-					objectMapper: $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		$context->registerService(
-			AuditTrailProvider::class,
-			function (ContainerInterface $container) {
-				return new AuditTrailProvider(
-					mapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// Leaf provider: XWiki (external, OpenConnector-backed). Ships
-		// in-repo as the worked external-storage example; routed
-		// through ExternalIntegrationRouter, credentials on the
-		// OpenConnector `xwiki` source.
-		// @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
-		$context->registerService(
-			XwikiProvider::class,
-			function (ContainerInterface $container) {
-				return new XwikiProvider(
-					router: $container->get(ExternalIntegrationRouter::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					xwikiLinkMapper: $container->get(\OCA\OpenRegister\Db\XwikiLinkMapper::class),
-				);
-			}
-		);
-
-		// XwikiLinkService — Tier-2 link/create/unlink/picker service
-		// backing the XwikiLinksController. xWiki is external: the provider
-		// + router are resolved lazily so the service loads even when
-		// OpenConnector is absent, mirroring the unconfigured-source
-		// 503-with-cause pattern.
-		// @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\XwikiLinkService::class,
-			function (ContainerInterface $container) {
-				return new XwikiLinkService(
-					xwikiLinkMapper: $container->get(\OCA\OpenRegister\Db\XwikiLinkMapper::class),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// Leaf provider: KvK company lookup (external, OpenConnector-backed).
-		// Stateless, read-only — no link table; routed through
-		// ExternalIntegrationRouter, credentials (the `apikey` header) on the
-		// OpenConnector `kvk` source. Centralises pipelinq's KvkApiClient
-		// onto the canonical OR/OpenConnector path (ADR-022).
-		// @spec openspec/specs/integration-registry/spec.md (canonical spec).
-		$context->registerService(
-			KvkProvider::class,
-			function (ContainerInterface $container) {
-				return new KvkProvider(
-					router: $container->get(ExternalIntegrationRouter::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// Leaf provider: OpenCorporates company search (external,
-		// OpenConnector-backed). Stateless, read-only — no link table;
-		// routed through ExternalIntegrationRouter, credentials (the
-		// `api_token` query param) on the OpenConnector `opencorporates`
-		// source. Centralises pipelinq's OpenCorporatesApiClient onto the
-		// canonical OR/OpenConnector path (ADR-022).
-		// @spec openspec/specs/integration-registry/spec.md (canonical spec).
-		$context->registerService(
-			OpenCorporatesProvider::class,
-			function (ContainerInterface $container) {
-				return new OpenCorporatesProvider(
-					router: $container->get(ExternalIntegrationRouter::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// Leaf provider: outbound-messaging dispatch (external,
-		// OpenConnector-backed) — side-effecting SMS / WhatsApp send. Routed
-		// through ExternalIntegrationRouter, credentials on the per-call
-		// OpenConnector source (cmcom-sms / messagebird-sms / twilio-sms /
-		// whatsapp-cloud-api / whatsapp-bsp). NOT added to the IntegrationRegistry
-		// boot loop: it is a send-only leaf with no listable surface, reached
-		// via MessageDispatchController, not as an object-sidebar tab.
-		// Centralises only pipelinq's per-provider DISPATCH + credentials onto
-		// the canonical OR/OpenConnector path (ADR-022); all orchestration
-		// (provider selection, STOP opt-out, template-approval, 24h session,
-		// dedupe, delivery-status) stays in pipelinq.
-		// @spec openspec/specs/integration-registry/spec.md (canonical spec).
-		$context->registerService(
-			MessageDispatchProvider::class,
-			function (ContainerInterface $container) {
-				return new MessageDispatchProvider(
-					router: $container->get(ExternalIntegrationRouter::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// Leaf provider: OpenProject (external, OpenConnector-backed) —
-		// mirrors the XwikiProvider pattern (AD-4 / AD-22). Credentials
-		// on the OpenConnector `openproject` source. Tier-2: the
-		// OpenProjectLinkMapper backs the linked list so it renders from
-		// the cached link rows even when the source is temporarily down.
-		// @spec openspec/specs/integration-openproject/spec.md (canonical spec).
-		$context->registerService(
-			OpenProjectProvider::class,
-			function (ContainerInterface $container) {
-				return new OpenProjectProvider(
-					router: $container->get(ExternalIntegrationRouter::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					linkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
-				);
-			}
-		);
-
-		// OpenProjectLinkService — Tier-2 link/create/unlink/picker
-		// service backing the OpenProjectLinksController. OpenProject is
-		// external; the service composes the link mapper with the
-		// OpenProjectProvider + ExternalIntegrationRouter so picker /
-		// create / refresh flows go through the OpenConnector
-		// `openproject` source, degrading to a 503-with-cause when the
-		// source is missing or the upstream is unreachable (wave-5.2).
-		// @spec openspec/specs/integration-openproject/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\OpenProjectLinkService::class,
-			function (ContainerInterface $container) {
-				return new OpenProjectLinkService(
-					openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
-					provider: $container->get(OpenProjectProvider::class),
-					router: $container->get(ExternalIntegrationRouter::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// Leaf providers — NC-native, "backend already shipped":
-		// wrap the existing OR services (Calendar, Contacts, Deck, Email)
-		// through the registry contract so they surface in the sidebar /
-		// widgets / admin UI / OCS caps without per-app glue. Each
-		// provider gates on its required NC app via IAppManager.
-		// @spec openspec/specs/integration-calendar/spec.md (canonical spec).
-		$context->registerService(
-			CalendarProvider::class,
-			function (ContainerInterface $container) {
-				return new CalendarProvider(
-					calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
-					calendarLinkService: $container->get(\OCA\OpenRegister\Service\CalendarLinkService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					logger: $container->get(\Psr\Log\LoggerInterface::class),
-				);
-			}
-		);
-
-		// @spec openspec/specs/integration-contacts/spec.md (canonical spec).
-		$context->registerService(
-			ContactsProvider::class,
-			function (ContainerInterface $container) {
-				return new ContactsProvider(
-					contactService: $container->get(\OCA\OpenRegister\Service\ContactService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// @spec openspec/specs/integration-deck/spec.md (canonical spec).
-		$context->registerService(
-			DeckProvider::class,
-			function (ContainerInterface $container) {
-				return new DeckProvider(
-					deckLinkService: $container->get(\OCA\OpenRegister\Service\DeckLinkService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// @spec openspec/specs/integration-email/spec.md (canonical spec).
-		$context->registerService(
-			EmailProvider::class,
-			function (ContainerInterface $container) {
-				return new EmailProvider(
-					emailService: $container->get(\OCA\OpenRegister\Service\EmailService::class),
-					emailLinkService: $container->get(\OCA\OpenRegister\Service\EmailLinkService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// Leaf providers — NC-app-backed greenfield. Each registers the
-		// registry surface (sidebar slot + admin UI presence + OCS caps
-		// entry) gated on the named NC app. The wrapped read service +
-		// link table land in per-leaf follow-up PRs; until then `list()`
-		// returns an empty array so the slot renders an empty state
-		// rather than a 500.
-		$greenfieldProviders = [
-			// @spec openspec/specs/integration-activity/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-			// NB: AnalyticsProvider + CollectivesProvider + CospendProvider
-			// were Tier-1 greenfield until Tier-2; each now takes its own
-			// link mapper (AnalyticsLinkMapper / CollectiveLinkMapper /
-			// CospendLinkMapper) and is registered separately below.
-			// NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
-			// link-table dep (FormLinkMapper) that doesn't fit the (db,
-			// appManager, l10n) signature shared by the rest of this list.
-			// Registered separately below.
-			// NB: FlowProvider was Tier-1 greenfield until Tier-2; it now
-			// takes a FlowLinkMapper. Registered separately below.
-			// NB: MapsProvider was Tier-1 greenfield until Tier-2; it now
-			// takes a MapLinkMapper. Registered separately below.
-			// NB: PhotosProvider was Tier-1 greenfield until Tier-2; it now
-			// takes a PhotoLinkMapper. Registered separately below.
-			// NB: TimeProvider was Tier-1 greenfield until Tier-2; it now
-			// takes a TimeTrackerLinkMapper. Registered separately below.
-		];
-		// Each greenfield provider now uses MarkerLookupTrait to query
-		// its upstream app's main table directly via IDBConnection. All
-		// share the same constructor signature (db, appManager, l10n, logger).
-		foreach ($greenfieldProviders as $providerClass) {
+		foreach (array_keys(BuiltinIntegrationServices::FACTORIES) as $class) {
 			$context->registerService(
-				$providerClass,
-				function (ContainerInterface $container) use ($providerClass) {
-					return new $providerClass(
-						db: $container->get('OCP\IDBConnection'),
-						appManager: $container->get('OCP\App\IAppManager'),
-						l10n: $container->get('OCP\IL10N'),
-						logger: $container->get('Psr\Log\LoggerInterface'),
-					);
+				$class,
+				static function (ContainerInterface $container) use ($class) {
+					return BuiltinIntegrationServices::build(container: $container, class: $class);
 				}
 			);
 		}
-
-		// FormsProvider — Tier-2 link-table backed. Promoted from the
-		// marker-only greenfield wave to its own factory so it gets the
-		// FormLinkMapper injected. The provider still gracefully degrades
-		// to the legacy marker scan when the link table is empty (e.g.
-		// forms that pre-date the Tier-2 link table).
-		// @spec openspec/specs/integration-forms/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
-			function (ContainerInterface $container) {
-				return new FormsProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					formLinkMapper: $container->get(\OCA\OpenRegister\Db\FormLinkMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// SharesProvider — NC core (no app gate); wraps OCP\Share\IManager
-		// (query-time, no link table — IShare is first-class NC state).
-		// @spec openspec/specs/integration-shares/spec.md (canonical spec).
-		$context->registerService(
-			SharesProvider::class,
-			function (ContainerInterface $container) {
-				return new SharesProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// ShareLinkService — Tier-2 share create/revoke/list service
-		// backing the ShareLinksController. NO link table / NO cache:
-		// OCP\Share\IManager is the single source of truth, resolved
-		// lazily through the container (same pattern as SharesProvider).
-		// @spec openspec/specs/integration-shares/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\ShareLinkService::class,
-			function (ContainerInterface $container) {
-				return new ShareLinkService(
-					l10n: $container->get('OCP\IL10N'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// CaseTokenService — mint/resolve/revoke public "track your case"
-		// token links (the SharesProvider create()/delete() public-token
-		// surface). ObjectService is resolved lazily through the container
-		// (same pattern as ShareLinkService) so the resolve path runs the
-		// canonical RBAC-respecting read; the token never bypasses RBAC.
-		// @spec openspec/specs/integration-leaf-foundation/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\CaseTokenService::class,
-			function (ContainerInterface $container) {
-				return new CaseTokenService(
-					mapper: $container->get(\OCA\OpenRegister\Db\CaseTokenMapper::class),
-					secureRandom: $container->get('OCP\Security\ISecureRandom'),
-					userSession: $container->get('OCP\IUserSession'),
-					urlGenerator: $container->get('OCP\IURLGenerator'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					container: $container,
-				);
-			}
-		);
-
-		// CaseTokenController — anonymous public resolve endpoint.
-		$context->registerService(
-			\OCA\OpenRegister\Controller\CaseTokenController::class,
-			function (ContainerInterface $container) {
-				return new CaseTokenController(
-					appName: 'openregister',
-					request: $container->get('OCP\IRequest'),
-					tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
-					throttler: $container->get('OCP\Security\Bruteforce\IThrottler'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// AnalyticsSeriesService — register/fetch page-level pre-computed
-		// chart series (the leaf-foundation SLA-dashboard render surface).
-		// RBAC-scoped; (re)declares its page widget on the registry.
-		// @spec openspec/specs/integration-leaf-foundation/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\AnalyticsSeriesService::class,
-			function (ContainerInterface $container) {
-				return new AnalyticsSeriesService(
-					mapper: $container->get(\OCA\OpenRegister\Db\AnalyticsSeriesMapper::class),
-					registry: $container->get(IntegrationRegistry::class),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-				);
-			}
-		);
-
-		// AnalyticsSeriesController — register/fetch HTTP surface a leaf
-		// calls to feed a dashboard chart widget.
-		$context->registerService(
-			\OCA\OpenRegister\Controller\AnalyticsSeriesController::class,
-			function (ContainerInterface $container) {
-				return new AnalyticsSeriesController(
-					appName: 'openregister',
-					request: $container->get('OCP\IRequest'),
-					seriesService: $container->get(\OCA\OpenRegister\Service\AnalyticsSeriesService::class),
-				);
-			}
-		);
-
-		// BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
-		// Replaces the original `or:{uuid}` tag-marker convention with a
-		// proper persistence layer; the wrapping BookmarkLinkService owns
-		// the late-bound NC Bookmarks reads/writes. Needs the container
-		// (NC Bookmarks classes are only on the classpath when that app is
-		// installed) plus IUserSession to scope the query to the user.
-		// @spec openspec/specs/integration-bookmarks/spec.md (canonical spec).
-		$context->registerService(
-			BookmarksProvider::class,
-			function (ContainerInterface $container) {
-				return new BookmarksProvider(
-					bookmarkLinkMapper: $container->get(\OCA\OpenRegister\Db\BookmarkLinkMapper::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// TalkProvider — needs container for late-bound `OCA\Talk\Manager`
-		// (only on the classpath with `spreed` installed) plus
-		// IUserSession to scope `getRoomsForUser`. Tier-2: the
-		// TalkLinkMapper is injected so the provider can short-circuit
-		// the legacy marker scan when the link table is populated.
-		// @spec openspec/specs/integration-talk/spec.md (canonical spec).
-		$context->registerService(
-			TalkProvider::class,
-			function (ContainerInterface $container) {
-				return new TalkProvider(
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					l10n: $container->get('OCP\IL10N'),
-					talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
-				);
-			}
-		);
-
-		// TalkLinkService — Tier-2 link/create/unlink service backing
-		// the TalkLinksController. Same late-bound Talk pattern as
-		// the provider (container for OCA\Talk\* lookups).
-		// @spec openspec/specs/integration-talk/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\TalkLinkService::class,
-			function (ContainerInterface $container) {
-				return new TalkLinkService(
-					talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					l10n: $container->get('OCP\IL10N'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-				);
-			}
-		);
-
-		// PollsProvider — Tier-2: backed by the PollLinkMapper +
-		// direct queries against `oc_polls_*` tables. Replaces the
-		// original title-marker convention with a proper persistence
-		// layer.
-		// @spec openspec/specs/integration-polls/spec.md (canonical spec).
-		$context->registerService(
-			PollsProvider::class,
-			function (ContainerInterface $container) {
-				return new PollsProvider(
-					pollLinkMapper: $container->get(\OCA\OpenRegister\Db\PollLinkMapper::class),
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// FlowProvider — Tier-2: backed by FlowLinkMapper + direct
-		// queries against `oc_flow_operations`. Replaces the Tier-1
-		// `[or:{uuid}]` name-marker convention with a proper
-		// persistence layer.
-		// @spec openspec/specs/integration-flow/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
-			function (ContainerInterface $container) {
-				return new FlowProvider(
-					flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-				);
-			}
-		);
-
-		// ActivityFilterService — Tier-2 read-only filter/paginate
-		// service backing the ActivityLinksController. NC Activity
-		// entries are core-generated; this only wraps the wave-5.3
-		// MarkerLookupTrait carve-out query with type/actor/date
-		// filters + cursor pagination.
-		// @spec openspec/specs/integration-activity/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\ActivityFilterService::class,
-			function (ContainerInterface $container) {
-				return new ActivityFilterService(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// FlowLinkService — Tier-2 admin-gated link/unlink/picker
-		// service backing the FlowLinksController. NC Flow operations
-		// are configured by admins only; the service enforces that
-		// gate via IGroupManager.
-		// @spec openspec/specs/integration-flow/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\FlowLinkService::class,
-			function (ContainerInterface $container) {
-				return new FlowLinkService(
-					flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
-					db: $container->get('OCP\IDBConnection'),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// MapsProvider — Tier-2: backed by the MapLinkMapper. The
-		// provider still gracefully degrades to the legacy `[or:{uuid}]`
-		// favorite-name marker scan when the link table is empty (POIs
-		// that pre-date the Tier-2 link table).
-		// @spec openspec/specs/integration-maps/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
-			function (ContainerInterface $container) {
-				return new MapsProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// MapLinkService — Tier-2 link/create/unlink/picker service
-		// backing the MapLinksController. NC Maps favorites are
-		// user-scoped; the FavoritesService is resolved lazily via the
-		// container so the service loads even when Maps is absent.
-		// @spec openspec/specs/integration-maps/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\MapLinkService::class,
-			function (ContainerInterface $container) {
-				return new MapLinkService(
-					mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					urlGenerator: $container->get('OCP\IURLGenerator'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// PhotosProvider — Tier-2: backed by the PhotoLinkMapper. The
-		// provider still gracefully degrades to the legacy `[or:{uuid}]`
-		// album-name marker scan when the link table is empty (albums
-		// that pre-date the Tier-2 link table).
-		// @spec openspec/specs/integration-photos/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
-			function (ContainerInterface $container) {
-				return new PhotosProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// PhotoLinkService — Tier-2 link/create/unlink/picker service
-		// backing the PhotoLinksController. NC Photos albums are
-		// user-scoped; the AlbumMapper is resolved lazily via the
-		// container so the service loads even when Photos is absent.
-		// @spec openspec/specs/integration-photos/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\PhotoLinkService::class,
-			function (ContainerInterface $container) {
-				return new PhotoLinkService(
-					photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					urlGenerator: $container->get('OCP\IURLGenerator'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// CollectivesProvider — Tier-2: backed by the CollectiveLinkMapper.
-		// The provider still gracefully degrades to the legacy
-		// `[or:{uuid}]` slug-marker scan when the link table is empty
-		// (pages that pre-date the Tier-2 link table).
-		// @spec openspec/specs/integration-collectives/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
-			function (ContainerInterface $container) {
-				return new CollectivesProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// AnalyticsProvider — Tier-2: backed by the AnalyticsLinkMapper.
-		// The provider still gracefully degrades to the legacy
-		// `[or:{uuid}]` report-name marker scan when the link table is
-		// empty (reports that pre-date the Tier-2 link table; wave-2.2
-		// marker-on-name convention).
-		// @spec openspec/specs/integration-analytics/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
-			function (ContainerInterface $container) {
-				return new AnalyticsProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// CospendProvider — Tier-2: backed by the CospendLinkMapper. The
-		// provider still gracefully degrades to the legacy `[or:{uuid}]`
-		// name-marker scan (projects + bills) when the link table is empty
-		// (entities that pre-date the Tier-2 link table; wave-2.3
-		// marker-on-name convention).
-		// @spec openspec/specs/integration-cospend/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
-			function (ContainerInterface $container) {
-				return new CospendProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
-				);
-			}
-		);
-
-		// CospendLinkService — Tier-2 link/create/unlink/picker service
-		// backing the CospendLinksController. NC Cospend projects are
-		// user-scoped; the ProjectService is resolved lazily via the
-		// container (behind a class_exists guard) and bills/projects are
-		// read directly from the cospend_* tables, so the service loads
-		// even when Cospend is absent.
-		// @spec openspec/specs/integration-cospend/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\CospendLinkService::class,
-			function (ContainerInterface $container) {
-				return new CospendLinkService(
-					cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					db: $container->get('OCP\IDBConnection'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// CollectiveLinkService — Tier-2 link/create/unlink/picker service
-		// backing the CollectiveLinksController. NC Collectives pages are
-		// user-scoped; CollectiveService + PageService are resolved lazily
-		// via the container so the service loads even when Collectives is
-		// absent.
-		// @spec openspec/specs/integration-collectives/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\CollectiveLinkService::class,
-			function (ContainerInterface $container) {
-				return new CollectiveLinkService(
-					collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					urlGenerator: $container->get('OCP\IURLGenerator'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// AnalyticsLinkService — Tier-2 link/create/unlink/picker service
-		// backing the AnalyticsLinksController. NC Analytics reports are
-		// user-scoped; the ReportService is resolved lazily via
-		// `\OCP\Server::get()` behind a class_exists guard so the service
-		// loads even when Analytics is absent.
-		// @spec openspec/specs/integration-analytics/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\AnalyticsLinkService::class,
-			function (ContainerInterface $container) {
-				return new AnalyticsLinkService(
-					analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					container: $container,
-				);
-			}
-		);
-
-		// TimeProvider — Tier-2: backed by the TimeTrackerLinkMapper. The
-		// provider still gracefully degrades to the legacy
-		// `[or:{uuid}]` note/name marker scan in `timemanager_client` /
-		// `timemanager_task` when the link table is empty (entries that
-		// pre-date the Tier-2 link table; wave-2.4 marker convention). The
-		// leaf slug is `time-tracker`; the NC app id is `timemanager`.
-		// @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
-			function (ContainerInterface $container) {
-				return new TimeProvider(
-					db: $container->get('OCP\IDBConnection'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					l10n: $container->get('OCP\IL10N'),
-					linkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
-					config: $container->get('OCP\IConfig'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// TimeTrackerLinkService — Tier-2 link/create/unlink/picker service
-		// backing the TimeTrackerLinksController. NC TimeManager entries are
-		// user-scoped; ClientMapper + TaskMapper are resolved lazily via the
-		// container so the service loads even when TimeManager is absent.
-		// @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
-		$context->registerService(
-			\OCA\OpenRegister\Service\TimeTrackerLinkService::class,
-			function (ContainerInterface $container) {
-				return new TimeTrackerLinkService(
-					timeTrackerLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
-					db: $container->get('OCP\IDBConnection'),
-					container: $container,
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-
-		// Schema versioning & object migration services (schema-versioning-and-object-migration).
-		$context->registerService(
-			\OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
-			function (ContainerInterface $container) {
-				return new SchemaDiffService();
-			}
-		);
-		$context->registerService(
-			\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
-			function (ContainerInterface $container) {
-				return new SchemaMigrationPlanner();
-			}
-		);
-		$context->registerService(
-			\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
-			function (ContainerInterface $container) {
-				return new SchemaVersioningService(
-					diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
-					changelogMapper: $container->get(\OCA\OpenRegister\Db\SchemaChangelogMapper::class),
-					runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
-					runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-		$context->registerService(
-			\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class,
-			function (ContainerInterface $container) {
-				return new SchemaRevalidationService(
-					runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
-					runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
-					schemaMapper: $container->get(SchemaMapper::class),
-					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
-					validateObject: $container->get(\OCA\OpenRegister\Service\Object\ValidateObject::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
-		$context->registerService(
-			\OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
-			function (ContainerInterface $container) {
-				return new SchemaMigrationService(
-					planner: $container->get(\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class),
-					runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
-					runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
-					schemaMapper: $container->get(SchemaMapper::class),
-					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-				);
-			}
-		);
 	}//end registerBuiltinIntegrationProviders()
 
 	/**
