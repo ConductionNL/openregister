@@ -12,6 +12,9 @@ on:
 
 jobs:
   triage:
+    permissions:
+      issues: write
+      contents: read
     # `@main`, not `@feature/openspec-project-sync` — that branch no longer
     # exists on ConductionNL/.github, so this reference was unresolvable and the
     # triage workflow never ran.
