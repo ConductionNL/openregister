@@ -168,6 +168,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -648,6 +649,9 @@ class Application extends App implements IBootstrap {
 				return $c->get(EmailLinkService::class);
 			}
 		);
+
+		// The contracts other components type-hint, bound to their services.
+		ContractBindings::register(context: $context);
 
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);

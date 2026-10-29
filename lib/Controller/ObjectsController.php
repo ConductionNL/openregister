@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeImmutable;
+use OCA\OpenRegister\Contract\ObjectExporterInterface;
+use OCA\OpenRegister\Contract\ObjectImporterInterface;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
@@ -52,14 +54,12 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
-use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -118,16 +118,16 @@ class ObjectsController extends Controller {
 	/**
 	 * Export service for handling data exports
 	 *
-	 * @var ExportService
+	 * @var ObjectExporterInterface
 	 */
-	private readonly ExportService $exportService;
+	private readonly ObjectExporterInterface $exportService;
 
 	/**
 	 * Import service for handling data imports
 	 *
-	 * @var ImportService
+	 * @var ObjectImporterInterface
 	 */
-	private readonly ImportService $importService;
+	private readonly ObjectImporterInterface $importService;
 
 	/**
 	 * The `@`-prefixed body keys a client is allowed to send.
@@ -158,8 +158,8 @@ class ObjectsController extends Controller {
 	 * @param ObjectService $objectService The object service
 	 * @param IUserSession $userSession The user session
 	 * @param IGroupManager $groupManager The group manager
-	 * @param ExportService $exportService The export service
-	 * @param ImportService $importService The import service
+	 * @param ObjectExporterInterface $exportService The export service
+	 * @param ObjectImporterInterface $importService The import service
 	 * @param WebhookService $webhookService The webhook service (optional)
 	 * @param LoggerInterface $logger The logger (optional)
 	 * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser Optional geo wire-format adapter (null-safe)
@@ -192,8 +192,8 @@ class ObjectsController extends Controller {
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		ExportService $exportService,
-		ImportService $importService,
+		ObjectExporterInterface $exportService,
+		ObjectImporterInterface $importService,
 		private readonly ?WebhookService $webhookService = null,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser = null,
