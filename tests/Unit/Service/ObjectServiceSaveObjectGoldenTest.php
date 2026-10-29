@@ -130,6 +130,26 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			'explicit reveal on update' => [['object' => ['title' => 'x'], 'uuid' => 'u-1', 'existing' => ['title' => 'Old', 'secret' => 's'], 'explicit' => true]],
 			'explicit reveal on create with generated uuid' => [['object' => ['title' => 'x'], 'generateUuid' => 'gen-1', 'explicit' => true]],
 			'auto transition' => [['object' => ['title' => 'x'], 'autoTransitions' => true]],
+			'real uuid update (dedup observable)' => [['object' => ['title' => 'x'], 'uuid' => '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', 'existing' => ['title' => 'Old']]],
+			'real uuid create via cascade' => [['object' => ['title' => 'x'], 'generateUuid' => '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', 'deepLink' => 'https://app/deep/2']],
+			'real uuid, no register' => [['object' => ['title' => 'x'], 'uuid' => '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', 'existing' => ['title' => 'Old'], 'register' => null]],
+			'append-only create without uuid' => [['object' => ['title' => 'x'], 'appendOnly' => true]],
+			'append-only create with generated uuid' => [['object' => ['title' => 'x'], 'appendOnly' => true, 'generateUuid' => 'gen-2']],
+			'append-only insert, caller failIfExists false' => [['object' => ['id' => 'chosen-2', 'title' => 'x'], 'appendOnly' => true]],
+			'append-only and transferred' => [['object' => ['title' => 'x'], 'uuid' => 'u-1', 'existing' => ['title' => 'Old'], 'appendOnly' => true, 'transferred' => true]],
+			'view backed update' => [['object' => ['title' => 'x'], 'uuid' => 'u-1', 'existing' => ['title' => 'Old'], 'schemaSource' => ['provider' => 'view']]],
+			'no schema with uuid' => [['object' => ['title' => 'x'], 'uuid' => 'u-1', 'existing' => ['title' => 'Old'], 'noSchema' => true]],
+			'cascade swaps uuid on update' => [['object' => ['title' => 'x'], 'uuid' => 'u-1', 'existing' => ['title' => 'Old', 'secret' => 's'], 'cascadeUuid' => 'u-2', 'explicit' => true]],
+			'self id' => [['object' => ['@self' => ['id' => 'sid-1'], 'title' => 'x']]],
+			'whitespace id' => [['object' => ['id' => '   ', 'title' => 'x']]],
+			'entity with explicit uuid param' => [['entity' => ['uuid' => 'u-1', 'title' => 'Entity'], 'uuid' => 'u-9', 'existing' => ['title' => 'Old']]],
+			'save fails with auto transitions' => [['object' => ['title' => 'x'], 'saveThrows' => true, 'autoTransitions' => true]],
+			'render fails' => [['object' => ['title' => 'x'], 'renderThrows' => true]],
+			'contact and reference fail' => [['object' => ['title' => 'x'], 'contactThrows' => true, 'referenceThrows' => true]],
+			'preset scope restored' => [['object' => ['title' => 'x'], 'preset' => true]],
+			'preset scope restored on failure' => [['object' => ['title' => 'x'], 'preset' => true, 'invalid' => true]],
+			'invalid on update' => [['object' => ['title' => 'x'], 'uuid' => 'u-1', 'existing' => ['title' => 'Old'], 'invalid' => true]],
+			'generated uuid with failIfExists and every flag off' => [['object' => ['title' => 'x'], 'generateUuid' => 'gen-3', 'failIfExists' => true, 'rbac' => false, 'multi' => false, 'validation' => false, 'silent' => true]],
 		];
 	}//end cases()
 
@@ -140,6 +160,11 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 	public function testSaveObjectMatchesGolden(array $case): void {
 		$name = $this->dataName();
 		$service = $this->service(case: $case);
+		$scope = new \ReflectionClass(ObjectService::class);
+		if (($case['preset'] ?? false) === true) {
+			$scope->getProperty('currentRegister')->setValue($service, $this->register(id: 77));
+			$scope->getProperty('currentSchema')->setValue($service, $this->schema(case: [], id: 78));
+		}
 
 		$object = ($case['object'] ?? []);
 		if (isset($case['entity']) === true) {
@@ -156,7 +181,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			$saved = $service->saveObject(
 				$object,
 				array_key_exists('extend', $case) === true ? $case['extend'] : [],
-				($case['register'] ?? $this->register()),
+				(array_key_exists('register', $case) === true ? $case['register'] : $this->register()),
 				(($case['noSchema'] ?? false) === true) ? null : ($case['schema'] ?? $this->schema(case: $case)),
 				($case['uuid'] ?? null),
 				($case['rbac'] ?? true),
@@ -176,6 +201,9 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 		}
 
 		$actual['calls'] = $this->calls;
+		foreach (['currentRegister', 'currentSchema', 'currentSchemaRef'] as $property) {
+			$actual['after'][$property] = $this->describe($scope->getProperty($property)->getValue($service));
+		}
 		$actual = json_decode(json_encode($actual), true);
 
 		$golden = [];
@@ -266,7 +294,13 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			getHandler: $this->recorder(GetObject::class, 'getHandler', []),
 			permissionHandler: $this->recorder(PermissionHandler::class, 'permissions', []),
 			renderHandler: $this->recorder(RenderObject::class, 'render', [
-				'renderEntity' => fn (array $a): ObjectEntity => $a[0],
+				'renderEntity' => function (array $a) use ($case): ObjectEntity {
+					if (($case['renderThrows'] ?? false) === true) {
+						throw new Exception('render broke');
+					}
+
+					return $a[0];
+				},
 			]),
 			saveHandler: $this->recorder(SaveObject::class, 'saveHandler', [
 				'applyAlwaysDefaults' => fn (array $a): array => $a[1] + ['always' => 1],
@@ -304,7 +338,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			utilityHandler: $this->recorder(UtilityHandler::class, 'utility', []),
 			validationHandler: $this->recorder(ValidationHandler::class, 'validation', []),
 			cascadingHandler: $this->recorder(CascadingHandler::class, 'cascading', [
-				'handlePreValidationCascading' => fn (array $a): array => [$a[0], ($a[2] ?? ($case['generateUuid'] ?? null))],
+				'handlePreValidationCascading' => fn (array $a): array => [$a[0], ($case['cascadeUuid'] ?? ($a[2] ?? ($case['generateUuid'] ?? null)))],
 			]),
 			migrationHandler: $this->recorder(MigrationHandler::class, 'migration', []),
 			registerMapper: $this->recorder(RegisterMapper::class, 'registerMapper', [
