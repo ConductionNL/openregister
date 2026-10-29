@@ -1124,7 +1124,7 @@ class TextExtractionService {
 				// Extract text from PDF using Smalot PdfParser.
 				$extractedText = $this->extractPdf(file: $file);
 			} elseif ($this->isWordDocument(mimeType: $mimeType) === true) {
-				// Extract text from DOCX/DOC using PhpWord.
+				// Extract text from DOCX/ODT.
 				$extractedText = $this->extractWord(file: $file);
 			} elseif ($this->isSpreadsheet(mimeType: $mimeType) === true) {
 				// Extract text from XLSX/XLS using PhpSpreadsheet.
@@ -1669,24 +1669,15 @@ class TextExtractionService {
 	}//end extractPdf()
 
 	/**
-	 * Extract text from a Word-family document (DOCX/DOC/ODT) using PhpWord
+	 * Extract text from a Word-family document (DOCX/ODT) through WordExtractor
 	 *
-	 * Selects the PhpWord reader from the file's MIME type / extension
-	 * (DOCX → Word2007, DOC → MsDoc, ODT → ODText) and walks the full
-	 * element tree — body, tables (incl. nested tables and in-cell text
-	 * runs / list items), section headers and footers, and document-level
-	 * footnotes/endnotes. On a per-document load/parse failure the method
-	 * logs structural detail (no document content) and returns null rather
-	 * than throwing, so a single un-parseable file does not abort a batch.
+	 * Reads the body, tables (nested too), headers, footers and notes. Legacy
+	 * binary .doc and per-document failures give null rather than throwing,
+	 * so a single unreadable file does not abort a batch.
 	 *
 	 * @param \OCP\Files\File $file Nextcloud file object
 	 *
 	 * @return string|null Extracted text content, or null on empty/failed extraction
-	 *
-	 * @throws Exception If the PhpWord library itself is not installed (deployment error)
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-section header/body/footer/notes traversal
 	 */
 	private function extractWord(\OCP\Files\File $file): ?string {
 		// Delegated to the dedicated WordExtractor handler

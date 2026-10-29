@@ -3384,7 +3384,7 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testIsWordDocumentReturnsTrueForOdt(): void {
 		// OpenDocument Text (.odt) is now handled by the Word extraction
-		// path (PhpWord supports ODText), so isWordDocument() reports true.
+		// path (WordTextReader reads ODT), so isWordDocument() reports true.
 		// See commit 51a289ec1 (.doc/.odt support).
 		$result = $this->invokePrivate('isWordDocument', [
 			'application/vnd.oasis.opendocument.text',

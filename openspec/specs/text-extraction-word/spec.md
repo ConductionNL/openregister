@@ -5,7 +5,7 @@ status: done
 # text-extraction-word Specification
 
 ## Purpose
-Extracts complete text from Word-family documents (DOCX, legacy DOC, ODT), including table cells and nested tables, section headers and footers, and footnotes and endnotes. DOCX and ODT are read by `WordTextReader` straight from the package XML with ZipArchive and DOM; legacy DOC goes through PhpWord's `MsDoc` reader. The format is selected from the input MIME or extension. Nesting depth is bounded by the XML parser, reader or load failures return null gracefully rather than aborting, and failure logs never contain document content.
+Extracts complete text from Word-family documents (DOCX, legacy DOC, ODT), including table cells and nested tables, section headers and footers, and footnotes and endnotes. DOCX and ODT are read by `WordTextReader` straight from the package XML with ZipArchive and DOM. Legacy binary DOC is recognised but not read: it gives null. The format is selected from the input MIME or extension. Nesting depth is bounded by the XML parser, reader or load failures return null gracefully rather than aborting, and failure logs never contain document content.
 
 @e2e exclude Backend PHP text-extraction service (package reader for DOCX/ODT tables, headers, footers, foot/endnotes, tracked changes, reader selection, failure logging). Pure server-side document processing with no user-facing OpenRegister UI surface — exercised via PHPUnit fixture-document units. Covered by PHPUnit.
 
@@ -66,7 +66,7 @@ The reader MUST capture footnote and endnote text: for DOCX from the footnotes a
 
 ### Requirement: Nesting depth MUST be bounded
 
-The reader walks the parsed XML tree recursively, so nesting depth MUST be bounded before the walk. Package parts MUST be parsed without `LIBXML_PARSEHUGE`, so libxml refuses a part nested deeper than its limit (256 levels); such a part is treated as unreadable. The legacy DOC walker keeps its own depth cap (`MAX_WORD_DEPTH`).
+The reader walks the parsed XML tree recursively, so nesting depth MUST be bounded before the walk. Package parts MUST be parsed without `LIBXML_PARSEHUGE`, so libxml refuses a part nested deeper than its limit (256 levels); such a part is treated as unreadable.
 
 #### Scenario: Pathologically deep nesting does not crash extraction
 
@@ -93,7 +93,7 @@ Text a tracked change deleted (`w:delText` in DOCX, the `text:tracked-changes` r
 - `application/msword` (`.doc`) → `MsDoc`
 - `application/vnd.oasis.opendocument.text` (`.odt`) → `ODText`
 
-When the MIME is generic or ambiguous, the reader MAY be selected from the file extension; the final fallback MUST be `Word2007`. `Word2007` and `ODText` are read by `WordTextReader`; `MsDoc` by PhpWord's `IOFactory::load()`.
+When the MIME is generic or ambiguous, the reader MAY be selected from the file extension; the final fallback MUST be `Word2007`. `Word2007` and `ODText` are read by `WordTextReader`; `MsDoc` is not read.
 
 #### Scenario: DOCX selects the Word2007 reader
 
@@ -115,7 +115,7 @@ When the MIME is generic or ambiguous, the reader MAY be selected from the file 
 
 ### Requirement: ODT and DOC MUST be routed through the Word branch
 
-`isWordDocument()` MUST recognise `application/vnd.oasis.opendocument.text` in addition to the existing `application/vnd.openxmlformats-officedocument.wordprocessingml.document` and `application/msword`, so that ODT inputs dispatch to `extractWord()` in `performTextExtraction()`. `application/msword` MUST continue to route to `extractWord()` and MUST now actually load (via the `MsDoc` reader).
+`isWordDocument()` MUST recognise `application/vnd.oasis.opendocument.text` in addition to the existing `application/vnd.openxmlformats-officedocument.wordprocessingml.document` and `application/msword`, so that ODT inputs dispatch to `extractWord()` in `performTextExtraction()`. `application/msword` MUST continue to route to `extractWord()`, which returns null for it and logs that legacy DOC is not supported.
 
 #### Scenario: ODT MIME is recognised as a Word document
 
@@ -128,19 +128,19 @@ When the MIME is generic or ambiguous, the reader MAY be selected from the file 
 - **WHEN** `TextExtractionService::extractFile($fileId)` is called
 - **THEN** the persisted extracted-text contains "Hallo wereld"
 
-#### Scenario: DOC input loads via MsDoc instead of failing on the Word2007 default
+#### Scenario: DOC input is not read
 
-- **GIVEN** a legacy `.doc` file (mime `application/msword`) that the `MsDoc` reader can parse, containing the text "Oud document"
-- **WHEN** `TextExtractionService::extractFile($fileId)` is called
-- **THEN** the persisted extracted-text contains "Oud document"
+- **GIVEN** a legacy `.doc` file (mime `application/msword`)
+- **WHEN** `extractWord` runs
+- **THEN** it returns null and logs, without document content, that legacy DOC is not supported
 
 ### Requirement: Reader / load failure MUST return null gracefully, not throw fatally
 
-When a document cannot be read (a corrupt package, or the binary `MsDoc` reader's known limitations) or the read produces no text, `extractWord()` MUST log the failure and return null. It MUST NOT propagate a fatal error for an unsupported/limited per-document input; the surrounding pipeline treats null as "unsupported/empty" and continues. The existing "PhpWord library not installed" guard (class missing) MAY still throw, because that is a deployment error rather than a per-document failure.
+When a document cannot be read (a corrupt package, or legacy DOC) or the read produces no text, `extractWord()` MUST log the failure and return null. It MUST NOT propagate a fatal error for an unsupported per-document input; the surrounding pipeline treats null as "unsupported/empty" and continues.
 
-#### Scenario: Unparseable DOC returns null without aborting
+#### Scenario: Unreadable package returns null without aborting
 
-- **GIVEN** a `.doc` file the `MsDoc` reader cannot parse
+- **GIVEN** a `.docx` file that is not a valid package
 - **WHEN** `extractWord` runs
 - **THEN** the method returns null
 - **AND** the failure is logged

@@ -147,17 +147,15 @@ class WordExtractorTest extends TestCase {
 	}
 
 	/**
-	 * A per-document parse failure (here: a genuine PhpWord MsDoc parse
-	 * failure on non-OLE bytes, needing no ZipArchive) must degrade to
-	 * null rather than throwing, and must log an error without leaking
-	 * document content (ADR-005).
+	 * Legacy binary .doc is not read: null, and a log line without document
+	 * content (ADR-005).
 	 *
 	 * @return void
 	 */
-	public function testExtractReturnsNullOnUnparsableMsDocContent(): void {
-		$this->logger->expects($this->atLeastOnce())
-			->method('error')
-			->with($this->stringContains('[WordExtractor] Word extraction failed'));
+	public function testExtractReturnsNullForLegacyDoc(): void {
+		$this->logger->expects($this->once())
+			->method('info')
+			->with($this->stringContains('[WordExtractor] Legacy binary .doc is not supported'), ['fileId' => 303]);
 
 		$result = $this->extractor->extract(
 			file: $this->mockFile(content: 'not a real ole/doc binary', mime: 'application/msword', name: 'garbage.doc')
