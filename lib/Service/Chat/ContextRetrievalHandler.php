@@ -103,10 +103,6 @@ class ContextRetrievalHandler {
 	 *
 	 * @return array Retrieved context with semantic results, chunks, and metadata.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  RAG context retrieval requires many search strategies
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       RAG context retrieval requires many search strategies
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex RAG logic cannot be easily split
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function retrieveContext(
@@ -126,259 +122,24 @@ class ContextRetrievalHandler {
 			]
 		);
 
-		// Get search settings from agent or use defaults, then apply RAG settings overrides.
-		$searchMode = $agent?->getRagSearchMode() ?? 'hybrid';
-		$numSources = $agent?->getRagNumSources() ?? 5;
-		$includeFiles = $ragSettings['includeFiles'] ?? ($agent?->getSearchFiles() ?? true);
-		$includeObjects = $ragSettings['includeObjects'] ?? ($agent?->getSearchObjects() ?? true);
-		$numSourcesFiles = $ragSettings['numSourcesFiles'] ?? $numSources;
-		$numSourcesObjects = $ragSettings['numSourcesObjects'] ?? $numSources;
-
-		// Calculate total sources needed (will be filtered by type later).
-		$totalSources = max($numSourcesFiles, $numSourcesObjects);
-
-		// Get view filters if agent has views configured. Null means no view
-		// bounds this search; an empty list means a view bounds it and none
-		// is left (the chat picked only views the agent is not granted).
-		$viewFilters = null;
-		if ($agent !== null && $agent->getViews() !== null && empty($agent->getViews()) === false) {
-			$agentViews = $agent->getViews();
-
-			// If selectedViews provided, filter to only those views.
-			if (empty($selectedViews) === false) {
-				$viewFilters = array_values(array_intersect($agentViews, $selectedViews));
-				$this->logger->info(
-					message: '[ContextRetrievalHandler] Using filtered views',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'agentViews' => count($agentViews),
-						'selectedViews' => count($selectedViews),
-						'filteredViews' => count($viewFilters),
-					]
-				);
-			}
-
-			if (empty($selectedViews) === true) {
-				// Use all agent views.
-				$viewFilters = $agentViews;
-				$this->logger->info(
-					message: '[ContextRetrievalHandler] Using all agent views',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'views' => count($viewFilters),
-					]
-				);
-			}
-		} elseif (empty($selectedViews) === false) {
-			// User selected views but agent has no views configured - use selected ones.
-			$viewFilters = $selectedViews;
-			$this->logger->info(
-				message: '[ContextRetrievalHandler] Using user-selected views (agent has none)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'views' => count($viewFilters),
-				]
-			);
-		}//end if
-
-		$sources = [];
-		$contextText = '';
+		$settings = $this->searchSettings(agent: $agent, ragSettings: $ragSettings);
+		$viewFilters = $this->resolveViewFilters(agent: $agent, selectedViews: $selectedViews);
 
 		try {
-			// Build filters for vector search.
-			$vectorFilters = [];
-
-			// Filter by entity types based on agent settings.
-			$entityTypes = [];
-			if ($includeObjects === true) {
-				$entityTypes[] = 'object';
-			}
-
-			if ($includeFiles === true) {
-				$entityTypes[] = 'file';
-			}
-
-			// Only add entity_type filter if we're filtering.
-			if (empty($entityTypes) === false && count($entityTypes) < 2) {
-				$vectorFilters['entity_type'] = $entityTypes;
-			}
-
-			// Determine search method - fetch more results than needed for filtering.
-			$fetchLimit = $totalSources * 2;
-
-			// Initialize results before conditional assignment.
-			$results = [];
-
-			// Keyword search (default).
-			$results = $this->searchKeywordOnly(query: $query, _limit: $fetchLimit);
-
-			if ($searchMode === 'semantic') {
-				$results = $this->vectorService->semanticSearch(
-					query: $query,
-					limit: $fetchLimit,
-					filters: $vectorFilters
-					// Pass filters array instead of 0.7.
-				);
-			} elseif ($searchMode === 'hybrid') {
-				// Fuse the already-fetched keyword results with vector search.
-				$hybridResponse = $this->vectorService->hybridSearch(
-					query: $query,
-					keywordResults: $results,
-					limit: $fetchLimit
-				);
-				// Extract results array from hybrid search response.
-				$results = $hybridResponse['results'] ?? [];
-			}//end if
-
-			// Ensure results is an array.
-			if (is_array($results) === false) {
-				$this->logger->warning(
-					message: '[ContextRetrievalHandler] Search returned non-array result',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'searchMode' => $searchMode,
-						'resultType' => gettype($results),
-						'resultValue' => $results,
-					]
-				);
-				$results = [];
-			}
-
-			// Determine raw results count for logging. $results is always an
-			// array here, so the old gettype() fallback was unreachable.
-			$rawResultsCount = count($results);
+			$results = $this->searchResults(query: $query, settings: $settings);
+			$settings['rawResultsCount'] = count($results);
 
 			// An agent with views reads only the objects inside them.
 			if ($viewFilters !== null) {
 				$results = $this->limitObjectsToViews(results: $results, views: $viewFilters);
 			}
 
-			// Filter and build context - track file and object counts separately.
-			$fileSourceCount = 0;
-			$objectSourceCount = 0;
-
-			foreach ($results as $result) {
-				// Skip if result is not an array.
-				if (is_array($result) === false) {
-					$this->logger->warning(
-						message: '[ContextRetrievalHandler] Skipping non-array result',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'resultType' => gettype($result),
-							'resultValue' => $result,
-						]
-					);
-					continue;
-				}
-
-				$isFile = ($result['entity_type'] ?? '') === 'file';
-				$isObject = ($result['entity_type'] ?? '') === 'object';
-
-				// Check type filters.
-				$skipFile = $isFile === true && $includeFiles === false;
-				$skipObject = $isObject === true && $includeObjects === false;
-				if ($skipFile === true || $skipObject === true) {
-					continue;
-				}
-
-				// Check if we've reached the limit for this source type.
-				if (($isFile === true) === true && ($fileSourceCount >= $numSourcesFiles) === true) {
-					continue;
-				}
-
-				if (($isObject === true) === true && ($objectSourceCount >= $numSourcesObjects) === true) {
-					continue;
-				}
-
-				// Extract source information.
-				$source = [
-					'id' => $result['entity_id'] ?? null,
-					'type' => $result['entity_type'] ?? 'unknown',
-					'name' => $this->extractSourceName(result: $result),
-					'similarity' => $result['similarity'] ?? $result['score'] ?? 1.0,
-					'text' => $result['chunk_text'] ?? $result['text'] ?? '',
-				];
-
-				// Add type-specific metadata.
-				$metadata = $result['metadata'] ?? [];
-				if (is_string($metadata) === true) {
-					$metadata = json_decode($metadata, true) ?? [];
-				}
-
-				// For objects: add UUID, register, schema.
-				if ($source['type'] === 'object') {
-					$source['uuid'] = $metadata['uuid'] ?? null;
-					$source['register'] = $metadata['register_id'] ?? $metadata['register'] ?? null;
-					$source['schema'] = $metadata['schema_id'] ?? $metadata['schema'] ?? null;
-					$source['uri'] = $metadata['uri'] ?? null;
-				}
-
-				// For files: add file_id, path.
-				if ($source['type'] === 'file') {
-					$source['file_id'] = $metadata['file_id'] ?? $source['id'];
-					$source['file_path'] = $metadata['file_path'] ?? null;
-					$source['mime_type'] = $metadata['mime_type'] ?? null;
-				}
-
-				$sources[] = $source;
-
-				// Increment the appropriate counter.
-				if ($isFile === true) {
-					$fileSourceCount++;
-				} elseif ($isObject === true) {
-					$objectSourceCount++;
-				}
-
-				// Add to context text.
-				$contextText .= "Source: {$source['name']}\n";
-				$contextText .= "{$source['text']}\n\n";
-
-				// Stop if we've reached limits for both types.
-				if ((($includeFiles === false) === true || $fileSourceCount >= $numSourcesFiles)
-					&& (($includeObjects === false) === true || $objectSourceCount >= $numSourcesObjects)
-				) {
-					break;
-				}
-			}//end foreach
-
-			$this->logger->info(
-				message: '[ContextRetrievalHandler] Context retrieved',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'numSources' => count($sources),
-					'fileSources' => $fileSourceCount,
-					'objectSources' => $objectSourceCount,
-					'contextLength' => strlen($contextText),
-					'searchMode' => $searchMode,
-					'includeObjects' => $includeObjects,
-					'includeFiles' => $includeFiles,
-					'numSourcesFiles' => $numSourcesFiles,
-					'numSourcesObjects' => $numSourcesObjects,
-					'rawResultsCount' => $rawResultsCount,
-				]
-			);
-
-			// DEBUG: Log first source.
-			if (empty($sources) === false) {
-				$this->logger->info(
-					message: '[ContextRetrievalHandler] First source details',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'source' => $sources[0],
-					]
-				);
-			}
+			$context = $this->buildContext(results: $results, settings: $settings);
+			$this->logRetrievedContext(context: $context, settings: $settings);
 
 			return [
-				'text' => $contextText,
-				'sources' => $sources,
+				'text' => $context['text'],
+				'sources' => $context['sources'],
 			];
 		} catch (Exception $e) {
 			$this->logger->error(
@@ -396,6 +157,335 @@ class ContextRetrievalHandler {
 			];
 		}//end try
 	}//end retrieveContext()
+
+	/**
+	 * Read the search settings from the agent or the defaults, with the RAG settings as overrides.
+	 *
+	 * @param Agent|null $agent       Agent configuration.
+	 * @param array      $ragSettings RAG configuration overrides.
+	 *
+	 * @return array{searchMode: string, includeFiles: mixed, includeObjects: mixed, numSourcesFiles: mixed, numSourcesObjects: mixed}
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function searchSettings(?Agent $agent, array $ragSettings): array {
+		$numSources = $agent?->getRagNumSources() ?? 5;
+		return [
+			'searchMode' => $agent?->getRagSearchMode() ?? 'hybrid',
+			'includeFiles' => $ragSettings['includeFiles'] ?? ($agent?->getSearchFiles() ?? true),
+			'includeObjects' => $ragSettings['includeObjects'] ?? ($agent?->getSearchObjects() ?? true),
+			'numSourcesFiles' => $ragSettings['numSourcesFiles'] ?? $numSources,
+			'numSourcesObjects' => $ragSettings['numSourcesObjects'] ?? $numSources,
+		];
+	}//end searchSettings()
+
+	/**
+	 * Decide which views bound the search.
+	 *
+	 * Null means no view bounds this search; an empty list means a view bounds
+	 * it and none is left (the chat picked only views the agent is not granted).
+	 *
+	 * @param Agent|null $agent         Agent configuration.
+	 * @param array      $selectedViews The views the chat selected.
+	 *
+	 * @return array|null The view ids, or null when no view bounds the search.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function resolveViewFilters(?Agent $agent, array $selectedViews): ?array {
+		$agentViews = $agent?->getViews();
+		if (empty($agentViews) === false && empty($selectedViews) === false) {
+			$viewFilters = array_values(array_intersect($agentViews, $selectedViews));
+			$this->logViews(
+				message: '[ContextRetrievalHandler] Using filtered views',
+				counts: [
+					'agentViews' => count($agentViews),
+					'selectedViews' => count($selectedViews),
+					'filteredViews' => count($viewFilters),
+				]
+			);
+			return $viewFilters;
+		}
+
+		if (empty($agentViews) === false) {
+			$this->logViews(message: '[ContextRetrievalHandler] Using all agent views', counts: ['views' => count($agentViews)]);
+			return $agentViews;
+		}
+
+		if (empty($selectedViews) === false) {
+			// User selected views but agent has no views configured - use selected ones.
+			$this->logViews(
+				message: '[ContextRetrievalHandler] Using user-selected views (agent has none)',
+				counts: ['views' => count($selectedViews)]
+			);
+			return $selectedViews;
+		}
+
+		return null;
+	}//end resolveViewFilters()
+
+	/**
+	 * Log which views bound the search.
+	 *
+	 * @param string             $message The log message.
+	 * @param array<string, int> $counts  The view counts to log.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function logViews(string $message, array $counts): void {
+		$this->logger->info(
+			message: $message,
+			context: ['file' => __FILE__, 'line' => __LINE__] + $counts
+		);
+	}//end logViews()
+
+	/**
+	 * Run the search the settings ask for, fetching twice the sources needed so filtering leaves enough.
+	 *
+	 * Keyword search always runs; semantic search replaces its results and
+	 * hybrid search fuses them with vector search.
+	 *
+	 * @param string $query    User query text.
+	 * @param array  $settings The search settings.
+	 *
+	 * @return array The search results.
+	 *
+	 * @throws Exception When a search fails.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function searchResults(string $query, array $settings): array {
+		$fetchLimit = max($settings['numSourcesFiles'], $settings['numSourcesObjects']) * 2;
+		$results = $this->searchKeywordOnly(query: $query, _limit: $fetchLimit);
+
+		if ($settings['searchMode'] === 'semantic') {
+			$results = $this->vectorService->semanticSearch(
+				query: $query,
+				limit: $fetchLimit,
+				filters: $this->entityTypeFilter(settings: $settings)
+			);
+		} elseif ($settings['searchMode'] === 'hybrid') {
+			$hybridResponse = $this->vectorService->hybridSearch(
+				query: $query,
+				keywordResults: $results,
+				limit: $fetchLimit
+			);
+			$results = $hybridResponse['results'] ?? [];
+		}
+
+		if (is_array($results) === false) {
+			$this->logger->warning(
+				message: '[ContextRetrievalHandler] Search returned non-array result',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'searchMode' => $settings['searchMode'],
+					'resultType' => gettype($results),
+					'resultValue' => $results,
+				]
+			);
+			$results = [];
+		}
+
+		return $results;
+	}//end searchResults()
+
+	/**
+	 * The vector filter on entity type: set only when exactly one of objects and files is searched.
+	 *
+	 * @param array $settings The search settings.
+	 *
+	 * @return array The vector search filters.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function entityTypeFilter(array $settings): array {
+		$entityTypes = [];
+		if ($settings['includeObjects'] === true) {
+			$entityTypes[] = 'object';
+		}
+
+		if ($settings['includeFiles'] === true) {
+			$entityTypes[] = 'file';
+		}
+
+		if (count($entityTypes) === 1) {
+			return ['entity_type' => $entityTypes];
+		}
+
+		return [];
+	}//end entityTypeFilter()
+
+	/**
+	 * Turn the search results into sources and context text, up to the limit per source type.
+	 *
+	 * @param array $results  The search results.
+	 * @param array $settings The search settings.
+	 *
+	 * @return array{text: string, sources: list<array<string, mixed>>, fileSources: int, objectSources: int}
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function buildContext(array $results, array $settings): array {
+		$context = ['text' => '', 'sources' => [], 'fileSources' => 0, 'objectSources' => 0, 'settings' => $settings];
+		foreach ($results as $result) {
+			if (is_array($result) === false) {
+				$this->logger->warning(
+					message: '[ContextRetrievalHandler] Skipping non-array result',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'resultType' => gettype($result),
+						'resultValue' => $result,
+					]
+				);
+				continue;
+			}
+
+			if ($this->acceptsResult(result: $result, context: $context) === false) {
+				continue;
+			}
+
+			$source = $this->buildSource(result: $result);
+			$context['sources'][] = $source;
+			if (($result['entity_type'] ?? '') === 'file') {
+				$context['fileSources']++;
+			} elseif (($result['entity_type'] ?? '') === 'object') {
+				$context['objectSources']++;
+			}
+
+			$context['text'] .= "Source: {$source['name']}\n";
+			$context['text'] .= "{$source['text']}\n\n";
+			if ($this->hasAllSources(context: $context) === true) {
+				break;
+			}
+		}//end foreach
+
+		unset($context['settings']);
+		return $context;
+	}//end buildContext()
+
+	/**
+	 * Whether a result's type is searched and its type still has room under its limit.
+	 *
+	 * @param array $result  The search result.
+	 * @param array $context The context so far, with the settings and the counts per type.
+	 *
+	 * @return bool True when the result becomes a source.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function acceptsResult(array $result, array $context): bool {
+		$settings = $context['settings'];
+		$type = ($result['entity_type'] ?? '');
+		if ($type === 'file') {
+			return $settings['includeFiles'] !== false && ($context['fileSources'] >= $settings['numSourcesFiles']) === false;
+		}
+
+		if ($type === 'object') {
+			return $settings['includeObjects'] !== false && ($context['objectSources'] >= $settings['numSourcesObjects']) === false;
+		}
+
+		return true;
+	}//end acceptsResult()
+
+	/**
+	 * Whether every searched source type has reached its limit.
+	 *
+	 * @param array $context The context so far, with the settings and the counts per type.
+	 *
+	 * @return bool True when no more sources are needed.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function hasAllSources(array $context): bool {
+		$settings = $context['settings'];
+		$filesDone = $settings['includeFiles'] === false || $context['fileSources'] >= $settings['numSourcesFiles'];
+		$objectsDone = $settings['includeObjects'] === false || $context['objectSources'] >= $settings['numSourcesObjects'];
+		return $filesDone === true && $objectsDone === true;
+	}//end hasAllSources()
+
+	/**
+	 * Build one source from a search result, with the metadata of its type.
+	 *
+	 * @param array $result The search result.
+	 *
+	 * @return array<string, mixed> The source.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function buildSource(array $result): array {
+		$source = [
+			'id' => $result['entity_id'] ?? null,
+			'type' => $result['entity_type'] ?? 'unknown',
+			'name' => $this->extractSourceName(result: $result),
+			'similarity' => $result['similarity'] ?? $result['score'] ?? 1.0,
+			'text' => $result['chunk_text'] ?? $result['text'] ?? '',
+		];
+
+		$metadata = $result['metadata'] ?? [];
+		if (is_string($metadata) === true) {
+			$metadata = json_decode($metadata, true) ?? [];
+		}
+
+		if ($source['type'] === 'object') {
+			$source['uuid'] = $metadata['uuid'] ?? null;
+			$source['register'] = $metadata['register_id'] ?? $metadata['register'] ?? null;
+			$source['schema'] = $metadata['schema_id'] ?? $metadata['schema'] ?? null;
+			$source['uri'] = $metadata['uri'] ?? null;
+		}
+
+		if ($source['type'] === 'file') {
+			$source['file_id'] = $metadata['file_id'] ?? $source['id'];
+			$source['file_path'] = $metadata['file_path'] ?? null;
+			$source['mime_type'] = $metadata['mime_type'] ?? null;
+		}
+
+		return $source;
+	}//end buildSource()
+
+	/**
+	 * Log what the retrieval found, and the first source.
+	 *
+	 * @param array $context  The built context with the counts per type.
+	 * @param array $settings The search settings with the raw result count.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function logRetrievedContext(array $context, array $settings): void {
+		$this->logger->info(
+			message: '[ContextRetrievalHandler] Context retrieved',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'numSources' => count($context['sources']),
+				'fileSources' => $context['fileSources'],
+				'objectSources' => $context['objectSources'],
+				'contextLength' => strlen($context['text']),
+				'searchMode' => $settings['searchMode'],
+				'includeObjects' => $settings['includeObjects'],
+				'includeFiles' => $settings['includeFiles'],
+				'numSourcesFiles' => $settings['numSourcesFiles'],
+				'numSourcesObjects' => $settings['numSourcesObjects'],
+				'rawResultsCount' => $settings['rawResultsCount'],
+			]
+		);
+
+		if (empty($context['sources']) === false) {
+			$this->logger->info(
+				message: '[ContextRetrievalHandler] First source details',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'source' => $context['sources'][0],
+				]
+			);
+		}
+	}//end logRetrievedContext()
 
 	/**
 	 * Drop every object result that lies outside the given views.
