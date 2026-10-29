@@ -61,6 +61,7 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 			'plain' => [['csv' => $csv, 'save' => $saved]],
 			'nothing saved' => [['csv' => $csv, 'save' => ['saved' => [], 'updated' => [], 'unchanged' => [['id' => 'n']]]]],
 			'empty save result' => [['csv' => $csv, 'save' => []]],
+			'only updated' => [['csv' => $csv, 'save' => ['updated' => [['id' => 'u']]]]],
 			'only created' => [['csv' => $csv, 'save' => ['saved' => [['id' => 'a']]]]],
 			'unchanged without others' => [['csv' => $csv, 'save' => ['unchanged' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']]]]],
 			'validation errors' => [['csv' => $csv, 'validation' => true, 'save' => ['invalid' => [['object' => ['title' => 'Two'], 'error' => 'bad', 'type' => 'X'], ['title' => 'raw']]] + $saved]],

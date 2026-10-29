@@ -1172,6 +1172,139 @@
             "importJobId": "<uuid>"
         }
     },
+    "only updated": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [],
+                "updated": [
+                    "u"
+                ],
+                "unchanged": [],
+                "errors": [],
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
     "pack": {
         "calls": [
             {
