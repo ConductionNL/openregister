@@ -145,3 +145,8 @@ playwright-report/
 # Python bytecode caches (a .pyc was once committed by accident, WOO-579)
 __pycache__/
 *.pyc
+
+# Agent and review work files. They belong in an issue or a PR, not in the tree.
+/scratchpad/
+/task-audit.json
+bom-*.cdx.json
