@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Activity;
 
-use OCA\OpenRegister\Contract\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\Activity\IFilter;
 use OCP\IL10N;
 use OCP\IURLGenerator;

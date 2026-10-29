@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Contract;
 
 use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Contract\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use PHPUnit\Framework\TestCase;
 
 class AppIdentityTest extends TestCase {

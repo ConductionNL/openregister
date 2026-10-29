@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Dashboard;
 
-use OCA\OpenRegister\Contract\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\Dashboard\IIconWidget;
 use OCP\Dashboard\IWidget;

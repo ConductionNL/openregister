@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Case;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Contract\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use Throwable;
 
