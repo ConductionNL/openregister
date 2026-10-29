@@ -4618,7 +4618,14 @@ class MagicMapper extends AbstractObjectMapper {
 		// got here (see encryptFlaggedProperties()).
 		$data = $this->encryptFlaggedProperties(data: $data, schema: $schema);
 
-		$preparedData = $this->prepareMetadataColumns(objectData: $objectData, register: $register, schema: $schema, now: $now);
+		$metadata = $this->authoritativeMetadata(
+			objectData: $objectData,
+			ids: ['register' => $register->getId(), 'schema' => $schema->getId()]
+		);
+		$metadata['created'] ??= $now;
+		$metadata['updated'] ??= $now;
+
+		$preparedData = $this->prepareMetadataColumns(metadata: $metadata, schema: $schema);
 		$preparedData = array_replace($preparedData, $this->preparePropertyColumns(data: $data, schema: $schema));
 
 		$this->reportDroppedProperties(data: $data, schemaProperties: $schema->getProperties(), schema: $schema);
@@ -4649,13 +4656,12 @@ class MagicMapper extends AbstractObjectMapper {
 	 * updated, deleted, locked, retention, uuid, slug, uri. Client injection of any of
 	 * those must be fixed at the SaveObject/controller level.
 	 *
-	 * @param array    $objectData The object data, with its optional `@self` block
-	 * @param Register $register   The register context
-	 * @param Schema   $schema     The schema context
+	 * @param array                                $objectData The object data, with its optional `@self` block
+	 * @param array{register: mixed, schema: mixed} $ids        The authoritative register and schema ids
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function authoritativeMetadata(array $objectData, Register $register, Schema $schema): array {
+	private function authoritativeMetadata(array $objectData, array $ids): array {
 		$metadata = $objectData['@self'] ?? [];
 		unset($metadata['authorization']);
 
@@ -4663,8 +4669,8 @@ class MagicMapper extends AbstractObjectMapper {
 			unset($metadata['owner']);
 		}
 
-		$metadata['register'] = $register->getId();
-		$metadata['schema']   = $schema->getId();
+		$metadata['register'] = $ids['register'];
+		$metadata['schema']   = $ids['schema'];
 
 		// The entity serialises `schemaVersion` and `lastUserActivity`; the columns are snake_case.
 		$metadata['schema_version']     = $metadata['schemaVersion'] ?? $metadata['schema_version'] ?? null;
@@ -4676,16 +4682,12 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * The `_`-prefixed metadata columns written for one object, in column order.
 	 *
-	 * @param array    $objectData The object data, with its optional `@self` block
-	 * @param Register $register   The register context
-	 * @param Schema   $schema     The schema context
-	 * @param DateTime $now        The time an absent `created` or `updated` gets
+	 * @param array<string, mixed> $metadata The authoritative metadata, `created` and `updated` filled in
+	 * @param Schema               $schema   The schema context
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function prepareMetadataColumns(array $objectData, Register $register, Schema $schema, DateTime $now): array {
-		$metadata = $this->authoritativeMetadata(objectData: $objectData, register: $register, schema: $schema);
-
+	private function prepareMetadataColumns(array $metadata, Schema $schema): array {
 		// LINKED_TYPE_COLUMN_MAP values carry the column prefix; the loop below adds its own,
 		// so the linked type key itself is the field.
 		$fields     = self::METADATA_WRITE_FIELDS;
@@ -4699,7 +4701,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$columns = [];
 		foreach ($fields as $field) {
-			$value = $this->prepareMetadataValue(field: $field, value: ($metadata[$field] ?? null), now: $now);
+			$value = $this->prepareMetadataValue(field: $field, value: ($metadata[$field] ?? null));
 			if (in_array($field, $jsonFields) === true) {
 				$value = $this->jsonColumnValue(value: $value);
 			}
@@ -4713,26 +4715,21 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * A metadata value as its column stores it; datetime fields become UTC 'Y-m-d H:i:s'.
 	 *
-	 * An absent `created` or `updated` is `$now`. A DateTime is converted to the column's
+	 * A DateTime is converted to the column's
 	 * timezone before formatting, because format() renders in the instance's own timezone
 	 * and a non-UTC value would be read back as UTC (WOO-567). This is done inline rather
 	 * than through DateTimeNormalizer so the path works without a resolvable container. A
 	 * string goes through DateTimeNormalizer, so empty input becomes null rather than now
 	 * and a non-UTC offset is converted rather than dropped.
 	 *
-	 * @param string   $field The metadata field
-	 * @param mixed    $value The value from `@self`
-	 * @param DateTime $now   The time an absent `created` or `updated` gets
+	 * @param string $field The metadata field
+	 * @param mixed  $value The value from `@self`
 	 *
 	 * @return mixed
 	 */
-	private function prepareMetadataValue(string $field, mixed $value, DateTime $now): mixed {
+	private function prepareMetadataValue(string $field, mixed $value): mixed {
 		if (in_array($field, ['created', 'updated', 'last_user_activity', 'expires']) === false) {
 			return $value;
-		}
-
-		if ($value === null && in_array($field, ['created', 'updated']) === true) {
-			$value = $now;
 		}
 
 		if ($value instanceof \DateTimeInterface) {
@@ -4808,9 +4805,8 @@ class MagicMapper extends AbstractObjectMapper {
 
 			if (array_key_exists($propertyName, $data) === true) {
 				$value = $this->preparePropertyValue(
-					propertyName: $propertyName,
-					value: $data[$propertyName],
-					propertyConfig: ($schemaProperties[$propertyName] ?? [])
+					property: ['name' => $propertyName, 'config' => ($schemaProperties[$propertyName] ?? [])],
+					value: $data[$propertyName]
 				);
 				$columns[$this->sanitizeColumnName(name: $propertyName)] = $value;
 			}
@@ -4853,15 +4849,14 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Arrays and objects become JSON. An empty string becomes NULL at the final
 	 * insert/update stage, not here.
 	 *
-	 * @param int|string $propertyName   The property
-	 * @param mixed      $value          The value
-	 * @param mixed      $propertyConfig The property's schema definition
+	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
+	 * @param mixed                                  $value    The value
 	 *
 	 * @return mixed
 	 */
-	private function preparePropertyValue(int|string $propertyName, mixed $value, mixed $propertyConfig): mixed {
-		$value = $this->dropUnprocessedUploads(propertyName: $propertyName, value: $value, propertyConfig: $propertyConfig);
-		$value = $this->normalisePropertyDate(value: $value, format: ($propertyConfig['format'] ?? null));
+	private function preparePropertyValue(array $property, mixed $value): mixed {
+		$value = $this->dropUnprocessedUploads(property: $property, value: $value);
+		$value = $this->normalisePropertyDate(value: $value, format: ($property['config']['format'] ?? null));
 
 		if (is_bool($value) === true) {
 			$value = (int)$value;
@@ -4881,19 +4876,19 @@ class MagicMapper extends AbstractObjectMapper {
 	 * property holding one becomes null; an array of files loses those items, and becomes
 	 * null when none is left. Each is logged as a warning.
 	 *
-	 * @param int|string $propertyName   The property
-	 * @param mixed      $value          The value
-	 * @param mixed      $propertyConfig The property's schema definition
+	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
+	 * @param mixed                                  $value    The value
 	 *
 	 * @return mixed
 	 */
-	private function dropUnprocessedUploads(int|string $propertyName, mixed $value, mixed $propertyConfig): mixed {
-		$propertyType = $propertyConfig['type'] ?? 'string';
+	private function dropUnprocessedUploads(array $property, mixed $value): mixed {
+		$propertyConfig = $property['config'];
+		$propertyType   = $propertyConfig['type'] ?? 'string';
 
 		if ($propertyType === 'file' && is_string($value) === true && strpos($value, 'data:') === 0) {
 			$msg = '[MagicMapper] File property contains unprocessed';
 			$msg .= ' base64 data URL - setting to null to prevent DB error';
-			$this->logUnprocessedUpload(message: $msg, propertyName: $propertyName, upload: $value);
+			$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $property['name'], 'valueLength' => strlen($value)]);
 			return null;
 		}
 
@@ -4902,7 +4897,7 @@ class MagicMapper extends AbstractObjectMapper {
 			return $value;
 		}
 
-		return $this->withoutUnprocessedUploads(propertyName: $propertyName, items: $value);
+		return $this->withoutUnprocessedUploads(propertyName: $property['name'], items: $value);
 	}//end dropUnprocessedUploads()
 
 	/**
@@ -4919,7 +4914,7 @@ class MagicMapper extends AbstractObjectMapper {
 			if (is_string($item) === true && strpos($item, 'data:') === 0) {
 				$msg = '[MagicMapper] Array file item contains';
 				$msg .= ' unprocessed base64 data URL - skipping item';
-				$this->logUnprocessedUpload(message: $msg, propertyName: $propertyName, upload: $item);
+				$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $propertyName, 'valueLength' => strlen($item)]);
 				continue;
 			}
 
@@ -4936,21 +4931,15 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Log an unprocessed base64 upload that is not written.
 	 *
-	 * @param string     $message      The message
-	 * @param int|string $propertyName The property
-	 * @param string     $upload       The data URL
+	 * @param string                                                 $message The message
+	 * @param array{propertyName: int|string, valueLength: int} $context The property and the data URL's length
 	 *
 	 * @return void
 	 */
-	private function logUnprocessedUpload(string $message, int|string $propertyName, string $upload): void {
+	private function logUnprocessedUpload(string $message, array $context): void {
 		$this->logger->warning(
 			message: $message,
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'propertyName' => $propertyName,
-				'valueLength' => strlen($upload),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__] + $context
 		);
 	}//end logUnprocessedUpload()
 
