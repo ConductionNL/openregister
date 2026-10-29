@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -39,7 +40,6 @@ use OCP\IL10N;
 use OCP\IUserSession;
 use PhpOffice\PhpWord\IOFactory;
 use Psr\Log\LoggerInterface;
-use Smalot\PdfParser\Parser as PdfParser;
 use Throwable;
 use ZipArchive;
 
@@ -1298,9 +1298,7 @@ class DocumentProcessingHandler {
 		// to the `ocr-document-scanning` capability rather than producing
 		// an empty no-op output via the byte-replace path.
 		try {
-			$parser = new PdfParser();
-			$parsedPdf = $parser->parseContent($content);
-			$extracted = $parsedPdf->getText();
+			$extracted = (new PdfExtractor(logger: $this->logger))->extractText(pdfBytes: $content);
 		} catch (\Throwable $e) {
 			// The smalot parser rejects encrypted/secured PDFs with a message
 			// rather than a typed exception; map that to the caller-correctable 422.
