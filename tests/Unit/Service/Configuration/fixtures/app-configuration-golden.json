@@ -1,0 +1,1518 @@
+{
+    "find-throws": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "T",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": null,
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": null,
+                "registers": [],
+                "schemas": [],
+                "objects": [],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "T",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "insert-throws": {
+        "threw": "Exception",
+        "message": "Failed to create or update configuration: insert failed",
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "T",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version"
+                    ]
+                }
+            ],
+            [
+                "log.error",
+                "[ImportHandler] Failed to create or update configuration for app myapp: insert failed"
+            ]
+        ]
+    },
+    "new-data-only": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "T",
+                "description": "D",
+                "type": "t",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": null,
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": null,
+                "registers": [
+                    3,
+                    1,
+                    3
+                ],
+                "schemas": [
+                    5,
+                    6
+                ],
+                "objects": [
+                    9
+                ],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version",
+                "registers",
+                "schemas",
+                "objects"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "T",
+                        "description": "D",
+                        "type": "t",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [
+                            3,
+                            1,
+                            3
+                        ],
+                        "schemas": [
+                            5,
+                            6
+                        ],
+                        "objects": [
+                            9
+                        ],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version",
+                        "registers",
+                        "schemas",
+                        "objects"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "new-empty": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "Configuration for myapp",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": null,
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": null,
+                "registers": [],
+                "schemas": [],
+                "objects": [],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "Configuration for myapp",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "new-full": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "Info title",
+                "description": "Info description",
+                "type": "app",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": "org/repo",
+                "githubBranch": "main",
+                "githubPath": "lib/c.json",
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": "^1.0",
+                "organisation": null,
+                "owner": "alice",
+                "registers": [
+                    3,
+                    1,
+                    3
+                ],
+                "schemas": [
+                    5,
+                    6
+                ],
+                "objects": [
+                    9
+                ],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version",
+                "registers",
+                "schemas",
+                "objects",
+                "openregister",
+                "sourceType",
+                "sourceUrl",
+                "githubRepo",
+                "githubBranch",
+                "githubPath",
+                "owner"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "Info title",
+                        "description": "Info description",
+                        "type": "app",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://example.org/c.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "org/repo",
+                        "githubBranch": "main",
+                        "githubPath": "lib/c.json",
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": "^1.0",
+                        "organisation": null,
+                        "owner": "alice",
+                        "registers": [
+                            3,
+                            1,
+                            3
+                        ],
+                        "schemas": [
+                            5,
+                            6
+                        ],
+                        "objects": [
+                            9
+                        ],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version",
+                        "registers",
+                        "schemas",
+                        "objects",
+                        "openregister",
+                        "sourceType",
+                        "sourceUrl",
+                        "githubRepo",
+                        "githubBranch",
+                        "githubPath",
+                        "owner"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "new-github-null-values": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "Configuration for myapp",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": "only",
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": "bob",
+                "registers": [],
+                "schemas": [],
+                "objects": [],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version",
+                "githubBranch",
+                "owner"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "Configuration for myapp",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": "only",
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": "bob",
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version",
+                        "githubBranch",
+                        "owner"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "new-github-partial": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "Configuration for myapp",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": "b",
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": null,
+                "registers": [],
+                "schemas": [],
+                "objects": [],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version",
+                "githubBranch"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "Configuration for myapp",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": "b",
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version",
+                        "githubBranch"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "new-github-string": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "Configuration for myapp",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": "flat/repo",
+                "githubBranch": null,
+                "githubPath": "f.json",
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": null,
+                "registers": [],
+                "schemas": [],
+                "objects": [],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version",
+                "githubRepo",
+                "githubPath"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "Configuration for myapp",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "flat/repo",
+                        "githubBranch": null,
+                        "githubPath": "f.json",
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version",
+                        "githubRepo",
+                        "githubPath"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "new-object-data": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "From object",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": null,
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": null,
+                "registers": [],
+                "schemas": [],
+                "objects": [],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "From object",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "new-x-only": {
+        "returned": {
+            "fields": {
+                "id": null,
+                "title": "X",
+                "description": "XD",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": "o/r",
+                "githubBranch": "dev",
+                "githubPath": "p.json",
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": null,
+                "registers": [],
+                "schemas": [],
+                "objects": [],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "app",
+                "version",
+                "githubRepo",
+                "githubBranch",
+                "githubPath"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "insert",
+                {
+                    "fields": {
+                        "id": null,
+                        "title": "X",
+                        "description": "XD",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "o/r",
+                        "githubBranch": "dev",
+                        "githubPath": "p.json",
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "app",
+                        "version",
+                        "githubRepo",
+                        "githubBranch",
+                        "githubPath"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Created new configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "update": {
+        "returned": {
+            "fields": {
+                "id": 40,
+                "title": "Info title",
+                "description": "Info description",
+                "type": "app",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": null,
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": "old-owner",
+                "registers": [
+                    1,
+                    2,
+                    3
+                ],
+                "schemas": {
+                    "0": 5,
+                    "2": 6
+                },
+                "objects": [
+                    8,
+                    9
+                ],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "version",
+                "registers",
+                "schemas",
+                "objects"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "update",
+                {
+                    "fields": {
+                        "id": 40,
+                        "title": "Info title",
+                        "description": "Info description",
+                        "type": "app",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": "old-owner",
+                        "registers": [
+                            1,
+                            2,
+                            3
+                        ],
+                        "schemas": {
+                            "0": 5,
+                            "2": 6
+                        },
+                        "objects": [
+                            8,
+                            9
+                        ],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "version",
+                        "registers",
+                        "schemas",
+                        "objects"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Updated existing configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "update-empty-ids": {
+        "returned": {
+            "fields": {
+                "id": 40,
+                "title": "Configuration for myapp",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": null,
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": "old-owner",
+                "registers": [
+                    3,
+                    1
+                ],
+                "schemas": [
+                    5,
+                    6
+                ],
+                "objects": [
+                    9
+                ],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "version",
+                "registers",
+                "schemas",
+                "objects"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "update",
+                {
+                    "fields": {
+                        "id": 40,
+                        "title": "Configuration for myapp",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": "old-owner",
+                        "registers": [
+                            3,
+                            1
+                        ],
+                        "schemas": [
+                            5,
+                            6
+                        ],
+                        "objects": [
+                            9
+                        ],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "version",
+                        "registers",
+                        "schemas",
+                        "objects"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Updated existing configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "update-nothing-new": {
+        "returned": {
+            "fields": {
+                "id": 40,
+                "title": "Same",
+                "description": "Imported configuration for application myapp",
+                "type": "imported",
+                "app": "myapp",
+                "application": "myapp",
+                "version": "2.1.0",
+                "sourceType": null,
+                "sourceUrl": null,
+                "localVersion": null,
+                "remoteVersion": null,
+                "autoUpdate": false,
+                "notificationGroups": [],
+                "githubRepo": null,
+                "githubBranch": null,
+                "githubPath": null,
+                "isLocal": true,
+                "syncEnabled": false,
+                "syncInterval": 24,
+                "syncStatus": "never",
+                "openregister": null,
+                "organisation": null,
+                "owner": "old-owner",
+                "registers": [
+                    1,
+                    2
+                ],
+                "schemas": [
+                    5
+                ],
+                "objects": [
+                    8
+                ],
+                "views": [],
+                "agents": [],
+                "sources": [],
+                "mappings": [],
+                "applications": []
+            },
+            "set": [
+                "title",
+                "description",
+                "type",
+                "version"
+            ]
+        },
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "update",
+                {
+                    "fields": {
+                        "id": 40,
+                        "title": "Same",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": "old-owner",
+                        "registers": [
+                            1,
+                            2
+                        ],
+                        "schemas": [
+                            5
+                        ],
+                        "objects": [
+                            8
+                        ],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "version"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Updated existing configuration for app myapp with version 2.1.0"
+            ]
+        ]
+    },
+    "update-throws": {
+        "threw": "Exception",
+        "message": "Failed to create or update configuration: update failed",
+        "calls": [
+            [
+                "findByApp",
+                "myapp",
+                [
+                    50,
+                    0,
+                    true
+                ]
+            ],
+            [
+                "update",
+                {
+                    "fields": {
+                        "id": 40,
+                        "title": "T",
+                        "description": "Imported configuration for application myapp",
+                        "type": "imported",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": null,
+                        "sourceUrl": null,
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": true,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": "old-owner",
+                        "registers": [
+                            1,
+                            2
+                        ],
+                        "schemas": [
+                            5
+                        ],
+                        "objects": [
+                            8
+                        ],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": []
+                    },
+                    "set": [
+                        "title",
+                        "description",
+                        "type",
+                        "version"
+                    ]
+                }
+            ],
+            [
+                "log.error",
+                "[ImportHandler] Failed to create or update configuration for app myapp: update failed"
+            ]
+        ]
+    }
+}
