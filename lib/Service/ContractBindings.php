@@ -20,13 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Contract\ExampleSetInstallerInterface;
-use OCA\OpenRegister\Contract\FlowTimerControlInterface;
-use OCA\OpenRegister\Contract\McpCatalogueInterface;
-use OCA\OpenRegister\Contract\ObjectExporterInterface;
-use OCA\OpenRegister\Contract\ObjectImporterInterface;
-use OCA\OpenRegister\Contract\ObjectMergerInterface;
-use OCA\OpenRegister\Contract\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Merge\MergeService;
