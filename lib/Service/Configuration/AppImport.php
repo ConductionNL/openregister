@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 /**
  * The app, its configuration data, the version it ships and whether the import is forced.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class AppImport {
 
@@ -47,6 +49,8 @@ final class AppImport {
 	 * The `x-openregister` extension block, as declared.
 	 *
 	 * @return mixed
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function extension(): mixed {
 		return ($this->data['x-openregister'] ?? []);
@@ -56,6 +60,8 @@ final class AppImport {
 	 * The OAS `info` block, as declared.
 	 *
 	 * @return mixed
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function info(): mixed {
 		return ($this->data['info'] ?? []);

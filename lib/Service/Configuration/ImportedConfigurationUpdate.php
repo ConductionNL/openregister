@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\Configuration;
 /**
  * The Configuration an import tracks, and the import result, which later
  * steps may still add to.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ImportedConfigurationUpdate {
 
