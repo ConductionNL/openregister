@@ -183,7 +183,6 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -788,16 +787,13 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
-		// Bind the dormant Path B PDF anonymisation fallback bridge to its
-		// null implementation. Tenants enabling Path B replace this binding
-		// with a concrete NcOfficeConverterInterface implementation that
-		// talks to Collabora Online / Code (per the
-		// `pdf-anonymisation-odt-fallback` scaffold).
-		$context->registerService(
+		// Office conversion (ODT and PDF) goes through Nextcloud's conversion
+		// API, so whichever office server registered a provider does the work:
+		// Collabora through richdocuments, or Euro-Office. PDF export, PDF
+		// reports and the Path B PDF anonymisation fallback all use it.
+		$context->registerServiceAlias(
 			\OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
-			function () {
-				return new NullNcOfficeConverter();
-			}
+			\OCA\OpenRegister\Service\File\Office\ConversionManagerConverter::class
 		);
 
 		// The loop node's step dispatcher. `IterateNode` resolves the INTERFACE

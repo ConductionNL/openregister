@@ -18,19 +18,22 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File\Office;
 
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\Office\ConversionManagerConverter;
+use OCA\OpenRegister\Service\File\Office\ConversionWorkFolder;
 use OCP\Files\Conversion\ConversionMimeProvider;
 use OCP\Files\Conversion\IConversionManager;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * Tests for {@see ConversionManagerConverter}.
+ * Tests for {@see ConversionManagerConverter} and {@see ConversionWorkFolder}.
  */
 class ConversionManagerConverterTest extends TestCase {
 
@@ -39,29 +42,46 @@ class ConversionManagerConverterTest extends TestCase {
 	/** @var IConversionManager&MockObject */
 	private IConversionManager $manager;
 
-	/** @var IRootFolder&MockObject */
-	private IRootFolder $root;
-
 	/** @var Folder&MockObject */
 	private Folder $work;
 
+	/** @var Folder&MockObject */
+	private Folder $home;
+
 	protected function setUp(): void {
 		$this->manager = $this->createMock(IConversionManager::class);
-		$this->root = $this->createMock(IRootFolder::class);
 		$this->work = $this->createMock(Folder::class);
-		$this->work->method('getPath')->willReturn('/appdata_x/openregister/office-conversion');
-
-		$appData = $this->createMock(Folder::class);
-		$appData->method('get')->with('openregister/office-conversion')->willReturn($this->work);
-		$this->root->method('getAppDataDirectoryName')->willReturn('appdata_x');
-		$this->root->method('get')->willReturnCallback(
-			fn (string $path) => match ($path) {
-				'appdata_x' => $appData,
-				'/appdata_x/openregister/office-conversion/out.pdf' => $this->pdfNode(),
-				default => throw new NotFoundException($path),
-			}
-		);
+		$this->work->method('getPath')->willReturn('/openregister/files/.office-conversion');
+		$this->home = $this->createMock(Folder::class);
 	}//end setUp()
+
+	/**
+	 * The converter, with the work folder in a mocked home of openregister's account.
+	 *
+	 * @return ConversionManagerConverter
+	 */
+	private function converter(): ConversionManagerConverter {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('openregister');
+		$ownership = $this->createMock(FileOwnershipHandler::class);
+		$ownership->method('getUser')->willReturn($user);
+		$root = $this->createMock(IRootFolder::class);
+		$root->method('getUserFolder')->with('openregister')->willReturn($this->home);
+
+		return new ConversionManagerConverter(
+			conversionManager: $this->manager,
+			workFolder: new ConversionWorkFolder(rootFolder: $root, ownership: $ownership)
+		);
+	}//end converter()
+
+	/**
+	 * Let the home hold the work folder already.
+	 *
+	 * @return void
+	 */
+	private function workFolderExists(): void {
+		$this->home->method('get')->with('.office-conversion')->willReturn($this->work);
+	}//end workFolderExists()
 
 	/**
 	 * A converted file node holding PDF bytes, expected to be deleted.
@@ -97,7 +117,7 @@ class ConversionManagerConverterTest extends TestCase {
 	 */
 	public function testWithoutProviderItRequiresAnOfficeServer(): void {
 		$this->offers(pairs: [['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/pdf']]);
-		$converter = new ConversionManagerConverter(conversionManager: $this->manager, rootFolder: $this->root);
+		$converter = $this->converter();
 
 		$this->assertFalse($converter->isAvailable());
 
@@ -108,23 +128,25 @@ class ConversionManagerConverterTest extends TestCase {
 	}//end testWithoutProviderItRequiresAnOfficeServer()
 
 	/**
-	 * With a provider the ODT goes through a work file in app data, and both files are removed.
+	 * With a provider the ODT goes through a work file in openregister's home, and both files are removed.
 	 *
 	 * @return void
 	 */
 	public function testConvertsThroughTheConversionManager(): void {
 		$this->offers(pairs: [[self::ODT, 'application/pdf']]);
+		$this->workFolderExists();
 
 		$source = $this->createMock(File::class);
 		$source->expects($this->once())->method('delete');
 		$this->work->expects($this->once())->method('newFile')
 			->with($this->matchesRegularExpression('/^[0-9a-f]{32}\.odt$/'), 'odt bytes')
 			->willReturn($source);
+		$this->work->method('get')->with('out.pdf')->willReturn($this->pdfNode());
 		$this->manager->expects($this->once())->method('convert')
-			->with($source, 'application/pdf', $this->matchesRegularExpression('#^/appdata_x/openregister/office-conversion/[0-9a-f]{32}\.pdf$#'))
-			->willReturn('/appdata_x/openregister/office-conversion/out.pdf');
+			->with($source, 'application/pdf', $this->matchesRegularExpression('#^/openregister/files/\.office-conversion/[0-9a-f]{32}\.pdf$#'))
+			->willReturn('/openregister/files/.office-conversion/out.pdf');
 
-		$converter = new ConversionManagerConverter(conversionManager: $this->manager, rootFolder: $this->root);
+		$converter = $this->converter();
 
 		$this->assertTrue($converter->isAvailable());
 		$this->assertSame('%PDF-1.7 converted', $converter->odtToPdf(odtBytes: 'odt bytes'));
@@ -137,6 +159,7 @@ class ConversionManagerConverterTest extends TestCase {
 	 */
 	public function testFailedConversionIsReportedAndCleanedUp(): void {
 		$this->offers(pairs: [[self::ODT, 'application/pdf']]);
+		$this->workFolderExists();
 
 		$source = $this->createMock(File::class);
 		$source->expects($this->once())->method('delete');
@@ -145,7 +168,7 @@ class ConversionManagerConverterTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('The office server could not convert the document');
-		(new ConversionManagerConverter(conversionManager: $this->manager, rootFolder: $this->root))->odtToPdf(odtBytes: 'odt');
+		$this->converter()->odtToPdf(odtBytes: 'odt');
 	}//end testFailedConversionIsReportedAndCleanedUp()
 
 	/**
@@ -157,7 +180,7 @@ class ConversionManagerConverterTest extends TestCase {
 		$this->offers(pairs: [[self::ODT, 'application/pdf']]);
 
 		$this->expectException(OfficeServerRequiredException::class);
-		(new ConversionManagerConverter(conversionManager: $this->manager, rootFolder: $this->root))->pdfToOdt(pdfBytes: '%PDF');
+		$this->converter()->pdfToOdt(pdfBytes: '%PDF');
 	}//end testPdfToOdtNeedsItsOwnProvider()
 
 	/**
@@ -167,20 +190,13 @@ class ConversionManagerConverterTest extends TestCase {
 	 */
 	public function testCreatesTheWorkFolder(): void {
 		$this->offers(pairs: [[self::ODT, 'application/pdf']]);
+		$this->home->method('get')->willThrowException(new NotFoundException('missing'));
+		$this->home->expects($this->once())->method('newFolder')->with('.office-conversion')->willReturn($this->work);
 
-		$appData = $this->createMock(Folder::class);
-		$appData->method('get')->willThrowException(new NotFoundException('missing'));
-		$appData->expects($this->once())->method('newFolder')->with('openregister/office-conversion')->willReturn($this->work);
-		$root = $this->createMock(IRootFolder::class);
-		$root->method('getAppDataDirectoryName')->willReturn('appdata_x');
-		$root->method('get')->willReturnCallback(
-			fn (string $path) => $path === 'appdata_x' ? $appData : $this->pdfNode()
-		);
+		$this->work->method('newFile')->willReturn($this->createMock(File::class));
+		$this->work->method('get')->willReturn($this->pdfNode());
+		$this->manager->method('convert')->willReturn('/openregister/files/.office-conversion/out.pdf');
 
-		$source = $this->createMock(File::class);
-		$this->work->method('newFile')->willReturn($source);
-		$this->manager->method('convert')->willReturn('/appdata_x/openregister/office-conversion/out.pdf');
-
-		$this->assertSame('%PDF-1.7 converted', (new ConversionManagerConverter(conversionManager: $this->manager, rootFolder: $root))->odtToPdf(odtBytes: 'odt'));
+		$this->assertSame('%PDF-1.7 converted', $this->converter()->odtToPdf(odtBytes: 'odt'));
 	}//end testCreatesTheWorkFolder()
 }//end class

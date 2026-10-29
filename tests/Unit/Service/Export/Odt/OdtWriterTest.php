@@ -30,6 +30,8 @@ use ZipArchive;
  * an office server can convert to PDF.
  *
  * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
+ * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
  */
 class OdtWriterTest extends TestCase {
 
@@ -164,7 +166,8 @@ class OdtWriterTest extends TestCase {
 		$this->assertSame('12.5', $content->evaluate('string(//table:table[2]/table:table-row[2]/table:table-cell[2])'));
 		$this->assertSame('Bedragen', $content->evaluate('string(//text:p[@text:style-name="OR_Subtle"][2])'));
 		$this->assertStringContainsString('No data available', $content->evaluate('string(//text:p[@text:style-name="OR_Error"])'));
-		$this->assertStringNotContainsString('font-family', $this->parts['content.xml'], 'The report CSS is not copied as text.');
+		$this->assertStringNotContainsString('grid-template-columns', $this->parts['content.xml'], 'The report CSS is not copied as text.');
+		$this->assertSame(1, substr_count($this->parts['content.xml'], 'xmlns:text='), 'Namespaces are declared once.');
 
 		$styles = $this->xpath(part: 'styles.xml');
 		$this->assertSame('21cm', $styles->evaluate('string(//style:page-layout-properties/@fo:page-width)'));
@@ -185,7 +188,7 @@ class OdtWriterTest extends TestCase {
 
 		$this->assertStringNotContainsString('alert', $this->parts['content.xml']);
 		$this->assertStringNotContainsString('passwd', $this->parts['content.xml']);
-		$this->assertSame(['content.xml', 'meta.xml', 'META-INF/manifest.xml', 'mimetype', 'styles.xml'], $this->sortedNames());
+		$this->assertSame(['META-INF/manifest.xml', 'content.xml', 'meta.xml', 'mimetype', 'styles.xml'], $this->sortedNames());
 		$this->assertSame('Tekst hier', preg_replace('/\s+/', ' ', $this->xpath(part: 'content.xml')->evaluate('string(//text:p)')));
 	}//end testActiveContentIsDropped()
 

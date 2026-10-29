@@ -48,6 +48,8 @@ use ReflectionMethod;
 /**
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtWriter
  * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
+ * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
  */
 class ExportServicePdfTest extends TestCase {
 
