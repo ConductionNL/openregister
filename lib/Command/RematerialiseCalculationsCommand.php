@@ -111,222 +111,257 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @return int Symfony command exit code.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$registerRef = (string)$input->getArgument('register');
-		$schemaRef = (string)$input->getArgument('schema');
-		$dryRun = (bool)$input->getOption('dry-run');
-
 		try {
-			$register = $this->registerMapper->find($registerRef, _multitenancy: false);
-			$schema = $this->schemaMapper->find($schemaRef, _multitenancy: false);
+			$register = $this->registerMapper->find((string)$input->getArgument('register'), _multitenancy: false);
+			$schema = $this->schemaMapper->find((string)$input->getArgument('schema'), _multitenancy: false);
 		} catch (\Throwable $e) {
 			$output->writeln('<error>' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
 		}
 
-		$calcs = $this->getCalculations(schema: $schema);
-		if ($calcs === null || count($calcs) === 0) {
+		$run = new RematerialiseRun(register: $register, schema: $schema, output: $output);
+		$run->dryRun = (bool)$input->getOption('dry-run');
+		if ($run->calculations === []) {
 			$output->writeln('<comment>Schema declares no x-openregister-calculations — nothing to do.</comment>');
 			return Command::SUCCESS;
 		}
 
-		$materialiseNames = [];
-		foreach ($calcs as $name => $spec) {
-			if (is_array($spec) === true && ($spec['materialise'] ?? false) === true) {
-				$materialiseNames[] = (string)$name;
-			}
-		}
-
-		if (count($materialiseNames) === 0) {
+		if ($run->materialised === []) {
 			$output->writeln('<comment>No materialised calculations declared — nothing to do.</comment>');
 			return Command::SUCCESS;
 		}
 
-		$dryRunLabel = '';
-		if ($dryRun === true) {
-			$dryRunLabel = ' (dry run)';
-		}
-
-		$output->writeln(
-			sprintf(
-				'<info>Rematerialising %d calculation(s) on %s/%s%s</info>',
-				count($materialiseNames),
-				$register->getSlug() ?? $register->getId(),
-				$schema->getSlug() ?? $schema->getId(),
-				$dryRunLabel
-			)
-		);
-
+		$this->announce(run: $run);
 		$entities = $this->magicMapper->findAllInRegisterSchemaTable(
 			register: $register,
 			schema: $schema,
 			limit: 100000
 		);
-
-		// Declared cross-object references are pre-resolved per object so the
-		// recompute path refreshes references the same way the save path does.
-		$referenceSpecs = ($schema->getConfiguration()['x-openregister-references'] ?? null);
-		if (is_array($referenceSpecs) === false || count($referenceSpecs) === 0) {
-			$referenceSpecs = null;
-		}
-
-		// Declared aggregate-references are pre-resolved per object so the
-		// recompute path refreshes save-time aggregate snapshots the same way
-		// the save path does.
-		$aggregateSpecs = ($schema->getConfiguration()['x-openregister-aggregate-refs'] ?? null);
-		if (is_array($aggregateSpecs) === false || count($aggregateSpecs) === 0) {
-			$aggregateSpecs = null;
-		}
-
-		$touched = 0;
-		$unchanged = 0;
-		$failed = 0;
-
 		foreach ($entities as $entity) {
-			$data = $entity->getObject() ?? [];
-			$payload = $this->withSelf(data: $data, entity: $entity);
-
-			if ($referenceSpecs !== null) {
-				$payload['@ref'] = $this->references->resolveAll(
-					payload: $payload,
-					references: $referenceSpecs,
-					register: $entity->getRegister(),
-					organisation: $entity->getOrganisation()
-				);
-			}
-
-			if ($aggregateSpecs !== null) {
-				$outcome = $this->aggregates->resolveAllWithOutcome(
-					payload: $payload,
-					aggregates: $aggregateSpecs,
-					registerRef: $entity->getRegister()
-				);
-				// An aggregate that could not be resolved is not a null to
-				// compare: the row's value is unknown, so the row FAILED (live
-				// pass O9 counted 205 such rows "unchanged" and exited 0).
-				if ($outcome['failed'] !== []) {
-					$failed++;
-					foreach ($outcome['failed'] as $name => $reason) {
-						$output->writeln(sprintf('  <error>! aggregate %s on %s: %s</error>', $name, (string)$entity->getUuid(), $reason));
-					}
-
-					continue;
-				}
-
-				$payload['@aggregate'] = $outcome['values'];
-			}
-
-			$stored = $data;
-			$expected = [];
-			$changed = false;
-			foreach ($calcs as $name => $spec) {
-				if (is_array($spec) === false || ($spec['materialise'] ?? false) !== true) {
-					continue;
-				}
-
-				// A `sequence` reserves exactly once, on create. This command has no
-				// SequenceContext, so re-evaluating would resolve the node to null and
-				// `concat` would render it as "", replacing every assigned number with
-				// a truncated stub ("2026-0013" -> "2026-"). Never rewrite those.
-				// openregister#3075.
-				if ($this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true) {
-					continue;
-				}
-
-				try {
-					$value = $this->evaluator->evaluate($payload, $spec['expression'] ?? null);
-					if ($value instanceof DateTimeInterface) {
-						$value = $value->format(DateTimeInterface::ATOM);
-					}
-
-					if (($data[(string)$name] ?? null) !== $value) {
-						$expected[(string)$name] = $value;
-						$changed = true;
-					}
-				} catch (\Throwable $e) {
-					$failed++;
-					$output->writeln(
-						sprintf(
-							'  <error>! %s on %s: %s</error>',
-							(string)$name,
-							(string)$entity->getUuid(),
-							$e->getMessage()
-						)
-					);
-				}//end try
-			}//end foreach
-
-			if ($changed === false) {
-				$unchanged++;
-				continue;
-			}
-
-			if ($dryRun === true) {
-				$touched++;
-				continue;
-			}
-
-			// Re-read the row: an earlier save in this run can already have
-			// materialised it (saving one enrolment re-saves its siblings), and
-			// saving the snapshot taken at the start would then try to change
-			// the readOnly value back (live pass O11).
-			$current = $this->reread(entity: $entity, register: $register, schema: $schema);
-			if ($current !== null) {
-				$stored = $current;
-				$expected = array_filter(
-					$expected,
-					static fn ($value, $name): bool => ($current[$name] ?? null) !== $value,
-					ARRAY_FILTER_USE_BOTH
-				);
-				if ($expected === []) {
-					$output->writeln(
-						sprintf('  <comment>%s already materialised by an earlier save in this run</comment>', (string)$entity->getUuid()),
-						OutputInterface::VERBOSITY_VERBOSE
-					);
-					$touched++;
-					continue;
-				}
-			}
-
-			// The read decodes JSON held in a `type: string` property; the
-			// re-save hands it back as stored, or validation refuses the row.
-			$stored = $this->types->restoreStringTypedValues(data: $stored, properties: ($schema->getProperties() ?? []));
-
-			// A `fallback` calculation gives the value only until an app's own
-			// save listener sets it (dossiq: a case deadline follows its
-			// statutory term), so a value the save kept is not a failure.
-			$fallbacks = array_filter($calcs, static fn ($spec): bool => is_array($spec) === true && ($spec['fallback'] ?? false) === true);
-			$checked   = array_diff_key($expected, $fallbacks);
-
-			if ($this->saveForMaterialisation(entity: $entity, stored: $stored, expected: $checked, output: $output) === true) {
-				$touched++;
-				continue;
-			}
-
-			$failed++;
-		}//end foreach
+			$this->rematerialiseRow(run: $run, entity: $entity);
+		}
 
 		$output->writeln(
-			sprintf(
-				'<info>Touched %d, unchanged %d, failed %d</info>',
-				$touched,
-				$unchanged,
-				$failed
-			)
+			sprintf('<info>Touched %d, unchanged %d, failed %d</info>', $run->touched, $run->unchanged, $run->failed)
 		);
-		$exitCode = Command::SUCCESS;
-		if ($failed > 0) {
-			$exitCode = Command::FAILURE;
+		return $run->exitCode();
+	}//end execute()
+
+	/**
+	 * Say how many calculations the run re-evaluates, and on what.
+	 *
+	 * @param RematerialiseRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function announce(RematerialiseRun $run): void {
+		$dryRunLabel = '';
+		if ($run->dryRun === true) {
+			$dryRunLabel = ' (dry run)';
 		}
 
-		return $exitCode;
-	}//end execute()
+		$run->output->writeln(
+			sprintf(
+				'<info>Rematerialising %d calculation(s) on %s/%s%s</info>',
+				count($run->materialised),
+				$run->register->getSlug() ?? $run->register->getId(),
+				$run->schema->getSlug() ?? $run->schema->getId(),
+				$dryRunLabel
+			)
+		);
+	}//end announce()
+
+	/**
+	 * Re-evaluate one row's materialised calculations and save it when a value changed.
+	 *
+	 * @param RematerialiseRun                  $run    The run.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity The row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function rematerialiseRow(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): void {
+		$payload = $this->evaluationPayload(run: $run, entity: $entity);
+		if ($payload === null) {
+			return;
+		}
+
+		$row = ['entity' => $entity, 'data' => ($entity->getObject() ?? []), 'payload' => $payload];
+		$row['expected'] = $this->changedValues(run: $run, row: $row);
+		if ($row['expected'] === []) {
+			$run->unchanged++;
+			return;
+		}
+
+		if ($run->dryRun === true) {
+			$run->touched++;
+			return;
+		}
+
+		$this->saveChangedRow(run: $run, row: $row);
+	}//end rematerialiseRow()
+
+	/**
+	 * Build the payload the calculations evaluate: the row with `@self`, `@ref` and `@aggregate`.
+	 *
+	 * Declared cross-object references and aggregate-references are pre-resolved
+	 * per object so the recompute path refreshes them the same way the save path does.
+	 * An aggregate that could not be resolved is not a null to compare: the row's
+	 * value is unknown, so the row FAILED and no payload is returned.
+	 *
+	 * @param RematerialiseRun                  $run    The run.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity The row.
+	 *
+	 * @return array<string, mixed>|null The payload, or null when an aggregate failed.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function evaluationPayload(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
+		$payload = $this->withSelf(data: ($entity->getObject() ?? []), entity: $entity);
+		if ($run->referenceSpecs !== null) {
+			$payload['@ref'] = $this->references->resolveAll(
+				payload: $payload,
+				references: $run->referenceSpecs,
+				register: $entity->getRegister(),
+				organisation: $entity->getOrganisation()
+			);
+		}
+
+		if ($run->aggregateSpecs === null) {
+			return $payload;
+		}
+
+		$outcome = $this->aggregates->resolveAllWithOutcome(
+			payload: $payload,
+			aggregates: $run->aggregateSpecs,
+			registerRef: $entity->getRegister()
+		);
+		if ($outcome['failed'] !== []) {
+			$run->failed++;
+			foreach ($outcome['failed'] as $name => $reason) {
+				$run->output->writeln(sprintf('  <error>! aggregate %s on %s: %s</error>', $name, (string)$entity->getUuid(), $reason));
+			}
+
+			return null;
+		}
+
+		$payload['@aggregate'] = $outcome['values'];
+		return $payload;
+	}//end evaluationPayload()
+
+	/**
+	 * Evaluate the materialised calculations and keep the values that differ from the stored ones.
+	 *
+	 * A `sequence` reserves exactly once, on create. This command has no
+	 * SequenceContext, so re-evaluating would resolve the node to null and
+	 * `concat` would render it as "", replacing every assigned number with
+	 * a truncated stub ("2026-0013" -> "2026-"). Those are never rewritten.
+	 *
+	 * @param RematerialiseRun     $run The run.
+	 * @param array<string, mixed> $row The row: entity, stored data and payload.
+	 *
+	 * @return array<string, mixed> The changed values, by calculation name.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function changedValues(RematerialiseRun $run, array $row): array {
+		$expected = [];
+		foreach ($run->materialised as $name => $spec) {
+			if ($this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true) {
+				continue;
+			}
+
+			try {
+				$value = $this->evaluator->evaluate($row['payload'], $spec['expression'] ?? null);
+				if ($value instanceof DateTimeInterface) {
+					$value = $value->format(DateTimeInterface::ATOM);
+				}
+
+				if (($row['data'][(string)$name] ?? null) !== $value) {
+					$expected[(string)$name] = $value;
+				}
+			} catch (\Throwable $e) {
+				$run->failed++;
+				$run->output->writeln(
+					sprintf('  <error>! %s on %s: %s</error>', (string)$name, (string)$row['entity']->getUuid(), $e->getMessage())
+				);
+			}
+		}//end foreach
+
+		return $expected;
+	}//end changedValues()
+
+	/**
+	 * Save a row whose calculations changed, unless an earlier save in this run already materialised it.
+	 *
+	 * The read decodes JSON held in a `type: string` property; the re-save hands
+	 * it back as stored, or validation refuses the row. A `fallback` calculation
+	 * gives the value only until an app's own save listener sets it, so a value
+	 * the save kept is not a failure.
+	 *
+	 * @param RematerialiseRun     $run The run.
+	 * @param array<string, mixed> $row The row: entity, stored data and the changed values.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function saveChangedRow(RematerialiseRun $run, array $row): void {
+		$row = $this->withCurrentState(run: $run, row: $row);
+		if ($row['expected'] === []) {
+			$run->output->writeln(
+				sprintf('  <comment>%s already materialised by an earlier save in this run</comment>', (string)$row['entity']->getUuid()),
+				OutputInterface::VERBOSITY_VERBOSE
+			);
+			$run->touched++;
+			return;
+		}
+
+		$stored = $this->types->restoreStringTypedValues(data: $row['data'], properties: ($run->schema->getProperties() ?? []));
+		$checked = array_diff_key($row['expected'], $run->fallbacks());
+		if ($this->saveForMaterialisation(entity: $row['entity'], stored: $stored, expected: $checked, output: $run->output) === true) {
+			$run->touched++;
+			return;
+		}
+
+		$run->failed++;
+	}//end saveChangedRow()
+
+	/**
+	 * Replace the row's data with what is stored now, and drop the values it already holds.
+	 *
+	 * An earlier save in this run can already have materialised the row (saving
+	 * one enrolment re-saves its siblings), and saving the snapshot taken at the
+	 * start would then try to change the readOnly value back. When the row cannot
+	 * be read again, the snapshot stays.
+	 *
+	 * @param RematerialiseRun     $run The run.
+	 * @param array<string, mixed> $row The row: entity, stored data and the changed values.
+	 *
+	 * @return array<string, mixed> The row with current data and the values still to change.
+	 *
+	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
+	 */
+	private function withCurrentState(RematerialiseRun $run, array $row): array {
+		$current = $this->reread(entity: $row['entity'], register: $run->register, schema: $run->schema);
+		if ($current === null) {
+			return $row;
+		}
+
+		$row['data'] = $current;
+		$row['expected'] = array_filter(
+			$row['expected'],
+			static fn ($value, $name): bool => ($current[$name] ?? null) !== $value,
+			ARRAY_FILTER_USE_BOTH
+		);
+		return $row;
+	}//end withCurrentState()
 
 	/**
 	 * Read a row's stored data as it is now, not as the run's first read saw it.
@@ -451,23 +486,4 @@ class RematerialiseCalculationsCommand extends Command {
 		];
 		return $data;
 	}//end withSelf()
-
-	/**
-	 * Read the `x-openregister-calculations` configuration block.
-	 *
-	 * @param Schema $schema Schema to inspect.
-	 *
-	 * @return array<string, mixed>|null Calculations map, or null when absent.
-	 *
-	 * @spec openspec/specs/computed-fields/spec.md
-	 */
-	private function getCalculations(Schema $schema): ?array {
-		$config = ($schema->getConfiguration() ?? []);
-		$value = ($config['x-openregister-calculations'] ?? null);
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return null;
-	}//end getCalculations()
 }//end class
