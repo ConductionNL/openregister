@@ -196,6 +196,8 @@ final class RuleFiring {
 	 * @param string $channel The channel name.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function hasChannel(string $channel): bool {
 		return in_array($channel, $this->channels, true);
