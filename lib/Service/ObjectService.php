@@ -5653,13 +5653,30 @@ class ObjectService implements ObjectServiceInterface
      */
     private function deleteBulkRow(string | int $uuid, array &$run): void
     {
+        $reason = $this->bulkDeleteOutcome(uuid: $uuid, run: $run);
+        if ($reason !== null) {
+            $run['skipped'][]             = $uuid;
+            $run['skippedReasons'][$uuid] = $reason;
+        }
+    }//end deleteBulkRow()
+
+    /**
+     * Delete one row of a bulk delete and say why it was skipped, if it was.
+     *
+     * @param string|int $uuid The UUID to delete.
+     * @param array      $run  The bulk delete run.
+     *
+     * @return array|null The skip reason, or null when the row was deleted.
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function bulkDeleteOutcome(string | int $uuid, array &$run): ?array
+    {
         try {
             $scope   = $this->resolveBulkDeleteScope(uuid: $uuid, run: $run);
             $refusal = $this->bulkDeleteRefusal(scope: $scope, run: $run);
             if ($refusal !== null) {
-                $run['skipped'][]             = $uuid;
-                $run['skippedReasons'][$uuid] = $refusal;
-                return;
+                return $refusal;
             }
 
             $result = $this->deleteHandler->deleteObject(
@@ -5674,7 +5691,7 @@ class ObjectService implements ObjectServiceInterface
             );
             if ($result === true) {
                 $this->recordBulkDeleted(scope: $scope, run: $run);
-                return;
+                return null;
             }
 
             // The handler reports some refusals by RETURN VALUE rather than by
@@ -5684,8 +5701,7 @@ class ObjectService implements ObjectServiceInterface
                 message: '[ObjectService] Bulk delete handler refused object',
                 context: ['uuid' => $uuid]
             );
-            $run['skipped'][]             = $uuid;
-            $run['skippedReasons'][$uuid] = [
+            return [
                 'error'   => 'DELETE_REFUSED',
                 'message' => 'The delete handler did not delete this object.',
             ];
@@ -5698,8 +5714,7 @@ class ObjectService implements ObjectServiceInterface
                     'blockers' => count($e->getAnalysis()->blockers),
                 ]
             );
-            $run['skipped'][]             = $uuid;
-            $run['skippedReasons'][$uuid] = [
+            return [
                 'error'   => 'REFERENTIAL_INTEGRITY_RESTRICT',
                 'message' => $e->getMessage(),
             ];
@@ -5712,13 +5727,12 @@ class ObjectService implements ObjectServiceInterface
                     'error' => $e->getMessage(),
                 ]
             );
-            $run['skipped'][]             = $uuid;
-            $run['skippedReasons'][$uuid] = [
+            return [
                 'error'   => 'DELETE_FAILED',
                 'message' => $e->getMessage(),
             ];
         }//end try
-    }//end deleteBulkRow()
+    }//end bulkDeleteOutcome()
 
     /**
      * Resolve a bulk-delete row's register, schema and entity before deleting it.
