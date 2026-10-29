@@ -161,7 +161,6 @@
   <file src="lib/Service/Notification/NotificationAnnotationValidator.php">
     <InvalidOperand>
       <code><![CDATA[$defaultLocaleBad]]></code>
-      <code><![CDATA[$defaultLocaleBad]]></code>
     </InvalidOperand>
   </file>
   <file src="lib/Service/Notification/SystemEntityObjectAdapter.php">
