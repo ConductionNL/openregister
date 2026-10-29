@@ -718,6 +718,25 @@
             "importJobId": "<uuid>"
         }
     },
+    "no register": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "threw": "TypeError",
+        "message": "OCA\\OpenRegister\\Service\\ImportService::processCsvSheet(): Argument #2 ($register) must be of type OCA\\OpenRegister\\Db\\Register, null given",
+        "code": 0
+    },
     "no schema": {
         "calls": [],
         "threw": "InvalidArgumentException",

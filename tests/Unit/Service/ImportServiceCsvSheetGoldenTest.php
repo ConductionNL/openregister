@@ -73,6 +73,7 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 			'header only' => [['csv' => "title,status\n"]],
 			'only empty rows' => [['csv' => "title,status\n,\n,\n", 'save' => $saved]],
 			'no schema' => [['csv' => $csv, 'schema' => false]],
+			'no register' => [['csv' => $csv, 'register' => false, 'save' => $saved]],
 			'dry run' => [['csv' => $csv, 'dryRun' => true]],
 			'pack' => [['csv' => $csv, 'pack' => true, 'save' => $saved]],
 			'pack with skipped and failing rows' => [['csv' => $csv, 'pack' => true, 'skip' => [2], 'mapErrors' => [4, 5], 'save' => $saved]],
@@ -95,6 +96,10 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 		$register->setId(4);
 		if (($case['slugless'] ?? false) === false) {
 			$register->setSlug('reg-4');
+		}
+
+		if (($case['register'] ?? true) === false) {
+			$register = null;
 		}
 
 		$schema = null;
@@ -130,7 +135,12 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 			);
 			$outcome = ['result' => $this->describe(value: $result)];
 		} catch (\Throwable $e) {
-			$outcome = ['threw' => get_class($e), 'message' => $e->getMessage(), 'code' => $e->getCode()];
+			$message = $e->getMessage();
+			if ($e instanceof \TypeError) {
+				$message = preg_replace('/, called in .*$/', '', $message);
+			}
+
+			$outcome = ['threw' => get_class($e), 'message' => $message, 'code' => $e->getCode()];
 		}
 
 		$actual = json_decode(json_encode(['calls' => $this->calls] + $outcome), true);
