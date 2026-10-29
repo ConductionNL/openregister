@@ -29,10 +29,10 @@
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Export\Pdf\DompdfTableRenderer;
+use OCA\OpenRegister\Service\Export\Pdf\FpdfTableRenderer;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -148,6 +149,7 @@ class ExportService {
 	 * @param CacheHandler $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
+	 * @param IAppConfig|null $appConfig App config, read for the experimental `pdf_export_engine` switch.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -159,6 +161,7 @@ class ExportService {
 		CacheHandler $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -571,70 +574,23 @@ class ExportService {
 	/**
 	 * Render one or more section HTML fragments into a single A4-landscape PDF.
 	 *
-	 * Uses the same Dompdf sandboxing pattern established by
-	 * `PdfReportWriter`: no remote fetches, no PHP execution. Page numbers
-	 * are added via `Canvas::page_text()`'s safe `{PAGE_NUM}`/`{PAGE_COUNT}`
-	 * placeholder substitution — not the PHP-script-in-HTML mechanism,
-	 * which stays disabled for security.
+	 * Dompdf renders, unless app config `pdf_export_engine` is `fpdf`: an
+	 * experiment towards dropping the LGPL dompdf dependency, off until its
+	 * output is accepted.
 	 *
 	 * @param string[] $sections Escaped HTML fragments, one per schema section.
 	 *
 	 * @return string Raw PDF bytes.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	private function renderPdfDocument(array $sections): string {
-		$style = '@page { margin: 12mm; }'
-			. "body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #1a1a1a; }"
-			. 'h1 { font-size: 14pt; margin: 0 0 2mm 0; }'
-			. 'p.meta { font-size: 8pt; color: #555555; margin: 0 0 4mm 0; }'
-			. 'table { width: 100%; border-collapse: collapse; }'
-			. 'th, td { border: 0.25pt solid #cccccc; padding: 1.5mm 2mm; text-align: left; word-wrap: break-word; }'
-			. 'th { background-color: #2c3e50; color: #ffffff; font-weight: bold; }'
-			. 'tbody tr:nth-child(even) { background-color: #f2f2f2; }'
-			. '.pdf-section { page-break-after: always; }'
-			. '.pdf-section:last-child { page-break-after: auto; }';
-
-		$body = implode('', $sections);
-		$html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' . $style . '</style></head><body>' . $body . '</body></html>';
-
-		$options = new Options();
-		// No remote stylesheet/image fetches — keeps the renderer hermetic,
-		// same rationale as PdfReportWriter.
-		$options->set('isRemoteEnabled', false);
-		// PHP execution in templates stays disabled; page numbers use
-		// Canvas::page_text() placeholders instead (see below).
-		$options->set('isPhpEnabled', false);
-		$options->set('defaultFont', 'DejaVu Sans');
-		$options->set('defaultPaperSize', 'A4');
-		$options->set('defaultPaperOrientation', 'landscape');
-
-		// SECURITY: assert sandbox flags didn't drift via a future refactor.
-		// Dompdf has a history of SSRF / file-disclosure CVEs
-		// (CVE-2022-41343, CVE-2023-23924); these flags are the primary
-		// mitigation and must stay false.
-		if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
-			throw new RuntimeException(
-				'ExportService PDF sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
-			);
+		$renderer = new DompdfTableRenderer();
+		if ($this->appConfig?->getValueString('openregister', 'pdf_export_engine', 'dompdf') === 'fpdf') {
+			$renderer = new FpdfTableRenderer();
 		}
 
-		$dompdf = new Dompdf($options);
-		$dompdf->loadHtml($html, 'UTF-8');
-		$dompdf->setPaper('A4', 'landscape');
-		$dompdf->render();
-
-		$canvas = $dompdf->getCanvas();
-		$font = $dompdf->getFontMetrics()->getFont('DejaVu Sans');
-		$canvas->page_text(
-			$canvas->get_width() - 70,
-			$canvas->get_height() - 20,
-			'Page {PAGE_NUM} / {PAGE_COUNT}',
-			$font,
-			8,
-			[0.3, 0.3, 0.3]
-		);
-
-		$output = $dompdf->output();
-		return $output ?? '';
+		return $renderer->render(sections: $sections);
 	}//end renderPdfDocument()
 
 	/**
