@@ -255,8 +255,7 @@ class MagicBulkHandler {
 	 * @param array<string, mixed> $prepared The row being built.
 	 * @param array<string, mixed> $selfData The object's `@self` metadata.
 	 * @param array<string, mixed> $object The raw object payload.
-	 * @param bool $managedSlug Whether the schema opted into managed slugs; only
-	 *                          then is a slug carried onto the row.
+	 * @param bool $managedSlug Whether the schema has managed slugs; only then is a slug carried onto the row.
 	 *
 	 * @return array<string, mixed> The row with the display columns set.
 	 *
@@ -271,7 +270,6 @@ class MagicBulkHandler {
 		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
 		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
 		$prepared['_slug'] = MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object, managedSlug: $managedSlug);
-
 		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
 		return $prepared;
