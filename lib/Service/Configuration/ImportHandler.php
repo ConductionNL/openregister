@@ -2102,7 +2102,7 @@ class ImportHandler {
 			// reuses another register's schema that merely shares the slug.
 			$existingSchema = $this->resolveExistingSchemaForImport(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId, version: $version);
 			if ($existingSchema !== null) {
-				return $this->updateImportedSchema(data: $data, existing: $existingSchema, options: $options);
+				return $this->updateImportedSchema(update: new ImportedSchemaUpdate(data: $data, existing: $existingSchema), options: $options);
 			}
 
 			return $this->createImportedSchema(data: $data, options: $options);
@@ -2204,8 +2204,10 @@ class ImportHandler {
 			return $data;
 		}
 
+		$references = new ImportReferenceMap(slugsAndIds: $slugsAndIdsMap);
 		foreach ($data['properties'] as $key => &$property) {
-			$property = $this->normaliseImportedProperty(key: $key, property: $property, slugsAndIdsMap: $slugsAndIdsMap);
+			$property = $this->normaliseImportedPropertyShape(key: $key, property: $property);
+			$property = $this->normaliseImportedProperty(property: $property, references: $references);
 		}
 
 		unset($property);
@@ -2213,22 +2215,20 @@ class ImportHandler {
 	}//end normaliseImportedProperties()
 
 	/**
-	 * Normalise one imported property and map its slugs to ids.
+	 * Map one imported property's slugs to ids.
 	 *
-	 * @param int|string $key            The property name.
-	 * @param mixed      $property       The property definition.
-	 * @param array      $slugsAndIdsMap Slugs with their IDs from this import.
+	 * @param array              $property   The property definition, its shape already normalised.
+	 * @param ImportReferenceMap $references This import's slug-to-id map.
 	 *
 	 * @return array The normalised property.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function normaliseImportedProperty(int|string $key, mixed $property, array $slugsAndIdsMap): array {
-		$property = $this->normaliseImportedPropertyShape(key: $key, property: $property);
-		$property = $this->mapImportedPropertySchemaRefs(property: $property, slugsAndIdsMap: $slugsAndIdsMap);
+	private function normaliseImportedProperty(array $property, ImportReferenceMap $references): array {
+		$property = $this->mapImportedPropertySchemaRefs(property: $property, references: $references);
 		$property = $this->resolveImportedObjectConfigurations(property: $property);
 
-		return $this->mapImportedLegacyRegisters(property: $property, slugsAndIdsMap: $slugsAndIdsMap);
+		return $this->mapImportedLegacyRegisters(property: $property, references: $references);
 	}//end normaliseImportedProperty()
 
 	/**
@@ -2317,24 +2317,20 @@ class ImportHandler {
 	 * into the schema handed to Opis, which then fails with a message naming
 	 * neither property nor schema.
 	 *
-	 * @param array $property       The property definition.
-	 * @param array $slugsAndIdsMap Slugs with their IDs from this import.
+	 * @param array              $property   The property definition.
+	 * @param ImportReferenceMap $references This import's slug-to-id map.
 	 *
 	 * @return array The property.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function mapImportedPropertySchemaRefs(array $property, array $slugsAndIdsMap): array {
+	private function mapImportedPropertySchemaRefs(array $property, ImportReferenceMap $references): array {
 		if (($property['$ref'] ?? null) !== null) {
-			$property['$ref'] = $this->mappedImportReference(reference: $property['$ref'], slugsAndIdsMap: $slugsAndIdsMap, entities: $this->schemasMap);
+			$property['$ref'] = $references->resolve(reference: $property['$ref'], entities: $this->schemasMap);
 		}
 
 		if (($property['items']['$ref'] ?? null) !== null) {
-			$property['items']['$ref'] = $this->mappedImportReference(
-				reference: $property['items']['$ref'],
-				slugsAndIdsMap: $slugsAndIdsMap,
-				entities: $this->schemasMap
-			);
+			$property['items']['$ref'] = $references->resolve(reference: $property['items']['$ref'], entities: $this->schemasMap);
 		}
 
 		return $property;
@@ -2343,53 +2339,24 @@ class ImportHandler {
 	/**
 	 * Map the legacy `register` keys of a property and its items from slugs to ids.
 	 *
-	 * @param array $property       The property definition.
-	 * @param array $slugsAndIdsMap Slugs with their IDs from this import.
+	 * @param array              $property   The property definition.
+	 * @param ImportReferenceMap $references This import's slug-to-id map.
 	 *
 	 * @return array The property.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function mapImportedLegacyRegisters(array $property, array $slugsAndIdsMap): array {
+	private function mapImportedLegacyRegisters(array $property, ImportReferenceMap $references): array {
 		if (($property['register'] ?? null) !== null) {
-			$property['register'] = $this->mappedImportReference(
-				reference: $property['register'],
-				slugsAndIdsMap: $slugsAndIdsMap,
-				entities: $this->registersMap
-			);
+			$property['register'] = $references->resolve(reference: $property['register'], entities: $this->registersMap);
 		}
 
 		if (is_array($property['items'] ?? null) === true && isset($property['items']['register']) === true) {
-			$property['items']['register'] = $this->mappedImportReference(
-				reference: $property['items']['register'],
-				slugsAndIdsMap: $slugsAndIdsMap,
-				entities: $this->registersMap
-			);
+			$property['items']['register'] = $references->resolve(reference: $property['items']['register'], entities: $this->registersMap);
 		}
 
 		return $property;
 	}//end mapImportedLegacyRegisters()
-
-	/**
-	 * The id a slug reference maps to: this import's map first, then the known entities.
-	 *
-	 * @param mixed                                $reference      The slug, or an id already.
-	 * @param array                                $slugsAndIdsMap Slugs with their IDs from this import.
-	 * @param array<string, Register|Schema>       $entities       Known registers or schemas by slug.
-	 *
-	 * @return mixed The id, or the reference unchanged when nothing maps it.
-	 */
-	private function mappedImportReference(mixed $reference, array $slugsAndIdsMap, array $entities): mixed {
-		if (($slugsAndIdsMap[$reference] ?? null) !== null) {
-			return $slugsAndIdsMap[$reference];
-		}
-
-		if (($entities[$reference] ?? null) !== null) {
-			return $entities[$reference]->getId();
-		}
-
-		return $reference;
-	}//end mappedImportReference()
 
 	/**
 	 * Resolve the register and schema slugs in a property's and its items' `objectConfiguration`.
@@ -2540,33 +2507,30 @@ class ImportHandler {
 	 * guard, so a property an instance added survives the upgrade; the
 	 * baseline is recorded only after the write succeeds.
 	 *
-	 * @param array               $data     The normalised schema data.
-	 * @param Schema              $existing The stored schema.
-	 * @param SchemaImportOptions $options  The caller's settings.
+	 * @param ImportedSchemaUpdate $update  The normalised definition and the stored schema.
+	 * @param SchemaImportOptions  $options The caller's settings.
 	 *
 	 * @return Schema The stored schema.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function updateImportedSchema(array $data, Schema $existing, SchemaImportOptions $options): Schema {
-		if ($this->isUnchangedReimport(data: $data, existing: $existing, options: $options) === true) {
+	private function updateImportedSchema(ImportedSchemaUpdate $update, SchemaImportOptions $options): Schema {
+		$existing = $update->existing;
+		if ($this->isUnchangedReimport(update: $update, options: $options) === true) {
 			return $existing;
 		}
 
-		$incomingVersion = $data['version'] ?? '0.0.0';
 		$guarded = $this->applyShippedBaselineGuard(
-			data: $data,
+			data: $update->data,
 			existing: $existing,
 			appId: $options->appId,
 			appVersion: $options->version
 		);
 		$changeSet = $this->classifyImportedSchemaChange(existing: $existing, data: $guarded['data']);
-		$data = $this->withImportedSchemaVersion(
-			data: $guarded['data'],
-			existing: $existing,
-			changeSet: $changeSet,
-			incomingVersion: $incomingVersion
-		);
+		$data = $guarded['data'];
+		if (version_compare($update->incomingVersion(), $update->existingVersion(), '>') === false) {
+			$data = $this->withRetainedSchemaVersion(update: new ImportedSchemaUpdate(data: $data, existing: $existing), changeSet: $changeSet);
+		}
 
 		$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$existing->getId());
 		$schema = $this->schemaMapper->updateFromArray(id: $existing->getId(), object: $data);
@@ -2585,22 +2549,19 @@ class ImportHandler {
 	 * schema through a register.d fragment without bumping its version, so a
 	 * content difference still applies the update (#2075/#2082).
 	 *
-	 * @param array               $data     The normalised schema data.
-	 * @param Schema              $existing The stored schema.
-	 * @param SchemaImportOptions $options  The caller's settings.
+	 * @param ImportedSchemaUpdate $update  The normalised definition and the stored schema.
+	 * @param SchemaImportOptions  $options The caller's settings.
 	 *
 	 * @return bool True when the import changes nothing.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function isUnchangedReimport(array $data, Schema $existing, SchemaImportOptions $options): bool {
-		$existingVersion = $existing->getVersion() ?? '0.0.0';
-		$incomingVersion = $data['version'] ?? '0.0.0';
-		if ($options->force === true || version_compare($incomingVersion, $existingVersion, '<=') === false) {
+	private function isUnchangedReimport(ImportedSchemaUpdate $update, SchemaImportOptions $options): bool {
+		if ($options->force === true || version_compare($update->incomingVersion(), $update->existingVersion(), '<=') === false) {
 			return false;
 		}
 
-		if ($this->schemaContentDiffers(data: $data, existing: $existing) === false) {
+		if ($this->schemaContentDiffers(data: $update->data, existing: $update->existing) === false) {
 			$this->logger->debug(
 				message: '[ImportHandler] Skipping schema import: version not newer and content unchanged.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -2613,45 +2574,38 @@ class ImportHandler {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'schema_slug' => $existing->getSlug(),
-				'schema_id' => $existing->getId(),
+				'schema_slug' => $update->existing->getSlug(),
+				'schema_id' => $update->existing->getId(),
 			]
 		);
 		return false;
 	}//end isUnchangedReimport()
 
 	/**
-	 * The schema data with the version an update writes.
+	 * The schema data with the stored version kept, bumped when the change classification says so.
 	 *
-	 * A newer shipped version is kept. Otherwise an import never moves the
-	 * version back (#4163): the stored version stays, bumped when the change
-	 * classification says so.
+	 * Used when the import's version is not newer: an import never moves a
+	 * schema's version back (#4163).
 	 *
-	 * @param array                $data            The guarded schema data.
-	 * @param Schema               $existing        The stored schema.
-	 * @param SchemaChangeSet|null $changeSet       The classified change, null when not classified.
-	 * @param mixed                $incomingVersion The version the import ships.
+	 * @param ImportedSchemaUpdate $update    The guarded definition and the stored schema.
+	 * @param SchemaChangeSet|null $changeSet The classified change, null when not classified.
 	 *
 	 * @return array The data.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function withImportedSchemaVersion(array $data, Schema $existing, ?SchemaChangeSet $changeSet, mixed $incomingVersion): array {
-		$existingVersion = $existing->getVersion() ?? '0.0.0';
-		if (version_compare($incomingVersion, $existingVersion, '>') === true) {
-			return $data;
-		}
-
-		if ($existing->getVersion() !== null) {
-			$data['version'] = $existingVersion;
+	private function withRetainedSchemaVersion(ImportedSchemaUpdate $update, ?SchemaChangeSet $changeSet): array {
+		$data = $update->data;
+		if ($update->existing->getVersion() !== null) {
+			$data['version'] = $update->existingVersion();
 		}
 
 		if ($changeSet !== null && $changeSet->hasChanges() === true) {
-			$data['version'] = $this->schemaVersioning->nextVersion(existing: $existing, changeSet: $changeSet);
+			$data['version'] = $this->schemaVersioning->nextVersion(existing: $update->existing, changeSet: $changeSet);
 		}
 
 		return $data;
-	}//end withImportedSchemaVersion()
+	}//end withRetainedSchemaVersion()
 
 	/**
 	 * Create a schema from an import.
