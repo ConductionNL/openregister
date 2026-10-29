@@ -3506,18 +3506,19 @@ class AnnotationNotificationDispatcher {
 
 	/**
 	 * Filter resolved recipients down to users who have subscribed to
-	 * the object's (register, schema). Non-uid recipients (email
-	 * literals, webhook urls, etc) pass through unchanged because the
-	 * subscription store is user-scoped only.
+	 * the object's (register, schema). A recipient is a uid string, as the
+	 * recipient resolver returns it, or a `{kind, uid}` entry. Entries that
+	 * are not a user (email literals, webhook urls, etc) pass through
+	 * unchanged because the subscription store is user-scoped only.
 	 *
 	 * Null-safe: when the SubscriptionMapper isn't wired (legacy
 	 * fixtures) or the object lacks register/schema metadata, the
 	 * filter is a no-op and every recipient is kept.
 	 *
-	 * @param array<int, array> $recipients The resolved recipient list.
+	 * @param array<int, mixed> $recipients The resolved recipient list.
 	 * @param ObjectEntity $object The object the event fired on.
 	 *
-	 * @return array<int, array>
+	 * @return array<int, mixed>
 	 */
 	private function filterBySubscription(array $recipients, ObjectEntity $object): array {
 		if ($this->subscriptionMapper === null) {
@@ -3550,21 +3551,40 @@ class AnnotationNotificationDispatcher {
 		return array_values(
 			array_filter(
 				$recipients,
-				static function (array $recipient) use ($subscribedSet): bool {
-					$kind = ($recipient['kind'] ?? null);
-					$uid = ($recipient['uid'] ?? null);
-					if ($kind !== 'user' || is_string($uid) === false || $uid === '') {
-						// Non-user recipients (email literal, webhook url,
-						// talk room, group expansion that already produced
-						// a user) bypass the subscription filter so legacy
-						// wire shapes still receive notifications.
-						return true;
-					}
-
-					return isset($subscribedSet[$uid]);
-				}
+				fn (mixed $recipient): bool => $this->keepsSubscribedRecipient(recipient: $recipient, subscribedSet: $subscribedSet)
 			)
 		);
 
 	}//end filterBySubscription()
+
+	/**
+	 * Whether a recipient survives the subscription filter.
+	 *
+	 * A uid string, or a `{kind: user, uid}` entry, survives only when the
+	 * uid subscribed. Entries that are not a user (email literals, webhook
+	 * urls, talk rooms) bypass the filter so legacy wire shapes still
+	 * receive notifications.
+	 *
+	 * @param mixed              $recipient     A uid or a recipient entry.
+	 * @param array<string, int> $subscribedSet The subscribed uids, as keys.
+	 *
+	 * @return bool
+	 */
+	private function keepsSubscribedRecipient(mixed $recipient, array $subscribedSet): bool {
+		if (is_string($recipient) === true) {
+			return isset($subscribedSet[$recipient]);
+		}
+
+		if (is_array($recipient) === false) {
+			return true;
+		}
+
+		$kind = ($recipient['kind'] ?? null);
+		$uid  = ($recipient['uid'] ?? null);
+		if ($kind !== 'user' || is_string($uid) === false || $uid === '') {
+			return true;
+		}
+
+		return isset($subscribedSet[$uid]);
+	}//end keepsSubscribedRecipient()
 }//end class
