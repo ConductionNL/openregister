@@ -184,7 +184,7 @@ class MagicSearchHandlerRowToEntityTest extends TestCase {
 	 */
 	#[DataProvider('casesWithExpectations')]
 	public function testRowHydratesTheRecordedEntity(array $case, array $expected): void {
-		$this->assertSame($expected, $this->runCase(case: $case));
+		$this->assertSame(expected: $expected, actual: $this->runCase(case: $case));
 	}//end testRowHydratesTheRecordedEntity()
 
 	/**
@@ -194,7 +194,7 @@ class MagicSearchHandlerRowToEntityTest extends TestCase {
 	 */
 	public function testEveryCaseIsRecorded(): void {
 		$expected = require __DIR__.'/fixtures/row-to-entity.php';
-		$this->assertSame(array_keys(self::cases()), array_keys($expected));
+		$this->assertSame(expected: array_keys(self::cases()), actual: array_keys($expected));
 	}//end testEveryCaseIsRecorded()
 
 	/**
@@ -227,13 +227,13 @@ class MagicSearchHandlerRowToEntityTest extends TestCase {
 			}//end log()
 		};
 		$handler = new MagicSearchHandler(
-			db: $this->createMock(IDBConnection::class),
+			db: $this->createMock(originalClassName: IDBConnection::class),
 			logger: $logger,
-			rbacHandler: $this->createMock(MagicRbacHandler::class),
-			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
+			rbacHandler: $this->createMock(originalClassName: MagicRbacHandler::class),
+			organizationHandler: $this->createMock(originalClassName: MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
-			dateTimeNormalizer: new DateTimeNormalizer($logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			dateTimeNormalizer: new DateTimeNormalizer(logger: $logger),
+			relatedRows: $this->createMock(originalClassName: RelatedRowQueryApplier::class)
 		);
 
 		$register = new Register();
