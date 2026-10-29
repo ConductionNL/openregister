@@ -34,8 +34,8 @@ use Psr\Log\LoggerInterface;
  * `fixtures/preference-resolve-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationPreferenceService
- * @uses \OCA\OpenRegister\Service\Notification\PreferenceLookup
+ * @covers \OCA\OpenRegister\Service\Notification\NotificationPreferenceService
+ * @covers \OCA\OpenRegister\Service\Notification\PreferenceLookup
  */
 final class NotificationPreferenceResolveGoldenTest extends TestCase {
 
@@ -106,8 +106,6 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::resolveEffective
 	 *
 	 * @dataProvider cases
 	 */
