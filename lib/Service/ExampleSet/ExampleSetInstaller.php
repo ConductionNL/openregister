@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use Throwable;
 
 /**
@@ -45,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
-class ExampleSetInstaller {
+class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Constructor.
 	 *

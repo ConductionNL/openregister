@@ -27,6 +27,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IURLGenerator;
@@ -44,7 +45,7 @@ use OCP\IURLGenerator;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class McpDiscoveryService {
+class McpDiscoveryService implements McpCatalogueInterface {
 
 	/**
 	 * App name constant

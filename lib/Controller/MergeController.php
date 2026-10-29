@@ -32,10 +32,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Merge\MergeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -49,13 +49,13 @@ class MergeController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param MergeService $mergeService MDM merge engine.
+	 * @param ObjectMergerInterface $mergeService MDM merge engine.
 	 * @param IUserSession $userSession Current user session, for actor attribution.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MergeService $mergeService,
+		private readonly ObjectMergerInterface $mergeService,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);

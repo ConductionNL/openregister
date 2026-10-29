@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -64,7 +65,6 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
-use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
@@ -157,7 +157,7 @@ class SchemasController extends Controller {
 	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler for caching operations
 	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service for facet caching
-	 * @param SchemaService $schemaService Schema service for exploration operations
+	 * @param SchemaExplorationInterface $schemaService Schema service for exploration operations
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param ContainerInterface $container Container for lazy loading services
 	 * @param SchemaVersioningService $schemaVersioningService Schema versioning service for version operations
@@ -182,7 +182,7 @@ class SchemasController extends Controller {
 		private readonly OrganisationService $organisationService,
 		private readonly SchemaCacheHandler $schemaCacheService,
 		private readonly FacetCacheHandler $facetCacheSvc,
-		private readonly SchemaService $schemaService,
+		private readonly SchemaExplorationInterface $schemaService,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 		private readonly SchemaVersioningService $schemaVersioningService,
