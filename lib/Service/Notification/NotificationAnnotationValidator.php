@@ -516,38 +516,16 @@ final class NotificationAnnotationValidator {
 			}
 		}
 
-		return array_merge($errors, $this->validateSubjectDefaultLocale(name: $name, subject: $subject));
-	}//end validateSubjectMap()
-
-	/**
-	 * Errors for a subject map's `defaultLocale`, which must name a declared locale.
-	 *
-	 * @param string              $name    The rule key.
-	 * @param array<mixed, mixed> $subject The declared subject map.
-	 *
-	 * @return array<int, array<string, mixed>>
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function validateSubjectDefaultLocale(string $name, array $subject): array {
-		if (isset($subject['defaultLocale']) === false) {
-			return [];
-		}
-
-		$defaultLocale     = $subject['defaultLocale'];
-		$defaultLocaleBad  = is_string($defaultLocale) === false;
-		$defaultLocaleBad |= isset($subject[$defaultLocale]) === false;
-		if ((bool)$defaultLocaleBad === false) {
-			return [];
-		}
-
-		return [
-			[
+		$defaultLocale = $this->content->undeclaredDefaultLocale(map: $subject);
+		if ($defaultLocale !== null) {
+			$errors[] = [
 				'code' => 'notification-bad-default-locale',
-				'message' => sprintf('Notification "%s" defaultLocale "%s" is not declared in the subject map.', $name, (string)$defaultLocale),
-			],
-		];
-	}//end validateSubjectDefaultLocale()
+				'message' => sprintf('Notification "%s" defaultLocale "%s" is not declared in the subject map.', $name, $defaultLocale),
+			];
+		}
+
+		return $errors;
+	}//end validateSubjectMap()
 
 	/**
 	 * Errors for the settings a declared `webhook` or `talk` channel needs.

@@ -291,24 +291,49 @@ final class NotificationContentValidator {
 			}
 		}
 
-		if (isset($message['defaultLocale']) === false) {
-			return $errors;
-		}
-
-		$defaultLocale = $message['defaultLocale'];
-		$undeclared    = isset($message[$defaultLocale]) === false;
-		if (is_string($defaultLocale) === false || $undeclared === true) {
+		$defaultLocale = $this->undeclaredDefaultLocale(map: $message);
+		if ($defaultLocale !== null) {
 			$errors[] = $this->badMessage(
 				message: sprintf(
 					'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
 					$name,
-					(string)$defaultLocale
+					$defaultLocale
 				)
 			);
 		}
 
 		return $errors;
 	}//end messageMapErrors()
+
+	/**
+	 * The declared `defaultLocale` of a subject or message map when it does
+	 * not name a locale the map declares, as it appears in a diagnostic.
+	 *
+	 * A non-scalar is named by its type, since casting it would only print
+	 * "Array".
+	 *
+	 * @param array<mixed, mixed> $map The subject or message map.
+	 *
+	 * @return string|null Null when the map declares no default or a declared one.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function undeclaredDefaultLocale(array $map): ?string {
+		if (isset($map['defaultLocale']) === false) {
+			return null;
+		}
+
+		$defaultLocale = $map['defaultLocale'];
+		if (is_string($defaultLocale) === true && isset($map[$defaultLocale]) === true) {
+			return null;
+		}
+
+		if (is_scalar($defaultLocale) === true) {
+			return (string)$defaultLocale;
+		}
+
+		return get_debug_type($defaultLocale);
+	}//end undeclaredDefaultLocale()
 
 	/**
 	 * A `notification-bad-message` error.

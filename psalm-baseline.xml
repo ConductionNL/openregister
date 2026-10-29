@@ -158,11 +158,6 @@
       <code><![CDATA[$this->relationCache]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
-  <file src="lib/Service/Notification/NotificationAnnotationValidator.php">
-    <InvalidOperand>
-      <code><![CDATA[$defaultLocaleBad]]></code>
-    </InvalidOperand>
-  </file>
   <file src="lib/Service/Notification/SystemEntityObjectAdapter.php">
     <ConstructorSignatureMismatch>
       <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
