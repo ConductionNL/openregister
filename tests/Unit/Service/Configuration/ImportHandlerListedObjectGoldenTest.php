@@ -44,10 +44,13 @@ use Psr\Log\LoggerInterface;
  * `fixtures/listed-object-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
- * @uses               \OCA\OpenRegister\Service\Configuration\ListedSeed
+ * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ListedSeed
  * @uses               \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
  * @uses               \OCA\OpenRegister\Service\Configuration\ShippedSeedContent
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ImportHandlerListedObjectGoldenTest extends TestCase {
 
@@ -118,8 +121,6 @@ class ImportHandlerListedObjectGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::importListedObject
 	 *
 	 * @dataProvider cases
 	 */
