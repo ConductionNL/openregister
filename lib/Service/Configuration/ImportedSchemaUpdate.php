@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\Schema;
 
 /**
  * The pair ImportHandler::importSchema() compares when a schema already exists.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ImportedSchemaUpdate {
 

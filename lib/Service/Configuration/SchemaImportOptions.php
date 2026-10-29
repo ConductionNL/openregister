@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 /**
  * The caller's settings for one ImportHandler::importSchema() call.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class SchemaImportOptions {
 

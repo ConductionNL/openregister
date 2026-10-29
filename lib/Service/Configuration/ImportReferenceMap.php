@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 /**
  * The slug-to-id map of one import, consulted before the already known entities.
+ *
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ImportReferenceMap {
 
