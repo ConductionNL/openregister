@@ -99,6 +99,42 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
 
 	/**
+	 * The metadata columns a row sets on its entity, in the order they are set, with how
+	 * each is stored: a scalar, a datetime, the deleted marker, a float, or JSON whose
+	 * fallback is an empty array (`json`) or null (`json-or-null`).
+	 *
+	 * @var array<string, string>
+	 */
+	private const ROW_METADATA_KINDS = [
+		'uuid'               => 'scalar',
+		'name'               => 'scalar',
+		'description'        => 'scalar',
+		'summary'            => 'scalar',
+		'image'              => 'scalar',
+		'slug'               => 'scalar',
+		'uri'                => 'scalar',
+		'owner'              => 'scalar',
+		'organisation'       => 'scalar',
+		'created'            => 'datetime',
+		'updated'            => 'datetime',
+		'last_user_activity' => 'datetime',
+		'deleted'            => 'deleted',
+		'relevance'          => 'float',
+		'relations'          => 'json',
+		'files'              => 'json',
+		'locked'             => 'json-or-null',
+		'groups'             => 'json',
+		'authorization'      => 'json',
+		'validation'         => 'json',
+		'geo'                => 'json',
+		'retention'          => 'json',
+		'version'            => 'scalar',
+		'folder'             => 'scalar',
+		'application'        => 'scalar',
+		'size'               => 'scalar',
+	];
+
+	/**
 	 * The working set: archived rows are left out. The default.
 	 *
 	 * @var string
@@ -4477,10 +4513,6 @@ class MagicSearchHandler {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
-	 *
 	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function convertRowToObjectEntity(
@@ -4491,247 +4523,12 @@ class MagicSearchHandler {
 	): ?ObjectEntity {
 		try {
 			$objectEntity = new ObjectEntity();
+			$columns      = $this->splitRowColumns(row: $row, schema: $schema);
 
-			// Extract metadata (prefixed with _).
-			$metadataData = [];
-			$objectData = [];
-
-			// Build property type map and column-to-property mapping from schema.
-			// The column-to-property mapping allows us to restore original property names
-			// (e.g., 'e-mailadres') from their sanitized column names (e.g., 'e_mailadres').
-			// PERF-4: memoised per schema id so sanitizeColumnName runs once per
-			// schema rather than once per property per row.
-			$schemaMaps = $this->getSchemaColumnMaps(schema: $schema);
-			$propertyTypes = $schemaMaps['types'];
-			$propertyFormats = ($schemaMaps['formats'] ?? []);
-			$columnToPropertyMap = $schemaMaps['columns'];
-
-			foreach ($row as $column => $value) {
-				$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
-				if ($metadataField !== null) {
-					$metadataData[$metadataField] = $value;
-					continue;
-				}
-
-				// Map column name back to original property name using schema mapping.
-				// Falls back to camelCase conversion if not found in mapping.
-				$propertyName = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
-
-				// Convert value based on schema property type.
-				// Delegates to the shared SchemaTypeConverter so this handler and
-				// MagicStatisticsHandler agree on type semantics across read paths.
-				$propertyType = $propertyTypes[$propertyName] ?? 'string';
-				$value = $this->schemaTypeConverter->convertValue(
-					value: $value,
-					schemaType: $propertyType
-				);
-
-				// Then agree on FORMAT semantics too. A `date`/`date-time` property
-				// lives in a DATETIME column, so the driver returns 'Y-m-d H:i:s' —
-				// which fails the schema's own `date-time` format when the object is
-				// written straight back (every UI edit is a read-modify-write, so any
-				// object with a populated date-time 400'd). MagicStatisticsHandler
-				// already normalises here; this path did not, and this is the path
-				// findAll() actually uses.
-				$propertyFormat = ($propertyFormats[$propertyName] ?? null);
-				if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
-					if ($propertyFormat === 'date') {
-						$normalised = $this->dateTimeNormalizer->normalize($value);
-						$value = null;
-						if ($normalised !== null) {
-							$value = $normalised->format('Y-m-d');
-						}
-					} elseif ($propertyFormat === 'date-time') {
-						// The column is a DATETIME and carries no offset, so the value
-						// must be read back in the timezone the write path stored it
-						// in (UTC) rather than in the server's `date.timezone`
-						// (WOO-567).
-						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
-					}
-				}
-
-				$objectData[$propertyName] = $value;
-			}//end foreach
-
-			// Set metadata properties.
-			if (($metadataData['uuid'] ?? null) !== null) {
-				$objectEntity->setUuid($metadataData['uuid']);
-			}
-
-			if (($metadataData['name'] ?? null) !== null) {
-				$objectEntity->setName($metadataData['name']);
-			}
-
-			if (($metadataData['description'] ?? null) !== null) {
-				$objectEntity->setDescription($metadataData['description']);
-			}
-
-			if (($metadataData['summary'] ?? null) !== null) {
-				$objectEntity->setSummary($metadataData['summary']);
-			}
-
-			if (($metadataData['image'] ?? null) !== null) {
-				$objectEntity->setImage($metadataData['image']);
-			}
-
-			if (($metadataData['slug'] ?? null) !== null) {
-				$objectEntity->setSlug($metadataData['slug']);
-			}
-
-			if (($metadataData['uri'] ?? null) !== null) {
-				$objectEntity->setUri($metadataData['uri']);
-			}
-
-			if (($metadataData['owner'] ?? null) !== null) {
-				$objectEntity->setOwner($metadataData['owner']);
-			}
-
-			if (($metadataData['organisation'] ?? null) !== null) {
-				$objectEntity->setOrganisation($metadataData['organisation']);
-			}
-
-			if (($metadataData['created'] ?? null) !== null) {
-				$objectEntity->setCreated(new DateTime($metadataData['created']));
-			}
-
-			if (($metadataData['updated'] ?? null) !== null) {
-				$objectEntity->setUpdated(new DateTime($metadataData['updated']));
-			}
-
-			if (($metadataData['last_user_activity'] ?? null) !== null) {
-				$objectEntity->setLastUserActivity(new DateTime($metadataData['last_user_activity']));
-			}
-
-			if (($metadataData['deleted'] ?? null) !== null) {
-				$objectEntity->setDeleted($this->deletedMarker(raw: $metadataData['deleted']));
-			}
-
-			// Set relevance score if present (from fuzzy search).
-			// The _relevance column contains the similarity score as a percentage (0-100).
-			if (($metadataData['relevance'] ?? null) !== null) {
-				$objectEntity->setRelevance((float)$metadataData['relevance']);
-			}
-
-			// Set JSON metadata fields (stored as JSONB in magic tables).
-			if (($metadataData['relations'] ?? null) !== null) {
-				$relations = $metadataData['relations'];
-				if (is_string($metadataData['relations']) === true) {
-					$relations = json_decode($metadataData['relations'], true);
-				}
-
-				$objectEntity->setRelations([]);
-				if (is_array($relations) === true) {
-					$objectEntity->setRelations($relations);
-				}
-			}
-
-			if (($metadataData['files'] ?? null) !== null) {
-				$files = $metadataData['files'];
-				if (is_string($metadataData['files']) === true) {
-					$files = json_decode($metadataData['files'], true);
-				}
-
-				$objectEntity->setFiles([]);
-				if (is_array($files) === true) {
-					$objectEntity->setFiles($files);
-				}
-			}
-
-			if (($metadataData['locked'] ?? null) !== null) {
-				$locked = $metadataData['locked'];
-				if (is_string($metadataData['locked']) === true) {
-					$locked = json_decode($metadataData['locked'], true);
-				}
-
-				$objectEntity->setLocked(null);
-				if (is_array($locked) === true) {
-					$objectEntity->setLocked($locked);
-				}
-			}
-
-			if (($metadataData['groups'] ?? null) !== null) {
-				$groups = $metadataData['groups'];
-				if (is_string($metadataData['groups']) === true) {
-					$groups = json_decode($metadataData['groups'], true);
-				}
-
-				$objectEntity->setGroups([]);
-				if (is_array($groups) === true) {
-					$objectEntity->setGroups($groups);
-				}
-			}
-
-			if (($metadataData['authorization'] ?? null) !== null) {
-				$auth = $metadataData['authorization'];
-				if (is_string($metadataData['authorization']) === true) {
-					$auth = json_decode($metadataData['authorization'], true);
-				}
-
-				$objectEntity->setAuthorization([]);
-				if (is_array($auth) === true) {
-					$objectEntity->setAuthorization($auth);
-				}
-			}
-
-			if (($metadataData['validation'] ?? null) !== null) {
-				$validation = $metadataData['validation'];
-				if (is_string($metadataData['validation']) === true) {
-					$validation = json_decode($metadataData['validation'], true);
-				}
-
-				$objectEntity->setValidation([]);
-				if (is_array($validation) === true) {
-					$objectEntity->setValidation($validation);
-				}
-			}
-
-			if (($metadataData['geo'] ?? null) !== null) {
-				$geo = $metadataData['geo'];
-				if (is_string($metadataData['geo']) === true) {
-					$geo = json_decode($metadataData['geo'], true);
-				}
-
-				$objectEntity->setGeo([]);
-				if (is_array($geo) === true) {
-					$objectEntity->setGeo($geo);
-				}
-			}
-
-			if (($metadataData['retention'] ?? null) !== null) {
-				$retention = $metadataData['retention'];
-				if (is_string($metadataData['retention']) === true) {
-					$retention = json_decode($metadataData['retention'], true);
-				}
-
-				$objectEntity->setRetention([]);
-				if (is_array($retention) === true) {
-					$objectEntity->setRetention($retention);
-				}
-			}
-
-			// Set scalar metadata fields.
-			if (($metadataData['version'] ?? null) !== null) {
-				$objectEntity->setVersion($metadataData['version']);
-			}
-
-			if (($metadataData['folder'] ?? null) !== null) {
-				$objectEntity->setFolder($metadataData['folder']);
-			}
-
-			if (($metadataData['application'] ?? null) !== null) {
-				$objectEntity->setApplication($metadataData['application']);
-			}
-
-			if (($metadataData['size'] ?? null) !== null) {
-				$objectEntity->setSize($metadataData['size']);
-			}
-
-			// Set register and schema.
+			$this->applyRowMetadata(entity: $objectEntity, metadata: $columns['metadata']);
 			$objectEntity->setRegister((string)$register->getId());
 			$objectEntity->setSchema((string)$schema->getId());
-
-			// Set the object data.
-			$objectEntity->setObject($objectData);
+			$objectEntity->setObject($columns['object']);
 
 			return $objectEntity;
 		} catch (\Exception $e) {
@@ -4749,6 +4546,151 @@ class MagicSearchHandler {
 			return null;
 		}//end try
 	}//end convertRowToObjectEntity()
+
+	/**
+	 * Split a magic-table row into its metadata columns and its typed property values.
+	 *
+	 * A column maps back to its original property name through the schema (`e_mailadres`
+	 * is `e-mailadres`), or to its camelCase form when the schema does not declare it.
+	 *
+	 * @param array  $row    Database row data
+	 * @param Schema $schema Schema context
+	 *
+	 * @return array{metadata: array<string, mixed>, object: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function splitRowColumns(array $row, Schema $schema): array {
+		$schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);
+		$propertyFormats     = ($schemaMaps['formats'] ?? []);
+		$columnToPropertyMap = $schemaMaps['columns'];
+		$metadata            = [];
+		$object = [];
+
+		foreach ($row as $column => $value) {
+			$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
+			if ($metadataField !== null) {
+				$metadata[$metadataField] = $value;
+				continue;
+			}
+
+			$propertyName          = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
+			$object[$propertyName] = $this->convertRowValue(
+				value: $value,
+				property: [
+					'type'   => ($schemaMaps['types'][$propertyName] ?? 'string'),
+					'format' => ($propertyFormats[$propertyName] ?? null),
+				]
+			);
+		}
+
+		return ['metadata' => $metadata, 'object' => $object];
+	}//end splitRowColumns()
+
+	/**
+	 * A column value as its schema property type and format read it.
+	 *
+	 * A `date` or `date-time` property lives in a DATETIME column, so the driver returns
+	 * 'Y-m-d H:i:s'. That fails the schema's own format when the object is written back,
+	 * so the value is normalised here, as MagicStatisticsHandler does. A `date-time` column
+	 * carries no offset and is read back in UTC, the timezone the write path stored it in.
+	 *
+	 * @param mixed                                     $value    The column value
+	 * @param array{type: string, format: string|null} $property The schema property type and format
+	 *
+	 * @return mixed
+	 */
+	private function convertRowValue(mixed $value, array $property): mixed {
+		$format = $property['format'];
+		$value  = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $property['type']);
+		if ($value === null || is_string($value) === false || $format === null) {
+			return $value;
+		}
+
+		if ($format === 'date') {
+			$normalised = $this->dateTimeNormalizer->normalize($value);
+			if ($normalised === null) {
+				return null;
+			}
+
+			return $normalised->format('Y-m-d');
+		}
+
+		if ($format === 'date-time') {
+			return $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
+		}
+
+		return $value;
+	}//end convertRowValue()
+
+	/**
+	 * Set every metadata column the row holds a value for, in the order of {@see self::ROW_METADATA_KINDS}.
+	 *
+	 * @param ObjectEntity         $entity   The entity being hydrated
+	 * @param array<string, mixed> $metadata The row's metadata columns, keyed without their prefix
+	 *
+	 * @return void
+	 */
+	private function applyRowMetadata(ObjectEntity $entity, array $metadata): void {
+		foreach (self::ROW_METADATA_KINDS as $field => $kind) {
+			if (($metadata[$field] ?? null) === null) {
+				continue;
+			}
+
+			$setter = 'set'.str_replace('_', '', ucwords($field, '_'));
+			foreach ($this->rowMetadataValues(kind: $kind, value: $metadata[$field]) as $setterValue) {
+				$entity->$setter($setterValue);
+			}
+		}
+	}//end applyRowMetadata()
+
+	/**
+	 * The values one metadata column sets on the entity, in the order they are set.
+	 *
+	 * A JSON column sets its fallback first, then the decoded array when it is one.
+	 *
+	 * @param string $kind  The field's kind in {@see self::ROW_METADATA_KINDS}
+	 * @param mixed  $value The column value, not null
+	 *
+	 * @return list<mixed>
+	 */
+	private function rowMetadataValues(string $kind, mixed $value): array {
+		switch ($kind) {
+			case 'datetime':
+				return [new DateTime($value)];
+			case 'deleted':
+				return [$this->deletedMarker(raw: $value)];
+			case 'float':
+				return [(float)$value];
+			case 'json':
+				return $this->rowJsonValues(value: $value, fallback: []);
+			case 'json-or-null':
+				return $this->rowJsonValues(value: $value, fallback: null);
+			default:
+				return [$value];
+		}
+	}//end rowMetadataValues()
+
+	/**
+	 * The values a JSON metadata column sets: the fallback, then the decoded array when it is one.
+	 *
+	 * @param mixed      $value    The column value, a JSON string or already decoded
+	 * @param array|null $fallback The value set when the column holds no array
+	 *
+	 * @return list<array|null>
+	 */
+	private function rowJsonValues(mixed $value, ?array $fallback): array {
+		$decoded = $value;
+		if (is_string($value) === true) {
+			$decoded = json_decode($value, true);
+		}
+
+		if (is_array($decoded) === true) {
+			return [$fallback, $decoded];
+		}
+
+		return [$fallback];
+	}//end rowJsonValues()
 
 	/**
 	 * The `_deleted` column as the marker `ObjectEntity::setDeleted()` takes.
