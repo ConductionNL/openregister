@@ -62,10 +62,10 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
-use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -100,7 +100,7 @@ class TaskEventsController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskService $tasks Resolves a task by uuid.
+	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param CalendarLinkService $links The link-table layer, uuid-anchored.
 	 * @param CalendarEventService $events The VEVENT layer, for the legacy
@@ -112,7 +112,7 @@ class TaskEventsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskService $tasks,
+		private readonly TaskManagerInterface $tasks,
 		private readonly TaskAuthorizationService $authorization,
 		private readonly CalendarLinkService $links,
 		private readonly CalendarEventService $events,

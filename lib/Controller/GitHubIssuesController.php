@@ -34,8 +34,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubGuards;
-use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubRequestValidator;
 use OCA\OpenRegister\Service\Configuration\RateLimiterService;
 use OCP\AppFramework\Controller;
@@ -82,7 +82,7 @@ class GitHubIssuesController extends Controller {
 	 *
 	 * @param string $appName Nextcloud app name (DI-injected)
 	 * @param IRequest $request Current HTTP request
-	 * @param GitHubHandler $githubHandler Reused HTTP client / token / attribution logic
+	 * @param GitHubClientInterface $githubHandler Reused HTTP client / token / attribution logic
 	 * @param GitHubGuards $guards Policy guards (feature flag, repo allowlist, GET rate limit)
 	 * @param GitHubRequestValidator $validator Pure-function input validators
 	 * @param RateLimiterService $rateLimiter Cache-backed rate limiter with fail-closed contract
@@ -95,7 +95,7 @@ class GitHubIssuesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly GitHubHandler $githubHandler,
+		private readonly GitHubClientInterface $githubHandler,
 		private readonly GitHubGuards $guards,
 		private readonly GitHubRequestValidator $validator,
 		private readonly RateLimiterService $rateLimiter,
