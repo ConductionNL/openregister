@@ -534,43 +534,25 @@ class ResponseGenerationHandler {
 	/**
 	 * Send the conversation to the provider's chat client.
 	 *
-	 * OpenAI and Fireworks both run through OpenAIChat (OpenAIChat::__construct()
-	 * type-errors when given an OllamaConfig). Fireworks then answers through
-	 * direct HTTP, which avoids the OpenAI library's error handling.
+	 * Ollama runs through OllamaChat; OpenAI and the OpenAI-compatible Fireworks
+	 * API run through OpenAIChat (OpenAIChat::__construct() type-errors when
+	 * given an OllamaConfig).
 	 *
 	 * @param array $request Provider, config, message history, tools, functions and channel.
 	 *
-	 * @return array{response: string, chat: OpenAIChat|OllamaChat|null} The response and the chat client used.
+	 * @return array{response: string, chat: OpenAIChat|OllamaChat} The response and the chat client used.
 	 *
 	 * @throws Exception When the API call fails.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	private function runChat(array $request): array {
-		$chat = null;
-		$response = '';
-		if ($request['provider'] !== 'ollama') {
-			$chat = new OpenAIChat($request['config']);
-			$response = $this->invokeChatWithTools(chat: $chat, request: $request);
-		}
+		$chat = match ($request['provider']) {
+			'ollama' => new OllamaChat($request['config']),
+			default => new OpenAIChat($request['config']),
+		};
 
-		if ($request['provider'] === 'fireworks') {
-			/*
-			 * @psalm-suppress UndefinedPropertyFetch LLPhant config has dynamic properties
-			 */
-			$response = $this->callFireworksChatAPIWithHistory(
-				apiKey: $request['config']->apiKey,
-				model: $request['config']->model,
-				baseUrl: $request['config']->url,
-				messageHistory: $request['messageHistory'],
-				functions: $request['functions']
-			);
-		} elseif ($request['provider'] === 'ollama') {
-			$chat = new OllamaChat($request['config']);
-			$response = $this->invokeChatWithTools(chat: $chat, request: $request);
-		}
-
-		return ['response' => $response, 'chat' => $chat];
+		return ['response' => $this->invokeChatWithTools(chat: $chat, request: $request), 'chat' => $chat];
 	}//end runChat()
 
 	/**
@@ -733,7 +715,7 @@ class ResponseGenerationHandler {
 		}
 
 		// Non-streaming fallback — load-bearing for POST /api/chat/send,
-		// for providers without streaming support (Fireworks today), and
+		// for providers whose streaming surface throws MissingFeatureException, and
 		// for Ollama-with-tools where our StreamingToolInstanceWrapper
 		// still fires from the blocking callFunction path so tool_call /
 		// tool_result frames reach the SSE consumer even without token
@@ -817,159 +799,4 @@ class ResponseGenerationHandler {
 
 		return $assembled;
 	}//end streamChat()
-
-	/**
-	 * Call Fireworks AI chat API with full message history
-	 *
-	 * Similar to callFireworksChatAPI but supports full conversation history.
-	 * Converts LLPhant message objects to API format.
-	 *
-	 * @param string $apiKey Fireworks API key.
-	 * @param string $model Model identifier.
-	 * @param string $baseUrl Base API URL.
-	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param array $functions Function definitions for tool calling (optional).
-	 *
-	 * @return string Generated response text
-	 *
-	 * @throws \Exception If API call fails
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  API call requires handling many response scenarios
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
-	 *
-	 * @spec openspec/specs/chat-ai/spec.md
-	 */
-	private function callFireworksChatAPIWithHistory(
-		string $apiKey,
-		string $model,
-		string $baseUrl,
-		array $messageHistory,
-		array $functions = [],
-	): string {
-		$url = rtrim($baseUrl, '/') . '/chat/completions';
-
-		// Note: Function calling with Fireworks AI is not yet implemented.
-		// Functions will be ignored for Fireworks provider.
-		if (empty($functions) === false) {
-			$msg = '[ResponseGenerationHandler] Function calling not yet supported for Fireworks AI. Tools will be ignored.';
-			$this->logger->warning(
-				message: $msg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'functionCount' => count($functions),
-				]
-			);
-		}
-
-		$this->logger->debug(
-			message: '[ResponseGenerationHandler] Calling Fireworks chat API with history',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'url' => $url,
-				'model' => $model,
-				'historyCount' => count($messageHistory),
-			]
-		);
-
-		// Convert LLPhant messages to API format.
-		// LLPhant Message properties are public, so we can access them directly.
-		$messages = [];
-		foreach ($messageHistory as $msg) {
-			// Convert ChatRole enum to string value.
-			$roleString = $msg->role->value;
-			$content = $msg->content;
-
-			$messages[] = [
-				'role' => $roleString,
-				'content' => $content,
-			];
-		}
-
-		// Log final message count.
-		$this->logger->debug(
-			message: '[ResponseGenerationHandler] Prepared messages for API',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'messageCount' => count($messages),
-			]
-		);
-
-		$payload = [
-			'model' => $model,
-			'messages' => $messages,
-		];
-
-		$ch = curl_init($url);
-		curl_setopt($ch, CURLOPT_POST, true);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt(
-			$ch,
-			CURLOPT_HTTPHEADER,
-			[
-				'Authorization: Bearer ' . $apiKey,
-				'Content-Type: application/json',
-			]
-		);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-		curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-		// Longer timeout for conversations.
-		$response = curl_exec($ch);
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		$curlError = curl_error($ch);
-		// No curl_close(): deprecated since PHP 8.0 and a no-op — the
-		// CurlHandle object is freed when it goes out of scope.
-		if ($curlError !== '') {
-			throw new Exception("Fireworks API request failed: {$curlError}");
-		}
-
-		if ($httpCode !== 200) {
-			// Parse error response.
-			$errorData = [];
-			if (is_string($response) === true) {
-				$errorData = json_decode($response, true);
-			}
-
-			$fallbackError = 'Unknown error';
-			if (is_string($response) === true) {
-				$fallbackError = $response;
-			}
-
-			$errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $fallbackError;
-
-			// Make error messages user-friendly.
-			if ($httpCode === 401 || $httpCode === 403) {
-				throw new Exception('Authentication failed. Please check your Fireworks API key.');
-			}
-
-			if ($httpCode === 404) {
-				throw new Exception("Model not found: {$model}. Please check the model name.");
-			}
-
-			if ($httpCode === 429) {
-				throw new Exception('Rate limit exceeded. Please try again later.');
-			}
-
-			throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
-		}//end if
-
-		$data = [];
-		if (is_string($response) === true) {
-			$data = json_decode($response, true);
-		}
-
-		if (isset($data['choices'][0]['message']['content']) === false) {
-			$responseStr = 'Invalid response';
-			if (is_string($response) === true) {
-				$responseStr = $response;
-			}
-
-			throw new Exception('Unexpected Fireworks API response format: ' . $responseStr);
-		}
-
-		return $data['choices'][0]['message']['content'];
-	}//end callFireworksChatAPIWithHistory()
 }//end class

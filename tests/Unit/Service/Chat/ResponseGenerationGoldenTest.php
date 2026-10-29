@@ -196,6 +196,21 @@ class ResponseGenerationGoldenTest extends TestCase {
 	}//end testGenerateResponseMatchesGolden()
 
 	/**
+	 * One message to Fireworks is one request to the provider, as for every other provider.
+	 */
+	public function testFireworksSendsOneRequestPerMessage(): void {
+		file_put_contents(self::$requestLog, '');
+		$functionInfos = [];
+		$case = ['llm' => ['chatProvider' => 'fireworks', 'fireworksConfig' => ['apiKey' => 'fw', 'chatModel' => 'fw-model', 'baseUrl' => '{base}']]];
+		$response = $this->handler(case: $case, functionInfos: $functionInfos)
+			->generateResponse('Hello', ['text' => '', 'sources' => []], [], null);
+
+		$requests = array_values(array_filter(explode("\n", (string)file_get_contents(self::$requestLog))));
+		$this->assertCount(1, $requests);
+		$this->assertSame('Answer from /v1/chat/completions', $response);
+	}//end testFireworksSendsOneRequestPerMessage()
+
+	/**
 	 * @param array<string, mixed> $case
 	 * @param list<FunctionInfo>   $functionInfos Filled with the FunctionInfo objects handed to the chat.
 	 */

@@ -47,24 +47,6 @@
                         }
                     ]
                 }
-            },
-            {
-                "method": "POST",
-                "path": "/v1/chat/completions",
-                "auth": "Bearer fw-test",
-                "body": {
-                    "model": "fw-model",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are a helpful AI assistant that helps users find and understand their data."
-                        },
-                        {
-                            "role": "user",
-                            "content": "What is in register A?"
-                        }
-                    ]
-                }
             }
         ],
         "calls": [
@@ -105,24 +87,6 @@
             ],
             [
                 "log",
-                "debug",
-                "[ResponseGenerationHandler] Calling Fireworks chat API with history",
-                {
-                    "url": "{base}/v1/chat/completions",
-                    "model": "fw-model",
-                    "historyCount": 2
-                }
-            ],
-            [
-                "log",
-                "debug",
-                "[ResponseGenerationHandler] Prepared messages for API",
-                {
-                    "messageCount": 2
-                }
-            ],
-            [
-                "log",
                 "info",
                 "[ResponseGenerationHandler] Response generated - PERFORMANCE",
                 {
@@ -144,24 +108,6 @@
                 "auth": "Bearer fw-test",
                 "body": {
                     "temperature": 0.3,
-                    "model": "agent-model",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are the register guide."
-                        },
-                        {
-                            "role": "user",
-                            "content": "What is in register A?"
-                        }
-                    ]
-                }
-            },
-            {
-                "method": "POST",
-                "path": "/v1/chat/completions",
-                "auth": "Bearer fw-test",
-                "body": {
                     "model": "agent-model",
                     "messages": [
                         {
@@ -214,24 +160,6 @@
             ],
             [
                 "log",
-                "debug",
-                "[ResponseGenerationHandler] Calling Fireworks chat API with history",
-                {
-                    "url": "{base}/v1/chat/completions",
-                    "model": "agent-model",
-                    "historyCount": 2
-                }
-            ],
-            [
-                "log",
-                "debug",
-                "[ResponseGenerationHandler] Prepared messages for API",
-                {
-                    "messageCount": 2
-                }
-            ],
-            [
-                "log",
                 "info",
                 "[ResponseGenerationHandler] Response generated - PERFORMANCE",
                 {
@@ -247,24 +175,6 @@
         "response": "Answer from /v1/chat/completions",
         "usage": [],
         "requests": [
-            {
-                "method": "POST",
-                "path": "/v1/chat/completions",
-                "auth": "Bearer fw",
-                "body": {
-                    "model": "accounts/fireworks/models/llama-v3p1-8b-instruct",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are a helpful AI assistant that helps users find and understand their data."
-                        },
-                        {
-                            "role": "user",
-                            "content": "What is in register A?"
-                        }
-                    ]
-                }
-            },
             {
                 "method": "POST",
                 "path": "/v1/chat/completions",
@@ -317,24 +227,6 @@
                         }
                     },
                     "hasTools": false
-                }
-            ],
-            [
-                "log",
-                "debug",
-                "[ResponseGenerationHandler] Calling Fireworks chat API with history",
-                {
-                    "url": "{base}/v1/chat/completions",
-                    "model": "accounts/fireworks/models/llama-v3p1-8b-instruct",
-                    "historyCount": 2
-                }
-            ],
-            [
-                "log",
-                "debug",
-                "[ResponseGenerationHandler] Prepared messages for API",
-                {
-                    "messageCount": 2
                 }
             ],
             [
