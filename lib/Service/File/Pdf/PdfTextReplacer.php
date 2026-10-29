@@ -632,4 +632,42 @@ class PdfTextReplacer {
 			streamsModified: 0
 		);
 	}//end measureNoOpStructurePreservation()
+
+	/**
+	 * Strip the /Info dictionary and XMP metadata from PDF bytes.
+	 *
+	 * Fails closed: when the PDF library cannot reparse or reserialise the
+	 * bytes, the unsanitised input (which still carries the original
+	 * document metadata) is never returned.
+	 *
+	 * @param string $pdfBytes PDF bytes, typically the output of {@see replaceInPdf()}.
+	 *
+	 * @return string The re-serialised PDF without document metadata.
+	 *
+	 * @throws PdfAnonymisationException When the bytes cannot be reparsed or the serialised result is empty.
+	 *
+	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 */
+	public function sanitizeMetadata(string $pdfBytes): string {
+		$doc = PDFDoc::from_string(buffer: $pdfBytes);
+		if ($doc === false) {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'SAPP failed to reparse replaced PDF for metadata sanitisation',
+				diagnostic: ['stage' => 'sanitize.reparse']
+			);
+		}
+
+		(new PdfMetadataSanitizer(logger: $this->logger))->sanitize(doc: $doc);
+		$serialised = $doc->to_pdf_file_s(rebuild: true);
+		if ($serialised === false || $serialised === '') {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'SAPP serialise after metadata sanitisation returned empty',
+				diagnostic: ['stage' => 'sanitize.serialise']
+			);
+		}
+
+		return $serialised;
+	}//end sanitizeMetadata()
 }//end class
