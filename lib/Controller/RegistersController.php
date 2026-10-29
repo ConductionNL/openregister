@@ -26,8 +26,8 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Contract\ObjectExporterInterface;
-use OCA\OpenRegister\Contract\ObjectImporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;

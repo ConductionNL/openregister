@@ -143,7 +143,9 @@ MUST persist OR-side metadata independently of the Nextcloud node.
 `description`/`category`/`labels` as independently optional — a `null` argument
 leaves the field unchanged while an explicit value (including `""` or `[]`)
 overwrites it. Document content rewrites (`DocumentProcessingHandler::replaceWords`
-for `.doc`/`.docx` via PHPWord and text files, and `::anonymizeDocument` which
+for `.docx`, by editing the text of the body, header, footer, note and comment
+parts in place across the runs of each paragraph, and for text files; and
+`::anonymizeDocument` which
 builds `[ENTITY_TYPE: key]` replacements) MUST write the result as a new
 `<name>_replaced` / `<name>_anonymized` sibling node rather than mutating the
 source. Write-path lock guarding MUST go through

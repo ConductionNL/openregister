@@ -208,7 +208,7 @@ class DependentValueListenerTest extends TestCase {
 	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
 	 */
 	public function testTheListenerIsSubscribedToBothWriteEvents(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/ListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(

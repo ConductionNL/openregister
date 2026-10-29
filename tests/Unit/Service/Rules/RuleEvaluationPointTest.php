@@ -194,7 +194,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
 	 */
 	public function testTheRuleListenersAreSubscribedToThoseEvents(): void {
-		$application = (string)file_get_contents($this->lib() . '/AppInfo/Application.php');
+		$application = (string)file_get_contents($this->lib() . '/Listener/ListenerRegistrar.php');
 
 		$this->assertStringContainsString(
 			needle: 'registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class)',
@@ -226,7 +226,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function testTheAdministeredValidationsAreSubscribedToThoseEvents(): void {
-		$application = (string)file_get_contents($this->lib() . '/AppInfo/Application.php');
+		$application = (string)file_get_contents($this->lib() . '/Listener/ListenerRegistrar.php');
 
 		foreach (['ObjectCreatingEvent', 'ObjectUpdatingEvent'] as $event) {
 			$this->assertStringContainsString(
