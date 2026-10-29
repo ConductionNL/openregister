@@ -33,7 +33,6 @@ use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -1425,17 +1424,13 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		$targets = $this->crossTableTargets(params: $params, register: $register, schema: $schema);
+		$urlPath = ['register' => $register, 'schema' => $schema];
+		$targets = $this->crossTableTargets(params: $params, urlPath: $urlPath);
 		if ($targets !== null) {
-			return $this->crossTableSearch(
-				registers: $targets['registers'],
-				schemas: $targets['schemas'],
-				objectService: $objectService
-			);
+			return $this->crossTableSearch(registers: $targets['registers'], schemas: $targets['schemas'], objectService: $objectService);
 		}
 
 		try {
-			// Resolve slugs to numeric IDs consistently (validation only).
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -1450,7 +1445,7 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		$listing = $this->buildListingScope(register: $register, schema: $schema, resolved: $resolved);
+		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
 			return $this->indexFromMagicTable(listing: $listing, objectService: $objectService);
@@ -1492,25 +1487,25 @@ class ObjectsController extends Controller {
 	 * for `registers`. Only an explicit list of more than one value makes the
 	 * listing cross-table; the URL path fills in the side that was not listed.
 	 *
-	 * @param array  $params   The request parameters.
-	 * @param string $register The register from the URL path.
-	 * @param string $schema   The schema from the URL path.
+	 * @param array $params  The request parameters.
+	 * @param array $urlPath The register and schema from the URL path.
 	 *
 	 * @psalm-param array<string, mixed> $params
+	 * @psalm-param array{register: string, schema: string} $urlPath
 	 *
 	 * @return array{registers: array, schemas: array}|null
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function crossTableTargets(array $params, string $register, string $schema): ?array {
+	private function crossTableTargets(array $params, array $urlPath): ?array {
 		$schemasList = [];
 		if (($params['schemas'] ?? null) !== null) {
-			$schemasList = $this->parseMultiValue(param: $params['schemas'], defaultValue: $schema);
+			$schemasList = $this->parseMultiValue(param: $params['schemas'], defaultValue: $urlPath['schema']);
 		}
 
 		$registersList = [];
 		if (($params['registers'] ?? null) !== null) {
-			$registersList = $this->parseMultiValue(param: $params['registers'], defaultValue: $register);
+			$registersList = $this->parseMultiValue(param: $params['registers'], defaultValue: $urlPath['register']);
 		}
 
 		if (count($schemasList) <= 1 && count($registersList) <= 1) {
@@ -1518,11 +1513,11 @@ class ObjectsController extends Controller {
 		}
 
 		if (empty($schemasList) === true) {
-			$schemasList = [$schema];
+			$schemasList = [$urlPath['schema']];
 		}
 
 		if (empty($registersList) === true) {
-			$registersList = [$register];
+			$registersList = [$urlPath['register']];
 		}
 
 		return ['registers' => $registersList, 'schemas' => $schemasList];
@@ -1536,23 +1531,23 @@ class ObjectsController extends Controller {
 	 * reachable anonymously (@PublicPage); honouring ?rbac=false&_multi=false
 	 * would let any caller list every object across all organisations/ACLs.
 	 *
-	 * @param string $register The register from the URL path.
-	 * @param string $schema   The schema from the URL path.
-	 * @param array  $resolved The resolved register and schema.
+	 * @param array $urlPath  The register and schema from the URL path.
+	 * @param array $resolved The resolved register and schema.
 	 *
+	 * @psalm-param array{register: string, schema: string} $urlPath
 	 * @psalm-param array<string, mixed> $resolved
 	 *
 	 * @return array<string, mixed> The listing scope.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function buildListingScope(string $register, string $schema, array $resolved): array {
+	private function buildListingScope(array $urlPath, array $resolved): array {
 		$params  = $this->request->getParams();
 		$isAdmin = $this->isCurrentUserAdmin();
 
 		return [
-			'register' => $register,
-			'schema'   => $schema,
+			'register' => $urlPath['register'],
+			'schema'   => $urlPath['schema'],
 			'resolved' => $resolved,
 			'params'   => $params,
 			'rbac'     => ($isAdmin === false),
@@ -1615,44 +1610,41 @@ class ObjectsController extends Controller {
 		$query['_multitenancy'] = $listing['multi'];
 		// Never request-controlled; read by the public schema bypass logic.
 		$query['_multitenancy_explicit'] = false;
+		$listing['query']       = $query;
+		$listing['magicMapper'] = $magicMapper;
+
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
 			query: $query,
 			register: $registerEntity,
 			schema: $schemaEntity
 		);
-		$serializedResults = $this->serializeMagicResults(results: $results, query: $query, listing: $listing);
-		$pagination        = $this->paginateMagicResults(query: $query, listing: $listing, magicMapper: $magicMapper);
+		$serializedResults = $this->serializeMagicResults(results: $results, listing: $listing);
+		$page            = $this->paginateMagicResults(listing: $listing);
+		$page['results'] = $serializedResults;
 
-		$responseData = $this->buildMagicResponse(
-			results: $serializedResults,
-			pagination: $pagination,
-			query: $query,
-			listing: $listing
-		);
+		$responseData = $this->buildMagicResponse(page: $page, listing: $listing);
 		$responseData = $this->addIgnoredFilterHint(responseData: $responseData, ignoredFilters: $magicMapper->getIgnoredFilters());
-		$responseData = $this->addMagicFacets(responseData: $responseData, query: $query, magicMapper: $magicMapper, listing: $listing);
+		$responseData = $this->addMagicFacets(responseData: $responseData, listing: $listing);
 
-		return $this->magicListingResponse(responseData: $responseData, query: $query, listing: $listing);
+		return $this->magicListingResponse(responseData: $responseData, listing: $listing);
 	}//end indexFromMagicTable()
 
 	/**
 	 * Strip empty values, apply the spatial post-filter and negotiate the format of a magic-table listing.
 	 *
 	 * @param array $responseData The response body.
-	 * @param array $query        The search query.
-	 * @param array $listing      The listing scope.
+	 * @param array $listing      The listing scope, with its search query.
 	 *
 	 * @psalm-param array<string, mixed> $responseData
-	 * @psalm-param array<string, mixed> $query
 	 * @psalm-param array<string, mixed> $listing
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function magicListingResponse(array $responseData, array $query, array $listing): JSONResponse {
+	private function magicListingResponse(array $responseData, array $listing): JSONResponse {
 		$includeEmpty = filter_var(
-			value: $query['_empty'] ?? $listing['params']['_empty'] ?? false,
+			value: $listing['query']['_empty'] ?? $listing['params']['_empty'] ?? false,
 			filter: FILTER_VALIDATE_BOOLEAN
 		);
 		if ($includeEmpty === false) {
@@ -1737,17 +1729,16 @@ class ObjectsController extends Controller {
 	 * Render or serialize the rows a magic-table search returned.
 	 *
 	 * @param array $results The ObjectEntity rows.
-	 * @param array $query   The search query.
-	 * @param array $listing The listing scope.
+	 * @param array $listing The listing scope, with its search query.
 	 *
-	 * @psalm-param array<string, mixed> $query
 	 * @psalm-param array<string, mixed> $listing
 	 *
 	 * @return array The rendered rows.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function serializeMagicResults(array $results, array $query, array $listing): array {
+	private function serializeMagicResults(array $results, array $listing): array {
+		$query  = $listing['query'];
 		$extend = $this->rowExtensions(query: $query);
 
 		$hasComplexRendering = empty($extend) === false
@@ -1797,18 +1788,16 @@ class ObjectsController extends Controller {
 	 * query and reports total null, for callers that do not need the grand
 	 * total (e.g. infinite scroll).
 	 *
-	 * @param array       $query       The search query.
-	 * @param array       $listing     The listing scope.
-	 * @param MagicMapper $magicMapper The magic mapper.
+	 * @param array $listing The listing scope, with its search query and magic mapper.
 	 *
-	 * @psalm-param array<string, mixed> $query
 	 * @psalm-param array<string, mixed> $listing
 	 *
 	 * @return array{total: int|null, pages: int, page: int, limit: int}
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function paginateMagicResults(array $query, array $listing, MagicMapper $magicMapper): array {
+	private function paginateMagicResults(array $listing): array {
+		$query  = $listing['query'];
 		$limit  = (int)($query['_limit'] ?? 20);
 		$offset = $query['_offset'] ?? null;
 		$page   = $query['_page'] ?? null;
@@ -1820,7 +1809,7 @@ class ObjectsController extends Controller {
 			$offset = (int)($offset ?? 0);
 		}
 
-		$total = $this->countMagicTotal(query: $query, listing: $listing, magicMapper: $magicMapper);
+		$total = $this->countMagicTotal(listing: $listing);
 		if ($limit <= 0) {
 			return ['total' => $total, 'pages' => 1, 'page' => 1, 'limit' => $limit];
 		}
@@ -1843,26 +1832,23 @@ class ObjectsController extends Controller {
 	 *
 	 * The count query is the search query without its pagination keys.
 	 *
-	 * @param array       $query       The search query.
-	 * @param array       $listing     The listing scope.
-	 * @param MagicMapper $magicMapper The magic mapper.
+	 * @param array $listing The listing scope, with its search query and magic mapper.
 	 *
-	 * @psalm-param array<string, mixed> $query
 	 * @psalm-param array<string, mixed> $listing
 	 *
 	 * @return int|null
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function countMagicTotal(array $query, array $listing, MagicMapper $magicMapper): ?int {
+	private function countMagicTotal(array $listing): ?int {
 		if ($this->wantsListingTotal(params: $listing['params']) === false) {
 			return null;
 		}
 
-		$countQuery = $query;
+		$countQuery = $listing['query'];
 		unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
 
-		return $magicMapper->countObjectsInRegisterSchemaTable(
+		return $listing['magicMapper']->countObjectsInRegisterSchemaTable(
 			query: $countQuery,
 			register: $listing['resolved']['registerEntity'],
 			schema: $listing['resolved']['schemaEntity']
@@ -1889,26 +1875,24 @@ class ObjectsController extends Controller {
 	/**
 	 * The response body of a magic-table listing, before hints, facets and post-filters.
 	 *
-	 * @param array $results    The rendered rows.
-	 * @param array $pagination The pagination figures.
-	 * @param array $query      The search query.
-	 * @param array $listing    The listing scope.
+	 * @param array $page    The rendered rows and the pagination figures.
+	 * @param array $listing The listing scope, with its search query.
 	 *
-	 * @psalm-param array<string, mixed> $pagination
-	 * @psalm-param array<string, mixed> $query
+	 * @psalm-param array<string, mixed> $page
 	 * @psalm-param array<string, mixed> $listing
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function buildMagicResponse(array $results, array $pagination, array $query, array $listing): array {
+	private function buildMagicResponse(array $page, array $listing): array {
+		$query        = $listing['query'];
 		$responseData = [
-			'results' => $results,
-			'total'   => $pagination['total'],
-			'pages'   => $pagination['pages'],
-			'page'    => $pagination['page'],
-			'limit'   => $pagination['limit'],
+			'results' => $page['results'],
+			'total'   => $page['total'],
+			'pages'   => $page['pages'],
+			'page'    => $page['page'],
+			'limit'   => $page['limit'],
 			'@self'   => [
 				'source'             => 'magic_mapper',
 				'register'           => $listing['register'],
@@ -1994,27 +1978,24 @@ class ObjectsController extends Controller {
 	/**
 	 * Add the magic table's facets when `_facets` asks for them.
 	 *
-	 * @param array       $responseData The response body.
-	 * @param array       $query        The search query.
-	 * @param MagicMapper $magicMapper  The magic mapper.
-	 * @param array       $listing      The listing scope.
+	 * @param array $responseData The response body.
+	 * @param array $listing      The listing scope, with its search query and magic mapper.
 	 *
 	 * @psalm-param array<string, mixed> $responseData
-	 * @psalm-param array<string, mixed> $query
 	 * @psalm-param array<string, mixed> $listing
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function addMagicFacets(array $responseData, array $query, MagicMapper $magicMapper, array $listing): array {
-		if (empty($query['_facets']) === true) {
+	private function addMagicFacets(array $responseData, array $listing): array {
+		if (empty($listing['query']['_facets']) === true) {
 			return $responseData;
 		}
 
 		try {
-			$facets = $magicMapper->getSimpleFacetsFromRegisterSchemaTable(
-				query: $query,
+			$facets = $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
+				query: $listing['query'],
 				register: $listing['resolved']['registerEntity'],
 				schema: $listing['resolved']['schemaEntity']
 			);
