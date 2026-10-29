@@ -1,13 +1,17 @@
 <?php
 
 /**
- * lib/Contract is the leaf every component may depend on.
+ * lib/Contract and lib/Kernel/Contracts are the leaves every component may depend on.
  *
- * It holds interfaces and value types only. A contract may name another
+ * They hold interfaces and value types only. A contract may name another
  * contract, the entities in lib/Db, an event or an exception, and nothing
  * else of OpenRegister: a contract that reaches a mapper or a service ties
  * every caller of the contract to that class again, which is the coupling
  * the contract exists to remove.
+ *
+ * lib/Contract is the contract other apps consume (ADR-084), so it holds
+ * exactly the published files. Interfaces between OpenRegister's own
+ * components live in lib/Kernel/Contracts.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -29,6 +33,19 @@ class ContractIsALeafTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
+	 * The files of the published contract.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PUBLISHED = [
+		'EmailLinkReaderInterface.php',
+		'ObjectEntityInterface.php',
+		'ObjectServiceInterface.php',
+		'RegisterSlugResolution.php',
+		'RegisterSlugResolverInterface.php',
+	];
+
+	/**
 	 * Every OpenRegister class a contract names is a contract, an entity, an event or an exception.
 	 *
 	 * @return void
@@ -36,7 +53,8 @@ class ContractIsALeafTest extends TestCase {
 	public function testContractsNameOnlyKernelTypes(): void {
 		$offenders = [];
 
-		foreach ((array)glob(self::LIB . '/Contract/*.php') as $path) {
+		$paths = array_merge((array)glob(self::LIB . '/Contract/*.php'), (array)glob(self::LIB . '/Kernel/Contracts/*.php'));
+		foreach ($paths as $path) {
 			foreach ($this->referencedClasses(source: (string)file_get_contents((string)$path)) as $class) {
 				if ($this->isKernelType(class: $class) === false) {
 					$offenders[] = basename((string)$path) . ' → ' . $class;
@@ -50,6 +68,21 @@ class ContractIsALeafTest extends TestCase {
 			message: 'a contract may only name kernel types: ' . implode(', ', $offenders)
 		);
 	}//end testContractsNameOnlyKernelTypes()
+
+	/**
+	 * lib/Contract holds the published contract and nothing else.
+	 *
+	 * @return void
+	 */
+	public function testContractHoldsOnlyThePublishedFiles(): void {
+		$files = array_map(
+			fn (string $path): string => basename($path),
+			(array)glob(self::LIB . '/Contract/*.php')
+		);
+		sort($files);
+
+		$this->assertSame(expected: self::PUBLISHED, actual: $files);
+	}//end testContractHoldsOnlyThePublishedFiles()
 
 	/**
 	 * The check itself rejects a contract that names a service or a mapper.
@@ -108,7 +141,7 @@ class ContractIsALeafTest extends TestCase {
 		$own = array_filter(
 			$classes,
 			fn (string $class): bool => str_starts_with(ltrim($class, '\\'), 'OCA\\OpenRegister\\') === true
-				&& str_starts_with(ltrim($class, '\\'), 'OCA\\OpenRegister\\Contract') === false
+				&& preg_match('/^OCA\\\\OpenRegister\\\\(Contract|Kernel\\\\Contracts)(\\\\|$)/', ltrim($class, '\\')) !== 1
 		);
 
 		return array_values(array_unique(array_map(fn (string $class): string => ltrim($class, '\\'), $own)));
