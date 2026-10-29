@@ -199,4 +199,49 @@ class ConversionManagerConverterTest extends TestCase {
 
 		$this->assertSame('%PDF-1.7 converted', $this->converter()->odtToPdf(odtBytes: 'odt'));
 	}//end testCreatesTheWorkFolder()
+
+	/**
+	 * Legacy .doc converts to DOCX when offered, else to plain text, else not at all.
+	 *
+	 * @return void
+	 */
+	public function testLegacyDocTargetPrefersDocx(): void {
+		$doc = 'application/msword';
+		$docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+		$this->offers(pairs: [[$doc, 'text/plain'], [$doc, $docx]]);
+		$this->assertSame('docx', $this->converter()->legacyDocTarget());
+
+		$this->manager = $this->createMock(IConversionManager::class);
+		$this->offers(pairs: [[$doc, 'text/plain']]);
+		$this->assertSame('txt', $this->converter()->legacyDocTarget());
+
+		$this->manager = $this->createMock(IConversionManager::class);
+		$this->offers(pairs: [[self::ODT, 'application/pdf']]);
+		$this->assertNull($this->converter()->legacyDocTarget());
+	}//end testLegacyDocTargetPrefersDocx()
+
+	/**
+	 * A legacy .doc goes through a .doc work file and comes back as DOCX.
+	 *
+	 * @return void
+	 */
+	public function testConvertsLegacyDocToDocx(): void {
+		$docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+		$this->offers(pairs: [['application/msword', $docx]]);
+		$this->workFolderExists();
+
+		$source = $this->createMock(File::class);
+		$this->work->expects($this->once())->method('newFile')
+			->with($this->matchesRegularExpression('/^[0-9a-f]{32}\.doc$/'), 'doc bytes')
+			->willReturn($source);
+		$result = $this->createMock(File::class);
+		$result->method('getContent')->willReturn('PK docx');
+		$this->work->method('get')->willReturn($result);
+		$this->manager->expects($this->once())->method('convert')
+			->with($source, $docx, $this->matchesRegularExpression('#\.docx$#'))
+			->willReturn('/openregister/files/.office-conversion/out.docx');
+
+		$this->assertSame('PK docx', $this->converter()->convertLegacyDoc(docBytes: 'doc bytes', target: 'docx'));
+	}//end testConvertsLegacyDocToDocx()
 }//end class
