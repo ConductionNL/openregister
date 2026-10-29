@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\GitHubHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\GitHubFileLocation
  */
 class GitHubHandlerPublishGoldenTest extends TestCase {
 
