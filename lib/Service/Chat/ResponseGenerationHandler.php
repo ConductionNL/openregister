@@ -160,8 +160,6 @@ class ResponseGenerationHandler {
 	 * @psalm-param  array{text: string, sources: list<array>} $context
 	 * @psalm-return string
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) LLPhantMessage factory methods are standard LLPhant pattern
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function generateResponse(
@@ -196,46 +194,19 @@ class ResponseGenerationHandler {
 		$chatProvider = $this->chatProvider(llmConfig: $llmConfig, hasTools: empty($tools) === false);
 
 		try {
-			$config = $this->buildChatConfig(llmConfig: $llmConfig, agent: $agent);
-
-			$systemPrompt = ($agent?->getPrompt() ?? 'You are a helpful AI assistant that helps users find and understand their data.');
-			$systemPrompt .= $this->appContextPrompt(cnAiContext: $cnAiContext);
-			$systemPrompt .= $this->ragContextPrompt(contextText: $context['text']);
-			array_unshift($messageHistory, LLPhantMessage::system($systemPrompt));
-			$messageHistory[] = LLPhantMessage::user($userMessage);
-
-			$functions = [];
-			if (empty($tools) === false) {
-				$functions = $this->toolHandler->convertToolsToFunctions($tools);
-			}
-
-			$request = [
-				'provider' => $chatProvider,
-				'config' => $config,
-				'messageHistory' => $messageHistory,
-				'tools' => $tools,
-				'functions' => $functions,
-				'channel' => $channel,
-			];
-			$llmStartTime = microtime(true);
-			$result = $this->runChat(request: $request);
-			$llmTime = microtime(true) - $llmStartTime;
-
-			$this->logPerformance(
-				request: $request + ['response' => $result['response']],
-				timings: ['total' => microtime(true) - $startTime, 'tools' => $toolsTime, 'llm' => $llmTime]
+			return $this->generateWithProvider(
+				request: [
+					'provider' => $chatProvider,
+					'config' => $this->buildChatConfig(llmConfig: $llmConfig, agent: $agent),
+					'messageHistory' => $this->conversation(
+						messageHistory: $messageHistory,
+						turn: ['agent' => $agent, 'userMessage' => $userMessage, 'context' => $context, 'cnAiContext' => $cnAiContext]
+					),
+					'tools' => $tools,
+					'channel' => $channel,
+				],
+				timings: ['start' => $startTime, 'tools' => $toolsTime]
 			);
-
-			// Expose the LLM token/latency usage for per-run cost recording (run-analytics).
-			// Only OllamaChat accumulates usage today; other providers leave it empty.
-			$this->lastUsage = [];
-			if ($result['chat'] instanceof OllamaChat) {
-				$this->lastUsage = $result['chat']->lastUsage;
-			}
-
-			$this->lastUsage['llmSeconds'] = round($llmTime, 2);
-
-			return $result['response'];
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ResponseGenerationHandler] Failed to generate response',
@@ -249,6 +220,69 @@ class ResponseGenerationHandler {
 			throw new Exception('Failed to generate response: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end generateResponse()
+
+	/**
+	 * Put the system prompt before the history and the user's message after it.
+	 *
+	 * The system prompt is the agent's prompt or the default, then the app
+	 * context and the retrieved RAG context.
+	 *
+	 * @param array $messageHistory Array of LLPhantMessage objects.
+	 * @param array $turn           The agent, the user's message, the RAG context and the app context.
+	 *
+	 * @return array The full conversation as LLPhantMessage objects.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) LLPhantMessage factory methods are standard LLPhant pattern
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function conversation(array $messageHistory, array $turn): array {
+		$systemPrompt = ($turn['agent']?->getPrompt() ?? 'You are a helpful AI assistant that helps users find and understand their data.');
+		$systemPrompt .= $this->appContextPrompt(cnAiContext: $turn['cnAiContext']);
+		$systemPrompt .= $this->ragContextPrompt(contextText: $turn['context']['text']);
+		array_unshift($messageHistory, LLPhantMessage::system($systemPrompt));
+		$messageHistory[] = LLPhantMessage::user($turn['userMessage']);
+		return $messageHistory;
+	}//end conversation()
+
+	/**
+	 * Run the chat, log its performance and record its usage.
+	 *
+	 * Only OllamaChat accumulates token usage today; other providers leave it
+	 * empty. The usage is exposed for per-run cost recording (run-analytics).
+	 *
+	 * @param array                $request Provider, config, conversation, tools and channel.
+	 * @param array<string, float> $timings The start time and the tool loading time.
+	 *
+	 * @return string The generated response.
+	 *
+	 * @throws Exception When the API call fails.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function generateWithProvider(array $request, array $timings): string {
+		$request['functions'] = [];
+		if (empty($request['tools']) === false) {
+			$request['functions'] = $this->toolHandler->convertToolsToFunctions($request['tools']);
+		}
+
+		$llmStartTime = microtime(true);
+		$result = $this->runChat(request: $request);
+		$llmTime = microtime(true) - $llmStartTime;
+
+		$this->logPerformance(
+			request: $request + ['response' => $result['response']],
+			timings: ['total' => microtime(true) - $timings['start'], 'tools' => $timings['tools'], 'llm' => $llmTime]
+		);
+
+		$this->lastUsage = [];
+		if ($result['chat'] instanceof OllamaChat) {
+			$this->lastUsage = $result['chat']->lastUsage;
+		}
+
+		$this->lastUsage['llmSeconds'] = round($llmTime, 2);
+		return $result['response'];
+	}//end generateWithProvider()
 
 	/**
 	 * The agent's enabled tools, filtered by the selected tools.
