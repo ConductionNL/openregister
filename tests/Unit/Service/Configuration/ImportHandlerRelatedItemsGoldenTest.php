@@ -42,7 +42,8 @@ use Psr\Log\LoggerInterface;
  * `fixtures/related-items-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 
@@ -116,8 +117,6 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::processRelatedItems
 	 *
 	 * @dataProvider cases
 	 */
