@@ -163,29 +163,71 @@ class DocumentProcessingHandlerDocxTest extends TestCase {
 	}//end testReplacesInEveryTextPart()
 
 	/**
-	 * A value split over several runs is not replaced.
+	 * A value split over several runs is replaced, in the run where it starts.
 	 *
 	 * @return void
 	 */
-	public function testValueSplitOverRunsIsKept(): void {
+	public function testValueSplitOverRunsIsReplaced(): void {
 		$this->replace(fixture: 'Word/word-structures.docx', replacements: ['Maria Bakker' => '[PERSOON: 1]', 'Jan Jansen' => '[PERSOON: 2]']);
 
 		$body = $this->partText(pattern: '#^word/document\.xml$#');
-		$this->assertStringContainsString('Aanvrager Maria Bakker woont', $body);
-		$this->assertStringContainsString('Gesplitst: Jan Jansen tekent.', $body);
-	}//end testValueSplitOverRunsIsKept()
+		$this->assertStringContainsString('Aanvrager [PERSOON: 1] woont', $body);
+		$this->assertStringContainsString('Gesplitst: [PERSOON: 2] tekent.', $body);
+		$this->assertStringContainsString('<w:b/></w:rPr><w:t xml:space="preserve">[PERSOON: 1]</w:t>', $this->part(name: 'word/document.xml'));
+	}//end testValueSplitOverRunsIsReplaced()
 
 	/**
-	 * Deleted tracked-change text is replaced; comments keep their values.
+	 * Deleted tracked-change text and comments are replaced too.
 	 *
 	 * @return void
 	 */
-	public function testDeletedTextIsReplacedCommentsAreKept(): void {
+	public function testDeletedTextAndCommentsAreReplaced(): void {
 		$this->replace(fixture: 'Word/word-structures.docx', replacements: ['Maria Bakker' => '[PERSOON: 1]', '12.000' => '[BEDRAG: 1]']);
 
 		$this->assertSame('[BEDRAG: 1]', $this->partText(pattern: '#^word/document\.xml$#', query: '//w:delText'));
-		$this->assertSame('Controleer de naam van Maria Bakker.', $this->partText(pattern: '#^word/comments\.xml$#'));
-	}//end testDeletedTextIsReplacedCommentsAreKept()
+		$this->assertSame('Controleer de naam van [PERSOON: 1].', $this->partText(pattern: '#^word/comments\.xml$#'));
+	}//end testDeletedTextAndCommentsAreReplaced()
+
+	/**
+	 * Parts without a match, and the package's other files, are written back unchanged.
+	 *
+	 * @return void
+	 */
+	public function testUntouchedPartsAreByteIdentical(): void {
+		$this->replace(fixture: 'Word/word-structures.docx', replacements: ['Gemeente' => 'G.']);
+
+		$source = new ZipArchive();
+		$source->open(dirname(__DIR__, 3) . '/Data/Word/word-structures.docx');
+		foreach (['word/document.xml', 'word/footer1.xml', 'word/styles.xml', 'word/numbering.xml', 'docProps/core.xml', '[Content_Types].xml'] as $name) {
+			$this->assertSame($source->getFromName($name), $this->part(name: $name), $name);
+		}
+
+		$source->close();
+		$this->assertSame('G. Demostad kenmerk ZK-2026-0042', $this->partText(pattern: '#^word/header\d*\.xml$#'));
+	}//end testUntouchedPartsAreByteIdentical()
+
+	/**
+	 * A replacement that contains its own search text is not replaced again.
+	 *
+	 * @return void
+	 */
+	public function testReplacementContainingSearchTextEnds(): void {
+		$this->replace(fixture: 'Word/word-structures.docx', replacements: ['Jansen' => 'Jansen-Jansen']);
+
+		$this->assertSame('Behandelaar Jan Jansen-Jansen telefoon 0612345678', $this->partText(pattern: '#^word/footer\d*\.xml$#'));
+	}//end testReplacementContainingSearchTextEnds()
+
+	/**
+	 * Bytes that are not a DOCX package fail with an exception.
+	 *
+	 * @return void
+	 */
+	public function testNonPackageFails(): void {
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Failed to replace words in Word document');
+
+		$this->replace(fixture: 'Word/not-a-package.docx', replacements: ['a' => 'b']);
+	}//end testNonPackageFails()
 
 	/**
 	 * Matching ignores case and every occurrence is replaced.
