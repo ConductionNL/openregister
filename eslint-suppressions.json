@@ -500,18 +500,6 @@
   },
   "src/modals/configuration/PublishConfiguration.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 4
-    },
-    "no-console": {
-      "count": 3
-    },
-    "vue/prefer-define-options": {
       "count": 1
     }
   },
@@ -561,6 +549,17 @@
     },
     "vue/prefer-define-options": {
       "count": 1
+    }
+  },
+  "src/modals/github/PublishToGithub.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    },
+    "@nextcloud/no-deprecated-library-props": {
+      "count": 1
+    },
+    "no-console": {
+      "count": 3
     }
   },
   "src/modals/logs/AuditTrailChanges.vue": {
@@ -886,18 +885,6 @@
   },
   "src/modals/register/PublishRegister.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 4
-    },
-    "no-console": {
-      "count": 3
-    },
-    "vue/prefer-define-options": {
       "count": 1
     }
   },

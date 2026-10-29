@@ -11,8 +11,8 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { registerStore } from '../../store/store.js'
 import PublishToGithub from '../github/PublishToGithub.vue'
+import { registerStore } from '../../store/store.js'
 
 export default {
 	name: 'PublishRegister',
@@ -32,7 +32,9 @@ export default {
 		 * @spec exclude UI display helper — the default file name from the register slug.
 		 */
 		defaultFilePath() {
-			return this.register?.slug ? `${this.register.slug}_openregister.json` : ''
+			return this.register?.slug
+				? `${this.register.slug}_openregister.json`
+				: ''
 		},
 
 		/**
@@ -42,8 +44,17 @@ export default {
 			return {
 				title: t('openregister', 'Publish Register OAS to GitHub'),
 				entityHeading: t('openregister', 'Register'),
-				filePathPlaceholder: t('openregister', 'e.g., lib/settings/register.json'),
-				filePathHint: t('openregister', 'Path where the register OAS file will be saved in the repository'),
+
+				filePathPlaceholder: t(
+					'openregister',
+					'e.g., lib/settings/register.json',
+				),
+
+				filePathHint: t(
+					'openregister',
+					'Path where the register OAS file will be saved in the repository',
+				),
+
 				commitPlaceholder: t('openregister', 'Update register OAS: ...'),
 				commitPrefix: 'Update register OAS: ',
 				publishedMessage: 'Register OAS published successfully!',

@@ -11,8 +11,8 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { configurationStore } from '../../store/store.js'
 import PublishToGithub from '../github/PublishToGithub.vue'
+import { configurationStore } from '../../store/store.js'
 
 export default {
 	name: 'PublishConfiguration',
@@ -35,8 +35,17 @@ export default {
 			return {
 				title: t('openregister', 'Publish Configuration to GitHub'),
 				entityHeading: t('openregister', 'Configuration'),
-				filePathPlaceholder: t('openregister', 'e.g., lib/settings/config.json'),
-				filePathHint: t('openregister', 'Path where the configuration file will be saved in the repository'),
+
+				filePathPlaceholder: t(
+					'openregister',
+					'e.g., lib/settings/config.json',
+				),
+
+				filePathHint: t(
+					'openregister',
+					'Path where the configuration file will be saved in the repository',
+				),
+
 				commitPlaceholder: t('openregister', 'Update configuration: ...'),
 				commitPrefix: 'Update configuration: ',
 				publishedMessage: 'Configuration published successfully!',

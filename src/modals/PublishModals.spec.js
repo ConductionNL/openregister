@@ -11,17 +11,22 @@
  */
 
 import { mount } from '@vue/test-utils'
-import { reactive } from 'vue'
-import PublishRegister from './register/PublishRegister.vue'
 import PublishConfiguration from './configuration/PublishConfiguration.vue'
+import PublishRegister from './register/PublishRegister.vue'
 
 jest.mock('../store/store.js', () => {
 	const { reactive: makeReactive } = jest.requireActual('vue')
 	return {
 		__esModule: true,
 		navigationStore: makeReactive({ modal: null, setModal: jest.fn() }),
-		registerStore: makeReactive({ registerItem: null, refreshRegisterList: jest.fn() }),
-		configurationStore: makeReactive({ configurationItem: null, refreshConfigurationList: jest.fn() }),
+		registerStore: makeReactive({
+			registerItem: null,
+			refreshRegisterList: jest.fn(),
+		}),
+		configurationStore: makeReactive({
+			configurationItem: null,
+			refreshConfigurationList: jest.fn(),
+		}),
 	}
 })
 jest.mock(
@@ -63,8 +68,11 @@ jest.mock('@nextcloud/vue', () => ({ __esModule: true, ...mockNcStubs() }))
 // Exposing the same stubs there renders such a component as the build does.
 jest.mock('vue', () => ({ ...jest.requireActual('vue'), ...mockNcStubs() }))
 
-// eslint-disable-next-line import/first
-import { configurationStore, navigationStore, registerStore } from '../store/store.js'
+import {
+	configurationStore,
+	navigationStore,
+	registerStore,
+} from '../store/store.js'
 
 const REPOS = [
 	{ full_name: 'acme/site', owner: 'acme', name: 'site', private: false },
@@ -89,18 +97,30 @@ async function flush() {
  * @return {Function}
  */
 function scriptedFetch(script) {
-	return jest.fn(async (url, options) => {
+	return jest.fn(async (url) => {
 		const json = (ok, body) => ({ ok, json: async () => body })
 		if (url.includes('/github/repositories')) {
-			return script.repositoriesFail ? json(false, { error: 'no token' }) : json(true, { repositories: REPOS })
+			return script.repositoriesFail
+				? json(false, { error: 'no token' })
+				: json(true, { repositories: REPOS })
 		}
 
 		if (url.includes('/github/branches')) {
-			return script.branchesFail ? json(false, {}) : json(true, { branches: script.branches ?? [{ name: 'dev' }, { name: 'master' }] })
+			return script.branchesFail
+				? json(false, {})
+				: json(true, {
+						branches: script.branches ?? [
+							{ name: 'dev' },
+							{ name: 'master' },
+						],
+					})
 		}
 
 		return script.publishFail
-			? json(false, script.publishFail === 'empty' ? {} : { error: 'push rejected' })
+			? json(
+					false,
+					script.publishFail === 'empty' ? {} : { error: 'push rejected' },
+				)
 			: json(true, { commit_sha: 'abcdef123456', indexing_note: script.note })
 	})
 }
@@ -139,7 +159,8 @@ function observe(wrapper) {
 		fetch: global.fetch.mock.calls,
 		setModal: navigationStore.setModal.mock.calls,
 		refreshRegisters: registerStore.refreshRegisterList.mock.calls.length,
-		refreshConfigurations: configurationStore.refreshConfigurationList.mock.calls.length,
+		refreshConfigurations:
+			configurationStore.refreshConfigurationList.mock.calls.length,
 		state: {
 			selectedRepository: vm.selectedRepository,
 			selectedBranch: vm.selectedBranch,
@@ -157,35 +178,67 @@ const MODALS = {
 	register: {
 		component: PublishRegister,
 		modal: 'publishRegister',
-		setItem: (item) => { registerStore.registerItem = item },
-		item: { id: 3, title: 'Parks', slug: 'parks', githubRepo: 'acme/site', githubBranch: 'dev', githubPath: 'x.json' },
+		setItem: (item) => {
+			registerStore.registerItem = item
+		},
+		item: {
+			id: 3,
+			title: 'Parks',
+			slug: 'parks',
+			githubRepo: 'acme/site',
+			githubBranch: 'dev',
+			githubPath: 'x.json',
+		},
 	},
 	configuration: {
 		component: PublishConfiguration,
 		modal: 'publishConfiguration',
-		setItem: (item) => { configurationStore.configurationItem = item },
-		item: { id: 8, title: 'Base', slug: 'base', githubRepo: 'acme/site', githubBranch: 'dev', githubPath: 'lib/settings/base.json' },
+		setItem: (item) => {
+			configurationStore.configurationItem = item
+		},
+		item: {
+			id: 8,
+			title: 'Base',
+			slug: 'base',
+			githubRepo: 'acme/site',
+			githubBranch: 'dev',
+			githubPath: 'lib/settings/base.json',
+		},
 	},
 }
 
 const SCENARIOS = {
 	'opens and loads repositories': {},
 	'item without slug or published repo': { item: { id: 5, title: 'Plain' } },
-	'item published to an unknown repo': { item: { id: 5, title: 'Gone', slug: 'gone', githubRepo: 'acme/other' } },
+	'item published to an unknown repo': {
+		item: { id: 5, title: 'Gone', slug: 'gone', githubRepo: 'acme/other' },
+	},
 	'no item': { item: null },
 	'closed modal': { modal: 'other' },
 	'repositories fail': { repositoriesFail: true },
 	'pick a repository': { pick: 'acme/secret' },
-	'pick a repository object with main branch': { pick: { value: 'acme/secret' }, branches: [{ name: 'x' }, { name: 'main' }] },
+	'pick a repository object with main branch': {
+		pick: { value: 'acme/secret' },
+		branches: [{ name: 'x' }, { name: 'main' }],
+	},
 	'pick a repository without branches': { pick: 'acme/secret', branches: [] },
 	'branches fail': { pick: 'acme/secret', branchesFail: true },
 	'clear the repository': { pick: null },
-	'publish': { pick: 'acme/site', publish: true },
-	'publish with note and empty commit message': { pick: 'acme/site', commit: '', note: 'Indexed in an hour.', publish: true },
+	publish: { pick: 'acme/site', publish: true },
+	'publish with note and empty commit message': {
+		pick: 'acme/site',
+		commit: '',
+		note: 'Indexed in an hour.',
+		publish: true,
+	},
 	'publish fails': { pick: 'acme/site', publish: true, publishFail: true },
-	'publish fails without message': { pick: 'acme/site', publish: true, publishFail: 'empty' },
+	'publish fails without message': {
+		pick: 'acme/site',
+		publish: true,
+		publishFail: 'empty',
+	},
 	'publish without a path': { pick: 'acme/site', path: '  ', publish: true },
-	'close': { close: true },
+	close: { close: true },
 	'close while loading': { close: true, loading: true },
 }
 
@@ -205,7 +258,13 @@ describe.each(Object.keys(MODALS))('%s publish modal', (kind) => {
 		modal.setItem('item' in scenario ? scenario.item : { ...modal.item })
 
 		const wrapper = mount(modal.component, {
-			global: { mocks: { navigationStore, t: (app, text) => text, n: (app, one, many, count) => (count === 1 ? one : many) } },
+			global: {
+				mocks: {
+					navigationStore,
+					t: (app, text) => text,
+					n: (app, one, many, count) => (count === 1 ? one : many),
+				},
+			},
 		})
 		await flush()
 		const steps = [observe(wrapper)]

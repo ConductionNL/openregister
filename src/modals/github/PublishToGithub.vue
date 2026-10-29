@@ -113,6 +113,7 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
 import {
 	NcButton,
 	NcDialog,
@@ -121,7 +122,6 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import { translate as t } from '@nextcloud/l10n'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import { navigationStore } from '../../store/store.js'
 
@@ -145,6 +145,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		/**
 		 * The entity to publish: it needs an `id` and a `title`.
 		 */
@@ -152,6 +153,7 @@ export default {
 			type: Object,
 			default: null,
 		},
+
 		/**
 		 * The API collection the entity is published from, as in `/api/{entityPath}/{id}/publish/github`.
 		 */
@@ -159,6 +161,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		/**
 		 * The translated texts: title, entityHeading, filePathPlaceholder, filePathHint, commitPlaceholder,
 		 * and the untranslated commitPrefix, publishedMessage and failureMessage.
@@ -167,6 +170,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * The modifier class of the entity section.
 		 */
@@ -174,6 +178,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * The file path filled in when the form opens with none.
 		 */
@@ -181,6 +186,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * Select the repository, branch and path the entity was last published to.
 		 */
@@ -188,6 +194,7 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		/**
 		 * Refreshes the entity's list after a publish.
 		 */
@@ -259,7 +266,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param newValue
+		 * @param {string|object|null} newValue The selected repository
 		 * @spec exclude UI watcher — reloads branches when the selected repository changes.
 		 */
 		selectedRepository(newValue) {
@@ -363,8 +370,8 @@ export default {
 		},
 
 		/**
-		 * @param owner
-		 * @param repo
+		 * @param {string} owner The repository owner
+		 * @param {string} repo The repository name
 		 * @spec exclude Modal data-load plumbing — fetches branches for the selected repository.
 		 */
 		async loadBranches(owner, repo) {
@@ -411,7 +418,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string|object|null} value The selected repository
 		 * @spec exclude UI event handler — reloads branches when repository selection changes.
 		 */
 		onRepositoryChange(value) {
