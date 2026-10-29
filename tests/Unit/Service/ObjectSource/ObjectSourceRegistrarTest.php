@@ -15,14 +15,13 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
+use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
-/**
- * @covers \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar
- */
 class ObjectSourceRegistrarTest extends TestCase {
 
 	/**
@@ -64,6 +63,35 @@ class ObjectSourceRegistrarTest extends TestCase {
 		);
 		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
 	}//end testRegistersTheServicesInOrder()
+
+	/**
+	 * Every factory builds an instance of the name it is registered under.
+	 *
+	 * The container hands each factory a test double for every service it asks
+	 * for; see serviceFor().
+	 *
+	 * @return void
+	 */
+	public function testEveryFactoryBuildsItsService(): void {
+		$context = new RecordingRegistrationContext();
+		ObjectSourceRegistrar::register(context: $context);
+
+		$doubles   = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$doubles, &$container, $context) {
+				if (isset($doubles[$id]) === false) {
+					$doubles[$id] = $this->serviceFor(id: $id, factories: $context->factories, container: $container);
+				}
+
+				return $doubles[$id];
+			}
+		);
+
+		foreach ($context->factories as $name => $factory) {
+			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
+		}
+	}//end testEveryFactoryBuildsItsService()
 
 	/**
 	 * boot() adds every built-in provider to the registry, in order, and skips one that fails to resolve.
@@ -136,4 +164,29 @@ class ObjectSourceRegistrarTest extends TestCase {
 
 		ObjectSourceRegistrar::boot(server: $server);
 	}//end testBootStopsWithoutARegistry()
+
+	/**
+	 * A test double for a service, or, for a final class, a real instance.
+	 *
+	 * A final class registered here is built by its own factory; any other
+	 * final class is created without running its constructor.
+	 *
+	 * @param string                  $id        The service id the factory asks for.
+	 * @param array<string, callable> $factories The registered factories by name.
+	 * @param IAppContainer           $container The container to hand a factory.
+	 *
+	 * @return object
+	 */
+	private function serviceFor(string $id, array $factories, IAppContainer $container): object {
+		$class = new ReflectionClass(objectOrClass: $id);
+		if ($class->isFinal() === false) {
+			return $this->createMock(originalClassName: $id);
+		}
+
+		if (isset($factories[$id]) === true) {
+			return $factories[$id]($container);
+		}
+
+		return $class->newInstanceWithoutConstructor();
+	}//end serviceFor()
 }//end class
