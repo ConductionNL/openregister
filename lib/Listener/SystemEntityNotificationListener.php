@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Contract\ObjectNotificationDispatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;

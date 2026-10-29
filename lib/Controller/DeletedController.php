@@ -28,7 +28,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Contract\ObjectRendererInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;

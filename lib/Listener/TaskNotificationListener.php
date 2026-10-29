@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Contract\ObjectNotificationDispatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Service\Notification\TaskNotificationRules;

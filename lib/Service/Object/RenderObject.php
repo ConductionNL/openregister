@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
-use OCA\OpenRegister\Contract\ObjectRendererInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;

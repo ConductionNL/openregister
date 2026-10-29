@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Contract\WebhookDeliveryInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;

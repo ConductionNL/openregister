@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Contract\WebhookDeliveryInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;

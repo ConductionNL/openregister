@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Contract\WebhookDeliveryInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;

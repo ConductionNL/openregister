@@ -47,7 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Contract\ObjectNotificationDispatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\QueuedNotification;
 use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;

@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Contract\ObjectNotificationDispatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;

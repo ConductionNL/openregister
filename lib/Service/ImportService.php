@@ -31,7 +31,7 @@ use DateTime;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Contract\ObjectImporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;

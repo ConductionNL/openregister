@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Contract\ObjectTransitionInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;

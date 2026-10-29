@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Contract\ObjectSaverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;

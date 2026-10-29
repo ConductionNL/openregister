@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Contract\ObjectNotificationDispatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;

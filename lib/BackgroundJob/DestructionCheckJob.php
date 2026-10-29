@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Contract\ObjectSaverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\RecordState;

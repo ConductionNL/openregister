@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Contract\ObjectTransitionInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCP\EventDispatcher\Event;

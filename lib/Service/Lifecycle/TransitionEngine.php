@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Contract\ObjectTransitionInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;

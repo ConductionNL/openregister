@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Contract\ObjectTransitionInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;

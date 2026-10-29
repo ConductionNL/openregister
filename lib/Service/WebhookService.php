@@ -32,7 +32,7 @@ use DateTime;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
-use OCA\OpenRegister\Contract\WebhookDeliveryInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Webhook;
