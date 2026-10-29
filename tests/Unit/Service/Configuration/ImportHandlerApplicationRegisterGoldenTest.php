@@ -41,7 +41,10 @@ use Psr\Log\LoggerInterface;
  * magic-table and log call with `fixtures/application-register-golden.json`.
  * Set `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ImportHandlerApplicationRegisterGoldenTest extends TestCase {
 
@@ -102,8 +105,6 @@ class ImportHandlerApplicationRegisterGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::autoCreateRegisterIfApplication
 	 *
 	 * @dataProvider cases
 	 */
