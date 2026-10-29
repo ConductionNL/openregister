@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -126,6 +127,8 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			'contact cache fails' => [['object' => ['title' => 'x'], 'contactThrows' => true]],
 			'reference cache fails' => [['object' => ['title' => 'x'], 'referenceThrows' => true]],
 			'deep link' => [['object' => ['title' => 'x'], 'deepLink' => 'https://app/deep/1']],
+			'explicit reveal on update' => [['object' => ['title' => 'x'], 'uuid' => 'u-1', 'existing' => ['title' => 'Old', 'secret' => 's'], 'explicit' => true]],
+			'explicit reveal on create with generated uuid' => [['object' => ['title' => 'x'], 'generateUuid' => 'gen-1', 'explicit' => true]],
 			'auto transition' => [['object' => ['title' => 'x'], 'autoTransitions' => true]],
 		];
 	}//end cases()
@@ -421,7 +424,12 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId($id);
 		$schema->setSlug('schema-' . $id);
-		$schema->setProperties(['title' => ['type' => 'string'], 'when' => ['type' => 'string', 'format' => 'date']]);
+		$properties = ['title' => ['type' => 'string'], 'when' => ['type' => 'string', 'format' => 'date']];
+		if (($case['explicit'] ?? false) === true) {
+			$properties['secret'] = ['type' => 'string', 'authorization' => [ExplicitReveal::KEY => ExplicitReveal::EXPLICIT]];
+		}
+
+		$schema->setProperties($properties);
 		$schema->setHardValidation(($case['hardValidation'] ?? true));
 		$schema->setAppendOnly(($case['appendOnly'] ?? false));
 		$configuration = [];
