@@ -48,6 +48,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Configuration
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
+ * @uses \OCA\OpenRegister\Service\Configuration\AppImport
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedConfigurationUpdate
  */
 class ImportHandlerRegisterFolderTest extends TestCase {
 
