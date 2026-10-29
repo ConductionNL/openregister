@@ -54,7 +54,7 @@ class EmailLinkReaderContractTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheContainerBindsTheInterface(): void {
-		$source = (string)file_get_contents(filename: __DIR__.'/../../../lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(filename: __DIR__ . '/../../../lib/Service/ServiceRegistrar.php');
 
 		$this->assertMatchesRegularExpression(
 			pattern: '/registerService\(\s*EmailLinkReaderInterface::class,\s*function \(\$c\) \{\s*return \$c->get\(EmailLinkService::class\);/',
