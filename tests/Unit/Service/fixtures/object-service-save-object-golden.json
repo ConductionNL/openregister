@@ -1,0 +1,5098 @@
+{
+    "append-only insert with chosen uuid": {
+        "result": {
+            "entity": "u-new",
+            "data": {
+                "id": "u-new",
+                "title": "x",
+                "always": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-new",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-new",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-new",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-new",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "u-new",
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-new",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-new",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-new",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    },
+                    "u-new",
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    true,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "u-new",
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/u-new",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/u-new",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/u-new",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "u-new",
+                        "title": "x",
+                        "always": 1,
+                        "uuid": "u-new",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "u-new",
+                        "data": {
+                            "id": "u-new",
+                            "title": "x",
+                            "always": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "append-only update": {
+        "threw": "OCA\\OpenRegister\\Exception\\AppendOnlyException",
+        "message": "SCHEMA_APPEND_ONLY: Schema \"schema-9\" is append-only; update operations are not permitted.",
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "update",
+                    null,
+                    "owner",
+                    true,
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "Old"
+                        }
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "auto transition": {
+        "result": {
+            "entity": "auto-1",
+            "data": {
+                "id": "auto-1",
+                "state": "closed"
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "autoTransitions.enter",
+                []
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "autoTransitions.leave",
+                []
+            ],
+            [
+                "autoTransitions.preferAutomatic",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [
+                        {
+                            "applied": "close"
+                        }
+                    ]
+                ]
+            ]
+        ]
+    },
+    "contact cache fails": {
+        "result": {
+            "entity": "created-1",
+            "data": {
+                "id": "created-1",
+                "title": "x",
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Skipped contact-match cache invalidation: invalidation failed",
+                    {
+                        "exception": "contacts down",
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "create": {
+        "result": {
+            "entity": "created-1",
+            "data": {
+                "id": "created-1",
+                "title": "New",
+                "when": "2024-01-15",
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "New",
+                            "when": "2024-01-15T10:30:00+02:00"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "New",
+                        "when": "2024-01-15T10:30:00+02:00"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "when": "2024-01-15T10:30:00+02:00"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "when": "2024-01-15T10:30:00+02:00",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "dates.normalize",
+                [
+                    "2024-01-15T10:30:00+02:00",
+                    null
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "when": "2024-01-15",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "New",
+                        "when": "2024-01-15",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "when": "2024-01-15",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "created-1",
+                        "title": "New",
+                        "when": "2024-01-15",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "created-1",
+                        "title": "New",
+                        "when": "2024-01-15",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "New",
+                            "when": "2024-01-15",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "create with chosen id": {
+        "result": {
+            "entity": "chosen-1",
+            "data": {
+                "id": "chosen-1",
+                "title": "Mine",
+                "always": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "chosen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "chosen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": "chosen-1",
+                            "title": "Mine"
+                        }
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "chosen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "id": "chosen-1",
+                        "title": "Mine"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "chosen-1",
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "id": "chosen-1",
+                        "title": "Mine"
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "chosen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "id": "chosen-1",
+                        "title": "Mine",
+                        "always": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "chosen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "chosen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "id": "chosen-1",
+                        "title": "Mine",
+                        "always": 1
+                    },
+                    "chosen-1",
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "chosen-1",
+                        "title": "Mine",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/chosen-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/chosen-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/chosen-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "chosen-1",
+                        "title": "Mine",
+                        "always": 1,
+                        "uuid": "chosen-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "chosen-1",
+                        "data": {
+                            "id": "chosen-1",
+                            "title": "Mine",
+                            "always": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "create with generated uuid": {
+        "result": {
+            "entity": "gen-1",
+            "data": {
+                "id": "gen-1",
+                "title": "New",
+                "@self": {
+                    "_autoGeneratedUuid": true
+                },
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "New"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "New"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] UUID auto-generated by CascadingHandler, marking as CREATE operation",
+                    {
+                        "uuid": "gen-1",
+                        "register": 4,
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        }
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "gen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "gen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    "gen-1",
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "gen-1",
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/gen-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/gen-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/gen-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "gen-1",
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "gen-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "gen-1",
+                        "data": {
+                            "id": "gen-1",
+                            "title": "New",
+                            "@self": {
+                                "_autoGeneratedUuid": true
+                            },
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "create with generated uuid and scalar self": {
+        "result": {
+            "entity": "gen-1",
+            "data": {
+                "id": "gen-1",
+                "title": "New",
+                "@self": {
+                    "_autoGeneratedUuid": true
+                },
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "New"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "New",
+                        "@self": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] UUID auto-generated by CascadingHandler, marking as CREATE operation",
+                    {
+                        "uuid": "gen-1",
+                        "register": 4,
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        }
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "gen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "gen-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    "gen-1",
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "gen-1",
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/gen-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/gen-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/gen-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "gen-1",
+                        "title": "New",
+                        "@self": {
+                            "_autoGeneratedUuid": true
+                        },
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "gen-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "gen-1",
+                        "data": {
+                            "id": "gen-1",
+                            "title": "New",
+                            "@self": {
+                                "_autoGeneratedUuid": true
+                            },
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "deep link": {
+        "result": {
+            "entity": "created-1",
+            "data": {
+                "id": "created-1",
+                "title": "x",
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://app/deep/1",
+                    null
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "every flag": {
+        "result": {
+            "entity": "u-1",
+            "data": {
+                "id": "u-1",
+                "title": "x",
+                "always": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "update",
+                    null,
+                    "owner",
+                    false,
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "Old"
+                        }
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "u-1",
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateReadOnlyConstraints",
+                [
+                    {
+                        "title": "x",
+                        "always": 1
+                    },
+                    {
+                        "title": "Old"
+                    },
+                    {
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "validator.validateImmutableConstraints",
+                [
+                    {
+                        "title": "x",
+                        "always": 1
+                    },
+                    {
+                        "title": "Old"
+                    },
+                    {
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    },
+                    "u-1",
+                    null,
+                    false,
+                    false,
+                    true,
+                    true,
+                    false,
+                    {
+                        "file": {
+                            "name": "a.txt"
+                        }
+                    },
+                    {
+                        "user": "alice"
+                    },
+                    true,
+                    true,
+                    true,
+                    "portal:abc"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "u-1",
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/u-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/u-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/u-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "u-1",
+                        "title": "x",
+                        "always": 1,
+                        "uuid": "u-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "x",
+                            "always": 1
+                        }
+                    },
+                    [
+                        "owner"
+                    ],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "invalid": {
+        "threw": "OCA\\OpenRegister\\Exception\\ValidationException",
+        "message": "title is wrong",
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "validator.generateErrorMessage",
+                [
+                    {
+                        "object": "ValidationResult"
+                    }
+                ]
+            ]
+        ]
+    },
+    "no schema": {
+        "threw": "TypeError",
+        "message": "CascadingHandler::handlePreValidationCascading(): Argument #2 ($schema) must be of type OCA\\OpenRegister\\Db\\Schema, null given, called in /home/rubenlinde/sig-lanes/l6c-or/openregister/lib/Service/ObjectService.php on line 2411",
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ]
+        ]
+    },
+    "null extend": {
+        "result": {
+            "entity": "created-1",
+            "data": {
+                "id": "created-1",
+                "title": "x",
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "reference cache fails": {
+        "result": {
+            "entity": "created-1",
+            "data": {
+                "id": "created-1",
+                "title": "x",
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "logger.warning",
+                [
+                    "[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed",
+                    {
+                        "exception": "references down",
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "save fails": {
+        "threw": "Exception",
+        "message": "database refused",
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "schema not in register": {
+        "threw": "OCA\\OpenRegister\\Exception\\SchemaNotInRegisterException",
+        "message": "Schema slug \"none\" is not carried by register \"reg-4\" (id 4), which carries 2 schema(s). 0 schema(s) elsewhere on this instance carry this slug; none of them is served here, because naming a register makes it a boundary. If the linkage was lost, run `occ openregister:registers:relink-schemas` to inspect and repair it.",
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "schemaMapper.findInIds",
+                [
+                    "none",
+                    [
+                        9,
+                        6
+                    ]
+                ]
+            ],
+            [
+                "schemaMapper.countBySlug",
+                [
+                    "none"
+                ]
+            ]
+        ]
+    },
+    "scope by id": {
+        "result": {
+            "entity": "created-1",
+            "data": {
+                "id": "created-1",
+                "title": "x",
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "registerMapper.find",
+                [
+                    5,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "schemaMapper.findInIds",
+                [
+                    6,
+                    [
+                        9,
+                        6
+                    ]
+                ]
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 6
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 6
+                    },
+                    null,
+                    5
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 6
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 6
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 6
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    {
+                        "schema": 6
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 5
+                    },
+                    {
+                        "schema": 6
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/5/schemas/6/objects/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/5/6/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/5/6/created-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    5,
+                    6,
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "created-1",
+                        "register": 5,
+                        "schema": 6
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "soft validation": {
+        "result": {
+            "entity": "created-1",
+            "data": {
+                "id": "created-1",
+                "title": "x",
+                "always": 1,
+                "expression": 1,
+                "seeded": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "x"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x"
+                    }
+                ]
+            ],
+            [
+                "saveHandler.applyExpressionDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.seedLifecycleFieldOnCreate",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1
+                    }
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    },
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/created-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "created-1",
+                        "title": "x",
+                        "always": 1,
+                        "expression": 1,
+                        "seeded": 1,
+                        "uuid": "created-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "created-1",
+                        "data": {
+                            "id": "created-1",
+                            "title": "x",
+                            "always": 1,
+                            "expression": 1,
+                            "seeded": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "transferred": {
+        "threw": "OCP\\AppFramework\\Db\\DoesNotExistException",
+        "message": "OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.",
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "update",
+                    null,
+                    "owner",
+                    true,
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "Old"
+                        }
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "update existing": {
+        "result": {
+            "entity": "u-1",
+            "data": {
+                "id": "u-1",
+                "title": "Changed",
+                "always": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "update",
+                    null,
+                    "owner",
+                    true,
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "Old"
+                        }
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "title": "Changed"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "u-1",
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "Changed"
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "title": "Changed",
+                        "always": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateReadOnlyConstraints",
+                [
+                    {
+                        "title": "Changed",
+                        "always": 1
+                    },
+                    {
+                        "title": "Old"
+                    },
+                    {
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "validator.validateImmutableConstraints",
+                [
+                    {
+                        "title": "Changed",
+                        "always": 1
+                    },
+                    {
+                        "title": "Old"
+                    },
+                    {
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "title": "Changed",
+                        "always": 1
+                    },
+                    "u-1",
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "u-1",
+                        "title": "Changed",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/u-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/u-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/u-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "u-1",
+                        "title": "Changed",
+                        "always": 1,
+                        "uuid": "u-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "Changed",
+                            "always": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "update from entity": {
+        "result": {
+            "entity": "u-1",
+            "data": {
+                "id": "u-1",
+                "title": "Entity",
+                "always": 1
+            }
+        },
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "update",
+                    null,
+                    "owner",
+                    true,
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "Old"
+                        }
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "cascading.handlePreValidationCascading",
+                [
+                    {
+                        "id": "u-1",
+                        "title": "Entity"
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "u-1",
+                    4
+                ]
+            ],
+            [
+                "saveHandler.applyAlwaysDefaults",
+                [
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "id": "u-1",
+                        "title": "Entity"
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateObject",
+                [
+                    {
+                        "id": "u-1",
+                        "title": "Entity",
+                        "always": 1
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "object": "stdClass"
+                    },
+                    0,
+                    []
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "validator.validateReadOnlyConstraints",
+                [
+                    {
+                        "id": "u-1",
+                        "title": "Entity",
+                        "always": 1
+                    },
+                    {
+                        "id": "u-1",
+                        "title": "Old"
+                    },
+                    {
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "validator.validateImmutableConstraints",
+                [
+                    {
+                        "id": "u-1",
+                        "title": "Entity",
+                        "always": 1
+                    },
+                    {
+                        "id": "u-1",
+                        "title": "Old"
+                    },
+                    {
+                        "schema": 9
+                    }
+                ]
+            ],
+            [
+                "objectMapper.find",
+                [
+                    "u-1",
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "saveHandler.clearAllCaches",
+                []
+            ],
+            [
+                "saveHandler.saveObject",
+                [
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    {
+                        "id": "u-1",
+                        "title": "Entity",
+                        "always": 1
+                    },
+                    "u-1",
+                    null,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                ]
+            ],
+            [
+                "contacts.invalidateCacheForObject",
+                [
+                    {
+                        "id": "u-1",
+                        "title": "Entity",
+                        "always": 1
+                    }
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCP\\Collaboration\\Reference\\IReferenceManager"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                ]
+            ],
+            [
+                "container.get",
+                [
+                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/#/registers/4/schemas/9/objects/u-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/api/objects/4/9/u-1",
+                    null
+                ]
+            ],
+            [
+                "urls.getAbsoluteURL",
+                [
+                    "/"
+                ]
+            ],
+            [
+                "references.invalidateCache",
+                [
+                    "https://cloud.test/apps/openregister/objects/4/9/u-1",
+                    null
+                ]
+            ],
+            [
+                "deepLinks.resolveUrl",
+                [
+                    4,
+                    9,
+                    {
+                        "id": "u-1",
+                        "title": "Entity",
+                        "always": 1,
+                        "uuid": "u-1",
+                        "register": 4,
+                        "schema": 9
+                    },
+                    []
+                ]
+            ],
+            [
+                "render.renderEntity",
+                [
+                    {
+                        "entity": "u-1",
+                        "data": {
+                            "id": "u-1",
+                            "title": "Entity",
+                            "always": 1
+                        }
+                    },
+                    [],
+                    0,
+                    [],
+                    [],
+                    [],
+                    null,
+                    null,
+                    [],
+                    [],
+                    true,
+                    true
+                ]
+            ]
+        ]
+    },
+    "view backed": {
+        "threw": "OCA\\OpenRegister\\Exception\\ReadOnlyTypeException",
+        "message": "SCHEMA_READ_ONLY: Schema \"schema-9\" lists the rows of a saved view; create operations are not permitted.",
+        "calls": [
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] ObjectService constructor completed.",
+                    []
+                ]
+            ],
+            [
+                "files.resetFolderAccessRevalidationCache",
+                []
+            ],
+            [
+                "permissions.getActiveOrganisationForContext",
+                []
+            ],
+            [
+                "permissions.checkPermission",
+                [
+                    {
+                        "schema": 9
+                    },
+                    "create",
+                    null,
+                    null,
+                    true,
+                    {
+                        "entity": null,
+                        "data": {
+                            "id": null,
+                            "title": "x"
+                        }
+                    }
+                ]
+            ]
+        ]
+    }
+}
