@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationPreferenceService
+ * @uses \OCA\OpenRegister\Service\Notification\PreferenceLookup
  */
 final class NotificationPreferenceResolveGoldenTest extends TestCase {
 

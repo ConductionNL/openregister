@@ -551,18 +551,13 @@ class NotificationPreferenceService {
 		?array $groupIds = null,
 	): array {
 		$defaultEnabled = (bool)($schemaDefault['enabled'] ?? true);
-		$defaultChannels = null;
-		if (isset($schemaDefault['channels']) === true && is_array($schemaDefault['channels']) === true) {
-			$defaultChannels = array_values($schemaDefault['channels']);
-		}
-
-		// An opt-in channel is off by default and on for whoever chose it, so
-		// the default needs naming even when the rule leaves `channels` out.
-		$allowedChannels = $defaultChannels;
-		if (self::optInChannelsOf(spec: $schemaDefault) !== []) {
-			$defaultChannels = ($defaultChannels ?? self::DEFAULT_CHANNELS);
-			$allowedChannels = self::availableChannelsOf(spec: $schemaDefault);
-		}
+		[$defaultChannels, $allowedChannels] = self::declaredChannels(schemaDefault: $schemaDefault);
+		$lookup = new PreferenceLookup(
+			schemaSlug: $schemaSlug,
+			notificationKey: $notificationKey,
+			scopes: $scopes,
+			allowedChannels: $allowedChannels
+		);
 
 		$layers = [
 			[
@@ -580,56 +575,30 @@ class NotificationPreferenceService {
 			'scope' => 'global',
 		];
 
-		// The group layer. Several groups may hold a default for the same kind;
-		// the narrowest scope wins, and among equally scoped groups the first
-		// one the group manager returns does. Deliberately not "the strictest
-		// wins": a team default is a team's decision, not a vote.
-		$groups = ($groupIds ?? $this->groupsOf(userId: $userId));
-		foreach ($groups as $groupId) {
-			$found = $this->firstScopedValue(
-				scopes: $scopes,
-				schemaSlug: $schemaSlug,
-				notificationKey: $notificationKey,
-				userId: null,
-				groupId: (string)$groupId
-			);
-			if ($found === null) {
-				continue;
-			}
-
-			$winner = $this->applyLayer(
-				base: $winner,
-				value: $found['value'],
-				defaultChannels: $allowedChannels,
-				layer: 'group-default',
-				scope: $found['scope']
-			);
+		$group = $this->firstGroupValue(lookup: $lookup, groupIds: ($groupIds ?? $this->groupsOf(userId: $userId)));
+		if ($group !== null) {
+			$winner = $lookup->applyLayer(base: $winner, found: $group);
 			$layers[] = [
 				'layer' => 'group-default',
-				'group' => (string)$groupId,
-				'scope' => $found['scope'],
+				'group' => $group['group'],
+				'scope' => $group['scope'],
 				'enabled' => $winner['enabled'],
 				'channels' => $winner['channels'],
 			];
-			break;
-		}//end foreach
+		}
 
 		// The user's own value, which always wins when it is there.
 		$own = $this->firstScopedValue(
-			scopes: $scopes,
-			schemaSlug: $schemaSlug,
-			notificationKey: $notificationKey,
-			userId: $userId,
-			groupId: null
+			lookup: $lookup,
+			read: fn (?string $scope): ?array => $this->getOverride(
+				userId: $userId,
+				schemaSlug: $schemaSlug,
+				notificationKey: $notificationKey,
+				scope: $scope
+			)
 		);
 		if ($own !== null) {
-			$winner = $this->applyLayer(
-				base: $winner,
-				value: $own['value'],
-				defaultChannels: $allowedChannels,
-				layer: 'user-override',
-				scope: $own['scope']
-			);
+			$winner = $lookup->applyLayer(base: $winner, found: $own + ['layer' => 'user-override']);
 			$layers[] = [
 				'layer' => 'user-override',
 				'scope' => $own['scope'],
@@ -643,33 +612,77 @@ class NotificationPreferenceService {
 	}//end resolveEffective()
 
 	/**
+	 * The default channels a rule declares, and the channels a layer may choose among.
+	 *
+	 * An opt-in channel is off by default and on for whoever chose it, so the
+	 * default needs naming even when the rule leaves `channels` out.
+	 *
+	 * @param array<string, mixed> $schemaDefault The rule's `{enabled, channels, optInChannels}` block.
+	 *
+	 * @return array{0: array<int, string>|null, 1: array<int, string>|null} The default and the allowed channels.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private static function declaredChannels(array $schemaDefault): array {
+		$defaultChannels = null;
+		if (isset($schemaDefault['channels']) === true && is_array($schemaDefault['channels']) === true) {
+			$defaultChannels = array_values($schemaDefault['channels']);
+		}
+
+		if (self::optInChannelsOf(spec: $schemaDefault) === []) {
+			return [$defaultChannels, $defaultChannels];
+		}
+
+		return [($defaultChannels ?? self::DEFAULT_CHANNELS), self::availableChannelsOf(spec: $schemaDefault)];
+	}//end declaredChannels()
+
+	/**
+	 * The default of the first group that holds one, at its narrowest scope.
+	 *
+	 * Several groups may hold a default for the same kind; the narrowest scope
+	 * wins, and among equally scoped groups the first one the group manager
+	 * returns does. Deliberately not "the strictest wins": a team default is a
+	 * team's decision, not a vote.
+	 *
+	 * @param PreferenceLookup $lookup   The kind, scopes and channels.
+	 * @param array            $groupIds The user's group ids, in group-manager order.
+	 *
+	 * @return array{value: array<string, mixed>, scope: string, layer: string, group: string}|null
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	private function firstGroupValue(PreferenceLookup $lookup, array $groupIds): ?array {
+		foreach ($groupIds as $groupId) {
+			$found = $this->firstScopedValue(
+				lookup: $lookup,
+				read: fn (?string $scope): ?array => $this->getGroupDefault(
+					groupId: (string)$groupId,
+					schemaSlug: $lookup->schemaSlug,
+					notificationKey: $lookup->notificationKey,
+					scope: $scope
+				)
+			);
+			if ($found !== null) {
+				return $found + ['layer' => 'group-default', 'group' => (string)$groupId];
+			}
+		}
+
+		return null;
+	}//end firstGroupValue()
+
+	/**
 	 * Find one party's value, trying each scope in order before the global one.
 	 *
-	 * @param array<int, string> $scopes Candidate scopes, narrowest first.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param string|null $userId The user whose own value to read, or null for a group.
-	 * @param string|null $groupId The group whose default to read, or null for a user.
+	 * @param PreferenceLookup $lookup The kind and its candidate scopes, narrowest first.
+	 * @param \Closure         $read   Reads the party's value at a scope, or at null for the global one.
 	 *
 	 * @return array{value: array<string, mixed>, scope: string}|null The value and the scope it came from, or null.
 	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
-	private function firstScopedValue(
-		array $scopes,
-		string $schemaSlug,
-		string $notificationKey,
-		?string $userId,
-		?string $groupId,
-	): ?array {
-		foreach ($scopes as $scope) {
-			$value = $this->readValue(
-				schemaSlug: $schemaSlug,
-				notificationKey: $notificationKey,
-				userId: $userId,
-				groupId: $groupId,
-				scope: (string)$scope
-			);
+	private function firstScopedValue(PreferenceLookup $lookup, \Closure $read): ?array {
+		foreach ($lookup->scopes as $scope) {
+			$value = $read((string)$scope);
 			if ($value !== null) {
 				return ['value' => $value, 'scope' => (string)$scope];
 			}
@@ -677,96 +690,13 @@ class NotificationPreferenceService {
 
 		// No scoped value: the party's global one, and an absent one there is
 		// the fall-through this whole design is built on.
-		$value = $this->readValue(
-			schemaSlug: $schemaSlug,
-			notificationKey: $notificationKey,
-			userId: $userId,
-			groupId: $groupId,
-			scope: null
-		);
+		$value = $read(null);
 		if ($value === null) {
 			return null;
 		}
 
 		return ['value' => $value, 'scope' => 'global'];
 	}//end firstScopedValue()
-
-	/**
-	 * Read one stored value for one party at one scope.
-	 *
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param string|null $userId The user, or null for a group.
-	 * @param string|null $groupId The group, or null for a user.
-	 * @param string|null $scope The scope, or null for the global value.
-	 *
-	 * @return array<string, mixed>|null The stored value, or null when absent.
-	 */
-	private function readValue(
-		string $schemaSlug,
-		string $notificationKey,
-		?string $userId,
-		?string $groupId,
-		?string $scope,
-	): ?array {
-		if ($groupId !== null) {
-			return $this->getGroupDefault(
-				groupId: $groupId,
-				schemaSlug: $schemaSlug,
-				notificationKey: $notificationKey,
-				scope: $scope
-			);
-		}
-
-		if ($userId === null) {
-			return null;
-		}
-
-		return $this->getOverride(
-			userId: $userId,
-			schemaSlug: $schemaSlug,
-			notificationKey: $notificationKey,
-			scope: $scope
-		);
-	}//end readValue()
-
-	/**
-	 * Fold one layer's stored value over the answer so far.
-	 *
-	 * A layer chooses among the channels the schema declared, its default and
-	 * its opt-in ones, never beyond them. A group cannot give its members a
-	 * channel the rule does not have, and neither can a user.
-	 *
-	 * @param array{enabled: bool, channels: array<int, string>|null, source: string, scope: string} $base The answer so far.
-	 * @param array<string, mixed> $value The layer's stored value.
-	 * @param array<int, string>|null $defaultChannels The channels the schema declared, opt-in ones included.
-	 * @param string $layer The layer's name, recorded as the source when it decides.
-	 * @param string $scope The scope this value was pinned to.
-	 *
-	 * @return array{enabled: bool, channels: array<int, string>|null, source: string, scope: string}
-	 */
-	private function applyLayer(
-		array $base,
-		array $value,
-		?array $defaultChannels,
-		string $layer,
-		string $scope,
-	): array {
-		$enabled = (bool)($value['enabled'] ?? $base['enabled']);
-		$channels = $base['channels'];
-		if (isset($value['channels']) === true && is_array($value['channels']) === true) {
-			$channels = array_values(
-				array_intersect($value['channels'], ($defaultChannels ?? $value['channels']))
-			);
-		}
-
-		return [
-			'enabled' => $enabled,
-			'channels' => $channels,
-			'source' => $layer,
-			'scope' => $scope,
-		];
-	}//end applyLayer()
 
 	/**
 	 * One schema per owning app and slug, the highest version.
