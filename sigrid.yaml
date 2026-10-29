@@ -1,0 +1,68 @@
+# Sigrid analysis scope for OpenRegister.
+#
+# Every key below is documented at
+# https://docs.sigrid-says.com/reference/analysis-scope-configuration.html
+# Sigrid's default excludes (node_modules, vendor, build output, docs, migrations,
+# mocks and stubs) still apply on top of this file. Components are left to
+# Sigrid's automatic detection. ARCHITECTURE.md describes the directory roles.
+
+# Pin the maintainability model, so a yearly recalibration never changes the
+# rating without a deliberate change to this file.
+model: "2026"
+
+# Test-code patterns can only be set per language, and listing languages switches
+# off automatic technology detection. The list therefore names every technology
+# in the repo, so nothing that automatic detection would find is dropped.
+languages:
+  - name: php
+    production:
+    test:
+      include:
+        - ".*/tests/.*[.]php"
+  - name: javascript
+    production:
+    test:
+      include:
+        - ".*/tests/.*"
+        - ".*/__tests__/.*"
+        - ".*[.](spec|test)[.](js|mjs|cjs|ts|tsx)"
+  - name: typescript
+    production:
+    test:
+      include:
+        - ".*/tests/.*"
+        - ".*/__tests__/.*"
+        - ".*[.](spec|test)[.](js|mjs|cjs|ts|tsx)"
+  - name: vue
+    production:
+    test:
+      include:
+        - ".*/tests/.*[.]vue"
+  - name: python
+    production:
+    test:
+      include:
+        - ".*/tests?/.*[.]py"
+        - ".*/test_[^/]*[.]py"
+        - ".*/conftest[.]py"
+  - name: script
+    production:
+    test:
+      include:
+        - ".*/tests/.*[.]sh"
+
+# Only generated files and developer tooling are excluded.
+exclude:
+  # Translation catalogues. l10n/<locale>.js is generated from l10n/<locale>.json
+  # (an OC.L10N.register() call around the same key/value pairs); no logic.
+  - ".*/l10n/[^/]*[.]js"
+  # Developer tooling: translation, quality, release and test-runner scripts.
+  # Not part of the shipped app.
+  - ".*/scripts/.*"
+  - ".*/tools/.*"
+  # Composer manifests for isolated developer tools.
+  - ".*/vendor-bin/.*"
+  # Root-level tool configuration (ESLint flat config, PHPStan bootstrap, PHP-CS-Fixer).
+  - ".*/eslint[.]config[.]m?js"
+  - ".*/phpstan-bootstrap[.]php"
+  - ".*/[.]php-cs-fixer[.]dist[.]php"
