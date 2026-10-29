@@ -1615,7 +1615,6 @@ class ObjectsController extends Controller {
 		$query['_multitenancy'] = $listing['multi'];
 		// Never request-controlled; read by the public schema bypass logic.
 		$query['_multitenancy_explicit'] = false;
-
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
 			query: $query,
 			register: $registerEntity,
@@ -1633,6 +1632,25 @@ class ObjectsController extends Controller {
 		$responseData = $this->addIgnoredFilterHint(responseData: $responseData, ignoredFilters: $magicMapper->getIgnoredFilters());
 		$responseData = $this->addMagicFacets(responseData: $responseData, query: $query, magicMapper: $magicMapper, listing: $listing);
 
+		return $this->magicListingResponse(responseData: $responseData, query: $query, listing: $listing);
+	}//end indexFromMagicTable()
+
+	/**
+	 * Strip empty values, apply the spatial post-filter and negotiate the format of a magic-table listing.
+	 *
+	 * @param array $responseData The response body.
+	 * @param array $query        The search query.
+	 * @param array $listing      The listing scope.
+	 *
+	 * @psalm-param array<string, mixed> $responseData
+	 * @psalm-param array<string, mixed> $query
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicListingResponse(array $responseData, array $query, array $listing): JSONResponse {
 		$includeEmpty = filter_var(
 			value: $query['_empty'] ?? $listing['params']['_empty'] ?? false,
 			filter: FILTER_VALIDATE_BOOLEAN
@@ -1648,15 +1666,15 @@ class ObjectsController extends Controller {
 		if ($this->wantsJsonLd() === true) {
 			return $this->jsonLdCollectionResponse(
 				result: $responseData,
-				register: $registerEntity,
-				schema: $schemaEntity
+				register: $listing['resolved']['registerEntity'],
+				schema: $listing['resolved']['schemaEntity']
 			);
 		}
 
 		// Response compression is negotiated at the webserver level; the
 		// controller never sets encoding headers.
 		return new JSONResponse(data: $responseData);
-	}//end indexFromMagicTable()
+	}//end magicListingResponse()
 
 	/**
 	 * Build the search query of a listing and warn about filter keys the schema does not know.
@@ -1802,17 +1820,7 @@ class ObjectsController extends Controller {
 			$offset = (int)($offset ?? 0);
 		}
 
-		$total = null;
-		if ($this->wantsListingTotal(params: $listing['params']) === true) {
-			$countQuery = $query;
-			unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
-			$total = $magicMapper->countObjectsInRegisterSchemaTable(
-				query: $countQuery,
-				register: $listing['resolved']['registerEntity'],
-				schema: $listing['resolved']['schemaEntity']
-			);
-		}
-
+		$total = $this->countMagicTotal(query: $query, listing: $listing, magicMapper: $magicMapper);
 		if ($limit <= 0) {
 			return ['total' => $total, 'pages' => 1, 'page' => 1, 'limit' => $limit];
 		}
@@ -1829,6 +1837,37 @@ class ObjectsController extends Controller {
 
 		return ['total' => $total, 'pages' => $pages, 'page' => (int)$page, 'limit' => $limit];
 	}//end paginateMagicResults()
+
+	/**
+	 * The grand total of a magic-table listing, or null when the caller does not want it.
+	 *
+	 * The count query is the search query without its pagination keys.
+	 *
+	 * @param array       $query       The search query.
+	 * @param array       $listing     The listing scope.
+	 * @param MagicMapper $magicMapper The magic mapper.
+	 *
+	 * @psalm-param array<string, mixed> $query
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return int|null
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function countMagicTotal(array $query, array $listing, MagicMapper $magicMapper): ?int {
+		if ($this->wantsListingTotal(params: $listing['params']) === false) {
+			return null;
+		}
+
+		$countQuery = $query;
+		unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+
+		return $magicMapper->countObjectsInRegisterSchemaTable(
+			query: $countQuery,
+			register: $listing['resolved']['registerEntity'],
+			schema: $listing['resolved']['schemaEntity']
+		);
+	}//end countMagicTotal()
 
 	/**
 	 * Whether the caller wants the grand total counted.
