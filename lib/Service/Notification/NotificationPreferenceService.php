@@ -559,33 +559,15 @@ class NotificationPreferenceService {
 			allowedChannels: $allowedChannels
 		);
 
-		$layers = [
-			[
-				'layer' => 'schema-default',
-				'scope' => 'global',
-				'enabled' => $defaultEnabled,
-				'channels' => $defaultChannels,
-			],
-		];
-
 		$winner = [
 			'enabled' => $defaultEnabled,
 			'channels' => $defaultChannels,
 			'source' => 'schema-default',
 			'scope' => 'global',
 		];
+		$layers = [self::layerRecord(winner: $winner, found: ['layer' => 'schema-default', 'scope' => 'global'])];
 
 		$group = $this->firstGroupValue(lookup: $lookup, groupIds: ($groupIds ?? $this->groupsOf(userId: $userId)));
-		if ($group !== null) {
-			$winner = $lookup->applyLayer(base: $winner, found: $group);
-			$layers[] = [
-				'layer' => 'group-default',
-				'group' => $group['group'],
-				'scope' => $group['scope'],
-				'enabled' => $winner['enabled'],
-				'channels' => $winner['channels'],
-			];
-		}
 
 		// The user's own value, which always wins when it is there.
 		$own = $this->firstScopedValue(
@@ -598,18 +580,42 @@ class NotificationPreferenceService {
 			)
 		);
 		if ($own !== null) {
-			$winner = $lookup->applyLayer(base: $winner, found: $own + ['layer' => 'user-override']);
-			$layers[] = [
-				'layer' => 'user-override',
-				'scope' => $own['scope'],
-				'enabled' => $winner['enabled'],
-				'channels' => $winner['channels'],
-			];
+			$own['layer'] = 'user-override';
+		}
+
+		foreach ([$group, $own] as $found) {
+			if ($found !== null) {
+				$winner = $lookup->applyLayer(base: $winner, found: $found);
+				$layers[] = self::layerRecord(winner: $winner, found: $found);
+			}
 		}
 
 		$winner['layers'] = $layers;
 		return $winner;
 	}//end resolveEffective()
+
+	/**
+	 * The entry a layer leaves in the resolution's `layers` trail.
+	 *
+	 * @param array<string, mixed> $winner The answer after this layer.
+	 * @param array<string, mixed> $found  The layer's name, scope and, for a group, its id.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private static function layerRecord(array $winner, array $found): array {
+		$record = ['layer' => $found['layer']];
+		if (isset($found['group']) === true) {
+			$record['group'] = $found['group'];
+		}
+
+		return $record + [
+			'scope' => $found['scope'],
+			'enabled' => $winner['enabled'],
+			'channels' => $winner['channels'],
+		];
+	}//end layerRecord()
 
 	/**
 	 * The default channels a rule declares, and the channels a layer may choose among.
