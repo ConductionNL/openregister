@@ -68,6 +68,7 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 			'save throws' => [['csv' => $csv, 'saveThrows' => true]],
 			'publish flag' => [['csv' => $csv, 'publish' => true, 'save' => $saved]],
 			'flags off' => [['csv' => $csv, 'rbac' => false, 'multi' => false, 'events' => true, 'enrich' => false, 'user' => true, 'save' => $saved]],
+			'multitenancy off only' => [['csv' => $csv, 'multi' => false, 'validation' => true, 'save' => $saved]],
 			'no queue' => [['csv' => $csv, 'noQueue' => true, 'save' => $saved]],
 			'no headers' => [['csv' => ",,\n1,2,3\n"]],
 			'header only' => [['csv' => "title,status\n"]],

@@ -547,6 +547,145 @@
             "importJobId": "<uuid>"
         }
     },
+    "multitenancy off only": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    false,
+                    true,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
     "no headers": {
         "calls": [
             {
