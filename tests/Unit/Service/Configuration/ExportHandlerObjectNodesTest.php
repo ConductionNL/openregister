@@ -35,8 +35,11 @@ use Psr\Log\LoggerInterface;
  * rather than arrays. The export writes their schema and register ids as
  * slugs, the same as for arrays, instead of failing the whole export.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ExportHandler
- * @uses \OCA\OpenRegister\Service\Configuration\ExportSlugMaps
+ * @covers \OCA\OpenRegister\Service\Configuration\ExportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ExportSlugMaps
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Authorization\RbacGroupCollector
  */
 class ExportHandlerObjectNodesTest extends TestCase {
 
@@ -80,7 +83,6 @@ class ExportHandlerObjectNodesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @covers ::exportConfig
 	 */
 	public function testObjectItemsExportWithSlugs(): void {
 		$items = new \stdClass();
@@ -101,7 +103,6 @@ class ExportHandlerObjectNodesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @covers ::exportConfig
 	 */
 	public function testObjectConfigurationExportsWithSlugs(): void {
 		$exported = $this->exportedProperties(
