@@ -155,6 +155,64 @@ class ReferencedCalculationRefresherTest extends TestCase {
 	}//end testAChangedReadFieldReSavesTheReferringObjects()
 
 	/**
+	 * The inline guard names the changed fields a dependent reads, without reading a referrer.
+	 *
+	 * @return void
+	 */
+	public function testTheGuardNamesTheChangedReadFieldsWithoutReadingReferrers(): void {
+		$service = $this->createMock(originalClassName: ObjectService::class);
+		$service->expects($this->never())->method('saveObject');
+		$rows = $this->createMock(originalClassName: MagicMapper::class);
+		$rows->expects($this->never())->method('findAllInRegisterSchemaTable');
+
+		$changed = $this->refresher(service: $service, rows: $rows)->changedReadFields(
+			updated: self::caseType(data: ['title' => 'Other', 'startableFlows' => ['flow-1']]),
+			old: self::caseType(data: ['title' => 'Woo'])
+		);
+
+		$this->assertSame(expected: ['startableFlows'], actual: $changed);
+	}//end testTheGuardNamesTheChangedReadFieldsWithoutReadingReferrers()
+
+	/**
+	 * A refresh queued at the cascade bound re-saves nothing, so a deferred cascade stops.
+	 *
+	 * @return void
+	 */
+	public function testARefreshAtTheCascadeBoundReSavesNothing(): void {
+		$service = $this->createMock(originalClassName: ObjectService::class);
+		$service->expects($this->never())->method('saveObject');
+
+		$refresher = $this->refresher(service: $service);
+		$saved     = $refresher->refreshChanged(updated: self::caseType(data: ['startableFlows' => ['flow-1']]), changed: ['startableFlows'], depth: 2);
+
+		$this->assertSame(expected: 0, actual: $saved);
+		$this->assertSame(expected: 0, actual: $refresher->depth());
+	}//end testARefreshAtTheCascadeBoundReSavesNothing()
+
+	/**
+	 * While the re-saves run the depth is one deeper, so a refresh they queue carries it.
+	 *
+	 * @return void
+	 */
+	public function testTheReSavesRunOneLevelDeeper(): void {
+		$service   = $this->createMock(originalClassName: ObjectService::class);
+		$seen      = [];
+		$refresher = null;
+		$service->method('saveObject')->willReturnCallback(
+			function () use (&$seen, &$refresher) {
+				$seen[] = $refresher->depth();
+				return new ObjectEntity();
+			}
+		);
+		$refresher = $this->refresher(service: $service);
+
+		$refresher->refreshChanged(updated: self::caseType(data: ['startableFlows' => ['flow-1']]), changed: ['startableFlows'], depth: 1);
+
+		$this->assertSame(expected: [2], actual: $seen);
+		$this->assertSame(expected: 0, actual: $refresher->depth());
+	}//end testTheReSavesRunOneLevelDeeper()
+
+	/**
 	 * The re-save hands a decoded string-typed value back as the stored JSON string.
 	 *
 	 * @return void

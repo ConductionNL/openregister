@@ -36,7 +36,9 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * An instance whose tasks already share a key cannot take the index; the
  * upgrade then says so, names the count and leaves the table as it was, rather
- * than failing the upgrade or rewriting somebody's keys.
+ * than failing the upgrade or rewriting somebody's keys. Nextcloud never runs
+ * this migration again, so the post-migration repair step
+ * EnsureTaskKeyUniqueIndex adds the index later, once the keys are distinct.
  *
  * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
  */
@@ -90,7 +92,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 		if ($this->collisions > 0) {
 			$output->warning(
 				$this->collisions . ' task keys are shared by more than one task, so task_key is not made unique. '
-				. 'Give those tasks distinct keys and run the upgrade again.'
+				. 'Give those tasks distinct keys, then run occ maintenance:repair to add the index.'
 			);
 		}
 	}//end preSchemaChange()

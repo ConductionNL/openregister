@@ -7,6 +7,12 @@
  * objects that read one of its changed fields through `@ref` (a case's
  * `hasStartableFlows` after its case type lists flows).
  *
+ * The listener only decides inline whether a refresh is needed (schema reads,
+ * no referrer reads, no writes); the re-saves themselves are queued through
+ * ListenerDeferralService as ReferencedCalculationJob (ADR-078), so the
+ * user's update returns before up to SYNC_LIMIT referrers per dependency are
+ * re-saved and their own post-write listeners fire.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -28,10 +34,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\BackgroundJob\ReferencedCalculationJob;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -45,19 +54,33 @@ use Throwable;
 class ReferencedCalculationListener implements IEventListener {
 
 	/**
+	 * Entries per enqueued refresh job.
+	 *
+	 * @var integer
+	 */
+	private const CHUNK_SIZE = 50;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ReferencedCalculationRefresher $refresher Re-saves the objects that read the updated one.
 	 * @param LoggerInterface                $logger    The logger.
+	 * @param ListenerDeferralService        $deferral  Queues the refresh as an actor-forwarded job.
+	 * @param IUserSession                   $session   Names the user whose update this is, per entry.
 	 */
 	public function __construct(
 		private readonly ReferencedCalculationRefresher $refresher,
 		private readonly LoggerInterface $logger,
+		private readonly ListenerDeferralService $deferral,
+		private readonly IUserSession $session,
 	) {
 	}//end __construct()
 
 	/**
-	 * Refresh the objects that read the updated object; never fails the save that already happened.
+	 * Queue the refresh of the objects that read the updated object; never fails the save that already happened.
+	 *
+	 * Runs the refresh inline only when the deferral kill switch
+	 * (`listenerDeferral = inline`) is set.
 	 *
 	 * @param Event $event The inbound event.
 	 *
@@ -71,7 +94,40 @@ class ReferencedCalculationListener implements IEventListener {
 		}
 
 		try {
-			$this->refresher->refresh(updated: $event->getNewObject(), old: $event->getOldObject());
+			$updated = $event->getNewObject();
+			$changed = $this->refresher->changedReadFields(updated: $updated, old: $event->getOldObject());
+			if ($changed === []) {
+				return;
+			}
+
+			$depth = $this->refresher->depth();
+			if ($this->deferral->isDeferralEnabled() === false) {
+				$this->refresher->refreshChanged(updated: $updated, changed: $changed, depth: $depth);
+				return;
+			}
+
+			// The entry names its own actor: ListenerDeferralService captures one
+			// per process, which in a cron process running several refresh jobs
+			// is the first job's user, not the one whose update this is.
+			$actor  = $this->session->getUser()?->getUID();
+			$sorted = $changed;
+			sort($sorted);
+			$this->deferral->defer(
+				jobClass: ReferencedCalculationJob::class,
+				entry: [
+					'uuid'     => (string) $updated->getUuid(),
+					'register' => (string) $updated->getRegister(),
+					'schema'   => (string) $updated->getSchema(),
+					'version'  => $updated->getVersion(),
+					'changed'  => $changed,
+					'depth'    => $depth,
+					'actor'    => $actor,
+				],
+				chunkSize: self::CHUNK_SIZE,
+				// Depth and actor are part of the key: in a cron process running
+				// several jobs, a depth-1 entry must not swallow a depth-0 one.
+				dedupeKey: (string) $updated->getUuid().'|'.implode(',', $sorted).'|'.$depth.'|'.($actor ?? '')
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ReferencedCalculationListener] refresh failed: '.$e->getMessage());
 		}

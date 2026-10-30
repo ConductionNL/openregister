@@ -34,6 +34,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * The flow dry-run endpoint.
@@ -48,12 +50,14 @@ class FlowDryRunController extends Controller {
 	 * @param IRequest          $request The request.
 	 * @param FlowAccess        $access  Who the caller is and which flow rights they hold.
 	 * @param FlowDryRunService $service Walks the flow against the object.
+	 * @param LoggerInterface   $logger  Records a dry run that failed for another reason.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly FlowAccess $access,
 		private readonly FlowDryRunService $service,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -100,6 +104,11 @@ class FlowDryRunController extends Controller {
 			return new JSONResponse($this->service->dryRun(flowId: $id, register: $register, schema: $schema, objectId: $objectId));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (Throwable $e) {
+			// Anything else the lookups or the engine throw is logged and answered
+			// without its message, which may name internals (ADR-105).
+			$this->logger->error('[FlowDryRun] dry run failed', ['exception' => $e]);
+			return new JSONResponse(['error' => 'The dry run could not be completed.'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 	}//end dryRun()
 }//end class

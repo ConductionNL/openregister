@@ -38,6 +38,13 @@ use Throwable;
 class SchemaManageGate {
 
 	/**
+	 * What firstUnmanageableRowSchema() names for a row that names no `@self.schema`.
+	 *
+	 * @var string
+	 */
+	public const NO_SCHEMA = '(none)';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IUserSession  $userSession  The caller.
@@ -133,11 +140,14 @@ class SchemaManageGate {
 	/**
 	 * The first schema a mixed-schema batch's rows name that the caller may not manage, or that cannot be resolved.
 	 *
-	 * A row that names no schema is left to the save, which records it as invalid.
+	 * A row that names no schema in `@self.schema` is refused as well, under the
+	 * placeholder `(none)`: the save also accepts a flat row whose top-level
+	 * `schema` names one, and a row the gate cannot attribute to a schema must not
+	 * slip past the manage check (fail closed).
 	 *
 	 * @param array<mixed> $objects The rows.
 	 *
-	 * @return string|null The first schema refused, or null when every named schema passes.
+	 * @return string|null The first schema refused, or null when every row names a schema that passes.
 	 *
 	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
@@ -149,7 +159,11 @@ class SchemaManageGate {
 				$named = ($object['@self']['schema'] ?? null);
 			}
 
-			if (is_scalar($named) === false || (string)$named === '' || isset($checked[(string)$named]) === true) {
+			if (is_scalar($named) === false || (string)$named === '') {
+				return self::NO_SCHEMA;
+			}
+
+			if (isset($checked[(string)$named]) === true) {
 				continue;
 			}
 
@@ -163,7 +177,7 @@ class SchemaManageGate {
 			if ($this->mayManage(schema: $schema) === false) {
 				return (string)$named;
 			}
-		}
+		}//end foreach
 
 		return null;
 	}//end firstUnmanageableRowSchema()

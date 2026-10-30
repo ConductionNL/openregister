@@ -83,7 +83,7 @@ class ImportDestructionListRegisterTest extends TestCase {
 		$this->step(appPath: (string)realpath(__DIR__ . '/../../..'), importer: $importer)->run($output);
 
 		$this->assertSame('openregister.destruction-lists', $imported['appId']);
-		$this->assertSame('1.0.0', $imported['version']);
+		$this->assertSame('1.1.0', $imported['version']);
 		$this->assertFalse($imported['force']);
 		$this->assertSame(['destructionList'], $imported['data']['components']['registers']['destruction-lists']['schemas']);
 		$schema = $imported['data']['components']['schemas']['destructionList'];

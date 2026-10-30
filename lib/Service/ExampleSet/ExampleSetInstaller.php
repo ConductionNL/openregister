@@ -253,7 +253,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$set    = (string) $plan['set'];
 		$record = $this->record->read(set: $set);
-		$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
+		// A refresh (`--refresh`, the daily refresh) rewrites the set's data only.
+		// Accounts, groups, memberships and sub-admin rights are made on install;
+		// re-making them here would hand back what an admin took away since.
+		if (($plan['refresh'] ?? false) !== true) {
+			$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
+		}
 
 		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		$written = [];
