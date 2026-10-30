@@ -79,6 +79,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 

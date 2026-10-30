@@ -62,6 +62,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class MagicRbacHandlerDenyTest extends TestCase {
 

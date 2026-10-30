@@ -21,7 +21,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectAccessRulesInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTableLocatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -45,6 +49,8 @@ final class DbContractBindings {
 	public const BINDINGS = [
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		MagicMapperInterface::class => MagicMapper::class,
+		ObjectAccessRulesInterface::class => MagicRbacHandler::class,
+		ObjectTableLocatorInterface::class => MagicTableHandler::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 	];

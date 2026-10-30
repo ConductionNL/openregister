@@ -37,6 +37,10 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectTableLocatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -57,7 +61,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.StaticAccess)           MagicMapper::isTableColumnsVerified / setTableColumnsVerified
  *   are process-scoped static caches with no injectable alternative in the current design.
  */
-class MagicTableHandler {
+class MagicTableHandler implements ObjectTableLocatorInterface {
 	/**
 	 * Constructor for MagicTableHandler
 	 *
@@ -268,12 +272,17 @@ class MagicTableHandler {
 	/**
 	 * Get table name for a specific register+schema combination
 	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema context
+	 * @param RegisterInterface $register The register context
+	 * @param SchemaInterface $schema The schema context
 	 *
 	 * @return string The table name for the register+schema combination
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
-	public function getTableNameForRegisterSchema(Register $register, Schema $schema): string {
+	public function getTableNameForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): string {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		$registerId = $register->getId();
 		$schemaId = $schema->getId();
 
@@ -301,14 +310,17 @@ class MagicTableHandler {
 	 * to avoid repeated database calls. Cache is automatically invalidated
 	 * when tables are created, updated, or dropped.
 	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema context
+	 * @param RegisterInterface $register The register context
+	 * @param SchemaInterface $schema The schema context
 	 *
 	 * @return bool True if specialized table exists, false if should use generic storage
 	 *
 	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
-	public function existsTableForRegisterSchema(Register $register, Schema $schema): bool {
+	public function existsTableForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): bool {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		$registerId = $register->getId();
 		$schemaId = $schema->getId();
 		$cacheKey = $this->magicMapper->getCacheKey(registerId: $registerId, schemaId: $schemaId);

@@ -37,7 +37,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   The mapper's flags are part of its signatures.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) findAll() mirrors the mapper signature.
  */
-interface MagicMapperInterface {
+interface MagicMapperInterface extends ObjectTableLocatorInterface {
 
 	/**
 	 * Table name prefix for register+schema-specific tables.
@@ -187,18 +187,6 @@ interface MagicMapperInterface {
 		?RegisterInterface $register = null,
 		?SchemaInterface $schema = null,
 	): array;
-
-	/**
-	 * Get table name for a specific register+schema combination
-	 *
-	 * @param RegisterInterface $register The register context
-	 * @param SchemaInterface $schema The schema context
-	 *
-	 * @return string The table name for the register+schema combination
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md
-	 */
-	public function getTableNameForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): string;
 
 	/**
 	 * Find multiple objects by UUIDs across ALL magic tables.
@@ -824,22 +812,6 @@ interface MagicMapperInterface {
 	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function widenNumberColumnsToDefault(string $tableName): array;
-
-	/**
-	 * Check if a specialized table exists for register+schema combination
-	 *
-	 * This method provides fast existence checking with intelligent caching
-	 * to avoid repeated database calls. Cache is automatically invalidated
-	 * when tables are created, updated, or dropped.
-	 *
-	 * @param RegisterInterface $register The register context
-	 * @param SchemaInterface $schema The schema context
-	 *
-	 * @return bool True if specialized table exists, false if should use generic storage
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md
-	 */
-	public function existsTableForRegisterSchema(RegisterInterface $register, SchemaInterface $schema): bool;
 
 	/**
 	 * Get register chart data.
