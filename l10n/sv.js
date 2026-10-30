@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Vem som godkände listan, och när.",
         "Who made it.": "Vem som tillverkade den.",
         "Who rejected the list, and why.": "Vem som avslog listan, och varför.",
-        "Woo published": "Publicerad enligt Woo"
+        "Woo published": "Publicerad enligt Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "En PDF kräver en kontorsserver (Collabora eller Euro-Office), och ingen är installerad. Be din administratör att installera en, eller ladda ner rapporten i ett annat format.",
+        "The report could not be downloaded.": "Rapporten kunde inte laddas ner."
     },
     "nplurals=2; plural=(n != 1);"
 )

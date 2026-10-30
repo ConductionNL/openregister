@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Хто затвердив список і коли.",
         "Who made it.": "Хто його виготовив.",
         "Who rejected the list, and why.": "Хто відхилив список і чому.",
-        "Woo published": "Опубліковано на підставі Woo"
+        "Woo published": "Опубліковано на підставі Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Для PDF потрібен офісний сервер (Collabora або Euro-Office), але жодного не встановлено. Попросіть адміністратора встановити його або завантажте звіт в іншому форматі.",
+        "The report could not be downloaded.": "Не вдалося завантажити звіт."
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 )

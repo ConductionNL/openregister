@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Kdo seznam schválil a kdy.",
         "Who made it.": "Kdo to vyrobil.",
         "Who rejected the list, and why.": "Kdo seznam zamítl a proč.",
-        "Woo published": "Zveřejněno podle Woo"
+        "Woo published": "Zveřejněno podle Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF vyžaduje kancelářský server (Collabora nebo Euro-Office) a žádný není nainstalován. Požádejte správce o jeho instalaci, nebo si stáhněte zprávu v jiném formátu.",
+        "The report could not be downloaded.": "Zprávu se nepodařilo stáhnout."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )
