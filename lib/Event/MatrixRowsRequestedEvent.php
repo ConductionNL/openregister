@@ -5,7 +5,9 @@
  *
  * Dispatched while a schema's department matrix is compiled, when the matrix
  * declares `rowsFrom`. A listener that answers to that provider id adds rows in
- * the matrix row shape; they are compiled beside the declared rows.
+ * the matrix row shape, naming its app; they are compiled beside the declared
+ * rows. Only the app that owns the provider id (`<appId>.<name>`) is heard: rows
+ * another app adds, or rows added without an app id, are dropped.
  *
  * 🔴 It fires INSIDE an authorization decision. A listener must read without
  * RBAC and must not ask the permission handler anything, or it re-enters the
@@ -50,6 +52,13 @@ class MatrixRowsRequestedEvent extends Event {
 	private array $rows = [];
 
 	/**
+	 * The app that added each row, by the row's index.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $answeredBy = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Schema $schema   The schema whose matrix is compiled.
@@ -87,19 +96,34 @@ class MatrixRowsRequestedEvent extends Event {
 	/**
 	 * Add rows in the matrix row shape (`group`, `value`/`values`, `actions`, `where`, `until`).
 	 *
-	 * @param array<int, mixed> $rows The rows.
+	 * @param array<int, mixed> $rows  The rows.
+	 * @param string            $appId The app adding them; only the app that owns the provider id is heard.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
 	 */
-	public function addRows(array $rows): void {
+	public function addRows(array $rows, string $appId = ''): void {
 		foreach ($rows as $row) {
 			if (is_array($row) === true) {
-				$this->rows[] = $row;
+				$this->rows[]       = $row;
+				$this->answeredBy[] = trim($appId);
 			}
 		}
 	}//end addRows()
+
+	/**
+	 * The app that added the row at this index of getRows(), '' when none was named.
+	 *
+	 * @param int $index The row's index.
+	 *
+	 * @return string The app id.
+	 *
+	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 */
+	public function answeredBy(int $index): string {
+		return ($this->answeredBy[$index] ?? '');
+	}//end answeredBy()
 
 	/**
 	 * The rows listeners added.

@@ -150,7 +150,7 @@ class ViewPresentationService {
 		// view. The cards inside the columns are stripped correctly by the
 		// render path, which is exactly what makes this hard to notice: the
 		// board looks empty and correct while its headings are the leak.
-		if ($this->aggregateVisibility()->maySummarise(schema: $schema, property: $groupByField) === false) {
+		if ($this->aggregateVisibility()->maySummariseValues(schema: $schema, property: $groupByField) === false) {
 			throw new InvalidArgumentException(
 				sprintf(
 					'This board groups on \'%s\', which you may not read, so it cannot be drawn for you.',

@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use Throwable;
 
 /**
@@ -99,6 +100,13 @@ class ReadableAuditTrailLister {
 	 * @var array<int, Schema|null>
 	 */
 	private array $schemaCache = [];
+
+	/**
+	 * Masks explicit-reveal values in the rows, built on first use.
+	 *
+	 * @var ExplicitRevealTrailMasker|null
+	 */
+	private ?ExplicitRevealTrailMasker $revealMasker = null;
 
 	/**
 	 * Constructor.
@@ -408,7 +416,9 @@ class ReadableAuditTrailLister {
 	 * @return array The row, without the withheld fields.
 	 */
 	private function scopedRow(AuditTrail $entry): array {
-		$row = $entry->jsonSerialize();
+		// Explicit-reveal values leave masked, as on every trail route.
+		$this->revealMasker ??= new ExplicitRevealTrailMasker(schemaMapper: $this->schemaMapper);
+		$row = $this->revealMasker->mask(entries: [$entry->jsonSerialize()])[0];
 
 		foreach (self::WITHHELD_FIELDS as $field) {
 			unset($row[$field]);

@@ -22,7 +22,7 @@ Read with `GrantConstraints::reaches()` against the request's clock. A row past 
 
 ## D-3. Rows from an app, at check time
 
-`matrix.rowsFrom` names a provider. In `compileDepartmentMatrix()` OpenRegister dispatches `MatrixRowsRequestedEvent` with the schema, the register and the provider id. Listeners call `addRows(array $rows)`. The rows are added to the declared rows before compiling.
+`matrix.rowsFrom` names a provider. In `compileDepartmentMatrix()` OpenRegister dispatches `MatrixRowsRequestedEvent` with the schema, the register and the provider id. Listeners call `addRows(array $rows, string $appId)`. Only rows added by the app that owns the provider id (the part before the first dot, `dossiq` in `dossiq.case-type-rights`) are kept, and a row granting `public`, `authenticated` or `admin` is dropped. The rows are added to the declared rows before compiling. The app id is what the listener says it is: Nextcloud's event dispatcher does not tell OpenRegister which app a listener belongs to, so the binding keeps an app from answering another app's provider by mistake, not an installed app that lies about its id. Installing an app remains the trust decision; the reserved-group drop holds whatever app answers.
 
 - The event fires once per request per (schema, provider). The result is kept in the handler for the rest of the request.
 - 🔴 The listener runs inside an authorization decision. It must read without RBAC (as `DepartmentMatrixPersonValues` does) and must not ask the permission handler anything. A listener that throws contributes no rows; the matrix only adds ways in, so the failure direction is closed.
@@ -44,7 +44,7 @@ When the effective authorization block (after the matrix is compiled) names `rea
 
 A refused read still answers 404 and a refused change 403 (decision 4 of `object-files-follow-object-access`). The admin rule, the owner rule and system operations are unchanged.
 
-When the block names none of the three, every row reads "Today". A schema opts in by naming one.
+When the block names none of the three, every row reads "Today". A schema opts in by naming one. The opt-in is read from the declared block, not the compiled one: a declared matrix row naming a file verb opts in even after its `until` has passed, and a matrix that names a `rowsFrom` provider is in the regime unless it declares `fileVerbs: false` (any other `fileVerbs` value opts in; the validator refuses a non-boolean). An expired row or a failing provider then compiles to no grant, never back to the object rule.
 
 ## D-5. `{groups: true}` user source
 

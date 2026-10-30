@@ -225,7 +225,12 @@ Further rules:
   interpolation `{{field}}` already uses.
 - For `kind: transition`, inputs are passed as the transition's `data`.
 - Sensitive inputs (`writeOnly: true` in the input schema) are passed to the run but never written to the run's
-  stored context or the audit digest.
+  stored context or the audit digest. Whatever stores a run (its log, step rows, final items, per-place items,
+  context, error and flow state) redacts them: by key at `json.inputs.<name>`, where the action-inputs node puts
+  them; as any string or number whose whole value equals a held value of four or more characters (a copy a later
+  step made; in flow state only the values this run wrote); and in the error as a whole token between letters and
+  digits. By design, two cases are not caught in items, log, context or flow state: a secret shorter than four
+  characters outside its own key, and a secret embedded inside a longer string (a message built from it).
 
 ## D-6: nodes, and how apps contribute them
 

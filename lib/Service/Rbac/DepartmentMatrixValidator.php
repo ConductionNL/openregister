@@ -136,6 +136,10 @@ class DepartmentMatrixValidator {
 			$findings[] = ['code' => 'matrix.bad-rows-from', 'message' => 'rowsFrom must name a provider.'];
 		}
 
+		if (array_key_exists('fileVerbs', $matrix) === true && is_bool($matrix['fileVerbs']) === false) {
+			$findings[] = ['code' => 'matrix.bad-file-verbs', 'message' => 'fileVerbs must be true or false.'];
+		}
+
 		$rows = ($matrix['rows'] ?? null);
 		if ($rowsFrom !== null && ($rows === null || $rows === [])) {
 			return $findings;

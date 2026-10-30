@@ -210,7 +210,9 @@ class ExplicitReveal {
 	}//end explicitProperties()
 
 	/**
-	 * The mask of a value: its last four characters behind five stars.
+	 * The mask of a value: its last four characters behind five stars. A value
+	 * of at most twice that length shows no character at all, since its tail
+	 * would be most (or all) of the value.
 	 *
 	 * @param mixed $value The value.
 	 *
@@ -228,7 +230,11 @@ class ExplicitReveal {
 			return '';
 		}
 
-		return str_repeat('*', 5) . substr($text, -self::VISIBLE);
+		if (mb_strlen($text) <= 2 * self::VISIBLE) {
+			return str_repeat('*', 5);
+		}
+
+		return str_repeat('*', 5) . mb_substr($text, -self::VISIBLE);
 	}//end mask()
 
 	/**
@@ -269,19 +275,7 @@ class ExplicitReveal {
 				continue;
 			}
 
-			$change = $changed[$name];
-			if (is_array($change) === false) {
-				$changed[$name] = self::mask(value: $change);
-				continue;
-			}
-
-			foreach (['old', 'new'] as $side) {
-				if (isset($change[$side]) === true) {
-					$change[$side] = self::mask(value: $change[$side]);
-				}
-			}
-
-			$changed[$name] = $change;
+			$changed[$name] = ExplicitRevealChangeMask::maskChange(change: $changed[$name]);
 		}
 
 		return $changed;
