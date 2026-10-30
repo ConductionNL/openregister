@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -192,16 +191,13 @@ final class ServiceRegistrar {
 			}
 		);
 
-		// Bind the dormant Path B PDF anonymisation fallback bridge to its
-		// null implementation. Tenants enabling Path B replace this binding
-		// with a concrete NcOfficeConverterInterface implementation that
-		// talks to Collabora Online / Code (per the
-		// `pdf-anonymisation-odt-fallback` scaffold).
-		$context->registerService(
+		// Office conversion (ODT and PDF) goes through Nextcloud's conversion
+		// API, so whichever office server registered a provider does the work:
+		// Collabora through richdocuments, or Euro-Office. PDF export, PDF
+		// reports and the Path B PDF anonymisation fallback all use it.
+		$context->registerServiceAlias(
 			\OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
-			function () {
-				return new NullNcOfficeConverter();
-			}
+			\OCA\OpenRegister\Service\File\Office\ConversionManagerConverter::class
 		);
 
 		// Web Push hex-icon service (openregister-web-push-engine): needs an
