@@ -981,7 +981,7 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildWhereConditionsSql(
@@ -1125,7 +1125,7 @@ class MagicSearchHandler {
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function lifecycleConditionsSql(array $query, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
@@ -1191,7 +1191,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function archivedConditionSql(string $mode, string $columnPrefix, array $missingColumns): ?string {
 		if ($mode === self::ARCHIVED_ANY) {
@@ -1227,7 +1227,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
 	 */
 	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns, ?Schema $schema = null): ?string {
@@ -2627,7 +2627,7 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function applyBasicFilters(
 		IQueryBuilder $qb,
