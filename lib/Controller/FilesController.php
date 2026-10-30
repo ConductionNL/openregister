@@ -277,7 +277,9 @@ class FilesController extends Controller {
 	 * @param string $fileVerb The file verb a change needs when the schema names file verbs: addFiles (default) or deleteFiles.
 	 * @param int|null $fileId The file the action is on; a restricted file the caller is not admitted to answers 404.
 	 *
-	 * @return void
+	 * @return ObjectEntity|null The object the route names, resolved within its register and
+	 *                           schema (so a slug is this schema's object, #4037); null for an
+	 *                           anonymous caller, who is gated on publication instead.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
@@ -296,7 +298,7 @@ class FilesController extends Controller {
 		bool $change = true,
 		string $fileVerb = ObjectFileAccess::ADD_FILES,
 		?int $fileId = null,
-	): void {
+	): ?ObjectEntity {
 		// A restricted file the caller is not admitted to is not there for them, whatever the object rule says.
 		if ($fileId !== null) {
 			$this->refuseRestrictedFile(fileId: $fileId);
@@ -312,7 +314,7 @@ class FilesController extends Controller {
 				);
 			}
 
-			return;
+			return null;
 		}
 
 		// The object rule is the only gate: an object's files live in the
@@ -326,11 +328,10 @@ class FilesController extends Controller {
 				// change either. Asked after the access rule, so a caller
 				// without access still gets 404/403 and learns nothing of the state.
 				$this->fileWriteGuard?->assertWritable(object: $object);
-				return;
+				return $object;
 			}
 
-			$this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
-			return;
+			return $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
 		}
 
 		// Legacy wiring without the guard: the object read check alone.
@@ -338,6 +339,12 @@ class FilesController extends Controller {
 		if ($change === true && $object instanceof ObjectEntity) {
 			$this->fileWriteGuard?->assertWritable(object: $object);
 		}
+
+		if ($object instanceof ObjectEntity) {
+			return $object;
+		}
+
+		return null;
 	}//end ensureObjectAccess()
 
 	/**
@@ -619,10 +626,20 @@ class FilesController extends Controller {
 			// A person sees the list only when they may read the object. Every
 			// file sits in the openregister account's home, so without this
 			// check any signed-in user could list any object's files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
+			$object = $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
 
-			// Get the raw files from the file service.
-			$files = $this->fileService->getFiles(object: $id, sharedFilesOnly: $isAnonymous);
+			// An anonymous caller has no read check to resolve the object; it is looked
+			// up within this register and schema all the same. Publication still decides
+			// what it sees (shared files only).
+			if ($object === null && $isAnonymous === true) {
+				$object = $this->objectInScope(register: $register, schema: $schema, id: $id);
+			}
+
+			// List the files of the object resolved within this register and schema: a
+			// slug names THIS schema's object (#4037). The raw identifier would be looked
+			// up across every table, where another schema's object with the same slug
+			// could win; only the legacy wiring without the access guard still passes it.
+			$files = $this->fileService->getFiles(object: ($object ?? $id), sharedFilesOnly: $isAnonymous);
 			if ($this->fileRestrictions !== null) {
 				$files = $this->fileRestrictions->readableNodes(nodes: $files);
 			}
@@ -645,6 +662,42 @@ class FilesController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end index()
+
+	/**
+	 * The object an identifier names within a register and schema, without a read check.
+	 *
+	 * For a caller who has no read check to resolve the object (anonymous): it only
+	 * picks the object, what the caller sees is decided by publication. A slug two
+	 * objects hold is answered as not found, the answer the files listing gives every
+	 * refused read (file-actions REQ-OFOA-002), and lists neither object's files.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $id       The object's id, uuid or slug.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DoesNotExistException When no object, or more than one, holds the identifier there.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function objectInScope(string $register, string $schema, string $id): ObjectEntity {
+		try {
+			$object = WriteCause::asLookup(
+				fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _audit: false)
+			);
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			throw new DoesNotExistException('Object not found');
+		}
+
+		if ($object instanceof ObjectEntity === false) {
+			throw new DoesNotExistException('Object not found');
+		}
+
+		return $object;
+	}//end objectInScope()
 
 	/**
 	 * Get a specific file associated with an object

@@ -738,4 +738,62 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->assertEquals(403, $response->getStatus());
 	}//end testListVersionsDeniedForUnauthorizedUserReturns403()
+	/**
+	 * An anonymous files listing for a slug looks the object up within the route's
+	 * register and schema (#4037), not across every table.
+	 */
+	public function testAnAnonymousListingResolvesTheObjectWithinTheRegisterAndSchema(): void {
+		$object = $this->createObjectMock();
+		$this->objectService->expects($this->once())
+			->method('find')
+			->with('hello-world', [], false, 'reg', 'sch', false, false, true, false)
+			->willReturn($object);
+		$this->fileService->expects($this->once())
+			->method('getFiles')
+			->with($object, true)
+			->willReturn([]);
+		$this->fileService->method('formatFiles')->willReturn(['results' => []]);
+		$this->request->method('getParams')->willReturn([]);
+
+		$response = $this->anonymousController()->index('reg', 'sch', 'hello-world');
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testAnAnonymousListingResolvesTheObjectWithinTheRegisterAndSchema()
+
+	/**
+	 * A slug two objects hold answers an anonymous listing 404 and lists no file
+	 * (file-actions REQ-OFOA-002), as it does for a signed-in reader.
+	 */
+	public function testAnAnonymousListingOfAnAmbiguousSlugIs404AndListsNoFile(): void {
+		$this->objectService->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two'));
+		$this->fileService->expects($this->never())->method('getFiles');
+
+		$response = $this->anonymousController()->index('reg', 'sch', 'dubbel');
+
+		$this->assertSame(404, $response->getStatus());
+	}//end testAnAnonymousListingOfAnAmbiguousSlugIs404AndListsNoFile()
+
+	/**
+	 * A controller whose session has no user.
+	 *
+	 * @return FilesController
+	 */
+	private function anonymousController(): FilesController {
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn(null);
+
+		return new FilesController(
+			'openregister',
+			$this->request,
+			$this->fileService,
+			$this->objectService,
+			$this->rootFolder,
+			$this->userManager,
+			$this->eventDispatcher,
+			$this->createMock(\OCA\OpenRegister\Db\FileMapper::class),
+			null,
+			$userSession
+		);
+	}//end anonymousController()
 }//end class

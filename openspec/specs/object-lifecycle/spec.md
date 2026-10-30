@@ -12,6 +12,7 @@ retrofit: true
 - `fk-graph-lifecycle-transitions` — adds declarative FK-scoped graph transition mode (in-progress)
 - `lifecycle-declarative-conditions` — adds an optional declarative JSONLogic `condition` (plus a `message`) on a lifecycle transition, refusing the save with `lifecycle-condition-unmet` when it does not hold; malformed conditions are rejected at schema-save time (in-progress)
 - `lifecycle-auto-transitions`: lets a transition declare `autoWhen` (a JSONLogic rule) and `executionMode` (`sync` by default, or `async`), so OpenRegister fires it through the named-transition engine after a write, bounded by a loop cap; malformed or graph-mode declarations are refused at schema-save time (in-progress)
+- `object-slugs-configurable-and-unique` — `objectSlugField` / `objectSlugSuffix` persist through schema save, import and the schema editor; object slugs are unique per register + schema (a collision saves the object without a slug and logs both uuids, or appends a UTC date-time suffix when opted in), frozen once set, applied identically in bulk save; a duplicated slug answers 409 on lookup; `occ openregister:backfill-slugs` fills missing slugs (a set slug is never rewritten) and reports existing duplicates (in-progress)
 
 ## Purpose
 

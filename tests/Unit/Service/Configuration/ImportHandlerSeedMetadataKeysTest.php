@@ -39,6 +39,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -59,6 +62,12 @@ use ReflectionClass;
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
+
+	/** @var string|null When set, only this slug is held (so its suffixed variant is free). */
+	private ?string $onlyHeldSlug = null;
+
+	/** @var list<string> Warnings the slug handler logged. */
+	private array $slugWarnings = [];
 
 	/** @var array<int, ObjectEntity> Every entity handed to the routing mapper's insert(). */
 	private array $inserted = [];
@@ -137,14 +146,154 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	}//end testTheLookupStillUsesTheSeedUuid()
 
 	/**
+	 * Review finding save-f5: a seed on a schema with managed slugs goes through
+	 * the slug handler, so it cannot take a slug another live object holds.
+	 */
+	public function testASeedCannotTakeASlugAnotherLiveObjectHolds(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, ['other-uuid']);
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertNull($this->inserted[0]->getSlug(), 'the seed is imported without the slug another object holds');
+	}//end testASeedCannotTakeASlugAnotherLiveObjectHolds()
+
+	/**
+	 * A seed whose slug is free keeps it, managed or not.
+	 */
+	public function testASeedKeepsAFreeSlugOnAManagedSchema(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, []);
+
+		$this->assertSame('school-de-linde', $this->inserted[0]->getSlug());
+	}//end testASeedKeepsAFreeSlugOnAManagedSchema()
+
+	/**
+	 * Review finding r2save-f4: a seed that takes the suffixed slug says so.
+	 */
+	public function testASeedThatTakesTheSuffixedSlugLogsTheCollision(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam', 'objectSlugSuffix' => true]);
+		$this->onlyHeldSlug = 'school-de-linde';
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, ['other-uuid']);
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertMatchesRegularExpression('/^school-de-linde-\d{14}$/', (string)$this->inserted[0]->getSlug());
+		$this->assertCount(1, $this->slugWarnings);
+		$this->assertStringContainsString('other-uuid', $this->slugWarnings[0]);
+		$this->assertStringContainsString('got the suffixed slug', $this->slugWarnings[0]);
+	}//end testASeedThatTakesTheSuffixedSlugLogsTheCollision()
+
+	/**
+	 * Review finding pp-f5: a first import that lost the slug to another object stored the seed
+	 * under the suffixed slug; the next import finds it there instead of copying it again.
+	 */
+	public function testAUuidLessSeedStoredUnderASuffixedSlugIsNotCopiedAgain(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string'], 'title' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam', 'objectSlugSuffix' => true]);
+		// The configured source (`naam`) decides the slug, not the title (review Robert, 30-10).
+		$this->onlyHeldSlug = 'de-linde';
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, ['other-uuid'], ['title' => 'School De Linde', 'naam' => 'De Linde'], 2);
+
+		$this->assertCount(1, $this->inserted, 'the second import finds the suffixed copy');
+		$this->assertMatchesRegularExpression('/^de-linde-\d{14}$/', (string)$this->inserted[0]->getSlug());
+	}//end testAUuidLessSeedStoredUnderASuffixedSlugIsNotCopiedAgain()
+
+	/**
+	 * Review finding r2save-f3: a uuid-less seed is looked up by the slug it was
+	 * stored under, so importing it twice yields one object.
+	 */
+	public function testAUuidLessSeedWithACapitalisedTitleIsImportedOnce(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string'], 'title' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, [], ['title' => 'School De Linde', 'naam' => 'De Linde'], 2);
+
+		$this->assertCount(1, $this->inserted, 'the second import finds the first object');
+		// The configured source (`naam`) decides the slug, not the title (review Robert, 30-10).
+		$this->assertSame('de-linde', $this->inserted[0]->getSlug());
+		$this->assertSame(['de-linde', 'de-linde'], $lookups, 'the lookup uses the stored form');
+	}//end testAUuidLessSeedWithACapitalisedTitleIsImportedOnce()
+
+	/**
+	 * Review finding (Robert, 30-10): an explicit seed `slug` is still the client
+	 * slug and wins over the configured source, as it does through the API.
+	 */
+	public function testAnExplicitSeedSlugStillWinsOverTheConfiguredSource(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string'], 'title' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, [], ['slug' => 'eigen-slug', 'title' => 'School De Linde', 'naam' => 'De Linde']);
+
+		$this->assertSame('eigen-slug', $this->inserted[0]->getSlug());
+	}//end testAnExplicitSeedSlugStillWinsOverTheConfiguredSource()
+
+	/**
+	 * A real slug handler over a mapper that reports the given holders, or none.
+	 *
+	 * @param MagicMapper                    $routing        The routing mapper mock.
+	 * @param RegisterMapper                 $registerMapper The register mapper.
+	 * @param array<int, string>|null        $holders        Holders of any slug; null = no handler.
+	 *
+	 * @return ObjectSlugHandler|null The handler.
+	 */
+	private function slugHandlerFor(MagicMapper $routing, RegisterMapper $registerMapper, ?array $holders): ?ObjectSlugHandler {
+		if ($holders === null) {
+			return null;
+		}
+
+		$routing->method('findSlugHolders')->willReturnCallback(
+			fn ($register, $schema, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
+		);
+		return new ObjectSlugHandler(
+			magicMapper: $routing,
+			hydrator: new MetadataHydrationHandler(
+				logger: $this->createMock(LoggerInterface::class),
+				cacheHandler: $this->createMock(CacheHandler::class)
+			),
+			registerMapper: $registerMapper,
+			logger: $this->slugLogger()
+		);
+	}//end slugHandlerFor()
+
+	/**
+	 * A logger that collects the slug warnings in $this->slugWarnings.
+	 *
+	 * @return LoggerInterface The logger.
+	 */
+	private function slugLogger(): LoggerInterface {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function ($message): void {
+				$this->slugWarnings[] = (string)$message;
+			}
+		);
+		return $logger;
+	}//end slugLogger()
+
+	/**
 	 * Run the real importSeedData() for one seed object of the given schema.
 	 *
-	 * @param Schema             $schema  The target schema.
-	 * @param array<int, string> $lookups Filled with every identifier find() received.
+	 * @param Schema                  $schema      The target schema.
+	 * @param array<int, string>      $lookups     Filled with every identifier find() received.
+	 * @param array<int, string>|null $slugHolders Live holders of any slug (null = no slug handler wired).
+	 * @param array|null              $seed        The seed object (default: a seed with uuid and slug).
+	 * @param int                     $runs        How many times the same import runs.
 	 *
 	 * @return void
 	 */
-	private function importSeed(Schema $schema, array &$lookups = []): void {
+	private function importSeed(Schema $schema, array &$lookups = [], ?array $slugHolders = null, ?array $seed = null, int $runs = 1): void {
 		$register = new Register();
 		$register->setSlug('learniq');
 		$register->setSchemas([(int)$schema->getId()]);
@@ -155,9 +304,28 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$routing = $this->createMock(MagicMapper::class);
 		$routing->method('find')->willReturnCallback(
-			static function ($identifier) use (&$lookups) {
+			function ($identifier) use (&$lookups) {
 				$lookups[] = (string)$identifier;
+				// Behave like a table: an earlier insert is found by its uuid or stored slug.
+				foreach ($this->inserted as $entity) {
+					if ($entity->getUuid() === (string)$identifier || $entity->getSlug() === (string)$identifier) {
+						return $entity;
+					}
+				}
+
 				throw new DoesNotExistException('not found');
+			}
+		);
+		$routing->method('findSlugsByPrefix')->willReturnCallback(
+			function ($register, $schema, string $prefix): array {
+				$matches = [];
+				foreach ($this->inserted as $entity) {
+					if (str_starts_with((string)$entity->getSlug(), $prefix) === true) {
+						$matches[] = ['slug' => (string)$entity->getSlug(), 'uuid' => (string)$entity->getUuid()];
+					}
+				}
+
+				return $matches;
 			}
 		);
 		$routing->method('insert')->willReturnCallback(
@@ -183,7 +351,8 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
 			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->createMock(ObjectService::class)
+			objectService:       $this->createMock(ObjectService::class),
+			slugHandler:         $this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders)
 		);
 		$handler->setObjectMapper($routing);
 
@@ -200,7 +369,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 				'seedData' => [
 					'objects' => [
 						'school' => [
-							['uuid' => self::SEED_UUID, 'slug' => 'school-de-linde', 'naam' => 'De Linde'],
+							($seed ?? ['uuid' => self::SEED_UUID, 'slug' => 'school-de-linde', 'naam' => 'De Linde']),
 						],
 					],
 				],
@@ -209,7 +378,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$result = ['objects' => []];
 		$method = $ref->getMethod('importSeedData');
-		$method->invokeArgs($handler, [$configData, 'admin', 'learniq', $configuration, &$result]);
+		for ($run = 0; $run < $runs; $run++) {
+			$method->invokeArgs($handler, [$configData, 'admin', 'learniq', $configuration, &$result]);
+		}
 	}//end importSeed()
 
 	/**

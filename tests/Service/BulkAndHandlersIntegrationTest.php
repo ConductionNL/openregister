@@ -473,58 +473,6 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		$this->assertEquals('trimmed', $this->metadataHandler->createSlug('--trimmed--'));
 	}
 
-	public function testCreateSlugFromValue(): void {
-		$this->assertEquals('hello-world', $this->metadataHandler->createSlugFromValue('Hello World'));
-		$this->assertNull($this->metadataHandler->createSlugFromValue(''));
-		$this->assertNull($this->metadataHandler->createSlugFromValue('   '));
-	}
-
-	public function testGenerateSlugFromSlugFromConfig(): void {
-		$schema = new Schema();
-		$schema->setTitle('Test Schema');
-		$schema->setProperties([
-			'_slugFrom' => 'title',
-			'title' => ['type' => 'string'],
-		]);
-
-		$data = ['title' => 'My Article Title'];
-		$result = $this->metadataHandler->generateSlug($data, $schema);
-		$this->assertEquals('my-article-title', $result);
-	}
-
-	public function testGenerateSlugFromTitleFieldConfig(): void {
-		$schema = new Schema();
-		$schema->setTitle('Test Schema');
-		$schema->setProperties([
-			'_titleField' => 'label',
-			'label' => ['type' => 'string'],
-		]);
-
-		$data = ['label' => 'Custom Label'];
-		$result = $this->metadataHandler->generateSlug($data, $schema);
-		$this->assertEquals('custom-label', $result);
-	}
-
-	public function testGenerateSlugFromCommonFields(): void {
-		$schema = new Schema();
-		$schema->setTitle('Test Schema');
-		$schema->setProperties([]);
-
-		$data = ['name' => 'Common Name'];
-		$result = $this->metadataHandler->generateSlug($data, $schema);
-		$this->assertEquals('common-name', $result);
-	}
-
-	public function testGenerateSlugFallbackToSchemaName(): void {
-		$schema = new Schema();
-		$schema->setTitle('My Schema Title');
-		$schema->setProperties([]);
-
-		$data = ['randomField' => 'value'];
-		$result = $this->metadataHandler->generateSlug($data, $schema);
-		$this->assertEquals('my-schema-title', $result);
-	}
-
 	public function testHydrateObjectMetadataWithConfiguredFields(): void {
 		$entity = new ObjectEntity();
 		$entity->setObject([
@@ -556,23 +504,19 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		$this->assertEquals('Custom Title Value', $entity->getName());
 	}
 
-	public function testHydrateObjectMetadataWithSlugField(): void {
-		// Note: Schema::setConfiguration() validates keys via a whitelist.
-		// 'objectSlugField' is not in the validated keys, so we set configuration
-		// directly via reflection to test the slug hydration path.
+	public function testHydrateObjectMetadataLeavesTheSlugToObjectSlugHandler(): void {
+		// objectSlugField now survives Schema::setConfiguration() (#4037), and the
+		// hydrator no longer writes the slug: ObjectSlugHandler decides it.
 		$entity = new ObjectEntity();
 		$entity->setObject(['naam' => 'Test', 'slug_source' => 'My Custom Slug']);
 
 		$schema = new Schema();
 		$schema->setProperties([]);
-
-		// Set configuration directly to bypass validation that drops unknown keys.
-		$refProp = new \ReflectionProperty(Schema::class, 'configuration');
-		$refProp->setAccessible(true);
-		$refProp->setValue($schema, ['objectSlugField' => 'slug_source']);
+		$schema->setConfiguration(['objectSlugField' => 'slug_source']);
+		$this->assertSame('slug_source', $schema->getConfiguration()['objectSlugField']);
 
 		$this->metadataHandler->hydrateObjectMetadata($entity, $schema);
-		$this->assertEquals('my-custom-slug', $entity->getSlug());
+		$this->assertNull($entity->getSlug());
 	}
 
 	public function testHydrateObjectMetadataWithDescriptionField(): void {
