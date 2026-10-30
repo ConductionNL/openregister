@@ -209,7 +209,7 @@
                 "args": [
                     {
                         "title": "Four",
-                        "": "empty key"
+                        "(empty)": "empty key"
                     },
                     4
                 ]
@@ -780,7 +780,7 @@
                 "args": [
                     {
                         "title": "Four",
-                        "": "empty key"
+                        "(empty)": "empty key"
                     },
                     4
                 ]
@@ -1027,7 +1027,7 @@
                 "args": [
                     {
                         "title": "Four",
-                        "": "empty key"
+                        "(empty)": "empty key"
                     },
                     4
                 ]
