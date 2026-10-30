@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
@@ -1081,6 +1082,8 @@ class RegistersController extends Controller {
 							],
 							statusCode: ExportTooLargeException::HTTP_STATUS
 						);
+					} catch (OfficeServerRequiredException $e) {
+						return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
 					}
 
 					$filename = sprintf(
