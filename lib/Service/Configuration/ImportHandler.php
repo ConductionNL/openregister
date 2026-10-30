@@ -4963,8 +4963,7 @@ class ImportHandler {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-branch auto-create / reconcile logic.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Idempotent insert-or-update with multiple optional fields.
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function autoCreateRegisterIfApplication(
 		array $data,
@@ -4973,35 +4972,13 @@ class ImportHandler {
 		Configuration $configuration,
 		array &$result,
 	): void {
-		$xOpenregister = $data['x-openregister'] ?? [];
-		$type = $xOpenregister['type'] ?? null;
-
-		// Only trigger on `application`-typed configurations.
-		if ($type !== 'application') {
+		$details = $this->applicationRegisterDetails(data: $data, appId: $appId);
+		if ($details === null) {
 			return;
 		}
 
-		// Derive register attributes from the OAS document.
-		$info = $data['info'] ?? [];
-		$slug = $xOpenregister['app'] ?? $appId;
-		if (is_string($slug) === false || $slug === '') {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
-			);
-			return;
-		}
-
-		$title = $info['title'] ?? $xOpenregister['title'] ?? $appId;
-		$description = $info['description'] ?? $xOpenregister['description'] ?? null;
-
-		// Collect numeric schema IDs from the import result.
-		$newSchemaIds = [];
-		foreach ($schemas as $schema) {
-			if ($schema instanceof Schema && $schema->getId() !== null) {
-				$newSchemaIds[] = (int)$schema->getId();
-			}
-		}
+		$details['schemas'] = $schemas;
+		$details['schemaIds'] = self::savedSchemaIds(schemas: $schemas);
 
 		// Idempotent lookup on (slug, organisationId). The find cache on
 		// RegisterMapper already keys by slug, so this is cheap.
@@ -5011,139 +4988,23 @@ class ImportHandler {
 		$existingRegisters = $this->registerMapper->findAll(
 			limit: 1,
 			offset: 0,
-			filters: ['slug' => $slug],
+			filters: ['slug' => $details['slug']],
 			_rbac: false,
 			_multitenancy: true
 		);
 
 		$register = null;
 		if (count($existingRegisters) > 0) {
-			$register = $existingRegisters[0];
-
-			// Reconcile: refresh title/description and union schema IDs.
-			$register->setTitle($title);
-			if ($description !== null) {
-				$register->setDescription($description);
-			}
-
-			// Reconcile schema references. Union the freshly-imported (app-owned)
-			// ids in, but first PRUNE any currently-listed id that is now
-			// SHADOWED by a newly-imported schema sharing the same slug. This
-			// self-heals a register that — before the cross-app slug-collision
-			// fix — had a FOREIGN app's same-slug schema bound into it (e.g.
-			// pipelinq's 'conversation' #701 living in hermiq's register). Once
-			// the app imports its OWN 'conversation', the foreign shadow is
-			// dropped from THIS app's register so a slug resolves unambiguously
-			// to the app's own schema.
-			$currentSchemaIds = $register->getSchemas() ?? [];
-
-			// Map lower(slug) -> app-owned id for everything we just imported.
-			$newSlugToId = [];
-			foreach ($schemas as $schema) {
-				if ($schema instanceof Schema
-					&& $schema->getId() !== null
-					&& $schema->getSlug() !== null
-				) {
-					$newSlugToId[strtolower($schema->getSlug())] = (int)$schema->getId();
-				}
-			}
-
-			// Drop any currently-listed id whose slug matches a freshly-imported
-			// schema but whose id differs (the shadowed, foreign/stale one).
-			$prunedSchemaIds = [];
-			foreach ($currentSchemaIds as $currentId) {
-				$currentId = (int)$currentId;
-				$keep = true;
-				try {
-					$existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
-					if ($existingSlug !== null) {
-						$slugKey = strtolower($existingSlug);
-						if (isset($newSlugToId[$slugKey]) === true && $newSlugToId[$slugKey] !== $currentId) {
-							$keep = false;
-							$this->logger->debug(
-								message: sprintf(
-									"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
-									$slug,
-									$currentId,
-									$existingSlug,
-									$newSlugToId[$slugKey]
-								),
-								context: ['file' => __FILE__, 'line' => __LINE__]
-							);
-						}
-					}
-				} catch (\Throwable $ignore) {
-					// Missing / undecodable schema id — keep it as-is; nothing to compare against.
-				}//end try
-
-				if ($keep === true) {
-					$prunedSchemaIds[] = $currentId;
-				}
-			}//end foreach
-
-			// Union the freshly-imported app-owned ids into the pruned list.
-			$unionSchemaIds = $prunedSchemaIds;
-			foreach ($newSchemaIds as $newId) {
-				if (in_array($newId, $unionSchemaIds, true) === false) {
-					$unionSchemaIds[] = $newId;
-				}
-			}
-
-			$register->setSchemas($unionSchemaIds);
-			$register = $this->registerMapper->update($register);
-
-			$this->logger->debug(
-				message: '[ImportHandler] Auto-Register reconciled (idempotent re-import)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'slug' => $slug,
-					'unionSchemaIds' => $unionSchemaIds,
-				]
-			);
-		}//end if
+			$register = $this->reconcileApplicationRegister(register: $existingRegisters[0], details: $details);
+		}
 
 		if ($register === null) {
-			// Fresh insert: derive a new Register entity.
-			$register = $this->registerMapper->createFromArray(
-				object: [
-					'title' => $title,
-					'description' => $description ?? '',
-					'slug' => $slug,
-					'schemas' => $newSchemaIds,
-					'source' => 'import',
-				]
-			);
-
-			// Info: a register was CREATED. Structural and rare.
-			$this->logger->info(
-				message: '[ImportHandler] Auto-Register created from x-openregister.type=application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'slug' => $slug,
-					'schemaIds' => $newSchemaIds,
-				]
-			);
-		}//end if
+			$register = $this->createApplicationRegister(details: $details);
+		}
 
 		// Surface the auto-created register in the import result so callers
 		// see a complete (Configuration, Schemas, Register) triple.
-		$resultRegisters = $result['registers'] ?? [];
-		$alreadyPresent = false;
-		foreach ($resultRegisters as $existing) {
-			if ($existing instanceof Register && $existing->getId() === $register->getId()) {
-				$alreadyPresent = true;
-				break;
-			}
-		}
-
-		if ($alreadyPresent === false) {
-			$resultRegisters[] = $register;
-			$result['registers'] = $resultRegisters;
-		}
+		$result['registers'] = self::withRegister(registers: ($result['registers'] ?? []), register: $register);
 
 		// Keep the Configuration entity's registers[] field in sync so the
 		// triple stays consistent and a follow-up `_extend=registers` GET
@@ -5155,47 +5016,266 @@ class ImportHandler {
 			$this->configurationMapper->update($configuration);
 		}
 
-		// EAGER MAGIC-TABLE CREATION (fixes #1615): provision the per-schema
-		// magic table for EVERY imported schema, not just those that ship
-		// seed data. Without this, log-style schemas (call_log, job_log,
-		// synchronization_log, …) — which typically have no seed data —
-		// never get their `oc_openregister_table_{registerId}_{schemaId}`
-		// table created on `occ app:enable`, and the first runtime write
-		// from a service like CallService throws "relation does not exist".
-		//
-		// Idempotent on re-import: ensureTableForRegisterSchema short-
-		// circuits when the table already exists (see MagicTableHandler
-		// line 109-112). The seed-objects loop further down still calls
-		// the same method as a defensive no-op.
 		if ($this->magicMapper !== null) {
-			foreach ($schemas as $schema) {
-				if ($schema instanceof Schema === false) {
-					continue;
-				}
-
-				try {
-					$this->magicMapper->ensureTableForRegisterSchema(
-						register: $register,
-						schema: $schema
-					);
-				} catch (\Exception $e) {
-					// Non-fatal: surfaced via logger so the rest of the
-					// import (other schemas, seed data) still completes.
-					$this->logger->warning(
-						message: '[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schema_id' => $schema->getId(),
-							'schema_slug' => $schema->getSlug(),
-							'register_id' => $register->getId(),
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
+			$this->ensureApplicationMagicTables(register: $register, schemas: $schemas);
+		}
 	}//end autoCreateRegisterIfApplication()
+
+	/**
+	 * The slug, title and description of the register an `application` configuration declares.
+	 *
+	 * Null when the configuration is not of type `application`, or when it
+	 * names no usable slug (which is logged).
+	 *
+	 * @param array  $data  The full OAS document.
+	 * @param string $appId The app identifier, the fallback slug and title.
+	 *
+	 * @return array{slug: string, title: mixed, description: mixed}|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function applicationRegisterDetails(array $data, string $appId): ?array {
+		$xOpenregister = $data['x-openregister'] ?? [];
+		if (($xOpenregister['type'] ?? null) !== 'application') {
+			return null;
+		}
+
+		$slug = $xOpenregister['app'] ?? $appId;
+		if (is_string($slug) === false || $slug === '') {
+			$this->logger->warning(
+				message: '[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
+			);
+			return null;
+		}
+
+		$info = $data['info'] ?? [];
+		return [
+			'slug' => $slug,
+			'title' => $info['title'] ?? $xOpenregister['title'] ?? $appId,
+			'description' => $info['description'] ?? $xOpenregister['description'] ?? null,
+		];
+	}//end applicationRegisterDetails()
+
+	/**
+	 * The ids of the imported schemas that have been saved.
+	 *
+	 * @param array $schemas The imported schemas.
+	 *
+	 * @return array<int, int>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function savedSchemaIds(array $schemas): array {
+		$ids = [];
+		foreach ($schemas as $schema) {
+			if ($schema instanceof Schema && $schema->getId() !== null) {
+				$ids[] = (int)$schema->getId();
+			}
+		}
+
+		return $ids;
+	}//end savedSchemaIds()
+
+	/**
+	 * Create the register an `application` configuration declares.
+	 *
+	 * @param array<string, mixed> $details The slug, title, description and saved schema ids.
+	 *
+	 * @return Register
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createApplicationRegister(array $details): Register {
+		$register = $this->registerMapper->createFromArray(
+			object: [
+				'title' => $details['title'],
+				'description' => $details['description'] ?? '',
+				'slug' => $details['slug'],
+				'schemas' => $details['schemaIds'],
+				'source' => 'import',
+			]
+		);
+
+		// Info: a register was CREATED. Structural and rare.
+		$this->logger->info(
+			message: '[ImportHandler] Auto-Register created from x-openregister.type=application',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'slug' => $details['slug'],
+				'schemaIds' => $details['schemaIds'],
+			]
+		);
+
+		return $register;
+	}//end createApplicationRegister()
+
+	/**
+	 * Refresh an existing application register on re-import.
+	 *
+	 * The title and description are refreshed, and the freshly imported
+	 * (app-owned) schema ids are unioned in after pruning any listed id that a
+	 * new schema with the same slug now shadows. That self-heals a register
+	 * that, before the cross-app slug-collision fix, had a FOREIGN app's
+	 * same-slug schema bound into it (e.g. pipelinq's 'conversation' #701
+	 * living in hermiq's register): once the app imports its OWN
+	 * 'conversation', the foreign shadow is dropped so a slug resolves
+	 * unambiguously to the app's own schema.
+	 *
+	 * @param Register             $register The existing register.
+	 * @param array<string, mixed> $details  The slug, title, description, schemas and saved schema ids.
+	 *
+	 * @return Register The updated register.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function reconcileApplicationRegister(Register $register, array $details): Register {
+		$register->setTitle($details['title']);
+		if ($details['description'] !== null) {
+			$register->setDescription($details['description']);
+		}
+
+		$unionSchemaIds = $this->unshadowedSchemaIds(register: $register, details: $details);
+		foreach ($details['schemaIds'] as $newId) {
+			if (in_array($newId, $unionSchemaIds, true) === false) {
+				$unionSchemaIds[] = $newId;
+			}
+		}
+
+		$register->setSchemas($unionSchemaIds);
+		$register = $this->registerMapper->update($register);
+
+		$this->logger->debug(
+			message: '[ImportHandler] Auto-Register reconciled (idempotent re-import)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'slug' => $details['slug'],
+				'unionSchemaIds' => $unionSchemaIds,
+			]
+		);
+
+		return $register;
+	}//end reconcileApplicationRegister()
+
+	/**
+	 * A register's listed schema ids, without those a freshly imported schema shadows.
+	 *
+	 * A listed id is shadowed when its schema's slug matches a newly imported
+	 * schema (case-insensitively) but its id differs. An id whose schema
+	 * cannot be loaded is kept: there is nothing to compare it against.
+	 *
+	 * @param Register             $register The existing register.
+	 * @param array<string, mixed> $details  The register slug and the imported schemas.
+	 *
+	 * @return array<int, int>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function unshadowedSchemaIds(Register $register, array $details): array {
+		$newSlugToId = [];
+		foreach ($details['schemas'] as $schema) {
+			if ($schema instanceof Schema && $schema->getId() !== null && $schema->getSlug() !== null) {
+				$newSlugToId[strtolower($schema->getSlug())] = (int)$schema->getId();
+			}
+		}
+
+		$kept = [];
+		foreach ($register->getSchemas() ?? [] as $currentId) {
+			$currentId = (int)$currentId;
+			try {
+				$existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
+			} catch (\Throwable $ignore) {
+				$existingSlug = null;
+			}
+
+			$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
+			if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $currentId) {
+				$kept[] = $currentId;
+				continue;
+			}
+
+			$this->logger->debug(
+				message: sprintf(
+					"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
+					$details['slug'],
+					$currentId,
+					$existingSlug,
+					$shadowedBy
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}//end foreach
+
+		return $kept;
+	}//end unshadowedSchemaIds()
+
+	/**
+	 * A result's registers with the given one added, unless a register with its id is already there.
+	 *
+	 * @param array    $registers The result's registers.
+	 * @param Register $register  The register to add.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function withRegister(array $registers, Register $register): array {
+		foreach ($registers as $existing) {
+			if ($existing instanceof Register && $existing->getId() === $register->getId()) {
+				return $registers;
+			}
+		}
+
+		$registers[] = $register;
+		return $registers;
+	}//end withRegister()
+
+	/**
+	 * Provision the magic table of every imported schema in an application register.
+	 *
+	 * EAGER MAGIC-TABLE CREATION (fixes #1615): every imported schema, not
+	 * just those that ship seed data. Without this, log-style schemas
+	 * (call_log, job_log, synchronization_log, …), which typically have no
+	 * seed data, never get their `oc_openregister_table_{registerId}_{schemaId}`
+	 * table on `occ app:enable`, and the first runtime write from a service
+	 * like CallService throws "relation does not exist". Idempotent on
+	 * re-import: ensureTableForRegisterSchema short-circuits when the table
+	 * already exists. A failure is logged so the rest of the import completes.
+	 *
+	 * @param Register $register The application register.
+	 * @param array    $schemas  The imported schemas.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function ensureApplicationMagicTables(Register $register, array $schemas): void {
+		foreach ($schemas as $schema) {
+			if ($schema instanceof Schema === false) {
+				continue;
+			}
+
+			try {
+				$this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schema_id' => $schema->getId(),
+						'schema_slug' => $schema->getSlug(),
+						'register_id' => $register->getId(),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+	}//end ensureApplicationMagicTables()
 
 	/**
 	 * Import configuration from a file path.
