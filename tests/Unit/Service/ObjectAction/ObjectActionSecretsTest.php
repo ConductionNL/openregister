@@ -77,7 +77,7 @@ class ObjectActionSecretsTest extends TestCase {
 	}//end testErrorTextReplacesWholeTokensOnly()
 
 	/**
-	 * A whole-string copy is redacted; timestamps, uuids, ints and a short secret are not touched.
+	 * A whole-value copy is redacted (a number too); timestamps, uuids and a short secret are not touched.
 	 *
 	 * @return void
 	 */
@@ -93,7 +93,7 @@ class ObjectActionSecretsTest extends TestCase {
 		}
 
 		$this->assertSame(
-			expected: ['code' => '[redacted]', 'created' => '2026-10-30T10:00:00+00:00', 'uuid' => self::UUID, 'n' => '1', 'count' => 2026],
+			expected: ['code' => '[redacted]', 'created' => '2026-10-30T10:00:00+00:00', 'uuid' => self::UUID, 'n' => '1', 'count' => '[redacted]'],
 			actual: $data['json']
 		);
 	}//end testCopiesAreRedactedWholeStringsOnly()
