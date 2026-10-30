@@ -3746,7 +3746,7 @@ class SaveObject {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors saveObject()'s own RBAC flag.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function selfDataForUpdate(array $selfData, bool $_rbac): array {
 		if ($_rbac === true) {

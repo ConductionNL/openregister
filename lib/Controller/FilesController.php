@@ -280,7 +280,7 @@ class FilesController extends Controller {
 	 * @return void
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
 	 *                                                            authenticated caller may not access the object.
@@ -349,7 +349,7 @@ class FilesController extends Controller {
 	 *
 	 * @throws ObjectFileAccessDeniedException With 404 when the caller is not admitted.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 */
 	private function refuseRestrictedFile(int $fileId): void {
 		if ($this->fileRestrictions?->mayRead(fileId: $fileId) === false) {
@@ -557,7 +557,7 @@ class FilesController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/file-download-audit-names-the-file/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
 	 */
 	private function recordDownloadEvent(int $fileId, ?\OCA\OpenRegister\Db\ObjectEntity $object = null, string $fileName = ''): void {
 		if ($this->fileMapper !== null) {

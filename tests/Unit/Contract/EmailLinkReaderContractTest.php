@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/email-link-reader-contract/specs/generic-integrations/spec.md
+ * @spec openspec/specs/generic-integrations/spec.md
  */
 
 declare(strict_types=1);

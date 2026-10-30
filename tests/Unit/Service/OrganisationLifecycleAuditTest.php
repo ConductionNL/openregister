@@ -46,7 +46,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
- * @spec openspec/changes/organisation-lifecycle-audit/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 class OrganisationLifecycleAuditTest extends TestCase {
 
