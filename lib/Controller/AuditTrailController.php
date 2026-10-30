@@ -535,7 +535,9 @@ class AuditTrailController extends Controller {
 
 		try {
 			$log = $this->logService->getLog($id);
-			return new JSONResponse(data: $log);
+			// The single entry shows explicit-reveal values masked, like the lists.
+			$masked = $this->logService->maskExplicitReveal(entries: [$log]);
+			return new JSONResponse(data: $masked[0]);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
 		}
