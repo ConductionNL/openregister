@@ -87,6 +87,23 @@ class PreviewHandler {
 	private readonly MagicMapper $objectMapper;
 
 	/**
+	 * The component sections every preview starts with, in output order.
+	 *
+	 * @var array<string, array>
+	 */
+	private const EMPTY_PREVIEW = [
+		'registers' => [],
+		'schemas' => [],
+		'objects' => [],
+		'endpoints' => [],
+		'sources' => [],
+		'mappings' => [],
+		'jobs' => [],
+		'synchronizations' => [],
+		'rules' => [],
+	];
+
+	/**
 	 * Constructor for PreviewHandler.
 	 *
 	 * @param RegisterMapper $registerMapper The register mapper.
@@ -135,88 +152,29 @@ class PreviewHandler {
 	 *     rules: array
 	 * }|JSONResponse
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Preview comparison requires many conditional change checks
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component preview has many entity type conditions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full preview involves registers, schemas, objects, and metadata
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
 	 */
 	public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse {
-		// Fetch the remote configuration using FetchHandler.
 		$remoteData = $this->fetchHandler->fetchRemoteConfiguration($configuration);
-
 		if ($remoteData instanceof JSONResponse) {
 			return $remoteData;
 		}
 
-		// Initialize preview result.
-		$preview = [
-			'registers' => [],
-			'schemas' => [],
-			'objects' => [],
-			'endpoints' => [],
-			'sources' => [],
-			'mappings' => [],
-			'jobs' => [],
-			'synchronizations' => [],
-			'rules' => [],
-		];
-
-		// Preview registers.
-		if (($remoteData['components']['registers'] ?? null) !== null
-			&& is_array($remoteData['components']['registers']) === true
-		) {
-			foreach ($remoteData['components']['registers'] as $slug => $registerData) {
-				$preview['registers'][] = $this->previewRegisterChange(slug: $slug, registerData: $registerData);
-			}
+		$preview = self::EMPTY_PREVIEW;
+		foreach (self::remoteComponent(remoteData: $remoteData, kind: 'registers') as $slug => $registerData) {
+			$preview['registers'][] = $this->previewRegisterChange(slug: $slug, registerData: $registerData);
 		}
 
-		// Preview schemas.
-		if (($remoteData['components']['schemas'] ?? null) !== null
-			&& is_array($remoteData['components']['schemas']) === true
-		) {
-			foreach ($remoteData['components']['schemas'] as $slug => $schemaData) {
-				$preview['schemas'][] = $this->previewSchemaChange(slug: $slug, schemaData: $schemaData);
-			}
+		foreach (self::remoteComponent(remoteData: $remoteData, kind: 'schemas') as $slug => $schemaData) {
+			$preview['schemas'][] = $this->previewSchemaChange(slug: $slug, schemaData: $schemaData);
 		}
 
-		// Preview objects.
-		if (($remoteData['components']['objects'] ?? null) !== null
-			&& is_array($remoteData['components']['objects']) === true
-		) {
-			// Local registers and schemas by lowercased slug.
-			$registersBySlug = [];
-			foreach ($this->registerMapper->findAll() as $register) {
-				$registersBySlug[strtolower($register->getSlug() ?? '')] = $register;
-			}
+		// An empty object list still reads the local registers and schemas.
+		$remoteObjects = ($remoteData['components']['objects'] ?? null);
+		if (is_array($remoteObjects) === true) {
+			$preview['objects'] = $this->previewObjects(remoteObjects: $remoteObjects, preview: $preview);
+		}
 
-			$schemasBySlug = [];
-			foreach ($this->schemaMapper->findAll() as $schema) {
-				$schemasBySlug[strtolower($schema->getSlug() ?? '')] = $schema;
-			}
-
-			// Registers and schemas this same import creates: their objects
-			// are created too, not skipped as "not found locally" (live pass O13).
-			$objectPreview = new ObjectChangePreview(
-				objectMapper: $this->objectMapper,
-				compare: fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed)
-			);
-			$planned = [
-				'registers' => $objectPreview->createdSlugs(rows: $preview['registers']),
-				'schemas'   => $objectPreview->createdSlugs(rows: $preview['schemas']),
-			];
-
-			foreach ($remoteData['components']['objects'] as $objectData) {
-				$preview['objects'][] = $objectPreview->preview(
-					objectData: (array)$objectData,
-					registersBySlug: $registersBySlug,
-					schemasBySlug: $schemasBySlug,
-					planned: $planned
-				);
-			}
-		}//end if
-
-		// Add metadata about the preview.
 		$preview['metadata'] = [
 			'configurationId' => $configuration->getId(),
 			'configurationTitle' => $configuration->getTitle(),
@@ -231,6 +189,72 @@ class PreviewHandler {
 
 		return $preview;
 	}//end previewConfigurationChanges()
+
+	/**
+	 * One component map of a remote document, or an empty list when it is absent or not a map.
+	 *
+	 * @param array  $remoteData The remote document.
+	 * @param string $kind       The component, e.g. `registers`.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 */
+	private static function remoteComponent(array $remoteData, string $kind): array {
+		$component = ($remoteData['components'][$kind] ?? null);
+		if (is_array($component) === false) {
+			return [];
+		}
+
+		return $component;
+	}//end remoteComponent()
+
+	/**
+	 * The preview rows of the remote objects, matched against the local registers and schemas.
+	 *
+	 * Registers and schemas the same import creates count as present, so their
+	 * objects are created too rather than skipped as "not found locally".
+	 *
+	 * @param array $remoteObjects The remote objects.
+	 * @param array $preview       The preview so far, with its register and schema rows.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 */
+	private function previewObjects(array $remoteObjects, array $preview): array {
+		// Local registers and schemas by lowercased slug.
+		$registersBySlug = [];
+		foreach ($this->registerMapper->findAll() as $register) {
+			$registersBySlug[strtolower($register->getSlug() ?? '')] = $register;
+		}
+
+		$schemasBySlug = [];
+		foreach ($this->schemaMapper->findAll() as $schema) {
+			$schemasBySlug[strtolower($schema->getSlug() ?? '')] = $schema;
+		}
+
+		$objectPreview = new ObjectChangePreview(
+			objectMapper: $this->objectMapper,
+			compare: fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed)
+		);
+		$planned = [
+			'registers' => $objectPreview->createdSlugs(rows: $preview['registers']),
+			'schemas'   => $objectPreview->createdSlugs(rows: $preview['schemas']),
+		];
+
+		$rows = [];
+		foreach ($remoteObjects as $objectData) {
+			$rows[] = $objectPreview->preview(
+				objectData: (array)$objectData,
+				registersBySlug: $registersBySlug,
+				schemasBySlug: $schemasBySlug,
+				planned: $planned
+			);
+		}
+
+		return $rows;
+	}//end previewObjects()
 
 	/**
 	 * Preview changes for a single register.
