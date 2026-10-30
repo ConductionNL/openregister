@@ -13,7 +13,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+ * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use ReflectionMethod;
 /**
  * The rendered object (`@self.files`, file-typed properties) and an access link leave a restricted file out.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+ * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
  */
 class FileRestrictionRenderAndLinkTest extends TestCase {
 

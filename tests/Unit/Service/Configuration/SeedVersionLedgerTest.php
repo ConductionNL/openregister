@@ -25,7 +25,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class SeedVersionLedgerTest extends TestCase {
 

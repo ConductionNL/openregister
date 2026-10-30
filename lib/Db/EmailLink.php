@@ -183,7 +183,7 @@ class EmailLink extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
 	 */
 	public function details(): array {
 		$metadata = json_decode((string) $this->metadata, true);
@@ -204,7 +204,7 @@ class EmailLink extends Entity implements JsonSerializable {
 	 *
 	 * @return array
 	 *
-	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
 	 */
 	public function jsonSerialize(): array {
 		return [

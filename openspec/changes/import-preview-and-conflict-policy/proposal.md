@@ -116,6 +116,12 @@ destruction, and nothing serialises the instance as a whole.
   C-configuration-16 and C-configuration-95 are answered by the two halves
   together, and neither half is useful alone.
 
+- **A whole base imports in one step.** A base from another product, uploaded as
+  its export archive or handed over by a source adapter, is proposed as one
+  register with a schema per table and a relation per link, confirmed by the
+  administrator, and imported as one job through the preview and the policy
+  (REQ-IPC-006, row x-import-product).
+
 ## Consumers
 
 - **integriq**: `migration-source-adapters` (integriq#2001) builds the

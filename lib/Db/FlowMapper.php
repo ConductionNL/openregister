@@ -86,7 +86,7 @@ class FlowMapper extends QBMapper {
 	 *
 	 * @return Flow|null The flow, or null when none is stored.
 	 *
-	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	public function findDeclared(string $name, string $schemaSlug): ?Flow {
 		$qb = $this->db->getQueryBuilder();

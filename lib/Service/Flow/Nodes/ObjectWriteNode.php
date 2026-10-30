@@ -455,7 +455,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @return array `summary` and `changes` (`[{field, value}]`).
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function preview(array $items, array $config, array $context): array {
 		$operation = trim((string)($config['operation'] ?? 'create'));

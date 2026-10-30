@@ -174,7 +174,7 @@ class PresentationExtractor {
 		$tempFile = null;
 		$zip = null;
 		try {
-			// Write the content to a temp file for ZipArchive to open, as WordExtractor does for PhpWord.
+			// Write the content to a temp file for ZipArchive to open, as WordTextReader does.
 			$tempFile = tmpfile();
 			fwrite($tempFile, $file->getContent());
 
