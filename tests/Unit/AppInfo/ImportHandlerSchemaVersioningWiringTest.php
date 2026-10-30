@@ -6,7 +6,7 @@ declare(strict_types=1);
  * The container hands the import handler its schema versioning service (#4102).
  *
  * A setter with a green test suite and no caller is a guard that never runs,
- * so this asserts the wiring from the caller: the Application's optional
+ * so this asserts the wiring from the caller: the configuration registrar's optional
  * import services.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -24,12 +24,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
 use GuzzleHttp\Client;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -38,13 +38,12 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 use RuntimeException;
 
 /**
- * Application wiring of the import handler's schema versioning.
+ * Configuration registrar wiring of the import handler's schema versioning.
  */
 class ImportHandlerSchemaVersioningWiringTest extends TestCase {
 
@@ -80,10 +79,8 @@ class ImportHandlerSchemaVersioningWiringTest extends TestCase {
 			}
 		);
 
-		// Application::__construct() boots the app container, which a unit test has not got.
-		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-		(new ReflectionMethod(Application::class, 'attachOptionalImportServices'))->invoke(
-			$app,
+		(new ReflectionMethod(ConfigurationServiceRegistrar::class, 'attachOptionalImportServices'))->invoke(
+			null,
 			$handler,
 			$container,
 			$this->createMock(LoggerInterface::class)
@@ -126,9 +123,8 @@ class ImportHandlerSchemaVersioningWiringTest extends TestCase {
 			}
 		);
 
-		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-		(new ReflectionMethod(Application::class, 'attachOptionalImportServices'))->invoke(
-			$app,
+		(new ReflectionMethod(ConfigurationServiceRegistrar::class, 'attachOptionalImportServices'))->invoke(
+			null,
 			$handler,
 			$container,
 			$this->createMock(LoggerInterface::class)

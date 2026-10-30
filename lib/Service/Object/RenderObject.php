@@ -732,6 +732,42 @@ class RenderObject {
 	}//end resolveTranslationsForRows()
 
 	/**
+	 * Resolve the declared lenses on a batch of un-rendered list rows.
+	 *
+	 * The list fast paths bypass renderEntity, where a schema's lenses are
+	 * resolved, so a lens property was absent from a list row while the same
+	 * object read on its own carried it. Each ObjectEntity row is resolved
+	 * against its own schema; a schema without lenses is skipped.
+	 *
+	 * @param array $rows  Result rows by reference; ObjectEntity rows are mutated in place.
+	 * @param bool  $_rbac Whether the reader's access to the referenced object is checked.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The lens resolver takes the rbac flag
+	 *
+	 * @spec openspec/changes/list-fast-path-resolves-lenses/specs/object-lenses/spec.md
+	 */
+	public function applyLensesToRows(array &$rows, bool $_rbac=true): void {
+		if ($this->lensResolver === null) {
+			return;
+		}
+
+		foreach ($rows as $row) {
+			if ($row instanceof ObjectEntity === false || $row->getSchema() === null) {
+				continue;
+			}
+
+			$schema = $this->getSchema(id: $row->getSchema());
+			if ($schema === null || $schema->getLenses() === []) {
+				continue;
+			}
+
+			$row->setObject($this->applyLens(schema: $schema, objectData: ($row->getObject() ?? []), rbac: $_rbac));
+		}
+	}//end applyLensesToRows()
+
+	/**
 	 * Redact write-only properties from cheap-path list rows (openregister#380, ocon#147).
 	 *
 	 * The list cheap-path (no _extend/_fields/_filter/_unset) does NOT run rows through

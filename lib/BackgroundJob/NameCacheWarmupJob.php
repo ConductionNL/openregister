@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -63,7 +63,10 @@ class NameCacheWarmupJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory for parent class
 	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 */
-	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ContainerInterface $container,
+	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 		// Warmup is not time-critical: let NC defer it to a low-load window (OPS-13).
@@ -99,8 +102,8 @@ class NameCacheWarmupJob extends TimedJob {
 		);
 
 		try {
-			// @var CacheHandler $cacheHandler.
-			$cacheHandler = $this->container->get(CacheHandler::class);
+			// @var ObjectNameCacheInterface $cacheHandler.
+			$cacheHandler = $this->container->get(ObjectNameCacheInterface::class);
 
 			// Perform cache warmup.
 			$namesLoaded = $cacheHandler->warmupNameCache();
