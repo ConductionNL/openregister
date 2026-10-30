@@ -226,6 +226,7 @@ class CalendarLinkServiceTest extends TestCase {
 			"LOCATION:HQ\r\nATTENDEE;CN=\"Sanne de Vries\";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:sanne@demo.example",
 			$this->buildVevent('ev-A', 'Toelichting')
 		);
+		$this->calDavBackend->method('getCalendarsForUser')->willReturn([]);
 		$this->calDavBackend->method('getCalendarObject')->with(7, 'a.ics')->willReturn(['calendardata' => $ics]);
 
 		$events = $this->service->getLinkedEvents('obj-1');
@@ -247,6 +248,7 @@ class CalendarLinkServiceTest extends TestCase {
 		$link->setCalendarId(7);
 		$this->linkMapper->method('findByObjectUuid')->willReturn([$link]);
 		$this->calendarEventService->method('getEventsForObject')->willReturn([]);
+		$this->calDavBackend->method('getCalendarsForUser')->willReturn([]);
 		$this->calDavBackend->method('getCalendarObject')->willReturn(null);
 
 		$events = $this->service->getLinkedEvents('obj-1');
