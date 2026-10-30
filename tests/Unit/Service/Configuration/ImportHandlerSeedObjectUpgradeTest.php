@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -375,7 +375,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testASeedThatLacksAShippedFieldGainsIt(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
@@ -393,7 +393,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testChangedShippedContentArrivesAtAnUnchangedVersion(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
@@ -411,7 +411,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testUnchangedShippedContentIsNotWrittenAgain(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
@@ -431,7 +431,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testAFailedWriteIsNotRememberedAsShipped(): void {
 		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
