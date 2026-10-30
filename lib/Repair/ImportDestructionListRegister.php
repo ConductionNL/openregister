@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/example-set-archival-setting/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  *
- * @spec openspec/changes/example-set-archival-setting/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
  *   (Requirement: OpenRegister ships a register for destruction lists)
  */
 class ImportDestructionListRegister implements IRepairStep {
@@ -93,7 +93,7 @@ class ImportDestructionListRegister implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/retention-management/spec.md
+	 * @spec openspec/specs/retention-management/spec.md
 	 *   (Requirement: OpenRegister ships a register for destruction lists)
 	 */
 	public function getName(): string {
@@ -107,7 +107,7 @@ class ImportDestructionListRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/retention-management/spec.md
+	 * @spec openspec/specs/retention-management/spec.md
 	 *   (Requirement: OpenRegister ships a register for destruction lists)
 	 */
 	public function run(IOutput $output): void {

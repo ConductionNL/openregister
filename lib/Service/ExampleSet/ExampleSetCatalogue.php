@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One gathering: discovery, the cast rule and every entry's shape.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
 class ExampleSetCatalogue {
 	/**
@@ -78,7 +78,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @return array<string, array<int, string>> App ids by set id, both sorted.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
 	 */
 	public function sets(): array {
 		$sets = [];
@@ -122,7 +122,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When the set cannot be gathered; the message names why and where.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	public function gather(string $set): array {
 		if (preg_match(self::SET_ID, $set) !== 1) {
@@ -385,8 +385,8 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When an entry lacks a key or fields, or a key is used twice.
 	 *
-	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
-	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	private function keyedRows(string $file, array $declared, string $noun): array {
 		$entries = [];
@@ -420,7 +420,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When another app declares the part, or a row lacks a key or fields.
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	private function archival(string $app, string $file, array $declared): array {
 		if ($declared !== [] && $app !== ExampleSetOrder::CAST_APP) {
@@ -541,7 +541,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the value is generated is the entry's own fact.
 	 *
-	 * @spec openspec/changes/example-set-typed-app-config/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
 	 */
 	private function appConfigType(string $file, int $index, array $entry, bool $generate): string {
 		$type = (string) ($entry['type'] ?? 'string');
@@ -567,7 +567,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When an entry names another app, or lacks a user, a key or a value.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	private function userPreferences(string $app, string $file, array $declared): array {
 		$entries = [];
@@ -603,7 +603,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When an entry names no register.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function requiredRegisters(array $declared, string $file): array {
 		$registers = [];
@@ -638,7 +638,7 @@ class ExampleSetCatalogue {
 	 * @throws ExampleSetException When an organisation lacks a key, name or slug, names a quota that is not a whole number,
 	 *                             or a member the cast does not hold.
 	 *
-	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
 	private function organisationEntities(array $declared, string $file, array $people=[]): array {
 		$accounts = [];

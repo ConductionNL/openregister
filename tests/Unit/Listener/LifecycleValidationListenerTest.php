@@ -256,7 +256,7 @@ class LifecycleValidationListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function testADeclaredStateWriteAsTheSystemSkipsTheTransitionCheck(): void {
 		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);

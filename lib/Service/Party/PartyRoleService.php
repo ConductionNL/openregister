@@ -156,7 +156,7 @@ class PartyRoleService {
 	 *
 	 * @throws Exception 400 for an undeclared kind or role, 404 for an unknown party.
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function importParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
 		return $this->linkParty(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, linkedBy: $linkedBy);

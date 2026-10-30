@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 gives the entry the uuid every timeline row carries.
  *
- * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
  */
 class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 
@@ -72,7 +72,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function part(): string {
 		return 'timelineEntries';
@@ -83,7 +83,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function noun(): string {
 		return 'timeline entry';
@@ -97,7 +97,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -156,7 +156,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	 * @return array{error: string, entry: array{uuid: string, object: string}|null} The record entry, or why the
 	 *                                                                                write failed.
 	 *
-	 * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['object'];
@@ -206,7 +206,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -223,7 +223,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-timeline-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function revert(array $entry): string {
 		try {

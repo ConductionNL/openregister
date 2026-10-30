@@ -24,8 +24,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
- * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the flows of an example set.
  *
- * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One check, write, proof and delete step per flow part.
  */
@@ -93,7 +93,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function part(): string {
 		return 'flows';
@@ -104,7 +104,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function noun(): string {
 		return 'flow';
@@ -118,7 +118,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -152,7 +152,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
 	 */
 	private function runsRefusal(mixed $runs): string {
 		if (is_array($runs) === false || array_is_list($runs) === false) {
@@ -176,7 +176,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
 	 */
 	private function runRefusal(array $run): string {
 		$unknown = array_diff(array_keys($run), self::RUN_FIELDS);
@@ -246,7 +246,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function write(string $app, string $key, array $data): array {
 		try {
@@ -282,7 +282,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
 	 */
 	public function updatesInPlace(): bool {
 		return true;
@@ -300,7 +300,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the update failed.
 	 *
-	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
 	 */
 	public function update(array $entry, string $app, string $key, array $data): array {
 		$uuid = (string) ($entry['uuid'] ?? '');
@@ -383,7 +383,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -402,7 +402,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function revert(array $entry): string {
 		try {
@@ -426,7 +426,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
 	 */
 	private function writeRun(Flow $flow, ?int $version, array $run): void {
 		$created = new DateTime((string) ($run['created'] ?? 'now'));

@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
 /**
  * Finds, writes and deletes the Talk conversations of an example set.
  *
- * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
  */
 class ExampleSetTalkStore {
 
@@ -91,7 +91,7 @@ class ExampleSetTalkStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function available(): bool {
 		return $this->appManager->isInstalled('spreed') === true && class_exists(self::ROOMS) === true && class_exists(self::CHAT) === true;
@@ -106,7 +106,7 @@ class ExampleSetTalkStore {
 	 *
 	 * @return array{token: string, id: int, created: bool}
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function room(string $owner, string $name, array $participants): array {
 		$manager = $this->container->get(self::MANAGER);
@@ -140,7 +140,7 @@ class ExampleSetTalkStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function heldCall(string $token, string $owner, DateTime $start, DateTime $end, array $joined): void {
 		$room = $this->container->get(self::MANAGER)->getRoomByToken($token);
@@ -165,7 +165,7 @@ class ExampleSetTalkStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function roomExists(string $token): bool {
 		try {
@@ -184,7 +184,7 @@ class ExampleSetTalkStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function deleteRoom(string $token): void {
 		$room = $this->container->get(self::MANAGER)->getRoomByToken($token);

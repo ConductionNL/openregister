@@ -488,7 +488,7 @@ class RegisterDescriptorService {
 	 *
 	 * @return bool True when the shipped version is newer than the installed one.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function isBehind(string $appId, string $slug, bool $mock): bool {
 		$descriptor = $this->descriptorFor(appId: $appId, slug: $slug, mock: $mock);

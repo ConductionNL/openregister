@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-one-run-at-a-time/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
+ * @spec openspec/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
  */
 
 declare(strict_types=1);

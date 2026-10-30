@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
 	public function testARewriteMovesTheReferencesRecordAlong(): void {
 		$this->incidentWith();
@@ -85,7 +85,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	public function testAKeptFieldKeepsItsValueAndALensIsNotSent(): void {
 		$this->incidentWith(incident: ['since' => '{{date:-1}}', 'reported' => '{{date:-1}}']);
@@ -110,7 +110,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	public function testAnAppendOnlyRowIsKept(): void {
 		$this->incidentWith();
@@ -132,7 +132,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
 	public function testJsonTextHoldsWhenTheStoreAnswersItDecoded(): void {
 		$proof = new ExampleSetProof();
@@ -150,7 +150,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-leaves-unset-fields/specs/example-sets/spec.md#requirement-a-refresh-does-not-send-fields-the-declaration-leaves-unset
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-does-not-send-fields-the-declaration-leaves-unset
 	 */
 	public function testARefreshLeavesAFieldTheDeclarationDoesNotNameUnset(): void {
 		$this->incidentWith();

@@ -24,3 +24,9 @@ A declared object MAY carry `owner`, which SHALL resolve to the account id of a 
 ### Requirement: The system scope may assign a record
 
 `ObjectOwnershipService` SHALL let a trusted system operation (inside `SystemOperationContext`) assign or reassign a record without a session user. Outside that scope only an administrator SHALL.
+
+#### Scenario: Assigned inside the system scope, refused outside it
+- **GIVEN** no session user and a record owned by `__system__`
+- **WHEN** a trusted system operation assigns it to `carol` inside `SystemOperationContext`
+- **THEN** the record SHALL be owned by `carol`
+- **AND** the same assignment outside the system scope SHALL be refused

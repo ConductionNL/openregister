@@ -22,7 +22,7 @@ The accounts of an example set: the cast's people with an account, and the
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+ * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use DateTimeZone;
  * @SuppressWarnings(PHPMD.TooManyMethods)            One rule per kind of refusal keeps each one readable.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Every account rule of a set in one place: cast, service accounts, groups.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+ * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
  */
 class ExampleSetPeople {
 	/**
@@ -73,7 +73,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function install(array $plan, array $adopt, string $password, array $report, array &$record): array {
 		$set    = (string) $plan['set'];
@@ -137,7 +137,7 @@ class ExampleSetPeople {
 	 *
 	 * @return string `named` or `kept`.
 	 *
-	 * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
 	 */
 	private function nameUnnamedGroup(string $set, string $gid, string $displayName, array &$record): string {
 		$current = $this->accounts->groupName(gid: $gid);
@@ -192,7 +192,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
 	private function installSubAdmins(array $plan, array $report, array &$record): array {
 		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid, $uid]) {
@@ -222,7 +222,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, array{0: string, 1: string}>
 	 *
-	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
 	private function declaredSubAdmins(array $plan): array {
 		$pairs = [];
@@ -326,7 +326,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
 	private function installProfile(array $plan, array $person, array $report, array $record): array {
 		$uid  = (string) $person['uid'];
@@ -429,7 +429,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function refusals(array $plan, array $record, array $adopt): array {
 		$refusals = [];
@@ -611,7 +611,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function missing(array $record): array {
 		$missing = [];
@@ -649,7 +649,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-declare-service-accounts-req-exs-014
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-service-accounts-req-exs-014
 	 */
 	public function serviceAccounts(array $plan): array {
 		$accounts = [];
@@ -672,7 +672,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function declaredUids(array $plan): array {
 		$uids = [];
@@ -694,7 +694,7 @@ class ExampleSetPeople {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public static function passesElevenTest(string $bsn): bool {
 		if (preg_match('/^\d{9}$/', $bsn) !== 1) {
