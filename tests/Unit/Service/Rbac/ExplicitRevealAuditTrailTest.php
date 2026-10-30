@@ -285,15 +285,31 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 	 */
 	public function testTheSubjectAuditTrailShowsItMasked(): void {
 		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$trails->method('findByIdentifier')->willReturn([$this->entry()]);
+		// The mapper's real shape: raw rows grouped by schema id, `changed` as JSON text.
+		$trails->method('findByIdentifier')->willReturn(
+			[
+				'7' => [
+					[
+						'id' => 1,
+						'schema' => '7',
+						'action' => 'update',
+						'changed' => json_encode(value: ['citizenServiceNumber' => ['old' => null, 'new' => self::BSN]]),
+					],
+				],
+			]
+		);
 		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParam')->willReturn('123457609');
 
 		$response = $this->adminController(logService: $this->logService(trails: $trails), trails: $trails, request: $request)
 			->subjectAuditTrail();
 
-		$this->assertStringNotContainsString(needle: '"' . self::BSN . '"', haystack: (string)json_encode(value: $response->getData()));
-		$this->assertStringContainsString(needle: self::MASK, haystack: (string)json_encode(value: $response->getData()));
+		$row     = $response->getData()['7'][0];
+		$changed = json_decode(json: $row['changed'], associative: true);
+
+		$this->assertIsString(actual: $row['changed'], message: 'the raw row keeps its JSON text');
+		$this->assertSame(expected: self::MASK, actual: $changed['citizenServiceNumber']['new']);
+		$this->assertStringNotContainsString(needle: self::BSN, haystack: $row['changed']);
 	}//end testTheSubjectAuditTrailShowsItMasked()
 
 	/**
