@@ -1090,6 +1090,10 @@ class ObjectsController extends Controller {
 		// buildSearchQuery() with no `_rbac` assignment.
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 
+		// Same bypass, same gap for lenses: renderEntity is where a schema's
+		// declared lenses are resolved.
+		$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac']);
+
 		// Same bypass, same gap for translatable properties: renderEntity is
 		// where a `{"nl":...}` map projects to the negotiated language.
 		$renderHandler->resolveTranslationsForRows(rows: $results);
@@ -1766,6 +1770,10 @@ class ObjectsController extends Controller {
 		// gates ONLY the property `authorization.read` strip; writeOnly strips
 		// unconditionally, admin included (#389/#460).
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $listing['rbac']);
+
+		// Same bypass, same gap for lenses: renderEntity is where a schema's
+		// declared lenses are resolved.
+		$renderHandler->applyLensesToRows(rows: $results, _rbac: $listing['rbac']);
 
 		// Same bypass, same gap for translatable properties: renderEntity is
 		// where a `{"nl":...}` map projects to the negotiated language.
@@ -2842,6 +2850,10 @@ class ObjectsController extends Controller {
 						// `authorization.read` strip; writeOnly strips unconditionally (#460).
 						$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 						$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+
+						// Same bypass, same gap for lenses: renderEntity is where a schema's
+						// declared lenses are resolved.
+						$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
 						// Same bypass, same gap for translatable properties: renderEntity is
 						// where a `{"nl":...}` map projects to the negotiated language.

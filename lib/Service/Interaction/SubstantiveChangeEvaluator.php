@@ -81,10 +81,12 @@ class SubstantiveChangeEvaluator {
 	 *
 	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ValueNormaliser $normaliser Puts values in the form a reader sees.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
+		private readonly ValueNormaliser $normaliser=new ValueNormaliser(),
 	) {
 	}//end __construct()
 
@@ -185,8 +187,7 @@ class SubstantiveChangeEvaluator {
 	/**
 	 * The property names whose values differ between two versions.
 	 *
-	 * Compared on the decoded object body rather than a serialised string, so a
-	 * key reordering is not a change.
+	 * Compared by meaning rather than by storage: see ValueNormaliser.
 	 *
 	 * @param ObjectEntity $new The object as it now stands.
 	 * @param ObjectEntity $old The object as it stood before.
@@ -204,7 +205,7 @@ class SubstantiveChangeEvaluator {
 				continue;
 			}
 
-			if (($newBody[$name] ?? null) !== ($oldBody[$name] ?? null)) {
+			if ($this->normaliser->normalised(value: ($newBody[$name] ?? null)) !== $this->normaliser->normalised(value: ($oldBody[$name] ?? null))) {
 				$changed[] = $name;
 			}
 		}
@@ -212,6 +213,7 @@ class SubstantiveChangeEvaluator {
 		return $changed;
 
 	}//end changedProperties()
+
 
 	/**
 	 * One object's decoded body.
