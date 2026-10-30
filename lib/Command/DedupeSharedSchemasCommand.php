@@ -50,7 +50,7 @@ use Throwable;
  * referencing registers' configurations do not single one owner out is reported
  * and skipped until `--keep` names one.
  *
- * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+ * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
  */
 class DedupeSharedSchemasCommand extends Command {
 
@@ -72,7 +72,7 @@ class DedupeSharedSchemasCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:registers:dedupe-shared-schemas')
@@ -114,7 +114,7 @@ class DedupeSharedSchemasCommand extends Command {
 	 *
 	 * @return int The exit code.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$write  = (bool)$input->getOption('write');

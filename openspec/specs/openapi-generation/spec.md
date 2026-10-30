@@ -10,7 +10,9 @@ status: done
 Auto-generate OpenAPI 3.1.0 specifications from register and schema definitions stored in OpenRegister, producing complete API documentation that covers every CRUD endpoint, query parameter, authentication scheme, and response model. The generated spec MUST be downloadable in JSON and YAML formats, serveable via an interactive Swagger UI, and MUST regenerate automatically when schemas change so that documentation never drifts from the live API surface. The generation pipeline MUST also support NL API Design Rules compliance markers for Dutch government API interoperability.
 
 **Source**: Gap identified in cross-platform analysis; developer experience improvement. Competitors Strapi (`@strapi/openapi`) and Directus both auto-generate OpenAPI specs from their data models. NocoDB exposes a Swagger endpoint per base.
+
 ## Requirements
+
 ### Requirement: The system MUST auto-generate OpenAPI 3.1.0 specs from register/schema definitions
 Each register MUST have an automatically generated OpenAPI 3.1.0 specification reflecting all schemas belonging to that register, their properties, and all available CRUD operations. The generation MUST be driven by `OasService::createOas()` reading from `RegisterMapper` and `SchemaMapper`, using `BaseOas.json` as the foundation template.
 
@@ -517,6 +519,33 @@ capability specs.
 - **WHEN** `DELETE /api/sources/5` is called
 - **THEN** the entity MUST be deleted via the mapper and the response MUST return an empty JSON body
 - **AND** deleting a non-existent ID MUST return HTTP 404 for controllers that catch `DoesNotExistException`
+
+### Requirement: Two contract versions are served at once, with a declared lifecycle (REQ-AVS-005)
+
+An API version SHALL carry a status of supported, deprecated with an end
+date, or withdrawn. A supported and a deprecated version SHALL be served
+at the same time, each described by its own generated OpenAPI document. A
+deprecated version SHALL answer normally and SHALL carry its end date in
+the response. A withdrawn version SHALL answer 410 naming its successor.
+
+#### Scenario: five suppliers move at their own pace
+
+- **GIVEN** version 1 deprecated with an end date and version 2 supported
+- **WHEN** a client calls version 1
+- **THEN** the call succeeds and the response names the end date
+
+#### Scenario: a withdrawn version says where to go
+
+- **GIVEN** version 1 withdrawn with version 2 as its successor
+- **WHEN** a client calls version 1
+- **THEN** the response is 410 and names version 2
+
+#### Scenario: each version has its own description
+
+- **GIVEN** two versions served at once
+- **WHEN** the OpenAPI documents are fetched
+- **THEN** each describes only its own routes
+- @e2e exclude {generator output, covered by unit tests}
 
 ## Current Implementation Status
 - **Fully implemented -- OAS generation from schemas**: `OasService` (`lib/Service/OasService.php`) generates OpenAPI specs from register/schema definitions via `createOas()`. It maps schema properties to OpenAPI types, generates paths for CRUD operations, and handles multi-register generation with operationId prefixing.

@@ -1726,7 +1726,7 @@ class SaveObject {
 	 *
 	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyExpressionDefaults(Schema $schema, array $data): array {
 		$properties = ($schema->getProperties() ?? []);

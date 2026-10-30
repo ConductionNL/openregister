@@ -36,7 +36,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -91,7 +91,7 @@ class ApiVersionNegotiator {
 	 *
 	 * @return ApiVersionNegotiation What was asked for, and what answers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function negotiate(IRequest $request): ApiVersionNegotiation {
 		$named = $this->readRequestedIdentifier(request: $request);
@@ -118,7 +118,7 @@ class ApiVersionNegotiator {
 	 *
 	 * @return array<int, string> The served identifiers, lowest first.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function acceptableIdentifiers(): array {
 		return $this->catalogue->servedIdentifiers();

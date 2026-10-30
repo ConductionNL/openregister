@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -146,7 +146,7 @@ final class ConsistencyRepairServiceTest extends TestCase {
 	/**
 	 * The plan names the objects the repair will touch, before it touches any.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -164,7 +164,7 @@ final class ConsistencyRepairServiceTest extends TestCase {
 	 * Applying it deletes exactly the rows the plan showed, and records the
 	 * act with the actor and the objects.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -187,7 +187,7 @@ final class ConsistencyRepairServiceTest extends TestCase {
 	 * A repair nobody is named for is refused, because a repair nobody is
 	 * named for is a repair nobody can be asked about.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -208,7 +208,7 @@ final class ConsistencyRepairServiceTest extends TestCase {
 	/**
 	 * A check this instance does not have cannot be repaired.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -222,7 +222,7 @@ final class ConsistencyRepairServiceTest extends TestCase {
 	 * Nothing to repair writes nothing and records nothing: an act recorded
 	 * for a repair that changed no row is an audit trail that cries wolf.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */

@@ -35,7 +35,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use DateTimeImmutable;
 /**
  * Turns the claims of one sign-in into the grants an administrator declared.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class DerivedGrantResolver {
 
@@ -81,7 +81,7 @@ class DerivedGrantResolver {
 	 * @return array{grants: array<int, array<string, mixed>>, skipped: array<int, string>}
 	 *         The grants, and one sentence per rule that could not be read.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function derive(array $claims, mixed $rules): array {
 		if (is_array($rules) === false || $rules === []) {
@@ -157,7 +157,7 @@ class DerivedGrantResolver {
 	 *
 	 * @return array<int, string> The group ids this caller holds here.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function groupsFor(array $grants, array $area, GrantConstraints $constraints): array {
 		$now = new DateTimeImmutable();

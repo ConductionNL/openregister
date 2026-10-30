@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -85,7 +85,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return array<string, mixed> The options the request is made with.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function withProxy(array $options): array {
 		try {
@@ -113,7 +113,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function get(string $uri, array $options = []): IResponse {
 		return $this->inner->get($uri, $this->withProxy(options: $options));
@@ -128,7 +128,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function head(string $uri, array $options = []): IResponse {
 		return $this->inner->head($uri, $this->withProxy(options: $options));
@@ -143,7 +143,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function post(string $uri, array $options = []): IResponse {
 		return $this->inner->post($uri, $this->withProxy(options: $options));
@@ -158,7 +158,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function put(string $uri, array $options = []): IResponse {
 		return $this->inner->put($uri, $this->withProxy(options: $options));
@@ -173,7 +173,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function patch(string $uri, array $options = []): IResponse {
 		return $this->inner->patch($uri, $this->withProxy(options: $options));
@@ -188,7 +188,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function delete(string $uri, array $options = []): IResponse {
 		return $this->inner->delete($uri, $this->withProxy(options: $options));
@@ -203,7 +203,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function options(string $uri, array $options = []): IResponse {
 		return $this->inner->options($uri, $this->withProxy(options: $options));
@@ -219,7 +219,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function request(string $method, string $uri, array $options = []): IResponse {
 		return $this->inner->request($method, $uri, $this->withProxy(options: $options));
@@ -234,7 +234,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IPromise The promise.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function getAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->getAsync($uri, $this->withProxy(options: $options));
@@ -249,7 +249,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IPromise The promise.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function headAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->headAsync($uri, $this->withProxy(options: $options));
@@ -264,7 +264,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IPromise The promise.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function postAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->postAsync($uri, $this->withProxy(options: $options));
@@ -279,7 +279,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IPromise The promise.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function putAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->putAsync($uri, $this->withProxy(options: $options));
@@ -294,7 +294,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IPromise The promise.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function deleteAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->deleteAsync($uri, $this->withProxy(options: $options));
@@ -309,7 +309,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IPromise The promise.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function optionsAsync(string $uri, array $options = []): IPromise {
 		return $this->inner->optionsAsync($uri, $this->withProxy(options: $options));
@@ -329,7 +329,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return ResponseInterface The response.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function sendRequest(RequestInterface $request): ResponseInterface {
 		return $this->inner->sendRequest($request);
@@ -343,7 +343,7 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response it maps to.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function getResponseFromThrowable(Throwable $e): IResponse {
 		return $this->inner->getResponseFromThrowable($e);

@@ -3411,7 +3411,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function withPermittedActions(
 		array $renderedData,

@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -84,7 +84,7 @@ class CallerRefusedException extends Exception {
 	 *
 	 * @return self The refusal.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public static function overLimit(int $limit, int $windowSeconds, int $resetAt, int $now): self {
 		$retryAfter = max(1, ($resetAt - $now));
@@ -109,7 +109,7 @@ class CallerRefusedException extends Exception {
 	 *
 	 * @return self The refusal.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public static function wrongAddress(): self {
 		return new self(
@@ -124,7 +124,7 @@ class CallerRefusedException extends Exception {
 	 *
 	 * @return JSONResponse The refusal, with the ceiling repeated in headers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function toResponse(): JSONResponse {
 		$body = ['error' => $this->getMessage()];

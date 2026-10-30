@@ -362,7 +362,7 @@ class BulkJobService {
 	 *
 	 * @throws BulkJobRefusedException When the job is not running.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function pause(BulkJob $job): BulkJob {
 		if ($job->getState() !== BulkJob::STATE_RUNNING) {
@@ -392,7 +392,7 @@ class BulkJobService {
 	 *
 	 * @throws BulkJobRefusedException When the job is not paused.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function resume(BulkJob $job): BulkJob {
 		if ($job->getState() !== BulkJob::STATE_PAUSED) {

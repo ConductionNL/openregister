@@ -128,7 +128,7 @@ export default {
 		 *
 		 * @return {string} The placeholder.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		queryPlaceholder() {
 			return '{\n  "status": "open"\n}'
@@ -141,7 +141,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		ruleId() {
 			this.result = null
@@ -161,7 +161,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		async run() {
 			this.result = null

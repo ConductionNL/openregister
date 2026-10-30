@@ -4770,7 +4770,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @return PermissionHandler The permission handler.
      *
-     * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function getPermissionHandler(): PermissionHandler
     {

@@ -302,7 +302,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The paused job, or the refusal.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	#[NoAdminRequired]
 	public function pause(int $id): JSONResponse {
@@ -328,7 +328,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The running job, or the refusal.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	#[NoAdminRequired]
 	public function resume(int $id): JSONResponse {

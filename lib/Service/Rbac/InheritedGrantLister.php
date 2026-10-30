@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  * It also takes the ancestor walk (`HierarchyDescender`) out of the write
  * surface's constructor, which nothing on the write paths ever used.
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class InheritedGrantLister {
 
@@ -120,7 +120,7 @@ class InheritedGrantLister {
 	 *
 	 * @return array<int, array<string, mixed>> The inherited grants, ancestor named.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function inheritedGrantsFor(ObjectEntity $object): array {
 		$ancestors = [];

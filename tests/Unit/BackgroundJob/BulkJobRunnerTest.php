@@ -125,7 +125,7 @@ final class BulkJobRunnerTest extends TestCase {
 	 * paused job would keep walking its members and the console would show a
 	 * state nothing honours.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */

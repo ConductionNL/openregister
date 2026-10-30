@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Rules;
  * ceiling still applies to a replay, and a schema that declares nothing behaves
  * exactly as it did (task 5.3).
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleCeilingService {
 
@@ -62,7 +62,7 @@ final class RuleCeilingService {
 	 *
 	 * @throws RuleCeilingException When the count is above the declared ceiling.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function assert(RuleDescriptor $rule, int $count): void {
 		$ceiling = $rule->getMaxObjects();
@@ -96,7 +96,7 @@ final class RuleCeilingService {
 	 *
 	 * @return bool True when the run is allowed to proceed.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function allows(RuleDescriptor $rule, int $count): bool {
 		$ceiling = $rule->getMaxObjects();

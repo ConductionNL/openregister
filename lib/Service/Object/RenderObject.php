@@ -3253,7 +3253,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
 		if ($schema === null) {

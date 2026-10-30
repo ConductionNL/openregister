@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -109,7 +109,7 @@ class CallerRateLimiter {
 	 * @return array{allowed: bool, limit: int, remaining: int, resetAt: int}|null
 	 *         The outcome, or null when no ceiling is administered for this caller.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function consume(string $principal, int $now): ?array {
 		$ceiling = $this->policy->limitFor(principal: $principal);

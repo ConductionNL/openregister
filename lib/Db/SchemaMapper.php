@@ -1250,7 +1250,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateAuthorizationDeny(Schema $schema): void {
 		$authorization = $schema->getAuthorization();
@@ -1905,7 +1905,7 @@ class SchemaMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
 	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateDependentValueTables(Schema $schema): void {
 		$properties = ($schema->getProperties() ?? []);
@@ -2489,7 +2489,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When the declaration cannot be honoured.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateHierarchyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2554,7 +2554,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When a declaration cannot produce a link.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	private function validateExternalLinksAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);

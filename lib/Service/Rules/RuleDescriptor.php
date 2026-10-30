@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use JsonSerializable;
  * id across reads, across restarts and across the machine it is read on, which
  * is what lets the run log key on it without a registry to allocate ids.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleDescriptor implements JsonSerializable {
 
@@ -99,7 +99,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return string The id, as the run log and the routes address it.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getId(): string {
 		return ($this->kind . self::ID_SEPARATOR . $this->schemaSlug . self::ID_SEPARATOR . $this->key);
@@ -120,7 +120,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return string The derived id.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function idFor(string $kind, string $schemaSlug, string $key): string {
 		return ($kind . self::ID_SEPARATOR . $schemaSlug . self::ID_SEPARATOR . $key);
@@ -131,7 +131,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return string One of the RuleVocabulary KIND_ constants.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getKind(): string {
 		return $this->kind;
@@ -142,7 +142,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return string The schema slug.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getSchemaSlug(): string {
 		return $this->schemaSlug;
@@ -153,7 +153,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return string The key: a calculation's name, a transition's name, a state's name or a flow's uuid.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getKey(): string {
 		return $this->key;
@@ -164,7 +164,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return bool True when the rule will be evaluated on the next save.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function isEnabled(): bool {
 		return $this->enabled;
@@ -175,7 +175,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return mixed The condition, or null when the rule has none.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getCondition(): mixed {
 		return $this->condition;
@@ -186,7 +186,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return int|null The ceiling, or null when the rule declares none.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getMaxObjects(): ?int {
 		return $this->maxObjects;
@@ -208,7 +208,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The descriptor.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [
