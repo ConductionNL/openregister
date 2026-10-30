@@ -33,8 +33,8 @@ class ServiceRegistrarTest extends TestCase {
 	 * @var array<string,string>
 	 */
 	private const LEFT_OUT = [
-		'OCA\OpenRegister\Service\OrganisationService::$settingsService'      => 'No construction cycle today. Left out because wiring it would switch the'
-			.' default-organisation key from `defaultOrganisation` to `organisation.default_organisation`;'
+		'OCA\OpenRegister\Service\OrganisationService::$settingsService'      => 'No construction cycle today. Left out because, wired, it would write both'
+			.' `defaultOrganisation` and `organisation.default_organisation` and read the nested key;'
 			.' the two keys already diverge (see the comment on the factory).',
 		'OCA\OpenRegister\Service\File\FolderManagementHandler::$fileService' => 'Set by FileService::__construct() through setFileService():'
 			.' FileService takes this handler, so constructor injection would be a cycle.',

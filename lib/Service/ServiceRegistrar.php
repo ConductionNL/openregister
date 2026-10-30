@@ -259,10 +259,12 @@ final class ServiceRegistrar {
 		// once given, a circular dependency, no longer holds: nothing in
 		// SettingsService's constructor graph reaches OrganisationService.
 		// Wiring it is not a no-op, though. Without it OrganisationService
-		// reads and writes the flat `defaultOrganisation` app-config key; with
-		// it, it would go through ConfigurationSettingsHandler, which uses only
-		// `organisation.default_organisation`. The two keys already diverge
-		// today; reconciling them is a separate change.
+		// reads and writes only the flat `defaultOrganisation` app-config key.
+		// Wired, it would still write that key (setDefaultOrganisationId()),
+		// additionally write `organisation.default_organisation` through
+		// SettingsService, and read the nested key instead of the flat one.
+		// The two keys already diverge today; reconciling them is a separate
+		// change.
 		$context->registerService(
 			OrganisationService::class,
 			function (ContainerInterface $container) {
