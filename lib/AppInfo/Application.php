@@ -1309,7 +1309,10 @@ class Application extends App implements IBootstrap {
 			objectService: $container->get(ObjectService::class),
 			shippedGuard: $shippedGuard,
 			importJobRecorder: $importJobRecorder,
-			schemaInstaller: $schemaInstaller
+			schemaInstaller: $schemaInstaller,
+			// The definition phases of an import run in one transaction, so
+			// Nextcloud logs no `dirty table reads` for them.
+			db: $container->get('OCP\IDBConnection')
 		);
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed
