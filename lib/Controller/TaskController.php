@@ -42,8 +42,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\Task;
 use DateTime;
+use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -51,11 +51,11 @@ use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -101,7 +101,7 @@ class TaskController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskService $tasks The authorized lifecycle.
+	 * @param TaskManagerInterface $tasks The authorized lifecycle.
 	 * @param TaskInboxService $inbox The inbox queries.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param TaskTemporalProjection $temporal The one overdue derivation.
@@ -122,7 +122,7 @@ class TaskController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskService $tasks,
+		private readonly TaskManagerInterface $tasks,
 		private readonly TaskInboxService $inbox,
 		private readonly TaskAuthorizationService $authorization,
 		private readonly TaskTemporalProjection $temporal,
@@ -760,7 +760,7 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function parseInstant(?string $value): ?DateTime {
-		$raw = trim((string) ($value ?? ''));
+		$raw = trim((string)($value ?? ''));
 		if ($raw === '') {
 			return null;
 		}
@@ -786,7 +786,7 @@ class TaskController extends Controller {
 	 * than was asked for is exactly the failure this endpoint's scope rules
 	 * exist to prevent.
 	 *
-	 * @param string|null $dueAfter  The raw lower bound.
+	 * @param string|null $dueAfter The raw lower bound.
 	 * @param string|null $dueBefore The raw upper bound.
 	 *
 	 * @return array{after: DateTime|null, before: DateTime|null, error: string|null}
