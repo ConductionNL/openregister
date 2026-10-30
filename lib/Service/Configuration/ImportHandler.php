@@ -3970,240 +3970,77 @@ class ImportHandler {
 	 * @return array The data with target `@self.id` populated and `@ref:` tokens resolved.
 	 */
 	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
-		if (($data['components']['objects'] ?? null) === null
-			|| is_array($data['components']['objects']) === false
-		) {
+		$objects = ($data['components']['objects'] ?? null);
+		if (is_array($objects) === false) {
 			return $data;
 		}
 
-		// Collect the slugs that are actually referenced, so we only resolve
-		// identities for genuine reference targets (and skip the work entirely
-		// when no object references another).
-		$referencedSlugs = [];
-		$refSchemaSlugs = [];
-		foreach ($data['components']['objects'] as $objectData) {
-			if (is_array($objectData) === true) {
-				$this->collectRefTargets(
-					value: $objectData,
-					bareSlugs: $referencedSlugs,
-					schemaSlugs: $refSchemaSlugs
-				);
-			}
-		}
-
-		if (count($referencedSlugs) === 0 && count($refSchemaSlugs) === 0) {
+		// Only genuine reference targets get a pre-resolved identity, and the
+		// work is skipped entirely when no object references another.
+		$index = new SeedReferenceIndex(logger: $this->logger);
+		$index->collectFromObjects(objects: $objects);
+		if ($index->isEmpty() === true) {
 			return $data;
 		}
 
-		// PASS 1 — assign a stable UUID to each referenced target and index it.
-		$uuidBySchemaSlug = [];
-		$uuidBySlug = [];
-		$ambiguousSlugs = [];
-
-		foreach ($data['components']['objects'] as &$targetData) {
-			if (is_array($targetData) === false) {
+		foreach ($objects as $position => $targetData) {
+			if (is_array($targetData) === false || $index->isReferenced(self: $targetData['@self'] ?? null) === false) {
 				continue;
 			}
 
-			$objectSlug = $targetData['@self']['slug'] ?? null;
-			if (empty($objectSlug) === true) {
+			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
+			if ($uuid === null) {
 				continue;
 			}
 
-			$schemaSlug = $targetData['@self']['schema'] ?? null;
-			$schemaSlugKey = null;
-			if (is_string($schemaSlug) === true && $schemaSlug !== '') {
-				$schemaSlugKey = $schemaSlug . ':' . $objectSlug;
-			}
+			$objects[$position]['@self']['id'] = $uuid;
+			$index->record(self: $objects[$position]['@self']);
+		}
 
-			// Only objects that something references need a pre-resolved identity.
-			$isReferenced = (array_key_exists($objectSlug, $referencedSlugs) === true
-				|| ($schemaSlugKey !== null && array_key_exists($schemaSlugKey, $refSchemaSlugs) === true));
-			if ($isReferenced === false) {
-				continue;
-			}
-
-			// A target whose register/schema cannot be resolved will be skipped
-			// by the import loop and never persisted; pre-assigning it an id
-			// would leave referrers pointing at a dangling, never-stored UUID.
-			// Leave it unmapped so replaceRefTokens logs the unresolved reference
-			// instead of silently fabricating one.
-			[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
-			if ($registerObject === null || $schemaObject === null) {
-				continue;
-			}
-
-			// Prefer the UUID already persisted for this register+schema+slug so
-			// re-imports stay idempotent and resolved references always match the
-			// id the import loop will keep on update; fall back to an explicit
-			// seed id (first import), then a freshly minted one.
-			$uuid = $this->findExistingSeedUuid(
-				register: $registerObject,
-				schema: $schemaObject,
-				slug: $objectSlug
-			);
-			if (empty($uuid) === true) {
-				$uuid = $targetData['@self']['id'] ?? null;
-			}
-
-			if (empty($uuid) === true) {
-				$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-			}
-
-			$targetData['@self']['id'] = $uuid;
-
-			if ($schemaSlugKey !== null) {
-				$uuidBySchemaSlug[$schemaSlugKey] = $uuid;
-			}
-
-			$isDuplicateSlug = (array_key_exists($objectSlug, $uuidBySlug) === true
-				&& $uuidBySlug[$objectSlug] !== $uuid);
-			if ($isDuplicateSlug === true) {
-				$ambiguousSlugs[$objectSlug] = true;
-			}
-
-			if ($isDuplicateSlug === false) {
-				$uuidBySlug[$objectSlug] = $uuid;
-			}
-		}//end foreach
-
-		unset($targetData);
-
-		// PASS 2 — replace @ref: tokens in every object's property values.
-		foreach ($data['components']['objects'] as &$objectData) {
-			if (is_array($objectData) === false) {
-				continue;
-			}
-
-			$self = $objectData['@self'] ?? null;
-			unset($objectData['@self']);
-
-			$objectData = $this->replaceRefTokens(
-				value: $objectData,
-				uuidBySchemaSlug: $uuidBySchemaSlug,
-				uuidBySlug: $uuidBySlug,
-				ambiguousSlugs: $ambiguousSlugs
-			);
-
-			if ($self !== null) {
-				$objectData['@self'] = $self;
-			}
-		}//end foreach
-
-		unset($objectData);
-
+		$data['components']['objects'] = $index->replaceInObjects(objects: $objects);
 		return $data;
 	}//end resolveSeedReferenceTokens()
 
 	/**
-	 * Recursively collect the slugs referenced by `@ref:` tokens in a value.
+	 * The UUID a referenced seed target is stored under.
 	 *
-	 * @param mixed $value The property value to scan.
-	 * @param array $bareSlugs Accumulator of "objectSlug" => true (by reference).
-	 * @param array $schemaSlugs Accumulator of "schemaSlug:objectSlug" => true (by reference).
+	 * Prefers the UUID already persisted for its register+schema+slug, so
+	 * re-imports stay idempotent and references match the id the import loop
+	 * keeps on update; then an explicit seed id; then a freshly minted one.
 	 *
-	 * @return void
+	 * A target whose register or schema cannot be resolved is skipped by the
+	 * import loop and never stored, so it gets no UUID: a referrer would
+	 * otherwise point at an id that never exists, and the token is logged as
+	 * unresolved instead.
+	 *
+	 * @param array       $targetData The referenced seed object.
+	 * @param string|null $appId      The importing app, for the foreign-schema guard.
+	 *
+	 * @return mixed The UUID, or null when the target will not be stored.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function collectRefTargets(mixed $value, array &$bareSlugs, array &$schemaSlugs): void {
-		if (is_array($value) === true) {
-			foreach ($value as $item) {
-				$this->collectRefTargets(value: $item, bareSlugs: $bareSlugs, schemaSlugs: $schemaSlugs);
-			}
-
-			return;
+	private function seedReferenceTargetUuid(array $targetData, ?string $appId): mixed {
+		[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
+		if ($registerObject === null || $schemaObject === null) {
+			return null;
 		}
 
-		if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
-			return;
-		}
-
-		$reference = substr($value, strlen('@ref:'));
-		if (str_contains($reference, ':') === true) {
-			$schemaSlugs[$reference] = true;
-			return;
-		}
-
-		$bareSlugs[$reference] = true;
-	}//end collectRefTargets()
-
-	/**
-	 * Recursively replace `@ref:` tokens in a value with resolved target UUIDs.
-	 *
-	 * A token is matched only when it spans the whole string value, in one of:
-	 *  - `@ref:<slug>`               — resolved by slug (must be unambiguous).
-	 *  - `@ref:<schema-slug>:<slug>` — resolved by schema + slug (explicit).
-	 *
-	 * @param mixed $value The property value (scalar, list, or map).
-	 * @param array $uuidBySchemaSlug Map of "schemaSlug:objectSlug" => uuid.
-	 * @param array $uuidBySlug Map of "objectSlug" => uuid.
-	 * @param array $ambiguousSlugs Set of slugs that map to multiple objects.
-	 *
-	 * @return mixed The value with any `@ref:` tokens replaced.
-	 */
-	private function replaceRefTokens(
-		mixed $value,
-		array $uuidBySchemaSlug,
-		array $uuidBySlug,
-		array $ambiguousSlugs,
-	): mixed {
-		if (is_array($value) === true) {
-			foreach ($value as $key => $item) {
-				$value[$key] = $this->replaceRefTokens(
-					value: $item,
-					uuidBySchemaSlug: $uuidBySchemaSlug,
-					uuidBySlug: $uuidBySlug,
-					ambiguousSlugs: $ambiguousSlugs
-				);
-			}
-
-			return $value;
-		}
-
-		if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
-			return $value;
-		}
-
-		$reference = substr($value, strlen('@ref:'));
-		$schemaSlug = null;
-		$objectSlug = $reference;
-		if (str_contains($reference, ':') === true) {
-			[$schemaSlug, $objectSlug] = explode(':', $reference, 2);
-		}
-
-		if ($schemaSlug !== null && $schemaSlug !== '') {
-			if (array_key_exists($schemaSlug . ':' . $objectSlug, $uuidBySchemaSlug) === true) {
-				return $uuidBySchemaSlug[$schemaSlug . ':' . $objectSlug];
-			}
-
-			$this->logger->warning(
-				message: '[ImportHandler] Unresolved seed reference "' . $value . '" — no imported object for that schema+slug.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $value;
-		}
-
-		if (array_key_exists($objectSlug, $ambiguousSlugs) === true) {
-			$this->logger->warning(
-				message: '[ImportHandler] Ambiguous seed reference "' . $value . '"; slug exists in '
-					. 'multiple schemas — use @ref:<schema>:<slug>. Left unresolved.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $value;
-		}
-
-		if (array_key_exists($objectSlug, $uuidBySlug) === true) {
-			return $uuidBySlug[$objectSlug];
-		}
-
-		$this->logger->warning(
-			message: '[ImportHandler] Unresolved seed reference "' . $value . '" — no imported object with that slug.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
+		$uuid = $this->findExistingSeedUuid(
+			register: $registerObject,
+			schema: $schemaObject,
+			slug: $targetData['@self']['slug']
 		);
+		if (empty($uuid) === true) {
+			$uuid = $targetData['@self']['id'] ?? null;
+		}
 
-		return $value;
-	}//end replaceRefTokens()
+		if (empty($uuid) === true) {
+			$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+		}
+
+		return $uuid;
+	}//end seedReferenceTargetUuid()
 
 	/**
 	 * Resolve a seed object's `@self` register + schema slugs to their entities,
@@ -4409,347 +4246,39 @@ class ImportHandler {
 	 *     rules: array
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       App import requires many conditional transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration lookup and metadata mapping has many branches
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) App import with entity tracking requires detailed logic
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function importFromApp(string $appId, array $data, string $version, bool $force = false): array {
 		try {
-			// Ensure data is consistently an array by converting any stdClass objects.
-			$data = $this->ensureArrayStructure(data: $data);
+			$import = new AppImport(
+				appId: $appId,
+				data: $this->ensureArrayStructure(data: $data),
+				version: $version,
+				force: $force
+			);
 
-			// Try to find existing configuration for this app.
-			// First check by sourceUrl (unique identifier), then by appId.
-			$configuration = null;
-			$xOpenregister = $data['x-openregister'] ?? [];
-			$sourceUrl = $xOpenregister['sourceUrl'] ?? null;
+			$configuration = ($this->findAppConfiguration(import: $import) ?? $this->createAppConfiguration(import: $import));
 
-			// If sourceUrl is provided, try to find by sourceUrl first (ensures uniqueness).
-			if ($sourceUrl !== null) {
-				try {
-					$configuration = $this->configurationMapper->findBySourceUrl($sourceUrl, systemLookup: true);
-					if ($configuration !== null) {
-						$this->logger->debug(
-							message: '[ImportHandler] Found existing configuration by sourceUrl',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'sourceUrl' => $sourceUrl,
-								'configurationId' => $configuration->getId(),
-								'currentVersion' => $configuration->getVersion(),
-							]
-						);
-					}
-				} catch (Exception $e) {
-					// No configuration found by sourceUrl.
-				}
-			}
-
-			// If not found by sourceUrl, try by appId.
-			if ($configuration === null) {
-				try {
-					$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
-					if (count($configurations) > 0) {
-						// Use the first (most recent) configuration.
-						$configuration = $configurations[0];
-						$this->logger->debug(
-							message: "[ImportHandler] Found existing configuration for app {$appId}",
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'configurationId' => $configuration->getId(),
-								'currentVersion' => $configuration->getVersion(),
-							]
-						);
-
-						// Check version and decide if we should update or skip.
-						$existingVersion = $configuration->getVersion() ?? '0.0.0';
-						$newVersion = $version ?? '0.0.0';
-
-						// Only skip if not forced AND version is not newer.
-						// Note: We deliberately do NOT early-return here, even when skipping,
-						// because we still want to check for seedData changes.
-						// The importFromJson method will handle version checks for schemas/registers.
-						if ($force === false && version_compare($newVersion, $existingVersion, '<=') === true) {
-							$msg = "Config version ({$existingVersion}) up-to-date, checking seedData";
-							$this->logger->debug(
-								message: '[ImportHandler] ' . $msg,
-								context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId, 'force' => $force]
-							);
-							// Continue to importFromJson, which will skip schemas/registers but may import seedData.
-						}
-					}//end if
-				} catch (Exception $e) {
-					// No existing configuration found, we'll create a new one.
-					$this->logger->debug(
-						message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-				}//end try
-			}//end if
-
-			// Create new configuration if none exists.
-			if ($configuration === null) {
-				$configuration = new Configuration();
-
-				// Extract metadata following OAS standard first, then x-openregister extension.
-				$info = $data['info'] ?? [];
-				$xOpenregister = $data['x-openregister'] ?? [];
-
-				// Standard OAS properties from info section.
-				$defaultTitle = "Configuration for {$appId}";
-				$defaultDesc = "Configuration imported by application {$appId}";
-				$title = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? $defaultTitle;
-				$desc = $info['description'] ?? $xOpenregister['description'] ?? $data['description'];
-				$description = $desc ?? $defaultDesc;
-
-				// OpenRegister-specific properties.
-				$type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
-
-				$configuration->setTitle($title);
-				$configuration->setDescription($description);
-				$configuration->setType($type);
-				$configuration->setApp($appId);
-				$configuration->setVersion($version);
-
-				// Mark as local configuration (maintained by the app).
-				$configuration->setIsLocal(true);
-				$configuration->setSyncEnabled(false);
-				$configuration->setSyncStatus('never');
-
-				// Set version requirements from x-openregister if available.
-				if (($xOpenregister['openregister'] ?? null) !== null) {
-					$configuration->setOpenregister($xOpenregister['openregister']);
-				}
-
-				// Set additional metadata from x-openregister if available.
-				// Note: Internal properties (autoUpdate, notificationGroups, owner, organisation).
-				// Are not imported as they are instance-specific settings.
-				if (($xOpenregister['sourceType'] ?? null) !== null) {
-					$configuration->setSourceType($xOpenregister['sourceType']);
-				}
-
-				if (($xOpenregister['sourceUrl'] ?? null) !== null) {
-					$configuration->setSourceUrl($xOpenregister['sourceUrl']);
-				}
-
-				// Support both nested github structure (new) and flat structure (backward compatibility).
-				if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
-					// New nested structure.
-					if (($xOpenregister['github']['repo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['github']['repo']);
-					}
-
-					if (($xOpenregister['github']['branch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['github']['branch']);
-					}
-
-					if (($xOpenregister['github']['path'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['github']['path']);
-					}
-				}
-
-				if (($xOpenregister['github'] ?? null) === null || is_array($xOpenregister['github']) === false) {
-					// Legacy flat structure (backward compatibility).
-					if (($xOpenregister['githubRepo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['githubRepo']);
-					}
-
-					if (($xOpenregister['githubBranch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['githubBranch']);
-					}
-
-					if (($xOpenregister['githubPath'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['githubPath']);
-					}
-				}//end if
-
-				$configuration->setRegisters([]);
-				$configuration->setSchemas([]);
-				$configuration->setObjects([]);
-
-				// Insert the configuration to get an ID.
-				$configuration = $this->configurationMapper->insert($configuration);
-
-				$this->logger->debug(
-					message: "[ImportHandler] Created new configuration for app {$appId}",
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'configurationId' => $configuration->getId(),
-						'version' => $version,
-					]
-				);
-			}//end if
-
-			// Perform the import using the configuration entity, under its own
-			// import job id so the objects it creates can be removed by job
-			// later (a setup wizard's "remove this example set").
+			// Run under its own import job id so the objects it creates can be
+			// removed by job later (a setup wizard's "remove this example set").
 			$result = $this->importFromJsonAsJob(
-				data: $data,
+				data: $import->data,
 				configuration: $configuration,
 				appId: $appId,
 				version: $version,
 				force: $force
 			);
 
-			// Update the configuration with the import results.
+			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
 			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
-				// Merge imported entity IDs with existing ones.
-				$existingRegisterIds = $configuration->getRegisters() ?? [];
-				$existingSchemaIds = $configuration->getSchemas() ?? [];
-				$existingObjectIds = $configuration->getObjects() ?? [];
-
-				foreach ($result['registers'] as $register) {
-					$isRegister = $register instanceof Register;
-					$alreadyExists = in_array($register->getId(), $existingRegisterIds, true);
-					if ($isRegister === true && $alreadyExists === false) {
-						$existingRegisterIds[] = $register->getId();
-					}
-				}
-
-				foreach ($result['schemas'] as $schema) {
-					if ($schema instanceof Schema && in_array($schema->getId(), $existingSchemaIds, true) === false) {
-						$existingSchemaIds[] = $schema->getId();
-					}
-				}
-
-				foreach ($result['objects'] as $object) {
-					if ($object instanceof ObjectEntity && in_array($object->getId(), $existingObjectIds, true) === false) {
-						$existingObjectIds[] = $object->getId();
-					}
-				}
-
-				$configuration->setRegisters($existingRegisterIds);
-				$configuration->setSchemas($existingSchemaIds);
-				$configuration->setObjects($existingObjectIds);
-				$configuration->setVersion($version);
-
-				// Update metadata following OAS standard first, then x-openregister extension.
-				// This ensures sourceUrl and other tracking info stays current.
-				$info = $data['info'] ?? [];
-				$xOpenregister = $data['x-openregister'] ?? [];
-
-				// Standard OAS properties from info section.
-				if (($info['title'] ?? null) !== null) {
-					$configuration->setTitle($info['title']);
-				} elseif (($xOpenregister['title'] ?? null) !== null) {
-					$configuration->setTitle($xOpenregister['title']);
-				}
-
-				if (($info['description'] ?? null) !== null) {
-					$configuration->setDescription($info['description']);
-				} elseif (($xOpenregister['description'] ?? null) !== null) {
-					$configuration->setDescription($xOpenregister['description']);
-				}
-
-				// OpenRegister-specific properties from x-openregister.
-				if (($xOpenregister['sourceType'] ?? null) !== null) {
-					$configuration->setSourceType($xOpenregister['sourceType']);
-				}
-
-				if (($xOpenregister['sourceUrl'] ?? null) !== null) {
-					$configuration->setSourceUrl($xOpenregister['sourceUrl']);
-				}
-
-				// Update github properties (nested or flat).
-				if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
-					if (($xOpenregister['github']['repo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['github']['repo']);
-					}
-
-					if (($xOpenregister['github']['branch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['github']['branch']);
-					}
-
-					if (($xOpenregister['github']['path'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['github']['path']);
-					}
-				}
-
-				if (($xOpenregister['github'] ?? null) === null || is_array($xOpenregister['github']) === false) {
-					// Legacy flat structure.
-					if (($xOpenregister['githubRepo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['githubRepo']);
-					}
-
-					if (($xOpenregister['githubBranch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['githubBranch']);
-					}
-
-					if (($xOpenregister['githubPath'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['githubPath']);
-					}
-				}//end if
-
-				$this->configurationMapper->update($configuration);
-
-				$this->logger->debug(
-					message: "[ImportHandler] Updated configuration entity for app {$appId}",
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'configurationId' => $configuration->getId(),
-						'totalRegisters' => count($existingRegisterIds ?? []),
-						'totalSchemas' => count($existingSchemaIds ?? []),
-						'totalObjects' => count($existingObjectIds ?? []),
-					]
-				);
-			}//end if
-
-			// **AUTO-REGISTER CREATION (runtime-schema-api / data-import-export spec)**:
-			// When a runtime caller (e.g. OpenBuild's schema editor) imports an OAS
-			// marked as `x-openregister.type=application`, the installer-time `repair`
-			// step that normally provisions a Register row does NOT run. Without this
-			// step, the smoke-test foot-gun reappears: schemas exist but no Register
-			// wraps them, so slug-aware searches return zero. This block closes that gap.
-			$this->autoCreateRegisterIfApplication(
-				data: $data,
-				appId: $appId,
-				schemas: $result['schemas'],
-				configuration: $configuration,
-				result: $result
-			);
-
-			// REGISTER FOLDERS AT IMPORT (register-folder-at-import): an
-			// API-created register gets its Files folder at creation; an
-			// app-imported one did not, so the first upload had to make it
-			// (portaliq#29). Every register this import returned, including an
-			// auto-created one, gets its folder here. The id is recorded as
-			// bookkeeping (no update event, no organisation check) and a
-			// failure is logged, never thrown: the first upload still makes it.
-			try {
-				$this->folderProvisioner?->ensureFolders(registers: ($result['registers'] ?? []));
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: "[ImportHandler] Register folder provisioning failed for app {$appId}: " . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
+				$this->trackAppImportResult(import: $import, update: $update);
 			}
 
-			// MAGIC-TABLE COLUMN SYNC (fixes #2082): reconcile the physical
-			// table of EVERY imported schema, in every register that holds it.
-			//
-			// The two pre-existing ensureTableForRegisterSchema() call sites
-			// only cover (a) registers that were just auto-created and (b)
-			// schemas that ship seed objects. An EXISTING schema in an
-			// EXISTING register with no seed data — by far the common case for
-			// an app shipping a `register.d` fragment that adds a property —
-			// was never reconciled, so the new column was simply absent until
-			// something happened to write an object of that type.
-			//
-			// Observed 2026-07-24 on softwarecatalog: `beoordeeling` gained a
-			// `status` property and `gebruik` gained TIME fields; neither
-			// column existed afterwards, not even after a FORCED re-import.
-			// Because the schema's own RBAC read rule matched on `status`, the
-			// generated SQL referenced a non-existent column and EVERY read —
-			// including the anonymous public path — returned HTTP 500.
-			$this->ensureMagicTablesForImportedSchemas(schemas: $result['schemas'] ?? []);
+			$this->finishAppImport(import: $import, update: $update);
 
-			return $result;
+			return $update->result;
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: "[ImportHandler] Failed to import configuration for app {$appId}: " . $e->getMessage(),
@@ -4758,6 +4287,325 @@ class ImportHandler {
 			throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
 		}//end try
 	}//end importFromApp()
+
+	/**
+	 * Find the Configuration an app import updates: by its `sourceUrl`
+	 * first, which is unique, then by the app id.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return Configuration|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function findAppConfiguration(AppImport $import): ?Configuration {
+		$sourceUrl = ($import->extension()['sourceUrl'] ?? null);
+		if ($sourceUrl !== null) {
+			try {
+				$configuration = $this->configurationMapper->findBySourceUrl($sourceUrl, systemLookup: true);
+				if ($configuration !== null) {
+					$this->logger->debug(
+						message: '[ImportHandler] Found existing configuration by sourceUrl',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'sourceUrl' => $sourceUrl,
+							'configurationId' => $configuration->getId(),
+							'currentVersion' => $configuration->getVersion(),
+						]
+					);
+					return $configuration;
+				}
+			} catch (Exception $e) {
+				// No configuration found by sourceUrl.
+			}
+		}//end if
+
+		return $this->findAppConfigurationByApp(import: $import);
+	}//end findAppConfiguration()
+
+	/**
+	 * Find the most recent Configuration of the importing app.
+	 *
+	 * An up-to-date version is only logged: the import still runs, because
+	 * importFromJson() skips unchanged schemas and registers but may still
+	 * import seed data.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return Configuration|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function findAppConfigurationByApp(AppImport $import): ?Configuration {
+		$appId = $import->appId;
+		try {
+			$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+		if (count($configurations) === 0) {
+			return null;
+		}
+
+		$configuration = $configurations[0];
+		$this->logger->debug(
+			message: "[ImportHandler] Found existing configuration for app {$appId}",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'configurationId' => $configuration->getId(),
+				'currentVersion' => $configuration->getVersion(),
+			]
+		);
+
+		$existingVersion = $configuration->getVersion() ?? '0.0.0';
+		if ($import->force === false && version_compare($import->version, $existingVersion, '<=') === true) {
+			$this->logger->debug(
+				message: "[ImportHandler] Config version ({$existingVersion}) up-to-date, checking seedData",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId, 'force' => $import->force]
+			);
+		}
+
+		return $configuration;
+	}//end findAppConfigurationByApp()
+
+	/**
+	 * Create and insert the Configuration of a first app import.
+	 *
+	 * Title and description follow the OAS `info` block first, then the
+	 * `x-openregister` extension, then the top level. Instance-specific
+	 * settings (autoUpdate, notificationGroups, owner, organisation) are not
+	 * imported.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return Configuration
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createAppConfiguration(AppImport $import): Configuration {
+		$appId = $import->appId;
+		$data  = $import->data;
+		$info  = $import->info();
+		$xOpenregister = $import->extension();
+
+		$configuration = new Configuration();
+		$configuration->setTitle($info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}");
+		$configuration->setDescription(
+			$info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}"
+		);
+		$configuration->setType($xOpenregister['type'] ?? $data['type'] ?? 'app');
+		$configuration->setApp($appId);
+		$configuration->setVersion($import->version);
+
+		// A local configuration is maintained by the app.
+		$configuration->setIsLocal(true);
+		$configuration->setSyncEnabled(false);
+		$configuration->setSyncStatus('never');
+
+		if (($xOpenregister['openregister'] ?? null) !== null) {
+			$configuration->setOpenregister($xOpenregister['openregister']);
+		}
+
+		$this->applyConfigurationSource(configuration: $configuration, xOpenregister: $xOpenregister);
+
+		$configuration->setRegisters([]);
+		$configuration->setSchemas([]);
+		$configuration->setObjects([]);
+
+		$configuration = $this->configurationMapper->insert($configuration);
+
+		$this->logger->debug(
+			message: "[ImportHandler] Created new configuration for app {$appId}",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'configurationId' => $configuration->getId(),
+				'version' => $import->version,
+			]
+		);
+
+		return $configuration;
+	}//end createAppConfiguration()
+
+	/**
+	 * Copy the source type, source url and GitHub location from the
+	 * `x-openregister` extension onto a Configuration.
+	 *
+	 * GitHub is read from the nested `github` object, or from the flat
+	 * `githubRepo` / `githubBranch` / `githubPath` keys when there is none.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 * @param mixed         $xOpenregister The `x-openregister` extension block.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function applyConfigurationSource(Configuration $configuration, mixed $xOpenregister): void {
+		if (($xOpenregister['sourceType'] ?? null) !== null) {
+			$configuration->setSourceType($xOpenregister['sourceType']);
+		}
+
+		if (($xOpenregister['sourceUrl'] ?? null) !== null) {
+			$configuration->setSourceUrl($xOpenregister['sourceUrl']);
+		}
+
+		$github = [
+			'repo'   => ($xOpenregister['githubRepo'] ?? null),
+			'branch' => ($xOpenregister['githubBranch'] ?? null),
+			'path'   => ($xOpenregister['githubPath'] ?? null),
+		];
+		if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
+			$github = [
+				'repo'   => ($xOpenregister['github']['repo'] ?? null),
+				'branch' => ($xOpenregister['github']['branch'] ?? null),
+				'path'   => ($xOpenregister['github']['path'] ?? null),
+			];
+		}
+
+		if ($github['repo'] !== null) {
+			$configuration->setGithubRepo($github['repo']);
+		}
+
+		if ($github['branch'] !== null) {
+			$configuration->setGithubBranch($github['branch']);
+		}
+
+		if ($github['path'] !== null) {
+			$configuration->setGithubPath($github['path']);
+		}
+	}//end applyConfigurationSource()
+
+	/**
+	 * Record what an app import brought in on its Configuration: the ids of
+	 * the registers, schemas and objects, the version, and the current
+	 * title, description and source.
+	 *
+	 * @param AppImport                   $import The app import.
+	 * @param ImportedConfigurationUpdate $update The configuration and the import result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function trackAppImportResult(AppImport $import, ImportedConfigurationUpdate $update): void {
+		$configuration = $update->configuration;
+		$result        = $update->result;
+
+		$registerIds = $this->appendNewEntityIds(
+			ids: ($configuration->getRegisters() ?? []),
+			entities: array_filter($result['registers'], static fn ($entity): bool => $entity instanceof Register)
+		);
+		$schemaIds   = $this->appendNewEntityIds(
+			ids: ($configuration->getSchemas() ?? []),
+			entities: array_filter($result['schemas'], static fn ($entity): bool => $entity instanceof Schema)
+		);
+		$objectIds   = $this->appendNewEntityIds(
+			ids: ($configuration->getObjects() ?? []),
+			entities: array_filter($result['objects'], static fn ($entity): bool => $entity instanceof ObjectEntity)
+		);
+
+		$configuration->setRegisters($registerIds);
+		$configuration->setSchemas($schemaIds);
+		$configuration->setObjects($objectIds);
+		$configuration->setVersion($import->version);
+
+		$info          = $import->info();
+		$xOpenregister = $import->extension();
+		$title         = ($info['title'] ?? $xOpenregister['title'] ?? null);
+		if ($title !== null) {
+			$configuration->setTitle($title);
+		}
+
+		$description = ($info['description'] ?? $xOpenregister['description'] ?? null);
+		if ($description !== null) {
+			$configuration->setDescription($description);
+		}
+
+		$this->applyConfigurationSource(configuration: $configuration, xOpenregister: $xOpenregister);
+
+		$this->configurationMapper->update($configuration);
+
+		$this->logger->debug(
+			message: "[ImportHandler] Updated configuration entity for app {$import->appId}",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'configurationId' => $configuration->getId(),
+				'totalRegisters' => count($registerIds),
+				'totalSchemas' => count($schemaIds),
+				'totalObjects' => count($objectIds),
+			]
+		);
+	}//end trackAppImportResult()
+
+	/**
+	 * Append the ids of entities not yet in the list.
+	 *
+	 * @param array<int, mixed>               $ids      The ids already tracked.
+	 * @param array<int|string, \OCP\AppFramework\Db\Entity> $entities The imported entities.
+	 *
+	 * @return array<int, mixed>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function appendNewEntityIds(array $ids, array $entities): array {
+		foreach ($entities as $entity) {
+			if (in_array($entity->getId(), $ids, true) === false) {
+				$ids[] = $entity->getId();
+			}
+		}
+
+		return $ids;
+	}//end appendNewEntityIds()
+
+	/**
+	 * The steps every app import ends with: an application register when the
+	 * data declares one, a Files folder per register, and a magic-table
+	 * sync per imported schema.
+	 *
+	 * The application register closes the gap a runtime caller leaves: it
+	 * skips the installer's repair step, so without it the schemas exist
+	 * but no register wraps them. A folder failure is logged, never thrown;
+	 * the first upload still makes the folder. The magic-table sync reaches
+	 * an existing schema in an existing register that ships no seed data,
+	 * which no other step reconciles (#2082).
+	 *
+	 * @param AppImport                   $import The app import.
+	 * @param ImportedConfigurationUpdate $update The configuration and the import result; an
+	 *                                            auto-created register is added to the result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function finishAppImport(AppImport $import, ImportedConfigurationUpdate $update): void {
+		$this->autoCreateRegisterIfApplication(
+			data: $import->data,
+			appId: $import->appId,
+			schemas: $update->result['schemas'],
+			configuration: $update->configuration,
+			result: $update->result
+		);
+
+		try {
+			$this->folderProvisioner?->ensureFolders(registers: ($update->result['registers'] ?? []));
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: "[ImportHandler] Register folder provisioning failed for app {$import->appId}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		$this->ensureMagicTablesForImportedSchemas(schemas: $update->result['schemas'] ?? []);
+	}//end finishAppImport()
 
 	/**
 	 * Run importFromJson() for an app under its own import job id.
@@ -6114,7 +5962,6 @@ class ImportHandler {
 		$notes = (array)($relatedItems['notes'] ?? []);
 		$tasks = (array)($relatedItems['tasks'] ?? []);
 
-		// Debug: per seed object.
 		$this->logger->debug(
 			message: '[ImportHandler] Processing related items for seed object',
 			context: [
@@ -6128,117 +5975,26 @@ class ImportHandler {
 		);
 
 		$filesCreated = 0;
-		$notesCreated = 0;
-		$tasksCreated = 0;
-
 		if (count($files) > 0 && $this->fileService !== null) {
-			foreach ($files as $fileSpec) {
-				$name = (string)($fileSpec['name'] ?? '');
-				$content = ($fileSpec['content'] ?? null);
-				if ($name === '' || is_string($content) === false) {
-					continue;
-				}
+			$filesCreated = $this->seedRelatedFiles(object: $object, files: $files);
+		}
 
-				$tags = (array)($fileSpec['tags'] ?? []);
-				$share = (bool)($fileSpec['share'] ?? false);
-
-				// `base64:` prefix means the content was encoded; strip + decode.
-				if (str_starts_with($content, 'base64:') === true) {
-					$decoded = base64_decode(substr($content, 7), strict: true);
-					if ($decoded === false) {
-						$this->logger->warning(
-							message: '[ImportHandler] Seed file base64 decode failed - skipping',
-							context: ['object_uuid' => $object->getUuid(), 'name' => $name]
-						);
-						continue;
-					}
-
-					$content = $decoded;
-				}
-
-				try {
-					$this->fileService->addFile($object, $name, $content, $share, $tags);
-					$filesCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed file creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'name' => $name,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
-
-		if (count($notes) > 0 && $this->noteService !== null && $hasUserContext === false) {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping seed notes - no user session available',
-				context: ['object_uuid' => $object->getUuid(), 'count' => count($notes)]
+		// Notes and tasks are written as the logged-in user, so without one they are skipped.
+		$notesCreated = 0;
+		if (count($notes) > 0 && $this->noteService !== null) {
+			$notesCreated = $this->seedRelatedNotes(
+				object: $object,
+				notes: $this->itemsForUser(items: $notes, context: ['kind' => 'notes', 'object' => $object, 'user' => $hasUserContext])
 			);
-		} elseif (count($notes) > 0 && $this->noteService !== null) {
-			foreach ($notes as $noteSpec) {
-				$message = (string)($noteSpec['message'] ?? '');
-				if ($message === '') {
-					continue;
-				}
+		}
 
-				try {
-					$this->noteService->createNote((string)$object->getUuid(), $message);
-					$notesCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed note creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}
-		}//end if
-
-		if (count($tasks) > 0 && $this->taskService !== null && $hasUserContext === false) {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping seed tasks - no user session available',
-				context: ['object_uuid' => $object->getUuid(), 'count' => count($tasks)]
+		$tasksCreated = 0;
+		if (count($tasks) > 0 && $this->taskService !== null) {
+			$tasksCreated = $this->seedRelatedTasks(
+				tasks: $this->itemsForUser(items: $tasks, context: ['kind' => 'tasks', 'object' => $object, 'user' => $hasUserContext]),
+				owner: ['object' => $object, 'registerId' => $registerId, 'schemaId' => $schemaId, 'title' => $objectTitle]
 			);
-		} elseif (count($tasks) > 0 && $this->taskService !== null) {
-			foreach ($tasks as $taskSpec) {
-				$summary = (string)($taskSpec['summary'] ?? '');
-				if ($summary === '') {
-					continue;
-				}
-
-				$taskData = [
-					'summary' => $summary,
-					'description' => (string)($taskSpec['description'] ?? ''),
-					'status' => (string)($taskSpec['status'] ?? 'needs-action'),
-					'priority' => (int)($taskSpec['priority'] ?? 0),
-					'due' => $taskSpec['due'] ?? null,
-				];
-				try {
-					$this->taskService->createTask(
-						$registerId,
-						$schemaId,
-						(string)$object->getUuid(),
-						$objectTitle,
-						$taskData
-					);
-					$tasksCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed task creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'summary' => $summary,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
+		}
 
 		$result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
 		$result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
@@ -6256,6 +6012,165 @@ class ImportHandler {
 			]
 		);
 	}//end processRelatedItems()
+
+	/**
+	 * The seed notes or tasks to create: all of them with a user session, none without one.
+	 *
+	 * @param array                $items   The seed notes or tasks.
+	 * @param array<string, mixed> $context The `kind` (notes or tasks), the `object` and whether a `user` is logged in.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function itemsForUser(array $items, array $context): array {
+		if ($context['user'] === true) {
+			return $items;
+		}
+
+		$this->logger->warning(
+			message: "[ImportHandler] Skipping seed {$context['kind']} - no user session available",
+			context: ['object_uuid' => $context['object']->getUuid(), 'count' => count($items)]
+		);
+
+		return [];
+	}//end itemsForUser()
+
+	/**
+	 * Attach a seed object's files; a `base64:` prefix marks encoded content.
+	 *
+	 * A file without a name or with non-string content is skipped, and so is
+	 * one whose base64 does not decode; a failed write is logged and skipped.
+	 *
+	 * @param ObjectEntity $object The seed object.
+	 * @param array        $files  The file specs: name, content, tags, share.
+	 *
+	 * @return int The number of files created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedFiles(ObjectEntity $object, array $files): int {
+		$created = 0;
+		foreach ($files as $fileSpec) {
+			$name = (string)($fileSpec['name'] ?? '');
+			$content = ($fileSpec['content'] ?? null);
+			if ($name === '' || is_string($content) === false) {
+				continue;
+			}
+
+			if (str_starts_with($content, 'base64:') === true) {
+				$content = base64_decode(substr($content, 7), strict: true);
+			}
+
+			if ($content === false) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed file base64 decode failed - skipping',
+					context: ['object_uuid' => $object->getUuid(), 'name' => $name]
+				);
+				continue;
+			}
+
+			try {
+				$this->fileService->addFile($object, $name, $content, (bool)($fileSpec['share'] ?? false), (array)($fileSpec['tags'] ?? []));
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed file creation failed',
+					context: [
+						'object_uuid' => $object->getUuid(),
+						'name' => $name,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+
+		return $created;
+	}//end seedRelatedFiles()
+
+	/**
+	 * Add a seed object's notes; one without a message is skipped, a failed one logged.
+	 *
+	 * @param ObjectEntity $object The seed object.
+	 * @param array        $notes  The note specs: message.
+	 *
+	 * @return int The number of notes created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedNotes(ObjectEntity $object, array $notes): int {
+		$created = 0;
+		foreach ($notes as $noteSpec) {
+			$message = (string)($noteSpec['message'] ?? '');
+			if ($message === '') {
+				continue;
+			}
+
+			try {
+				$this->noteService->createNote((string)$object->getUuid(), $message);
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed note creation failed',
+					context: [
+						'object_uuid' => $object->getUuid(),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		return $created;
+	}//end seedRelatedNotes()
+
+	/**
+	 * Add a seed object's tasks; one without a summary is skipped, a failed one logged.
+	 *
+	 * @param array                $tasks The task specs: summary, description, status, priority, due.
+	 * @param array<string, mixed> $owner The seed `object`, its `registerId`, `schemaId` and `title`.
+	 *
+	 * @return int The number of tasks created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedTasks(array $tasks, array $owner): int {
+		$created = 0;
+		foreach ($tasks as $taskSpec) {
+			$summary = (string)($taskSpec['summary'] ?? '');
+			if ($summary === '') {
+				continue;
+			}
+
+			$taskData = [
+				'summary' => $summary,
+				'description' => (string)($taskSpec['description'] ?? ''),
+				'status' => (string)($taskSpec['status'] ?? 'needs-action'),
+				'priority' => (int)($taskSpec['priority'] ?? 0),
+				'due' => $taskSpec['due'] ?? null,
+			];
+			try {
+				$this->taskService->createTask(
+					$owner['registerId'],
+					$owner['schemaId'],
+					(string)$owner['object']->getUuid(),
+					$owner['title'],
+					$taskData
+				);
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed task creation failed',
+					context: [
+						'object_uuid' => $owner['object']->getUuid(),
+						'summary' => $summary,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+
+		return $created;
+	}//end seedRelatedTasks()
 
 	/**
 	 * Ensure Nextcloud app dependencies are met for seedData import.

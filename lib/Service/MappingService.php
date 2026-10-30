@@ -63,6 +63,47 @@ use Twig\TemplateWrapper;
 class MappingService {
 
 	/**
+	 * Casts that carry an argument: prefix as written => cast type.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ARGUMENT_CASTS = [
+		'unsetIfValue==' => 'unsetIfValue',
+		'setNullIfValue==' => 'setNullIfValue',
+		'countValue:' => 'countValue',
+	];
+
+	/**
+	 * Casts that apply a PHP function to the value as it is.
+	 *
+	 * @var array<string, callable-string>
+	 */
+	private const VALUE_FUNCTION_CASTS = [
+		'string' => 'strval',
+		'int' => 'intval',
+		'integer' => 'intval',
+		'float' => 'floatval',
+		'json' => 'json_encode',
+	];
+
+	/**
+	 * Casts that apply a PHP function to the value as a string.
+	 *
+	 * @var array<string, callable-string>
+	 */
+	private const STRING_FUNCTION_CASTS = [
+		'date' => 'date',
+		'url' => 'urlencode',
+		'urlDecode' => 'urldecode',
+		'rawurl' => 'rawurlencode',
+		'rawurlDecode' => 'rawurldecode',
+		'html' => 'htmlentities',
+		'htmlDecode' => 'html_entity_decode',
+		'base64' => 'base64_encode',
+		'base64Decode' => 'base64_decode',
+	];
+
+	/**
 	 * Twig templating environment
 	 *
 	 * @var Environment
@@ -411,30 +452,9 @@ class MappingService {
 	 * @return void
 	 */
 	private function handleCast(Dot $dotArray, string $key, string $cast): void {
-		$value = $dotArray->get($key);
-		$unsetIfValue = null;
-		$setNullIfValue = null;
-		$countValue = null;
-
-		if (str_starts_with($cast, 'unsetIfValue==') === true) {
-			$unsetIfValue = substr($cast, 14);
-			$cast = 'unsetIfValue';
-		} elseif (str_starts_with($cast, 'setNullIfValue==') === true) {
-			$setNullIfValue = substr($cast, 16);
-			$cast = 'setNullIfValue';
-		} elseif (str_starts_with($cast, 'countValue:') === true) {
-			$countValue = substr($cast, 11);
-			$cast = 'countValue';
-		}
-
 		$value = $this->applyCast(
-			value: $value,
-			cast: $cast,
-			key: $key,
-			dotArray: $dotArray,
-			unsetIfValue: $unsetIfValue,
-			setNullIfValue: $setNullIfValue,
-			countValue: $countValue
+			value: $dotArray->get($key),
+			cast: $this->parseCast(cast: $cast) + ['key' => $key, 'dotArray' => $dotArray]
 		);
 
 		// Don't reset key that was deleted on purpose.
@@ -444,144 +464,202 @@ class MappingService {
 	}//end handleCast()
 
 	/**
+	 * Split a cast into its type and its argument.
+	 *
+	 * `unsetIfValue==<v>`, `setNullIfValue==<v>` and `countValue:<key>` carry an
+	 * argument; every other cast is a bare type.
+	 *
+	 * @param string $cast The cast as written in the mapping.
+	 *
+	 * @return array{type: string, argument: string|null} The cast type and its argument.
+	 */
+	private function parseCast(string $cast): array {
+		foreach (self::ARGUMENT_CASTS as $prefix => $type) {
+			if (str_starts_with($cast, $prefix) === true) {
+				return ['type' => $type, 'argument' => substr($cast, strlen($prefix))];
+			}
+		}
+
+		return ['type' => $cast, 'argument' => null];
+	}//end parseCast()
+
+	/**
 	 * Apply a specific cast to a value.
 	 *
-	 * @param mixed $value The value to cast.
-	 * @param string $cast The cast type.
-	 * @param string $key The key being cast.
-	 * @param Dot $dotArray The dot array.
-	 * @param string|null $unsetIfValue Value to unset if matched.
-	 * @param string|null $setNullIfValue Value to set null if matched.
-	 * @param string|null $countValue Key to count.
+	 * @param mixed                $value The value to cast.
+	 * @param array<string, mixed> $cast  The cast type and argument, the key being cast and the dot array.
 	 *
-	 * @return mixed The cast value.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @return mixed The cast value; an unknown cast leaves the value unchanged.
 	 */
-	private function applyCast(
-		mixed $value,
-		string $cast,
-		string $key,
-		Dot $dotArray,
-		?string $unsetIfValue = null,
-		?string $setNullIfValue = null,
-		?string $countValue = null,
-	): mixed {
-		switch ($cast) {
-			case 'string':
-				return (string)$value;
-			case 'bool':
-			case 'boolean':
-				if ((int)$value === 1 || strtolower((string)$value) === 'true' || strtolower((string)$value) === 'yes') {
-					return true;
-				}
-				return false;
-			case '?bool':
-			case '?boolean':
-				if ($value === null || $value === '') {
-					return null;
-				}
+	private function applyCast(mixed $value, array $cast): mixed {
+		$type = $cast['type'];
+		if (isset(self::VALUE_FUNCTION_CASTS[$type]) === true) {
+			return (self::VALUE_FUNCTION_CASTS[$type])($value);
+		}
 
-				if ((int)$value === 1 || strtolower((string)$value) === 'true' || strtolower((string)$value) === 'yes') {
-					return true;
-				}
-				return false;
-			case 'int':
-			case 'integer':
-				return (int)$value;
-			case 'float':
-				return (float)$value;
-			case 'array':
-				return (array)$value;
-			case 'date':
-				return date((string)$value);
-			case 'url':
-				return urlencode((string)$value);
-			case 'urlDecode':
-				return urldecode((string)$value);
-			case 'rawurl':
-				return rawurlencode((string)$value);
-			case 'rawurlDecode':
-				return rawurldecode((string)$value);
-			case 'html':
-				return htmlentities((string)$value);
-			case 'htmlDecode':
-				return html_entity_decode((string)$value);
-			case 'base64':
-				return base64_encode((string)$value);
-			case 'base64Decode':
-				return base64_decode((string)$value);
-			case 'json':
-				return json_encode($value);
-			case 'jsonToArray':
-				if (is_array($value) === true) {
-					return $value;
-				}
+		if (isset(self::STRING_FUNCTION_CASTS[$type]) === true) {
+			return (self::STRING_FUNCTION_CASTS[$type])((string)$value);
+		}
 
-				$decoded = html_entity_decode((string)$value);
-				return json_decode($decoded, true);
-			case 'utf8':
-				setlocale(category: LC_CTYPE, locales: 'cs_CZ');
-				return iconv('UTF-8', 'ASCII//TRANSLIT', (string)$value);
-			case 'nullStringToNull':
-				if ($value === 'null') {
-					return null;
-				}
-				return $value;
-			case 'coordinateStringToArray':
-				return $this->coordinateStringToArray(coordinates: (string)$value);
+		return match ($type) {
+			'bool', 'boolean' => $this->isTrueCastValue(value: $value),
+			'?bool', '?boolean' => $this->castToNullableBool(value: $value),
+			'array' => (array)$value,
+			'jsonToArray' => $this->castJsonToArray(value: $value),
+			'utf8' => $this->castToAscii(value: $value),
+			'nullStringToNull' => $this->castNullStringToNull(value: $value),
+			'coordinateStringToArray' => $this->coordinateStringToArray(coordinates: (string)$value),
+			'moneyStringToInt' => (int)str_replace(',', '', str_replace('.', '', (string)$value)),
+			'intToMoneyString' => number_format(($value / 100), 2, ',', '.'),
+			default => $this->applyDocumentCast(value: $value, cast: $cast),
+		};
+	}//end applyCast()
+
+	/**
+	 * Whether a value reads as true: 1, `true` or `yes` (case-insensitive).
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a truthy value.
+	 */
+	private function isTrueCastValue(mixed $value): bool {
+		return (int)$value === 1 || strtolower((string)$value) === 'true' || strtolower((string)$value) === 'yes';
+	}//end isTrueCastValue()
+
+	/**
+	 * Cast to a boolean, keeping null and the empty string as null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool|null The boolean, or null for an empty value.
+	 */
+	private function castToNullableBool(mixed $value): ?bool {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		return $this->isTrueCastValue(value: $value);
+	}//end castToNullableBool()
+
+	/**
+	 * Decode a JSON string (HTML entities decoded first); an array passes unchanged.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed The decoded value.
+	 */
+	private function castJsonToArray(mixed $value): mixed {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return json_decode(html_entity_decode((string)$value), true);
+	}//end castJsonToArray()
+
+	/**
+	 * Transliterate a UTF-8 string to ASCII.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|false The ASCII string, or false when iconv fails.
+	 */
+	private function castToAscii(mixed $value): string|false {
+		setlocale(category: LC_CTYPE, locales: 'cs_CZ');
+		return iconv('UTF-8', 'ASCII//TRANSLIT', (string)$value);
+	}//end castToAscii()
+
+	/**
+	 * Turn the string `null` into null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed Null for `null`, otherwise the value.
+	 */
+	private function castNullStringToNull(mixed $value): mixed {
+		if ($value === 'null') {
+			return null;
+		}
+
+		return $value;
+	}//end castNullStringToNull()
+
+	/**
+	 * Apply a cast that reads or changes the mapped document.
+	 *
+	 * `keyCantBeValue` and `unsetIfValue` may delete the key; `setNullIfValue`
+	 * may null the value; `countValue` counts another key's value.
+	 *
+	 * @param mixed                $value The value to cast.
+	 * @param array<string, mixed> $cast  The cast type and argument, the key being cast and the dot array.
+	 *
+	 * @return mixed The cast value; an unknown cast leaves the value unchanged.
+	 */
+	private function applyDocumentCast(mixed $value, array $cast): mixed {
+		$argument = $cast['argument'];
+		$dotArray = $cast['dotArray'];
+		switch ($cast['type']) {
 			case 'keyCantBeValue':
-				if ($key === $value) {
-					$dotArray->delete($key);
+				if ($cast['key'] === $value) {
+					$dotArray->delete($cast['key']);
 				}
 				return $value;
 			case 'unsetIfValue':
-				if ($unsetIfValue !== null && $value === $unsetIfValue) {
-					$dotArray->delete($key);
-				} elseif ($unsetIfValue === '' && (empty($value) === true || $value === null)) {
-					$dotArray->delete($key);
-				} elseif ($unsetIfValue === ''
-					&& is_array($value) === true
-					&& $this->areAllArrayKeysNull(array: $value) === true
-				) {
-					$dotArray->delete($key);
+				if ($this->matchesCastArgument(value: $value, argument: $argument) === true) {
+					$dotArray->delete($cast['key']);
 				}
 				return $value;
 			case 'setNullIfValue':
-				if ($setNullIfValue !== null && $value === $setNullIfValue) {
-					return null;
-				}
-
-				if ($setNullIfValue === '' && (empty($value) === true || $value === null)) {
-					return null;
-				}
-
-				if ($setNullIfValue === ''
-					&& is_array($value) === true
-					&& $this->areAllArrayKeysNull(array: $value) === true
-				) {
+				if ($this->matchesCastArgument(value: $value, argument: $argument) === true) {
 					return null;
 				}
 				return $value;
 			case 'countValue':
-				if ($countValue !== null
-					&& empty($countValue) === false
-					&& $dotArray->has($countValue) === true
-					&& is_countable($dotArray->get($countValue)) === true
-				) {
-					return count($dotArray->get($countValue));
-				}
-				return $value;
-			case 'moneyStringToInt':
-				$cleaned = str_replace('.', '', (string)$value);
-				return (int)str_replace(',', '', $cleaned);
-			case 'intToMoneyString':
-				$number = ($value / 100);
-				return number_format($number, 2, ',', '.');
+				return $this->countCastValue(value: $value, cast: $cast);
 			default:
 				return $value;
 		}//end switch
-	}//end applyCast()
+	}//end applyDocumentCast()
+
+	/**
+	 * The `countValue:<key>` cast: the number of items under another key.
+	 *
+	 * @param mixed                $value The value to cast.
+	 * @param array<string, mixed> $cast  The cast argument (the key to count) and the dot array.
+	 *
+	 * @return mixed The count, or the value when the key holds nothing countable.
+	 */
+	private function countCastValue(mixed $value, array $cast): mixed {
+		$countKey = $cast['argument'];
+		$dotArray = $cast['dotArray'];
+		if (empty($countKey) === false && $dotArray->has($countKey) === true && is_countable($dotArray->get($countKey)) === true) {
+			return count($dotArray->get($countKey));
+		}
+
+		return $value;
+	}//end countCastValue()
+
+	/**
+	 * Whether a value matches the argument of `unsetIfValue` or `setNullIfValue`.
+	 *
+	 * The value equals the argument, or the argument is empty and the value is
+	 * empty or an array whose leaves are all empty.
+	 *
+	 * @param mixed       $value    The value.
+	 * @param string|null $argument The cast argument.
+	 *
+	 * @return bool True when the cast applies.
+	 */
+	private function matchesCastArgument(mixed $value, ?string $argument): bool {
+		if ($argument !== null && $value === $argument) {
+			return true;
+		}
+
+		if ($argument !== '') {
+			return false;
+		}
+
+		return empty($value) === true || (is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true);
+	}//end matchesCastArgument()
 
 	/**
 	 * Checks if all keys in multi-dimensional array are null.
