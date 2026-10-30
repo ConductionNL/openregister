@@ -369,6 +369,8 @@ class ObjectSlugHandler {
 	 * @param string $slug The slug.
 	 *
 	 * @return string The folded key.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function foldKey(string $slug): string {
 		return $this->batch->fold(slug: $slug);
