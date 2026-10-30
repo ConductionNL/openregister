@@ -352,20 +352,51 @@ class ObjectFileAccess {
 			return false;
 		}
 
-		// A provider's rows may carry file verbs, and a provider that fails
-		// answers nothing: a `rowsFrom` matrix is therefore in the file regime
-		// unless the schema opts out with `fileVerbs: false`. Any other value
-		// of `fileVerbs` (true, "true", 1: the validator refuses the
-		// non-booleans) opts in. Fail closed: a doubt is no file access.
+		$declared = self::fileVerbsDeclared(matrix: $matrix);
+		if ($declared !== null) {
+			return $declared;
+		}
+
+		return self::rowsNameFileVerbs(rows: ($matrix['rows'] ?? []));
+	}//end matrixNamesFileVerbs()
+
+	/**
+	 * What the matrix itself declares about the file regime, or null to ask its rows.
+	 *
+	 * A provider's rows may carry file verbs, and a provider that fails
+	 * answers nothing: a `rowsFrom` matrix is therefore in the file regime
+	 * unless the schema opts out with `fileVerbs: false`. Any other value of
+	 * `fileVerbs` (true, "true", 1: the validator refuses the non-booleans)
+	 * opts in. Fail closed: a doubt is no file access.
+	 *
+	 * @param array<string, mixed> $matrix The declared matrix.
+	 *
+	 * @return bool|null True when in the regime; null when the rows decide.
+	 */
+	private static function fileVerbsDeclared(array $matrix): ?bool {
 		if (array_key_exists(self::MATRIX_FILE_VERBS, $matrix) === true) {
 			if ($matrix[self::MATRIX_FILE_VERBS] !== false) {
 				return true;
 			}
-		} else if (is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true) {
+
+			return null;
+		}
+
+		if (is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true) {
 			return true;
 		}
 
-		$rows = ($matrix['rows'] ?? []);
+		return null;
+	}//end fileVerbsDeclared()
+
+	/**
+	 * Whether any declared row (expired or not) names a file verb.
+	 *
+	 * @param mixed $rows The declared rows.
+	 *
+	 * @return bool
+	 */
+	private static function rowsNameFileVerbs(mixed $rows): bool {
 		if (is_array($rows) === false) {
 			return false;
 		}
@@ -382,7 +413,7 @@ class ObjectFileAccess {
 		}
 
 		return false;
-	}//end matrixNamesFileVerbs()
+	}//end rowsNameFileVerbs()
 
 	/**
 	 * The object's schema, or null when it cannot be found.

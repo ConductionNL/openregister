@@ -110,7 +110,7 @@ class ExplicitRevealTrailMasker {
 	 */
 	private static function maskEveryChange(array $changed): array {
 		foreach ($changed as $name => $change) {
-			$changed[$name] = ExplicitReveal::maskChange(change: $change);
+			$changed[$name] = ExplicitRevealChangeMask::maskChange(change: $change);
 		}
 
 		return $changed;

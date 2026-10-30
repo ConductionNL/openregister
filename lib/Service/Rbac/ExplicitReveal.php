@@ -275,56 +275,11 @@ class ExplicitReveal {
 				continue;
 			}
 
-			$changed[$name] = self::maskChange(change: $changed[$name]);
+			$changed[$name] = ExplicitRevealChangeMask::maskChange(change: $changed[$name]);
 		}
 
 		return $changed;
 	}//end maskChanges()
-
-	/**
-	 * Mask one change: `{old, new}` side by side, or a plain value. An array
-	 * value (a list, an object) has no tail to show and becomes five stars.
-	 *
-	 * @param mixed $change The change.
-	 *
-	 * @return mixed The change, masked.
-	 *
-	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
-	 */
-	public static function maskChange(mixed $change): mixed {
-		$isDiff = is_array($change) === true
-			&& (array_key_exists('old', $change) === true || array_key_exists('new', $change) === true);
-		if ($isDiff === false) {
-			return self::maskValue(value: $change);
-		}
-
-		foreach (['old', 'new'] as $side) {
-			if (isset($change[$side]) === true) {
-				$change[$side] = self::maskValue(value: $change[$side]);
-			}
-		}
-
-		return $change;
-	}//end maskChange()
-
-	/**
-	 * Mask a scalar, or replace an array by five stars.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return mixed The mask; null stays null.
-	 */
-	private static function maskValue(mixed $value): mixed {
-		if (is_array($value) === true) {
-			return str_repeat('*', 5);
-		}
-
-		if ($value === null) {
-			return null;
-		}
-
-		return self::mask(value: $value);
-	}//end maskValue()
 
 	/**
 	 * Refuse a query that filters or sorts on an explicit-reveal property.

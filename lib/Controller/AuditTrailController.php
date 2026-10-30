@@ -1073,9 +1073,7 @@ class AuditTrailController extends Controller {
 			$results = $this->auditTrailMapper->findByIdentifier($identifier);
 			// Explicit-reveal values leave masked here as on every trail route.
 			// Who may call this and the search it runs are issue #5148.
-			if (is_array($results) === true) {
-				$results = $this->logService->maskExplicitReveal(entries: $results);
-			}
+			$results = $this->logService->maskExplicitReveal(entries: $results);
 
 			return new JSONResponse(data: $results);
 		} catch (\Exception $e) {

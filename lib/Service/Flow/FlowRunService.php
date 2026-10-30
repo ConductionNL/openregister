@@ -1503,6 +1503,34 @@ class FlowRunService {
 	}//end persistFlowState()
 
 	/**
+	 * The result with every writeOnly action input redacted.
+	 *
+	 * 🔴 A WRITEONLY ACTION INPUT NEVER REACHES STORAGE. The steps carry it in
+	 * their items at `json.inputs.<name>` (the action-inputs node puts it there
+	 * so later steps can read `{{inputs.pin}}`), and the log samples every
+	 * step's items, so the log, the step rows, the final items and the error
+	 * are redacted before the one place a walk's result is stored. By key,
+	 * never by value: the context and the items carry the subject uuid and
+	 * counters a resumed run reads, which a value match corrupts.
+	 *
+	 * @param array $result    The engine's result envelope.
+	 * @param mixed $secretRef The run's inputsRef.
+	 *
+	 * @return array The envelope, with `log` and `items` always set.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 */
+	private function withoutSecrets(array $result, mixed $secretRef): array {
+		$result['log'] = ObjectActionSecrets::redactLog(log: (array)($result['log'] ?? []), ref: $secretRef);
+		$result['items'] = ObjectActionSecrets::redactItems(items: (array)($result['items'] ?? []), ref: $secretRef);
+		if (is_string($result['error'] ?? null) === true) {
+			$result['error'] = ObjectActionSecrets::redactText(text: $result['error'], ref: $secretRef);
+		}
+
+		return $result;
+	}//end withoutSecrets()
+
+	/**
 	 * Write back what a walk produced.
 	 *
 	 * @param FlowRun $run The run to update.
@@ -1518,28 +1546,18 @@ class FlowRunService {
 	private function persistResult(FlowRun $run, array $result): FlowRun {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
 
-		// 🔴 A WRITEONLY ACTION INPUT NEVER REACHES STORAGE. The steps carry it
-		// in their items at `json.inputs.<name>` (the action-inputs node puts it
-		// there so later steps can read `{{inputs.pin}}`), and the log samples
-		// every step's items, so the log, the step rows, the final items and
-		// the error are redacted here, the one place a walk's result is stored.
-		// By key, never by value: the context and the items carry the subject
-		// uuid and counters a resumed run reads, which a value match corrupts.
+		// A writeOnly action input never reaches storage ({@see self::withoutSecrets()}).
 		$secretRef = (((array)($result['context'] ?? []))[ObjectActionSecrets::CONTEXT_KEY] ?? null);
-		$result['log'] = ObjectActionSecrets::redactLog(log: (array)($result['log'] ?? []), ref: $secretRef);
-		$result['items'] = ObjectActionSecrets::redactItems(items: (array)($result['items'] ?? []), ref: $secretRef);
-		if (is_string($result['error'] ?? null) === true) {
-			$result['error'] = ObjectActionSecrets::redactText(text: $result['error'], ref: $secretRef);
-		}
+		$result = $this->withoutSecrets(result: $result, secretRef: $secretRef);
 
 		// The log is appended, not replaced: a resumed run's history is the
 		// whole run, not just the segment since it last woke up.
-		$log = array_merge(($run->getLog() ?? []), (array)($result['log'] ?? []));
+		$log = array_merge(($run->getLog() ?? []), $result['log']);
 
 		// Promote THIS segment's entries to step rows. Only the new entries —
 		// `$result['log']`, not the merged `$log` — or every resume would
 		// re-record the whole history it had already written.
-		$this->stepHistory()->record(run: $run, entries: (array)($result['log'] ?? []));
+		$this->stepHistory()->record(run: $run, entries: $result['log']);
 
 		// The token travels as an object so steps can write to it; the column
 		// holds JSON. Serialising here — on the suspended path as much as the
@@ -1588,7 +1606,7 @@ class FlowRunService {
 		unset($context[self::SIGNAL_CONTEXT_KEY]);
 
 		$run->setStatus($status);
-		$run->setItems((array)($result['items'] ?? []));
+		$run->setItems($result['items']);
 		$run->setContext($context);
 		$run->setLog($log);
 		$run->setError(($result['error'] ?? null));
