@@ -890,6 +890,46 @@ class ObjectWriteNodeTest extends TestCase {
 		);
 	}//end testADeleteBatchReportsItsDeletedCount()
 
+	/**
+	 * A delete the service reports as failed is not counted as deleted.
+	 *
+	 * `deleteObject()` catches an exception inside the delete and returns
+	 * `false` instead of throwing. The node used to discard that result and
+	 * count the item anyway, so the run log said "deleted 1" for an object
+	 * that was still there. Pins that the tally and the output item both
+	 * follow the service's answer.
+	 *
+	 * @return void
+	 */
+	public function testADeleteTheServiceReportsAsFailedIsNotCountedAsDeleted(): void {
+		$this->tableOf(table: [['uuid' => 'u-kept', 'data' => ['sourceId' => 'r1']]]);
+		$this->objects->expects($this->once())->method('deleteObject')->willReturn(false);
+
+		$report = new FlowStepReport();
+
+		$out = $this->node->execute(
+			$this->items(records: [['retiredId' => 'r1']]),
+			$this->deleteConfig(),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertFalse(
+			condition: $out[0]['json']['deleted'],
+			message: 'the output item must not claim a removal that failed'
+		);
+		$this->assertSame(
+			expected: [
+				'write' => [
+					'created' => ['count' => 0],
+					'updated' => ['count' => 0],
+					'deleted' => ['count' => 0],
+				],
+			],
+			actual: $report->take()
+		);
+
+	}//end testADeleteTheServiceReportsAsFailedIsNotCountedAsDeleted()
+
 	public function testADeleteMatchingNothingErrorsByDefault(): void {
 		$this->tableOf([]);
 		$this->objects->expects($this->never())->method('deleteObject');
@@ -1195,6 +1235,43 @@ class ObjectWriteNodeTest extends TestCase {
 		}
 
 	}//end testDeletesCountAgainstTheCapToo()
+
+	/**
+	 * A delete the service reports as failed still counts towards the cap.
+	 *
+	 * `deleteObject()` can cascade into child deletes before it fails and
+	 * returns false, so a failed attempt may already have written. The cap
+	 * bounds attempts, not confirmed deletes, or a batch of failing deletes
+	 * would run past `maxWrites` without limit.
+	 *
+	 * @return void
+	 */
+	public function testFailedDeletesStillCountAgainstTheCap(): void {
+		$this->tableOf(table: [['uuid' => 'u-1', 'data' => ['sourceId' => 'r1']]]);
+
+		$attempts = 0;
+		$this->objects->method('deleteObject')->willReturnCallback(
+			static function () use (&$attempts): bool {
+				$attempts++;
+
+				return false;
+			}
+		);
+
+		$records = array_fill(start_index: 0, count: 20, value: ['retiredId' => 'r1']);
+
+		$this->expectException(exception: RuntimeException::class);
+		try {
+			$this->node->execute(
+				$this->items(records: $records),
+				$this->deleteConfig(overrides: ['maxWrites' => 5]),
+				$this->registerContext
+			);
+		} finally {
+			$this->assertSame(expected: 5, actual: $attempts, message: 'the sixth attempt is refused, failed or not');
+		}
+
+	}//end testFailedDeletesStillCountAgainstTheCap()
 
 	public function testTheInstanceDefaultAppliesWhenNoCapIsConfigured(): void {
 		$seenDefault = null;
@@ -1774,6 +1851,9 @@ class ObjectWriteNodeTest extends TestCase {
 	 * "no report on failure" (review feedback — the only prior bulk-report
 	 * test covered the failure path, so the counts themselves were unpinned).
 	 *
+	 * The three buckets have distinct sizes (3 / 2 / 1) so that reading any
+	 * one bucket from another's key fails the assertion.
+	 *
 	 * @return void
 	 */
 	public function testABulkWriteReportsItsSavedUpdatedAndUnchangedCounts(): void {
@@ -1783,12 +1863,14 @@ class ObjectWriteNodeTest extends TestCase {
 					'saved' => [
 						['@self' => ['uuid' => 'a'], 'title' => 'a'],
 						['@self' => ['uuid' => 'b'], 'title' => 'b'],
-					],
-					'updated' => [
 						['@self' => ['uuid' => 'c'], 'title' => 'c'],
 					],
-					'unchanged' => [
+					'updated' => [
 						['@self' => ['uuid' => 'd'], 'title' => 'd'],
+						['@self' => ['uuid' => 'e'], 'title' => 'e'],
+					],
+					'unchanged' => [
+						['@self' => ['uuid' => 'f'], 'title' => 'f'],
 					],
 				]
 			)
@@ -1797,7 +1879,16 @@ class ObjectWriteNodeTest extends TestCase {
 		$report = new FlowStepReport();
 
 		$this->node->execute(
-			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c'], ['title' => 'd']]),
+			$this->items(
+				[
+					['title' => 'a'],
+					['title' => 'b'],
+					['title' => 'c'],
+					['title' => 'd'],
+					['title' => 'e'],
+					['title' => 'f'],
+				]
+			),
 			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
 			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
 		);
@@ -1805,8 +1896,8 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertSame(
 			[
 				'write' => [
-					'created' => ['count' => 2],
-					'updated' => ['count' => 1],
+					'created' => ['count' => 3],
+					'updated' => ['count' => 2],
 					'unchanged' => ['count' => 1],
 				],
 			],
