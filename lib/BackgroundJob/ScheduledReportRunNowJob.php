@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\ScheduledReportMapper;
-use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -47,13 +47,13 @@ class ScheduledReportRunNowJob extends QueuedJob {
 	 *
 	 * @param ITimeFactory $time Time factory.
 	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
-	 * @param ScheduledReportService $service Execution logic.
+	 * @param ScheduledReportsInterface $service Execution logic.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly ScheduledReportMapper $mapper,
-		private readonly ScheduledReportService $service,
+		private readonly ScheduledReportsInterface $service,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
