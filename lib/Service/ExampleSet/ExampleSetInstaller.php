@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
 /**
@@ -214,7 +215,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		}
 
 		try {
-			return $this->installHeld(plan: $plan, adopt: $adopt, password: $password, today: $today, report: $report);
+			// Every write of the run is the set's import, its run the set, so a history can leave the set's upkeep
+			// out and the trail can find one load. A row the set declares with its own cause keeps that cause.
+			return WriteCause::runAs(
+				cause: WriteCause::IMPORT,
+				run: 'example-set:'.$set,
+				operation: fn (): array => $this->installHeld(plan: $plan, adopt: $adopt, password: $password, today: $today, report: $report)
+			);
 		} finally {
 			$this->lock?->release(set: $set);
 		}
