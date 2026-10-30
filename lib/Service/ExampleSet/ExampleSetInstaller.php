@@ -178,6 +178,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *                              run made), `types`, `dropped`, `missing`, `lost` and `ok`.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::runAs() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function install(array $plan, array $adopt=[], string $password='', ?DateTimeImmutable $today=null): array {
 		$today  = ($today ?? $this->today(timezone: (string) $plan['timezone']));
