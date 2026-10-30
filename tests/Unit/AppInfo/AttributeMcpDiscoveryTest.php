@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Application::collectAttributeMcpProviders() DI-wiring tests (ADR-063 chain 3/3).
+ * McpProviderDiscovery::collectAttributeMcpProviders() DI-wiring tests (ADR-063 chain 3/3).
  *
  * Mirrors {@see \OCA\OpenRegister\Tests\Unit\Service\Integration\BuiltinProviderDiFactoryTest}'s
  * technique — reflect-invoke the private discovery method directly with a
@@ -39,13 +39,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\IMcpScannableServices;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Mcp\McpProviderDiscovery;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\CollidingFixtureService;
@@ -53,7 +53,6 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 use RuntimeException;
@@ -63,11 +62,11 @@ require_once __DIR__ . '/../Mcp/Fixtures/CollidingFixtureService.php';
 require_once __DIR__ . '/Fixtures/GlobalOcServerStub.php';
 
 /**
- * Application subclass that overrides the per-app-container seam so tests can
+ * McpProviderDiscovery subclass that overrides the per-app-container seam so tests can
  * inject an explicit appId → container topology (and record which appIds were
  * asked for) WITHOUT touching the global `\OC::$server` service locator.
  */
-class RecordingApplication extends Application {
+class RecordingApplication extends McpProviderDiscovery {
 
 	/**
 	 * Explicit appId → app-container map.
@@ -159,15 +158,10 @@ class AttributeMcpDiscoveryTest extends TestCase {
 		LoggerInterface $logger,
 		array &$providers,
 	): RecordingApplication {
-		// newInstanceWithoutConstructor() — Application::__construct() calls
-		// parent::__construct(), which touches \OC::$server; that global NC
-		// bootstrap is out of scope for this local unit-test harness (and
-		// orthogonal to what's under test here: the discovery method reads
-		// only its own parameters + the overridden app-container seam).
-		$app = (new ReflectionClass(RecordingApplication::class))->newInstanceWithoutConstructor();
+		$app = new RecordingApplication();
 		$app->appContainers = $appContainers;
 
-		$method = new ReflectionMethod(Application::class, 'collectAttributeMcpProviders');
+		$method = new ReflectionMethod(McpProviderDiscovery::class, 'collectAttributeMcpProviders');
 		$method->setAccessible(true);
 		$method->invokeArgs($app, [$sharedContainer, $logger, &$providers]);
 
@@ -433,7 +427,7 @@ class AttributeMcpDiscoveryTest extends TestCase {
 	 * dodge a property-type check, which is worse than just skipping: this
 	 * seam is exercised for real by every OTHER test in this file via the
 	 * `RecordingApplication` override (see `invokeCollect()` above), so
-	 * skipping here loses no coverage of `Application`'s own logic — only of
+	 * skipping here loses no coverage of `McpProviderDiscovery`'s own logic — only of
 	 * the raw `\OC::$server` plumbing, which is itself stubbed to be a no-op
 	 * fail-soft path in real NC.
 	 *
@@ -457,8 +451,8 @@ class AttributeMcpDiscoveryTest extends TestCase {
 		}
 
 		\OC::$server = $server;
-		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-		$method = new ReflectionMethod(Application::class, 'getRegisteredAppContainer');
+		$app = new McpProviderDiscovery();
+		$method = new ReflectionMethod(McpProviderDiscovery::class, 'getRegisteredAppContainer');
 		$method->setAccessible(true);
 
 		return $method->invoke($app, $appId, $logger);
