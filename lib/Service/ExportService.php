@@ -28,7 +28,7 @@
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Contract\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;

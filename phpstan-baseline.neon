@@ -8,17 +8,17 @@ parameters:
 		-
 			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
 			count: 1
-			path: lib/AppInfo/Application.php
+			path: lib/Service/ServiceRegistrar.php
 
 		-
-			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\SettingsService constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
+			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\SettingsService constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, OCP\\\\IContainer given\\.$#"
 			count: 1
-			path: lib/AppInfo/Application.php
+			path: lib/Service/Configuration/ConfigurationServiceRegistrar.php
 
 		-
-			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Settings\\\\ValidationOperationsHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer, Psr\\\\Container\\\\ContainerInterface given\\.$#"
+			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Settings\\\\ValidationOperationsHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer, OCP\\\\IContainer given\\.$#"
 			count: 1
-			path: lib/AppInfo/Application.php
+			path: lib/Service/Configuration/ConfigurationServiceRegistrar.php
 
 		-
 			message: "#^Parameter \\#1 \\$callback of method OCP\\\\IUserManager\\:\\:callForSeenUsers\\(\\) expects Closure\\(OCP\\\\IUser\\)\\: \\(bool\\|null\\), Closure\\(mixed\\)\\: void given\\.$#"

@@ -29,12 +29,8 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Contract\ObjectExporterInterface;
-use OCA\OpenRegister\Contract\ObjectImporterInterface;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
-use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -54,17 +50,21 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
-use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRightService;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
@@ -72,6 +72,7 @@ use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -81,7 +82,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\App\IAppManager;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -238,9 +238,9 @@ class ObjectsController extends Controller {
 	 * The caller's own flags are passed in rather than assumed, so an admin -
 	 * who reads exempt on the primary path - still gets the helpful answer.
 	 *
-	 * @param string   $id              The identifier the caller asked for.
-	 * @param bool     $rbac            The caller's own RBAC posture, as used by the read.
-	 * @param bool     $multitenancy    The caller's own tenancy posture, as used by the read.
+	 * @param string $id The identifier the caller asked for.
+	 * @param bool $rbac The caller's own RBAC posture, as used by the read.
+	 * @param bool $multitenancy The caller's own tenancy posture, as used by the read.
 	 * @param int|null $registerIdScope The register named in the URL, so the lookup cannot wander.
 	 *
 	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
@@ -1089,6 +1089,10 @@ class ObjectsController extends Controller {
 		// buildSearchQuery() with no `_rbac` assignment.
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 
+		// Same bypass, same gap for lenses: renderEntity is where a schema's
+		// declared lenses are resolved.
+		$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac']);
+
 		// Same bypass, same gap for translatable properties: renderEntity is
 		// where a `{"nl":...}` map projects to the negotiated language.
 		$renderHandler->resolveTranslationsForRows(rows: $results);
@@ -1219,14 +1223,14 @@ class ObjectsController extends Controller {
 	 * bug, so `GET /api/objects/19/9476` worked while
 	 * `POST /api/bulk/19/9475/save` still 404'd on the same register.
 	 *
-	 * @param string        $register      Register slug, uuid or numeric id.
-	 * @param string        $schema        Schema slug, uuid or numeric id.
+	 * @param string $register Register slug, uuid or numeric id.
+	 * @param string $schema Schema slug, uuid or numeric id.
 	 * @param ObjectService $objectService The request's object service.
 	 *
 	 * @return array The resolved ids and entities.
 	 *
 	 * @throws RegisterNotFoundException When the register does not resolve.
-	 * @throws SchemaNotFoundException   When the schema does not resolve.
+	 * @throws SchemaNotFoundException When the schema does not resolve.
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
@@ -1487,7 +1491,7 @@ class ObjectsController extends Controller {
 	 * for `registers`. Only an explicit list of more than one value makes the
 	 * listing cross-table; the URL path fills in the side that was not listed.
 	 *
-	 * @param array $params  The request parameters.
+	 * @param array $params The request parameters.
 	 * @param array $urlPath The register and schema from the URL path.
 	 *
 	 * @psalm-param array<string, mixed> $params
@@ -1531,7 +1535,7 @@ class ObjectsController extends Controller {
 	 * reachable anonymously (@PublicPage); honouring ?rbac=false&_multi=false
 	 * would let any caller list every object across all organisations/ACLs.
 	 *
-	 * @param array $urlPath  The register and schema from the URL path.
+	 * @param array $urlPath The register and schema from the URL path.
 	 * @param array $resolved The resolved register and schema.
 	 *
 	 * @psalm-param array{register: string, schema: string} $urlPath
@@ -1542,17 +1546,17 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function buildListingScope(array $urlPath, array $resolved): array {
-		$params  = $this->request->getParams();
+		$params = $this->request->getParams();
 		$isAdmin = $this->isCurrentUserAdmin();
 
 		return [
 			'register' => $urlPath['register'],
-			'schema'   => $urlPath['schema'],
+			'schema' => $urlPath['schema'],
 			'resolved' => $resolved,
-			'params'   => $params,
-			'rbac'     => ($isAdmin === false),
-			'multi'    => ($isAdmin === false),
-			'deleted'  => filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN),
+			'params' => $params,
+			'rbac' => ($isAdmin === false),
+			'multi' => ($isAdmin === false),
+			'deleted' => filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN),
 		];
 	}//end buildListingScope()
 
@@ -1573,7 +1577,7 @@ class ObjectsController extends Controller {
 	 */
 	private function isServedFromMagicTable(array $resolved): bool {
 		$registerEntity = $resolved['registerEntity'] ?? null;
-		$schemaEntity   = $resolved['schemaEntity'] ?? null;
+		$schemaEntity = $resolved['schemaEntity'] ?? null;
 		if ($registerEntity === null || $schemaEntity === null) {
 			return false;
 		}
@@ -1591,7 +1595,7 @@ class ObjectsController extends Controller {
 	/**
 	 * List the objects of a magic-mapped schema straight from its table.
 	 *
-	 * @param array         $listing       The listing scope.
+	 * @param array $listing The listing scope.
 	 * @param ObjectService $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
@@ -1601,16 +1605,16 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function indexFromMagicTable(array $listing, ObjectService $objectService): JSONResponse {
-		$magicMapper    = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 		$registerEntity = $listing['resolved']['registerEntity'];
-		$schemaEntity   = $listing['resolved']['schemaEntity'];
+		$schemaEntity = $listing['resolved']['schemaEntity'];
 
 		$query = $this->buildListingQuery(listing: $listing, objectService: $objectService);
-		$query['_rbac']         = $listing['rbac'];
+		$query['_rbac'] = $listing['rbac'];
 		$query['_multitenancy'] = $listing['multi'];
 		// Never request-controlled; read by the public schema bypass logic.
 		$query['_multitenancy_explicit'] = false;
-		$listing['query']       = $query;
+		$listing['query'] = $query;
 		$listing['magicMapper'] = $magicMapper;
 
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
@@ -1619,7 +1623,7 @@ class ObjectsController extends Controller {
 			schema: $schemaEntity
 		);
 		$serializedResults = $this->serializeMagicResults(results: $results, listing: $listing);
-		$page            = $this->paginateMagicResults(listing: $listing);
+		$page = $this->paginateMagicResults(listing: $listing);
 		$page['results'] = $serializedResults;
 
 		$responseData = $this->buildMagicResponse(page: $page, listing: $listing);
@@ -1633,7 +1637,7 @@ class ObjectsController extends Controller {
 	 * Strip empty values, apply the spatial post-filter and negotiate the format of a magic-table listing.
 	 *
 	 * @param array $responseData The response body.
-	 * @param array $listing      The listing scope, with its search query.
+	 * @param array $listing The listing scope, with its search query.
 	 *
 	 * @psalm-param array<string, mixed> $responseData
 	 * @psalm-param array<string, mixed> $listing
@@ -1671,7 +1675,7 @@ class ObjectsController extends Controller {
 	/**
 	 * Build the search query of a listing and warn about filter keys the schema does not know.
 	 *
-	 * @param array         $listing       The listing scope.
+	 * @param array $listing The listing scope.
 	 * @param ObjectService $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
@@ -1738,7 +1742,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function serializeMagicResults(array $results, array $listing): array {
-		$query  = $listing['query'];
+		$query = $listing['query'];
 		$extend = $this->rowExtensions(query: $query);
 
 		$hasComplexRendering = empty($extend) === false
@@ -1765,6 +1769,10 @@ class ObjectsController extends Controller {
 		// gates ONLY the property `authorization.read` strip; writeOnly strips
 		// unconditionally, admin included (#389/#460).
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $listing['rbac']);
+
+		// Same bypass, same gap for lenses: renderEntity is where a schema's
+		// declared lenses are resolved.
+		$renderHandler->applyLensesToRows(rows: $results, _rbac: $listing['rbac']);
 
 		// Same bypass, same gap for translatable properties: renderEntity is
 		// where a `{"nl":...}` map projects to the negotiated language.
@@ -1797,10 +1805,10 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function paginateMagicResults(array $listing): array {
-		$query  = $listing['query'];
-		$limit  = (int)($query['_limit'] ?? 20);
+		$query = $listing['query'];
+		$limit = (int)($query['_limit'] ?? 20);
 		$offset = $query['_offset'] ?? null;
-		$page   = $query['_page'] ?? null;
+		$page = $query['_page'] ?? null;
 
 		// Convert page to offset if page is provided but offset is not.
 		if ($page !== null && $offset === null && $limit > 0) {
@@ -1875,7 +1883,7 @@ class ObjectsController extends Controller {
 	/**
 	 * The response body of a magic-table listing, before hints, facets and post-filters.
 	 *
-	 * @param array $page    The rendered rows and the pagination figures.
+	 * @param array $page The rendered rows and the pagination figures.
 	 * @param array $listing The listing scope, with its search query.
 	 *
 	 * @psalm-param array<string, mixed> $page
@@ -1886,21 +1894,21 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function buildMagicResponse(array $page, array $listing): array {
-		$query        = $listing['query'];
+		$query = $listing['query'];
 		$responseData = [
 			'results' => $page['results'],
-			'total'   => $page['total'],
-			'pages'   => $page['pages'],
-			'page'    => $page['page'],
-			'limit'   => $page['limit'],
-			'@self'   => [
-				'source'             => 'magic_mapper',
-				'register'           => $listing['register'],
-				'schema'             => $listing['schema'],
-				'query'              => $query,
-				'rbac'               => $listing['rbac'],
-				'multi'              => $listing['multi'],
-				'deleted'            => $listing['deleted'],
+			'total' => $page['total'],
+			'pages' => $page['pages'],
+			'page' => $page['page'],
+			'limit' => $page['limit'],
+			'@self' => [
+				'source' => 'magic_mapper',
+				'register' => $listing['register'],
+				'schema' => $listing['schema'],
+				'query' => $query,
+				'rbac' => $listing['rbac'],
+				'multi' => $listing['multi'],
+				'deleted' => $listing['deleted'],
 				'activeOrganisation' => $this->activeOrganisationUuid(),
 			],
 		];
@@ -1940,7 +1948,7 @@ class ObjectsController extends Controller {
 	 * parameter, so "did you mean _filter?" would turn a scoped query into an
 	 * unscoped one.
 	 *
-	 * @param array $responseData   The response body.
+	 * @param array $responseData The response body.
 	 * @param array $ignoredFilters The filter keys the mapper ignored.
 	 *
 	 * @psalm-param array<string, mixed> $responseData
@@ -1956,14 +1964,14 @@ class ObjectsController extends Controller {
 
 		$responseData['@self']['ignoredFilters'] = $ignoredFilters;
 
-		$controlParams   = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'unset'];
+		$controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'unset'];
 		$mistakenParams = array_intersect($ignoredFilters, $controlParams);
 		if (empty($mistakenParams) === true) {
 			return $responseData;
 		}
 
 		$suggestions = array_map(fn ($param) => "_{$param}", $mistakenParams);
-		$hint  = 'Query returned 0 results because ';
+		$hint = 'Query returned 0 results because ';
 		$hint .= implode(', ', $mistakenParams);
 		$hint .= ' was treated as an object property filter.';
 		$hint .= ' Did you mean ';
@@ -1979,7 +1987,7 @@ class ObjectsController extends Controller {
 	 * Add the magic table's facets when `_facets` asks for them.
 	 *
 	 * @param array $responseData The response body.
-	 * @param array $listing      The listing scope, with its search query and magic mapper.
+	 * @param array $listing The listing scope, with its search query and magic mapper.
 	 *
 	 * @psalm-param array<string, mixed> $responseData
 	 * @psalm-param array<string, mixed> $listing
@@ -2040,7 +2048,7 @@ class ObjectsController extends Controller {
 	/**
 	 * List the objects through ObjectService, which picks the source.
 	 *
-	 * @param array         $listing       The listing scope.
+	 * @param array $listing The listing scope.
 	 * @param ObjectService $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
@@ -2079,7 +2087,7 @@ class ObjectsController extends Controller {
 		// Content negotiation: a JSON-LD @graph over the already-rendered,
 		// RBAC-filtered result (json-ld-output).
 		$registerEntity = $listing['resolved']['registerEntity'] ?? null;
-		$schemaEntity   = $listing['resolved']['schemaEntity'] ?? null;
+		$schemaEntity = $listing['resolved']['schemaEntity'] ?? null;
 		if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
 			return $this->jsonLdCollectionResponse(result: $result, register: $registerEntity, schema: $schemaEntity);
 		}
@@ -2842,6 +2850,10 @@ class ObjectsController extends Controller {
 						$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
 						$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
+						// Same bypass, same gap for lenses: renderEntity is where a schema's
+						// declared lenses are resolved.
+						$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+
 						// Same bypass, same gap for translatable properties: renderEntity is
 						// where a `{"nl":...}` map projects to the negotiated language.
 						$renderHandler->resolveTranslationsForRows(rows: $results);
@@ -2971,9 +2983,9 @@ class ObjectsController extends Controller {
 	 * them, because the case a picker exists for is a form being filled in and
 	 * those values are not saved yet.
 	 *
-	 * @param string        $id            The record being edited.
-	 * @param string        $register      The register.
-	 * @param string        $schema        The schema.
+	 * @param string $id The record being edited.
+	 * @param string $register The register.
+	 * @param string $schema The schema.
 	 * @param ObjectService $objectService The object service.
 	 *
 	 * @return JSONResponse The options, or what is still needed.
@@ -3391,10 +3403,10 @@ class ObjectsController extends Controller {
 	 * returned because the read was allowed, and every write is resolved again
 	 * on its own request. A reporting field must never be able to refuse a read.
 	 *
-	 * @param array             $renderedData  The rendered record.
-	 * @param Schema|null       $schema        The schema, when it resolved.
-	 * @param ObjectEntity|null $object        The row.
-	 * @param ObjectService     $objectService The service holding the resolver.
+	 * @param array $renderedData The rendered record.
+	 * @param Schema|null $schema The schema, when it resolved.
+	 * @param ObjectEntity|null $object The row.
+	 * @param ObjectService $objectService The service holding the resolver.
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
@@ -3726,8 +3738,8 @@ class ObjectsController extends Controller {
 	 * submissions, and overwriting a record by guessing its key is not what
 	 * those forms are for. `_failIfExists` asks the opposite of an upsert.
 	 *
-	 * @param bool                 $failIfExists Whether the call also asked for insert-only.
-	 * @param array<string, mixed> $resolved     The resolved register and schema.
+	 * @param bool $failIfExists Whether the call also asked for insert-only.
+	 * @param array<string, mixed> $resolved The resolved register and schema.
 	 *
 	 * @return JSONResponse|null The refusal, or null.
 	 *
@@ -5101,11 +5113,11 @@ class ObjectsController extends Controller {
 	 * One object's history for a non-admin, when they may read the object.
 	 *
 	 * @param string $register The register slug or identifier
-	 * @param string $schema   The schema slug or identifier
-	 * @param string $id       The object ID or UUID
+	 * @param string $schema The schema slug or identifier
+	 * @param string $id The object ID or UUID
 	 *
 	 * @return JSONResponse 200 with the redacted page, 404 when the object is not readable to this caller,
-	 *     or the doelbinding refusal.
+	 *                      or the doelbinding refusal.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
@@ -5345,8 +5357,8 @@ class ObjectsController extends Controller {
 	 * without racing the reload.
 	 *
 	 * @param ObjectEntity $existingObject The object as stored.
-	 * @param array<string, mixed> $sent   What the caller is writing.
-	 * @param mixed $schemaEntity          The schema, for the field filter.
+	 * @param array<string, mixed> $sent What the caller is writing.
+	 * @param mixed $schemaEntity The schema, for the field filter.
 	 *
 	 * @return JSONResponse|null The 409, or null when the caller may write.
 	 *
@@ -5463,7 +5475,7 @@ class ObjectsController extends Controller {
 	 * The changes made to this object since the caller read it, newest first.
 	 *
 	 * @param ObjectEntity $object The object.
-	 * @param string       $since  The caller's `updated`, ISO-8601.
+	 * @param string $since The caller's `updated`, ISO-8601.
 	 *
 	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The entries.
 	 *
@@ -5502,10 +5514,10 @@ class ObjectsController extends Controller {
 	 * Never throws: a trail that cannot be written must not turn a correct
 	 * refusal into a 500.
 	 *
-	 * @param ObjectEntity         $object   The object.
-	 * @param string               $expected The version the caller held.
-	 * @param string               $current  The version stored.
-	 * @param array<string, mixed> $body     The conflict body.
+	 * @param ObjectEntity $object The object.
+	 * @param string $expected The version the caller held.
+	 * @param string $current The version stored.
+	 * @param array<string, mixed> $body The conflict body.
 	 *
 	 * @return void
 	 *
@@ -5550,8 +5562,8 @@ class ObjectsController extends Controller {
 	 * the target cannot put anything there.
 	 *
 	 * @param string $register The source register.
-	 * @param string $schema   The source schema.
-	 * @param string $id       The object.
+	 * @param string $schema The source schema.
+	 * @param string $id The object.
 	 *
 	 * @return JSONResponse The outcome, or a 4xx naming what stood in the way.
 	 *
@@ -5658,8 +5670,8 @@ class ObjectsController extends Controller {
 	 * answer that it exists.
 	 *
 	 * @param string $register The register slug or identifier.
-	 * @param string $schema   The schema slug or identifier.
-	 * @param string $id       The object.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object.
 	 *
 	 * @return JSONResponse Who else is present.
 	 *
@@ -5702,8 +5714,8 @@ class ObjectsController extends Controller {
 	 * Say that the caller has closed this object.
 	 *
 	 * @param string $register The register slug or identifier.
-	 * @param string $schema   The schema slug or identifier.
-	 * @param string $id       The object.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object.
 	 *
 	 * @return JSONResponse Who is left.
 	 *
@@ -5747,8 +5759,8 @@ class ObjectsController extends Controller {
 	 * sends the request token in the beacon's form body.
 	 *
 	 * @param string $register The register slug or identifier.
-	 * @param string $schema   The schema slug or identifier.
-	 * @param string $id       The object.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object.
 	 *
 	 * @return JSONResponse Who is left, or 400 without the DELETE marker.
 	 *
@@ -5772,8 +5784,8 @@ class ObjectsController extends Controller {
 	 * Who has this object open.
 	 *
 	 * @param string $register The register slug or identifier.
-	 * @param string $schema   The schema slug or identifier.
-	 * @param string $id       The object.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object.
 	 *
 	 * @return JSONResponse The present readers.
 	 *
@@ -5828,8 +5840,8 @@ class ObjectsController extends Controller {
 	 * whether it exists.
 	 *
 	 * @param string $register The register.
-	 * @param string $schema   The schema.
-	 * @param string $id       The object.
+	 * @param string $schema The schema.
+	 * @param string $id The object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
@@ -6040,7 +6052,7 @@ class ObjectsController extends Controller {
 	 * no verb check and no sign that one was missing. A service that cannot be
 	 * resolved refuses, for the same reason an unreadable rule refuses.
 	 *
-	 * @param Schema   $schema   The schema being exported.
+	 * @param Schema $schema The schema being exported.
 	 * @param Register $register The register being exported.
 	 *
 	 * @return JSONResponse|null The refusal to return, or null when the export may run.
@@ -6089,7 +6101,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param \OCA\OpenRegister\Service\Export\ExportRefusedException $refusal The refusal.
 	 * @param Register $register The register that was asked for.
-	 * @param Schema   $schema   The schema that was asked for.
+	 * @param Schema $schema The schema that was asked for.
 	 *
 	 * @return void
 	 *
@@ -6118,9 +6130,9 @@ class ObjectsController extends Controller {
 	 * Record a completed export on the audit trail.
 	 *
 	 * @param Register $register The register exported.
-	 * @param Schema   $schema   The schema exported.
-	 * @param string   $format   The format written.
-	 * @param int      $rowCount How many rows left the instance.
+	 * @param Schema $schema The schema exported.
+	 * @param string $format The format written.
+	 * @param int $rowCount How many rows left the instance.
 	 *
 	 * @return void
 	 *
@@ -6153,9 +6165,9 @@ class ObjectsController extends Controller {
 	 * row, never the export.
 	 *
 	 * @param Register $register The register exported.
-	 * @param Schema   $schema   The schema exported.
-	 * @param string   $format   The format served.
-	 * @param int      $rowCount The rows served.
+	 * @param Schema $schema The schema exported.
+	 * @param string $format The format served.
+	 * @param int $rowCount The rows served.
 	 *
 	 * @return void
 	 *
@@ -6758,13 +6770,13 @@ class ObjectsController extends Controller {
 	 * and resolves them to human-readable names using the CacheHandler.
 	 *
 	 * @param array $renderedData The rendered object data.
-	 * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler The cache handler for name resolution.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null $cacheHandler The cache handler for name resolution.
 	 *
 	 * @return array<string, string> Map of UUID to name.
 	 */
 	private function collectNamesForResponse(
 		array $renderedData,
-		?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler,
+		?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler,
 	): array {
 		if ($cacheHandler === null) {
 			return [];
@@ -7003,7 +7015,7 @@ class ObjectsController extends Controller {
 	 * If the schema entity is not resolvable the data is returned unchanged,
 	 * leaving today's loud validation refusal in place rather than guessing.
 	 *
-	 * @param array $mergedData   The merged object data about to be saved.
+	 * @param array $mergedData The merged object data about to be saved.
 	 * @param mixed $schemaEntity The resolved schema entity, or whatever resolution produced.
 	 * @param array $suppliedKeys Keys the caller actually sent in the patch payload.
 	 *
@@ -7145,7 +7157,6 @@ class ObjectsController extends Controller {
 		}//end try
 
 		return $self;
-
 	}//end withUnreadCounts()
 
 	/**
@@ -7157,10 +7168,10 @@ class ObjectsController extends Controller {
 	 * caller's access is applied inside the query, so a caller who may read one
 	 * of three gets one of three and a total of one.
 	 *
-	 * @param string              $id                 The object being read as the hinge.
-	 * @param string              $register           The register slug or identifier.
-	 * @param string              $schema             The schema slug or identifier.
-	 * @param ObjectService       $objectService      The object service.
+	 * @param string $id The object being read as the hinge.
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param ObjectService $objectService The object service.
 	 * @param ReferencedByService $referencedByService The reverse view.
 	 *
 	 * @NoAdminRequired
@@ -7222,11 +7233,11 @@ class ObjectsController extends Controller {
 	 * inherited one is still returned, marked superseded, because "where did the
 	 * other pin go" is a question worth an answer.
 	 *
-	 * @param string             $id            The object whose features are read.
-	 * @param string             $register      The register slug or identifier.
-	 * @param string             $schema        The schema slug or identifier.
-	 * @param ObjectService      $objectService The object service.
-	 * @param InheritedGeoCollector $collector  The feature collector.
+	 * @param string $id The object whose features are read.
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param ObjectService $objectService The object service.
+	 * @param InheritedGeoCollector $collector The feature collector.
 	 *
 	 * @NoAdminRequired
 	 *

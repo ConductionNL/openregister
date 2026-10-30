@@ -27,7 +27,7 @@
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Contract\McpCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IURLGenerator;

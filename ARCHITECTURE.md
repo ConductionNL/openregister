@@ -62,7 +62,12 @@ Decoupling between components is in progress. The aim is that each component rea
 
 ### Contracts
 
-`lib/Contract/` holds the interfaces and value types that one component offers another. It is the leaf of the dependency graph: a contract may name another contract, an entity in `lib/Db/`, an event or an exception, and no other OpenRegister class. `tests/Unit/Architecture/ContractIsALeafTest.php` enforces this.
+Two directories hold interfaces and value types, and both are leaves of the dependency graph: a contract may name another contract, an entity in `lib/Db/`, an event or an exception, and no other OpenRegister class.
+
+- `lib/Contract/` is the published contract that other apps consume (ADR-084). Hydra gate 67 requires it to be byte-identical to `hydra-gates/contracts/`, so a file goes here only when it is published there too.
+- `lib/Kernel/Contracts/` holds the interfaces that one OpenRegister component offers another. Other apps do not use them.
+
+`tests/Unit/Architecture/ContractIsALeafTest.php` enforces both rules.
 
 A class that other components call implements its contract, and those callers type-hint the contract instead of the class. The concrete class stays resolvable by its own name, because other apps inject it that way.
 

@@ -66,10 +66,6 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
@@ -79,7 +75,6 @@ final class LifecycleAnnotationValidator {
 		}
 
 		$annotation = $schema['x-openregister-lifecycle'];
-		$errors = [];
 
 		// `property` is an additive alias for `field`; normalise it up-front so
 		// the rest of validation (and the runtime listener) sees a single key.
@@ -87,10 +82,9 @@ final class LifecycleAnnotationValidator {
 			$annotation['field'] = $annotation['property'];
 		}
 
-		// Provider mode: checked BEFORE graph so an annotation that declares
-		// both is refused by the provider-mode conflict rule below, with a
-		// message naming the real mistake, instead of being shape-checked as
-		// a graph block that happens to carry a stray key.
+		// Provider mode is checked BEFORE graph so an annotation that declares
+		// both is refused by the provider-mode conflict rule, with a message
+		// naming the real mistake.
 		if (isset($annotation['provider']) === true) {
 			return array_merge(
 				$this->validateProviderMode(annotation: $annotation, schema: $schema),
@@ -98,10 +92,8 @@ final class LifecycleAnnotationValidator {
 			);
 		}
 
-		// Graph mode: when a non-empty `graph` block is declared, the lifecycle
-		// field is a `$ref` with no enum, so shape-check the graph block instead
-		// of the static `transitions`/enum contract. Static-only schemas fall
-		// straight through to the unchanged validation below (no regression).
+		// Graph mode: the lifecycle field is a `$ref` with no enum, so the graph
+		// block is shape-checked instead of the static `transitions`/enum contract.
 		if (isset($annotation['graph']) === true
 			&& is_array($annotation['graph']) === true
 			&& $annotation['graph'] !== []
@@ -112,7 +104,68 @@ final class LifecycleAnnotationValidator {
 			);
 		}
 
-		// Required top-level fields.
+		return $this->validateStaticMode(annotation: $annotation, schema: $schema);
+	}//end validate()
+
+	/**
+	 * Validate a static-mode annotation: an enum field and a map of transitions.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 * @param array<string, mixed> $schema     Full schema definition.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateStaticMode(array $annotation, array $schema): array {
+		$errors = $this->missingRequiredKeys(annotation: $annotation);
+		if ($errors !== []) {
+			return $errors;
+		}
+
+		$field = $this->validateEnumField(field: (string)$annotation['field'], schema: $schema);
+		if ($field['enumSet'] === null) {
+			return $field['errors'];
+		}
+
+		$enumSet = $field['enumSet'];
+		$errors = array_merge(
+			$field['errors'],
+			$this->validateInitialAndFinal(annotation: $annotation, enumSet: $enumSet)
+		);
+
+		$transitions = $annotation['transitions'];
+		if (is_array($transitions) === false || count($transitions) === 0) {
+			$errors[] = [
+				'code' => 'lifecycle-transitions-empty',
+				'message' => 'x-openregister-lifecycle.transitions must declare at least one action.',
+			];
+			return $errors;
+		}
+
+		foreach ($transitions as $action => $spec) {
+			$errors = array_merge(
+				$errors,
+				$this->validateTransition(spec: $spec, context: ['action' => (string)$action, 'enumSet' => $enumSet])
+			);
+		}
+
+		// Per-state rules come last, so a malformed transition is reported as a
+		// transition problem, and the enum the states are checked against is known.
+		return array_merge(
+			$errors,
+			$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: $enumSet),
+			$this->states->validateInputsAgainstHiddenFields(annotation: $annotation, transitions: $transitions)
+		);
+	}//end validateStaticMode()
+
+	/**
+	 * The errors for each required static-mode key the annotation lacks.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}> One error per missing key.
+	 */
+	private function missingRequiredKeys(array $annotation): array {
+		$errors = [];
 		foreach (['field', 'initial', 'transitions'] as $required) {
 			if (isset($annotation[$required]) === false) {
 				$errors[] = [
@@ -122,27 +175,31 @@ final class LifecycleAnnotationValidator {
 			}
 		}
 
-		if (count($errors) > 0) {
-			return $errors;
-		}
+		return $errors;
+	}//end missingRequiredKeys()
 
-		$field = (string)$annotation['field'];
-		$initial = (string)$annotation['initial'];
-		$transitions = $annotation['transitions'];
-		$final = ($annotation['final'] ?? []);
-
-		// Field must exist on the schema.
+	/**
+	 * Check the lifecycle field: declared, of type string, with an enum.
+	 *
+	 * @param string               $field  The lifecycle field name.
+	 * @param array<string, mixed> $schema Full schema definition.
+	 *
+	 * @return array{errors: array<int, array{code: string, message: string}>, enumSet: array<string, int>|null}
+	 *     The errors, and the enum as a set; a null set means validation cannot go on.
+	 */
+	private function validateEnumField(string $field, array $schema): array {
 		$properties = ($schema['properties'] ?? []);
 		if (isset($properties[$field]) === false) {
-			$errors[] = [
-				'code' => 'lifecycle-field-missing',
-				'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
+			return [
+				'errors' => [[
+					'code' => 'lifecycle-field-missing',
+					'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
+				]],
+				'enumSet' => null,
 			];
-			// Without the field, other checks can't proceed meaningfully.
-			return $errors;
 		}
 
-		// Field must be a string with an enum constraint.
+		$errors = [];
 		$fieldDef = $properties[$field];
 		if (($fieldDef['type'] ?? null) !== 'string') {
 			$errors[] = [
@@ -157,12 +214,26 @@ final class LifecycleAnnotationValidator {
 				'code' => 'lifecycle-field-no-enum',
 				'message' => sprintf('x-openregister-lifecycle.field "%s" must declare an `enum` of allowed values.', $field),
 			];
-			return $errors;
+			return ['errors' => $errors, 'enumSet' => null];
 		}
 
-		$enumSet = array_flip($enum);
+		return ['errors' => $errors, 'enumSet' => array_flip($enum)];
+	}//end validateEnumField()
 
-		// Initial value must be in the enum.
+	/**
+	 * Check that `initial` and the `final` values are states of the enum.
+	 *
+	 * `final` in the reference form `{ from, field }` names rows in another
+	 * schema, so it is shape-checked but not enum-checked.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 * @param array<string, int>   $enumSet    The enum values as a set.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateInitialAndFinal(array $annotation, array $enumSet): array {
+		$errors = [];
+		$initial = (string)$annotation['initial'];
 		if (isset($enumSet[$initial]) === false) {
 			$errors[] = [
 				'code' => 'lifecycle-initial-not-in-enum',
@@ -170,174 +241,159 @@ final class LifecycleAnnotationValidator {
 			];
 		}
 
-		// Final values (if declared) must be in the enum, UNLESS `final` takes
-		// the reference form `{ from, field }`, in which case the ends are rows
-		// in another schema and this schema has no enum that could list them.
+		$final = ($annotation['final'] ?? []);
 		$finalError = $this->forms->validateForm($final);
 		if ($finalError !== null) {
 			$errors[] = $finalError;
-		} elseif ($this->forms->isReferenceForm($final) === false && is_array($final) === true) {
-			foreach ($final as $finalState) {
-				if (isset($enumSet[(string)$finalState]) === false) {
-					$errors[] = [
-						'code' => 'lifecycle-final-not-in-enum',
-						'message' => sprintf('x-openregister-lifecycle.final value "%s" is not in the field\'s enum.', $finalState),
-					];
-				}
-			}
-		}
-
-		// Transitions must be a non-empty map.
-		if (is_array($transitions) === false || count($transitions) === 0) {
-			$errors[] = [
-				'code' => 'lifecycle-transitions-empty',
-				'message' => 'x-openregister-lifecycle.transitions must declare at least one action.',
-			];
 			return $errors;
 		}
 
-		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-transition-malformed',
-					'message' => sprintf('Transition "%s" must be an object with `from` and `to`.', (string)$action),
-				];
-				continue;
-			}
+		if ($this->forms->isReferenceForm($final) === true || is_array($final) === false) {
+			return $errors;
+		}
 
-			// From: required, a single state string or an array of states, all
-			// in the enum. A string is coerced to a one-element list.
-			$from = ($spec['from'] ?? null);
-			if (is_string($from) === true && $from !== '') {
-				$from = [$from];
-			}
-
-			$fromOk = (is_array($from) === true && count($from) > 0);
-			if ($fromOk === false) {
+		foreach ($final as $finalState) {
+			if (isset($enumSet[(string)$finalState]) === false) {
 				$errors[] = [
-					'code' => 'lifecycle-from-missing',
-					'message' => sprintf('Transition "%s" must declare a non-empty `from` array.', (string)$action),
+					'code' => 'lifecycle-final-not-in-enum',
+					'message' => sprintf('x-openregister-lifecycle.final value "%s" is not in the field\'s enum.', $finalState),
 				];
 			}
+		}
 
-			$fromIterable = [];
-			if ($fromOk === true) {
-				$fromIterable = $from;
-			}
+		return $errors;
+	}//end validateInitialAndFinal()
 
-			foreach ($fromIterable as $fromState) {
-				if (isset($enumSet[(string)$fromState]) === false) {
-					$errors[] = [
-						'code' => 'lifecycle-from-not-in-enum',
-						'message' => sprintf(
-							'Transition "%s" lists "from" state "%s" which is not in the field\'s enum.',
-							(string)$action,
-							(string)$fromState
-						),
-					];
-				}
-			}
+	/**
+	 * Validate one static-mode transition.
+	 *
+	 * @param mixed                $spec    The transition declaration.
+	 * @param array<string, mixed> $context The action name and the enum set.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateTransition(mixed $spec, array $context): array {
+		if (is_array($spec) === false) {
+			return [[
+				'code' => 'lifecycle-transition-malformed',
+				'message' => sprintf('Transition "%s" must be an object with `from` and `to`.', $context['action']),
+			]];
+		}
 
-			// To: required string in the enum.
-			$to = ($spec['to'] ?? null);
-			if (is_string($to) === false || $to === '') {
+		return array_merge(
+			$this->validateTransitionFrom(spec: $spec, context: $context),
+			$this->validateTransitionTo(spec: $spec, context: $context),
+			$this->validateTransitionOptions(spec: $spec, action: $context['action'])
+		);
+	}//end validateTransition()
+
+	/**
+	 * Check a transition's `from`: a state or a non-empty list of states, all in the enum.
+	 *
+	 * @param array<string, mixed> $spec    The transition declaration.
+	 * @param array<string, mixed> $context The action name and the enum set.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateTransitionFrom(array $spec, array $context): array {
+		$from = ($spec['from'] ?? null);
+		if (is_string($from) === true && $from !== '') {
+			$from = [$from];
+		}
+
+		if (is_array($from) === false || count($from) === 0) {
+			return [[
+				'code' => 'lifecycle-from-missing',
+				'message' => sprintf('Transition "%s" must declare a non-empty `from` array.', $context['action']),
+			]];
+		}
+
+		$errors = [];
+		foreach ($from as $fromState) {
+			if (isset($context['enumSet'][(string)$fromState]) === false) {
 				$errors[] = [
-					'code' => 'lifecycle-to-missing',
-					'message' => sprintf('Transition "%s" must declare a string `to` value.', (string)$action),
-				];
-			} elseif (isset($enumSet[$to]) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-to-not-in-enum',
+					'code' => 'lifecycle-from-not-in-enum',
 					'message' => sprintf(
-						'Transition "%s" `to` value "%s" is not in the field\'s enum.',
-						(string)$action,
-						$to
+						'Transition "%s" lists "from" state "%s" which is not in the field\'s enum.',
+						$context['action'],
+						(string)$fromState
 					),
 				];
 			}
-
-			// Optional `requires` — must be a non-empty string when present.
-			// We don't try to resolve the DI tag at validation time; that's
-			// an install-time concern (warning) and a first-invocation
-			// concern (hard fail). At schema-save we just shape-check.
-			if (isset($spec['requires']) === true) {
-				if (is_string($spec['requires']) === false || $spec['requires'] === '') {
-					$errors[] = [
-						'code' => 'lifecycle-requires-malformed',
-						'message' => sprintf(
-							'Transition "%s" `requires` must be a non-empty DI tag string.',
-							(string)$action
-						),
-					];
-				}
-			}
-
-			// Optional `authorization` — declarative per-transition group/role
-			// gate (Engine 1). When present it must be a non-empty list whose
-			// entries are either NC group id strings or `{ "role": "<name>" }`
-			// objects. Shape-check only; group existence is a runtime concern.
-			if (isset($spec['authorization']) === true) {
-				$authError = $this->validateTransitionAuthorization(
-					authorization: $spec['authorization'],
-					action: (string)$action
-				);
-				if ($authError !== null) {
-					$errors[] = $authError;
-				}
-			}
-
-			// Optional `condition` — a declarative JSONLogic precondition on
-			// the object's own data. Shape-checked here so a broken expression
-			// cannot be stored; see validateTransitionCondition() for why a
-			// scalar is refused rather than accepted as a literal.
-			if (isset($spec['condition']) === true) {
-				$conditionError = $this->validateTransitionCondition(
-					condition: $spec['condition'],
-					action: (string)$action
-				);
-				if ($conditionError !== null) {
-					$errors[] = $conditionError;
-				}
-			}
-
-			// Optional `autoWhen` / `executionMode` — the declaration that makes
-			// this transition fire on its own. Refused rather than warned about,
-			// because a stored malformed rule fires on EVERY write from its
-			// `from` state; see the change's design.md.
-			$errors = array_merge(
-				$errors,
-				$this->validateAutomaticTransition(spec: $spec, action: (string)$action)
-			);
-
-			// Optional `message` — the refusal text a declined `condition`
-			// carries. A non-empty string, or a per-locale map.
-			if (isset($spec['message']) === true) {
-				$errors = array_merge(
-					$errors,
-					$this->validateTransitionMessage(
-						message: $spec['message'],
-						action: (string)$action
-					)
-				);
-			}
-		}//end foreach
-
-		// Per-state field rules and state conditions. Validated last so a
-		// malformed transition is reported as a transition problem rather than
-		// as a state one, and so the enum the states are checked against has
-		// already been established.
-		$errors = array_merge(
-			$errors,
-			$this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: $enumSet)
-		);
-
-		$errors = array_merge(
-			$errors,
-			$this->states->validateInputsAgainstHiddenFields(annotation: $annotation, transitions: $transitions)
-		);
+		}
 
 		return $errors;
-	}//end validate()
+	}//end validateTransitionFrom()
+
+	/**
+	 * Check a transition's `to`: a non-empty string in the enum.
+	 *
+	 * @param array<string, mixed> $spec    The transition declaration.
+	 * @param array<string, mixed> $context The action name and the enum set.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateTransitionTo(array $spec, array $context): array {
+		$to = ($spec['to'] ?? null);
+		if (is_string($to) === false || $to === '') {
+			return [[
+				'code' => 'lifecycle-to-missing',
+				'message' => sprintf('Transition "%s" must declare a string `to` value.', $context['action']),
+			]];
+		}
+
+		if (isset($context['enumSet'][$to]) === false) {
+			return [[
+				'code' => 'lifecycle-to-not-in-enum',
+				'message' => sprintf('Transition "%s" `to` value "%s" is not in the field\'s enum.', $context['action'], $to),
+			]];
+		}
+
+		return [];
+	}//end validateTransitionTo()
+
+	/**
+	 * Shape-check a transition's optional keys.
+	 *
+	 * `requires` is a non-empty DI tag (resolved at install and first use, not
+	 * here); `authorization` a group/role gate; `condition` a JSONLogic
+	 * precondition; `autoWhen`/`executionMode` make the transition fire on its own
+	 * (refused when malformed, as a stored broken rule fires on every write);
+	 * `message` the refusal text of a declined condition.
+	 *
+	 * @param array<string, mixed> $spec   The transition declaration.
+	 * @param string               $action The action name.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateTransitionOptions(array $spec, string $action): array {
+		$errors = [];
+		if (isset($spec['requires']) === true && (is_string($spec['requires']) === false || $spec['requires'] === '')) {
+			$errors[] = [
+				'code' => 'lifecycle-requires-malformed',
+				'message' => sprintf('Transition "%s" `requires` must be a non-empty DI tag string.', $action),
+			];
+		}
+
+		if (isset($spec['authorization']) === true) {
+			$errors[] = $this->validateTransitionAuthorization(authorization: $spec['authorization'], action: $action);
+		}
+
+		if (isset($spec['condition']) === true) {
+			$errors[] = $this->validateTransitionCondition(condition: $spec['condition'], action: $action);
+		}
+
+		$errors = array_merge(
+			array_values(array_filter($errors, static fn (?array $error): bool => $error !== null)),
+			$this->validateAutomaticTransition(spec: $spec, action: $action)
+		);
+
+		if (isset($spec['message']) === true) {
+			$errors = array_merge($errors, $this->validateTransitionMessage(message: $spec['message'], action: $action));
+		}
+
+		return $errors;
+	}//end validateTransitionOptions()
 
 
 	/**

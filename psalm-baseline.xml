@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <files psalm-version="5.26.1@d747f6500b38ac4f7dfc5edbcae6e4b637d7add0">
-  <file src="lib/AppInfo/Application.php">
+  <file src="lib/AppHost/ObservabilityRegistrar.php">
     <UnusedClosureParam>
       <code><![CDATA[$container]]></code>
     </UnusedClosureParam>
@@ -157,12 +157,6 @@
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[$this->relationCache]]></code>
     </InvalidPropertyAssignmentValue>
-  </file>
-  <file src="lib/Service/Notification/NotificationAnnotationValidator.php">
-    <InvalidOperand>
-      <code><![CDATA[$defaultLocaleBad]]></code>
-      <code><![CDATA[$defaultLocaleBad]]></code>
-    </InvalidOperand>
   </file>
   <file src="lib/Service/Notification/SystemEntityObjectAdapter.php">
     <ConstructorSignatureMismatch>
