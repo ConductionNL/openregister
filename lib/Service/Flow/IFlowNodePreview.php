@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ interface IFlowNodePreview {
 	 * @return array Any of `summary` (one sentence), `changes` (`[{field, value}]`)
 	 *               and `messages` (`[{channel, to, subject, body}]`).
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function preview(array $items, array $config, array $context): array;
 }//end interface

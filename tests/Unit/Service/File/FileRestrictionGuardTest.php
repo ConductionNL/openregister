@@ -13,7 +13,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use RuntimeException;
 /**
  * Who reads a restricted file.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 class FileRestrictionGuardTest extends TestCase {
 

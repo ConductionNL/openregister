@@ -171,7 +171,7 @@ class ViewAlertCrossedListener implements IEventListener {
 	 *
 	 * @return array<int, string> The recipients who still read it.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	private function onlyThoseWhoMayRead(array $view, array $uids): array {
 		$readers    = [];

@@ -342,7 +342,7 @@ class PartyServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-lookup-reads-the-party-tables/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
 	 */
 	public function testAPartyIsReadFromThePartyTable(): void {
 		$calls = [];
@@ -359,7 +359,7 @@ class PartyServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-lookup-reads-the-party-tables/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
 	 */
 	public function testAnIdOutsideThePartyTablesFallsBackToTheInstance(): void {
 		$calls = [];

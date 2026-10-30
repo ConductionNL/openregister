@@ -1480,7 +1480,7 @@ class CalculationEvaluator {
 	 *
 	 * @throws EvaluationException When an operand is missing or not numeric, or the schedule is malformed.
 	 *
-	 * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function rateSchedule(array $object, mixed $args, bool $cumulative): int|float|null {
 		if (is_array($args) === false || array_is_list($args) === false || count($args) < 2) {

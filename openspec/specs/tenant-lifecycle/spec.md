@@ -12,7 +12,9 @@ retrofit_extensions:
 Define the provisioning, suspension, and deprovisioning workflow for tenant organisations in a SaaS multi-tenant OpenRegister deployment. Each tenant maps to an Organisation entity with a lifecycle state machine that governs API access, data retention, and administrative operations.
 
 **Source**: SaaS deployment requirements; BIO/ISO 27001 tenant management; 67% of government tenders require demonstrable tenant isolation with controlled provisioning.
+
 ## Requirements
+
 ### Requirement: Organisation entities MUST have a lifecycle status field with defined state transitions
 The Organisation entity MUST include a `status` field representing the tenant lifecycle state. Valid states are: `provisioning`, `active`, `suspended`, `deprovisioning`, `archived`, `retained`. State transitions MUST follow the defined state machine and MUST be enforced at the service layer.
 
@@ -260,3 +262,37 @@ that no longer exists, MUST be cleared and re-resolved.
 - **WHEN** `reconstructOrganisationFromCache()` runs
 - **THEN** the string timestamps MUST be parsed back into `DateTime` instances on the rebuilt entity
 
+### Requirement: An organisation's lifecycle is on the audit trail
+
+Every change of an organisation's status through TenantLifecycleService (suspend, reactivate, deprovision, retain,
+archive) SHALL write one sealed audit-trail entry with action `organisation.status_changed`, `object_uuid` the
+organisation's uuid, the acting user, and `changed.status` holding the old and new status. An edit through
+`PUT/PATCH /api/organisations/{uuid}` that changes the name, description or slug SHALL write one entry with action
+`organisation.updated` holding the changed fields. A refused transition SHALL write nothing, and a failure to write the
+entry SHALL NOT fail the change.
+
+#### Scenario: Suspend an organisation
+
+- **GIVEN** an active organisation
+- **WHEN** an administrator suspends it
+- **THEN** `GET /api/audit-trails?object_uuid={uuid}` lists an `organisation.status_changed` entry from active to
+  suspended, with the administrator as its user
+
+### Requirement: Only an administrator or the organisation's administrator changes an organisation
+
+`PUT` and `PATCH /api/organisations/{uuid}` SHALL answer 403 to a caller who is neither a Nextcloud administrator nor
+the organisation's administrator (its owner), before anything is written, with a message saying members can read the
+organisation. A Nextcloud administrator and the organisation's administrator SHALL be able to change its name and
+description.
+
+#### Scenario: A member renames the organisation
+
+- **GIVEN** Pieter, a member but not the owner of "Gemeente Waterland"
+- **WHEN** he sends a new name
+- **THEN** the answer is 403 and the name is unchanged
+
+#### Scenario: The organisation's administrator renames it
+
+- **GIVEN** Marieke, the owner of "Gemeente Waterland"
+- **WHEN** she sends a new name
+- **THEN** the answer is 200 and the organisation carries the new name

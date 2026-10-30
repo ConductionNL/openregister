@@ -18,7 +18,7 @@ use Psr\Log\LoggerInterface;
  * Covers opt-in channels: a rule declares a channel that is off until a
  * person switches it on for that notification.
  *
- * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 class NotificationOptInChannelsTest extends TestCase {
 	private NotificationPreferenceService $service;

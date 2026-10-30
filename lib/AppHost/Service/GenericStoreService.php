@@ -403,7 +403,7 @@ class GenericStoreService {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/store-local-registry/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
 	private function isLocal(StoreDescriptor $descriptor): bool {
 		return trim($this->registryUrl(descriptor: $descriptor)) === self::LOCAL_REGISTRY;

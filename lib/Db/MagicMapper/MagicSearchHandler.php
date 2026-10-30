@@ -645,7 +645,7 @@ class MagicSearchHandler {
 	 *
 	 * @throws EncryptedFieldFilterException When the array property is encrypted.
 	 *
-	 * @spec openspec/changes/array-element-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
 	 */
 	private function applyArrayElementFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
 		$elements   = new ArrayElementFilter();
@@ -981,7 +981,7 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildWhereConditionsSql(
@@ -1125,7 +1125,7 @@ class MagicSearchHandler {
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function lifecycleConditionsSql(array $query, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
@@ -1191,7 +1191,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function archivedConditionSql(string $mode, string $columnPrefix, array $missingColumns): ?string {
 		if ($mode === self::ARCHIVED_ANY) {
@@ -1227,7 +1227,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
 	 */
 	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns, ?Schema $schema = null): ?string {
@@ -1920,7 +1920,7 @@ class MagicSearchHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::isNullOperatorAsksForNull() is a pure function shared with the aggregation path.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
 		return NullFilter::isNullOperatorAsksForNull(value: $value);
@@ -2041,7 +2041,7 @@ class MagicSearchHandler {
 	 * @return string[] The field's conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectFieldConditionsSql(
 		mixed $value,
@@ -2137,7 +2137,7 @@ class MagicSearchHandler {
 	 * @return string[] The conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectOperatorConditionsSql(
 		array $value,
@@ -2333,7 +2333,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string[] Array of SQL conditions
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
@@ -2627,7 +2627,7 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function applyBasicFilters(
 		IQueryBuilder $qb,
@@ -2949,7 +2949,7 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
@@ -3154,7 +3154,7 @@ class MagicSearchHandler {
 	 * @return list<string|\Stringable> The field's predicates, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectFieldPredicates(
 		IQueryBuilder $qb,
@@ -3259,7 +3259,7 @@ class MagicSearchHandler {
 	 * @return list<string|\Stringable> The predicates, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectOperatorPredicates(
 		IQueryBuilder $qb,
@@ -3400,7 +3400,7 @@ class MagicSearchHandler {
 	 *
 	 * @throws EncryptedFieldFilterException When the object property is encrypted.
 	 *
-	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres, Schema $schema): void {
@@ -4513,7 +4513,7 @@ class MagicSearchHandler {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function convertRowToObjectEntity(
 		array $row,
@@ -4558,7 +4558,7 @@ class MagicSearchHandler {
 	 *
 	 * @return array{metadata: array<string, mixed>, object: array<string, mixed>}
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function splitRowColumns(array $row, Schema $schema): array {
 		$schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);

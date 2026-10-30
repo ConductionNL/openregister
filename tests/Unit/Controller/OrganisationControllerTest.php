@@ -497,7 +497,7 @@ class OrganisationControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	public function testShowReturnsMeasuredUsage(): void {
 		$org = $this->createMock(originalClassName: Organisation::class);
@@ -519,7 +519,7 @@ class OrganisationControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	public function testShowDoesNotMeasureWhenNoAccess(): void {
 		$this->organisationService->method('hasAccessToOrganisation')->willReturn(false);

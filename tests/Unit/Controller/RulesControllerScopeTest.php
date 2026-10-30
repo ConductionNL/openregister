@@ -42,7 +42,7 @@ use ReflectionClass;
  *
  * @package OCA\OpenRegister\Tests\Unit\Controller
  *
- * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RulesControllerScopeTest extends TestCase {
 
@@ -114,7 +114,7 @@ class RulesControllerScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheScopeParameterNarrowsTheInventory(): void {
 		$this->assertSame(expected: ['algemeen', 'voorA'], actual: $this->keys(scope: ['caseType' => 'a']));
@@ -126,7 +126,7 @@ class RulesControllerScopeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testWithoutAUsableScopeEveryRuleIsListed(): void {
 		$this->assertSame(expected: ['algemeen', 'voorA', 'voorB'], actual: $this->keys(scope: []));
