@@ -90,6 +90,7 @@ use Symfony\Component\Uid\Uuid;
  *   each action is individually simple — the class total is a routing artifact, not design debt.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Each public method maps to one REST endpoint; NC AppFramework
  *   requires public methods for route dispatch — they cannot be made protected/private.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           The import action is split into one private method per step.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC Controller DI injects AppFramework, RBAC, audit, domain
  *   services, and mappers — each dep is used and cannot be combined without violating SRP.
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    The create/update actions include multi-step validation
@@ -1378,366 +1379,517 @@ class RegistersController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
 	 */
 	public function import(int|string $id, bool $force = false): JSONResponse {
 		try {
-			// Get the uploaded file.
 			$uploadedFile = $this->request->getUploadedFile('file');
 			if ($uploadedFile === null) {
 				return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
 			}
 
-			// Authorization: importing into a register can create schemas/
-			// registers/objects and calls `registerService->updateFromArray`
-			// (a configurable data-model write). Gate on manage-permission for
-			// the target register (default-SECURE: admin-only when no manage
-			// rule exists). Closes the bypass of the wave-1 #1949 admin-only
-			// create/update gate.
-			//
-			// When the register does not exist yet, defer the 404 (rather than
-			// returning immediately): a JSON upload may be a register-bundle
-			// that can auto-create it (register-import-auto-create,
-			// REQ-IMP-AC-01) — but only for an admin, mirroring the existing
-			// admin-only register-creation gate (there is no manage-authorization
-			// block to consult on an entity that doesn't exist yet).
-			try {
-				$registerForAuth = $this->registerMapper->find($id);
-			} catch (DoesNotExistException $e) {
-				$registerForAuth = null;
-			}
-
-			if ($registerForAuth !== null && $this->checkRegisterManagePermission(register: $registerForAuth) === false) {
+			// Importing can create schemas, registers and objects, so it is gated on
+			// manage permission for the target register (admin-only without a manage
+			// rule). A missing register defers its 404: an admin's JSON register
+			// bundle may auto-create it (REQ-IMP-AC-01).
+			$register = $this->findImportRegister(id: $id);
+			if ($register !== null && $this->checkRegisterManagePermission(register: $register) === false) {
 				return new JSONResponse(
 					data: ['error' => 'User does not have permission to manage this register'],
 					statusCode: 403
 				);
 			}
 
-			// Dynamically determine import type if not provided.
-			$type = $this->request->getParam('type');
-			if ($type === null || $type === '') {
-				$filename = $uploadedFile['name'] ?? '';
-				$extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-				if (in_array($extension, ['xlsx', 'xls']) === true) {
-					$type = 'excel';
-				} elseif ($extension === 'csv') {
-					$type = 'csv';
-				} elseif ($extension === 'json') {
-					// A .json upload is either a configuration bundle (object/map
-					// at the root) or an object export from
-					// ExportService::exportToJson (a JSON array, or a
-					// { "results": [...] } envelope). Route the array shape to the
-					// object importer; everything else stays on the configuration
-					// path so existing config-import behaviour is unchanged.
-					$type = 'configuration';
-					// Only peek when the uploaded temp file is actually readable;
-					// a missing/unreadable path would emit a file_get_contents
-					// warning and leave $type on the configuration path anyway.
-					$peekRaw = '';
-					if (is_readable((string)($uploadedFile['tmp_name'] ?? '')) === true) {
-						$peekRaw = (string)file_get_contents($uploadedFile['tmp_name']);
-					}
-
-					$peek = json_decode($peekRaw, true);
-					if (is_array($peek) === true
-						&& (array_is_list($peek) === true
-						|| (isset($peek['results']) === true && is_array($peek['results']) === true)
-						|| (isset($peek['components']['registers']) === true
-						&& is_array($peek['components']['registers']) === true))
-					) {
-						// The third condition is a register-bundle envelope
-						// (register-import-auto-create, REQ-IMP-AC-01) — routed
-						// to the object importer (ImportService::importFromJson),
-						// which detects the bundle shape and auto-creates the
-						// register + schemas, rather than the configuration path
-						// (ImportHandler::importFromJson), which requires a
-						// persisted Configuration entity this controller does not
-						// create.
-						$type = 'json';
-					}
-				} else {
-					$type = 'configuration';
-				}//end if
-			}//end if
-
-			// Missing register: only a JSON upload can auto-create it from a
-			// register bundle (REQ-IMP-AC-01); every other import type still
-			// requires a pre-existing register. Creating a new register
-			// requires admin — mirroring the existing admin-only creation gate,
-			// since there is no manage-authorization block to consult on an
-			// entity that doesn't exist yet.
-			if ($registerForAuth === null
-				&& ($type !== 'json' || $this->isCurrentUserAdmin() === false)
-			) {
+			$type = $this->resolveImportType(uploadedFile: $uploadedFile);
+			if ($this->isImportRegisterMissing(register: $register, type: $type) === true) {
 				return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 			}
 
-			// Get import options for all types - support both boolean and string values.
-			$includeObjects = $this->parseBooleanParam(paramName: 'includeObjects', default: false);
-			$validation = $this->parseBooleanParam(paramName: 'validation', default: false);
-			$events = $this->parseBooleanParam(paramName: 'events', default: false);
-			$publish = $this->parseBooleanParam(paramName: 'publish', default: false);
-			$enrich = $this->parseBooleanParam(paramName: 'enrich', default: true);
-
-			// Migration mapping pack (migration-mapping-packs): optional packId
-			// resolves a stored MigrationPack by its document slug; ImportService
-			// then maps every row through it before the normal validate/save
-			// pipeline. dryRun maps + validates every row and saves nothing —
-			// the per-row report migration quoting needs.
-			$packId = $this->request->getParam('packId');
-			$dryRun = $this->parseBooleanParam(paramName: 'dryRun', default: false);
-			$pack = null;
-			if ($packId !== null && $packId !== '') {
-				try {
-					$pack = $this->migrationPackService->findByPackSlug(packSlug: (string)$packId)->getDefinitionArray();
-				} catch (DoesNotExistException $e) {
-					return new JSONResponse(data: ['error' => 'Migration pack "' . $packId . '" not found'], statusCode: 400);
-				}
+			$options = $this->readImportOptions();
+			if ($options instanceof JSONResponse) {
+				return $options;
 			}
 
-			// Log import parameters for debugging.
-			$this->logger->debug(
-				message: '[RegistersController] Import parameters received',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'includeObjects' => $includeObjects,
-					'validation' => $validation,
-					'events' => $events,
-					'publish' => $publish,
-					'registerId' => $id,
-				]
-			);
-			// Find the register. Already resolved above via $registerForAuth;
-			// null only reaches here for an admin's register-bundle JSON
-			// import, where ImportService::importFromJson resolves/creates it
-			// from the bundle itself (REQ-IMP-AC-01).
-			$register = $registerForAuth;
-			// Handle different import types.
-			switch ($type) {
-				case 'excel':
-					// Migration packs are only wired into the single-schema CSV/JSON
-					// paths so far — reject rather than silently ignore packId here
-					// (an orphaned/no-op parameter is worse than a clear error).
-					if ($pack !== null) {
-						return new JSONResponse(
-							data: ['error' => 'packId is not yet supported for Excel imports; use CSV or JSON with a migration pack instead.'],
-							statusCode: 400
-						);
-					}
+			$options += ['id' => $id, 'force' => $force, 'type' => $type, 'register' => $register, 'file' => $uploadedFile];
+			$this->logImportOptions(options: $options);
 
-					// Import from Excel and get summary (now returns sheet-based format).
-					// SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
-					// manager pass ?multi=false to write objects across organisation boundaries.
-					// Derive RBAC from admin status and always keep imports tenant-scoped.
-					$rbac = ($this->isCurrentUserAdmin() === false);
-					$multi = true;
-					$summary = $this->importService->importFromExcel(
-						filePath: $uploadedFile['tmp_name'],
-						register: $register,
-						schema: null,
-						validation: $validation,
-						events: $events,
-						_rbac: $rbac,
-						_multitenancy: $multi,
-						publish: $publish,
-						currentUser: $this->userSession->getUser(),
-						enrich: $enrich
-					);
-					break;
-				case 'csv':
-					// Import from CSV and get summary (now returns sheet-based format).
-					// For CSV, schema MUST be specified in the request.
-					$schemaId = $this->request->getParam('schema');
-
-					if ($schemaId === null || $schemaId === '') {
-						return new JSONResponse(
-							data: ['error' => 'Schema parameter is required for CSV imports.'],
-							statusCode: 400
-						);
-					}
-
-					$schema = $this->schemaMapper->find($schemaId);
-
-					// SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
-					// manager pass ?multi=false to write objects across organisation boundaries.
-					// Derive RBAC from admin status and always keep imports tenant-scoped.
-					$rbac = ($this->isCurrentUserAdmin() === false);
-					$multi = true;
-					$summary = $this->importService->importFromCsv(
-						filePath: $uploadedFile['tmp_name'],
-						register: $register,
-						schema: $schema,
-						validation: $validation,
-						events: $events,
-						_rbac: $rbac,
-						_multitenancy: $multi,
-						publish: $publish,
-						currentUser: $this->userSession->getUser(),
-						enrich: $enrich,
-						pack: $pack,
-						dryRun: $dryRun
-					);
-					break;
-				case 'json':
-					// Object import (inverse of ExportService::exportToJson). The
-					// schema may be passed explicitly; otherwise it is derived
-					// from the exported objects' @self.schema so a plain file
-					// upload round-trips without extra parameters. A
-					// register-bundle payload (register-import-auto-create,
-					// REQ-IMP-AC-01) carries its own schema(s) and needs
-					// neither — ImportService::importFromJson resolves it from
-					// the bundle.
-					$peek = json_decode((string)file_get_contents($uploadedFile['tmp_name']), true);
-					$isBundle = is_array($peek) === true
-						&& array_is_list($peek) === false
-						&& isset($peek['components']['registers']) === true
-						&& is_array($peek['components']['registers']) === true
-						&& count($peek['components']['registers']) > 0;
-
-					$schemaId = $this->request->getParam('schema');
-					if (($schemaId === null || $schemaId === '') && $isBundle === false) {
-						$list = ($peek['results'] ?? $peek);
-						$schemaId = ($list[0]['@self']['schema'] ?? null);
-					}
-
-					if (($schemaId === null || $schemaId === '') && $isBundle === false) {
-						return new JSONResponse(
-							data: ['error' => 'Could not determine schema for JSON import; pass a schema parameter.'],
-							statusCode: 400
-						);
-					}
-
-					$schema = null;
-					if ($schemaId !== null && $schemaId !== '') {
-						$schema = $this->schemaMapper->find($schemaId);
-					}
-
-					// SEC-CTRL-6: derive RBAC from admin status; keep tenant-scoped.
-					$rbac = ($this->isCurrentUserAdmin() === false);
-					$multi = true;
-					$summary = $this->importService->importFromJson(
-						filePath: $uploadedFile['tmp_name'],
-						register: $register,
-						schema: $schema,
-						validation: $validation,
-						events: $events,
-						_rbac: $rbac,
-						_multitenancy: $multi,
-						publish: $publish,
-						currentUser: $this->userSession->getUser(),
-						enrich: $enrich,
-						pack: $pack,
-						dryRun: $dryRun,
-						registerSlug: (string)$id
-					);
-					break;
-				case 'configuration':
-				default:
-					if ($pack !== null) {
-						return new JSONResponse(
-							data: ['error' => 'packId only applies to CSV/JSON row imports, not configuration bundle imports.'],
-							statusCode: 400
-						);
-					}
-
-					// Initialize the uploaded files array.
-					$uploadedFiles = [$uploadedFile];
-					// Get the uploaded JSON data.
-					$jsonData = $this->configurationService->getUploadedJson(
-						data: $this->request->getParams(),
-						uploadedFiles: $uploadedFiles
-					);
-					if ($jsonData instanceof JSONResponse) {
-						return $jsonData;
-					}
-
-					// Import the data and get the result.
-					// ImportFromJson requires a Configuration entity as second parameter.
-					// For now, pass null and let the service handle it (will throw if required).
-					$configuration = null;
-					// TODO: Get or create Configuration entity if needed.
-					$result = $this->configurationService->importFromJson(
-						data: $jsonData,
-						configuration: $configuration,
-						owner: $this->request->getParam('owner'),
-						appId: $this->request->getParam('appId'),
-						version: $this->request->getParam('version'),
-						force: $force
-					);
-					// Build a summary for objects if present in sheet-based format.
-					$summary = [
-						'configuration' => [
-							'created' => [],
-							'updated' => [],
-							'unchanged' => [],
-							'errors' => [],
-						],
-					];
-					if (($result['objects'] ?? null) !== null && is_array($result['objects']) === true) {
-						foreach ($result['objects'] as $object) {
-							// For now, treat all as 'created' (improve if possible).
-							$summary['configuration']['created'][] = [
-								'id' => $object->getId(),
-								'uuid' => $object->getUuid(),
-								'sheet' => 'configuration',
-								'register' => [
-									'id' => $register->getId(),
-									'name' => $register->getTitle(),
-								],
-								'schema' => null,
-								// Schema info not available in configuration import.
-							];
-						}
-					}
-
-					// If no registers in oas, update the register given through query with created schemas.
-					if (empty($result['registers']) === true) {
-						// Get created schema ids.
-						$createdSchemas = [];
-						foreach ($result['schemas'] as $schema) {
-							$createdSchemas[] = $schema->getId();
-						}
-
-						// Get existing schemas.
-						$register = $this->registerService->find($id);
-						$registerSchemas = $register->getSchemas();
-
-						// Merge new with existing.
-						$mergedSchemaArray = array_merge($registerSchemas ?? [], $createdSchemas);
-						$mergedSchemaArray = array_keys(array_flip($mergedSchemaArray));
-
-						$register->setSchemas($mergedSchemaArray);
-						// Update through service instead of direct mapper call.
-						$this->registerService->updateFromArray(id: $id, data: $register->jsonSerialize());
-					}
-					break;
-			}//end switch
-
-			// Attach a downloadable per-row error CSV when the summary
-			// surfaces row-level failures. Base64 keeps the artefact in the
-			// existing JSON envelope so the frontend can offer a download
-			// without a second round-trip.
-			$errorsCsv = $this->importService->serializeErrorsToCsv(summary: $summary);
-			$responseData = [
-				'message' => 'Import successful',
-				'summary' => $summary,
-			];
-			if ($errorsCsv !== '') {
-				$responseData['errors_csv'] = base64_encode($errorsCsv);
-				$responseData['errors_csv_filename'] = 'import_errors.csv';
+			$summary = $this->runImport(options: $options);
+			if ($summary instanceof JSONResponse) {
+				return $summary;
 			}
 
-			return new JSONResponse(data: $responseData);
+			return $this->importSuccessResponse(summary: $summary);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end import()
+
+	/**
+	 * Find the register an import targets, or null when it does not exist yet.
+	 *
+	 * @param int|string $id The ID, UUID or slug of the register
+	 *
+	 * @return Register|null The register, or null when none matches
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function findImportRegister(int|string $id): ?Register {
+		try {
+			return $this->registerMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findImportRegister()
+
+	/**
+	 * Whether a missing register blocks the import.
+	 *
+	 * Only an admin's JSON import may run without a register, because a register
+	 * bundle can create it; every other import needs an existing register.
+	 *
+	 * @param Register|null $register The target register, or null when missing
+	 * @param mixed         $type     The resolved import type
+	 *
+	 * @return bool True when the import must answer 404
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function isImportRegisterMissing(?Register $register, mixed $type): bool {
+		if ($register !== null) {
+			return false;
+		}
+
+		return $type !== 'json' || $this->isCurrentUserAdmin() === false;
+	}//end isImportRegisterMissing()
+
+	/**
+	 * Determine the import type from the `type` parameter or the uploaded file.
+	 *
+	 * Without a `type` parameter the extension decides: xlsx/xls is excel, csv is
+	 * csv, and json is either an object import or a configuration bundle (see
+	 * jsonImportType()). Anything else is a configuration import.
+	 *
+	 * @param array $uploadedFile The uploaded file entry
+	 *
+	 * @return mixed One of excel, csv, json or configuration, or the given type
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function resolveImportType(array $uploadedFile): mixed {
+		$type = $this->request->getParam('type');
+		if ($type !== null && $type !== '') {
+			return $type;
+		}
+
+		$extension = strtolower(pathinfo($uploadedFile['name'] ?? '', PATHINFO_EXTENSION));
+		$byExtension = ['xlsx' => 'excel', 'xls' => 'excel', 'csv' => 'csv'];
+		if (isset($byExtension[$extension]) === true) {
+			return $byExtension[$extension];
+		}
+
+		if ($extension === 'json') {
+			return $this->jsonImportType(uploadedFile: $uploadedFile);
+		}
+
+		return 'configuration';
+	}//end resolveImportType()
+
+	/**
+	 * Decide whether a .json upload is an object import or a configuration bundle.
+	 *
+	 * An object export from ExportService::exportToJson (a JSON list, or a
+	 * `{ "results": [...] }` envelope) and a register bundle (`components.registers`,
+	 * REQ-IMP-AC-01) go to the object importer, which auto-creates a bundle's
+	 * register and schemas. Everything else stays on the configuration path.
+	 *
+	 * @param array $uploadedFile The uploaded file entry
+	 *
+	 * @return string Either json or configuration
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function jsonImportType(array $uploadedFile): string {
+		$peekRaw = '';
+		if (is_readable((string)($uploadedFile['tmp_name'] ?? '')) === true) {
+			$peekRaw = (string)file_get_contents($uploadedFile['tmp_name']);
+		}
+
+		$peek = json_decode($peekRaw, true);
+		if (is_array($peek) === false) {
+			return 'configuration';
+		}
+
+		if (array_is_list($peek) === true
+			|| (isset($peek['results']) === true && is_array($peek['results']) === true)
+			|| (isset($peek['components']['registers']) === true && is_array($peek['components']['registers']) === true)
+		) {
+			return 'json';
+		}
+
+		return 'configuration';
+	}//end jsonImportType()
+
+	/**
+	 * Read the import flags and the optional migration pack from the request.
+	 *
+	 * A `packId` resolves a stored MigrationPack by its slug; ImportService maps
+	 * every row through it. `dryRun` maps and validates every row and saves nothing.
+	 *
+	 * @return array|JSONResponse The options, or a 400 response for an unknown pack
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function readImportOptions(): array|JSONResponse {
+		$options = [
+			'includeObjects' => $this->parseBooleanParam(paramName: 'includeObjects', default: false),
+			'validation' => $this->parseBooleanParam(paramName: 'validation', default: false),
+			'events' => $this->parseBooleanParam(paramName: 'events', default: false),
+			'publish' => $this->parseBooleanParam(paramName: 'publish', default: false),
+			'enrich' => $this->parseBooleanParam(paramName: 'enrich', default: true),
+			'dryRun' => $this->parseBooleanParam(paramName: 'dryRun', default: false),
+			'pack' => null,
+		];
+
+		$packId = $this->request->getParam('packId');
+		if ($packId === null || $packId === '') {
+			return $options;
+		}
+
+		try {
+			$options['pack'] = $this->migrationPackService->findByPackSlug(packSlug: (string)$packId)->getDefinitionArray();
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Migration pack "' . $packId . '" not found'], statusCode: 400);
+		}
+
+		return $options;
+	}//end readImportOptions()
+
+	/**
+	 * Log the import options at debug level.
+	 *
+	 * @param array $options The import options
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function logImportOptions(array $options): void {
+		$this->logger->debug(
+			message: '[RegistersController] Import parameters received',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'includeObjects' => $options['includeObjects'],
+				'validation' => $options['validation'],
+				'events' => $options['events'],
+				'publish' => $options['publish'],
+				'registerId' => $options['id'],
+			]
+		);
+	}//end logImportOptions()
+
+	/**
+	 * Run the importer that matches the import type.
+	 *
+	 * @param array $options The import options, including type, register and file
+	 *
+	 * @return array|JSONResponse The import summary, or an error response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function runImport(array $options): array|JSONResponse {
+		switch ($options['type']) {
+			case 'excel':
+				return $this->importExcel(options: $options);
+			case 'csv':
+				return $this->importCsv(options: $options);
+			case 'json':
+				return $this->importJsonObjects(options: $options);
+			default:
+				return $this->importConfigurationBundle(options: $options);
+		}
+	}//end runImport()
+
+	/**
+	 * The arguments every row importer (excel, csv, json) receives.
+	 *
+	 * SEC-CTRL-6: RBAC is derived from admin status, never from the request, and
+	 * imports always stay tenant-scoped, so a manager cannot pass ?multi=false to
+	 * write objects across organisation boundaries.
+	 *
+	 * @param array $options The import options
+	 *
+	 * @return array Named arguments for ImportService
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function rowImportArguments(array $options): array {
+		return [
+			'filePath' => $options['file']['tmp_name'],
+			'register' => $options['register'],
+			'validation' => $options['validation'],
+			'events' => $options['events'],
+			'_rbac' => ($this->isCurrentUserAdmin() === false),
+			'_multitenancy' => true,
+			'publish' => $options['publish'],
+			'currentUser' => $this->userSession->getUser(),
+			'enrich' => $options['enrich'],
+		];
+	}//end rowImportArguments()
+
+	/**
+	 * Import an Excel workbook; migration packs are not supported here.
+	 *
+	 * @param array $options The import options
+	 *
+	 * @return array|JSONResponse The sheet-based summary, or a 400 response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importExcel(array $options): array|JSONResponse {
+		if ($options['pack'] !== null) {
+			return new JSONResponse(
+				data: ['error' => 'packId is not yet supported for Excel imports; use CSV or JSON with a migration pack instead.'],
+				statusCode: 400
+			);
+		}
+
+		return $this->importService->importFromExcel(...$this->rowImportArguments(options: $options), schema: null);
+	}//end importExcel()
+
+	/**
+	 * Import a CSV file into the schema named by the required `schema` parameter.
+	 *
+	 * @param array $options The import options
+	 *
+	 * @return array|JSONResponse The sheet-based summary, or a 400 response
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If several schemas match
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importCsv(array $options): array|JSONResponse {
+		$schemaId = $this->request->getParam('schema');
+		if ($schemaId === null || $schemaId === '') {
+			return new JSONResponse(
+				data: ['error' => 'Schema parameter is required for CSV imports.'],
+				statusCode: 400
+			);
+		}
+
+		$schema = $this->schemaMapper->find($schemaId);
+
+		return $this->importService->importFromCsv(
+			...$this->rowImportArguments(options: $options),
+			schema: $schema,
+			pack: $options['pack'],
+			dryRun: $options['dryRun']
+		);
+	}//end importCsv()
+
+	/**
+	 * Import a JSON object export (the inverse of ExportService::exportToJson).
+	 *
+	 * The schema comes from the `schema` parameter or from the first exported
+	 * object's `@self.schema`. A register bundle (REQ-IMP-AC-01) carries its own
+	 * schemas and needs neither.
+	 *
+	 * @param array $options The import options
+	 *
+	 * @return array|JSONResponse The summary, or a 400 response without a schema
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If several schemas match
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importJsonObjects(array $options): array|JSONResponse {
+		$peek = json_decode((string)file_get_contents($options['file']['tmp_name']), true);
+		$isBundle = $this->isRegisterBundle(peek: $peek);
+
+		$schemaId = $this->request->getParam('schema');
+		if (($schemaId === null || $schemaId === '') && $isBundle === false) {
+			$list = ($peek['results'] ?? $peek);
+			$schemaId = ($list[0]['@self']['schema'] ?? null);
+		}
+
+		if (($schemaId === null || $schemaId === '') && $isBundle === false) {
+			return new JSONResponse(
+				data: ['error' => 'Could not determine schema for JSON import; pass a schema parameter.'],
+				statusCode: 400
+			);
+		}
+
+		$schema = null;
+		if ($schemaId !== null && $schemaId !== '') {
+			$schema = $this->schemaMapper->find($schemaId);
+		}
+
+		return $this->importService->importFromJson(
+			...$this->rowImportArguments(options: $options),
+			schema: $schema,
+			pack: $options['pack'],
+			dryRun: $options['dryRun'],
+			registerSlug: (string)$options['id']
+		);
+	}//end importJsonObjects()
+
+	/**
+	 * Whether decoded JSON is a register bundle with at least one register.
+	 *
+	 * @param mixed $peek The decoded upload
+	 *
+	 * @return bool True for a non-empty `components.registers` map
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function isRegisterBundle(mixed $peek): bool {
+		return is_array($peek) === true
+			&& array_is_list($peek) === false
+			&& isset($peek['components']['registers']) === true
+			&& is_array($peek['components']['registers']) === true
+			&& count($peek['components']['registers']) > 0;
+	}//end isRegisterBundle()
+
+	/**
+	 * Import a configuration bundle and summarise the objects it created.
+	 *
+	 * @param array $options The import options
+	 *
+	 * @return array|JSONResponse The summary, or an error response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importConfigurationBundle(array $options): array|JSONResponse {
+		if ($options['pack'] !== null) {
+			return new JSONResponse(
+				data: ['error' => 'packId only applies to CSV/JSON row imports, not configuration bundle imports.'],
+				statusCode: 400
+			);
+		}
+
+		$jsonData = $this->configurationService->getUploadedJson(
+			data: $this->request->getParams(),
+			uploadedFiles: [$options['file']]
+		);
+		if ($jsonData instanceof JSONResponse) {
+			return $jsonData;
+		}
+
+		// ImportFromJson takes a Configuration entity; this endpoint has none to pass.
+		$result = $this->configurationService->importFromJson(
+			data: $jsonData,
+			configuration: null,
+			owner: $this->request->getParam('owner'),
+			appId: $this->request->getParam('appId'),
+			version: $this->request->getParam('version'),
+			force: $options['force']
+		);
+
+		$summary = $this->configurationImportSummary(result: $result, register: $options['register']);
+
+		if (empty($result['registers']) === true) {
+			$this->addCreatedSchemasToRegister(id: $options['id'], schemas: $result['schemas']);
+		}
+
+		return $summary;
+	}//end importConfigurationBundle()
+
+	/**
+	 * Build the sheet-based summary of a configuration import.
+	 *
+	 * Every imported object is listed as created.
+	 *
+	 * @param array    $result   The configuration import result
+	 * @param Register $register The register the import targeted
+	 *
+	 * @return array The summary under the `configuration` sheet
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function configurationImportSummary(array $result, Register $register): array {
+		$summary = [
+			'configuration' => [
+				'created' => [],
+				'updated' => [],
+				'unchanged' => [],
+				'errors' => [],
+			],
+		];
+		if (($result['objects'] ?? null) === null || is_array($result['objects']) === false) {
+			return $summary;
+		}
+
+		foreach ($result['objects'] as $object) {
+			$summary['configuration']['created'][] = [
+				'id' => $object->getId(),
+				'uuid' => $object->getUuid(),
+				'sheet' => 'configuration',
+				'register' => [
+					'id' => $register->getId(),
+					'name' => $register->getTitle(),
+				],
+				'schema' => null,
+			];
+		}
+
+		return $summary;
+	}//end configurationImportSummary()
+
+	/**
+	 * Add the schemas a configuration import created to the target register.
+	 *
+	 * Used when the imported bundle defines no registers of its own.
+	 *
+	 * @param int|string $id      The ID, UUID or slug of the register
+	 * @param array      $schemas The created schema entities
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the register does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If several registers match
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function addCreatedSchemasToRegister(int|string $id, array $schemas): void {
+		$createdSchemas = [];
+		foreach ($schemas as $schema) {
+			$createdSchemas[] = $schema->getId();
+		}
+
+		$register = $this->registerService->find($id);
+		$mergedSchemaArray = array_merge($register->getSchemas() ?? [], $createdSchemas);
+		$register->setSchemas(array_keys(array_flip($mergedSchemaArray)));
+		$this->registerService->updateFromArray(id: $id, data: $register->jsonSerialize());
+	}//end addCreatedSchemasToRegister()
+
+	/**
+	 * Wrap an import summary in the success response.
+	 *
+	 * Row-level failures are attached as a base64 CSV so the frontend can offer a
+	 * download without a second request.
+	 *
+	 * @param array $summary The import summary
+	 *
+	 * @return JSONResponse The success response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importSuccessResponse(array $summary): JSONResponse {
+		$errorsCsv = $this->importService->serializeErrorsToCsv(summary: $summary);
+		$responseData = [
+			'message' => 'Import successful',
+			'summary' => $summary,
+		];
+		if ($errorsCsv !== '') {
+			$responseData['errors_csv'] = base64_encode($errorsCsv);
+			$responseData['errors_csv_filename'] = 'import_errors.csv';
+		}
+
+		return new JSONResponse(data: $responseData);
+	}//end importSuccessResponse()
 
 	/**
 	 * Roll back an import by soft-deleting every object whose `create`
