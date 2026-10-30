@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
  * {@see FileRestrictionAdmitEvent}. Anonymous callers and lookup failures are
  * refused.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 class FileRestrictionGuard {
 
@@ -75,7 +75,7 @@ class FileRestrictionGuard {
 	 *
 	 * @return bool True when the file carries no restriction or the caller is admitted.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function mayRead(int $fileId): bool {
 		return ($this->readable(fileIds: [$fileId])[$fileId] ?? false);
@@ -88,7 +88,7 @@ class FileRestrictionGuard {
 	 *
 	 * @return array<int, bool> The verdict per file id.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function readable(array $fileIds): array {
 		$fileIds = array_values(array_unique(array_map('intval', $fileIds)));
@@ -151,7 +151,7 @@ class FileRestrictionGuard {
 	 *
 	 * @return list<Node> The readable nodes.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 */
 	public function readableNodes(array $nodes): array {
 		$ids = [];
@@ -178,7 +178,7 @@ class FileRestrictionGuard {
 	 *
 	 * @return bool True when restricted, or when that cannot be told.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-has-no-public-link-req-pfrr-004
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-has-no-public-link-req-pfrr-004
 	 */
 	public function isRestricted(int $fileId): bool {
 		try {
@@ -198,7 +198,7 @@ class FileRestrictionGuard {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function forget(): void {
 		$this->memo = [];

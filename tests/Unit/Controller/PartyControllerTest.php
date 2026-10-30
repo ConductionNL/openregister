@@ -322,7 +322,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testAReaderCannotLinkAParty(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -342,7 +342,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testAReaderCannotUnlinkAParty(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -361,7 +361,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testAReaderCannotReplaceThePrimaryParty(): void {
 		$this->objectLayerAnswers($this->caseObject());
@@ -381,7 +381,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testTheUpdateRightIsAskedOnTheObject(): void {
 		$object = $this->caseObject();
@@ -411,7 +411,7 @@ class PartyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	public function testReadingThePartiesDoesNotAskTheUpdateRight(): void {
 		$this->objectLayerAnswers($this->caseObject());
