@@ -546,7 +546,7 @@ class PropertyVocabularyTest extends TestCase {
 	 * saves, and a value outside the list is refused. `textarea` is the value
 	 * dossiq shipped that refused its whole aanvullingsverzoek schema.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */

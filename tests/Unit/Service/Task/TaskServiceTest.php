@@ -1250,7 +1250,7 @@ class TaskServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/task-find-by-key/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function testATaskIsFoundByItsKey(): void {
 		$task = $this->openTask();

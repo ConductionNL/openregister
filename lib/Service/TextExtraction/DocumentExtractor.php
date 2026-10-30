@@ -333,7 +333,7 @@ class DocumentExtractor {
 		try {
 			$text = $this->wordExtractor->extract(file: $file);
 		} catch (Throwable $e) {
-			// PhpWord missing is WordExtractor's deployment error; the structure does not need it.
+			// A WordExtractor failure does not stop the structure, which does not need it.
 			$this->logger->warning(
 				message: '[DocumentExtractor] Flat text unavailable; using the structure',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'exception' => get_class($e)]

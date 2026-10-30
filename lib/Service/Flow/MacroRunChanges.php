@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+ * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Summarises the changes in a flow run's log.
  *
- * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+ * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
  */
 final class MacroRunChanges {
 
@@ -62,7 +62,7 @@ final class MacroRunChanges {
 	 *
 	 * @return array<int, array{step: string, kind: string}> One entry per completed changing step.
 	 *
-	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
 	 */
 	public function fromLog(array $log, array $nodes = []): array {
 		$labels  = $this->labelsOf(nodes: $nodes);

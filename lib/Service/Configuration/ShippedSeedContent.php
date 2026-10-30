@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 /**
  * Decides, from the shipped content, what a re-import writes to a stored seed object.
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ShippedSeedContent {
 
@@ -47,7 +47,7 @@ class ShippedSeedContent {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function hash(array $shipped): string {
 		unset($shipped['@self']);
@@ -64,7 +64,7 @@ class ShippedSeedContent {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function update(array $stored, array $shipped, ?string $remembered): ?array {
 		if ($remembered !== null && $remembered !== $this->hash(shipped: $shipped)) {
