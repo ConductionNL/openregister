@@ -81,6 +81,10 @@ class ContentReportController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * @no-admin-idor-exempt Guarded by the object lookup: MagicMapper::find() runs with its
+	 *   default RBAC and multitenancy filters, so an object the caller may not read answers
+	 *   404 before anything is filed.
+	 *
 	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
 	 */
 	public function create(): JSONResponse {
