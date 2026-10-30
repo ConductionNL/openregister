@@ -86,8 +86,8 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -131,7 +131,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 * @param FlowMapper      $flowMapper    Reads and removes rows in the flow table.
 	 * @param FlowRunMapper   $flowRunMapper Proves a row has never been dispatched.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $objectMapper  Resolves a uuid back to the object it was copied from.
-	 * @param SchemaMapper    $schemaMapper  Turns that object's schema reference into a slug.
+	 * @param SchemaMapperInterface<Schema>    $schemaMapper  Turns that object's schema reference into a slug.
 	 * @param LoggerInterface $logger        Records every removal and every spared ambiguity.
 	 *
 	 * @return void
@@ -140,7 +140,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 		private readonly FlowMapper $flowMapper,
 		private readonly FlowRunMapper $flowRunMapper,
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

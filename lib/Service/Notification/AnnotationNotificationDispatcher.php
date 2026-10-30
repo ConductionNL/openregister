@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\DuplicateDispatchException;
@@ -38,11 +39,11 @@ use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\QueuedNotification;
 use OCA\OpenRegister\Db\QueuedNotificationMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
@@ -140,7 +141,7 @@ class AnnotationNotificationDispatcher implements ObjectNotificationDispatcherIn
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Mapper used to resolve the object's schema.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper used to resolve the object's schema.
 	 * @param INotificationManager $notificationManager Nextcloud notification API.
 	 * @param LoggerInterface $logger Logger for dispatch diagnostics.
 	 * @param IGroupManager $groupManager Group resolver for `groups` recipient kinds.
@@ -158,7 +159,7 @@ class AnnotationNotificationDispatcher implements ObjectNotificationDispatcherIn
 	 * @param NotificationPreferenceService|null $preferenceService Override-only preference resolver (delivery gate).
 	 * @param IJobList|null $jobList Job list used to enqueue the web-push dispatch job.
 	 * @param IURLGenerator|null $urlGenerator URL generator for action-target deeplinks.
-	 * @param RegisterMapper|null $registerMapper Register mapper used for the default originApp.
+	 * @param RegisterMapperInterface<Register, Schema>|null $registerMapper Register mapper used for the default originApp.
 	 * @param \OCA\OpenRegister\Service\ObjectService|null $objectService Object resolver for relation-target deeplinks (RBAC).
 	 * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null $deepLinkRegistry Canonical per-app deeplink resolver.
 	 * @param IAppManager|null $appManager Resolves originApp display name (auto body).
@@ -176,7 +177,7 @@ class AnnotationNotificationDispatcher implements ObjectNotificationDispatcherIn
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
 		private readonly IGroupManager $groupManager,
@@ -194,7 +195,7 @@ class AnnotationNotificationDispatcher implements ObjectNotificationDispatcherIn
 		private readonly ?NotificationPreferenceService $preferenceService = null,
 		private readonly ?IJobList $jobList = null,
 		private readonly ?IURLGenerator $urlGenerator = null,
-		private readonly ?RegisterMapper $registerMapper = null,
+		private readonly ?RegisterMapperInterface $registerMapper = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService = null,
 		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
 		private readonly ?IAppManager $appManager = null,

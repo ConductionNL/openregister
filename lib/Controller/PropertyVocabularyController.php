@@ -26,7 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
 use OCP\AppFramework\Controller;
@@ -47,7 +48,7 @@ class PropertyVocabularyController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param PropertyVocabulary $vocabulary The published vocabulary.
 	 * @param ExtendingFormDeclaration $declarations The extending-form declaration reader.
-	 * @param SchemaMapper $schemaMapper Schema lookup, for the declared narrowings.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup, for the declared narrowings.
 	 *
 	 * @return void
 	 */
@@ -56,7 +57,7 @@ class PropertyVocabularyController extends Controller {
 		IRequest $request,
 		private readonly PropertyVocabulary $vocabulary,
 		private readonly ExtendingFormDeclaration $declarations,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

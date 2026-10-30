@@ -22,9 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -60,13 +62,13 @@ class PurposeGuard {
 	 *
 	 * @param PurposeRegistry  $registry The administered purpose list.
 	 * @param PurposeContext   $context  The purpose this request declared.
-	 * @param AuditTrailMapper $audit    Records the refusal.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $audit    Records the refusal.
 	 * @param LoggerInterface  $logger   PSR-3 logger.
 	 */
 	public function __construct(
 		private readonly PurposeRegistry $registry,
 		private readonly PurposeContext $context,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

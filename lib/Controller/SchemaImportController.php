@@ -32,10 +32,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -57,8 +57,8 @@ class SchemaImportController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param SchemaImportService $importService Standards import orchestrator.
-	 * @param SchemaMapper $schemaMapper Schema persistence.
-	 * @param RegisterMapper $registerMapper Register lookup/association.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema persistence.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup/association.
 	 * @param LoggerInterface $logger Logger.
 	 * @param SchemaVersioningService|null $schemaVersioning Classifies, versions and logs a merged definition change (#4102).
 	 */
@@ -66,8 +66,8 @@ class SchemaImportController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly SchemaImportService $importService,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?SchemaVersioningService $schemaVersioning = null,
 	) {

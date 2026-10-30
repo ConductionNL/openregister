@@ -30,6 +30,8 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
@@ -71,8 +73,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
  *   for the same reason: this is the one place an audit row is written, and every entry
  *   point that writes one has to go through it or the hash chain has a second author.
+ *
+ * @implements AuditTrailMapperInterface<AuditTrail, ObjectEntity>
  */
-class AuditTrailMapper extends QBMapper {
+class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 	/**
 	 * Request-scoped import-job tag.
@@ -685,8 +689,8 @@ class AuditTrailMapper extends QBMapper {
 	/**
 	 * Creates an audit trail for object changes
 	 *
-	 * @param ObjectEntity|null $old The old state of the object
-	 * @param ObjectEntity|null $new The new state of the object
+	 * @param ObjectRowInterface|null $old The old state of the object
+	 * @param ObjectRowInterface|null $new The new state of the object
 	 * @param string|null $action The action to record. NULL (the default) infers it from which
 	 *                            entities are present: no `new` is a delete, no `old` is a create,
 	 *                            otherwise an update. A NAMED action is used verbatim — the
@@ -706,11 +710,14 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	public function createAuditTrail(
-		?ObjectEntity $old = null,
-		?ObjectEntity $new = null,
+		?ObjectRowInterface $old = null,
+		?ObjectRowInterface $new = null,
 		?string $action = null,
 		?array $cascadeContext = null,
 	): AuditTrail {
+		$old = StoredEntity::object(object: $old);
+		$new = StoredEntity::object(object: $new);
+
 		$auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
 
 		// Nothing merges unless an administrator set a window, so this is a
@@ -853,8 +860,8 @@ class AuditTrailMapper extends QBMapper {
 	 * (single insert) and {@see insertAuditTrails()} (batched multi-row insert),
 	 * so both paths produce identical audit rows.
 	 *
-	 * @param ObjectEntity|null $old The old state of the object
-	 * @param ObjectEntity|null $new The new state of the object
+	 * @param ObjectRowInterface|null $old The old state of the object
+	 * @param ObjectRowInterface|null $new The new state of the object
 	 * @param string|null $action The action to record. NULL (the default) infers it from which
 	 *                            entities are present: no `new` is a delete, no `old` is a create,
 	 *                            otherwise an update. A NAMED action is used verbatim — the
@@ -874,11 +881,14 @@ class AuditTrailMapper extends QBMapper {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function buildAuditTrail(
-		?ObjectEntity $old = null,
-		?ObjectEntity $new = null,
+		?ObjectRowInterface $old = null,
+		?ObjectRowInterface $new = null,
 		?string $action = null,
 		?array $cascadeContext = null,
 	): AuditTrail {
+		$old = StoredEntity::object(object: $old);
+		$new = StoredEntity::object(object: $new);
+
 		// Infer the action from which entities are present — but ONLY when the
 		// caller did not name one.
 		//
@@ -1162,14 +1172,22 @@ class AuditTrailMapper extends QBMapper {
 	 * indefinitely: the failure being guarded against is evidence
 	 * disappearing, not disk filling.
 	 *
-	 * @param AuditTrail $auditTrail The row to stamp.
-	 * @param ObjectEntity|null $objectEntity The object the row describes, or null when it could not be found.
+	 * @param Entity $auditTrail The row to stamp; only a stored AuditTrail row is accepted.
+	 * @param ObjectRowInterface|null $objectEntity The object the row describes, or null when it could not be found.
 	 *
 	 * @return AuditTrail The same row, stamped.
 	 *
+	 * @throws InvalidArgumentException When the row is not a stored AuditTrail row.
+	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function applyRetentionExpiry(AuditTrail $auditTrail, ?ObjectEntity $objectEntity): AuditTrail {
+	public function applyRetentionExpiry(Entity $auditTrail, ?ObjectRowInterface $objectEntity): AuditTrail {
+		if ($auditTrail instanceof AuditTrail === false) {
+			throw new InvalidArgumentException('Only a stored AuditTrail row is accepted here.');
+		}
+
+		$objectEntity = StoredEntity::object(object: $objectEntity);
+
 		if ($objectEntity === null) {
 			$auditTrail->setExpires(null);
 			$auditTrail->setRetentionPeriod('object-unavailable:indefinite');
@@ -2704,7 +2722,7 @@ class AuditTrailMapper extends QBMapper {
 	 * whichever Nextcloud account the app password happens to belong to.
 	 * Omit both to keep the previous session-derived behavior unchanged.
 	 *
-	 * @param ObjectEntity $object The object the entry relates to
+	 * @param ObjectRowInterface $object The object the entry relates to
 	 * @param string $action The archival action (e.g., archival.destroyed)
 	 * @param array $context Additional context data
 	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
@@ -2723,13 +2741,15 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function createAuditTrailEntry(
-		ObjectEntity $object,
+		ObjectRowInterface $object,
 		string $action,
 		array $context = [],
 		?string $actorId = null,
 		?string $actorName = null,
 		?string $ipAddress = null,
 	): AuditTrail {
+		$object = StoredEntity::object(object: $object);
+
 		$userId = $actorId;
 		$userName = $actorName;
 		if ($userId === null) {

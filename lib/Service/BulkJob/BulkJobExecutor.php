@@ -32,14 +32,16 @@ use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUser;
@@ -73,8 +75,8 @@ class BulkJobExecutor {
 	 * @param BulkSelectionResolver $resolver Selection resolution.
 	 * @param BulkActionRegistry $registry The catalogue of registered actions.
 	 * @param PermissionHandler $permissionHandler Per-object access checks.
-	 * @param SchemaMapper $schemaMapper Schema lookup for the access check.
-	 * @param AuditTrailMapper $auditTrailMapper Audit entries per member.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup for the access check.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit entries per member.
 	 * @param IUserManager $userManager Actor lookup.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -84,8 +86,8 @@ class BulkJobExecutor {
 		private readonly BulkSelectionResolver $resolver,
 		private readonly BulkActionRegistry $registry,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
 	) {

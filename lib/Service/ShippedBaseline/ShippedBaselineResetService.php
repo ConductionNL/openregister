@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ShippedBaseline;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 
 /**
  * The one caller of the guard's reset: the occ command and the admin route both go through here.
@@ -52,11 +52,11 @@ class ShippedBaselineResetService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper              $schemas Where the schema lives.
+	 * @param SchemaMapperInterface<Schema>              $schemas Where the schema lives.
 	 * @param ShippedConfigurationGuard $guard   The baseline and the reset rules.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly ShippedConfigurationGuard $guard,
 	) {
 	}//end __construct()

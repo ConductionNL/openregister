@@ -27,8 +27,9 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -63,18 +64,18 @@ class RegisterService {
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface<Register, Schema> Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
 	 *
 	 * Handles database operations for schema entities.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface<Schema> Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Database connection
@@ -138,8 +139,8 @@ class RegisterService {
 	 *
 	 * Initializes service with required dependencies for register operations.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for database operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for schema operations
 	 * @param IDBConnection $db Database connection for custom queries
 	 * @param FileService $fileService File service for file operations
 	 * @param OrganisationService $organisationService Organisation service for permissions
@@ -149,8 +150,8 @@ class RegisterService {
 	 * @return void
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		IDBConnection $db,
 		FileService $fileService,
 		OrganisationService $organisationService,

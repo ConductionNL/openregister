@@ -25,7 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schemas;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 
 /**
  * The call site for `ReferenceFilterDeclaration::assertOperandsExist()`.
@@ -48,10 +49,10 @@ class ReferenceFilterOperandGuard {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapper $schemaMapper Resolves the referenced schema so its properties can be read.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves the referenced schema so its properties can be read.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

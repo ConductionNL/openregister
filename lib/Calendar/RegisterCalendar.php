@@ -29,9 +29,9 @@ namespace OCA\OpenRegister\Calendar;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCP\Calendar\ICalendar;
 use OCP\Constants;
 use Psr\Log\LoggerInterface;
@@ -79,9 +79,9 @@ class RegisterCalendar implements ICalendar {
 	/**
 	 * The RegisterMapper for loading registers
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface<Register, Schema>
 	 */
-	private RegisterMapper $registerMapper;
+	private RegisterMapperInterface $registerMapper;
 
 	/**
 	 * The event transformer
@@ -110,7 +110,7 @@ class RegisterCalendar implements ICalendar {
 	 * @param Schema $schema The schema entity
 	 * @param array $calendarConfig The calendar configuration
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper The MagicMapper for queries
-	 * @param RegisterMapper $registerMapper The RegisterMapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper The RegisterMapper
 	 * @param CalendarEventTransformer $transformer The event transformer
 	 * @param string $principalUri The principal URI
 	 * @param LoggerInterface $logger Logger instance
@@ -119,7 +119,7 @@ class RegisterCalendar implements ICalendar {
 		Schema $schema,
 		array $calendarConfig,
 		MagicMapperInterface $magicMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		CalendarEventTransformer $transformer,
 		string $principalUri,
 		LoggerInterface $logger,

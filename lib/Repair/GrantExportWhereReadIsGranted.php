@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -52,13 +52,13 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper    $schemaMapper Schema lookups and writes.
+	 * @param SchemaMapperInterface<Schema>    $schemaMapper Schema lookups and writes.
 	 * @param LoggerInterface $logger       Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

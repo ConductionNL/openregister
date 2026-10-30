@@ -40,10 +40,10 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
@@ -63,7 +63,7 @@ class ApprovalChainGateListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
 	 * @param TaskSequenceMapper $sequenceMapper Reads the anchor's sequences.
 	 * @param TaskSequenceService $sequenceService Provisions a sequence on the first attempt.
 	 * @param ApprovalChainAnnotationInstaller $installer Compiles the declared chain into a task template.
@@ -72,7 +72,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly TaskSequenceMapper $sequenceMapper,
 		private readonly TaskSequenceService $sequenceService,
 		private readonly ApprovalChainAnnotationInstaller $installer,

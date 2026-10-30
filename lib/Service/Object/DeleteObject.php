@@ -36,14 +36,16 @@ use DateTime;
 use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -96,9 +98,9 @@ class DeleteObject {
 	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Settings service
@@ -134,7 +136,7 @@ class DeleteObject {
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity data mapper.
 	 * @param CacheHandler $cacheHandler Object entity and query cache
 	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logs
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for logs
 	 * @param SettingsService $settingsService Settings service for trail settings
 	 * @param LoggerInterface $logger Logger for error handling
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
@@ -153,7 +155,7 @@ class DeleteObject {
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly CacheHandler $cacheHandler,
 		private readonly IUserSession $userSession,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		SettingsService $settingsService,
 		LoggerInterface $logger,
 		ReferentialIntegrityService $integrityService,
@@ -161,7 +163,7 @@ class DeleteObject {
 		private readonly OrganisationMapper $organisationMapper,
 		private readonly ?FileService $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
-		private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper = null,
+		private readonly ?RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeletionWindowService $windowService = null,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;

@@ -35,8 +35,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Deletion;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -53,14 +54,14 @@ class DestructionRecorder {
 	/**
 	 * Wire the ledger.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper The hash-chained audit trail.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper The hash-chained audit trail.
 	 * @param IUserSession     $userSession      The acting principal.
 	 * @param LoggerInterface  $logger           PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

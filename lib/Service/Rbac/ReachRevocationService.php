@@ -38,7 +38,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -67,7 +67,7 @@ class ReachRevocationService {
 	 * Wire the act.
 	 *
 	 * @param PrincipalReachService     $reach        The listing the act runs from.
-	 * @param SchemaMapper              $schemaMapper Schema authorization blocks.
+	 * @param SchemaMapperInterface<Schema>              $schemaMapper Schema authorization blocks.
 	 * @param DerivedGrantStore         $derived      Grants derived from sign-in claims.
 	 * @param DelegationGrantMapper     $delegations  Delegations held.
 	 * @param AuthorizationAuditService $audit        The record of what was removed.
@@ -78,7 +78,7 @@ class ReachRevocationService {
 	 */
 	public function __construct(
 		private readonly PrincipalReachService $reach,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DerivedGrantStore $derived,
 		private readonly DelegationGrantMapper $delegations,
 		private readonly AuthorizationAuditService $audit,

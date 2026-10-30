@@ -40,8 +40,8 @@ use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -113,7 +113,7 @@ class RelationGraphService {
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities.
 	 * @param ObjectRelationMapper $relationMapper Mapper for stored relation rows.
-	 * @param SchemaMapper $schemaMapper Mapper for schemas.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schemas.
 	 * @param RelationTypeResolver $relationTypes Resolves what a relation is called.
 	 * @param IAppConfig $appConfig Instance settings.
 	 * @param LoggerInterface $logger Logger.
@@ -123,7 +123,7 @@ class RelationGraphService {
 	public function __construct(
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly ObjectRelationMapper $relationMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RelationTypeResolver $relationTypes,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

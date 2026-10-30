@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
@@ -203,8 +205,8 @@ final class ObjectSourceRegistrar {
 				return new DatabaseIntrospectionService(
 					connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
 					typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
-					registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
 					diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
@@ -256,8 +258,8 @@ final class ObjectSourceRegistrar {
 			TablesSchemaSyncService::class,
 			function (ContainerInterface $container) {
 				return new TablesSchemaSyncService(
-					registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
 					columnMapper: $container->get(TablesColumnMapper::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);

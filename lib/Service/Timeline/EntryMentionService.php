@@ -33,7 +33,8 @@ namespace OCA\OpenRegister\Service\Timeline;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -83,7 +84,7 @@ class EntryMentionService {
 	 * @param WatcherService        $watchers      Subscribes the named principal.
 	 * @param IUserManager          $userManager   Resolves a token to a real principal.
 	 * @param IUserSession          $userSession   The caller, who is never notified of their own mention.
-	 * @param SchemaMapper          $schemaMapper  Resolves the object's schema for the read check.
+	 * @param SchemaMapperInterface<Schema>          $schemaMapper  Resolves the object's schema for the read check.
 	 * @param PermissionHandler     $permissions   The one RBAC evaluator.
 	 * @param INotificationManager  $notifications Sends the notification.
 	 * @param LoggerInterface       $logger        Logger for the fail-closed paths.
@@ -96,7 +97,7 @@ class EntryMentionService {
 		private readonly WatcherService $watchers,
 		private readonly IUserManager $userManager,
 		private readonly IUserSession $userSession,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissions,
 		private readonly INotificationManager $notifications,
 		private readonly LoggerInterface $logger,

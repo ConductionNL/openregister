@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -81,7 +81,7 @@ class CreateMissingRegisterFolders implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			$provisioner = $this->container->get(RegisterFolderProvisioner::class);
 			// Every register, whatever organisation owns it: occ upgrade has no
 			// active organisation, and the write is bookkeeping, not an edit.

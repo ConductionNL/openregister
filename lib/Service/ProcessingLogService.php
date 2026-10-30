@@ -49,10 +49,12 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ProcessingLogEntry;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -98,16 +100,16 @@ class ProcessingLogService {
 	 *
 	 * @param ProcessingLogMapper $logMapper Append-only log mapper.
 	 * @param VerwerkingsactiviteitMapper $vrwMapper Activity resolver + fallback seed.
-	 * @param SchemaMapper $schemaMapper Schema annotation reader.
-	 * @param RegisterMapper $registerMapper Register annotation reader (inheritance).
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema annotation reader.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register annotation reader (inheritance).
 	 * @param IUserSession $userSession Actor identity.
 	 * @param LoggerInterface $logger Fail-soft diagnostics.
 	 */
 	public function __construct(
 		private readonly ProcessingLogMapper $logMapper,
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

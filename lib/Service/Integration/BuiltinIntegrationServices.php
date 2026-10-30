@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -69,8 +72,8 @@ final class BuiltinIntegrationServices {
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class => [
 			'taskService'    => \OCA\OpenRegister\Service\TaskService::class,
-			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'registerMapper' => RegisterMapperInterface::class,
+			'schemaMapper'   => SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'l10n'           => \OCP\IL10N::class,
 		],
@@ -80,7 +83,7 @@ final class BuiltinIntegrationServices {
 			'l10n'         => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class => [
-			'mapper' => \OCA\OpenRegister\Db\AuditTrailMapper::class,
+			'mapper' => AuditTrailMapperInterface::class,
 			'l10n'   => \OCP\IL10N::class,
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
@@ -238,7 +241,7 @@ final class BuiltinIntegrationServices {
 			'userSession'    => \OCP\IUserSession::class,
 			'l10n'           => \OCP\IL10N::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'schemaMapper'   => SchemaMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-polls/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class => [
@@ -385,7 +388,7 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class => [
 			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
 			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'schemaMapper'   => SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'validateObject' => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
@@ -394,7 +397,7 @@ final class BuiltinIntegrationServices {
 			'planner'        => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
 			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
 			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'schemaMapper'   => SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
 		],

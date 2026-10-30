@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Throwable;
@@ -42,12 +42,12 @@ class SchemaManageGate {
 	 *
 	 * @param IUserSession  $userSession  The caller.
 	 * @param IGroupManager $groupManager The caller's groups and admin status.
-	 * @param SchemaMapper  $schemaMapper Resolves a schema a row names.
+	 * @param SchemaMapperInterface<Schema>  $schemaMapper Resolves a schema a row names.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

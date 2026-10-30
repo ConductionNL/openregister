@@ -29,10 +29,10 @@ namespace OCA\OpenRegister\Calendar;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\Calendar\ICalendarProvider;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -53,16 +53,16 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * The schema mapper for loading schemas
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private SchemaMapper $schemaMapper;
+	private SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * The register mapper for loading registers
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface<Register, Schema>
 	 */
-	private RegisterMapper $registerMapper;
+	private RegisterMapperInterface $registerMapper;
 
 	/**
 	 * The MagicMapper for querying objects
@@ -102,16 +102,16 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper
-	 * @param RegisterMapper $registerMapper The register mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper The register mapper
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper The MagicMapper
 	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger Logger instance
 	 * @param CalendarEventTransformer $transformer The event transformer
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		MagicMapperInterface $magicMapper,
 		IUserSession $userSession,
 		LoggerInterface $logger,

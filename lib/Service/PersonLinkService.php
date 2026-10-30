@@ -22,7 +22,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -43,14 +44,14 @@ class PersonLinkService {
 	 * @param ContactLinkMapper $links The link rows.
 	 * @param ContactService $contacts The CardDAV side of a contact link.
 	 * @param UserLinkWriter $userLinks The account side of a user link.
-	 * @param SchemaMapper $schemas The schemas, for the role vocabulary.
+	 * @param SchemaMapperInterface<Schema> $schemas The schemas, for the role vocabulary.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly ContactService $contacts,
 		private readonly UserLinkWriter $userLinks,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly PersonLinkEvents $events,
 	) {
 	}//end __construct()

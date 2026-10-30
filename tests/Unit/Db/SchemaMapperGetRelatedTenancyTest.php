@@ -24,6 +24,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(SchemaMapper::class)]
+#[UsesClass(\OCA\OpenRegister\Db\StoredEntity::class)]
 #[UsesClass(\OCA\OpenRegister\Db\Schema::class)]
 class SchemaMapperGetRelatedTenancyTest extends TestCase {
 

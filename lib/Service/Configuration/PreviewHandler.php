@@ -28,10 +28,10 @@ use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -57,16 +57,16 @@ class PreviewHandler {
 	/**
 	 * Register mapper for database operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface<Register, Schema> The register mapper instance.
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper for database operations.
 	 *
-	 * @var SchemaMapper The schema mapper instance.
+	 * @var SchemaMapperInterface<Schema> The schema mapper instance.
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Logger for logging operations.
@@ -109,16 +109,16 @@ class PreviewHandler {
 	/**
 	 * Constructor for PreviewHandler.
 	 *
-	 * @param RegisterMapper $registerMapper The register mapper.
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper The register mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param FetchHandler $fetchHandler The fetch handler for remote data fetching.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object mapper, to find the local object a remote one would
 	 *        update.
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		LoggerInterface $logger,
 		FetchHandler $fetchHandler,
 		MagicMapperInterface $objectMapper,

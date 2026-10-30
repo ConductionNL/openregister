@@ -36,10 +36,10 @@ use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
@@ -144,8 +144,8 @@ class TextExtractionService {
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities
-	 * @param SchemaMapper $schemaMapper Mapper for schemas
-	 * @param RegisterMapper $registerMapper Mapper for registers
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schemas
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for registers
 	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
 	 * @param GdprEntityMapper $entityMapper Mapper for GDPR entities
 	 * @param EntityRelationMapper $entityRelationMapper Mapper for entity relations
@@ -169,8 +169,8 @@ class TextExtractionService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly EntityRecognitionHandler $entityHandler,
 		private readonly GdprEntityMapper $entityMapper,
 		private readonly EntityRelationMapper $entityRelationMapper,

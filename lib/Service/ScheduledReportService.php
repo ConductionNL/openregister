@@ -33,14 +33,14 @@ use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -134,8 +134,8 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * Constructor.
 	 *
 	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
-	 * @param RegisterMapper $registerMapper Register lookup (create/update validation).
-	 * @param SchemaMapper $schemaMapper Schema lookup (create/update validation).
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup (create/update validation).
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup (create/update validation).
 	 * @param ExportService $exportService The export engine this feature composes.
 	 * @param IRootFolder $rootFolder Files root, for owner-folder delivery.
 	 * @param IUserManager $userManager Resolves the owner IUser for impersonation.
@@ -154,8 +154,8 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	public function __construct(
 		private readonly ScheduledReportMapper $mapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ExportService $exportService,
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserManager $userManager,

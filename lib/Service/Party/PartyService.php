@@ -29,9 +29,10 @@ namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use Throwable;
 
@@ -75,14 +76,14 @@ class PartyService {
 	 * Constructor.
 	 *
 	 * @param ObjectService $objects The object layer a party record lives in.
-	 * @param SchemaMapper $schemas The schemas, for the party declaration.
-	 * @param RegisterMapper|null $registers The registers carrying a party schema, so a lookup reads only
+	 * @param SchemaMapperInterface<Schema> $schemas The schemas, for the party declaration.
+	 * @param RegisterMapperInterface<Register, Schema>|null $registers The registers carrying a party schema, so a lookup reads only
 	 *                                       the party tables; absent, every lookup searches the instance
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
-		private readonly ?RegisterMapper $registers = null,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly ?RegisterMapperInterface $registers = null,
 	) {
 	}//end __construct()
 

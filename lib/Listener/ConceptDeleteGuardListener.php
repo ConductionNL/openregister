@@ -35,8 +35,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
 use OCP\EventDispatcher\Event;
@@ -70,13 +71,13 @@ class ConceptDeleteGuardListener implements IEventListener {
 	 *
 	 * @param ConceptDeleteGuard $guard Recognises a concept and counts its holders.
 	 * @param ConceptRepository $concepts Resolves the scheme a concept belongs to.
-	 * @param SchemaMapper $schemas Resolves the schema an object belongs to.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the schema an object belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly ConceptDeleteGuard $guard,
 		private readonly ConceptRepository $concepts,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
 

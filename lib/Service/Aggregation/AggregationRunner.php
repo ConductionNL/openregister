@@ -41,12 +41,12 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -139,8 +139,8 @@ class AggregationRunner {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic-table mapper used for the PHP fallback path.
-	 * @param RegisterMapper $registerMapper Register loader.
-	 * @param SchemaMapper $schemaMapper Schema loader.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register loader.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
 	 * @param AggregationCache $cache 60s aggregation result cache.
@@ -166,8 +166,8 @@ class AggregationRunner {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,
 		private readonly IDBConnection $db,
 		private readonly AggregationCache $cache,

@@ -55,14 +55,15 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IGroupManager;
@@ -132,10 +133,10 @@ class ObjectOwnershipService {
 	 * @param PermissionHandler $permissions The rules, for "may this caller edit this record".
 	 * @param ObjectOwnerWriter $ownerWriter The targeted write of the owner column.
 	 * @param ObjectAuthorizationWriter $authorizationWriter The targeted write of the authorization block.
-	 * @param AuditTrailMapper $auditTrailMapper The hash-sealed trail.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper The hash-sealed trail.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Resolves objects and their children.
-	 * @param RegisterMapper $registerMapper Resolves a child's register.
-	 * @param SchemaMapper $schemaMapper Resolves a child's schema.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Resolves a child's register.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves a child's schema.
 	 * @param INotificationManager $notificationManager Tells the previous owner.
 	 * @param LoggerInterface $logger Where a transfer is noted.
 	 * @param GrantChangeAuditor|null $grantAuditor Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
@@ -151,10 +152,10 @@ class ObjectOwnershipService {
 		private readonly PermissionHandler $permissions,
 		private readonly ObjectOwnerWriter $ownerWriter,
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
 		private readonly ?GrantChangeAuditor $grantAuditor = null,

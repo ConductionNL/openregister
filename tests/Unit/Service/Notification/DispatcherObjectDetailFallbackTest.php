@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCP\Activity\IManager as IActivityManager;
@@ -94,8 +96,8 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
-				RegisterMapper::class => $registerMapper,
-				SchemaMapper::class => $schemaMapper,
+				RegisterMapperInterface::class => $registerMapper,
+				SchemaMapperInterface::class => $schemaMapper,
 				IEventDispatcher::class => $dispatcher,
 				default => null,
 			}

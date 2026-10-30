@@ -48,9 +48,9 @@ use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRow;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPackService;
@@ -110,8 +110,8 @@ class ImportPreviewService {
 	 * @param ImportService $importService The row transform the write path uses.
 	 * @param ObjectService $objectService The write path.
 	 * @param ValidateObject $validateObject Schema validation.
-	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -124,8 +124,8 @@ class ImportPreviewService {
 		private readonly ImportService $importService,
 		private readonly ObjectService $objectService,
 		private readonly ValidateObject $validateObject,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

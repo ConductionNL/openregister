@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -79,12 +79,12 @@ class SubstantiveChangeEvaluator {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves the object's schema.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ValueNormaliser $normaliser Puts values in the form a reader sees.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ValueNormaliser $normaliser=new ValueNormaliser(),
 	) {

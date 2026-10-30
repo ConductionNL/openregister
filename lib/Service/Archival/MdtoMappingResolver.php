@@ -39,7 +39,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -53,12 +54,12 @@ class MdtoMappingResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper         $schemaMapper Loads the object's schema.
+	 * @param SchemaMapperInterface<Schema>         $schemaMapper Loads the object's schema.
 	 * @param MdtoElementCatalogue $catalogue    The authority on which elements MDTO demands.
 	 * @param LoggerInterface      $logger       Where an unreadable schema is reported.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MdtoElementCatalogue $catalogue,
 		private readonly LoggerInterface $logger,
 	) {

@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IL10N;
@@ -98,8 +100,8 @@ class AnnotationNotifierLinkTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnMap(
 			[
-				[RegisterMapper::class, $registerMapper],
-				[SchemaMapper::class, $schemaMapper],
+				[RegisterMapperInterface::class, $registerMapper],
+				[SchemaMapperInterface::class, $schemaMapper],
 			]
 		);
 

@@ -36,8 +36,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
@@ -105,8 +107,8 @@ class DuplicateDetectionService {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapper $schemaMapper Schema lookup for the dedup annotation.
-	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup for the dedup annotation.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param SimilarityCalculator $similarity Pure field-similarity primitives.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param LoggerInterface $logger PSR logger.
@@ -117,8 +119,8 @@ class DuplicateDetectionService {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		private readonly SimilarityCalculator $similarity,
 		private readonly DismissedPairStore $dismissals,
 		private readonly LoggerInterface $logger,

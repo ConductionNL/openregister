@@ -32,7 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
 
@@ -43,13 +45,13 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $mapper Audit-trail mapper.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $mapper Audit-trail mapper.
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private AuditTrailMapper $mapper,
+		private AuditTrailMapperInterface $mapper,
 		private IL10N $l10n,
 	) {
 	}//end __construct()

@@ -22,12 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -50,16 +51,16 @@ class MacroActionResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper     $schemas    Loads a schema by id or slug.
+	 * @param SchemaMapperInterface<Schema>     $schemas    Loads a schema by id or slug.
 	 * @param FlowService      $flows      Reads the bound flow, for its `next` hint.
-	 * @param AuditTrailMapper $auditTrail Writes the entry that names the action and the run.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrail Writes the entry that names the action and the run.
 	 * @param LoggerInterface  $logger     Diagnostics.
 	 * @param FlowMapper|null  $flowStore  Finds a flow a schema declares by name.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly FlowService $flows,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowMapper $flowStore = null,
 	) {

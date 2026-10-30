@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -40,7 +43,10 @@ final class DbContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		MagicMapperInterface::class => MagicMapper::class,
+		RegisterMapperInterface::class => RegisterMapper::class,
+		SchemaMapperInterface::class => SchemaMapper::class,
 	];
 
 	/**

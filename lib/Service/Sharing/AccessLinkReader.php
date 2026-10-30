@@ -44,10 +44,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sharing;
 
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Timeline\PublicTimeline;
@@ -104,7 +105,7 @@ class AccessLinkReader {
 	 * Constructor.
 	 *
 	 * @param ObjectService $objects The object read path.
-	 * @param SchemaMapper $schemas Resolves the schema whose rules apply.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
 	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
@@ -113,7 +114,7 @@ class AccessLinkReader {
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly PropertyRbacHandler $properties,
 		private readonly PublicTimeline $timeline,
 		private readonly AccessLinkSubject $subjects,

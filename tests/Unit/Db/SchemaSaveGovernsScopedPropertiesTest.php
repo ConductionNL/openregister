@@ -50,6 +50,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 

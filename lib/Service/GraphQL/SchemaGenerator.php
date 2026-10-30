@@ -30,9 +30,9 @@ use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
 use GraphQL\Type\SchemaConfig;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\GraphQL\Scalar\DateTimeType;
 use OCA\OpenRegister\Service\GraphQL\Scalar\EmailType;
 use OCA\OpenRegister\Service\GraphQL\Scalar\JsonType;
@@ -121,12 +121,12 @@ class SchemaGenerator {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param RegisterMapperInterface<Register, \OCA\OpenRegister\Db\Schema> $registerMapper Register mapper
+	 * @param SchemaMapperInterface<\OCA\OpenRegister\Db\Schema> $schemaMapper Schema mapper
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

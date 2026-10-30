@@ -46,7 +46,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
@@ -107,7 +109,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 * @param ObjectService $objectService Object read/write path.
 	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution per jurisdiction.
 	 * @param DpiaPatternDetectionService $detectionService Pure grouping/threshold engine.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable detection audit rows.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Immutable detection audit rows.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -116,7 +118,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 		private readonly ObjectService $objectService,
 		private readonly DsarPolicyPackResolver $packResolver,
 		private readonly DpiaPatternDetectionService $detectionService,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

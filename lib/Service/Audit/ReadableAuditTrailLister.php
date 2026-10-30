@@ -42,12 +42,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use Throwable;
 
@@ -104,16 +104,16 @@ class ReadableAuditTrailLister {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper  $auditTrailMapper  Reads the candidate rows.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity>  $auditTrailMapper  Reads the candidate rows.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>       $objectMapper      Resolves an entry's object across the magic tables.
-	 * @param SchemaMapper      $schemaMapper      Resolves the object's schema.
+	 * @param SchemaMapperInterface<Schema>      $schemaMapper      Resolves the object's schema.
 	 * @param PermissionHandler $permissionHandler Decides whether the caller may read the object.
 	 * @param ReadEventVisibility $readEvents      Whether the caller may see who read an object.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly ReadEventVisibility $readEvents,
 	) {

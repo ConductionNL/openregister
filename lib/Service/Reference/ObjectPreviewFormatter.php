@@ -31,8 +31,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Reference;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCA\OpenRegister\Service\ObjectService;
@@ -154,16 +156,16 @@ final class ObjectPreviewFormatter {
 	/**
 	 * Schema mapper for resolving schema names
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper for resolving register names
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface<Register, Schema>
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Logger for debugging
@@ -179,8 +181,8 @@ final class ObjectPreviewFormatter {
 	 * @param IL10N $l10n The localization service
 	 * @param ObjectService $objectService The object service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
-	 * @param SchemaMapper $schemaMapper Schema mapper
-	 * @param RegisterMapper $registerMapper Register mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
@@ -192,8 +194,8 @@ final class ObjectPreviewFormatter {
 		IL10N $l10n,
 		ObjectService $objectService,
 		DeepLinkRegistryService $deepLinkRegistry,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		LoggerInterface $logger,
 	) {
 		$this->urlGenerator = $urlGenerator;

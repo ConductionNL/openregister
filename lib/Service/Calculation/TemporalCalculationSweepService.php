@@ -43,10 +43,10 @@ namespace OCA\OpenRegister\Service\Calculation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
@@ -66,8 +66,8 @@ class TemporalCalculationSweepService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema enumeration (system scope).
-	 * @param RegisterMapper $registerMapper Register enumeration for schema→register resolution.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema enumeration (system scope).
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register enumeration for schema→register resolution.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Raw per-table object enumeration.
 	 * @param CalculationEvaluator $evaluator Expression evaluator (exposes `now`).
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
@@ -77,8 +77,8 @@ class TemporalCalculationSweepService {
 	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly CalculationEvaluator $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,

@@ -28,7 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Db\View;
@@ -50,9 +51,9 @@ class ViewPresentationService {
 	/**
 	 * Schema mapper, used to resolve enum order for the groupByField.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Object service, used to run the existing paginated/faceted object query.
@@ -71,7 +72,7 @@ class ViewPresentationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema mapper for enum/property discovery
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for enum/property discovery
 	 * @param ObjectService $objectService Object service for the paginated object query
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param PropertyRbacHandler|null $propertyRbac Judges whether the caller may group on a governed property.
@@ -81,7 +82,7 @@ class ViewPresentationService {
 	 * @return void
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		ObjectService $objectService,
 		LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction keeps working. The

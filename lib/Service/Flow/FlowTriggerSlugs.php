@@ -44,8 +44,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,13 +64,13 @@ class FlowTriggerSlugs {
 	 * The mappers memoise `find()` per request, so resolving the same
 	 * register/schema for several triggers in one dispatch costs one read.
 	 *
-	 * @param RegisterMapper $registers Resolves a register by id, uuid or slug.
-	 * @param SchemaMapper $schemas Resolves a schema by id, uuid or slug.
+	 * @param RegisterMapperInterface<Register, Schema> $registers Resolves a register by id, uuid or slug.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves a schema by id, uuid or slug.
 	 * @param LoggerInterface $logger Records identifiers that resolve to nothing.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
 

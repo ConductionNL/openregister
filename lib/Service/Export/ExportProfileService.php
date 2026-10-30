@@ -30,9 +30,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ExportProfileMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ExportService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -56,8 +56,8 @@ class ExportProfileService {
 	 * Wire the collaborators.
 	 *
 	 * @param ExportProfileMapper  $mapper        Profile persistence.
-	 * @param RegisterMapper       $registerMapper Register lookups.
-	 * @param SchemaMapper         $schemaMapper  Schema lookups.
+	 * @param RegisterMapperInterface<Register, Schema>       $registerMapper Register lookups.
+	 * @param SchemaMapperInterface<Schema>         $schemaMapper  Schema lookups.
 	 * @param ExportService        $exportService The selection every export shares.
 	 * @param ExportProfileWriter  $writer        Projection and file writing.
 	 * @param ExportRightService    $rightService  The export verb.
@@ -68,8 +68,8 @@ class ExportProfileService {
 	 */
 	public function __construct(
 		private readonly ExportProfileMapper $mapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ExportService $exportService,
 		private readonly ExportProfileWriter $writer,
 		private readonly ExportRightService $rightService,

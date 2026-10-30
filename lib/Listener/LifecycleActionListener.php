@@ -36,8 +36,8 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCP\EventDispatcher\Event;
@@ -55,7 +55,7 @@ class LifecycleActionListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
 	 * @param LifecycleActionExecutor $executor Runs the transition's declared actions.
 	 * @param LoggerInterface $logger Logger for diagnostics.
 	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is, so the named action's own actions run.
@@ -63,7 +63,7 @@ class LifecycleActionListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LifecycleActionExecutor $executor,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleTransitionResolver $transitionResolver,

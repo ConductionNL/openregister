@@ -39,12 +39,12 @@ namespace OCA\OpenRegister\Service\Schema;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
@@ -73,7 +73,7 @@ class SchemaRevalidationService {
 	 *
 	 * @param SchemaRunMapper $runMapper Run persistence.
 	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup.
 	 * @param ObjectService $objectService Object read/save pipeline.
 	 * @param ValidateObject $validateObject Single write-path validator.
 	 * @param LoggerInterface $logger Logger.
@@ -81,7 +81,7 @@ class SchemaRevalidationService {
 	public function __construct(
 		private readonly SchemaRunMapper $runMapper,
 		private readonly SchemaRunEntryMapper $runEntryMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectService $objectService,
 		private readonly ValidateObject $validateObject,
 		private readonly LoggerInterface $logger,

@@ -44,8 +44,8 @@ use OCA\OpenRegister\Db\ErasurePreview;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
@@ -82,7 +82,7 @@ class ErasureRunner {
 	 * @param ErasurePreviewStore       $store          The recorded preview and its approval.
 	 * @param DataSubjectRequestService $subjects       Discovery and the audited pseudonymise write.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>               $objectMapper   Object loads and the final delete.
-	 * @param SchemaMapper              $schemaMapper   Schema resolution for the destruction scope.
+	 * @param SchemaMapperInterface<Schema>              $schemaMapper   Schema resolution for the destruction scope.
 	 * @param DestroyRightService       $destroyRight   Whether this caller may destroy.
 	 * @param RetentionClockService     $clockService   Whether the clocks allow it.
 	 * @param DestructionScopeService   $scopeService   What goes with the object.
@@ -101,7 +101,7 @@ class ErasureRunner {
 		private readonly ErasurePreviewStore $store,
 		private readonly DataSubjectRequestService $subjects,
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DestroyRightService $destroyRight,
 		private readonly RetentionClockService $clockService,
 		private readonly DestructionScopeService $scopeService,

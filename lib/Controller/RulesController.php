@@ -32,7 +32,7 @@ use DateTime;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
@@ -71,7 +71,7 @@ class RulesController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param SchemaMapper $schemaMapper Resolves the schema a rule is declared on.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves the schema a rule is declared on.
 	 * @param RuleInventoryService $inventory Derives the rule list.
 	 * @param RuleRunMapper $runs Reads the run log.
 	 * @param RuleTrialService $trials Evaluates a rule without committing.
@@ -90,7 +90,7 @@ class RulesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RuleInventoryService $inventory,
 		private readonly RuleRunMapper $runs,
 		private readonly RuleTrialService $trials,

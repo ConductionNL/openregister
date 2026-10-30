@@ -28,17 +28,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
@@ -88,11 +89,11 @@ class TransitionEngine implements ObjectTransitionInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectService $objectService Object CRUD service used to load + save the entity.
-	 * @param SchemaMapper $schemaMapper Mapper to resolve the entity's schema.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper to resolve the entity's schema.
 	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
 	 * @param IUserSession $userSession Current user session, for actor attribution.
 	 * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
-	 * @param RegisterMapper $registerMapper Mapper used to resolve the register slug.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper used to resolve the register slug.
 	 * @param IAppConfig $appConfig App config, for the slug-contract opt-in.
 	 * @param LoggerInterface $logger Logger for post-commit listener failures.
 	 * @param LifecycleWriteBoundary $writeBoundary Names the transition for the listeners and wraps
@@ -110,11 +111,11 @@ class TransitionEngine implements ObjectTransitionInterface {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleWriteBoundary $writeBoundary,

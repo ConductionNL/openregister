@@ -36,7 +36,8 @@ namespace OCA\OpenRegister\BulkAction;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
@@ -81,7 +82,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 * @param ExportProfileWriter  $writer       Projection and CSV lines.
 	 * @param ExportRightService   $rightService The export verb.
 	 * @param ExportAuditRecorder  $recorder     The audit trail.
-	 * @param SchemaMapper         $schemaMapper Schema lookups for the per-schema file.
+	 * @param SchemaMapperInterface<Schema>         $schemaMapper Schema lookups for the per-schema file.
 	 * @param IRootFolder          $rootFolder   The actor's Files folder.
 	 *
 	 * @return void
@@ -91,7 +92,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 		private readonly ExportProfileWriter $writer,
 		private readonly ExportRightService $rightService,
 		private readonly ExportAuditRecorder $recorder,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IRootFolder $rootFolder,
 	) {
 	}//end __construct()

@@ -39,12 +39,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -62,15 +63,15 @@ class PurgeObjectCommand extends Command {
 	 * Wire the mappers.
 	 *
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>      $objectMapper     Magic-table object lookup and delete.
-	 * @param SchemaMapper     $schemaMapper     Schema lookup, to read the archival annotation.
-	 * @param AuditTrailMapper $auditTrailMapper Resolves the objects an import job created.
+	 * @param SchemaMapperInterface<Schema>     $schemaMapper     Schema lookup, to read the archival annotation.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Resolves the objects an import job created.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
 		parent::__construct();
 	}//end __construct()

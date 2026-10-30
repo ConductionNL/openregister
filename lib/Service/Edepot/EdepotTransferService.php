@@ -30,10 +30,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
@@ -77,7 +78,7 @@ class EdepotTransferService {
 	 * @param TransferListService $transferListService The transfer list service.
 	 * @param TransferRecordService $transferRecordService Durable transfer + proof persistence.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object mapper.
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper The audit trail mapper.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param INotificationManager $notificationManager The notification manager.
 	 * @param LoggerInterface $logger Logger.
@@ -88,7 +89,7 @@ class EdepotTransferService {
 		private readonly TransferListService $transferListService,
 		private readonly TransferRecordService $transferRecordService,
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,

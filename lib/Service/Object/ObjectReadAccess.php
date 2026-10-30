@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Http\JSONResponse;
@@ -53,12 +53,12 @@ class ObjectReadAccess {
 	 *
 	 * @param ObjectService $objectService Reads objects, with RBAC.
 	 * @param IUserSession  $userSession   Current-user session.
-	 * @param SchemaMapper  $schemaMapper  Resolves the object's schema, whose rule carries the verb.
+	 * @param SchemaMapperInterface<Schema>  $schemaMapper  Resolves the object's schema, whose rule carries the verb.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

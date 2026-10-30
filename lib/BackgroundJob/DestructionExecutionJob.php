@@ -32,9 +32,9 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\RetentionService;
@@ -116,7 +116,7 @@ class DestructionExecutionJob extends QueuedJob {
 			$retentionService = $this->container->get(RetentionService::class);
 			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
 			$objectMapper = $this->container->get(MagicMapperInterface::class);
-			$auditMapper = $this->container->get(AuditTrailMapper::class);
+			$auditMapper = $this->container->get(AuditTrailMapperInterface::class);
 			$deleteObject = $this->container->get(DeleteObject::class);
 			$saveObject = $this->container->get(ObjectSaverInterface::class);
 			$settings = $settingsHandler->getArchivalSettingsOnly();

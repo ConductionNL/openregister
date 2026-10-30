@@ -48,9 +48,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\ObjectService;
@@ -108,7 +110,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @param array $schemaEntries The app's opted-in schema entries (see above).
 	 * @param array $suppressedIds Hand-written tool ids to self-suppress (see above).
 	 * @param ObjectService $objectService RBAC-enforcing object read/write facade.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable hash-chained audit-trail writer.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Immutable hash-chained audit-trail writer.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
@@ -116,7 +118,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		private readonly array $schemaEntries,
 		private readonly array $suppressedIds,
 		private readonly ObjectService $objectService,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

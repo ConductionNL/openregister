@@ -29,9 +29,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -84,15 +84,15 @@ class UrnService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper The register mapper.
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper The register mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper.
 	 * @param IURLGenerator $urlGenerator The URL generator.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

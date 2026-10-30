@@ -23,14 +23,14 @@ namespace OCA\OpenRegister\Service\File;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterFolderRecorder;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\Files\Config\IUserMountCache;
@@ -91,11 +91,12 @@ class FolderManagementHandler {
 	 *
 	 * @param IRootFolder $rootFolder Root folder for file operations.
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities.
-	 * @param RegisterMapper $registerMapper Mapper for registers.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for registers.
 	 * @param IUserSession $userSession User session for user context.
 	 * @param IGroupManager $groupManager Group manager for group operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param AuditTrailMapper $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access
+	 *        denials.
 	 * @param IUserMountCache $mountCache Mount cache, used to recognise a folder OpenRegister manages
 	 *                                    without setting up the owning user's mounts.
 	 * @param RegisterFolderRecorder $folderRecorder Records a register's folder id as bookkeeping, so a
@@ -108,11 +109,11 @@ class FolderManagementHandler {
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
 		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserMountCache $mountCache,
 		private readonly RegisterFolderRecorder $folderRecorder,
 		private ?FileService $fileService = null,

@@ -29,10 +29,10 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 
 /**
  * Lists the action runs recorded on an object.
@@ -51,11 +51,11 @@ class ObjectActionHistory {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrail The audit trail.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrail The audit trail.
 	 * @param ObjectActionGate $gate       The read right.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly ObjectActionGate $gate,
 	) {
 	}//end __construct()

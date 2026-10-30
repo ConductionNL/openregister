@@ -27,9 +27,11 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
@@ -75,8 +77,8 @@ class TmloController extends Controller {
 	 * @param IRequest $request The request object
 	 * @param TmloService $tmloService TMLO metadata service
 	 * @param ObjectService $objectService Object service for querying objects
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper
 	 * @param LoggerInterface $logger Logger interface
 	 * @param ExportGate $exportGate The export verb, checked before any archival metadata leaves.
 	 *
@@ -87,8 +89,8 @@ class TmloController extends Controller {
 		IRequest $request,
 		private readonly TmloService $tmloService,
 		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ExportGate $exportGate,
 	) {
