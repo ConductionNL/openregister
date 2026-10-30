@@ -380,8 +380,8 @@ class LockHandler {
 		// holds until it is unlocked, so taking it needs the right to update
 		// the object, not only to find it. A flow run authorizes at its own
 		// call site.
-		if ($runUuid === null && $this->permissionHandler !== null && $context['schema'] instanceof Schema) {
-			$this->permissionHandler->checkPermission(
+		if ($runUuid === null) {
+			$this->permissionHandler?->checkPermission(
 				schema: $context['schema'],
 				action: 'update',
 				userId: null,
