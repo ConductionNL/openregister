@@ -129,7 +129,6 @@ class LlmSettingsHandler {
 					],
 					'vectorConfig' => [
 						'backend' => 'php',
-						'solrField' => '_embedding_',
 					],
 				];
 			}//end if
@@ -145,7 +144,6 @@ class LlmSettingsHandler {
 			if (isset($decoded['vectorConfig']) === false) {
 				$decoded['vectorConfig'] = [
 					'backend' => 'php',
-					'solrField' => '_embedding_',
 				];
 			}
 
@@ -155,12 +153,8 @@ class LlmSettingsHandler {
 					$decoded['vectorConfig']['backend'] = 'php';
 				}
 
-				if (isset($decoded['vectorConfig']['solrField']) === false) {
-					$decoded['vectorConfig']['solrField'] = '_embedding_';
-				}
-
-				// Remove deprecated solrCollection if it exists.
-				unset($decoded['vectorConfig']['solrCollection']);
+				// Drop the retired Solr vector keys.
+				unset($decoded['vectorConfig']['solrField'], $decoded['vectorConfig']['solrCollection']);
 			}
 
 			return $decoded;
@@ -222,7 +216,6 @@ class LlmSettingsHandler {
 				],
 				'vectorConfig' => [
 					'backend' => $newVec['backend'] ?? $exVec['backend'] ?? 'php',
-					'solrField' => $newVec['solrField'] ?? $exVec['solrField'] ?? '_embedding_',
 				],
 			];
 

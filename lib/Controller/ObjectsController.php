@@ -1385,9 +1385,9 @@ class ObjectsController extends Controller {
 	 * - Search: _search
 	 * - Rendering: _extend, _fields, _filter/_unset
 	 * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
-	 * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
-	 * - Debug: _debug (enable debug information in response - SOLR only)
-	 * - Source: _source (force search source: 'database' or 'index'/'solr')
+	 * - Aggregations: _aggregations (enable aggregations in response)
+	 * - Debug: _debug (enable debug information in response)
+	 * - Source: _source (ignored; the database is the only search source)
 	 * - Sorting: _order
 	 * - Empty values: _empty (boolean, default: false). When false (default), null, empty string,
 	 *   and empty array values are stripped from the response to reduce payload size.
@@ -2714,9 +2714,9 @@ class ObjectsController extends Controller {
 	 * - Search: _search
 	 * - Rendering: _extend, _fields, _filter/_unset
 	 * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
-	 * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
-	 * - Debug: _debug (enable debug information in response - SOLR only)
-	 * - Source: _source (force search source: 'database' or 'index'/'solr')
+	 * - Aggregations: _aggregations (enable aggregations in response)
+	 * - Debug: _debug (enable debug information in response)
+	 * - Source: _source (ignored; the database is the only search source)
 	 * - Sorting: _order
 	 * - Empty values: _empty (boolean, default: false). When false (default), null, empty string,
 	 *   and empty array values are stripped from the response to reduce payload size.
@@ -2913,7 +2913,7 @@ class ObjectsController extends Controller {
 			}//end try
 		}//end if
 
-		// Build search query and execute via normal route (magic tables or SOLR).
+		// Build search query and execute via the normal route (magic tables).
 		// Pass the already-resolved numeric register/schema IDs (when a
 		// register/schema query parameter was supplied) so the query filters
 		// on '@self.register' / '@self.schema' the same way the path-style
@@ -6604,49 +6604,6 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end getObjectVectorizationStats()
-
-	/**
-	 * Get count of objects for vectorization
-	 *
-	 * @return JSONResponse Object count
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @psalm-suppress NoValue
-	 *
-	 * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: mixed}, array<never, never>>
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	public function getObjectVectorizationCount(): JSONResponse {
-		try {
-			// Get schemas parameter if provided.
-			$schemas = $this->request->getParam(key: 'schemas');
-			if (is_string($schemas) === true) {
-				$schemas = json_decode($schemas, true);
-			}
-
-			// Use ObjectService delegation to handler.
-			$count = $this->objectService->getVectorizationCount(_schemas: $schemas);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'count' => $count,
-				]
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end getObjectVectorizationCount()
 
 	/**
 	 * Validate all objects for a register/schema combination

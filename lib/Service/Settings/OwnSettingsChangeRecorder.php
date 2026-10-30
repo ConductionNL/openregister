@@ -78,7 +78,6 @@ class OwnSettingsChangeRecorder {
 		'multitenancy',
 		'organisation',
 		'retention',
-		'solr',
 		'@flow_run_retention_days',
 		'@flow_audit_enabled',
 		'@flow_oversight_enabled',
