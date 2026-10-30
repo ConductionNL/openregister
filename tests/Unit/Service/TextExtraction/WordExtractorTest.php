@@ -24,21 +24,14 @@ use ReflectionMethod;
 /**
  * Unit tests for WordExtractor.
  *
- * NOTE: this test-runner container (php:8.3-cli, no ext-zip) cannot read a
- * real docx/odt fixture — PhpWord's Word2007/ODText readers hard-require
- * \ZipArchive (its PclZip fallback only covers writing, not
- * Shared\XMLReader::getDomFromZip() used on read). Because extract()
- * catches \Throwable and degrades to null on any per-document failure, the
- * container's missing ZipArchive class itself gives us a real (not
- * hand-waved) exercise of that degrade-to-null path: garbage bytes plus a
- * genuine docx/odt MIME type hit the same "reader blew up" branch that a
- * malformed real document would. The MsDoc (legacy .doc) reader does not
- * need ZipArchive, so garbage .doc bytes exercise the same null path via a
- * genuine PhpWord parse failure instead of an environment limitation.
+ * Garbage bytes under a genuine docx/doc MIME type exercise the degrade-to-null
+ * path a malformed real document takes. The MIME/extension to reader mapping
+ * is checked through reflection. Real documents are covered by
+ * {@see WordExtractorGoldenTest}.
  *
- * What IS fully, deterministically unit-testable here without any real
- * office file: the private resolveWordReader() MIME/extension → reader
- * mapping, verified via reflection.
+ * @covers \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\WordTextReader
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\OoxmlPackage
  */
 class WordExtractorTest extends TestCase {
 
@@ -178,9 +171,8 @@ class WordExtractorTest extends TestCase {
 	}
 
 	/**
-	 * A docx-typed file that PhpWord's Word2007 reader cannot open (in this
-	 * container, missing ZipArchive; on a real deployment, a corrupt zip)
-	 * must likewise degrade to null instead of throwing.
+	 * A docx-typed file that is not a zip package must likewise degrade to
+	 * null instead of throwing.
 	 *
 	 * @return void
 	 */
@@ -194,5 +186,24 @@ class WordExtractorTest extends TestCase {
 		);
 
 		$this->assertNull($result);
+	}
+
+	/**
+	 * A file whose content cannot be read degrades to null and logs the failure.
+	 *
+	 * @return void
+	 */
+	public function testExtractReturnsNullWhenContentCannotBeRead(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getContent')->willThrowException(new \RuntimeException('storage gone'));
+		$file->method('getMimeType')->willReturn('application/vnd.oasis.opendocument.text');
+		$file->method('getName')->willReturn('gone.odt');
+		$file->method('getId')->willReturn(304);
+
+		$this->logger->expects($this->once())
+			->method('error')
+			->with($this->stringContains('[WordExtractor] Word extraction failed'));
+
+		$this->assertNull($this->extractor->extract(file: $file));
 	}
 }//end class

@@ -133,12 +133,6 @@ class NotificationRecipientResolver {
 	 *
 	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per recipient kind; each is a distinct
-	 * resolution rule that cannot be merged without losing the kind's own verification posture.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) Kind dispatch times per-kind guards; all required.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) One branch per recipient kind, moved verbatim
-	 * from the dispatcher; splitting per kind would scatter the shared verification posture.
-	 *
 	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
 	public function resolveWithDiagnostics(
@@ -148,170 +142,213 @@ class NotificationRecipientResolver {
 		array $context = [],
 		array $roleGroups = [],
 	): array {
+		$source = new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups);
 		$uids = [];
 		$unresolved = [];
-		foreach ($recipientsSpec as $r) {
-			if (is_array($r) === false) {
+		foreach ($recipientsSpec as $entry) {
+			if (is_array($entry) === false) {
 				continue;
 			}
 
-			$kind = (string)($r['kind'] ?? '');
-
-			// `{"watchers": true}` carries no `kind`: it names a subscription
-			// list, not a value to look up. Normalised here so the branch below
-			// reads like every other kind.
-			if (($r['watchers'] ?? null) === true) {
-				$kind = 'watchers';
-			}
-
-			if ($kind === 'watchers') {
-				if ($object !== null) {
-					foreach ($this->resolveWatcherRecipients(object: $object) as $uid) {
-						$uids[] = $uid;
-					}
-				}
-
-				continue;
-			}
-
-			if ($kind === 'users') {
-				foreach ((array)($r['users'] ?? []) as $u) {
-					if (is_string($u) === true && $u !== '' && $this->userExists(uid: $u) === true) {
-						$uids[] = $u;
-					}
-				}
-
-				continue;
-			}
-
-			if ($kind === 'field') {
-				// The field's value comes from the object's stored data,
-				// which is writeable by anyone with `update` permission
-				// on the object. An attacker who controls the field
-				// could otherwise direct notifications at any uid string,
-				// including admins, with an attacker-shaped subject.
-				// Verify the value names a real Nextcloud user before
-				// adding it to the recipient list.
-				$field = (string)($r['field'] ?? '');
-				$value = ($data[$field] ?? null);
-				if (is_string($value) === true && $value !== '' && $this->userExists(uid: $value) === true) {
-					$uids[] = $value;
-				}
-
-				continue;
-			}
-
-			if ($kind === 'relation') {
-				// Resolve a typed relation (declared via x-openregister-relations).
-				// Same attacker-controlled-input reasoning as the `field`
-				// kind above — every extracted uid is checked against
-				// IUserManager::userExists().
-				$relName = (string)($r['relation'] ?? '');
-				if ($relName === '') {
-					continue;
-				}
-
-				$value = ($data[$relName] ?? null);
-				foreach ($this->extractUidsFromRelation(value: $value) as $uid) {
-					if ($this->userExists(uid: $uid) === true) {
-						$uids[] = $uid;
-					}
-				}
-
-				continue;
-			}//end if
-
-			if ($kind === 'object-acl') {
-				if ($object !== null) {
-					$perm = (string)($r['permission'] ?? 'read');
-					foreach ($this->resolveObjectAclRecipients(object: $object, permission: $perm) as $uid) {
-						$uids[] = $uid;
-					}
-				}
-
-				continue;
-			}
-
-			if ($kind === 'expression') {
-				if ($object !== null) {
-					$resolverTag = (string)($r['resolver'] ?? '');
-					$resolved = $this->resolveExpressionRecipients(
-						resolverTag: $resolverTag,
-						object: $object,
-						context: $context
-					);
-					foreach ($resolved as $uid) {
-						$uids[] = $uid;
-					}
-				}
-
-				continue;
-			}
-
-			if ($kind === 'groups') {
-				foreach ((array)($r['groups'] ?? []) as $gid) {
-					if (is_string($gid) === false || $gid === '') {
-						continue;
-					}
-
-					$expanded = $this->expandGroup(gid: $gid, kind: 'groups');
-					foreach ($expanded['uids'] as $uid) {
-						$uids[] = $uid;
-					}
-
-					foreach ($expanded['unresolved'] as $entry) {
-						$unresolved[] = $entry;
-					}
-				}
-
-				continue;
-			}//end if
-
-			if ($kind === 'role') {
-				// A role is the schema's own vocabulary: `authorization.roles`
-				// assigns each named role a set of Nextcloud groups, the same
-				// map a lifecycle transition reads. Addressing the role rather
-				// than the groups is what lets the assignment change without
-				// every rule being rewritten.
-				$roleName = (string)($r['role'] ?? '');
-				if ($roleName === '') {
-					continue;
-				}
-
-				$assigned = ($roleGroups[$roleName] ?? null);
-				if (is_array($assigned) === false) {
-					// The rule names a role this schema does not assign. That is
-					// a rule addressing nobody, which is the case this reports.
-					$unresolved[] = [
-						'kind' => 'role',
-						'id' => $roleName,
-						'reason' => 'role-not-assigned',
-					];
-					continue;
-				}
-
-				foreach ($assigned as $gid) {
-					if (is_string($gid) === false || $gid === '') {
-						continue;
-					}
-
-					$expanded = $this->expandGroup(gid: $gid, kind: 'role');
-					foreach ($expanded['uids'] as $uid) {
-						$uids[] = $uid;
-					}
-
-					foreach ($expanded['unresolved'] as $entry) {
-						$unresolved[] = $entry;
-					}
-				}
-			}//end if
-		}//end foreach
+			$resolved = $this->resolveEntry(entry: $entry, source: $source);
+			array_push($uids, ...$resolved['uids']);
+			array_push($unresolved, ...$resolved['unresolved']);
+		}
 
 		return [
 			'uids' => array_values(array_unique($uids)),
 			'unresolved' => $unresolved,
 		];
 	}//end resolveWithDiagnostics()
+
+	/**
+	 * Resolve one recipients entry by its kind.
+	 *
+	 * `{"watchers": true}` carries no `kind`: it names a subscription list,
+	 * not a value to look up, and is read as kind `watchers`.
+	 *
+	 * @param array<string, mixed> $entry  The recipients entry.
+	 * @param RecipientSource      $source What the entry is resolved against.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	private function resolveEntry(array $entry, RecipientSource $source): array {
+		$kind = (string)($entry['kind'] ?? '');
+		if (($entry['watchers'] ?? null) === true) {
+			$kind = 'watchers';
+		}
+
+		if ($kind === 'groups') {
+			return $this->expandGroups(gids: (array)($entry['groups'] ?? []), kind: 'groups');
+		}
+
+		if ($kind === 'role') {
+			return $this->resolveRoleEntry(roleName: (string)($entry['role'] ?? ''), roleGroups: $source->roleGroups);
+		}
+
+		$uids = match ($kind) {
+			'watchers' => $this->resolveWatcherEntry(object: $source->object),
+			'users' => $this->existingUids(candidates: (array)($entry['users'] ?? [])),
+			'field' => $this->existingUids(candidates: [($source->data[(string)($entry['field'] ?? '')] ?? null)]),
+			'relation' => $this->resolveRelationEntry(relation: (string)($entry['relation'] ?? ''), data: $source->data),
+			'object-acl' => $this->resolveObjectAclEntry(entry: $entry, object: $source->object),
+			'expression' => $this->resolveExpressionEntry(entry: $entry, source: $source),
+			default => [],
+		};
+
+		return ['uids' => $uids, 'unresolved' => []];
+	}//end resolveEntry()
+
+	/**
+	 * The candidates that name an existing Nextcloud user.
+	 *
+	 * A `field` value comes from object data anyone with `update` permission
+	 * may write, so an unchecked value could aim a notification at any uid,
+	 * admins included. Only real users pass.
+	 *
+	 * @param array<int|string, mixed> $candidates The candidate uids.
+	 *
+	 * @return array<int, string>
+	 */
+	private function existingUids(array $candidates): array {
+		$uids = [];
+		foreach ($candidates as $candidate) {
+			if (is_string($candidate) === true && $candidate !== '' && $this->userExists(uid: $candidate) === true) {
+				$uids[] = $candidate;
+			}
+		}
+
+		return $uids;
+	}//end existingUids()
+
+	/**
+	 * The watchers of the object, none without an object.
+	 *
+	 * @param ObjectEntity|null $object The object.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveWatcherEntry(?ObjectEntity $object): array {
+		if ($object === null) {
+			return [];
+		}
+
+		return array_values($this->resolveWatcherRecipients(object: $object));
+	}//end resolveWatcherEntry()
+
+	/**
+	 * The existing users a typed relation (x-openregister-relations) points at.
+	 *
+	 * @param string               $relation The relation name.
+	 * @param array<string, mixed> $data     The object's stored data.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveRelationEntry(string $relation, array $data): array {
+		if ($relation === '') {
+			return [];
+		}
+
+		$uids = [];
+		foreach ($this->extractUidsFromRelation(value: ($data[$relation] ?? null)) as $uid) {
+			if ($this->userExists(uid: $uid) === true) {
+				$uids[] = $uid;
+			}
+		}
+
+		return $uids;
+	}//end resolveRelationEntry()
+
+	/**
+	 * The users holding the entry's permission on the object, none without an object.
+	 *
+	 * @param array<string, mixed> $entry  The recipients entry.
+	 * @param ObjectEntity|null    $object The object.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveObjectAclEntry(array $entry, ?ObjectEntity $object): array {
+		if ($object === null) {
+			return [];
+		}
+
+		$permission = (string)($entry['permission'] ?? 'read');
+		return array_values($this->resolveObjectAclRecipients(object: $object, permission: $permission));
+	}//end resolveObjectAclEntry()
+
+	/**
+	 * The users an expression resolver returns, none without an object.
+	 *
+	 * @param array<string, mixed> $entry  The recipients entry.
+	 * @param RecipientSource      $source What the entry is resolved against.
+	 *
+	 * @return array<int, string>
+	 */
+	private function resolveExpressionEntry(array $entry, RecipientSource $source): array {
+		if ($source->object === null) {
+			return [];
+		}
+
+		return array_values(
+			$this->resolveExpressionRecipients(
+				resolverTag: (string)($entry['resolver'] ?? ''),
+				object: $source->object,
+				context: $source->context
+			)
+		);
+	}//end resolveExpressionEntry()
+
+	/**
+	 * Resolve a `role` entry through the groups the schema assigns that role.
+	 *
+	 * A role is the schema's own vocabulary: `authorization.roles` assigns
+	 * each role a set of groups, so the assignment can change without every
+	 * rule being rewritten. A role the schema does not assign addresses
+	 * nobody, and is reported as unresolved.
+	 *
+	 * @param string                            $roleName   The role named by the entry.
+	 * @param array<string, array<int, string>> $roleGroups Role name to assigned group ids.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 */
+	private function resolveRoleEntry(string $roleName, array $roleGroups): array {
+		if ($roleName === '') {
+			return ['uids' => [], 'unresolved' => []];
+		}
+
+		$assigned = ($roleGroups[$roleName] ?? null);
+		if (is_array($assigned) === false) {
+			return ['uids' => [], 'unresolved' => [['kind' => 'role', 'id' => $roleName, 'reason' => 'role-not-assigned']]];
+		}
+
+		return $this->expandGroups(gids: $assigned, kind: 'role');
+	}//end resolveRoleEntry()
+
+	/**
+	 * Expand a list of group ids, skipping entries that are not non-empty strings.
+	 *
+	 * @param array<int|string, mixed> $gids The group ids.
+	 * @param string                   $kind `groups` or `role`, for the unresolved entries.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 */
+	private function expandGroups(array $gids, string $kind): array {
+		$uids = [];
+		$unresolved = [];
+		foreach ($gids as $gid) {
+			if (is_string($gid) === false || $gid === '') {
+				continue;
+			}
+
+			$expanded = $this->expandGroup(gid: $gid, kind: $kind);
+			array_push($uids, ...array_values($expanded['uids']));
+			array_push($unresolved, ...array_values($expanded['unresolved']));
+		}
+
+		return ['uids' => $uids, 'unresolved' => $unresolved];
+	}//end expandGroups()
 
 	/**
 	 * Expand one group id to its members, saying so when the group is absent.

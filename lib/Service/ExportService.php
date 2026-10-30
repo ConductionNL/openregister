@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
@@ -59,7 +60,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class ExportService {
+class ExportService implements ObjectExporterInterface {
 
 	/**
 	 * Maximum number of objects a single PDF export may render.

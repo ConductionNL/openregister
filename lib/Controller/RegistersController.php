@@ -34,11 +34,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -115,16 +115,16 @@ class RegistersController extends Controller {
 	/**
 	 * Export service for handling data exports
 	 *
-	 * @var ExportService
+	 * @var ObjectExporterInterface
 	 */
-	private readonly ExportService $exportService;
+	private readonly ObjectExporterInterface $exportService;
 
 	/**
 	 * Import service for handling data imports
 	 *
-	 * @var ImportService
+	 * @var ObjectImporterInterface
 	 */
-	private readonly ImportService $importService;
+	private readonly ObjectImporterInterface $importService;
 
 	/**
 	 * Schema mapper for handling schema operations
@@ -143,9 +143,9 @@ class RegistersController extends Controller {
 	/**
 	 * GitHub service for publishing to GitHub
 	 *
-	 * @var GitHubHandler
+	 * @var GitHubClientInterface
 	 */
-	private readonly GitHubHandler $githubService;
+	private readonly GitHubClientInterface $githubService;
 
 	/**
 	 * App manager for getting app version
@@ -176,11 +176,11 @@ class RegistersController extends Controller {
 	 * @param IUserSession $userSession User session service
 	 * @param ConfigurationService $configurationService Configuration service for import/export
 	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
-	 * @param ExportService $exportService Export service for data exports
-	 * @param ImportService $importService Import service for data imports
+	 * @param ObjectExporterInterface $exportService Export service for data exports
+	 * @param ObjectImporterInterface $importService Import service for data imports
 	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
 	 * @param RegisterMapper $registerMapper Register mapper for database operations
-	 * @param GitHubHandler $githubService GitHub service for publishing
+	 * @param GitHubClientInterface $githubService GitHub service for publishing
 	 * @param IAppManager $appManager App manager for app version
 	 * @param OasService $oasService OAS service for OpenAPI generation
 	 * @param ContainerInterface $container Container for lazy loading services
@@ -203,11 +203,11 @@ class RegistersController extends Controller {
 		private readonly IUserSession $userSession,
 		ConfigurationService $configurationService,
 		AuditTrailMapper $auditTrailMapper,
-		ExportService $exportService,
-		ImportService $importService,
+		ObjectExporterInterface $exportService,
+		ObjectImporterInterface $importService,
 		SchemaMapper $schemaMapper,
 		RegisterMapper $registerMapper,
-		GitHubHandler $githubService,
+		GitHubClientInterface $githubService,
 		IAppManager $appManager,
 		OasService $oasService,
 		private readonly ContainerInterface $container,

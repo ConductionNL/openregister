@@ -89,6 +89,27 @@ class ValidateObject {
 	public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
 	/**
+	 * Messages that name the property, one argument and the value: the argument key, its
+	 * default, and the sprintf template.
+	 *
+	 * @var array<string, array{0: string, 1: int|string, 2: string}>
+	 */
+	private const SIMPLE_ERROR_MESSAGES = [
+		'format'  => [
+			'format',
+			'unknown',
+			"Property '%s' should match format '%s' but '%s' does not. Please provide a value in the correct format.",
+		],
+		'minimum' => ['min', 0, "Property '%s' should be at least %s, but is %s. Please provide a larger number."],
+		'maximum' => ['max', 0, "Property '%s' should be at most %s, but is %s. Please provide a smaller number."],
+		'pattern' => [
+			'pattern',
+			'unknown',
+			"Property '%s' should match pattern '%s' but '%s' does not. Please provide a value that matches the required pattern.",
+		],
+	];
+
+	/**
 	 * Request-scoped memoized validator instance.
 	 *
 	 * Building an Opis Validator and registering the custom formats and the
@@ -2364,181 +2385,268 @@ class ValidateObject {
 	 *
 	 * @return string A formatted error message.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many validation error types require specific formatting
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive error formatting for all validation types
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function formatValidationError(\Opis\JsonSchema\Errors\ValidationError $error): string {
-		$keyword = $error->keyword();
-		$dataPath = $error->data()->fullPath();
-		$value = $error->data()->value();
-		$args = $error->args();
+		$keyword      = $error->keyword();
+		$propertyPath = $this->errorPropertyPath(error: $error);
 
-		// Build property path for better identification.
-		$propertyPath = implode('.', $dataPath);
-		if (empty($dataPath) === true) {
-			$propertyPath = 'root';
+		if (isset(self::SIMPLE_ERROR_MESSAGES[$keyword]) === true) {
+			return $this->simpleErrorMessage(error: $error, propertyPath: $propertyPath);
 		}
 
-		switch ($keyword) {
-			case 'required':
-				$missing = $args['missing'] ?? [];
-				if (is_array($missing) === true && count($missing) > 0) {
-					if (count($missing) === 1) {
-						$property = $missing[0];
-						$hint = 'Please provide a value for this property or set it to null if allowed.';
-						return "The required property ({$property}) is missing. {$hint}";
-					}
-
-					$missingList = implode(', ', $missing);
-					$msg = "The required properties ({$missingList}) are missing. ";
-					return $msg . 'Please provide values for these properties.';
-				}
-				return 'Required property is missing';
-			case 'type':
-				$expectedType = $args['expected'] ?? 'unknown';
-				$actualType = $this->getValueType(value: $value);
-
-				// Handle array type definitions (e.g., ["array"] or ["string", "null"]).
-				if (is_array($expectedType) === true) {
-					$expectedType = implode(' or ', $expectedType);
-				}
-
-				// Provide specific guidance for empty values.
-				if ($expectedType === 'object' && (is_array($value) === true && empty($value) === true)) {
-					$hint1 = 'For non-required object properties, set this to null to clear the field.';
-					$hint2 = 'For required object properties, provide a valid object with the necessary properties.';
-					return "Property '{$propertyPath}' expects object but got empty ({}). {$hint1} {$hint2}";
-				}
-
-				if ($expectedType === 'array' && (is_array($value) === true && empty($value) === true)) {
-					$hint = 'This likely has a minItems constraint. Please provide at least one item.';
-					return "Property '{$propertyPath}' expects non-empty array but got empty array ([]). {$hint}";
-				}
-
-				if ($expectedType === 'string' && $value === '') {
-					$hint1 = 'For non-required string properties, set this to null to clear the field.';
-					$hint2 = 'For required string properties, provide a valid string value.';
-					return "Property '{$propertyPath}' expects non-empty string but got empty string. {$hint1} {$hint2}";
-				}
-
-				$hint = 'Please provide a value of the correct type.';
-				return "Property '{$propertyPath}' should be type '{$expectedType}' but is '{$actualType}'. {$hint}";
-			case 'minItems':
-				$minItems = $args['min'] ?? 0;
-				$actualItems = 0;
-				if (is_array($value) === true) {
-					$actualItems = count($value);
-				}
-
-				$hint = 'Please add more items to the array or set to null if the property is not required.';
-				return "Property '{$propertyPath}' requires at least {$minItems} items, has {$actualItems}. {$hint}";
-			case 'maxItems':
-				$maxItems = $args['max'] ?? 0;
-				$actualItems = 0;
-				if (is_array($value) === true) {
-					$actualItems = count($value);
-				}
-
-				$hint = 'Please remove some items from the array.';
-				return "Property '{$propertyPath}' allows at most {$maxItems} items, has {$actualItems}. {$hint}";
-			case 'format':
-				$format = $args['format'] ?? 'unknown';
-				$hint = 'Please provide a value in the correct format.';
-				return "Property '{$propertyPath}' should match format '{$format}' but '{$value}' does not. {$hint}";
-			case 'minLength':
-				$minLength = $args['min'] ?? 0;
-				$actualLength = 0;
-				if (is_string($value) === true) {
-					$actualLength = strlen($value);
-				}
-
-				if ($actualLength === 0) {
-					$hint = 'Please provide a non-empty string value.';
-					return "Property '{$propertyPath}' requires at least {$minLength} characters, but is empty. {$hint}";
-				}
-
-				$hint = 'Please provide a longer string value.';
-				return "Property '{$propertyPath}' requires at least {$minLength} chars, has {$actualLength}. {$hint}";
-			case 'maxLength':
-				$maxLength = $args['max'] ?? 0;
-				$actualLength = 0;
-				if (is_string($value) === true) {
-					$actualLength = strlen($value);
-				}
-
-				$hint = 'Please provide a shorter string value.';
-				return "Property '{$propertyPath}' allows at most {$maxLength} chars, has {$actualLength}. {$hint}";
-			case 'minimum':
-				$minimum = $args['min'] ?? 0;
-				$msg = "Property '{$propertyPath}' should be at least {$minimum}, ";
-				return $msg . "but is {$value}. Please provide a larger number.";
-			case 'maximum':
-				$maximum = $args['max'] ?? 0;
-				$msg = "Property '{$propertyPath}' should be at most {$maximum}, ";
-				return $msg . "but is {$value}. Please provide a smaller number.";
-			case 'enum':
-				$allowedValues = $args['values'] ?? [];
-
-				// ⚠️ OPIS PASSES NO ARGS FOR `enum`, so `$args['values']` is ALWAYS
-				// empty and this message rendered as:
-				//
-				//   Property 'ticketType' should be one of: , but is 'contactmoment'.
-				//   Please choose one of the allowed values.
-				//
-				// — an empty allowed-list, i.e. the one fact the reader needs is the
-				// one it omits. `EnumKeyword::validate()` calls
-				// `$this->error($schema, $context, 'enum', 'The data should match one
-				// item from enum')` with no fourth argument, so there is nothing to
-				// read; the values have to come from the SCHEMA instead.
-				//
-				// Measured 2026-08-17: an agent told "should be one of: , but is
-				// 'sent'" concluded the enum was empty and that NO value could be
-				// valid — a reasonable reading of that sentence, and wrong. It then
-				// worked around a constraint that was correctly rejecting its input.
-				// A self-correcting caller needs the list; so does a human.
-				if ($allowedValues === []) {
-					$schemaData = $error->schema()->info()->data();
-					if (is_object($schemaData) === true
-						&& isset($schemaData->enum) === true
-						&& is_array($schemaData->enum) === true
-					) {
-						$allowedValues = $schemaData->enum;
-					}
-				}
-
-				if (is_array($allowedValues) === true && $allowedValues !== []) {
-					$valuesList = implode(
-						', ',
-						array_map(
-							function ($v) {
-								return "'{$v}'";
-							},
-							$allowedValues
-						)
-					);
-					$msg = "Property '{$propertyPath}' should be one of: {$valuesList}, ";
-					return $msg . "but is '{$value}'. Please choose one of the allowed values.";
-				}
-
-				$msg = "Property '{$propertyPath}' has an invalid value '{$value}'. ";
-				return $msg . 'Please provide one of the allowed values.';
-			case 'pattern':
-				$pattern = $args['pattern'] ?? 'unknown';
-				$hint = 'Please provide a value that matches the required pattern.';
-				return "Property '{$propertyPath}' should match pattern '{$pattern}' but '{$value}' does not. {$hint}";
-			default:
-				// Check for sub-errors to provide more specific messages.
-				$subErrors = $error->subErrors();
-				if (empty($subErrors) === false) {
-					return $this->formatValidationError(error: $subErrors[0]);
-				}
-
-				$msg = "Property '{$propertyPath}' failed validation for rule '{$keyword}'. ";
-				return $msg . 'Please check the property value and schema requirements.';
-		}//end switch
+		return match ($keyword) {
+			'required' => $this->requiredErrorMessage(args: $error->args()),
+			'type' => $this->typeErrorMessage(error: $error, propertyPath: $propertyPath),
+			'minItems', 'maxItems' => $this->itemCountErrorMessage(error: $error, propertyPath: $propertyPath),
+			'minLength', 'maxLength' => $this->lengthErrorMessage(error: $error, propertyPath: $propertyPath),
+			'enum' => $this->enumErrorMessage(error: $error, propertyPath: $propertyPath),
+			default => $this->otherErrorMessage(error: $error, propertyPath: $propertyPath),
+		};
 	}//end formatValidationError()
+
+	/**
+	 * The dotted path of the failing value, or `root`.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error The validation error.
+	 *
+	 * @return string
+	 */
+	private function errorPropertyPath(\Opis\JsonSchema\Errors\ValidationError $error): string {
+		$dataPath = $error->data()->fullPath();
+		if (empty($dataPath) === true) {
+			return 'root';
+		}
+
+		return implode('.', $dataPath);
+	}//end errorPropertyPath()
+
+	/**
+	 * The message for a keyword in {@see self::SIMPLE_ERROR_MESSAGES}.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
+	 * @param string                                  $propertyPath The failing property.
+	 *
+	 * @return string
+	 */
+	private function simpleErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
+		[$argName, $default, $template] = self::SIMPLE_ERROR_MESSAGES[$error->keyword()];
+
+		return sprintf($template, $propertyPath, ($error->args()[$argName] ?? $default), $error->data()->value());
+	}//end simpleErrorMessage()
+
+	/**
+	 * The message for a missing required property or properties.
+	 *
+	 * @param array $args The error arguments.
+	 *
+	 * @return string
+	 */
+	private function requiredErrorMessage(array $args): string {
+		$missing = $args['missing'] ?? [];
+		if (is_array($missing) === false || count($missing) === 0) {
+			return 'Required property is missing';
+		}
+
+		if (count($missing) === 1) {
+			$hint = 'Please provide a value for this property or set it to null if allowed.';
+			return "The required property ({$missing[0]}) is missing. {$hint}";
+		}
+
+		$missingList = implode(', ', $missing);
+		return "The required properties ({$missingList}) are missing. Please provide values for these properties.";
+	}//end requiredErrorMessage()
+
+	/**
+	 * The message for a value of the wrong type, with specific guidance for an empty value.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
+	 * @param string                                  $propertyPath The failing property.
+	 *
+	 * @return string
+	 */
+	private function typeErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
+		$value        = $error->data()->value();
+		$expectedType = $error->args()['expected'] ?? 'unknown';
+		$actualType   = $this->getValueType(value: $value);
+
+		// A type list such as ["string", "null"].
+		if (is_array($expectedType) === true) {
+			$expectedType = implode(' or ', $expectedType);
+		}
+
+		$emptyHint = $this->emptyValueTypeMessage(expectedType: $expectedType, value: $value);
+		if ($emptyHint !== null) {
+			return "Property '{$propertyPath}' {$emptyHint}";
+		}
+
+		$hint = 'Please provide a value of the correct type.';
+		return "Property '{$propertyPath}' should be type '{$expectedType}' but is '{$actualType}'. {$hint}";
+	}//end typeErrorMessage()
+
+	/**
+	 * The rest of a type message for an empty object, array or string, or null for any other value.
+	 *
+	 * @param mixed $expectedType The expected type.
+	 * @param mixed $value        The failing value.
+	 *
+	 * @return string|null
+	 */
+	private function emptyValueTypeMessage(mixed $expectedType, mixed $value): ?string {
+		if ($expectedType === 'string' && $value === '') {
+			$hint1 = 'For non-required string properties, set this to null to clear the field.';
+			$hint2 = 'For required string properties, provide a valid string value.';
+			return "expects non-empty string but got empty string. {$hint1} {$hint2}";
+		}
+
+		if (is_array($value) === false || empty($value) === false) {
+			return null;
+		}
+
+		if ($expectedType === 'object') {
+			$hint1 = 'For non-required object properties, set this to null to clear the field.';
+			$hint2 = 'For required object properties, provide a valid object with the necessary properties.';
+			return "expects object but got empty ({}). {$hint1} {$hint2}";
+		}
+
+		if ($expectedType === 'array') {
+			$hint = 'This likely has a minItems constraint. Please provide at least one item.';
+			return "expects non-empty array but got empty array ([]). {$hint}";
+		}
+
+		return null;
+	}//end emptyValueTypeMessage()
+
+	/**
+	 * The message for an array with too few or too many items.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
+	 * @param string                                  $propertyPath The failing property.
+	 *
+	 * @return string
+	 */
+	private function itemCountErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
+		$value       = $error->data()->value();
+		$actualItems = 0;
+		if (is_array($value) === true) {
+			$actualItems = count($value);
+		}
+
+		if ($error->keyword() === 'minItems') {
+			$minItems = $error->args()['min'] ?? 0;
+			$hint     = 'Please add more items to the array or set to null if the property is not required.';
+			return "Property '{$propertyPath}' requires at least {$minItems} items, has {$actualItems}. {$hint}";
+		}
+
+		$maxItems = $error->args()['max'] ?? 0;
+		$hint     = 'Please remove some items from the array.';
+		return "Property '{$propertyPath}' allows at most {$maxItems} items, has {$actualItems}. {$hint}";
+	}//end itemCountErrorMessage()
+
+	/**
+	 * The message for a string that is too short or too long.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
+	 * @param string                                  $propertyPath The failing property.
+	 *
+	 * @return string
+	 */
+	private function lengthErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
+		$value        = $error->data()->value();
+		$actualLength = 0;
+		if (is_string($value) === true) {
+			$actualLength = strlen($value);
+		}
+
+		if ($error->keyword() === 'maxLength') {
+			$maxLength = $error->args()['max'] ?? 0;
+			$hint      = 'Please provide a shorter string value.';
+			return "Property '{$propertyPath}' allows at most {$maxLength} chars, has {$actualLength}. {$hint}";
+		}
+
+		$minLength = $error->args()['min'] ?? 0;
+		if ($actualLength === 0) {
+			$hint = 'Please provide a non-empty string value.';
+			return "Property '{$propertyPath}' requires at least {$minLength} characters, but is empty. {$hint}";
+		}
+
+		$hint = 'Please provide a longer string value.';
+		return "Property '{$propertyPath}' requires at least {$minLength} chars, has {$actualLength}. {$hint}";
+	}//end lengthErrorMessage()
+
+	/**
+	 * The message for a value outside an enum, listing the allowed values when they are known.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
+	 * @param string                                  $propertyPath The failing property.
+	 *
+	 * @return string
+	 */
+	private function enumErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
+		$value         = $error->data()->value();
+		$allowedValues = $error->args()['values'] ?? [];
+		if ($allowedValues === []) {
+			$allowedValues = $this->enumValuesFromSchema(error: $error);
+		}
+
+		if (is_array($allowedValues) === true && $allowedValues !== []) {
+			$valuesList = implode(
+				', ',
+				array_map(
+					function ($v) {
+						return "'{$v}'";
+					},
+					$allowedValues
+				)
+			);
+			$msg = "Property '{$propertyPath}' should be one of: {$valuesList}, ";
+			return $msg . "but is '{$value}'. Please choose one of the allowed values.";
+		}
+
+		$msg = "Property '{$propertyPath}' has an invalid value '{$value}'. ";
+		return $msg . 'Please provide one of the allowed values.';
+	}//end enumErrorMessage()
+
+	/**
+	 * The enum values the failing schema declares, or an empty list.
+	 *
+	 * Opis passes no arguments for `enum` (`EnumKeyword::validate()` reports the error
+	 * without a fourth argument), so the allowed values have to come from the schema.
+	 * Without them the message would list nothing, which reads as "no value is valid".
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error The validation error.
+	 *
+	 * @return array
+	 */
+	private function enumValuesFromSchema(\Opis\JsonSchema\Errors\ValidationError $error): array {
+		$schemaData = $error->schema()->info()->data();
+		if (is_object($schemaData) === true
+			&& isset($schemaData->enum) === true
+			&& is_array($schemaData->enum) === true
+		) {
+			return $schemaData->enum;
+		}
+
+		return [];
+	}//end enumValuesFromSchema()
+
+	/**
+	 * The message for any other keyword: the first sub-error's message when there is one.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
+	 * @param string                                  $propertyPath The failing property.
+	 *
+	 * @return string
+	 */
+	private function otherErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
+		$subErrors = $error->subErrors();
+		if (empty($subErrors) === false) {
+			return $this->formatValidationError(error: $subErrors[0]);
+		}
+
+		$msg = "Property '{$propertyPath}' failed validation for rule '{$error->keyword()}'. ";
+		return $msg . 'Please check the property value and schema requirements.';
+	}//end otherErrorMessage()
 
 	/**
 	 * Gets a human-readable type name for a value.
