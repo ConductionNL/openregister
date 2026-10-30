@@ -61,7 +61,7 @@ class ImportDestructionListRegister implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.0.0';
+	private const REGISTER_VERSION = '1.1.0';
 
 	/**
 	 * Configuration identity for the descriptor (its own appId so the
