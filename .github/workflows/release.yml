@@ -23,6 +23,10 @@ jobs:
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+      # One line: the shared workflow splices this into its rsync command.
+      # .mailmap maps contributors to personal addresses; git needs it, an
+      # installed app does not.
+      extra-rsync-excludes: "--exclude='/.mailmap'"
     secrets: inherit
 
   beta:
@@ -36,6 +40,10 @@ jobs:
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+      # One line: the shared workflow splices this into its rsync command.
+      # .mailmap maps contributors to personal addresses; git needs it, an
+      # installed app does not.
+      extra-rsync-excludes: "--exclude='/.mailmap'"
     secrets: inherit
 
   stable:
@@ -49,5 +57,9 @@ jobs:
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+      # One line: the shared workflow splices this into its rsync command.
+      # .mailmap maps contributors to personal addresses; git needs it, an
+      # installed app does not.
+      extra-rsync-excludes: "--exclude='/.mailmap'"
     secrets: inherit
 
