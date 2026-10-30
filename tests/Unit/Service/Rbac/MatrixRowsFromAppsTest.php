@@ -141,4 +141,21 @@ class MatrixRowsFromAppsTest extends TestCase {
 
 		$this->assertSame(expected: [], actual: $rows);
 	}//end testRowsFromAnotherAppOrNoAppAreDropped()
+
+	/**
+	 * A non-boolean `fileVerbs` is refused at save time.
+	 *
+	 * @return void
+	 */
+	public function testANonBooleanFileVerbsIsRefused(): void {
+		$validator = new DepartmentMatrixValidator();
+		$properties = ['assignedGroup' => ['type' => 'string']];
+		$matrix = ['field' => 'assignedGroup', 'userSource' => ['groups' => true], 'rowsFrom' => 'dossiq.case-type-rights'];
+
+		$refused = $validator->validate(properties: $properties, authorization: ['matrix' => $matrix + ['fileVerbs' => 'true']]);
+		$kept    = $validator->validate(properties: $properties, authorization: ['matrix' => $matrix + ['fileVerbs' => false]]);
+
+		$this->assertContains(needle: 'matrix.bad-file-verbs', haystack: array_column($refused, 'code'));
+		$this->assertSame(expected: [], actual: $kept);
+	}//end testANonBooleanFileVerbsIsRefused()
 }//end class

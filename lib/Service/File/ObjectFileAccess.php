@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
@@ -78,9 +79,9 @@ class ObjectFileAccess {
 	public const FILE_VERBS = [self::READ_FILES, self::ADD_FILES, self::DELETE_FILES];
 
 	/**
-	 * The matrix key that opts a schema into file verbs whose rows come from
-	 * a `rowsFrom` provider, so a provider that fails cannot take the regime
-	 * away with its rows.
+	 * The matrix key that declares whether a schema is in the file-verb regime
+	 * through its matrix. A `rowsFrom` matrix is in it unless this is false,
+	 * so a provider that fails cannot take the regime away with its rows.
 	 *
 	 * @var string
 	 */
@@ -299,9 +300,9 @@ class ObjectFileAccess {
 	 * source compiles to no grant, never to no regime.
 	 *
 	 * Opted in when the compiled or the declared block names a file verb, when
-	 * a declared matrix row names one in its actions (expired or not), or when
-	 * the matrix declares `fileVerbs: true` (file verbs that come from a
-	 * `rowsFrom` provider).
+	 * a declared matrix row names one in its actions (expired or not), when the
+	 * matrix declares `fileVerbs` other than false, or when it names a
+	 * `rowsFrom` provider and does not declare `fileVerbs: false`.
 	 *
 	 * @param Schema       $schema The object's schema.
 	 * @param ObjectEntity $object The object.
@@ -351,7 +352,16 @@ class ObjectFileAccess {
 			return false;
 		}
 
-		if (($matrix[self::MATRIX_FILE_VERBS] ?? false) === true) {
+		// A provider's rows may carry file verbs, and a provider that fails
+		// answers nothing: a `rowsFrom` matrix is therefore in the file regime
+		// unless the schema opts out with `fileVerbs: false`. Any other value
+		// of `fileVerbs` (true, "true", 1: the validator refuses the
+		// non-booleans) opts in. Fail closed: a doubt is no file access.
+		if (array_key_exists(self::MATRIX_FILE_VERBS, $matrix) === true) {
+			if ($matrix[self::MATRIX_FILE_VERBS] !== false) {
+				return true;
+			}
+		} else if (is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true) {
 			return true;
 		}
 

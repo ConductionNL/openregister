@@ -277,6 +277,42 @@ class FilesControllerFileVerbsTest extends TestCase {
 		$this->assertSame(404, $response->getStatus(), 'a provider that fails takes its grants away, not the file regime');
 	}//end testAFailingProviderKeepsItsFilesClosed()
 
+	/**
+	 * The file regime of a rowsFrom schema whose provider fails, by the declared fileVerbs.
+	 *
+	 * @param mixed $fileVerbs The declared fileVerbs, or the string 'absent'.
+	 *
+	 * @return int The status of a file list by an object reader.
+	 */
+	private function fileListWithAFailingProvider(mixed $fileVerbs): int {
+		$matrix = ['field' => 'department', 'userSource' => ['groups' => true], 'rowsFrom' => 'dossiq.case-type-rights'];
+		if ($fileVerbs !== 'absent') {
+			$matrix['fileVerbs'] = $fileVerbs;
+		}
+
+		$this->schema->setProperties(['department' => ['type' => 'string']]);
+		$this->schema->setAuthorization(['read' => ['staff'], 'matrix' => $matrix]);
+		$this->fileService->method('getFiles')->willReturn([]);
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('provider down'));
+
+		return $this->controllerAs('medewerker', ['staff'], $dispatcher)
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID)
+			->getStatus();
+	}//end fileListWithAFailingProvider()
+
+	public function testARowsFromSchemaWithoutFileVerbsKeepsItsFilesClosedWhenTheProviderFails(): void {
+		$this->assertSame(404, $this->fileListWithAFailingProvider(fileVerbs: 'absent'));
+	}//end testARowsFromSchemaWithoutFileVerbsKeepsItsFilesClosedWhenTheProviderFails()
+
+	public function testANonBooleanFileVerbsOptsIn(): void {
+		$this->assertSame(404, $this->fileListWithAFailingProvider(fileVerbs: 'true'));
+	}//end testANonBooleanFileVerbsOptsIn()
+
+	public function testAnExplicitOptOutKeepsTheObjectRule(): void {
+		$this->assertSame(200, $this->fileListWithAFailingProvider(fileVerbs: false));
+	}//end testAnExplicitOptOutKeepsTheObjectRule()
+
 	public function testDeleteFilesDeletes(): void {
 		$this->fileService->method('deleteFile')->willReturn(true);
 
