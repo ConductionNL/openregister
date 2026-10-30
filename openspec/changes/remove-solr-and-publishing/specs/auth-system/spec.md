@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Public read endpoints MUST require an authenticated user except for RBAC-public resources
 Marking register/schema read endpoints `#[PublicPage]` also exposes them to fully anonymous callers. Register and schema **definitions** MUST NOT be served to anonymous callers unless the specific resource is made public through an RBAC authorization rule that grants the `public` group `read` access (optionally time-windowed via a `publicatiedatum`/`$now` match). The legacy `published`/`depublished` entity columns are removed; the anonymous-visibility gate MUST be derived from the RBAC rule evaluation, not from those columns. Authenticated users are unaffected and continue to receive results scoped by the existing RBAC / multitenancy rules.
@@ -40,3 +40,13 @@ The decision to expose a register or schema to an anonymous caller MUST be deriv
 - **WHEN** the read-visibility guard evaluates the request
 - **THEN** the guard MUST ignore the client-supplied value and evaluate the entity's persisted RBAC authorization rules
 - **AND** the request MUST be rejected with HTTP 401
+
+## REMOVED Requirements
+
+### Requirement: Public read endpoints MUST require an authenticated user except for published resources
+**Reason**: The Register and Schema `published`/`depublished` columns are removed, so anonymous visibility can no longer be decided by them.
+**Migration**: Replaced by "Public read endpoints MUST require an authenticated user except for RBAC-public resources": each published-column scenario has an RBAC counterpart (list, show rejected, show allowed, authenticated unaffected). Operators re-express a published register or schema as a `public`-group `read` rule (see `deprecate-published-metadata`).
+
+### Requirement: The published-visibility gate MUST derive from server-side entity state
+**Reason**: The persisted `published`/`depublished` fields this gate read are removed.
+**Migration**: Replaced by "The public-visibility gate MUST derive from server-side RBAC evaluation", which keeps the rule that a client-supplied `published` or `public` value is ignored.
