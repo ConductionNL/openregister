@@ -122,7 +122,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, string> The opt-in channels.
 	 *
-	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
 	 */
 	public static function optInChannelsOf(array $spec): array {
 		$declared = (array)($spec['channels'] ?? self::DEFAULT_CHANNELS);
@@ -148,7 +148,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, string> The channels.
 	 *
-	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
 	 */
 	public static function availableChannelsOf(array $spec): array {
 		$declared = array_values((array)($spec['channels'] ?? self::DEFAULT_CHANNELS));
@@ -716,7 +716,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, Schema> The schemas to list.
 	 *
-	 * @spec openspec/changes/notification-preferences-one-row-per-slug/specs/notificatie-engine/spec.md#requirement-the-preference-list-names-each-rule-once
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-preference-list-names-each-rule-once
 	 */
 	private function onePerSlug(iterable $schemas): array {
 		$kept = [];

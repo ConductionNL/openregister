@@ -106,7 +106,6 @@
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^2.0",
 		"ddn/sapp": "dev-feat/chained-filter-text-replace#5c406e91254d6936f44372db35f1cc15e5a06c56",
-		"dompdf/dompdf": "^3.1",
 		"dragonmantank/cron-expression": "^3.3",
 		"elasticsearch/elasticsearch": "^v9.5.0",
 		"guzzlehttp/guzzle": "^7.0",
@@ -114,7 +113,6 @@
 		"minishlink/web-push": "^11.0",
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^5.0",
-		"phpoffice/phpword": "^1.2",
 		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
@@ -128,6 +126,9 @@
 		"web-token/jwt-library": "^4.1.9",
 		"webonyx/graphql-php": "^15.0",
 		"zbateson/mail-mime-parser": "^3.0"
+	},
+	"replace": {
+		"phpoffice/phpword": "*"
 	},
 	"require-dev": {
 		"conduction/coding-standard": "^1.0",

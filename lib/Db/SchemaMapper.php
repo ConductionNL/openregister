@@ -2840,7 +2840,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void {
 		// Check if it's a Twig-style template (contains {{ ... }}).
@@ -2908,7 +2908,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function isPropertyPath(string $path, array $propertyKeys): bool {
 		if (in_array($path, $propertyKeys, true) === true) {

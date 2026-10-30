@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\IAppConfig;
 /**
  * Remembers the shipped version of each seed object, per app id.
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class SeedVersionLedger {
 
@@ -87,7 +87,7 @@ class SeedVersionLedger {
 	 *
 	 * @return string|null The version.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function shipped(string $appId, string $seed): ?string {
 		return ($this->map(appId: $appId)[$seed] ?? null);
@@ -105,7 +105,7 @@ class SeedVersionLedger {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function record(string $appId, string $seed, string $version): void {
 		$map = $this->map(appId: $appId);
@@ -126,7 +126,7 @@ class SeedVersionLedger {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function flush(): void {
 		foreach (array_keys($this->dirty) as $appId) {

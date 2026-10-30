@@ -359,7 +359,7 @@ class PartyController extends Controller {
 	 *
 	 * @return JSONResponse The handler's response, or the error.
 	 *
-	 * @spec openspec/changes/party-writes-need-update-right/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
 	 */
 	private function withWritableObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
 		return $this->withObject(
