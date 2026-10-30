@@ -175,7 +175,7 @@ abstract class ExampleSetEngineRows {
 	}//end checkFragment()
 
 	/**
-	 * Write the rows of one fragment that the record does not hold.
+	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
 	 * @param array<string, mixed> $context  The context placeholders draw on.
@@ -186,6 +186,7 @@ abstract class ExampleSetEngineRows {
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
 	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$part    = $this->part();
@@ -223,6 +224,10 @@ abstract class ExampleSetEngineRows {
 			$report[$part][$name] = ['created', 'refreshed'][(int) $held];
 			$changed = true;
 		}//end foreach
+
+		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: $part, noun: $this->noun(), report: $report, record: $record) === true) {
+			$changed = true;
+		}
 
 		return $changed;
 	}//end installFragment()
