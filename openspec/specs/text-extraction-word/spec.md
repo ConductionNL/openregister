@@ -5,14 +5,14 @@ status: done
 # text-extraction-word Specification
 
 ## Purpose
-Extracts complete text from Word-family documents (DOCX, legacy DOC, ODT) by recursively walking every element — including table cells and nested tables, section headers and footers, and footnotes and endnotes — and selecting the correct PhpWord reader from the input MIME or extension. The recursive walker is depth-guarded against pathological nesting, reader or load failures return null gracefully rather than aborting, and failure logs never contain document content.
+Extracts complete text from Word-family documents (DOCX, legacy DOC, ODT), including table cells and nested tables, section headers and footers, and footnotes and endnotes. DOCX and ODT are read by `WordTextReader` straight from the package XML with ZipArchive and DOM; legacy DOC goes through PhpWord's `MsDoc` reader. The format is selected from the input MIME or extension. Nesting depth is bounded by the XML parser, reader or load failures return null gracefully rather than aborting, and failure logs never contain document content.
 
-@e2e exclude Backend PHP text-extraction service (PhpWord element walker for DOCX/DOC/ODT tables, headers, footers, foot/endnotes, reader selection, failure logging). Pure server-side document processing with no user-facing OpenRegister UI surface — exercised via PHPUnit fixture-document units. Covered by PHPUnit.
+@e2e exclude Backend PHP text-extraction service (package reader for DOCX/ODT tables, headers, footers, foot/endnotes, tracked changes, reader selection, failure logging). Pure server-side document processing with no user-facing OpenRegister UI surface — exercised via PHPUnit fixture-document units. Covered by PHPUnit.
 
 ## Requirements
 ### Requirement: Word extraction MUST capture table cell text including nested tables
 
-The recursive element walker in `extractWord()` MUST descend PhpWord `Table` elements via `getRows()` → each `Row::getCells()` → each `Cell::getElements()`, and MUST recurse each cell element. Because a cell element may itself be a `Table`, **nested tables** MUST be captured by the same path. Table cell text MUST appear in the flat output. (Prior behaviour dropped all table content because a `Table` element does not expose `getElements()`.)
+The reader MUST descend tables row by row and cell by cell, for DOCX (`w:tbl`) and ODT (`table:table`) alike. Because a cell may itself hold a table, **nested tables** MUST be captured by the same path. Table cell text MUST appear in the flat output, with a line break after every row.
 
 #### Scenario: Single-level table cell text is extracted
 
@@ -34,7 +34,7 @@ The recursive element walker in `extractWord()` MUST descend PhpWord `Table` ele
 
 ### Requirement: Word extraction MUST capture section header and footer text
 
-For each section, `extractWord()` MUST walk `$section->getHeaders()` and `$section->getFooters()` (each header/footer exposes `getElements()`) using the same recursive walker as the body, so header and footer text — including text inside tables in headers/footers — appears in the flat output.
+For DOCX the reader MUST read every header and footer part the main document references; for ODT it MUST read the master-page headers and footers in `styles.xml`. Header and footer text, including text inside tables in headers and footers, MUST appear in the flat output.
 
 #### Scenario: Header text is extracted
 
@@ -50,7 +50,7 @@ For each section, `extractWord()` MUST walk `$section->getHeaders()` and `$secti
 
 ### Requirement: Word extraction MUST capture footnote and endnote text
 
-`extractWord()` MUST capture footnote and endnote text via BOTH paths: inline `Footnote`/`Endnote` elements walked within text runs, AND an unconditional iteration of the document-level notes collection. The text content of footnotes and endnotes MUST appear in the flat output.
+The reader MUST capture footnote and endnote text: for DOCX from the footnotes and endnotes parts (without the separator notes), for ODT from the inline `text:note` bodies. Each note's text MUST appear in the flat output once.
 
 #### Scenario: Footnote text is extracted
 
@@ -64,27 +64,36 @@ For each section, `extractWord()` MUST walk `$section->getHeaders()` and `$secti
 - **WHEN** `extractWord` runs
 - **THEN** the flat output contains "Zie bijlage II"
 
-### Requirement: The recursive walker MUST be depth-guarded
+### Requirement: Nesting depth MUST be bounded
 
-The recursive element walker MUST accept a depth parameter and MUST stop descending once a fixed maximum depth (`MAX_WORD_DEPTH`, far above realistic document nesting) is exceeded, to defend against pathological or malicious nesting. When the cap is hit, the walker MUST stop descending the over-deep branch and MUST emit a debug-level log noting the cap; it MUST NOT raise an error or abort the overall extraction.
+The reader walks the parsed XML tree recursively, so nesting depth MUST be bounded before the walk. Package parts MUST be parsed without `LIBXML_PARSEHUGE`, so libxml refuses a part nested deeper than its limit (256 levels); such a part is treated as unreadable. The legacy DOC walker keeps its own depth cap (`MAX_WORD_DEPTH`).
 
 #### Scenario: Pathologically deep nesting does not crash extraction
 
-- **GIVEN** a DOCX document whose containers are nested far beyond the depth cap
+- **GIVEN** a DOCX document whose elements are nested beyond the parser's depth limit
 - **WHEN** `extractWord` runs
-- **THEN** extraction completes without an unhandled error
-- **AND** a debug-level log entry notes the depth-cap activation
-- **AND** text above the cap is still present in the output
+- **THEN** extraction completes without an unhandled error and returns null
+
+### Requirement: Deleted tracked changes and comments MUST NOT be read as document text
+
+Text a tracked change deleted (`w:delText` in DOCX, the `text:tracked-changes` records in ODT) and comment or annotation text MUST NOT appear in the flat output; inserted tracked-change text MUST. A word split over several runs MUST come out as one word.
+
+#### Scenario: Only the current text of a tracked change is read
+
+- **GIVEN** a DOCX document where a tracked change replaced "12.000" by "15.000" in "Het bedrag is 15.000 euro."
+- **WHEN** `extractWord` runs
+- **THEN** the flat output contains "Het bedrag is 15.000 euro."
+- **AND** it does not contain "12.000"
 
 ### Requirement: The reader MUST be selected from the input MIME / extension
 
-`extractWord()` MUST select the PhpWord reader explicitly rather than relying on the `Word2007` default. The mapping MUST be:
+`extractWord()` MUST select the format explicitly. The mapping MUST be:
 
 - `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (`.docx`) → `Word2007`
 - `application/msword` (`.doc`) → `MsDoc`
 - `application/vnd.oasis.opendocument.text` (`.odt`) → `ODText`
 
-When the MIME is generic or ambiguous, the reader MAY be selected from the file extension; the final fallback MUST be `Word2007`. The selected reader name MUST be passed to `IOFactory::load()`.
+When the MIME is generic or ambiguous, the reader MAY be selected from the file extension; the final fallback MUST be `Word2007`. `Word2007` and `ODText` are read by `WordTextReader`; `MsDoc` by PhpWord's `IOFactory::load()`.
 
 #### Scenario: DOCX selects the Word2007 reader
 
@@ -127,7 +136,7 @@ When the MIME is generic or ambiguous, the reader MAY be selected from the file 
 
 ### Requirement: Reader / load failure MUST return null gracefully, not throw fatally
 
-When `IOFactory::load()` raises an exception (notably the binary `MsDoc` reader's known limitations on documents it cannot parse) or the walk produces no text, `extractWord()` MUST log the failure and return null. It MUST NOT propagate a fatal error for an unsupported/limited per-document input; the surrounding pipeline treats null as "unsupported/empty" and continues. The existing "PhpWord library not installed" guard (class missing) MAY still throw, because that is a deployment error rather than a per-document failure.
+When a document cannot be read (a corrupt package, or the binary `MsDoc` reader's known limitations) or the read produces no text, `extractWord()` MUST log the failure and return null. It MUST NOT propagate a fatal error for an unsupported/limited per-document input; the surrounding pipeline treats null as "unsupported/empty" and continues. The existing "PhpWord library not installed" guard (class missing) MAY still throw, because that is a deployment error rather than a per-document failure.
 
 #### Scenario: Unparseable DOC returns null without aborting
 
@@ -154,9 +163,9 @@ Per ADR-005 ("NO PII in logs, error responses, or debug output"), log lines and 
 - **THEN** the log entry MUST NOT contain "Vertrouwelijk", "J. de Vries", or "123456782"
 - **AND** the log entry MAY contain the file ID, the MIME type, the reader name, and the exception class name
 
-### Requirement: The change MUST NOT reduce or alter DOCX output content nor affect non-Word files
+### Requirement: The change MUST NOT reduce DOCX output content nor affect non-Word files
 
-DOCX extraction MUST return a strict superset of its prior content — all text the prior 2-level traversal produced MUST still be present, with table, header/footer, and note text added. All other MIME branches in `TextExtractionService` (PDF, spreadsheet, plain text, EML) MUST behave identically before and after this change; the Word changes are additive and orthogonal.
+DOCX extraction MUST keep all body, table, header, footer and note text the prior traversal produced; only deleted tracked-change text is dropped (see above). All other MIME branches in `TextExtractionService` (PDF, spreadsheet, plain text, EML) MUST behave identically before and after this change; the Word changes are additive and orthogonal.
 
 #### Scenario: DOCX body paragraph text is still extracted
 

@@ -463,6 +463,110 @@
             "message": "Notification \"r\" `digest.timezone` must be a valid IANA timezone name."
         }
     ],
+    "digest-not-object": [
+        {
+            "code": "notification-digest-malformed",
+            "message": "Notification \"r\" `digest` must be an object."
+        }
+    ],
+    "digest-weekly-ok": [],
+    "digest-weekly-bad-day": [
+        {
+            "code": "notification-digest-bad-time",
+            "message": "Notification \"r\" `digest.at` must be an \"HH:MM\" time string."
+        },
+        {
+            "code": "notification-digest-weekly-missing-weekday",
+            "message": "Notification \"r\" `digest.weekday` (0-6) is required when `schedule` is \"weekly\"."
+        }
+    ],
+    "digest-weekly-no-day": [
+        {
+            "code": "notification-digest-weekly-missing-weekday",
+            "message": "Notification \"r\" `digest.weekday` (0-6) is required when `schedule` is \"weekly\"."
+        }
+    ],
+    "digest-daily-weekday": [
+        {
+            "code": "notification-digest-weekday-not-allowed",
+            "message": "Notification \"r\" `digest.weekday` is only allowed when `schedule` is \"weekly\"."
+        },
+        {
+            "code": "notification-digest-bad-timezone",
+            "message": "Notification \"r\" `digest.timezone` must be a valid IANA timezone name."
+        },
+        {
+            "code": "notification-digest-and-coalesce-mutually-exclusive",
+            "message": "Notification \"r\" declares both a rolling `coalesce` window and a fixed-time `digest` schedule; a rule may declare at most one batching mechanism."
+        }
+    ],
+    "digest-timezone-int": [
+        {
+            "code": "notification-digest-bad-time",
+            "message": "Notification \"r\" `digest.at` must be an \"HH:MM\" time string."
+        },
+        {
+            "code": "notification-digest-bad-timezone",
+            "message": "Notification \"r\" `digest.timezone` must be a valid IANA timezone name."
+        }
+    ],
+    "actions-shapes": [
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[0] must be an object."
+        },
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[1] primary must be a boolean."
+        },
+        {
+            "code": "notification-action-bad-target",
+            "message": "Notification \"r\" action[1] target.kind \"\" is not in [object-detail, route, url, task-verb]."
+        }
+    ],
+    "actions-label-empty": [
+        {
+            "code": "notification-action-bad-label",
+            "message": "Notification \"r\" action[0] label must be a per-locale map with at least one non-empty value."
+        },
+        {
+            "code": "notification-action-bad-label",
+            "message": "Notification \"r\" action[1] label must be a per-locale map with at least one non-empty value."
+        }
+    ],
+    "message-empty": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message must be a non-empty string when present."
+        }
+    ],
+    "message-map-no-locale": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message map must declare at least one locale (e.g. nl, en)."
+        },
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message defaultLocale \"nl\" is not declared in the message map."
+        }
+    ],
+    "message-map-default": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message for locale \"en\" must be a non-empty string."
+        },
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message defaultLocale \"de\" is not declared in the message map."
+        }
+    ],
+    "message-map-default-int": [
+        {
+            "code": "notification-bad-message",
+            "message": "Notification \"r\" message defaultLocale \"5\" is not declared in the message map."
+        }
+    ],
+    "message-map-ok": [],
     "recipients-missing": [
         {
             "code": "notification-no-recipients",

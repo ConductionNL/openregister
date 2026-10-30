@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\FlowTimer;
 
 /**
  * Cancels the timers of a run or a subject and supersedes one timer with a new anchor. Implemented by FlowTimerService.
@@ -74,7 +73,7 @@ interface FlowTimerControlInterface {
 	 * @param string|null $actor The acting identity.
 	 * @param DateTimeInterface|null $now The clock.
 	 *
-	 * @return FlowTimer The successor.
+	 * @return FlowTimerInterface The successor.
 	 *
 	 * @throws \OCA\OpenRegister\Exception\FlowTimerStateException When the timer is not open.
 	 */
@@ -84,5 +83,5 @@ interface FlowTimerControlInterface {
 		string $reason,
 		?string $actor,
 		?DateTimeInterface $now = null,
-	): FlowTimer;
+	): FlowTimerInterface;
 }//end interface
