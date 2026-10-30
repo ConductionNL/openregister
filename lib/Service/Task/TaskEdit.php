@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) TaskPriority is the one normaliser
  * every caller uses, as in TaskBuilder.
  *
- * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
  */
 class TaskEdit {
 
@@ -59,7 +59,7 @@ class TaskEdit {
 	 *
 	 * @throws TaskValidationException When a field is unknown or invalid.
 	 *
-	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
 	public function apply(Task $task, array $changes): array {
 		$next = $this->validated(task: $task, changes: $changes);

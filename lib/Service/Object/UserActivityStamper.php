@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/last-user-activity/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCP\IUserSession;
  * - the write's {@see WriteCause} is `person`, so a caller that labels its
  *   writes as `scheduled`, `rule`, `import`, `migration` or `cascade` is left out.
  *
- * @spec openspec/changes/last-user-activity/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 class UserActivityStamper {
 
@@ -73,7 +73,7 @@ class UserActivityStamper {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause and SystemOperationContext are ambient frames; there is no instance to inject.
 	 *
-	 * @spec openspec/changes/last-user-activity/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function isUserWrite(): bool {
 		if ($this->sapi === 'cli' || str_ends_with($this->request->getScriptName(), self::CRON_SCRIPT) === true) {
@@ -94,7 +94,7 @@ class UserActivityStamper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/last-user-activity/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function stamp(ObjectEntity $object): void {
 		if ($this->isUserWrite() === true) {

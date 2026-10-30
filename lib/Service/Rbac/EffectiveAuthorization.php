@@ -175,7 +175,7 @@ class EffectiveAuthorization {
 	 *
 	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
 	 *
-	 * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function grantNothingWhenEmpty(array $authorization): array {
 		if ($authorization !== []) {

@@ -985,6 +985,75 @@ widening the RBAC vocabulary.
 - **THEN** it contains no verb, scope or role expressing "may act as another
   user"
 
+### Requirement: A roles block that resolves to nothing grants nothing
+
+When an authorization block declares `roles` and none of them can be expanded,
+because the parent register declares no role definitions or every role name is
+unknown, the expanded block SHALL grant no verb to anybody: `read`, `create`,
+`update` and `delete` SHALL each be an empty list. It SHALL NOT be read as an
+absent block, which is open to every signed in account. The administrator and
+object owner bypasses SHALL still apply, and a block that keeps any other rule
+after expansion SHALL be evaluated as written.
+
+#### Scenario: A schema with roles only and a register without role definitions
+@e2e exclude An engine verdict with no surface of its own; asserted through hasPermission() in tests/Unit/Service/Object/PermissionHandlerHandlingTeamRuleTest.php.
+- **GIVEN** a schema whose authorization is `{"roles": {"behandelaar": ["behandelaars"]}}`
+- **AND** a parent register that declares no role definitions
+- **WHEN** a signed in user in no group asks to read, update or delete an object of it
+- **THEN** each SHALL be refused
+- **AND** an administrator SHALL still be allowed
+
+#### Scenario: A schema whose role names are all unknown
+@e2e exclude Same engine verdict; asserted in tests/Unit/Service/Object/PermissionHandlerRoleHierarchyTest.php.
+- **GIVEN** a register declaring the role `viewer`
+- **AND** a schema whose authorization assigns only the unknown role `ghost`
+- **WHEN** the block is expanded
+- **THEN** every canonical verb SHALL be an empty list
+
+### Requirement: A matrix row may add conditions and an end
+
+A department matrix row SHALL accept `where`, extra conditions in the scope vocabulary joined with AND to the row's field condition, and `until`, after which the row grants nothing. The compiled scope SHALL be an ordinary conditional scope, evaluated identically on the PHP and SQL paths. A row whose `where` holds an empty `$in` SHALL be dropped whole.
+
+#### Scenario: an edit right limited to statuses
+
+- **GIVEN** schema `case` with a matrix on `assignedGroup`, a row for group `intakers` with value `team-a`, actions `update` and `where` `{status: {$in: ["s1"]}}`, and a second row for `intakers` with actions `read` and no `where`
+- **AND** user A in groups `intakers` and `team-a`
+- **WHEN** A updates a `team-a` case in status `s1`, then one in status `s2`
+- **THEN** the first update is allowed and the second refused
+- **AND** A still reads the case in `s2`
+- @e2e exclude {enforcement is a service boundary; covered by PHPUnit on both the PHP and the SQL path}
+
+#### Scenario: a row past its end
+
+- **GIVEN** a row with `until` yesterday
+- **WHEN** its group lists objects
+- **THEN** the row admits nobody
+- @e2e exclude {covered by unit tests on the compiler}
+
+### Requirement: `$self` can mean a group the caller is in
+
+A matrix user source SHALL accept `{groups: true}`, making the caller's own values their Nextcloud group ids without a prefix.
+
+#### Scenario: own team
+
+- **GIVEN** a matrix on `assignedGroup` with user source `{groups: true}` and a row `$self` for group `handlers` with `read`
+- **AND** user A in `handlers` and `team-a`
+- **WHEN** A lists cases
+- **THEN** A sees the cases assigned to `team-a` and none assigned to `team-b`
+- @e2e exclude {covered by PHPUnit on both paths}
+
+### Requirement: An app contributes matrix rows at check time
+
+A matrix SHALL accept `rowsFrom`, a provider id. At check time OpenRegister SHALL dispatch `MatrixRowsRequestedEvent` once per request and schema and compile the rows listeners add beside the declared rows, through the same validator. A listener failure SHALL contribute no rows.
+
+#### Scenario: a provider row admits, a failing provider admits nobody
+
+- **GIVEN** a schema whose matrix declares `rowsFrom: "dossiq.case-type-rights"` and no rows of its own
+- **WHEN** a listener adds a row granting `read` to group `inspectors` on value `team-a`
+- **THEN** a member of `inspectors` and `team-a` reads a `team-a` object
+- **AND** when the listener throws, the same member reads nothing through the matrix
+- @e2e exclude {covered by PHPUnit with a real event dispatcher}
+
 ## ZGW Autorisaties Mapping Guide
 
 OpenRegister's existing group-based RBAC maps directly to ZGW autorisaties concepts. No additional code is required -- this is a configuration and documentation concern.

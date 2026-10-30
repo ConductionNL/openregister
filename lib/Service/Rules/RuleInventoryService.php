@@ -143,7 +143,7 @@ final class RuleInventoryService {
 	 * @return array<int, array<string, mixed>> The inventory rows.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function inventory(
 		Schema $schema,
@@ -420,7 +420,7 @@ final class RuleInventoryService {
 	 *
 	 * @return array{property: string, value: string}|null The scope, or null when the trigger node declares none.
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function flowScopeOf(string $flowUuid, string $schemaSlug): ?array {
 		$graph = $this->published?->graphOf(flowId: $flowUuid);

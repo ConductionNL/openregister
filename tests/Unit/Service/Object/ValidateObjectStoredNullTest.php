@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/validate-stored-null-as-absent/specs/object-validation/spec.md
+ * @spec openspec/specs/object-validation/spec.md
  */
 
 declare(strict_types=1);
@@ -23,7 +23,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @spec openspec/changes/validate-stored-null-as-absent/specs/object-validation/spec.md
+ * @spec openspec/specs/object-validation/spec.md
  */
 class ValidateObjectStoredNullTest extends TestCase {
 
