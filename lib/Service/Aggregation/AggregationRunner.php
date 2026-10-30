@@ -350,25 +350,30 @@ class AggregationRunner {
 		// `$bypassRbac` is honoured because it is how internal callers compute
 		// figures for somebody else, and those callers have already decided who
 		// may see the result.
+		$fieldNames = [];
+		if ($field !== null) {
+			$fieldNames = [(string)$field];
+		}
+
+		$touched = array_merge(
+			$fieldNames,
+			$this->groupByFields(groupBy: $groupBy),
+			$this->metricFields(metrics: $metrics)
+		);
+
+		// 🔴 THE EXPLICIT-REVEAL GUARD HOLDS WITH `$bypassRbac` TOO. A bypassing
+		// caller computes a figure for somebody else and stores or shows it
+		// (a materialised aggregate on another object), so a bucket key or a
+		// min/max over the value would leave in clear. Only trusted code
+		// (ExplicitReveal::trustedDuring, a system operation) passes. It is
+		// named first, so the refusal says why.
+		$this->assertNoExplicitValues(schema: $schema, fields: $touched);
+		// A caller's narrowing filter on an explicit-reveal property is an
+		// oracle: try values, read whether the figure changes.
+		$this->assertNoExplicitFilter(schema: $schema, filter: $extraFilter);
+
 		if ($bypassRbac === false) {
-			$fieldNames = [];
-			if ($field !== null) {
-				$fieldNames = [(string)$field];
-			}
-
-			$touched = array_merge(
-				$fieldNames,
-				$this->groupByFields(groupBy: $groupBy),
-				$this->metricFields(metrics: $metrics)
-			);
-			// An explicit-reveal property is named as such before the read
-			// rule is asked, so the refusal says why.
-			$this->assertNoExplicitValues(schema: $schema, fields: $touched);
 			$this->assertFieldsAreReadable(schema: $schema, fields: $touched);
-
-			// A caller's narrowing filter on an explicit-reveal property is an
-			// oracle: try values, read whether the figure changes.
-			$this->assertNoExplicitFilter(schema: $schema, filter: $extraFilter);
 		}
 
 		// Normalized groupBy spec (array or null) — used both for the native
@@ -734,18 +739,18 @@ class AggregationRunner {
 
 		// An explicit-reveal value leaves only as its mask, so the ad-hoc path
 		// may neither group on it (a bucket key is the value), take a min or max
-		// of it, nor filter on it.
-		if ($bypassRbac === false) {
-			$this->assertNoExplicitValues(
-				schema: $schema,
-				fields: array_merge(
-					[(string)$query->field],
-					$this->groupByFields(groupBy: $query->groupBy),
-					$this->metricFields(metrics: $query->metrics)
-				)
-			);
-			$this->assertNoExplicitFilter(schema: $schema, filter: $query->filter);
-		}
+		// of it, nor filter on it. With `$bypassRbac` too: a materialised
+		// aggregate (AggregateReferenceResolver) stores the figure on another
+		// object, in clear.
+		$this->assertNoExplicitValues(
+			schema: $schema,
+			fields: array_merge(
+				[(string)$query->field],
+				$this->groupByFields(groupBy: $query->groupBy),
+				$this->metricFields(metrics: $query->metrics)
+			)
+		);
+		$this->assertNoExplicitFilter(schema: $schema, filter: $query->filter);
 
 		// Resolve placeholders inside the filter (e.g. $now, $startOfMonth)
 		// so the native SQL path can bind concrete values. The resolved

@@ -224,6 +224,36 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 	}//end testANarrowingFilterOnItIsRefused()
 
 	/**
+	 * A bypassing caller (a materialised aggregate reference) is refused too:
+	 * it would store the value in clear on another object.
+	 *
+	 * @return void
+	 */
+	public function testABypassingAdhocMaxOverItIsRefused(): void {
+		$this->expectException(exception: NotAuthorizedException::class);
+		$this->expectExceptionMessage(message: 'shown only on request');
+
+		$this->runner()->runAdhocByRef(
+			registerRef: 'brp',
+			schemaRef: 'brp-person',
+			query: AggregationQuery::create(metric: 'max', field: 'citizenServiceNumber'),
+			bypassRbac: true
+		);
+	}//end testABypassingAdhocMaxOverItIsRefused()
+
+	/**
+	 * A bypassing declared aggregation grouping on it is refused too.
+	 *
+	 * @return void
+	 */
+	public function testABypassingDeclaredGroupByOnItIsRefused(): void {
+		$this->expectException(exception: NotAuthorizedException::class);
+		$this->expectExceptionMessage(message: 'shown only on request');
+
+		$this->runner()->run(registerRef: 'brp', schemaRef: 'brp-person', name: 'byBsn', bypassRbac: true);
+	}//end testABypassingDeclaredGroupByOnItIsRefused()
+
+	/**
 	 * The control: trusted server code and a system operation are not refused,
 	 * and an ordinary property is not affected.
 	 *
