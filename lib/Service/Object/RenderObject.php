@@ -746,7 +746,7 @@ class RenderObject {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The lens resolver takes the rbac flag
 	 *
-	 * @spec openspec/changes/list-fast-path-resolves-lenses/specs/object-lenses/spec.md
+	 * @spec openspec/specs/object-lenses/spec.md
 	 */
 	public function applyLensesToRows(array &$rows, bool $_rbac=true): void {
 		if ($this->lensResolver === null) {

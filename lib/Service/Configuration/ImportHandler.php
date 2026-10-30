@@ -1945,7 +1945,7 @@ class ImportHandler {
 	 *
 	 * @return Schema|null The row to adopt, or null.
 	 *
-	 * @spec openspec/changes/import-adopts-own-unlinked-schema/specs/schema-import/spec.md#requirement-an-import-adopts-its-apps-own-unlinked-schema
+	 * @spec openspec/specs/schema-import/spec.md#requirement-an-import-adopts-its-apps-own-unlinked-schema
 	 */
 	private function findOwnUnlinkedSchema(string $slug, ?string $appId): ?Schema {
 		if ($appId === null || $appId === '' || $slug === '') {
@@ -3672,7 +3672,7 @@ class ImportHandler {
 	 *
 	 * @throws \Throwable When the object cannot be saved.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function importListedObject(array $objectData, ?string $appId, ?IUser $actingUser, array &$result): void {
 		$rawRegister = $objectData['@self']['register'] ?? null;
@@ -3975,7 +3975,7 @@ class ImportHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-content/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function rememberShippedContent(?string $appId, ?string $seedKey, array $shipped): void {
 		if ($appId === null || $appId === '' || $seedKey === null) {
@@ -4012,7 +4012,7 @@ class ImportHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function recordFailedObject(array $objectData, ?string $appId, \Throwable $error, array &$result): void {
 		$slug = (string)($objectData['@self']['slug'] ?? '');

@@ -645,7 +645,7 @@ class MagicSearchHandler {
 	 *
 	 * @throws EncryptedFieldFilterException When the array property is encrypted.
 	 *
-	 * @spec openspec/changes/array-element-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
 	 */
 	private function applyArrayElementFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
 		$elements   = new ArrayElementFilter();
@@ -1920,7 +1920,7 @@ class MagicSearchHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::isNullOperatorAsksForNull() is a pure function shared with the aggregation path.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
 		return NullFilter::isNullOperatorAsksForNull(value: $value);
@@ -2041,7 +2041,7 @@ class MagicSearchHandler {
 	 * @return string[] The field's conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectFieldConditionsSql(
 		mixed $value,
@@ -2137,7 +2137,7 @@ class MagicSearchHandler {
 	 * @return string[] The conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectOperatorConditionsSql(
 		array $value,
@@ -2333,7 +2333,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string[] Array of SQL conditions
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
@@ -2949,7 +2949,7 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
@@ -3154,7 +3154,7 @@ class MagicSearchHandler {
 	 * @return list<string|\Stringable> The field's predicates, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectFieldPredicates(
 		IQueryBuilder $qb,
@@ -3259,7 +3259,7 @@ class MagicSearchHandler {
 	 * @return list<string|\Stringable> The predicates, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectOperatorPredicates(
 		IQueryBuilder $qb,
@@ -3400,7 +3400,7 @@ class MagicSearchHandler {
 	 *
 	 * @throws EncryptedFieldFilterException When the object property is encrypted.
 	 *
-	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres, Schema $schema): void {
