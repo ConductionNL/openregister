@@ -129,6 +129,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -878,7 +879,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					pairs: $pairs,
 					fields: $fields,
 					onMissing: $onMissing,
-					cap: $cap
+					cap: $cap,
+					context: $context
 				)
 			);
 
@@ -908,7 +910,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				onMissing: $onMissing,
 				onConflict: $onConflict,
 				replace: $replace,
-				cap: $cap
+				cap: $cap,
+				context: $context
 			)
 		);
 
@@ -1033,6 +1036,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param string $onConflict The conflict policy.
 	 * @param bool $replace Whether the write replaces.
 	 * @param int|null $cap The write cap.
+	 * @param array $context The run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -1057,10 +1061,13 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		string $onConflict,
 		bool $replace,
 		?int $cap,
+		array $context,
 	): array {
 		$writes = 0;
+		$created = 0;
+		$updated = 0;
+		$deleted = 0;
 		$out = [];
-
 		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
 		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
 
@@ -1068,13 +1075,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			$json = (array)($item[FlowItems::JSON] ?? []);
 			$binary = (array)($item[FlowItems::BINARY] ?? []);
 
-			// PASS THROUGH, DO NOT DROP. An item the author marked as
-			// already-current is emitted unchanged and costs no write and no
-			// cap. It must still be EMITTED: `openregister.filter` would
-			// remove it, and a synchronisation's sweep decides what to delete
-			// from the target ids its items carry — so dropping an unchanged
-			// item is what makes the next sweep delete the very object that
-			// was fine.
+			// PASS THROUGH, DO NOT DROP: an already-current item costs no write
+			// but must still be EMITTED, or a sync's sweep deletes the object it names.
 			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
 				$out[] = FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index);
 				continue;
@@ -1092,6 +1094,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					config: $config,
 					writes: $writes
 				);
+				$deleted += $this->confirmedDelete(item: $out[array_key_last($out)], config: $config);
 				continue;
 			}
 
@@ -1123,6 +1126,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				onConflict: $onConflict
 			);
 			$writes++;
+			if ($matched === null) {
+				$created++;
+			}
+			if ($matched !== null) {
+				$updated++;
+			}
 
 			$out[] = FlowItems::item(
 				json: $this->outputJson(
@@ -1135,6 +1144,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}//end foreach
 
+		$this->reportItemCounts(context: $context, created: $created, updated: $updated, deleted: $deleted);
 		return $out;
 	}//end writeItems()
 
@@ -1162,6 +1172,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $fields The configured fields.
 	 * @param string $onMissing The missing-field policy.
 	 * @param int $cap The write cap.
+	 * @param array $context The run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -1182,6 +1193,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		array $fields,
 		string $onMissing,
 		int $cap,
+		array $context,
 	): array {
 		if (count($items) > $cap) {
 			throw new RuntimeException(
@@ -1191,7 +1203,6 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				)
 			);
 		}
-
 		$plan = $this->planBulkRows(
 			items: $items,
 			config: $config,
@@ -1251,7 +1262,6 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			}
 
 			$position++;
-
 			unset($json['@self'], $json['id']);
 			$json['uuid'] = $id;
 			$json['register'] = $this->identifierOf(register: $register);
@@ -1268,6 +1278,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}//end foreach
 
+		// Placed after output processing — see the SEMANTICS note on writeReport().
+		$this->reportBulkCounts(context: $context, result: $result);
 		return $out;
 	}//end writeBulk()
 
@@ -1358,6 +1370,114 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	}//end guardBulkFailures()
 
 	/**
+	 * Write this hop's write tally onto the run log, via the context's
+	 * report handle: created/updated/deleted from {@see writeItems()},
+	 * created/updated/unchanged from {@see writeBulk()}.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * SEMANTICS: this reports a COMPLETED node execution, not "objects
+	 * persisted so far". Both call sites ({@see writeItems()}, {@see
+	 * writeBulk()}) call this only after every item this hop will touch has
+	 * been both written AND turned into an output item — never between the
+	 * two. An exception anywhere in that work propagates out of the node
+	 * instead of reaching this call, so a step that fails never gets a
+	 * report, even though {@see writeBulk()}'s database writes before the
+	 * exception would already be durable. Keep any future write path to this
+	 * same placement, or the report starts answering a different question
+	 * depending on which path produced it.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'write', value: $report);
+	}//end writeReport()
+
+	/**
+	 * Report writeItems()'s created/updated/deleted tally. Split out only to
+	 * keep writeItems() itself under the project's method-length threshold.
+	 *
+	 * $deleted is not $writes: every delete attempt counts towards the cap,
+	 * but only a delete the service confirms counts as deleted
+	 * ({@see confirmedDelete()}).
+	 *
+	 * @param array $context The run context.
+	 * @param int $created Items created.
+	 * @param int $updated Items updated.
+	 * @param int $deleted Deletes the service confirmed.
+	 *
+	 * @return void
+	 */
+	private function reportItemCounts(array $context, int $created, int $updated, int $deleted): void {
+		$this->writeReport(
+			context: $context,
+			report: [
+				'created' => ['count' => $created],
+				'updated' => ['count' => $updated],
+				'deleted' => ['count' => $deleted],
+			]
+		);
+	}//end reportItemCounts()
+
+	/**
+	 * Whether an item {@see executeDelete()} returned records a confirmed
+	 * delete: 1 when its written record says `deleted: true`, else 0.
+	 *
+	 * Only ever called on executeDelete()'s own output, where the `deleted`
+	 * flag is always the node's (it overwrites the record, or the `output`
+	 * key, on every branch), so an incoming `deleted` field from upstream can
+	 * never be counted here.
+	 *
+	 * @param array $item The output item.
+	 * @param array $config The step configuration; `output` is read from it.
+	 *
+	 * @return int 1 for a confirmed delete, 0 otherwise.
+	 */
+	private function confirmedDelete(array $item, array $config): int {
+		$record = (array)($item[FlowItems::JSON] ?? []);
+		$key = trim((string)($config['output'] ?? ''));
+		if ($key !== '') {
+			$record = (array)($record[$key] ?? []);
+		}
+
+		if (($record['deleted'] ?? null) === true) {
+			return 1;
+		}
+
+		return 0;
+	}//end confirmedDelete()
+
+	/**
+	 * Report writeBulk()'s saved/updated/unchanged tally from the raw
+	 * `saveObjects()` result. Split out only to keep writeBulk() itself under
+	 * the project's method-length threshold.
+	 *
+	 * @param array $context The run context.
+	 * @param array $result The bulk save result.
+	 *
+	 * @return void
+	 */
+	private function reportBulkCounts(array $context, array $result): void {
+		$this->writeReport(
+			context: $context,
+			report: [
+				'created' => ['count' => count((array)($result['saved'] ?? []))],
+				'updated' => ['count' => count((array)($result['updated'] ?? []))],
+				'unchanged' => ['count' => count((array)($result['unchanged'] ?? []))],
+			]
+		);
+	}//end reportBulkCounts()
+
+	/**
 	 * Index the bulk result's serialised rows by uuid.
 	 *
 	 * @param array $result The bulk save result.
@@ -1420,6 +1540,13 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 	/**
 	 * Perform one guarded delete and build its output item.
+	 *
+	 * Every delete ATTEMPT counts as a write towards the cap: a delete the
+	 * service reports as failed may already have cascaded into child deletes
+	 * before failing. Only a delete the service confirms (`deleteObject()`
+	 * returns true; it returns false for an exception it caught) is marked
+	 * `deleted: true` on the output item and counted in the `deleted` tally;
+	 * a failed one stays in the run marked `deleted: false`, like a skip.
 	 *
 	 * @param array $item The input item (`json` and `binary`).
 	 * @param int $index The input item's index, for provenance.
@@ -1496,8 +1623,9 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// Guard 4: the ordinary delete path, with the run owner as the explicit
 		// acting user and the register / schema scope confining the lookup to
 		// one magic table. No `_retentionSweep`; see `permanenceOf()` for why
-		// the soft delete is the default and what opts out of it.
-		$this->objects->deleteObject(
+		// the soft delete is the default and what opts out of it. Its result
+		// decides `deleted`, not `$writes`; see the method docblock.
+		$deleted = $this->objects->deleteObject(
 			uuid: $uuid,
 			register: $register,
 			schema: $schema,
@@ -1521,7 +1649,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					'uuid' => $uuid,
 					'register' => $this->identifierOf(register: $register),
 					'schema' => $this->labelOf(schema: $schema),
-					'deleted' => true,
+					'deleted' => $deleted,
 				],
 				config: $config
 			),

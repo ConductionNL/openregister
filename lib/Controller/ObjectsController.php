@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -5995,6 +5996,8 @@ class ObjectsController extends Controller {
 					],
 					statusCode: ExportTooLargeException::HTTP_STATUS
 				);
+			} catch (OfficeServerRequiredException $e) {
+				return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
 			}
 
 			$this->recordExportCompleted(

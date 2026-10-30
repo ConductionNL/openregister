@@ -1,0 +1,181 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`settings store initial state matches the golden state 1`] = `
+"{
+ "loading": false,
+ "loadingInProgress": false,
+ "saving": false,
+ "rebasing": false,
+ "loadingStats": false,
+ "loadingCacheStats": false,
+ "loadingVersionInfo": false,
+ "extractionStats": null,
+ "vectorStats": null,
+ "clearingCache": false,
+ "warmingUpCache": false,
+ "showClearCacheConfirmation": false,
+ "clearCacheType": "all",
+ "clearingAppStoreCache": false,
+ "warmupInterval": 3600,
+ "warmupLastRun": null,
+ "loadingWarmupInterval": false,
+ "savingWarmupInterval": false,
+ "massValidating": false,
+ "showMassValidateConfirmation": false,
+ "massValidateResults": null,
+ "clearingAuditTrails": false,
+ "clearingSearchTrails": false,
+ "clearingBlobObjects": false,
+ "showClearAuditTrailsConfirmation": false,
+ "showClearSearchTrailsConfirmation": false,
+ "showClearBlobObjectsConfirmation": false,
+ "rbacOptions": {
+  "enabled": false,
+  "anonymousGroup": "public",
+  "defaultNewUserGroup": "viewer",
+  "defaultObjectOwner": "",
+  "adminOverride": true
+ },
+ "multitenancyOptions": {
+  "enabled": false,
+  "defaultUserTenant": "",
+  "defaultObjectTenant": "",
+  "adminOverride": true
+ },
+ "flowOptions": {
+  "retentionDays": 31,
+  "auditEnabled": false,
+  "oversightEnabled": true,
+  "killSwitch": false
+ },
+ "retentionOptions": {
+  "objectArchiveRetention": 31536000000,
+  "objectDeleteRetention": 63072000000,
+  "searchTrailRetention": 2592000000,
+  "createLogRetention": 2592000000,
+  "readLogRetention": 86400000,
+  "updateLogRetention": 604800000,
+  "deleteLogRetention": 2592000000,
+  "auditTrailsEnabled": true,
+  "searchTrailsEnabled": true
+ },
+ "llmOptions": {
+  "enabled": false,
+  "providerId": "none",
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "enabledFeatures": []
+ },
+ "fileOptions": {
+  "extractionScope": "objects",
+  "extractionMode": "background",
+  "maxFileSize": 100,
+  "batchSize": 10,
+  "enabledFileTypes": [
+   "txt",
+   "pdf",
+   "docx",
+   "xlsx",
+   "pptx",
+   "html",
+   "md",
+   "json"
+  ]
+ },
+ "loadingLlmSettings": false,
+ "loadingFileSettings": false,
+ "versionInfo": {
+  "appName": "Open Register",
+  "appVersion": "0.2.3"
+ },
+ "groupOptions": [],
+ "userOptions": [],
+ "tenantOptions": [],
+ "stats": {
+  "warnings": {
+   "objectsWithoutOwner": 0,
+   "objectsWithoutOrganisation": 0,
+   "auditTrailsWithoutExpiry": 0,
+   "searchTrailsWithoutExpiry": 0,
+   "expiredAuditTrails": 0,
+   "expiredSearchTrails": 0,
+   "expiredObjects": 0
+  },
+  "totals": {
+   "totalObjects": 0,
+   "totalBlobObjects": 0,
+   "totalMagicObjects": 0,
+   "totalSize": 0,
+   "totalBlobSize": 0,
+   "totalMagicSize": 0,
+   "totalAuditTrails": 0,
+   "totalSearchTrails": 0,
+   "totalConfigurations": 0,
+   "totalDataAccessProfiles": 0,
+   "totalOrganisations": 0,
+   "totalRegisters": 0,
+   "totalSchemas": 0,
+   "totalSources": 0,
+   "totalWebhookLogs": 0,
+   "deletedObjects": 0
+  },
+  "lastUpdated": null
+ },
+ "cacheStats": {
+  "overview": {
+   "totalCacheSize": 0,
+   "totalCacheEntries": 0,
+   "overallHitRate": 0,
+   "averageResponseTime": 0,
+   "cacheEfficiency": 0
+  },
+  "services": {
+   "object": {
+    "entries": 0,
+    "hits": 0,
+    "requests": 0,
+    "memoryUsage": 0
+   },
+   "schema": {
+    "entries": 0,
+    "hits": 0,
+    "requests": 0,
+    "memoryUsage": 0
+   },
+   "facet": {
+    "entries": 0,
+    "hits": 0,
+    "requests": 0,
+    "memoryUsage": 0
+   }
+  },
+  "distributed": {
+   "type": "unknown",
+   "backend": "Unknown",
+   "available": false
+  },
+  "performance": {
+   "averageHitTime": 0,
+   "averageMissTime": 0,
+   "performanceGain": 0,
+   "optimalHitRate": 85,
+   "currentTrend": "unknown"
+  },
+  "names": {
+   "cache_size": 0,
+   "hit_rate": 0,
+   "hits": 0,
+   "misses": 0,
+   "warmups": 0,
+   "enabled": false
+  },
+  "lastUpdated": null,
+  "unavailable": true,
+  "errorMessage": "Loading..."
+ },
+ "showRebaseConfirmation": false
+}"
+`;
