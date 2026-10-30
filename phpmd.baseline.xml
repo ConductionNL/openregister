@@ -428,7 +428,7 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/TextExtraction/SpreadsheetExtractor.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TextExtraction/WordExtractor.php" method="extract"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TextExtraction/WordExtractor.php" method="extractWithPhpWord"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/TextExtraction/WordExtractor.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/TextExtraction/WordExtractor.php" method="walkWordElements"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/TextExtraction/WordExtractor.php" method="walkWordElements"/>
