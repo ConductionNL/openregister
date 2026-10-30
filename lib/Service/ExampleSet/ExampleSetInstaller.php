@@ -40,6 +40,7 @@ use Throwable;
  * Checks, installs and proves an example set.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One install flow: check, accounts, objects, proof.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     One install flow: check, accounts, objects, proof.
  * @SuppressWarnings(PHPMD.TooManyMethods)            Each part of a fragment has its own check and write step.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)    One collaborator per part of a fragment, each small and separately tested.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)    The constructor takes one collaborator per part of a fragment.
@@ -337,8 +338,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One pass per object: held, kept, refused,
-	 *                                               not made or written, each answered in place.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  One pass per object: held, kept, refused,
+	 *                                                not made or written, each answered in place.
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The same pass, kept in one place.
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];
