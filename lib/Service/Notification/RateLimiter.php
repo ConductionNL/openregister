@@ -126,33 +126,22 @@ class RateLimiter {
 	 *
 	 * @return bool True when the dispatch may proceed.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-8
 	 */
 	public function tryConsume(string $ruleId, string $recipient, ?array $perRuleOverride = null): bool {
-		if ($this->isEnabled() === false) {
-			return true;
-		}
-
-		if ($this->cache === null) {
-			return true;
-		}
-
-		if ($ruleId === '' || $recipient === '') {
-			// Defensive: a rule without an id can't be rate-limited
-			// in a stable way. Fail open rather than silently grouping
-			// unrelated rules under the empty-string key.
+		if ($this->bypasses(ruleId: $ruleId, recipient: $recipient) === true) {
 			return true;
 		}
 
 		[$bucketSize, $refillSeconds] = $this->resolveLimits(perRuleOverride: $perRuleOverride);
+		$ruleBucket = new TokenBucket(
+			key: $this->key(ruleId: $ruleId, recipient: $recipient),
+			size: $bucketSize,
+			refillSeconds: $refillSeconds,
+			now: ($this->timeProvider)()
+		);
 
-		$key = $this->key(ruleId: $ruleId, recipient: $recipient);
-		$now = ($this->timeProvider)();
-
-		$ruleTokens = $this->currentTokens(key: $key, bucketSize: $bucketSize, refillSeconds: $refillSeconds, now: $now);
+		$ruleTokens = $this->currentTokens(bucket: $ruleBucket);
 		if ($ruleTokens === null) {
 			return true;
 		}
@@ -170,89 +159,107 @@ class RateLimiter {
 			// Persist the new lastRefill so partial earnings don't
 			// get lost on the next call. The shared bucket is untouched:
 			// a refused dispatch messaged nobody.
-			$this->persist(key: $key, tokens: $ruleTokens, lastRefill: $now);
+			$this->persist(bucket: $ruleBucket, tokens: $ruleTokens);
 			return false;
 		}
 
-		// The SHARED per-recipient budget. Bucket keys are caller-agnostic —
-		// the key is the recipient, nothing else — so a declarative rule and a
-		// flow send node draw from ONE budget by construction: the abuse being
-		// bounded is "how much this instance messages this person", not "per
-		// subsystem" or "per rule". Sized from the app-config defaults only;
-		// a single rule's generous per-rule override must not widen every
-		// caller's ceiling. Pseudo-recipients (broadcast channel keys such as
-		// `__webhook__`) are not people and stay outside the shared budget.
+		$sharedBucket = $this->sharedBucket(recipient: $recipient, now: $ruleBucket->now);
 		$sharedTokens = null;
-		$sharedKey = null;
-		[$sharedBucketSize, $sharedRefillSeconds] = $this->resolveLimits(perRuleOverride: null);
-		if (str_starts_with($recipient, '__') === false) {
-			$sharedKey = $this->sharedKey(recipient: $recipient);
-			$sharedTokens = $this->currentTokens(
-				key: $sharedKey,
-				bucketSize: $sharedBucketSize,
-				refillSeconds: $sharedRefillSeconds,
-				now: $now
-			);
-
-			if ($sharedTokens !== null && $sharedTokens < 1.0) {
-				$this->logger->info(
-					sprintf(
-						'[NotificationRateLimiter] dropped rule="%s" recipient="%s" by the shared per-recipient budget bucket=%d refillSeconds=%d',
-						$ruleId,
-						$recipient,
-						$sharedBucketSize,
-						$sharedRefillSeconds
-					)
-				);
-				$this->persist(key: $sharedKey, tokens: $sharedTokens, lastRefill: $now);
-				return false;
-			}
+		if ($sharedBucket !== null) {
+			$sharedTokens = $this->currentTokens(bucket: $sharedBucket);
 		}
 
-		$this->persist(key: $key, tokens: ($ruleTokens - 1.0), lastRefill: $now);
-		if ($sharedKey !== null && $sharedTokens !== null) {
-			$this->persist(key: $sharedKey, tokens: ($sharedTokens - 1.0), lastRefill: $now);
+		if ($sharedTokens !== null && $sharedTokens < 1.0) {
+			$this->logger->info(
+				sprintf(
+					'[NotificationRateLimiter] dropped rule="%s" recipient="%s" by the shared per-recipient budget bucket=%d refillSeconds=%d',
+					$ruleId,
+					$recipient,
+					$sharedBucket->size,
+					$sharedBucket->refillSeconds
+				)
+			);
+			$this->persist(bucket: $sharedBucket, tokens: $sharedTokens);
+			return false;
+		}
+
+		$this->persist(bucket: $ruleBucket, tokens: ($ruleTokens - 1.0));
+		if ($sharedTokens !== null) {
+			$this->persist(bucket: $sharedBucket, tokens: ($sharedTokens - 1.0));
 		}
 
 		return true;
 	}//end tryConsume()
 
 	/**
+	 * Whether a dispatch passes without touching a bucket.
+	 *
+	 * It does when the limiter is off or has no cache, and when the rule or
+	 * recipient is empty: a rule without an id can't be rate-limited in a
+	 * stable way, so the limiter fails open rather than silently grouping
+	 * unrelated rules under the empty-string key.
+	 *
+	 * @param string $ruleId    Rule identifier.
+	 * @param string $recipient Recipient identifier.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function bypasses(string $ruleId, string $recipient): bool {
+		return $this->isEnabled() === false || $this->cache === null || $ruleId === '' || $recipient === '';
+	}//end bypasses()
+
+	/**
+	 * The shared per-recipient budget, or null for a pseudo-recipient.
+	 *
+	 * Bucket keys are caller-agnostic (the key is the recipient, nothing
+	 * else), so a declarative rule and a flow send node draw from ONE budget
+	 * by construction: the abuse being bounded is "how much this instance
+	 * messages this person", not "per subsystem" or "per rule". Sized from the
+	 * app-config defaults only; a single rule's generous per-rule override
+	 * must not widen every caller's ceiling. Pseudo-recipients (broadcast
+	 * channel keys such as `__webhook__`) are not people and stay outside it.
+	 *
+	 * @param string $recipient Recipient identifier.
+	 * @param int    $now       Current unix timestamp.
+	 *
+	 * @return TokenBucket|null
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 */
+	private function sharedBucket(string $recipient, int $now): ?TokenBucket {
+		[$bucketSize, $refillSeconds] = $this->resolveLimits(perRuleOverride: null);
+		if (str_starts_with($recipient, '__') === true) {
+			return null;
+		}
+
+		return new TokenBucket(
+			key: $this->sharedKey(recipient: $recipient),
+			size: $bucketSize,
+			refillSeconds: $refillSeconds,
+			now: $now
+		);
+	}//end sharedBucket()
+
+	/**
 	 * The refilled token count for a bucket, or null when the cache cannot
 	 * answer (the limiter then fails open, as everywhere else).
 	 *
-	 * @param string $key Cache key.
-	 * @param int $bucketSize Bucket capacity.
-	 * @param int $refillSeconds Seconds per earned token.
-	 * @param int $now Current unix timestamp.
+	 * @param TokenBucket $bucket The bucket.
 	 *
 	 * @return float|null The available tokens, or null to fail open.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function currentTokens(string $key, int $bucketSize, int $refillSeconds, int $now): ?float {
+	private function currentTokens(TokenBucket $bucket): ?float {
 		try {
-			$state = $this->cache?->get($key);
+			$state = $this->cache?->get($bucket->key);
 		} catch (\Throwable $e) {
 			return null;
 		}//end try
 
-		$tokens = (float)$bucketSize;
-		$lastRefill = $now;
-		if (is_string($state) === true) {
-			$decoded = json_decode($state, true);
-			if (is_array($decoded) === true && isset($decoded['tokens'], $decoded['lastRefill']) === true) {
-				$tokens = (float)$decoded['tokens'];
-				$lastRefill = (int)$decoded['lastRefill'];
-			}
-		}
-
-		// Refill: one token every $refillSeconds. Cap at bucket size.
-		if ($refillSeconds > 0 && $now > $lastRefill) {
-			$elapsed = ($now - $lastRefill);
-			$earned = ($elapsed / $refillSeconds);
-			$tokens = min((float)$bucketSize, ($tokens + $earned));
-		}
-
-		return $tokens;
+		return $bucket->tokensFrom(state: $state);
 	}//end currentTokens()
 
 	/**
@@ -360,28 +367,29 @@ class RateLimiter {
 	}//end key()
 
 	/**
-	 * Persist bucket state. Best-effort; cache write failures are
-	 * swallowed so a transient cache hiccup never throws into the
-	 * dispatch path.
+	 * Persist bucket state, refilled at the bucket's moment. Best-effort;
+	 * cache write failures are swallowed so a transient cache hiccup never
+	 * throws into the dispatch path.
 	 *
-	 * @param string $key Cache key.
-	 * @param float $tokens Current token count.
-	 * @param int $lastRefill Last refill timestamp.
+	 * @param TokenBucket $bucket The bucket.
+	 * @param float       $tokens Current token count.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function persist(string $key, float $tokens, int $lastRefill): void {
+	private function persist(TokenBucket $bucket, float $tokens): void {
 		if ($this->cache === null) {
 			return;
 		}
 
 		try {
 			$this->cache->set(
-				$key,
+				$bucket->key,
 				json_encode(
 					[
 						'tokens' => $tokens,
-						'lastRefill' => $lastRefill,
+						'lastRefill' => $bucket->now,
 					]
 				),
 				self::STATE_TTL
