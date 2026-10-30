@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Quem aprovou a lista, e quando.",
         "Who made it.": "Quem o fabricou.",
         "Who rejected the list, and why.": "Quem rejeitou a lista, e porquê.",
-        "Woo published": "Publicado ao abrigo da Woo"
+        "Woo published": "Publicado ao abrigo da Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Um PDF precisa de um servidor de escritório (Collabora ou Euro-Office) e não há nenhum instalado. Peça ao seu administrador para instalar um ou transfira o relatório noutro formato.",
+        "The report could not be downloaded.": "Não foi possível transferir o relatório."
     },
     "nplurals=2; plural=(n != 1);"
 )

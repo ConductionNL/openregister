@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Kas patvirtino sąrašą ir kada.",
         "Who made it.": "Kas jį pagamino.",
         "Who rejected the list, and why.": "Kas atmetė sąrašą ir kodėl.",
-        "Woo published": "Paskelbta pagal Woo"
+        "Woo published": "Paskelbta pagal Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF failui reikia biuro serverio (Collabora arba Euro-Office), tačiau nė vienas neįdiegtas. Paprašykite administratoriaus jį įdiegti arba atsisiųskite ataskaitą kitu formatu.",
+        "The report could not be downloaded.": "Ataskaitos atsisiųsti nepavyko."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

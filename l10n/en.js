@@ -3669,7 +3669,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Who approved the list, and when.",
         "Who made it.": "Who made it.",
         "Who rejected the list, and why.": "Who rejected the list, and why.",
-        "Woo published": "Woo published"
+        "Woo published": "Woo published",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.",
+        "The report could not be downloaded.": "The report could not be downloaded."
     },
     "nplurals=2; plural=(n != 1);"
 )

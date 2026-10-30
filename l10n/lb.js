@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Wien d'Lëscht genehmegt huet, a wéini.",
         "Who made it.": "Wien et hiergestallt huet.",
         "Who rejected the list, and why.": "Wien d'Lëscht ofgeleent huet, a firwat.",
-        "Woo published": "No der Woo verëffentlecht"
+        "Woo published": "No der Woo verëffentlecht",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "E PDF brauch en Office-Server (Collabora oder Euro-Office), an et ass keen installéiert. Fro däin Administrateur, fir een z'installéieren, oder lued de Bericht an engem anere Format erof.",
+        "The report could not be downloaded.": "De Bericht konnt net erofgelueden ginn."
     },
     "nplurals=2; plural=(n != 1);"
 )
