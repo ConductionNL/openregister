@@ -198,7 +198,7 @@ class GenericStoreControllerTest extends TestCase {
 	/**
 	 * Publish refuses an anonymous caller.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -214,7 +214,7 @@ class GenericStoreControllerTest extends TestCase {
 	/**
 	 * Publish refuses a user the publish groups do not admit, and sends nothing.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -233,7 +233,7 @@ class GenericStoreControllerTest extends TestCase {
 	/**
 	 * An admitted user's item is published with the declared fields.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -259,7 +259,7 @@ class GenericStoreControllerTest extends TestCase {
 	/**
 	 * An app without a store block answers not_configured.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */

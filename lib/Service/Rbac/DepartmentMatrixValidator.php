@@ -59,7 +59,7 @@ class DepartmentMatrixValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings; empty when the row reads.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function findingsForRow(mixed $row, array $properties, string $field): array {
 		$findings = $this->rowFindings(row: $row, index: 0);
@@ -276,7 +276,7 @@ class DepartmentMatrixValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function whereFindings(array $row, string|int $index, array $properties, string $field): array {
 		$name = 'Row ' . (string)$index;
