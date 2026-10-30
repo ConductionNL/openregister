@@ -147,12 +147,13 @@ class BulkController extends Controller {
 	}//end refusedSchemaGate()
 
 	/**
-	 * The refusal of a mixed-schema batch naming a schema the caller may not manage, or null.
+	 * The refusal of a mixed-schema batch naming a schema the caller may not manage, or a row naming none, or null.
 	 *
 	 * @param bool         $isMixedSchema Whether the batch names its schema per row.
 	 * @param array<mixed> $objects       The rows.
 	 *
-	 * @return JSONResponse|null 403, or null when every named schema passes or the batch is single-schema.
+	 * @return JSONResponse|null 400 for a row without @self.schema, 403, or null when every row
+	 *                           names a schema that passes or the batch is single-schema.
 	 *
 	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
@@ -164,6 +165,13 @@ class BulkController extends Controller {
 		$unmanageable = $this->manageGate()->firstUnmanageableRowSchema(objects: $objects);
 		if ($unmanageable === null) {
 			return null;
+		}
+
+		if ($unmanageable === SchemaManageGate::NO_SCHEMA) {
+			return new JSONResponse(
+				data: ['error' => 'Every object of a mixed-schema bulk write must name its schema in @self.schema.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
 		}
 
 		return new JSONResponse(
