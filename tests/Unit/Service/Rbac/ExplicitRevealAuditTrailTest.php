@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\LogService;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -44,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\LogService
  * @covers \OCA\OpenRegister\Controller\AuditTrailController
+ * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
 
@@ -161,4 +163,37 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 		$this->assertStringNotContainsString(needle: self::BSN, haystack: (string)$file['content']);
 	}//end testTheListExportShowsItMasked()
+
+	/**
+	 * The person schema, its BSN explicit-reveal.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function personSchema(): Schema {
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setProperties(['citizenServiceNumber' => ['type' => 'string', 'authorization' => ['reveal' => 'explicit']]]);
+
+		return $schema;
+	}//end personSchema()
+
+	/**
+	 * An entry naming no schema masks every value, a list value included.
+	 *
+	 * @return void
+	 */
+	public function testAnEntryWithoutASchemaAndAListValueAreMasked(): void {
+		$masker = new ExplicitRevealTrailMasker(schemaMapper: $this->createMock(originalClassName: SchemaMapper::class));
+		$rows   = $masker->mask(entries: [['schema' => null, 'changed' => ['pin' => '4321']], ['schema' => '', 'changed' => ['codes' => ['123457609']]]]);
+
+		$this->assertSame(expected: '*****', actual: $rows[0]['changed']['pin']);
+		$this->assertSame(expected: '*****', actual: $rows[1]['changed']['codes']);
+
+		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
+		$schemas->method('find')->willReturn($this->personSchema());
+		$listed = (new ExplicitRevealTrailMasker(schemaMapper: $schemas))->mask(
+			entries: [['schema' => 7, 'changed' => ['citizenServiceNumber' => ['123457609', '987654321']]]]
+		);
+		$this->assertSame(expected: '*****', actual: $listed[0]['changed']['citizenServiceNumber']);
+	}//end testAnEntryWithoutASchemaAndAListValueAreMasked()
 }//end class

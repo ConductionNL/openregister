@@ -78,11 +78,11 @@ class ExplicitRevealTrailMasker {
 				continue;
 			}
 
-			$schemaId = ($row['schema'] ?? null);
-			$schema   = $this->schemaOf(id: $schemaId);
-			if ($schema === null && is_scalar($schemaId) === true && (string)$schemaId !== '') {
-				// The entry names a schema that can no longer be read (deleted, bad id):
-				// which of its values were explicit-reveal is unknown, so mask them all.
+			$schema = $this->schemaOf(id: ($row['schema'] ?? null));
+			if ($schema === null) {
+				// No schema named, or one that can no longer be read (deleted,
+				// bad id): which values were explicit-reveal is unknown, so
+				// mask them all.
 				$row['changed']  = self::maskEveryChange(changed: $row['changed']);
 				$entries[$key] = $row;
 				continue;
@@ -110,18 +110,7 @@ class ExplicitRevealTrailMasker {
 	 */
 	private static function maskEveryChange(array $changed): array {
 		foreach ($changed as $name => $change) {
-			if (is_array($change) === false) {
-				$changed[$name] = ExplicitReveal::mask(value: $change);
-				continue;
-			}
-
-			foreach (['old', 'new'] as $side) {
-				if (isset($change[$side]) === true) {
-					$change[$side] = ExplicitReveal::mask(value: $change[$side]);
-				}
-			}
-
-			$changed[$name] = $change;
+			$changed[$name] = ExplicitReveal::maskChange(change: $change);
 		}
 
 		return $changed;
