@@ -201,6 +201,7 @@
 <script>
 import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -417,9 +418,37 @@ export default {
 				a.click()
 				URL.revokeObjectURL(url)
 			} catch (e) {
-				// eslint-disable-next-line no-console
-				console.error('[ReportView.downloadAs]', e)
+				showError(await this._downloadErrorMessage(e))
 			}
+		},
+
+		/**
+		 * The message to show when a download failed, read from the JSON error body.
+		 *
+		 * @param {object} error The axios error of a blob request.
+		 * @spec openspec/specs/export-pdf-format/spec.md
+		 * @return {Promise<string>}
+		 */
+		async _downloadErrorMessage(error) {
+			let body = null
+			try {
+				body = JSON.parse(await error.response?.data?.text())
+			} catch {
+				// Not a JSON error body; fall back to the generic message.
+			}
+
+			if (body?.error === 'office_server_required') {
+				return t(
+					'openregister',
+					'A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.',
+				)
+			}
+
+			return (
+				body?.message
+				|| body?.error
+				|| t('openregister', 'The report could not be downloaded.')
+			)
 		},
 
 		/**

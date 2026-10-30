@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Case;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use Throwable;
 
@@ -89,13 +89,13 @@ class UnarmedTimerMarkers {
 		}
 
 		try {
-			if ($this->appConfig->getValueString(Application::APP_ID, $key, '', true) !== '') {
+			if ($this->appConfig->getValueString(AppIdentity::APP_ID, $key, '', true) !== '') {
 				return true;
 			}
 
 			$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
 
-			return $this->appConfig->setValueString(Application::APP_ID, $key, $moment->format(DATE_ATOM), true);
+			return $this->appConfig->setValueString(AppIdentity::APP_ID, $key, $moment->format(DATE_ATOM), true);
 		} catch (Throwable) {
 			return false;
 		}
@@ -117,7 +117,7 @@ class UnarmedTimerMarkers {
 		}
 
 		try {
-			$this->appConfig->deleteKey(Application::APP_ID, $key);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, $key);
 		} catch (Throwable) {
 			// A marker that cannot be cleared is looked at again by the next pass.
 			return;
@@ -133,7 +133,7 @@ class UnarmedTimerMarkers {
 	 */
 	public function all(): array {
 		try {
-			$keys = $this->appConfig->getKeys(Application::APP_ID);
+			$keys = $this->appConfig->getKeys(AppIdentity::APP_ID);
 		} catch (Throwable) {
 			return [];
 		}
@@ -145,7 +145,7 @@ class UnarmedTimerMarkers {
 			}
 
 			try {
-				$moment = $this->appConfig->getValueString(Application::APP_ID, $key, '', true);
+				$moment = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '', true);
 			} catch (Throwable) {
 				continue;
 			}
