@@ -89,7 +89,7 @@ class ReferencedCalculationListenerTest extends TestCase {
 		$this->assertSame(['startableFlows'], $entry['changed']);
 		$this->assertSame(0, $entry['depth']);
 		$this->assertSame('alice', $entry['actor'], 'the entry names the user of the update');
-		$this->assertSame('type-1|startableFlows', $dedupeKey);
+		$this->assertSame('type-1|startableFlows|0|alice', $dedupeKey);
 	}//end testARefreshIsQueuedAndNoReferrerIsReSavedInTheRequest()
 
 	public function testAnUnreadChangeQueuesNothing(): void {

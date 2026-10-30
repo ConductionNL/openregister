@@ -109,6 +109,7 @@ class ReferencedCalculationListener implements IEventListener {
 			// The entry names its own actor: ListenerDeferralService captures one
 			// per process, which in a cron process running several refresh jobs
 			// is the first job's user, not the one whose update this is.
+			$actor  = $this->session->getUser()?->getUID();
 			$sorted = $changed;
 			sort($sorted);
 			$this->deferral->defer(
@@ -120,10 +121,12 @@ class ReferencedCalculationListener implements IEventListener {
 					'version'  => $updated->getVersion(),
 					'changed'  => $changed,
 					'depth'    => $depth,
-					'actor'    => $this->session->getUser()?->getUID(),
+					'actor'    => $actor,
 				],
 				chunkSize: self::CHUNK_SIZE,
-				dedupeKey: (string) $updated->getUuid().'|'.implode(',', $sorted)
+				// Depth and actor are part of the key: in a cron process running
+				// several jobs, a depth-1 entry must not swallow a depth-0 one.
+				dedupeKey: (string) $updated->getUuid().'|'.implode(',', $sorted).'|'.$depth.'|'.($actor ?? '')
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ReferencedCalculationListener] refresh failed: '.$e->getMessage());

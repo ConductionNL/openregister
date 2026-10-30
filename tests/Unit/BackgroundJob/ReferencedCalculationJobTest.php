@@ -119,4 +119,28 @@ class ReferencedCalculationJobTest extends TestCase {
 
 		$this->runJobAs('alice', [['uuid' => 'type-1', 'changed' => ['startableFlows'], 'depth' => 1, 'actor' => 'gone']]);
 	}//end testAnEntryWhoseUserIsGoneIsSkipped()
+
+	public function testAnEntryWithoutAnActorRunsAsNoUserAndTheJobActorIsRestored(): void {
+		$alice = $this->createMock(IUser::class);
+		$this->userManager->method('get')->willReturn($alice);
+		$this->resolver->method('resolve')->willReturn(new ObjectEntity());
+
+		$current = null;
+		$this->session->method('getUser')->willReturnCallback(static function () use (&$current) {
+			return $current;
+		});
+		$this->session->method('setUser')->willReturnCallback(static function (?IUser $user) use (&$current): void {
+			$current = $user;
+		});
+		$seen = [];
+		$this->refresher->method('refreshChanged')->willReturnCallback(static function () use (&$seen, &$current): int {
+			$seen[] = $current;
+			return 1;
+		});
+
+		$this->runJobAs('alice', [['uuid' => 'type-1', 'changed' => ['startableFlows'], 'depth' => 1]]);
+
+		$this->assertSame([null], $seen, 'not the job\'s captured actor');
+		$this->assertNull($current, 'the session the job found is restored');
+	}//end testAnEntryWithoutAnActorRunsAsNoUserAndTheJobActorIsRestored()
 }//end class

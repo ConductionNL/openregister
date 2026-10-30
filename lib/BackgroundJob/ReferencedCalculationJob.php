@@ -131,9 +131,9 @@ class ReferencedCalculationJob extends ActorForwardedJob {
 
 			$previous = $this->session->getUser();
 			try {
-				if ($actor !== null) {
-					$this->session->setUser($actor);
-				}
+				// No actor (an occ or cron origin) runs as no user, never as
+				// whoever the job itself was captured for.
+				$this->session->setUser($actor);
 
 				$this->refresher->refreshChanged(updated: $object, changed: $changed, depth: (int) ($entry['depth'] ?? 0));
 			} catch (\Throwable $e) {
@@ -153,7 +153,7 @@ class ReferencedCalculationJob extends ActorForwardedJob {
 	}//end runDeferred()
 
 	/**
-	 * The user whose update queued the entry: null to keep the job's actor, false when that user is gone.
+	 * The user whose update queued the entry: null when there was none (run as no user), false when that user is gone.
 	 *
 	 * @param array<string, mixed> $entry The entry.
 	 *
