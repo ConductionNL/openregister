@@ -322,7 +322,9 @@ final class ServiceRegistrar {
 					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
 					// Reads a located task's subject from its own table instead
 					// of searching every magic table for it.
-					locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
+					locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
+					// Without it the derived `blocked` flag is never computed.
+					blockers: $container->get(\OCA\OpenRegister\Db\TaskBlockerMapper::class)
 				);
 			}
 		);
@@ -347,7 +349,12 @@ final class ServiceRegistrar {
 					container: $container,
 					registerMapper: $container->get(RegisterMapper::class),
 					schemaMapper: $container->get(SchemaMapper::class),
-					db: $container->get('OCP\IDBConnection')
+					db: $container->get('OCP\IDBConnection'),
+					// The name scope reads the multitenancy switches and the
+					// admin override through these two; without them it
+					// treats multitenancy as on and the override as off.
+					groupManager: $container->get('OCP\IGroupManager'),
+					appConfig: $container->get('OCP\IAppConfig')
 				);
 			}
 		);
