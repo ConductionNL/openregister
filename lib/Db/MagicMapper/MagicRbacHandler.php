@@ -379,7 +379,7 @@ class MagicRbacHandler {
 	 *
 	 * @return bool True when the draft predicate must be left out for this table.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function statusColumnMissing(?string $tableName): bool {
 		if ($this->metadataColumns === null || $tableName === null || $tableName === '') {

@@ -263,7 +263,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 * create form. Refusing it by name refused dossiq's whole case schema at
 	 * register import, so an upgraded instance kept its old case schema.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */
@@ -291,7 +291,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 * `mapped()` is called with. A role the consumer reads that this layer
 	 * refuses breaks a working form at import, which is what this pins.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */
@@ -323,7 +323,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 	/**
 	 * A role that is neither a key, an alias nor a form role is still refused.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */

@@ -36,7 +36,7 @@ use ReflectionClass;
 /**
  * The readOnly rule of the update path, for a client and for a system operation.
  *
- * @spec openspec/changes/readonly-is-stamped-by-system-operations/specs/object-lifecycle/spec.md#requirement-a-system-operation-may-stamp-a-readonly-property
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-system-operation-may-stamp-a-readonly-property
  */
 class ObjectServiceReadOnlySystemOperationTest extends TestCase {
 

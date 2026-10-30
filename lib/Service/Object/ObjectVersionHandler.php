@@ -153,7 +153,7 @@ class ObjectVersionHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function advanceVersion(ObjectEntity $entity, ?string $carried): void {
 		$next = $this->parse(version: $carried);

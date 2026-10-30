@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @return array The output items: the node's for a performed step, the input otherwise.
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function dispatch(array $step, array $items, array $context): array {
 		$type = trim((string)($step['type'] ?? ''));
@@ -96,7 +96,7 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function previews(): array {
 		return $this->previews;

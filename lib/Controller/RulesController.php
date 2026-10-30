@@ -133,7 +133,7 @@ class RulesController extends Controller {
 	 * @return JSONResponse The inventory rows, narrowed by `scope[<property>]=<value>` when given.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function index(string $schema): JSONResponse {
