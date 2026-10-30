@@ -33,8 +33,9 @@ class ServiceRegistrarTest extends TestCase {
 	 * @var array<string,string>
 	 */
 	private const LEFT_OUT = [
-		'OCA\OpenRegister\Service\OrganisationService::$settingsService'      => 'Left out to break a circular dependency (the comment on the factory);'
-			.' the default-organisation UUID falls back to the same app config.',
+		'OCA\OpenRegister\Service\OrganisationService::$settingsService'      => 'No construction cycle today. Left out because wiring it would switch the'
+			.' default-organisation key from `defaultOrganisation` to `organisation.default_organisation`;'
+			.' the two keys already diverge (see the comment on the factory).',
 		'OCA\OpenRegister\Service\File\FolderManagementHandler::$fileService' => 'Set by FileService::__construct() through setFileService():'
 			.' FileService takes this handler, so constructor injection would be a cycle.',
 	];

@@ -255,7 +255,14 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function registerUserAndOrganisation(IRegistrationContext $context): void {
-		// Register OrganisationService without SettingsService to break circular dependency.
+		// OrganisationService is registered without SettingsService. The reason
+		// once given, a circular dependency, no longer holds: nothing in
+		// SettingsService's constructor graph reaches OrganisationService.
+		// Wiring it is not a no-op, though. Without it OrganisationService
+		// reads and writes the flat `defaultOrganisation` app-config key; with
+		// it, it would go through ConfigurationSettingsHandler, which uses only
+		// `organisation.default_organisation`. The two keys already diverge
+		// today; reconciling them is a separate change.
 		$context->registerService(
 			OrganisationService::class,
 			function (ContainerInterface $container) {
