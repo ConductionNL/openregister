@@ -8678,7 +8678,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account, minted since #4061 from the object detail page (src/components/access-links/ObjectAccessLinks.vue) and opened on a public page (/links/{anchor}, lib/Controller/AccessLinkPageController.php, src/views/accessLink/AccessLinkPage.vue) -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances",
-    "change": "or-form-and-journey-registry"
+    "change": "or-form-and-journey-registry",
+    "requirement": "A form link MAY open an existing record for change (REQ-FJR-008)"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
