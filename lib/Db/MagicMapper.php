@@ -800,7 +800,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string, array> Column definitions keyed by column name.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function getMetadataColumnDefinitions(): array {
 		return $this->getMetadataColumns();
@@ -818,7 +818,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return string The ALTER TABLE statement.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function buildAddColumnSql(string $tableName, array $definition): string {
 		$platform = $this->db->getDatabasePlatform();
@@ -853,7 +853,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return list<string> Bare table names (`openregister_table_<register>_<schema>`).
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	public function listMagicTableNames(): array {
 		$prefix = $this->getTablePrefix();
@@ -874,7 +874,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string, array> Missing column definitions keyed by column name.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	public function inspectMetadataColumns(string $tableName): array {
 		return $this->getMetadataColumnHealer()->inspect(tableName: $tableName);
@@ -887,7 +887,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array{added: list<string>, failed: array<string, string>} What was added, and what failed with why.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	public function healMetadataColumns(string $tableName): array {
 		return $this->getMetadataColumnHealer()->heal(tableName: $tableName);
@@ -898,7 +898,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return MagicMetadataColumnHealer The healer.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function getMetadataColumnHealer(): MagicMetadataColumnHealer {
 		if ($this->metadataColumnHealer === null) {
@@ -2605,7 +2605,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
-	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
 		$allResults = [];
@@ -2726,7 +2726,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string, string> Column name => property name.
 	 *
-	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function orderedPropertyFields(array $query): array {
 		$orderParams = ($query['_order'] ?? []);
@@ -2759,7 +2759,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string, string> The single-table `_order`.
 	 *
-	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function buildSequentialTableOrder(array $orderKeys, array $propertyFields): array {
 		$metadataColumns = $this->getMetadataColumns();
@@ -2794,7 +2794,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<int, ObjectEntity> The entities in the merged order.
 	 *
-	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function sortSequentialResults(array $results, array $orderKeys, array $propertyFields): array {
 		$rows = [];
@@ -2835,7 +2835,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return mixed The comparable value.
 	 *
-	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function sequentialOrderValue(ObjectEntity $entity, string $rowKey, array $propertyFields): mixed {
 		$value = null;
@@ -3881,7 +3881,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @psalm-return array{default: mixed|null, index: true, name: string,
 	 *                      nullable: bool, precision: int, scale: int, type: 'decimal'}
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	private function mapNumberProperty(string $columnName, array $propertyConfig): array {
 		// Handle 'required' - can be boolean (property level) or array (schema level).
@@ -5917,7 +5917,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string> Physical column names to widen.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function findDecimalColumnsNeedingWiden(array $currentColumns, array $requiredColumns): array {
 		return array_keys($this->decimalColumnWidenings(currentColumns: $currentColumns, requiredColumns: $requiredColumns));
@@ -5935,7 +5935,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string> The column names widened.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function widenDecimalColumns(string $tableName, array $currentColumns, array $requiredColumns): array {
 		$widenings = $this->decimalColumnWidenings(currentColumns: $currentColumns, requiredColumns: $requiredColumns);
@@ -5999,7 +5999,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string> The column names widened.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function widenNumberColumnsToDefault(string $tableName): array {
 		$currentColumns = $this->getExistingTableColumns(tableName: $tableName);
@@ -6031,7 +6031,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
 	private function refuseNumbersTheColumnsWouldRound(array $row, string $tableName): void {
 		$sizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getTablePrefix()))->sizes(tableName: $tableName);
