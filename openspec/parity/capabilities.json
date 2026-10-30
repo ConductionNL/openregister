@@ -6661,7 +6661,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Configurations bundle register+schemas(+objects): configuration#export routes.php:1715 from src/modals/configuration/ExportConfiguration.vue, configurations#import routes.php:1727 from ImportConfiguration.vue",
-    "spec": "openspec/specs/data-import-export"
+    "spec": "openspec/specs/data-import-export",
+    "requirement": "Configuration import/export MUST support full register portability @e2e exclude backend configuration import/export — covered by PHPUnit"
    },
    "reachedOn": "/configurations",
    "provider": "openregister",
@@ -6757,7 +6758,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "No importer for another product's base: git grep -i 'airtable|baserow|nocodb' in lib, src and appinfo finds none. The only neighbour is lib/Service TablesSchemaSyncService, which mounts a Nextcloud Tables table as a read-only virtual schema (occ openregister:tables:sync), not an import.",
-    "change": "import-preview-and-conflict-policy"
+    "change": "import-preview-and-conflict-policy",
+    "requirement": "A whole base from another product is imported as one job (REQ-IPC-006)"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -6791,7 +6793,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Per-configuration export with includeObjects ExportConfiguration.vue:23 (routes.php:1715) and re-import ImportRegister.vue:508 (routes.php:1656); no all-data backup/restore (grep -i backup in lib/Controller, lib/Command finds none)",
-    "change": "exchange-encrypted-instance-export"
+    "change": "exchange-encrypted-instance-export",
+    "requirement": [
+     "openspec/changes/import-preview-and-conflict-policy :: The instance serialises and loads, without secrets (REQ-IPC-005)",
+     "A load checks the whole set before writing anything",
+     "An instance set can be encrypted with a passphrase or an export key"
+    ]
    },
    "reachedOn": "/configurations, /registers",
    "provider": "openregister",
