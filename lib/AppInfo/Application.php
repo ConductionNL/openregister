@@ -74,9 +74,6 @@ use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
-use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
-use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
-use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\FileService;
@@ -122,24 +119,8 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
-use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
-use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
-use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
-use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
-use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
-use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
@@ -833,7 +814,7 @@ class Application extends App implements IBootstrap {
 		$this->registerVectorizationService(context: $context);
 		$this->registerObjectInteractionServices(context: $context);
 		$this->registerIntegrationRegistry(context: $context);
-		$this->registerObjectSourceProviders(context: $context);
+		ObjectSourceRegistrar::register(context: $context);
 		ListenerRegistrar::register(context: $context);
 		$this->registerMcpToolProviders(context: $context);
 		$this->registerAppHostObservability(context: $context);
@@ -1348,248 +1329,6 @@ class Application extends App implements IBootstrap {
 		);
 
 	}//end registerIntegrationRegistry()
-
-	/**
-	 * Register the ObjectSourceRegistry (shared) and the built-in
-	 * CalDAV-VTODO object-source provider service.
-	 *
-	 * The registry is shared so `addProvider()` registrations made during
-	 * `boot()` persist for the whole request; GetObject auto-wires it.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/object-source-providers/tasks.md#1-provider-interface-registry
-	 */
-	private function registerObjectSourceProviders(IRegistrationContext $context): void {
-		$context->registerService(
-			ObjectSourceRegistry::class,
-			function (ContainerInterface $container) {
-				return new ObjectSourceRegistry(
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			FederatedObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new FederatedObjectSourceProvider(
-					clientService: $container->get('OCP\Http\Client\IClientService'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			CalDavVtodoObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new CalDavVtodoObjectSourceProvider(
-					taskService: $container->get(TaskService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			UserDirectoryObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new UserDirectoryObjectSourceProvider(
-					userManager: $container->get('OCP\IUserManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			GroupObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new GroupObjectSourceProvider(
-					groupManager: $container->get('OCP\IGroupManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			OrganisationObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new OrganisationObjectSourceProvider(
-					organisationMapper: $container->get('OCA\OpenRegister\Db\OrganisationMapper'),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					organisationService: $container->get('OCA\OpenRegister\Service\OrganisationService')
-				);
-			}
-		);
-
-		$context->registerService(
-			ContactsObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new ContactsObjectSourceProvider(
-					contactsManager: $container->get('OCP\Contacts\IManager'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			CalendarEventObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new CalendarEventObjectSourceProvider(
-					calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			FilesObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new FilesObjectSourceProvider(
-					rootFolder: $container->get('OCP\Files\IRootFolder'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			DeckObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new DeckObjectSourceProvider(
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TalkObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new TalkObjectSourceProvider(
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		// DBAL virtual-register services + provider (dbal-virtual-registers).
-		// The connection factory depends only on the CredentialStore interface,
-		// which is already bound to the active leaf via CredentialStoreResolver.
-		$context->registerService(
-			\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
-			function (ContainerInterface $container) {
-				return new DbalConnectionFactory(
-					credentialStore: $container->get(\OCA\OpenRegister\Service\Credential\CredentialStore::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class,
-			function (ContainerInterface $container) {
-				return new SqlTypeMapper(
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService::class,
-			function (ContainerInterface $container) {
-				return new DatabaseIntrospectionService(
-					connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
-					typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
-					registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-					diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			DbalObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new DbalObjectSourceProvider(
-					sourceMapper: $container->get(\OCA\OpenRegister\Db\SourceMapper::class),
-					connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		// Tables provider stack — a guarded reader (the sole Tables-boundary),
-		// pure mappers, a schema-sync reconciler, and the provider itself.
-		$context->registerService(
-			TablesUuidDeriver::class,
-			function () {
-				return new TablesUuidDeriver();
-			}
-		);
-
-		$context->registerService(
-			TablesTableReader::class,
-			function (ContainerInterface $container) {
-				return new TablesTableReader(
-					appManager: $container->get('OCP\App\IAppManager'),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TablesColumnMapper::class,
-			function (ContainerInterface $container) {
-				return new TablesColumnMapper(
-					uuidDeriver: $container->get(TablesUuidDeriver::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TablesSchemaSyncService::class,
-			function (ContainerInterface $container) {
-				return new TablesSchemaSyncService(
-					registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-					columnMapper: $container->get(TablesColumnMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TablesObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new TablesObjectSourceProvider(
-					reader: $container->get(TablesTableReader::class),
-					columnMapper: $container->get(TablesColumnMapper::class),
-					uuidDeriver: $container->get(TablesUuidDeriver::class),
-					syncService: $container->get(TablesSchemaSyncService::class),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-	}//end registerObjectSourceProviders()
 
 	/**
 	 * Register the integration providers and link services listed in
@@ -2837,7 +2576,7 @@ class Application extends App implements IBootstrap {
 		// caller actually invokes that provider's CRUD path.
 		$this->bootBuiltinIntegrationProviders(server: $server);
 		$this->bootLeafRegistry(server: $server);
-		$this->bootObjectSourceProviders(server: $server);
+		ObjectSourceRegistrar::boot(server: $server);
 		$this->bootFederation(server: $server);
 
 		// Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
@@ -3057,62 +2796,6 @@ class Application extends App implements IBootstrap {
 		}
 
 	}//end bootLeafRegistry()
-
-	/**
-	 * Register the built-in object-source providers with the shared
-	 * ObjectSourceRegistry.
-	 *
-	 * Runs in boot() (post-registration) because addProvider() needs the
-	 * registry instance. Guarded so one absent provider never takes the app
-	 * down — a failing provider simply won't serve its bound schemas.
-	 *
-	 * @param mixed $server Server container (passed in from boot()).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/object-source-providers/tasks.md#5-caldav-vtodo-provider
-	 */
-	private function bootObjectSourceProviders($server): void {
-		try {
-			$registry = $server->get(ObjectSourceRegistry::class);
-		} catch (\Throwable $e) {
-			return;
-		}
-
-		// Register each built-in provider independently so one absent provider
-		// never blocks the others — a failing provider simply won't serve its
-		// bound schemas.
-		$providerClasses = [
-			CalDavVtodoObjectSourceProvider::class,
-			UserDirectoryObjectSourceProvider::class,
-			GroupObjectSourceProvider::class,
-			OrganisationObjectSourceProvider::class,
-			ContactsObjectSourceProvider::class,
-			CalendarEventObjectSourceProvider::class,
-			FilesObjectSourceProvider::class,
-			DeckObjectSourceProvider::class,
-			TalkObjectSourceProvider::class,
-			FederatedObjectSourceProvider::class,
-			TablesObjectSourceProvider::class,
-			// Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
-			DbalObjectSourceProvider::class,
-			// A saved view's rows as a read-only type (modelling-query-backed-type).
-			\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
-		];
-		foreach ($providerClasses as $providerClass) {
-			try {
-				$registry->addProvider($server->get($providerClass));
-			} catch (\Throwable $e) {
-				try {
-					$server->get(\Psr\Log\LoggerInterface::class)->warning(
-						'[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage()
-					);
-				} catch (\Throwable $inner) {
-					// Logger unavailable on this build — nothing to do.
-				}
-			}
-		}
-	}//end bootObjectSourceProviders()
 
 	/**
 	 * Register OpenRegister's OCM cloud-federation provider so cross-instance
