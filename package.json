@@ -57,7 +57,7 @@
   ],
   "prettier": "@nextcloud/prettier-config",
   "resolutions": {
-    "@babel/traverse": "^7.23.9",
+    "@babel/traverse": "^8.0.7",
     "json5": "^2.2.3",
     "postcss": "^8.4.31"
   },
@@ -111,7 +111,7 @@
     "@babel/plugin-transform-typescript": "^7.29.9",
     "@babel/preset-env": "^7.23.9",
     "@babel/preset-typescript": "^7.26.0",
-    "@babel/traverse": "^7.23.9",
+    "@babel/traverse": "^8.0.7",
     "@cyclonedx/cyclonedx-npm": "^6.0.0",
     "@nextcloud/browserslist-config": "^3.1.2",
     "@nextcloud/eslint-config": "^9.0.1",
