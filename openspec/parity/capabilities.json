@@ -2707,7 +2707,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchema.vue (create schema) -> POST api/schemas (appinfo/routes.php:6 Schemas resource); lib/Db/MagicMapper.php:811 ensureTableForRegisterSchema creates/syncs the per-schema table on first save (MagicTableHandler.php:93), no migration",
-    "spec": "openspec/specs/runtime-schema-api"
+    "spec": "openspec/specs/runtime-schema-api",
+    "requirement": "Runtime schema creation invalidates cache and reloads declarative engines"
    },
    "reachedOn": "/schemas",
    "provider": "openregister",
@@ -2773,7 +2774,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/schema/SchemaDetails.vue:46 'Add Property' opens src/modals/schema/EditSchemaProperty.vue (type/format/relation form, typeOptions :1185), saved via Schemas resource appinfo/routes.php:6",
-    "spec": "openspec/specs/entity-management-modals"
+    "spec": "openspec/specs/entity-management-modals",
+    "requirement": "openspec/changes/modelling-stated-requirements :: A schema's fields are built in a form (REQ-MSR-004)"
    },
    "reachedOn": "/schemas/:id",
    "provider": "openregister",
@@ -2809,7 +2811,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Record form src/modals/object/ViewObject.vue getPropertyInputComponent delegates to src/services/propertyEditor.js editorFor: enum/oneOf -> NcSelect of the declared values, file -> file picker (readFileAsDataUri, the data URI the save path stores), translatable -> TranslationFieldEditor per register language; booleans and dates as before. Tests src/services/propertyEditor.spec.js.",
-    "change": "records-form-and-cell-editors"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "REQ-RFCE-001 The record form gives each declared field its own editor"
    },
    "reachedOn": "/schemas/:id and /objects (edit dialog)",
    "provider": "openregister",
@@ -2847,7 +2850,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "$ref + inversedBy in EditSchemaProperty.vue:118; ObjectsController.php:4559 uses / :4612 used (routes.php:1186-1187) rendered as 'Uses' and 'Used by' tabs in src/views/object/ObjectDetails.vue:176/197",
-    "spec": "openspec/specs/relation-resource-urls"
+    "spec": "openspec/specs/relation-resource-urls",
+    "requirement": [
+     "openspec/specs/referential-integrity :: Requirement 12: Relation graph MUST support bidirectional traversal (uses/usedBy)",
+     "openspec/specs/referential-integrity :: Requirement 6: Bidirectional reference consistency via inversedBy and writeBack"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id",
    "provider": "openregister",
@@ -3141,7 +3148,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/ValidateObject.php:2167 formatValidationError builds message with property path; returned 400 by ObjectsController.php:3376-3378 on create/update (Schemas/objects routes)",
-    "spec": "openspec/specs/format-validators"
+    "spec": "openspec/specs/format-validators",
+    "requirement": "openspec/changes/modelling-stated-requirements :: A refused save names the field that broke the rule (REQ-MSR-001)"
    },
    "reachedOn": "/objects (edit dialog save)",
    "provider": "openregister",
@@ -3174,7 +3182,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Concept scheme URI field in EditSchemaProperty.vue:647; lib/Listener/CodedValueValidationListener.php:103 refuses values outside the vocabulary, registered Application.php:3346-3347; ConceptDeleteGuardListener Application.php:3358",
-    "spec": "openspec/specs/skos-concept-registers"
+    "spec": "openspec/specs/skos-concept-registers",
+    "requirement": [
+     "openspec/changes/modelling-stated-requirements :: A coded property takes its allowed values from a concept scheme (REQ-MSR-003)",
+     "openspec/changes/code-list-lifecycle-and-hierarchy :: A property uses the hierarchy, the context and the weights (REQ-CLH-002)"
+    ]
    },
    "reachedOn": "/schemas/:id (property editor); enforced on /objects save",
    "provider": "openregister",
@@ -3413,7 +3425,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/components/tables/EditableCell.vue (double click edits, Enter saves through PATCH /api/objects/{register}/{schema}/{id}, a refusal shows the server message and keeps the value) wired per scalar column in src/views/search/SearchIndex.vue (#column-<key> slots, inlineEditableColumns); offered only where @self.can.update is true, which lib/Service/Object/RenderObject.php applyUpdateRightMarker fills from PermissionHandler::hasPermission on _extend[]=@self.can. Tests EditableCell.spec.js, SearchIndex.spec.js, tests/Unit/Service/Object/RenderObjectUpdateRightTest.php.",
-    "change": "records-form-and-cell-editors"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "REQ-RFCE-002 A cell in the records list can be edited in place"
    },
    "reachedOn": "/tables (record modal Properties tab)",
    "provider": "openregister",
@@ -4076,7 +4089,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Negotiation and projection as before (LanguageMiddleware, RenderObject resolveTranslationsForRows); the record form now edits a translatable field with src/components/i18n/TranslationFieldEditor.vue, one input per register language (ViewObject.vue registerLanguages).",
-    "change": "records-form-and-cell-editors"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "REQ-RFCE-001 The record form gives each declared field its own editor"
    },
    "reachedOn": "API (Accept-Language) and /registers sidebar for languages; no per-field language editor",
    "provider": "openregister",
@@ -7835,7 +7849,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/DeleteObject.php:843 canDelete + :913 applyDeletionActions (RESTRICT/CASCADE/SET_NULL, ReferentialIntegrityService.php:113); blocked delete -> 409 ObjectsController.php:4256",
-    "spec": "openspec/specs/referential-integrity"
+    "spec": "openspec/specs/referential-integrity",
+    "requirement": "Requirement 1: Schema properties with $ref MUST support configurable onDelete behavior"
    },
    "reachedOn": "/objects (delete refused or links cleaned); onDelete declared in schema JSON",
    "provider": "openregister",
@@ -7869,7 +7884,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/SaveObject.php:4250/4422 validateReferences throws ReferenceValidationException (:5055) for properties with validateReference: true",
-    "spec": "openspec/specs/reference-existence-validation"
+    "spec": "openspec/specs/reference-existence-validation",
+    "requirement": "Save MUST reject objects with invalid references when validateReference is enabled"
    },
    "reachedOn": "/objects (save refused)",
    "provider": "openregister",
@@ -8369,7 +8385,11 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1171,1177 objects are addressed by {id} (uuid or slug) only; lib/Service/Import/MatchResolver.php:116 resolve() matches an import row on several declared properties, but only inside import previews (routes.php:1336), not as the record's identity in the API or in links",
-    "change": "modelling-composite-identity"
+    "change": "modelling-composite-identity",
+    "requirement": [
+     "A schema may declare one identity over a combination of fields",
+     "An object can be addressed by its key"
+    ]
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -8655,7 +8675,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchemaProperty.vue:380 'Facetable' switch per property -> lib/Db/MagicMapper.php:3580-3584 createTableIndexes adds CREATE INDEX on each facetable column (and on relation columns :3552); runs on table creation lib/Db/MagicMapper.php:2309 and on resync src/components/cards/RegisterSchemaCard.vue:952 -> appinfo/routes.php:279 tables#sync -> lib/Controller/TablesController.php:140 -> lib/Db/MagicMapper/MagicTableHandler.php:473 updateTableIndexes",
-    "change": "modelling-property-index-switch"
+    "change": "modelling-property-index-switch",
+    "requirement": "A property can ask for an index without being a facet"
    },
    "reachedOn": "schema property editor (Facetable) plus the register card's table sync",
    "provider": "openregister",
@@ -9165,7 +9186,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/ValidateObject.php:1827 validates the whole object against the schema with the Opis JSON Schema validator, so a property of type object with its own properties, required list and formats is checked before save; nested objects keep their structure for validation (ValidateObject.php:837 'nested-object'); the nested schema is set through src/views/schema/SchemaDetails.vue:60 upload modal -> src/modals/schema/UploadSchema.vue:144 -> src/store/modules/schema.js:321 /api/schemas/upload",
-    "spec": "openspec/specs/runtime-schema-api"
+    "spec": "openspec/specs/runtime-schema-api",
+    "requirement": "openspec/changes/modelling-stated-requirements :: An object-typed property is validated against its own JSON Schema (REQ-MSR-002)"
    },
    "reachedOn": "schema details, upload schema (JSON Schema) modal, then every object save",
    "provider": "openregister",
@@ -9277,7 +9299,11 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "grep diagram, mermaid, cytoscape, vis-network and erd in src: no diagram component (the two hits are wording in delete modals); the model is exported as OpenAPI per register (appinfo/routes.php:1667 oas#generate), not drawn",
-    "change": "modelling-schema-diagram"
+    "change": "modelling-schema-diagram",
+    "requirement": [
+     "A register's model is available as nodes and edges",
+     "The register page draws the model"
+    ]
    },
    "reachedOn": "nothing",
    "provider": "openregister",
