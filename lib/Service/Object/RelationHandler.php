@@ -19,11 +19,11 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectAccessRulesInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
@@ -79,7 +79,7 @@ class RelationHandler {
 	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities.
 	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schemas.
 	 * @param PerformanceHandler $performanceHandler Handler for performance operations.
-	 * @param MagicRbacHandler $rbacHandler Handler for RBAC operations.
+	 * @param ObjectAccessRulesInterface $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for registers.
 	 * @param RelationTypeResolver|null $relationTypes Resolves what a relation is called from each side.
@@ -91,7 +91,7 @@ class RelationHandler {
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PerformanceHandler $performanceHandler,
-		private readonly MagicRbacHandler $rbacHandler,
+		private readonly ObjectAccessRulesInterface $rbacHandler,
 		private readonly LoggerInterface $logger,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ?RelationTypeResolver $relationTypes = null,

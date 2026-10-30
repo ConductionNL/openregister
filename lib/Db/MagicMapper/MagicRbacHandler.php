@@ -41,6 +41,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectAccessRulesInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -93,7 +96,7 @@ use Throwable;
  *      interpreters apply the byte-identical transform. Injecting it would let this one be constructed without it and
  *      silently diverge from the PHP-layer evaluator on which entries are inert — the exact drift ADR-011 warns about.
  */
-class MagicRbacHandler {
+class MagicRbacHandler implements ObjectAccessRulesInterface {
 
 	/**
 	 * Raw-SQL impossible predicate used to fail closed on the SQL-string RBAC path.
@@ -1349,7 +1352,7 @@ class MagicRbacHandler {
 	 * qualifies for the group AND (when object data is supplied) ConditionMatcher
 	 * confirms the object satisfies the match clause.
 	 *
-	 * @param Schema $schema Schema to check
+	 * @param SchemaInterface $schema Schema to check
 	 * @param string $action CRUD action to check
 	 * @param string|null $objectOwner Optional object owner for ownership check
 	 * @param array|null $objectData Optional object data for conditional checks
@@ -1363,13 +1366,15 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	public function hasPermission(
-		Schema $schema,
+		SchemaInterface $schema,
 		string $action,
 		?string $objectOwner = null,
 		?array $objectData = null,
 		?array $objectAuthorization = null,
 		?string $objectUuid = null,
 	): bool {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
 
@@ -1660,7 +1665,7 @@ class MagicRbacHandler {
 	 * - no conditions at all is DENY ALL and becomes `FALSE`, never `TRUE` and
 	 *   never omitted.
 	 *
-	 * @param Schema $schema The schema of the rows the subquery reads.
+	 * @param SchemaInterface $schema The schema of the rows the subquery reads.
 	 * @param string $alias  The alias those rows carry in the subquery.
 	 * @param string $action The CRUD action being filtered.
 	 * @param string|null $tableName The bare magic table of the aliased rows; a `_status` column it lacks is left out of the draft predicate.
@@ -1671,7 +1676,9 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
+	public function buildRbacPredicateForAlias(SchemaInterface $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $alias) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a table alias an access predicate may be built for.', $alias)
