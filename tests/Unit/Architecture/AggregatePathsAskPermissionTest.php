@@ -84,6 +84,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// never summarise a value.
 		'lib/Db/Schema.php' => 'entity holding definitions, summarises nothing',
 		'lib/Db/SchemaMapper.php' => 'persistence, summarises nothing',
+		'lib/Kernel/Contracts/SchemaInterface.php' => 'the entity\'s interface, declares accessors, summarises nothing',
 		'lib/Service/Schemas/SchemaCacheHandler.php' => 'caches definitions, summarises nothing',
 	];
 
