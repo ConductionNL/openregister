@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -56,7 +57,12 @@ final class MapperRegistrar {
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig'),
-					logger: $container->get('Psr\Log\LoggerInterface')
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					// Lazy: resolving the validator here closes the cycle
+					// ObjectActionValidator → … → RegisterMapper → SchemaMapper.
+					// Omitting it silently skipped the admin-only `elevate`
+					// rule and the bound-flow checks (openregister#5143).
+					objectActions: static fn (): ObjectActionValidator => $container->get(ObjectActionValidator::class)
 				);
 			}
 		);

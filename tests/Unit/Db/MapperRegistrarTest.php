@@ -11,10 +11,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\MapperRegistrar;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 class MapperRegistrarTest extends TestCase {
 
@@ -63,4 +72,74 @@ class MapperRegistrarTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
 		}
 	}//end testEveryFactoryBuildsItsService()
+	/**
+	 * The SchemaMapper the factory builds refuses `elevate` from a non-administrator.
+	 *
+	 * The factory once omitted the declared-action validator, so production
+	 * saves skipped the admin-only `elevate` rule and the bound-flow checks
+	 * (openregister#5143). The validator is resolved lazily: building the
+	 * mapper must not ask the container for it, or the
+	 * ObjectActionValidator → … → RegisterMapper → SchemaMapper cycle returns.
+	 *
+	 * @return void
+	 */
+	public function testTheSchemaMapperFactoryWiresTheDeclaredActionValidator(): void {
+		$context = new RecordingRegistrationContext();
+		MapperRegistrar::register(context: $context);
+
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn('anna');
+		$session = $this->createMock(originalClassName: IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groups = $this->createMock(originalClassName: IGroupManager::class);
+		$groups->method('isAdmin')->willReturn(false);
+		$validator = new ObjectActionValidator(
+			macros: $this->createMock(originalClassName: MacroActionValidator::class),
+			userSession: $session,
+			groupManager: $groups
+		);
+
+		$requested = [];
+		$doubles   = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$requested, &$doubles, $validator) {
+				$requested[] = $id;
+				if ($id === ObjectActionValidator::class) {
+					return $validator;
+				}
+
+				$doubles[$id] ??= $this->createMock(originalClassName: $id);
+				return $doubles[$id];
+			}
+		);
+
+		$mapper = $context->factories[SchemaMapper::class]($container);
+		$this->assertNotContains(
+			needle: ObjectActionValidator::class,
+			haystack: $requested,
+			message: 'Building SchemaMapper must not resolve the validator: that closes a construction cycle.'
+		);
+
+		$schema = new Schema();
+		$schema->setConfiguration(
+			[
+				'x-openregister-action' => [
+					'publish' => [
+						'name'        => 'Publish',
+						'description' => 'Publish it.',
+						'steps'       => [['type' => 'openregister.set-fields']],
+						'elevate'     => [['register' => 'pub', 'schema' => 'publication', 'verbs' => ['create']]],
+					],
+				],
+			]
+		);
+		$schema->setAuthorization(['publish' => [['group' => 'redactie']]]);
+
+		$this->expectException(exception: InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'only an administrator may declare "elevate"');
+
+		$validate = new ReflectionMethod(objectOrMethod: SchemaMapper::class, method: 'validateMacroActions');
+		$validate->invoke($mapper, $schema);
+	}//end testTheSchemaMapperFactoryWiresTheDeclaredActionValidator()
 }//end class
