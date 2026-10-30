@@ -349,6 +349,8 @@ class ExampleSetChanges {
 	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
 	 */
 	private function writtenAgain(array $entry, array $resolved): array {
 		$again = [];
@@ -360,7 +362,10 @@ class ExampleSetChanges {
 				continue;
 			}
 
-			$undone = (($held['found'] === (bool) $set['had']) && $this->sameAs(stored: $held['value'], value: $set['old']) === true);
+			// A field that reads back null was never set, as one the object did not have.
+			$isSet  = ($held['found'] === true && $held['value'] !== null);
+			$hadSet = ((bool) $set['had'] === true && $set['old'] !== null);
+			$undone = ($isSet === $hadSet && $this->sameAs(stored: $held['value'], value: $set['old']) === true);
 			$moved  = ($held['found'] === true && $this->sameAs(stored: $held['value'], value: $set['new']) === true);
 			if ($undone === true || $moved === true) {
 				$again[$path] = $want;
