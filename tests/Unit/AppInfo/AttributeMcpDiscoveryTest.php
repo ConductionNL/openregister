@@ -39,8 +39,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\IMcpScannableServices;
@@ -84,11 +86,11 @@ class RecordingApplication extends McpProviderDiscovery {
 
 	/**
 	 * @param string $appId The candidate app id.
-	 * @param LoggerInterface $logger PSR logger (unused in the fake).
+	 * @param ContainerInterface $container OR's container (unused in the fake).
 	 *
 	 * @return ContainerInterface|null The mapped app container, or null.
 	 */
-	protected function getRegisteredAppContainer(string $appId, LoggerInterface $logger): ?ContainerInterface {
+	protected function getRegisteredAppContainer(string $appId, ContainerInterface $container): ?ContainerInterface {
 		$this->requestedAppIds[] = $appId;
 		return ($this->appContainers[$appId] ?? null);
 	}//end getRegisteredAppContainer()
@@ -410,7 +412,8 @@ class AttributeMcpDiscoveryTest extends TestCase {
 
 	/**
 	 * Reflect-invoke the REAL getRegisteredAppContainer() seam (not the
-	 * RecordingApplication override) with a controlled `\OC::$server`.
+	 * RecordingApplication override) with a controlled `\OC::$server`,
+	 * through the AppContainerLocator bound as the app container finder.
 	 *
 	 * These tests swap `\OC::$server` for a lightweight object extending
 	 * `\OC_FakeServer` — which only works when `\OC::$server` is declared
@@ -455,7 +458,9 @@ class AttributeMcpDiscoveryTest extends TestCase {
 		$method = new ReflectionMethod(McpProviderDiscovery::class, 'getRegisteredAppContainer');
 		$method->setAccessible(true);
 
-		return $method->invoke($app, $appId, $logger);
+		$shared = $this->container([AppContainerFinderInterface::class => new AppContainerLocator(logger: $logger)]);
+
+		return $method->invoke($app, $appId, $shared);
 	}//end invokeRealSeam()
 
 	public function testRealSeamReturnsNullWhenServerThrows(): void {
