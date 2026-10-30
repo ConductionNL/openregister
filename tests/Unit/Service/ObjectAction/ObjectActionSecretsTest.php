@@ -137,7 +137,8 @@ class ObjectActionSecretsTest extends TestCase {
 			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
 			$this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
 		);
-		$handle = new \OCA\OpenRegister\Service\Flow\FlowStateHandle(values: []);
+		// 'previous' was stored by an earlier run and must come back as loaded.
+		$handle = new \OCA\OpenRegister\Service\Flow\FlowStateHandle(values: ['previous' => '2026']);
 		$handle->set(key: 'cursor', value: '1');
 		$handle->set(key: 'since', value: '2026-10-30T10:00:00+00:00');
 		$handle->set(key: 'lastCode', value: '2026');
@@ -153,7 +154,7 @@ class ObjectActionSecretsTest extends TestCase {
 		}
 
 		$this->assertSame(
-			expected: ['cursor' => '1', 'since' => '2026-10-30T10:00:00+00:00', 'lastCode' => '[redacted]'],
+			expected: ['previous' => '2026', 'cursor' => '1', 'since' => '2026-10-30T10:00:00+00:00', 'lastCode' => '[redacted]'],
 			actual: $stored
 		);
 	}//end testFlowStateIsRedactedValueByValue()

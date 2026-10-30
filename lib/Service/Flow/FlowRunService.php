@@ -1478,8 +1478,9 @@ class FlowRunService {
 	 * Persist the flow's state with any copied writeOnly action input redacted.
 	 *
 	 * Flow state outlives the run and the request, and no key tells where an
-	 * author put a value, so each value that is a whole copy of a held secret
-	 * (four or more characters) is replaced; the rest of the write stands.
+	 * author put a value, so each value this run wrote that is a whole copy of
+	 * a held secret (four or more characters) is replaced; values earlier runs
+	 * stored, and the rest of the write, stand.
 	 *
 	 * @param FlowRun              $run       The run.
 	 * @param array<string, mixed> $context   The run context, holding the state handle.
@@ -1492,12 +1493,14 @@ class FlowRunService {
 	private function persistFlowState(FlowRun $run, array $context, mixed $secretRef): void {
 		$handle = ($context[FlowStateHandle::CONTEXT_KEY] ?? null);
 		if ($handle instanceof FlowStateHandle && $handle->isDirty() === true) {
-			// Value by value, by the same whole-string rule as the items: the
-			// rest of the state (cursors, timestamps) is written as it is.
-			$redacted = (array)ObjectActionSecrets::redactCopies(data: $handle->all(), ref: $secretRef);
-			foreach ($handle->all() as $key => $value) {
-				if (($redacted[$key] ?? null) !== $value) {
-					$handle->set(key: (string)$key, value: $redacted[$key]);
+			// Only the values THIS run wrote, by the same whole-value rule as
+			// the items: what earlier runs stored (cursors, timestamps) is
+			// written back as it was loaded.
+			foreach ($handle->writtenKeys() as $key) {
+				$value    = $handle->get(key: $key);
+				$redacted = ObjectActionSecrets::redactCopies(data: $value, ref: $secretRef);
+				if ($redacted !== $value) {
+					$handle->set(key: $key, value: $redacted);
 				}
 			}
 		}
