@@ -99,6 +99,22 @@ class ObjectActionSecretsTest extends TestCase {
 	}//end testCopiesAreRedactedWholeStringsOnly()
 
 	/**
+	 * A numeric input copied as a number is redacted; a short counter is not.
+	 *
+	 * @return void
+	 */
+	public function testNumericCopiesAreRedacted(): void {
+		$ref = ObjectActionSecrets::hold(values: ['n' => 123456, 'digit' => 1]);
+		try {
+			$data = ObjectActionSecrets::redactCopies(data: ['num' => 123456, 'float' => 123456.0, 'count' => 1, 'text' => '123456'], ref: $ref);
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: ['num' => '[redacted]', 'float' => '[redacted]', 'count' => 1, 'text' => '[redacted]'], actual: $data);
+	}//end testNumericCopiesAreRedacted()
+
+	/**
 	 * Flow state keeps its other values; only a copied secret is replaced.
 	 *
 	 * @return void

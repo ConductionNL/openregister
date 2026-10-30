@@ -190,14 +190,15 @@ final class ObjectActionSecrets {
 	}//end redactText()
 
 	/**
-	 * The data with every STRING whose whole value equals a held value of at
-	 * least {@see MIN_EMBEDDED_LENGTH} characters replaced: the copies a later
-	 * step made (`json.code` set from `{{inputs.pin}}`).
+	 * The data with every string, int or float whose whole value (as a string)
+	 * equals a held value of at least {@see MIN_EMBEDDED_LENGTH} characters
+	 * replaced: the copies a later step made (`json.code` set from
+	 * `{{inputs.pin}}`, `json.num` from a numeric input).
 	 *
 	 * Exact match only, never a substring, so a timestamp or a uuid that
-	 * contains the same digits stays intact; integers and objects are never
-	 * touched, and a shorter secret is left to the key pass. The limit: a
-	 * secret embedded inside a longer string is not found.
+	 * contains the same digits stays intact; a counter like 1 is under the
+	 * four-character minimum and stays; objects are never touched. The limit:
+	 * a secret embedded inside a longer string is not found.
 	 *
 	 * @param mixed $data The data.
 	 * @param mixed $ref  The reference.
@@ -224,7 +225,8 @@ final class ObjectActionSecrets {
 	 * @return mixed The data.
 	 */
 	private static function replaceCopies(mixed $data, array $secrets): mixed {
-		if (is_string($data) === true && in_array($data, $secrets, true) === true) {
+		$scalar = (is_string($data) === true || is_int($data) === true || is_float($data) === true);
+		if ($scalar === true && in_array((string)$data, $secrets, true) === true) {
 			return self::REDACTED;
 		}
 
