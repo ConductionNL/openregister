@@ -188,6 +188,22 @@ class MagicBulkHandlerDateNormalizationTest extends TestCase {
 		$this->assertSame(42, $row['source_last_checked']);
 	}
 
+	/**
+	 * A malformed schema whose `format` is not a string (here an integer) must
+	 * not throw a TypeError under strict_types: the property is simply not a
+	 * date property, so its value passes through untouched.
+	 *
+	 * @return void
+	 */
+	public function testANonStringSchemaFormatPassesTheValueThroughUntouched(): void {
+		$row = $this->prepare(
+			object: ['uuid' => 'u-9', 'sourceLastChecked' => '2026-10-13T14:50:03+00:00'],
+			properties: ['sourceLastChecked' => ['type' => 'string', 'format' => 123]]
+		);
+
+		$this->assertSame(expected: '2026-10-13T14:50:03+00:00', actual: $row['source_last_checked']);
+	}
+
 	public function testADateTimeInterfaceValueIsAlsoNormalized(): void {
 		$row = $this->prepare(
 			['uuid' => 'u-4', 'sourceLastChecked' => new DateTimeImmutable('2026-10-13 14:50:03', new DateTimeZone('UTC'))],

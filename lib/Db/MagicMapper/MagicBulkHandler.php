@@ -1014,11 +1014,12 @@ class MagicBulkHandler {
 	 * passes through unchanged.
 	 *
 	 * @param mixed $value The raw property value.
-	 * @param string|null $propertyFormat The schema property's `format`, if any.
+	 * @param mixed $propertyFormat The schema property's `format`, if any; any
+	 *                              non-string (malformed schema) passes through.
 	 *
 	 * @return mixed The normalised value, or $value unchanged when not applicable.
 	 */
-	private function normalizeDateProperty(mixed $value, ?string $propertyFormat): mixed {
+	private function normalizeDateProperty(mixed $value, mixed $propertyFormat): mixed {
 		if (in_array($propertyFormat, ['date-time', 'date'], true) === false || $value === null) {
 			return $value;
 		}
