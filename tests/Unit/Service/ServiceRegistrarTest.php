@@ -68,7 +68,6 @@ class ServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
 				'OCA\OpenRegister\Service\Credential\CredentialStore',
 				'OCA\OpenRegister\Service\Translation\TranslationProviderInterface',
-				'OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface',
 				'OCA\OpenRegister\Service\WebPush\HexIconService',
 				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
 				'OCA\OpenRegister\Service\SchemaImport\SchemaImportService',
@@ -154,4 +153,22 @@ class ServiceRegistrarTest extends TestCase {
 			actual: $context->factories[TaskService::class]($container)
 		);
 	}//end testTaskServiceIsBuiltWithoutTheWriteBackGate()
+
+	/**
+	 * The office converter seam points at the converter that uses Nextcloud's conversion API.
+	 *
+	 * @return void
+	 */
+	public function testTheOfficeConverterIsTheConversionManagerConverter(): void {
+		$context = new RecordingRegistrationContext();
+		ServiceRegistrar::register(context: $context);
+
+		$this->assertContains(
+			needle: [
+				'alias'  => 'OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface',
+				'target' => 'OCA\OpenRegister\Service\File\Office\ConversionManagerConverter',
+			],
+			haystack: $context->aliases
+		);
+	}//end testTheOfficeConverterIsTheConversionManagerConverter()
 }//end class

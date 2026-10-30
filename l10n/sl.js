@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Kdo je odobril seznam in kdaj.",
         "Who made it.": "Kdo ga je izdelal.",
         "Who rejected the list, and why.": "Kdo je zavrnil seznam in zakaj.",
-        "Woo published": "Objavljeno po Woo"
+        "Woo published": "Objavljeno po Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Za PDF je potreben pisarniški strežnik (Collabora ali Euro-Office), vendar ni nameščen noben. Prosite skrbnika, naj ga namesti, ali prenesite poročilo v drugi obliki.",
+        "The report could not be downloaded.": "Poročila ni bilo mogoče prenesti."
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

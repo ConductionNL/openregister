@@ -5927,6 +5927,56 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(5000, $result->getData()['maxRows']);
 	}
 
+	/**
+	 * Without an office server a PDF export answers 501 with a clear message.
+	 */
+	public function testExportPdfWithoutOfficeServerReturns501(): void {
+		$this->grantExport();
+		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$registerEntity->method('getSlug')->willReturn('my-register');
+
+		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$schemaEntity->method('getSlug')->willReturn('my-schema');
+
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+		$this->request->method('getParams')->willReturn(['format' => 'pdf']);
+		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+			if ($key === 'format') {
+				return 'pdf';
+			}
+			return $default;
+		});
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->exportService->method('exportToPdf')->willThrowException(
+			new \OCA\OpenRegister\Exception\OfficeServerRequiredException()
+		);
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+		$this->assertSame(501, $result->getStatus());
+		$this->assertSame('office_server_required', $result->getData()['error']);
+		$this->assertStringContainsString('Collabora or Euro-Office', $result->getData()['message']);
+	}
+
 	// =========================================================================
 	// index() — cross-table search with comma-separated schemas
 	// =========================================================================

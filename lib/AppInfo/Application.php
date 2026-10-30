@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MapperRegistrar;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
 use OCA\OpenRegister\Mcp\McpProviderDiscovery;
 use OCA\OpenRegister\Middleware\MiddlewareRegistrar;
@@ -109,7 +110,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @var string
 	 */
-	public const APP_ID = 'openregister';
+	public const APP_ID = AppIdentity::APP_ID;
 
 	/**
 	 * Constructor for the Application class
