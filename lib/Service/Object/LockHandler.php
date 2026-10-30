@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -69,6 +70,7 @@ class LockHandler {
 	 * @param SchemaMapper $schemaMapper Schema mapper for resolving manage rules
 	 * @param AdvisoryLockStore $advisory Pre-creation locks, for identifiers that do not resolve to a stored object
 	 * @param RunLockRegistry|null $runLocks Bookkeeping for run-held locks, so the terminal listener and the sweep can find them without reading objects
+	 * @param PermissionHandler|null $permissionHandler RBAC, asked for update permission before a user takes a lock
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
@@ -79,6 +81,7 @@ class LockHandler {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly AdvisoryLockStore $advisory,
 		private readonly ?RunLockRegistry $runLocks = null,
+		private readonly ?PermissionHandler $permissionHandler = null,
 	) {
 	}//end __construct()
 
@@ -360,6 +363,9 @@ class LockHandler {
 	 *                    both arms. Declaring only the narrow one made PHPStan
 	 *                    read the broad catch as dead code when it is the arm
 	 *                    that actually fires on contention.
+	 * @throws NotAuthorizedException If a user who may not update the object asks for its lock.
+	 *
+	 * @spec openspec/changes/lock-needs-update-permission/specs/lock-needs-update-permission/spec.md#requirement-a-user-lock-needs-update-permission-on-the-object
 	 */
 	private function lockStoredObject(
 		array $context,
@@ -369,6 +375,21 @@ class LockHandler {
 		?string $nodeId,
 	): array {
 		$objectBefore = $context['object'];
+
+		// A lock refuses every other writer, and one taken without a duration
+		// holds until it is unlocked, so taking it needs the right to update
+		// the object, not only to find it. A flow run authorizes at its own
+		// call site.
+		if ($runUuid === null && $this->permissionHandler !== null && $context['schema'] instanceof Schema) {
+			$this->permissionHandler->checkPermission(
+				schema: $context['schema'],
+				action: 'update',
+				userId: null,
+				objectOwner: $objectBefore->getOwner(),
+				_rbac: true,
+				object: $objectBefore
+			);
+		}
 
 		// Use MagicMapper for lock operation.
 		$objectAfter = $this->magicMapper->lockObjectEntity(
