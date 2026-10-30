@@ -78,7 +78,7 @@ class ObjectActionSecretsTest extends TestCase {
 	}//end testErrorTextReplacesWholeTokensOnly()
 
 	/**
-	 * A whole-value copy is redacted (a number too); timestamps, uuids and a short secret are not touched.
+	 * A whole-string copy is redacted; a number equal to a STRING secret, timestamps, uuids and a short secret are not.
 	 *
 	 * @return void
 	 */
@@ -94,7 +94,7 @@ class ObjectActionSecretsTest extends TestCase {
 		}
 
 		$this->assertSame(
-			expected: ['code' => '[redacted]', 'created' => '2026-10-30T10:00:00+00:00', 'uuid' => self::UUID, 'n' => '1', 'count' => '[redacted]'],
+			expected: ['code' => '[redacted]', 'created' => '2026-10-30T10:00:00+00:00', 'uuid' => self::UUID, 'n' => '1', 'count' => 2026],
 			actual: $data['json']
 		);
 	}//end testCopiesAreRedactedWholeStringsOnly()
@@ -160,7 +160,7 @@ class ObjectActionSecretsTest extends TestCase {
 	}//end testFlowStateIsRedactedValueByValue()
 
 	/**
-	 * A suspended run's correlation key is read from the redacted context.
+	 * A suspended run's correlation key column never holds a secret.
 	 *
 	 * @return void
 	 */
@@ -198,6 +198,52 @@ class ObjectActionSecretsTest extends TestCase {
 		}
 
 		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $stored->getCorrelationKey());
-		$this->assertStringNotContainsString(needle: '4321', haystack: (string)json_encode(value: $stored->getContext()));
+		// The resume slot itself is the engine's and is stored as it was.
+		$this->assertStringContainsString(needle: 'correlationKey', haystack: (string)json_encode(value: $stored->getContext()));
 	}//end testTheCorrelationKeyIsReadFromTheRedactedContext()
+
+	/**
+	 * With a string PIN "1234", a duration and a resume slot holding 1234 survive.
+	 *
+	 * @return void
+	 */
+	public function testEngineNumbersSurviveAStringPin(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '1234']);
+		try {
+			$data = ObjectActionSecrets::redactCopies(
+				data: [
+					'log' => [['durationMs' => 1234, 'itemsIn' => 1234]],
+					'resumeState' => ['wait' => ['taskId' => 1234, 'note' => '1234']],
+					'json' => ['code' => '1234', 'year' => 1234],
+				],
+				ref: $ref
+			);
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: [['durationMs' => 1234, 'itemsIn' => 1234]], actual: $data['log']);
+		$this->assertSame(expected: ['wait' => ['taskId' => 1234, 'note' => '1234']], actual: $data['resumeState']);
+		$this->assertSame(expected: ['code' => '[redacted]', 'year' => 1234], actual: $data['json']);
+	}//end testEngineNumbersSurviveAStringPin()
+
+	/**
+	 * With an int PIN, a numeric copy is redacted and a resume slot survives.
+	 *
+	 * @return void
+	 */
+	public function testAnIntPinCopyIsRedactedAndTheResumeSlotSurvives(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => 123456]);
+		try {
+			$data = ObjectActionSecrets::redactCopies(
+				data: ['json' => ['num' => 123456], 'resumeState' => ['wait' => ['taskId' => 123456]]],
+				ref: $ref
+			);
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: '[redacted]', actual: $data['json']['num']);
+		$this->assertSame(expected: ['wait' => ['taskId' => 123456]], actual: $data['resumeState']);
+	}//end testAnIntPinCopyIsRedactedAndTheResumeSlotSurvives()
 }//end class

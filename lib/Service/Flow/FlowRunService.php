@@ -1635,7 +1635,8 @@ class FlowRunService {
 		// The correlation key mirrors `resumeAt`: meaningful only while
 		// suspended, cleared on every other outcome so a finished run can
 		// never be the addressee of a business-key signal (design D-7).
-		$run->setCorrelationKey($this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED)));
+		$correlationKey = $this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED));
+		$run->setCorrelationKey(ObjectActionSecrets::redactCopies(data: $correlationKey, ref: $secretRef));
 
 		$persisted = $this->mapper->update($run);
 

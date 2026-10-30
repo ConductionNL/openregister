@@ -36,6 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\Flow\FlowResumeState;
+
 /**
  * Request-scoped holder of writeOnly action inputs.
  *
@@ -60,6 +62,23 @@ final class ObjectActionSecrets {
 	 * copied string value, or as a whole token in a free text.
 	 */
 	public const MIN_EMBEDDED_LENGTH = 4;
+
+	/**
+	 * Keys the copy pass never enters, at any depth: the resume slots a
+	 * suspended run reads back (FlowResumeState's context key) and the step
+	 * log's metrics. A value there is the engine's own, never a step's copy.
+	 */
+	public const UNTOUCHED_KEYS = [
+		FlowResumeState::CONTEXT_KEY,
+		'durationMs',
+		'itemsIn',
+		'itemsOut',
+		'count',
+		'truncated',
+		'firings',
+		'sequence',
+		'startedAt',
+	];
 
 	/**
 	 * Held values by reference.
@@ -215,20 +234,44 @@ final class ObjectActionSecrets {
 			return $data;
 		}
 
-		return self::replaceCopies(data: $data, secrets: $secrets);
+		return self::replaceCopies(data: $data, secrets: $secrets, numbers: self::numericSecrets(ref: $ref));
 	}//end redactCopies()
+
+	/**
+	 * The string forms of the held values that were themselves numbers, of at
+	 * least {@see MIN_EMBEDDED_LENGTH} characters. Only these match a number:
+	 * a string PIN "1234" never matches the int 1234 (a duration, a year).
+	 *
+	 * @param mixed $ref The reference.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function numericSecrets(mixed $ref): array {
+		$numbers = [];
+		foreach (self::read(ref: $ref) as $value) {
+			if ((is_int($value) === true || is_float($value) === true) && strlen((string)$value) >= self::MIN_EMBEDDED_LENGTH) {
+				$numbers[] = (string)$value;
+			}
+		}
+
+		return $numbers;
+	}//end numericSecrets()
 
 	/**
 	 * Walk the data, replacing whole-string copies.
 	 *
 	 * @param mixed              $data    The data.
-	 * @param array<int, string> $secrets The secrets.
+	 * @param array<int, string> $secrets The secrets a string may equal.
+	 * @param array<int, string> $numbers The numeric secrets a number may equal.
 	 *
 	 * @return mixed The data.
 	 */
-	private static function replaceCopies(mixed $data, array $secrets): mixed {
-		$scalar = (is_string($data) === true || is_int($data) === true || is_float($data) === true);
-		if ($scalar === true && in_array((string)$data, $secrets, true) === true) {
+	private static function replaceCopies(mixed $data, array $secrets, array $numbers): mixed {
+		if (is_string($data) === true && in_array($data, $secrets, true) === true) {
+			return self::REDACTED;
+		}
+
+		if ((is_int($data) === true || is_float($data) === true) && in_array((string)$data, $numbers, true) === true) {
 			return self::REDACTED;
 		}
 
@@ -237,7 +280,12 @@ final class ObjectActionSecrets {
 		}
 
 		foreach ($data as $key => $value) {
-			$data[$key] = self::replaceCopies(data: $value, secrets: $secrets);
+			// The resume slots a suspended run reads back, and the log's metrics.
+			if (in_array($key, self::UNTOUCHED_KEYS, true) === true) {
+				continue;
+			}
+
+			$data[$key] = self::replaceCopies(data: $value, secrets: $secrets, numbers: $numbers);
 		}
 
 		return $data;
