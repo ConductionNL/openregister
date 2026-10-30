@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
 	public function testAChangeTheSetNoLongerDeclaresIsLetGo(): void {
 		$this->store->offer(register: 'crm', schema: 'ticket');
@@ -80,7 +80,7 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
 	public function testAReadStateTheSetNoLongerDeclaresIsLetGo(): void {
 		$this->store->offer(register: 'cases', schema: 'case');
@@ -103,7 +103,7 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
 	public function testAnEntryOfAnAppOutsideThePlanIsKept(): void {
 		$this->store->offer(register: 'crm', schema: 'ticket');
@@ -125,7 +125,7 @@ class ExampleSetGoneDeclarationsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
 	 */
 	public function testARefreshWritesAgainAFieldThatReadsBackNull(): void {
 		$this->store->offer(register: 'crm', schema: 'ticket');

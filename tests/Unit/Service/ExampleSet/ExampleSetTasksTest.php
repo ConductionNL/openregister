@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
  */
 
 declare(strict_types=1);
@@ -130,7 +130,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-external-party-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
 	 */
 	public function testAnExternalTaskIsWrittenForItsPartyWithItsUploadRules(): void {
 		$this->caseWithTasks(tasks: [
@@ -159,7 +159,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-checklist/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-checklist
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-checklist
 	 */
 	public function testATaskIsWrittenWithItsChecklist(): void {
 		$checklist = [
@@ -187,7 +187,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-key-and-organisation/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-engine-key-and-organisation
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-engine-key-and-organisation
 	 */
 	public function testATaskKeepsTheKeyAndOrganisationItDeclares(): void {
 		$this->caseWithTasks(tasks: [
@@ -215,7 +215,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-requester-and-expiry/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	public function testATaskKeepsItsRequesterAndExpiry(): void {
 		$this->caseWithTasks(tasks: [

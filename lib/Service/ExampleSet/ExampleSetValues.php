@@ -42,7 +42,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+ * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use DateTimeImmutable;
 /**
  * Fills placeholders in declared values.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+ * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
  */
 class ExampleSetValues {
 	/**
@@ -88,7 +88,7 @@ class ExampleSetValues {
 	 *
 	 * @return mixed The filled value; an unfilled placeholder stays as written and is named in `$gaps`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function fill(mixed $value, array $context, array &$gaps): mixed {
 		if (is_array($value) === true) {
@@ -131,7 +131,7 @@ class ExampleSetValues {
 	 *
 	 * @return array{owner: string|null, refusal: string} The account id, or why the owner cannot be used.
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function ownerOf(array $object, array $context): array {
 		if (array_key_exists('owner', $object) === false) {
@@ -159,7 +159,7 @@ class ExampleSetValues {
 	 *
 	 * @return array<string, mixed> The data, in the declared order.
 	 *
-	 * @spec openspec/changes/example-set-verbatim-fields/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
 	 */
 	public function fillObject(array $object, array $context, array &$gaps): array {
 		$data     = (array) ($object['data'] ?? []);
@@ -178,7 +178,7 @@ class ExampleSetValues {
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
 	 */
 	public function viewsOf(array $fragment, ?array $record): array {
 		$views = [];
@@ -207,7 +207,7 @@ class ExampleSetValues {
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
 	 */
 	public function tasksOf(array $fragment, ?array $record): array {
 		return $this->writtenRowsOf(fragment: $fragment, part: 'tasks', noun: 'task', record: $record);
@@ -222,7 +222,7 @@ class ExampleSetValues {
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
 	 */
 	public function flowsOf(array $fragment, ?array $record): array {
 		return $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
@@ -290,7 +290,7 @@ class ExampleSetValues {
 	 *
 	 * @return mixed
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	private function valueOf(string $placeholder, array $context): mixed {
 		[$kind, $rest] = array_pad(explode(':', $placeholder, 2), 2, '');
@@ -322,7 +322,7 @@ class ExampleSetValues {
 	 *
 	 * @return int|null The file id, or null when there is no such file.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
 	private function fileId(array $files, string $reference): ?int {
 		[$key, $index] = array_pad(explode('.', $reference, 2), 2, '');

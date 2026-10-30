@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Writes a kept object's declared values over its stored row.
  *
- * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
  */
 class ExampleSetRewriter {
 
@@ -51,7 +51,7 @@ class ExampleSetRewriter {
 	 *
 	 * @return array<string, mixed> The object as stored afterwards.
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
 	public function keep(array $plan, array $run, callable $resolve, callable $references, array &$report, array &$written): array {
 		if (($plan['refresh'] ?? false) !== true) {
@@ -82,7 +82,7 @@ class ExampleSetRewriter {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
 	public function rewrite(
 		ExampleSetStore $store,
@@ -145,7 +145,7 @@ class ExampleSetRewriter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	private function holds(array $row, array $data): bool {
 		foreach ($data as $field => $value) {
@@ -164,7 +164,7 @@ class ExampleSetRewriter {
 	 *
 	 * @return mixed
 	 *
-	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	private function canonical(mixed $value): mixed {
 		if (is_array($value) === false) {
@@ -189,7 +189,7 @@ class ExampleSetRewriter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	private function handOver(ExampleSetStore $store, array $object, string $id, ?string $owner): string {
 		if ($owner === null || $store->ownerOf(register: $object['register'], schema: $object['schema'], id: $id) === $owner) {
@@ -209,7 +209,7 @@ class ExampleSetRewriter {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	private function writable(array $data, array $row, array $rules): array {
 		foreach ($rules['kept'] as $field) {
@@ -239,7 +239,7 @@ class ExampleSetRewriter {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
 	public function follow(array &$record, string $name, array $written, callable $save): void {
 		if (isset($written[$name]) === false) {

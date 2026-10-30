@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+ * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)    One collaborator per part of a fragment, each small and separately tested.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)    The constructor takes one collaborator per part of a fragment.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+ * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
 class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
@@ -102,7 +102,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *         Every refusal, the number of objects (`checked`) and of changes (`checkedChanges`) checked per register
 	 *         and schema, counted apart as an install reports them, and per required register `imported` or `kept`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function check(array $plan, array $adopt=[], ?DateTimeImmutable $today=null): array {
 		$today     = ($today ?? $this->today(timezone: (string) $plan['timezone']));
@@ -177,7 +177,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *                              `imported`, `created`, `adopted` or `kept`), `passwords` (uid to a password this
 	 *                              run made), `types`, `dropped`, `missing`, `lost` and `ok`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::runAs() is the ambient audit-cause frame; there is no instance to inject.
 	 */
@@ -240,7 +240,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed> The report, as install() returns it.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	private function installHeld(array $plan, array $adopt, string $password, DateTimeImmutable $today, array $report): array {
 		$checked             = $this->check(plan: $plan, adopt: $adopt, today: $today);
@@ -275,7 +275,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed> The context with `registers` (id by slug) and `schemas` (id by `register/schema`).
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	private function withIds(array $plan, array $base): array {
 		$text              = (string) json_encode($plan['fragments'], (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
@@ -307,8 +307,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<int, string> Refusals.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	private function checkChanges(array $fragment, array $context, array &$checked, array $plannedUsers): array {
 		$refusals = [];
@@ -473,7 +473,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed> The object as stored after the refresh.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	private function refreshReferences(array $plan, array $fragment, array $object, array $row, array $context, array &$report, array &$record): array {
 		$fields = $this->referenceFields(object: $object);
@@ -543,7 +543,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	private function referenceFields(array $object): array {
 		$fields = [];
@@ -569,8 +569,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
@@ -623,7 +623,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	private function withObjectJsonFields(array $change, array $fragment): array {
 		if (is_string($change['object'] ?? null) === false) {
@@ -812,7 +812,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<int, int> The file ids.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
 	private function heldFileIds(array $record, string $name): array {
 		return array_map(
@@ -832,7 +832,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<int, int> The file ids.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
 	private function plannedFileIds(array $record, string $app, array $object): array {
 		$held = $this->heldFileIds(record: $record, name: $app.'/'.$object['key']);
@@ -1038,7 +1038,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<int, string> Refusals.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	private function checkUserPreferences(array $fragment, array $context, array $users): array {
 		$refusals = [];
@@ -1076,7 +1076,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	private function installUserPreferences(array $plan, array $fragment, array $context, array $report, array &$record): array {
 		$refresh = (($plan['refresh'] ?? false) === true);

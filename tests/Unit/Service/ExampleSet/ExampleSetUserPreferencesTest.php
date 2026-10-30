@@ -65,7 +65,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testTheStaffSkipTheTourAndRemoveTakesTheValuesAway(): void {
 		$this->alpha(preferences: [
@@ -95,7 +95,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAnAdoptedAccountGetsItsOwnValueBackUnlessItChangedSince(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
@@ -123,7 +123,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-preferences-on-cast-admins/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAnAccountTheSetDoesNotOwnAnAdministratorOutsideTheCastAndASecretAreRefusedBeforeAnyWrite(): void {
 		$this->accounts->users['someone'] = ['displayName' => 'Someone', 'email' => '', 'password' => 'x'];
@@ -156,7 +156,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-preferences-on-cast-admins/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAnAdministratorTheCastDeclaresGetsThePreference(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
@@ -171,7 +171,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAKeyNextcloudKeepsAsSensitiveIsRefused(): void {
 		$this->accounts->users['esra.demir'] = ['displayName' => 'Esra', 'email' => '', 'password' => 'theirs'];
@@ -186,7 +186,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAPreferenceOfAnotherAppRefusesTheSet(): void {
 		$this->alpha(preferences: [['user' => '{{cast:esra.uid}}', 'app' => 'beta', 'key' => self::KEY, 'value' => '1.2.0']]);

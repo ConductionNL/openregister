@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the Collectives pages of an example set.
  *
- * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
  */
 class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 
@@ -64,7 +64,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function part(): string {
 		return 'collectivesPages';
@@ -75,7 +75,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function noun(): string {
 		return 'collectives page';
@@ -89,7 +89,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -127,7 +127,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *     entry: array{collective: int, createdCollective: bool, page: int, createdPage: bool, owner: string}|null
 	 * } The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$store = $this->store();
@@ -166,7 +166,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -183,7 +183,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function revert(array $entry): string {
 		$store = $this->store();

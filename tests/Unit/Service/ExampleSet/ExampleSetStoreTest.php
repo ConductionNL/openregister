@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  */
 class ExampleSetStoreTest extends TestCase {
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function testValidatePassesThePlannedAccountsToTheValidator(): void {
 		$objects = $this->createMock(ObjectService::class);
@@ -69,7 +69,7 @@ class ExampleSetStoreTest extends TestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	public function testARegisterAndASchemaAreFoundByTheirSlugsAndAMissOrAFailureIsNull(): void {
 		$objects = $this->createMock(ObjectService::class);
@@ -111,7 +111,7 @@ class ExampleSetStoreTest extends TestCase {
 	/**
 	 * A row of the set is deleted through the system path, which an archival schema lets through.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testARecordedRowIsDeletedThroughTheSystemPath(): void {
 		$row = $this->createMock(ObjectEntity::class);
@@ -127,7 +127,7 @@ class ExampleSetStoreTest extends TestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testAHeldRowIsNeverDeleted(): void {
 		$row = $this->createMock(ObjectEntity::class);
@@ -140,7 +140,7 @@ class ExampleSetStoreTest extends TestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testARefusalIsReturnedAsTheReasonAndAGoneRowIsGone(): void {
 		$row = $this->createMock(ObjectEntity::class);
@@ -162,7 +162,7 @@ class ExampleSetStoreTest extends TestCase {
 	/**
 	 * A read that fails says nothing about the row: remove must not drop it from the record as gone.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function testAReadThatFailsLeavesTheRowInTheRecordAndNamesWhy(): void {
 		$objects = $this->createMock(ObjectService::class);
@@ -178,7 +178,7 @@ class ExampleSetStoreTest extends TestCase {
 	/**
 	 * A row that is not there reads as absent without an error; one that cannot be read comes back with its error.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function testReadTellsAbsentFromFailed(): void {
 		$objects = $this->createMock(ObjectService::class);
@@ -202,7 +202,7 @@ class ExampleSetStoreTest extends TestCase {
 	 * listener) is never refused as an anonymous caller, and an update is
 	 * marked as a write of declared state while it runs, and only then.
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function testAWriteRunsAsTheSystemAndAnUpdateWritesDeclaredState(): void {
 		$actions = new LifecycleActionContext();
@@ -235,7 +235,7 @@ class ExampleSetStoreTest extends TestCase {
 	/**
 	 * The write rules of a schema: append-only, and the fields a rewrite must not send (readOnly, immutable, lenses).
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	public function testTheWriteRulesOfASchema(): void {
 		$schema = new Schema();
@@ -262,7 +262,7 @@ class ExampleSetStoreTest extends TestCase {
 	 * A declared owner goes to the save as `_owner`; a hand-over runs OpenRegister's ownership change as the system
 	 * and names a failure.
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function testTheOwnerGoesToTheSaveAndAHandOverRunsAsTheSystem(): void {
 		$saved = $this->createMock(ObjectEntity::class);

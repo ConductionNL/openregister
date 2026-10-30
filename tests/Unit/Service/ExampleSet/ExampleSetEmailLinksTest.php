@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
  */
 
 declare(strict_types=1);
@@ -157,7 +157,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
 	public function testARefreshWritesTheLinkAgainFromTodaysDeclaration(): void {
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => self::subsidyMail(extra: ['mailboxName' => 'Woo-postvak'])]]);

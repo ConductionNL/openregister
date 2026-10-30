@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the appointments of an example set.
  *
- * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
  */
 class ExampleSetAppointments extends ExampleSetEngineRows {
 	/**
@@ -78,7 +78,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function part(): string {
 		return 'appointments';
@@ -89,7 +89,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function noun(): string {
 		return 'appointment';
@@ -103,7 +103,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -144,7 +144,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{object: string, calendar: int, uri: string, uid: string}|null} The entry, or why not.
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['object'];
@@ -213,7 +213,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -230,7 +230,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		try {

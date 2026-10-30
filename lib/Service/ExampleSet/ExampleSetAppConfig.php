@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Writes, proves and restores app config for an example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
  */
 class ExampleSetAppConfig {
 	/**
@@ -74,7 +74,7 @@ class ExampleSetAppConfig {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
 	 */
 	public function refusal(string $app, string $key, bool $generate): string {
 		if ($generate === true || $this->sensitive(app: $app, key: $key) === false) {
@@ -97,7 +97,7 @@ class ExampleSetAppConfig {
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to be
 	 *                                                                 written), or why the write failed.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
 	 * @spec openspec/changes/example-set-app-config-at-least/specs/example-sets/spec.md#requirement-an-integer-app-config-entry-may-be-a-floor
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Generating and being a floor are the entry's own facts.
@@ -206,7 +206,7 @@ class ExampleSetAppConfig {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 * @spec openspec/changes/example-set-app-config-at-least/specs/example-sets/spec.md#requirement-an-integer-app-config-entry-may-be-a-floor
 	 */
 	public function lost(array $entry): bool {
@@ -237,7 +237,7 @@ class ExampleSetAppConfig {
 	 *
 	 * @return string `restored`, `left` (somebody changed it since) or `failed`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function revert(array $entry): string {
 		$app = (string) $entry['app'];

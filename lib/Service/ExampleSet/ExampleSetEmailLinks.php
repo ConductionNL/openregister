@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the email links of an example set.
  *
- * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
  */
 class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	/**
@@ -78,7 +78,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function part(): string {
 		return 'emailLinks';
@@ -89,7 +89,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function noun(): string {
 		return 'email link';
@@ -103,7 +103,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -185,7 +185,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{id: string}|null} The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
@@ -233,7 +233,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -252,7 +252,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-email-links/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function revert(array $entry): string {
 		try {

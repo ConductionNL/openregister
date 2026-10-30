@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the notes of an example set.
  *
- * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
  */
 class ExampleSetNotes extends ExampleSetEngineRows {
 	/**
@@ -70,7 +70,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
 	 */
 	public function part(): string {
 		return 'notes';
@@ -81,7 +81,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
 	 */
 	public function noun(): string {
 		return 'note';
@@ -95,7 +95,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -132,7 +132,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{id: string}|null} The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
 		try {
@@ -160,7 +160,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -179,7 +179,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-remove-takes-away-the-notes-and-read-states-a-set-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-takes-away-the-notes-and-read-states-a-set-wrote
 	 */
 	public function revert(array $entry): string {
 		try {

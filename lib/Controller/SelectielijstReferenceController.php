@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\IRequest;
  * The published selectielijst is public reference data, so any signed-in
  * user may resolve a URL; the resolver only fetches allowed selectielijst hosts.
  *
- * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
  */
 class SelectielijstReferenceController extends Controller {
 
@@ -65,7 +65,7 @@ class SelectielijstReferenceController extends Controller {
 	 *   SelectielijstReferenceResolver::isResolvable() admits only the allowed selectielijst
 	 *   hosts, and the answer holds nothing the caller could not read there themselves.
 	 *
-	 * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
+	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	#[NoAdminRequired]
 	public function resolve(): JSONResponse {

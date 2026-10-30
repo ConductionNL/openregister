@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Resolves a selectielijst result or process type URL to its code and name.
  *
- * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
  */
 class SelectielijstReferenceResolver {
 
@@ -84,7 +84,7 @@ class SelectielijstReferenceResolver {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
+	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function isResolvable(string $url): bool {
 		$parts = parse_url($url);
@@ -106,7 +106,7 @@ class SelectielijstReferenceResolver {
 	 *
 	 * @return array{url: string, code: string, name: string}|null Null when the URL is not resolvable or the row cannot be read.
 	 *
-	 * @spec openspec/changes/selectielijst-reference-resolve/specs/retention-management/spec.md
+	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function resolve(string $url): ?array {
 		if ($this->isResolvable(url: $url) === false) {

@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Finds, writes and deletes the collectives and pages of an example set.
  *
- * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
  */
 class ExampleSetCollectivesStore {
 
@@ -87,7 +87,7 @@ class ExampleSetCollectivesStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function available(): bool {
 		return $this->appManager->isInstalled('collectives') === true && class_exists(self::COLLECTIVES) === true && class_exists(self::PAGES) === true;
@@ -102,7 +102,7 @@ class ExampleSetCollectivesStore {
 	 *
 	 * @return array{id: int, created: bool}
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function collective(string $owner, string $name, array $groups): array {
 		$service = $this->container->get(self::COLLECTIVES);
@@ -129,7 +129,7 @@ class ExampleSetCollectivesStore {
 	 *
 	 * @return array{id: int, created: bool}
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function page(int $collective, string $owner, string $title, string $content): array {
 		$pages = $this->container->get(self::PAGES);
@@ -153,7 +153,7 @@ class ExampleSetCollectivesStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function pageExists(int $collective, int $page, string $owner): bool {
 		try {
@@ -174,7 +174,7 @@ class ExampleSetCollectivesStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function deletePage(int $collective, int $page, string $owner): void {
 		$this->container->get(self::PAGES)->trash($collective, $page, $owner, true);
@@ -188,7 +188,7 @@ class ExampleSetCollectivesStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function deleteCollective(int $collective, string $owner): void {
 		$service = $this->container->get(self::COLLECTIVES);

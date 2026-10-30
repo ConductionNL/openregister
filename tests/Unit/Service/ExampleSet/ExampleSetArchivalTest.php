@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function testTheRegisterAndSchemaAreMergedAndPutBackOnRemove(): void {
 		$this->appValues['openregister']['archival'] = (string) json_encode(['notificationLeadDays' => 14, 'destructionListRegister' => 7]);
@@ -94,7 +94,7 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function testRemoveLeavesWhatAnAdministratorChanged(): void {
 		$this->castWithArchival(setting: [
@@ -122,7 +122,7 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function testAnUnknownKeyOrAMissingRegisterIsRefused(): void {
 		$this->castWithArchival(setting: ['destructionListRegister' => '{{register:destruction-lists}}', 'destructionBatchSize' => 5]);
@@ -142,7 +142,7 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function testAnotherAppsFragmentMayNotWriteTheArchivalSetting(): void {
 		$this->app(app: 'openregister', fragment: $this->castFile());

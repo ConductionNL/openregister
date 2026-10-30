@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -58,9 +58,9 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-a-fragment-may-say-which-objects-the-sets-own-accounts-opened-and-when
-	 * @spec openspec/changes/example-set-notes-and-read-states/specs/example-sets/spec.md#requirement-remove-takes-away-the-notes-and-read-states-a-set-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-say-which-objects-the-sets-own-accounts-opened-and-when
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-takes-away-the-notes-and-read-states-a-set-wrote
 	 */
 	public function testANoteAndAReadStateAreWrittenOnceAtTheirMomentAndTakenAwayOnRemove(): void {
 		$this->caseWith(
@@ -109,7 +109,7 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
 	 */
 	public function testANoteQuotesATaskOfItsFragment(): void {
 		$this->app(app: 'alpha', fragment: [
@@ -139,7 +139,7 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
 	 */
 	public function testANoteQuotingAnUnknownTaskIsRefused(): void {
 		$this->caseWith(notes: [['key' => 'n', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{task:nope.uuid}}', 'message' => 'x']]]);
@@ -154,7 +154,7 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
 	public function testARefreshWritesTheNoteAndReadStateAgainForToday(): void {
 		$this->caseWith(

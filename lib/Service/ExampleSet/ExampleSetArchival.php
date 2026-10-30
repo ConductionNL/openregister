@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+ * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Merges, proves and restores the destruction-list keys of the archival setting.
  *
- * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+ * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
  */
 class ExampleSetArchival extends ExampleSetEngineRows {
 	/**
@@ -68,7 +68,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function part(): string {
 		return 'archival';
@@ -79,7 +79,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function noun(): string {
 		return 'archival setting';
@@ -95,7 +95,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::KEYS);
@@ -127,7 +127,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$had     = $this->has();
@@ -154,7 +154,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function lost(array $entry): bool {
 		$setting = $this->setting();
@@ -174,7 +174,7 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-archival-setting/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
 	 */
 	public function revert(array $entry): string {
 		$setting = $this->setting();

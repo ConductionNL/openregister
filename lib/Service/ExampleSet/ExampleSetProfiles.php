@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
 /**
  * Writes the profile, absence and status of a cast person's account.
  *
- * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
  */
 class ExampleSetProfiles {
 
@@ -77,7 +77,7 @@ class ExampleSetProfiles {
 	 *
 	 * @return array{headline: string, role: string, organisation: string, absence: array<string, string>|null, status: array<string, string>|null}
 	 *
-	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
 	public function fromPerson(array $person, DateTimeImmutable $today): array {
 		$absence = null;
@@ -123,7 +123,7 @@ class ExampleSetProfiles {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
 	public function apply(string $uid, array $profile): array {
 		$user = $this->users->get($uid);
@@ -152,7 +152,7 @@ class ExampleSetProfiles {
 	 *
 	 * @return array<int, string> Why a part was not written; empty when all were.
 	 *
-	 * @spec openspec/changes/example-set-adopted-accounts-gain-missing-profile/specs/example-sets/spec.md#requirement-an-adopted-account-gains-the-profile-fields-it-lacks
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-adopted-account-gains-the-profile-fields-it-lacks
 	 */
 	public function fillMissing(string $uid, array $profile): array {
 		$user = $this->users->get($uid);
@@ -193,7 +193,7 @@ class ExampleSetProfiles {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
 	 */
 	private function propertyValues(array $profile): array {
 		return [

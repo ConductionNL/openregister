@@ -101,7 +101,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function testAFileMovedToAnotherFolderStillArrived(): void {
 		$this->alpha(fragment: ['objects' => [[
@@ -129,7 +129,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-files-on-kept-objects/specs/example-sets/spec.md#requirement-a-later-install-attaches-the-files-an-object-gained
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-later-install-attaches-the-files-an-object-gained
 	 */
 	public function testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce(): void {
 		$object = ['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Besluit']];
@@ -267,7 +267,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-typed-app-config/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
 	 */
 	public function testAnIntegerAppConfigEntryIsWrittenAsAnInteger(): void {
 		$this->appValues['alpha'] = ['counter' => '7'];
@@ -482,7 +482,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
 	public function testAnOrganisationIsCreatedWithItsQuotaAndMembers(): void {
 		$file = $this->castFile();
