@@ -1096,6 +1096,17 @@
   "zgw-api-mapping"
  ],
  "specScreens": {
+  "access-by-link-not-by-account": {
+   "board": [
+    "OrBestanden",
+    "OrObject"
+   ]
+  },
+  "account-self-service": {
+   "board": [
+    "OrMijnAccount"
+   ]
+  },
   "action-registry": {
    "board": [
     "OrFlow"
@@ -1104,6 +1115,11 @@
   "actions": {
    "board": [
     "OrFlow"
+   ]
+  },
+  "activity-provider": {
+   "board": [
+    "OrObjectKoppelingen"
    ]
   },
   "admin-list-views": {
@@ -1132,9 +1148,33 @@
     "OrAgents"
    ]
   },
+  "aggregation-api": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
   "aggregations-backend-native": {
    "board": [
     "OrRapporten"
+   ]
+  },
+  "ai-mcp": {
+   "board": [
+    "OrAgents"
+   ]
+  },
+  "ai-translation-with-a-glossary": {
+   "board": [
+    "OrObjectBewerken"
+   ]
+  },
+  "an-export-is-a-file-with-a-life": {
+   "board": [
+    "OrAvgVerzoek"
+   ]
+  },
+  "anonymising-as-an-archival-outcome": {
+   "board": [
+    "OrEntiteiten"
    ]
   },
   "api-authorization": {
@@ -1142,9 +1182,36 @@
     "OrBeheerinstellingen"
    ]
   },
+  "api-client-libraries": {
+   "board": null,
+   "reason": "Client libraries in a programming language; a developer tool with no screen."
+  },
+  "api-explorer-in-the-app": {
+   "board": [
+    "OrRegisters"
+   ]
+  },
+  "api-nl-design-rules-conformance": {
+   "board": null,
+   "reason": "How the API is shaped (Dutch API design rules); it has no screen by nature."
+  },
   "api-test-coverage": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "api-upsert-on-a-declared-key": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "app-harvest-fetchers-and-flow-node": {
+   "board": [
+    "OrBronnen"
+   ]
+  },
+  "apphost-boilerplate": {
+   "board": [
+    "OrOperations"
+   ]
   },
   "apphost-observability": {
    "board": [
@@ -1171,9 +1238,26 @@
     "OrArchivering"
    ]
   },
+  "archival-destruction-workflow": {
+   "board": [
+    "OrArchivering"
+   ]
+  },
   "archivering-vernietiging": {
    "board": [
     "OrArchivering"
+   ]
+  },
+  "audit-hash-chain": {
+   "board": [
+    "OrAuditTrails",
+    "OrBeheerinstellingen"
+   ]
+  },
+  "audit-trail-immutable": {
+   "board": [
+    "OrAuditTrails",
+    "OrObjectHistorie"
    ]
   },
   "auth-system": {
@@ -1186,9 +1270,19 @@
     "OrBeheerinstellingen"
    ]
   },
+  "avg-verwerkingsregister": {
+   "board": [
+    "OrAvg"
+   ]
+  },
   "besluiten-management": {
    "board": null,
    "reason": "A ZGW decisions REST API covered by Newman; leaf apps draw the decision screens."
+  },
+  "built-in-dashboards": {
+   "board": [
+    "OrDashboard"
+   ]
   },
   "calendar-integration": {
    "board": [
@@ -1200,9 +1294,30 @@
     "OrSchema"
    ]
   },
+  "chat-ai": {
+   "board": [
+    "OrAiInstellingen"
+   ]
+  },
   "cleanup-linked-entity-type-map": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "computed-fields": {
+   "board": [
+    "OrObjectBewerken",
+    "OrSchema"
+   ]
+  },
+  "configuration-as-a-deployment": {
+   "board": [
+    "OrConfiguraties"
+   ]
+  },
+  "consent-evidence-envelope": {
+   "board": [
+    "OrObject"
+   ]
   },
   "contacts-actions": {
    "board": [
@@ -1212,6 +1327,16 @@
   "content-versioning": {
    "board": [
     "OrObjectHistorie"
+   ]
+  },
+  "context-chat-provider": {
+   "board": [
+    "OrAiInstellingen"
+   ]
+  },
+  "credential-broker": {
+   "board": [
+    "OrKoppelingen"
    ]
   },
   "credential-oauth2-connect": {
@@ -1234,6 +1359,17 @@
     "OrDashboard"
    ]
   },
+  "data-import-export": {
+   "board": [
+    "OrConfiguraties",
+    "OrRegisters"
+   ]
+  },
+  "data-quality-scoring": {
+   "board": [
+    "OrDatakwaliteit"
+   ]
+  },
   "data-sync-harvesting": {
    "board": [
     "OrBronnen"
@@ -1242,6 +1378,11 @@
   "datetime-input-handling": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "dbal-virtual-registers": {
+   "board": [
+    "OrBronnen"
+   ]
   },
   "declared-actions": {
    "board": [
@@ -1255,6 +1396,11 @@
   "delegated-identity": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "deletion-audit-trail": {
+   "board": [
+    "OrPrullenbak"
+   ]
   },
   "deprecate-published-metadata": {
    "board": null,
@@ -1351,6 +1497,11 @@
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
   },
+  "duplicate-detection": {
+   "board": [
+    "OrDuplicaten"
+   ]
+  },
   "edepot-bagit-output": {
    "board": [
     "OrArchivering"
@@ -1366,6 +1517,24 @@
     "OrArchivering"
    ]
   },
+  "edepot-transfer": {
+   "board": [
+    "OrArchivering",
+    "OrBestanden"
+   ]
+  },
+  "enhanced-audit-trail": {
+   "board": [
+    "OrAuditTrails"
+   ]
+  },
+  "entity-management-modals": {
+   "board": [
+    "OrEigenschap",
+    "OrObjectBewerken",
+    "OrSchema"
+   ]
+  },
   "entity-relation-grondslagen": {
    "board": [
     "OrEntiteiten"
@@ -1377,9 +1546,40 @@
     "OrConfiguraties"
    ]
   },
+  "event-driven-architecture": {
+   "board": [
+    "OrWebhooks"
+   ]
+  },
+  "exchange-encrypted-instance-export": {
+   "board": [
+    "OrConfiguraties",
+    "OrRegisters"
+   ]
+  },
   "export-pdf-format": {
    "board": [
     "OrRegisters"
+   ]
+  },
+  "export-pdf-house-style": {
+   "board": [
+    "OrRegisters"
+   ]
+  },
+  "faceting-configuration": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "feature-toggle-surface": {
+   "board": [
+    "OrBeheerinstellingen"
+   ]
+  },
+  "features-roadmap-menu": {
+   "board": [
+    "OrRoadmap"
    ]
   },
   "federation": {
@@ -1392,14 +1592,41 @@
     "OrBronnen"
    ]
   },
+  "field-level-encryption": {
+   "board": [
+    "OrEigenschap",
+    "OrSchema"
+   ]
+  },
+  "file-actions": {
+   "board": [
+    "OrBestanden",
+    "OrObject"
+   ]
+  },
+  "file-risk-classification": {
+   "board": [
+    "OrBestanden"
+   ]
+  },
   "file-search": {
    "board": [
     "OrBestanden"
    ]
   },
+  "files-leaf-save-to-object": {
+   "board": [
+    "OrObjectKoppelingen"
+   ]
+  },
   "files-render-extension": {
    "board": null,
    "reason": "The shape of file metadata in API responses; no screen by nature."
+  },
+  "files-sidebar-tabs": {
+   "board": [
+    "OrBestanden"
+   ]
   },
   "first-time-setup": {
    "board": [
@@ -1422,6 +1649,35 @@
     "OrFlow"
    ]
   },
+  "flow-business-timers": {
+   "board": [
+    "OrTaken"
+   ]
+  },
+  "flow-cases": {
+   "board": null,
+   "reason": "An engine for leaf apps such as dossiq, which draw the case plan on their own screens."
+  },
+  "flow-code-step-in-a-sidecar": {
+   "board": [
+    "OrWebhooks"
+   ]
+  },
+  "flow-decision-tables": {
+   "board": [
+    "OrFlow"
+   ]
+  },
+  "flow-definition-versioning": {
+   "board": [
+    "OrFlow"
+   ]
+  },
+  "flow-engine": {
+   "board": [
+    "OrFlow"
+   ]
+  },
   "flow-engine-consumer-seams": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1429,6 +1685,11 @@
   "flow-heartbeat-recovery": {
    "board": [
     "OrFlowOverzicht"
+   ]
+  },
+  "flow-messaging-nodes": {
+   "board": [
+    "OrFlow"
    ]
   },
   "flow-object-write-bulk": {
@@ -1450,6 +1711,11 @@
   "flow-run-subjects": {
    "board": [
     "OrFlowOverzicht"
+   ]
+  },
+  "flow-scheduled-trigger": {
+   "board": [
+    "OrFlow"
    ]
   },
   "flow-send-email-external-recipients": {
@@ -1477,6 +1743,17 @@
     "OrTaken"
    ]
   },
+  "flow-user-task-node": {
+   "board": [
+    "OrFlow",
+    "OrTaken"
+   ]
+  },
+  "format-validators": {
+   "board": [
+    "OrObjectBewerken"
+   ]
+  },
   "frontend-app-bootstrap": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1484,6 +1761,18 @@
   "frontend-store-client-state": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "gdpr-data-subject-rights": {
+   "board": [
+    "OrAvgVerzoek",
+    "OrAvgVerzoeken"
+   ]
+  },
+  "generated-identifier": {
+   "board": [
+    "OrObjectBewerken",
+    "OrSchema"
+   ]
   },
   "generic-integrations": {
    "board": [
@@ -1496,6 +1785,12 @@
     "OrObjecten"
    ]
   },
+  "geometry-on-a-map": {
+   "board": [
+    "OrObjecten",
+    "OrSchema"
+   ]
+  },
   "github-issue-proxy": {
    "board": [
     "OrRoadmap"
@@ -1506,10 +1801,28 @@
     "OrAgents"
    ]
   },
+  "graphql-api": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
   "guardian-participant-messaging-leaf": {
    "board": [
     "OrObjectKoppelingen"
    ]
+  },
+  "history-revert-through-the-save-path": {
+   "board": [
+    "OrObjectHistorie"
+   ]
+  },
+  "history-schema-and-settings-edits-audited": {
+   "board": [
+    "OrAuditTrails"
+   ]
+  },
+  "i18n-api-language-negotiation": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
   },
   "i18n-source-of-truth": {
    "board": [
@@ -1517,10 +1830,24 @@
     "OrEigenschap"
    ]
   },
+  "identity-survives-a-move": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "import-preview-and-conflict-policy": {
+   "board": [
+    "OrImporteren"
+   ]
+  },
   "import-resilient-per-entity-and-no-user-context": {
    "board": [
     "OrConfiguraties"
    ]
+  },
+  "incremental-sync-for-api-consumers": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
   },
   "integration-activity": {
    "board": [
@@ -1599,6 +1926,7 @@
   },
   "integration-message-dispatch": {
    "board": [
+    "OrFlow",
     "OrObjectKoppelingen"
    ]
   },
@@ -1651,6 +1979,10 @@
     "OrObjectKoppelingen"
    ]
   },
+  "json-ld-output": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
   "larping-skill-widget": {
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
@@ -1664,6 +1996,10 @@
    "board": [
     "OrObjectKoppelingen"
    ]
+  },
+  "mail-smart-picker": {
+   "board": null,
+   "reason": "Shown in Nextcloud's own smart picker in Text, Talk and Mail, not on an Open Register screen."
   },
   "mariadb-ci-matrix": {
    "board": null,
@@ -1682,6 +2018,12 @@
   "mdm-frontend": {
    "board": [
     "OrDatakwaliteit"
+   ]
+  },
+  "mdm-merge": {
+   "board": [
+    "OrDuplicaten",
+    "OrGoudenRecord"
    ]
   },
   "mdm-merge-ui": {
@@ -1724,6 +2066,37 @@
     "OrConfiguraties"
    ]
   },
+  "modelling-composite-identity": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "modelling-property-index-switch": {
+   "board": [
+    "OrEigenschap",
+    "OrRegister"
+   ]
+  },
+  "modelling-rename-without-loss": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "modelling-schema-diagram": {
+   "board": [
+    "OrRegister"
+   ]
+  },
+  "modelling-type-catalogue-metadata": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "modelling-validation-messages": {
+   "board": [
+    "OrEigenschap"
+   ]
+  },
   "nextcloud-api-compat": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1738,9 +2111,44 @@
     "OrOperations"
    ]
   },
+  "notificatie-engine": {
+   "board": [
+    "OrMijnAccount"
+   ]
+  },
+  "oas-generation": {
+   "board": [
+    "OrRegisters"
+   ]
+  },
   "oas-validation": {
    "board": [
     "OrRegisters"
+   ]
+  },
+  "object-interactions": {
+   "board": [
+    "OrObjectKoppelingen"
+   ]
+  },
+  "object-level-sharing-and-private-scope": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "object-lifecycle": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "object-ownership": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "object-presence": {
+   "board": [
+    "OrObject"
    ]
   },
   "object-read-state": {
@@ -1748,6 +2156,19 @@
     "OrObjecten",
     "OrObject"
    ]
+  },
+  "objects-crud": {
+   "board": [
+    "OrEigenschap",
+    "OrObjectBewerken",
+    "OrObjecten",
+    "OrRegister",
+    "OrSchema"
+   ]
+  },
+  "occ-commands": {
+   "board": null,
+   "reason": "Command-line occ commands; no screen by nature."
   },
   "office-document-sanitization": {
    "board": [
@@ -1758,9 +2179,29 @@
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
   },
+  "openapi-generation": {
+   "board": [
+    "OrSchema"
+   ]
+  },
   "openregister-app-manifest": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "operate-admin-query-console": {
+   "board": [
+    "OrRapporten"
+   ]
+  },
+  "operate-load-shedding": {
+   "board": [
+    "OrOperations"
+   ]
+  },
+  "or-form-and-journey-registry": {
+   "board": [
+    "OrObject"
+   ]
   },
   "orphan-auth-remediation": {
    "board": null,
@@ -1787,6 +2228,11 @@
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
   },
+  "production-observability": {
+   "board": [
+    "OrOperations"
+   ]
+  },
   "profile-actions": {
    "board": [
     "OrMijnAccount"
@@ -1797,10 +2243,82 @@
     "OrAuditTrails"
    ]
   },
+  "query-filter-through-a-reference": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "rapportage-bi-export": {
+   "board": [
+    "OrRapporten",
+    "OrRegister"
+   ]
+  },
+  "rbac-department-role-matrix": {
+   "board": [
+    "OrBeheerinstellingen"
+   ]
+  },
+  "rbac-scopes": {
+   "board": [
+    "OrBeheerinstellingen",
+    "OrOrganisaties"
+   ]
+  },
   "rbac-zaaktype": {
    "board": [
     "OrBeheerinstellingen"
    ]
+  },
+  "realtime-updates": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "record-star-follow-and-unread-on-screen": {
+   "board": [
+    "OrObject",
+    "OrObjecten"
+   ]
+  },
+  "record-tasks-tab": {
+   "board": [
+    "OrObjectKoppelingen"
+   ]
+  },
+  "records-change-held-for-approval": {
+   "board": [
+    "OrFlow",
+    "OrTaken"
+   ]
+  },
+  "records-draft-versions": {
+   "board": [
+    "OrObjectBewerken",
+    "OrObjectHistorie"
+   ]
+  },
+  "records-gallery-view": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "records-saved-templates": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "records-tree-view": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "reference-existence-validation": {
+   "board": [
+    "OrObjectBewerken"
+   ]
+  },
+  "referential-integrity": {
+   "board": null,
+   "reason": "Enforced on every delete; the refusal message appears wherever a record is deleted, and the rule is declared in schema JSON."
   },
   "register-i18n": {
    "board": [
@@ -1824,9 +2342,67 @@
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
   },
+  "relation-resource-urls": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "relation-types-with-inverses": {
+   "board": [
+    "OrObject",
+    "OrSchema"
+   ]
+  },
+  "retention-linked-destruction-conflict": {
+   "board": [
+    "OrArchivering"
+   ]
+  },
+  "retention-management": {
+   "board": [
+    "OrArchivering",
+    "OrObject"
+   ]
+  },
+  "row-field-level-security": {
+   "board": [
+    "OrBeheerinstellingen",
+    "OrEigenschap",
+    "OrObject"
+   ]
+  },
+  "runtime-schema-api": {
+   "board": [
+    "OrObjectBewerken",
+    "OrRegister",
+    "OrRegisters",
+    "OrSchema"
+   ]
+  },
   "saas-multi-tenant": {
    "board": [
     "OrOrganisaties"
+   ]
+  },
+  "saved-search-views": {
+   "board": [
+    "OrObjecten",
+    "OrRegister"
+   ]
+  },
+  "saved-view-count-alert": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "saved-view-presentation-picker": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "scheduled-report-jobs": {
+   "board": [
+    "OrRapporten"
    ]
   },
   "schema-driven-read-coercion": {
@@ -1839,6 +2415,16 @@
     "OrWebhooks"
    ]
   },
+  "schema-import": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "schema-migration": {
+   "board": [
+    "OrSchema"
+   ]
+  },
   "schema-property-exploration": {
    "board": [
     "OrSchema"
@@ -1848,7 +2434,22 @@
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
   },
+  "scoped-api-tokens": {
+   "board": [
+    "OrKoppelingen",
+    "OrMijnAccount"
+   ]
+  },
   "search-index": {
+   "board": [
+    "OrOperations"
+   ]
+  },
+  "search-quality-operators-and-facets": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "search-trail-recording": {
    "board": [
     "OrOperations"
    ]
@@ -1873,6 +2474,11 @@
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
   },
+  "skos-concept-registers": {
+   "board": [
+    "OrEigenschap"
+   ]
+  },
   "spec-governance": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1884,6 +2490,12 @@
   "system-operation-context": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "tables-bulk-jobs-and-file-search": {
+   "board": [
+    "OrBestanden",
+    "OrObjecten"
+   ]
   },
   "tables-virtual-register": {
    "board": [
@@ -1909,6 +2521,16 @@
   "tenant-lifecycle": {
    "board": [
     "OrOrganisaties"
+   ]
+  },
+  "tenant-quotas": {
+   "board": [
+    "OrOrganisaties"
+   ]
+  },
+  "text-extraction": {
+   "board": [
+    "OrBestanden"
    ]
   },
   "text-extraction-document": {
@@ -1941,6 +2563,11 @@
     "OrArchivering"
    ]
   },
+  "tmlo-metadata": {
+   "board": [
+    "OrRegister"
+   ]
+  },
   "tmlo-metadata-schema": {
    "board": [
     "OrRegister"
@@ -1961,6 +2588,10 @@
     "OrArchivering"
    ]
   },
+  "unified-search-provider": {
+   "board": null,
+   "reason": "Shown in Nextcloud's own global search bar, not on an Open Register screen."
+  },
   "unit-test-coverage": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1968,6 +2599,15 @@
   "unit-test-coverage-phase2": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "urn-resource-addressing": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "vector-embeddings": {
+   "board": [
+    "OrAiInstellingen"
+   ]
   },
   "verwerkingsregister-api": {
    "board": [
@@ -1977,6 +2617,11 @@
   "web-push-delivery": {
    "board": [
     "OrMijnAccount"
+   ]
+  },
+  "webhook-payload-mapping": {
+   "board": [
+    "OrWebhooks"
    ]
   },
   "workflow-engine-abstraction": {
@@ -2002,6 +2647,11 @@
   "zgw-api-mapping": {
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
+  },
+  "zoeken-filteren": {
+   "board": [
+    "OrObjecten"
+   ]
   }
  },
  "providers": [
