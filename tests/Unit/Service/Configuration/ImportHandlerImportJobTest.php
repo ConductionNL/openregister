@@ -45,6 +45,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\ListedSeed
  * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
  * @uses \OCA\OpenRegister\Db\Configuration
  * @uses \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
