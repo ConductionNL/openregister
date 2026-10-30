@@ -169,7 +169,7 @@ final class PropertyVocabulary {
 	 *   allowedValues?: array<int, string>}> The modifier rows.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function modifiers(): array {
 		$rows = [];

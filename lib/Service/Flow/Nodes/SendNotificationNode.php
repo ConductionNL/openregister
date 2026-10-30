@@ -127,7 +127,7 @@ class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 	 *
 	 * @return array `summary` and `messages` (`[{channel, to, subject, body}]`).
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function preview(array $items, array $config, array $context): array {
 		$messages = $this->messaging->previewMessages(channel: 'notification', config: $config, items: $items, context: $context);

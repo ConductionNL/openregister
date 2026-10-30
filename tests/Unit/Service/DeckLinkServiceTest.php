@@ -179,7 +179,7 @@ class DeckLinkServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deck-links-carry-board-and-list/specs/deck-integration/spec.md
+	 * @spec openspec/specs/deck-integration/spec.md
 	 */
 	public function testACardCarriesItsBoardAndListTitles(): void {
 		$titled = static fn (string $title): object => new class ($title) {

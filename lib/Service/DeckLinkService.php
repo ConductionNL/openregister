@@ -627,7 +627,7 @@ class DeckLinkService {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/deck-links-carry-board-and-list/specs/deck-integration/spec.md
+	 * @spec openspec/specs/deck-integration/spec.md
 	 */
 	private function relatedTitle(object $card, string $getter): string {
 		try {

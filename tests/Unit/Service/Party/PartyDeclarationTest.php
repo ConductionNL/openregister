@@ -186,7 +186,7 @@ class PartyDeclarationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-kind-identity-shapes/specs/party-model/spec.md#requirement-a-party-kind-names-its-identity-shapes
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-kind-names-its-identity-shapes
 	 */
 	public function testAPartyKindKeepsItsIdentityShapes(): void {
 		$schema = $this->schema(

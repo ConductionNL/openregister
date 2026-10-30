@@ -1096,6 +1096,17 @@
   "zgw-api-mapping"
  ],
  "specScreens": {
+  "access-by-link-not-by-account": {
+   "board": [
+    "OrBestanden",
+    "OrObject"
+   ]
+  },
+  "account-self-service": {
+   "board": [
+    "OrMijnAccount"
+   ]
+  },
   "action-registry": {
    "board": [
     "OrFlow"
@@ -1104,6 +1115,11 @@
   "actions": {
    "board": [
     "OrFlow"
+   ]
+  },
+  "activity-provider": {
+   "board": [
+    "OrObjectKoppelingen"
    ]
   },
   "admin-list-views": {
@@ -1132,9 +1148,33 @@
     "OrAgents"
    ]
   },
+  "aggregation-api": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
   "aggregations-backend-native": {
    "board": [
     "OrRapporten"
+   ]
+  },
+  "ai-mcp": {
+   "board": [
+    "OrAgents"
+   ]
+  },
+  "ai-translation-with-a-glossary": {
+   "board": [
+    "OrObjectBewerken"
+   ]
+  },
+  "an-export-is-a-file-with-a-life": {
+   "board": [
+    "OrAvgVerzoek"
+   ]
+  },
+  "anonymising-as-an-archival-outcome": {
+   "board": [
+    "OrEntiteiten"
    ]
   },
   "api-authorization": {
@@ -1142,9 +1182,36 @@
     "OrBeheerinstellingen"
    ]
   },
+  "api-client-libraries": {
+   "board": null,
+   "reason": "Client libraries in a programming language; a developer tool with no screen."
+  },
+  "api-explorer-in-the-app": {
+   "board": [
+    "OrRegisters"
+   ]
+  },
+  "api-nl-design-rules-conformance": {
+   "board": null,
+   "reason": "How the API is shaped (Dutch API design rules); it has no screen by nature."
+  },
   "api-test-coverage": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "api-upsert-on-a-declared-key": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "app-harvest-fetchers-and-flow-node": {
+   "board": [
+    "OrBronnen"
+   ]
+  },
+  "apphost-boilerplate": {
+   "board": [
+    "OrOperations"
+   ]
   },
   "apphost-observability": {
    "board": [
@@ -1171,9 +1238,26 @@
     "OrArchivering"
    ]
   },
+  "archival-destruction-workflow": {
+   "board": [
+    "OrArchivering"
+   ]
+  },
   "archivering-vernietiging": {
    "board": [
     "OrArchivering"
+   ]
+  },
+  "audit-hash-chain": {
+   "board": [
+    "OrAuditTrails",
+    "OrBeheerinstellingen"
+   ]
+  },
+  "audit-trail-immutable": {
+   "board": [
+    "OrAuditTrails",
+    "OrObjectHistorie"
    ]
   },
   "auth-system": {
@@ -1186,9 +1270,19 @@
     "OrBeheerinstellingen"
    ]
   },
+  "avg-verwerkingsregister": {
+   "board": [
+    "OrAvg"
+   ]
+  },
   "besluiten-management": {
    "board": null,
    "reason": "A ZGW decisions REST API covered by Newman; leaf apps draw the decision screens."
+  },
+  "built-in-dashboards": {
+   "board": [
+    "OrDashboard"
+   ]
   },
   "calendar-integration": {
    "board": [
@@ -1200,9 +1294,30 @@
     "OrSchema"
    ]
   },
+  "chat-ai": {
+   "board": [
+    "OrAiInstellingen"
+   ]
+  },
   "cleanup-linked-entity-type-map": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "computed-fields": {
+   "board": [
+    "OrObjectBewerken",
+    "OrSchema"
+   ]
+  },
+  "configuration-as-a-deployment": {
+   "board": [
+    "OrConfiguraties"
+   ]
+  },
+  "consent-evidence-envelope": {
+   "board": [
+    "OrObject"
+   ]
   },
   "contacts-actions": {
    "board": [
@@ -1212,6 +1327,16 @@
   "content-versioning": {
    "board": [
     "OrObjectHistorie"
+   ]
+  },
+  "context-chat-provider": {
+   "board": [
+    "OrAiInstellingen"
+   ]
+  },
+  "credential-broker": {
+   "board": [
+    "OrKoppelingen"
    ]
   },
   "credential-oauth2-connect": {
@@ -1234,6 +1359,17 @@
     "OrDashboard"
    ]
   },
+  "data-import-export": {
+   "board": [
+    "OrConfiguraties",
+    "OrRegisters"
+   ]
+  },
+  "data-quality-scoring": {
+   "board": [
+    "OrDatakwaliteit"
+   ]
+  },
   "data-sync-harvesting": {
    "board": [
     "OrBronnen"
@@ -1242,6 +1378,11 @@
   "datetime-input-handling": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "dbal-virtual-registers": {
+   "board": [
+    "OrBronnen"
+   ]
   },
   "declared-actions": {
    "board": [
@@ -1255,6 +1396,11 @@
   "delegated-identity": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "deletion-audit-trail": {
+   "board": [
+    "OrPrullenbak"
+   ]
   },
   "deprecate-published-metadata": {
    "board": null,
@@ -1351,6 +1497,11 @@
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
   },
+  "duplicate-detection": {
+   "board": [
+    "OrDuplicaten"
+   ]
+  },
   "edepot-bagit-output": {
    "board": [
     "OrArchivering"
@@ -1366,6 +1517,24 @@
     "OrArchivering"
    ]
   },
+  "edepot-transfer": {
+   "board": [
+    "OrArchivering",
+    "OrBestanden"
+   ]
+  },
+  "enhanced-audit-trail": {
+   "board": [
+    "OrAuditTrails"
+   ]
+  },
+  "entity-management-modals": {
+   "board": [
+    "OrEigenschap",
+    "OrObjectBewerken",
+    "OrSchema"
+   ]
+  },
   "entity-relation-grondslagen": {
    "board": [
     "OrEntiteiten"
@@ -1377,9 +1546,40 @@
     "OrConfiguraties"
    ]
   },
+  "event-driven-architecture": {
+   "board": [
+    "OrWebhooks"
+   ]
+  },
+  "exchange-encrypted-instance-export": {
+   "board": [
+    "OrConfiguraties",
+    "OrRegisters"
+   ]
+  },
   "export-pdf-format": {
    "board": [
     "OrRegisters"
+   ]
+  },
+  "export-pdf-house-style": {
+   "board": [
+    "OrRegisters"
+   ]
+  },
+  "faceting-configuration": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "feature-toggle-surface": {
+   "board": [
+    "OrBeheerinstellingen"
+   ]
+  },
+  "features-roadmap-menu": {
+   "board": [
+    "OrRoadmap"
    ]
   },
   "federation": {
@@ -1392,14 +1592,41 @@
     "OrBronnen"
    ]
   },
+  "field-level-encryption": {
+   "board": [
+    "OrEigenschap",
+    "OrSchema"
+   ]
+  },
+  "file-actions": {
+   "board": [
+    "OrBestanden",
+    "OrObject"
+   ]
+  },
+  "file-risk-classification": {
+   "board": [
+    "OrBestanden"
+   ]
+  },
   "file-search": {
    "board": [
     "OrBestanden"
    ]
   },
+  "files-leaf-save-to-object": {
+   "board": [
+    "OrObjectKoppelingen"
+   ]
+  },
   "files-render-extension": {
    "board": null,
    "reason": "The shape of file metadata in API responses; no screen by nature."
+  },
+  "files-sidebar-tabs": {
+   "board": [
+    "OrBestanden"
+   ]
   },
   "first-time-setup": {
    "board": [
@@ -1422,6 +1649,35 @@
     "OrFlow"
    ]
   },
+  "flow-business-timers": {
+   "board": [
+    "OrTaken"
+   ]
+  },
+  "flow-cases": {
+   "board": null,
+   "reason": "An engine for leaf apps such as dossiq, which draw the case plan on their own screens."
+  },
+  "flow-code-step-in-a-sidecar": {
+   "board": [
+    "OrWebhooks"
+   ]
+  },
+  "flow-decision-tables": {
+   "board": [
+    "OrFlow"
+   ]
+  },
+  "flow-definition-versioning": {
+   "board": [
+    "OrFlow"
+   ]
+  },
+  "flow-engine": {
+   "board": [
+    "OrFlow"
+   ]
+  },
   "flow-engine-consumer-seams": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1429,6 +1685,11 @@
   "flow-heartbeat-recovery": {
    "board": [
     "OrFlowOverzicht"
+   ]
+  },
+  "flow-messaging-nodes": {
+   "board": [
+    "OrFlow"
    ]
   },
   "flow-object-write-bulk": {
@@ -1450,6 +1711,11 @@
   "flow-run-subjects": {
    "board": [
     "OrFlowOverzicht"
+   ]
+  },
+  "flow-scheduled-trigger": {
+   "board": [
+    "OrFlow"
    ]
   },
   "flow-send-email-external-recipients": {
@@ -1477,6 +1743,17 @@
     "OrTaken"
    ]
   },
+  "flow-user-task-node": {
+   "board": [
+    "OrFlow",
+    "OrTaken"
+   ]
+  },
+  "format-validators": {
+   "board": [
+    "OrObjectBewerken"
+   ]
+  },
   "frontend-app-bootstrap": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1484,6 +1761,18 @@
   "frontend-store-client-state": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "gdpr-data-subject-rights": {
+   "board": [
+    "OrAvgVerzoek",
+    "OrAvgVerzoeken"
+   ]
+  },
+  "generated-identifier": {
+   "board": [
+    "OrObjectBewerken",
+    "OrSchema"
+   ]
   },
   "generic-integrations": {
    "board": [
@@ -1496,6 +1785,12 @@
     "OrObjecten"
    ]
   },
+  "geometry-on-a-map": {
+   "board": [
+    "OrObjecten",
+    "OrSchema"
+   ]
+  },
   "github-issue-proxy": {
    "board": [
     "OrRoadmap"
@@ -1506,10 +1801,28 @@
     "OrAgents"
    ]
   },
+  "graphql-api": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
   "guardian-participant-messaging-leaf": {
    "board": [
     "OrObjectKoppelingen"
    ]
+  },
+  "history-revert-through-the-save-path": {
+   "board": [
+    "OrObjectHistorie"
+   ]
+  },
+  "history-schema-and-settings-edits-audited": {
+   "board": [
+    "OrAuditTrails"
+   ]
+  },
+  "i18n-api-language-negotiation": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
   },
   "i18n-source-of-truth": {
    "board": [
@@ -1517,10 +1830,24 @@
     "OrEigenschap"
    ]
   },
+  "identity-survives-a-move": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "import-preview-and-conflict-policy": {
+   "board": [
+    "OrImporteren"
+   ]
+  },
   "import-resilient-per-entity-and-no-user-context": {
    "board": [
     "OrConfiguraties"
    ]
+  },
+  "incremental-sync-for-api-consumers": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
   },
   "integration-activity": {
    "board": [
@@ -1599,6 +1926,7 @@
   },
   "integration-message-dispatch": {
    "board": [
+    "OrFlow",
     "OrObjectKoppelingen"
    ]
   },
@@ -1651,6 +1979,10 @@
     "OrObjectKoppelingen"
    ]
   },
+  "json-ld-output": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
   "larping-skill-widget": {
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
@@ -1664,6 +1996,10 @@
    "board": [
     "OrObjectKoppelingen"
    ]
+  },
+  "mail-smart-picker": {
+   "board": null,
+   "reason": "Shown in Nextcloud's own smart picker in Text, Talk and Mail, not on an Open Register screen."
   },
   "mariadb-ci-matrix": {
    "board": null,
@@ -1682,6 +2018,12 @@
   "mdm-frontend": {
    "board": [
     "OrDatakwaliteit"
+   ]
+  },
+  "mdm-merge": {
+   "board": [
+    "OrDuplicaten",
+    "OrGoudenRecord"
    ]
   },
   "mdm-merge-ui": {
@@ -1724,6 +2066,37 @@
     "OrConfiguraties"
    ]
   },
+  "modelling-composite-identity": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "modelling-property-index-switch": {
+   "board": [
+    "OrEigenschap",
+    "OrRegister"
+   ]
+  },
+  "modelling-rename-without-loss": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "modelling-schema-diagram": {
+   "board": [
+    "OrRegister"
+   ]
+  },
+  "modelling-type-catalogue-metadata": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "modelling-validation-messages": {
+   "board": [
+    "OrEigenschap"
+   ]
+  },
   "nextcloud-api-compat": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1738,9 +2111,44 @@
     "OrOperations"
    ]
   },
+  "notificatie-engine": {
+   "board": [
+    "OrMijnAccount"
+   ]
+  },
+  "oas-generation": {
+   "board": [
+    "OrRegisters"
+   ]
+  },
   "oas-validation": {
    "board": [
     "OrRegisters"
+   ]
+  },
+  "object-interactions": {
+   "board": [
+    "OrObjectKoppelingen"
+   ]
+  },
+  "object-level-sharing-and-private-scope": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "object-lifecycle": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "object-ownership": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "object-presence": {
+   "board": [
+    "OrObject"
    ]
   },
   "object-read-state": {
@@ -1748,6 +2156,19 @@
     "OrObjecten",
     "OrObject"
    ]
+  },
+  "objects-crud": {
+   "board": [
+    "OrEigenschap",
+    "OrObjectBewerken",
+    "OrObjecten",
+    "OrRegister",
+    "OrSchema"
+   ]
+  },
+  "occ-commands": {
+   "board": null,
+   "reason": "Command-line occ commands; no screen by nature."
   },
   "office-document-sanitization": {
    "board": [
@@ -1758,9 +2179,29 @@
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
   },
+  "openapi-generation": {
+   "board": [
+    "OrSchema"
+   ]
+  },
   "openregister-app-manifest": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "operate-admin-query-console": {
+   "board": [
+    "OrRapporten"
+   ]
+  },
+  "operate-load-shedding": {
+   "board": [
+    "OrOperations"
+   ]
+  },
+  "or-form-and-journey-registry": {
+   "board": [
+    "OrObject"
+   ]
   },
   "orphan-auth-remediation": {
    "board": null,
@@ -1787,6 +2228,11 @@
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
   },
+  "production-observability": {
+   "board": [
+    "OrOperations"
+   ]
+  },
   "profile-actions": {
    "board": [
     "OrMijnAccount"
@@ -1797,10 +2243,82 @@
     "OrAuditTrails"
    ]
   },
+  "query-filter-through-a-reference": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "rapportage-bi-export": {
+   "board": [
+    "OrRapporten",
+    "OrRegister"
+   ]
+  },
+  "rbac-department-role-matrix": {
+   "board": [
+    "OrBeheerinstellingen"
+   ]
+  },
+  "rbac-scopes": {
+   "board": [
+    "OrBeheerinstellingen",
+    "OrOrganisaties"
+   ]
+  },
   "rbac-zaaktype": {
    "board": [
     "OrBeheerinstellingen"
    ]
+  },
+  "realtime-updates": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "record-star-follow-and-unread-on-screen": {
+   "board": [
+    "OrObject",
+    "OrObjecten"
+   ]
+  },
+  "record-tasks-tab": {
+   "board": [
+    "OrObjectKoppelingen"
+   ]
+  },
+  "records-change-held-for-approval": {
+   "board": [
+    "OrFlow",
+    "OrTaken"
+   ]
+  },
+  "records-draft-versions": {
+   "board": [
+    "OrObjectBewerken",
+    "OrObjectHistorie"
+   ]
+  },
+  "records-gallery-view": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "records-saved-templates": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "records-tree-view": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "reference-existence-validation": {
+   "board": [
+    "OrObjectBewerken"
+   ]
+  },
+  "referential-integrity": {
+   "board": null,
+   "reason": "Enforced on every delete; the refusal message appears wherever a record is deleted, and the rule is declared in schema JSON."
   },
   "register-i18n": {
    "board": [
@@ -1824,9 +2342,67 @@
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
   },
+  "relation-resource-urls": {
+   "board": [
+    "OrObject"
+   ]
+  },
+  "relation-types-with-inverses": {
+   "board": [
+    "OrObject",
+    "OrSchema"
+   ]
+  },
+  "retention-linked-destruction-conflict": {
+   "board": [
+    "OrArchivering"
+   ]
+  },
+  "retention-management": {
+   "board": [
+    "OrArchivering",
+    "OrObject"
+   ]
+  },
+  "row-field-level-security": {
+   "board": [
+    "OrBeheerinstellingen",
+    "OrEigenschap",
+    "OrObject"
+   ]
+  },
+  "runtime-schema-api": {
+   "board": [
+    "OrObjectBewerken",
+    "OrRegister",
+    "OrRegisters",
+    "OrSchema"
+   ]
+  },
   "saas-multi-tenant": {
    "board": [
     "OrOrganisaties"
+   ]
+  },
+  "saved-search-views": {
+   "board": [
+    "OrObjecten",
+    "OrRegister"
+   ]
+  },
+  "saved-view-count-alert": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "saved-view-presentation-picker": {
+   "board": [
+    "OrObjecten"
+   ]
+  },
+  "scheduled-report-jobs": {
+   "board": [
+    "OrRapporten"
    ]
   },
   "schema-driven-read-coercion": {
@@ -1839,6 +2415,16 @@
     "OrWebhooks"
    ]
   },
+  "schema-import": {
+   "board": [
+    "OrSchema"
+   ]
+  },
+  "schema-migration": {
+   "board": [
+    "OrSchema"
+   ]
+  },
   "schema-property-exploration": {
    "board": [
     "OrSchema"
@@ -1848,7 +2434,22 @@
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
   },
+  "scoped-api-tokens": {
+   "board": [
+    "OrKoppelingen",
+    "OrMijnAccount"
+   ]
+  },
   "search-index": {
+   "board": [
+    "OrOperations"
+   ]
+  },
+  "search-quality-operators-and-facets": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "search-trail-recording": {
    "board": [
     "OrOperations"
    ]
@@ -1873,6 +2474,11 @@
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
   },
+  "skos-concept-registers": {
+   "board": [
+    "OrEigenschap"
+   ]
+  },
   "spec-governance": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1884,6 +2490,12 @@
   "system-operation-context": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "tables-bulk-jobs-and-file-search": {
+   "board": [
+    "OrBestanden",
+    "OrObjecten"
+   ]
   },
   "tables-virtual-register": {
    "board": [
@@ -1909,6 +2521,16 @@
   "tenant-lifecycle": {
    "board": [
     "OrOrganisaties"
+   ]
+  },
+  "tenant-quotas": {
+   "board": [
+    "OrOrganisaties"
+   ]
+  },
+  "text-extraction": {
+   "board": [
+    "OrBestanden"
    ]
   },
   "text-extraction-document": {
@@ -1941,6 +2563,11 @@
     "OrArchivering"
    ]
   },
+  "tmlo-metadata": {
+   "board": [
+    "OrRegister"
+   ]
+  },
   "tmlo-metadata-schema": {
    "board": [
     "OrRegister"
@@ -1961,6 +2588,10 @@
     "OrArchivering"
    ]
   },
+  "unified-search-provider": {
+   "board": null,
+   "reason": "Shown in Nextcloud's own global search bar, not on an Open Register screen."
+  },
   "unit-test-coverage": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
@@ -1968,6 +2599,15 @@
   "unit-test-coverage-phase2": {
    "board": null,
    "reason": "Engineering spec (tests, CI, refactoring or plumbing); no user interface by nature."
+  },
+  "urn-resource-addressing": {
+   "board": null,
+   "reason": "An API for other systems and apps; it has no screen of its own by nature."
+  },
+  "vector-embeddings": {
+   "board": [
+    "OrAiInstellingen"
+   ]
   },
   "verwerkingsregister-api": {
    "board": [
@@ -1977,6 +2617,11 @@
   "web-push-delivery": {
    "board": [
     "OrMijnAccount"
+   ]
+  },
+  "webhook-payload-mapping": {
+   "board": [
+    "OrWebhooks"
    ]
   },
   "workflow-engine-abstraction": {
@@ -2002,6 +2647,11 @@
   "zgw-api-mapping": {
    "board": null,
    "reason": "Redirect stub; the capability and its screens are owned by another app."
+  },
+  "zoeken-filteren": {
+   "board": [
+    "OrObjecten"
+   ]
   }
  },
  "providers": [
@@ -2057,7 +2707,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchema.vue (create schema) -> POST api/schemas (appinfo/routes.php:6 Schemas resource); lib/Db/MagicMapper.php:811 ensureTableForRegisterSchema creates/syncs the per-schema table on first save (MagicTableHandler.php:93), no migration",
-    "spec": "openspec/specs/runtime-schema-api"
+    "spec": "openspec/specs/runtime-schema-api",
+    "requirement": "Runtime schema creation invalidates cache and reloads declarative engines"
    },
    "reachedOn": "/schemas",
    "provider": "openregister",
@@ -2123,7 +2774,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/schema/SchemaDetails.vue:46 'Add Property' opens src/modals/schema/EditSchemaProperty.vue (type/format/relation form, typeOptions :1185), saved via Schemas resource appinfo/routes.php:6",
-    "spec": "openspec/specs/entity-management-modals"
+    "spec": "openspec/specs/entity-management-modals",
+    "requirement": "openspec/changes/modelling-stated-requirements :: A schema's fields are built in a form (REQ-MSR-004)"
    },
    "reachedOn": "/schemas/:id",
    "provider": "openregister",
@@ -2159,7 +2811,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Record form src/modals/object/ViewObject.vue getPropertyInputComponent delegates to src/services/propertyEditor.js editorFor: enum/oneOf -> NcSelect of the declared values, file -> file picker (readFileAsDataUri, the data URI the save path stores), translatable -> TranslationFieldEditor per register language; booleans and dates as before. Tests src/services/propertyEditor.spec.js.",
-    "change": "records-form-and-cell-editors"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "REQ-RFCE-001 The record form gives each declared field its own editor"
    },
    "reachedOn": "/schemas/:id and /objects (edit dialog)",
    "provider": "openregister",
@@ -2197,7 +2850,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "$ref + inversedBy in EditSchemaProperty.vue:118; ObjectsController.php:4559 uses / :4612 used (routes.php:1186-1187) rendered as 'Uses' and 'Used by' tabs in src/views/object/ObjectDetails.vue:176/197",
-    "spec": "openspec/specs/relation-resource-urls"
+    "spec": "openspec/specs/relation-resource-urls",
+    "requirement": [
+     "openspec/specs/referential-integrity :: Requirement 12: Relation graph MUST support bidirectional traversal (uses/usedBy)",
+     "openspec/specs/referential-integrity :: Requirement 6: Bidirectional reference consistency via inversedBy and writeBack"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id",
    "provider": "openregister",
@@ -2491,7 +3148,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/ValidateObject.php:2167 formatValidationError builds message with property path; returned 400 by ObjectsController.php:3376-3378 on create/update (Schemas/objects routes)",
-    "spec": "openspec/specs/format-validators"
+    "spec": "openspec/specs/format-validators",
+    "requirement": "openspec/changes/modelling-stated-requirements :: A refused save names the field that broke the rule (REQ-MSR-001)"
    },
    "reachedOn": "/objects (edit dialog save)",
    "provider": "openregister",
@@ -2524,7 +3182,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Concept scheme URI field in EditSchemaProperty.vue:647; lib/Listener/CodedValueValidationListener.php:103 refuses values outside the vocabulary, registered Application.php:3346-3347; ConceptDeleteGuardListener Application.php:3358",
-    "spec": "openspec/specs/skos-concept-registers"
+    "spec": "openspec/specs/skos-concept-registers",
+    "requirement": [
+     "openspec/changes/modelling-stated-requirements :: A coded property takes its allowed values from a concept scheme (REQ-MSR-003)",
+     "openspec/changes/code-list-lifecycle-and-hierarchy :: A property uses the hierarchy, the context and the weights (REQ-CLH-002)"
+    ]
    },
    "reachedOn": "/schemas/:id (property editor); enforced on /objects save",
    "provider": "openregister",
@@ -2730,7 +3392,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/search/SearchIndex.vue:593 CnIndexPage with sortKey/sortOrder, @sort -> handleSort :337; column chooser src/sidebars/search/SearchSideBar.vue:1043 setSearchVisibleColumns; page src/manifest.json:141 id tables",
-    "spec": "openspec/specs/zoeken-filteren"
+    "spec": "openspec/specs/zoeken-filteren",
+    "requirement": "openspec/changes/records-api-and-table-stated :: The records table sorts by a column and shows the columns the user picks (REQ-RAT-002)"
    },
    "reachedOn": "/tables",
    "provider": "openregister",
@@ -2763,7 +3426,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/components/tables/EditableCell.vue (double click edits, Enter saves through PATCH /api/objects/{register}/{schema}/{id}, a refusal shows the server message and keeps the value) wired per scalar column in src/views/search/SearchIndex.vue (#column-<key> slots, inlineEditableColumns); offered only where @self.can.update is true, which lib/Service/Object/RenderObject.php applyUpdateRightMarker fills from PermissionHandler::hasPermission on _extend[]=@self.can. Tests EditableCell.spec.js, SearchIndex.spec.js, tests/Unit/Service/Object/RenderObjectUpdateRightTest.php.",
-    "change": "records-form-and-cell-editors"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "REQ-RFCE-002 A cell in the records list can be edited in place"
    },
    "reachedOn": "/tables (record modal Properties tab)",
    "provider": "openregister",
@@ -3003,7 +3667,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/DeletedController.php:374 restore, window per row :188 withWindows (destroyable-from date, days remaining); routes appinfo/routes.php:1438; page src/views/deleted/DeletedIndex.vue:213 Restore, :200 purge date; manifest id deleted src/manifest.json:165",
-    "spec": "openspec/specs/deletion-audit-trail"
+    "spec": "openspec/specs/deletion-audit-trail",
+    "requirement": [
+     "Requirement 3: Soft-deleted objects MUST be restorable through the trash API",
+     "Requirement 2: The system MUST support configurable retention periods before purge",
+     "Requirement 11: The trash/recycle bin API MUST support listing, filtering, and statistics for deleted objects"
+    ]
    },
    "reachedOn": "/deleted",
    "provider": "openregister",
@@ -3177,7 +3846,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "NotesProvider registered lib/AppInfo/Application.php:2117; lib/Service/NoteService.php wraps ICommentsManager; routes appinfo/routes.php:1493-1494 -> lib/Controller/NotesController.php:172; rendered via CnIntegrationWidget src/views/object/ObjectDetails.vue:413",
-    "spec": "openspec/specs/object-interactions"
+    "spec": "openspec/specs/object-interactions",
+    "requirement": "Notes on Objects via ICommentsManager"
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
@@ -3250,7 +3920,12 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-favourites-and-recent, backend only: PUT/DELETE .../favourite appinfo/routes.php:183,189 -> lib/Controller/ObjectFavouriteController.php; views registered on the audit trail through lib/Service/Interaction/ReadHistoryService.php registerAuditRead (read-history-on-audit-trail, replaced recordObjectView); _favourite/_recent lenses in lib/Service/Object/SearchQueryHandler.php:88. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
     "change": "record-star-follow-and-unread-on-screen",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": [
+     "openspec/specs/object-interactions :: A user can star an object without changing it",
+     "openspec/specs/object-interactions :: Favourites and recent are lenses on the object query",
+     "The Tables page filters on following and recent"
+    ]
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/favourite, GET /api/objects?_favourite / _recent",
    "provider": "openregister",
@@ -3355,7 +4030,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Anonymous create: lib/Controller/ObjectsController.php:3250 create is @PublicPage with AnonRateLimit, gated by schema RBAC; route appinfo/routes.php:1171. No public form page: templates/ holds only index.php and settings; formLinks (appinfo/routes.php:1104) only links NC Forms, no submission-to-record path.",
-    "change": "or-form-and-journey-registry"
+    "change": "or-form-and-journey-registry",
+    "requirement": [
+     "Anonymous submission MUST be throttled and MUST stamp no ownership",
+     "A journey MUST declare steps, branching, writes and access"
+    ]
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema} (anonymous)",
    "provider": "openregister",
@@ -3389,7 +4068,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "POST .../links appinfo/routes.php:105 -> lib/Controller/ObjectSharingController.php:241 createLink with expiration; access links with expiry appinfo/routes.php:1052,1066 -> lib/Controller/AccessLinkController.php:299; recipient read lib/Controller/ObjectShareLinkController.php:129 returns JSON. Shares tab src/views/object/ObjectDetails.vue:438 (CnObjectAccessTab, nextcloud-vue).",
-    "change": "access-by-link-not-by-account"
+    "change": "access-by-link-not-by-account",
+    "requirement": [
+     "A link declares its capabilities, carries an expiry and may carry a password (REQ-ABL-002)",
+     "A revoked or expired link answers 404, and every use is recorded (REQ-ABL-003)"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id (Shares tab); recipient: API only GET /api/shared/{token}",
    "provider": "openregister",
@@ -3426,7 +4109,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Negotiation and projection as before (LanguageMiddleware, RenderObject resolveTranslationsForRows); the record form now edits a translatable field with src/components/i18n/TranslationFieldEditor.vue, one input per register language (ViewObject.vue registerLanguages).",
-    "change": "records-form-and-cell-editors"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "REQ-RFCE-001 The record form gives each declared field its own editor"
    },
    "reachedOn": "API (Accept-Language) and /registers sidebar for languages; no per-field language editor",
    "provider": "openregister",
@@ -3535,7 +4219,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:1402 index, :3250 create, :3587 update, :4200 destroy; routes appinfo/routes.php:1164-1180 (/api/objects/{register}/{schema}[/{id}]), per-schema table generated from type",
-    "spec": "openspec/specs/objects-crud"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "openspec/changes/records-api-and-table-stated :: Every schema is served as a REST collection (REQ-RAT-001)"
    },
    "reachedOn": "/objects (ObjectsIndex) + API /api/objects/{register}/{schema}",
    "provider": "openregister",
@@ -3634,7 +4319,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "GraphiQL explorer lib/Controller/GraphQLController.php:155 route appinfo/routes.php:1991 lets you run queries; REST docs open in external read-only Redoc (src/components/cards/RegisterSchemaCard.vue:910). No REST try-it, no generated code samples",
-    "change": "api-explorer-in-the-app"
+    "change": "api-explorer-in-the-app",
+    "requirement": "REQ-APIX-001 The API can be tried from inside the app"
    },
    "reachedOn": "/api/graphql/explorer (not linked from any src page); /registers -> external Redoc",
    "provider": "openregister",
@@ -3668,7 +4354,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:92 operators gte/lte/gt/lt/in/notIn/ne/isnull, applied per property at :2347 applyObjectFilters (gte+lte = between). No per-field substring 'contains'/like operator on text properties; only array-contains and global _search",
-    "change": "search-quality-operators-and-facets"
+    "change": "search-quality-operators-and-facets",
+    "requirement": [
+     "openspec/specs/zoeken-filteren :: Field-level filtering with comparison operators",
+     "openspec/specs/zoeken-filteren :: A like filter matches a substring ignoring case",
+     "A property declares its match type and its input control (REQ-SQF-003)"
+    ]
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?field[gte]=...",
    "provider": "openregister",
@@ -3736,7 +4427,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:793 and :2943 read _fields/fields and pass to render; routes appinfo/routes.php:1164,1176",
-    "spec": "openspec/specs/objects-crud"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "Field selection narrows the SQL projection"
    },
    "reachedOn": "API only: GET /api/objects/...?_fields=a,b",
    "provider": "openregister",
@@ -3769,7 +4461,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:2941 _extend -> lib/Service/Object/RenderObject.php:3277 extendObject embeds referenced objects; routes appinfo/routes.php:1164,1176",
-    "spec": "openspec/specs/objects-crud"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": [
+     "openspec/specs/referential-integrity :: Requirement 11: API _extend parameter MUST support lazy and eager reference resolution",
+     "List/search relation resolution is batched, not per-row"
+    ]
    },
    "reachedOn": "API only: GET /api/objects/...?_extend=prop",
    "provider": "openregister",
@@ -3935,7 +4631,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Nextcloud app passwords give an outside system its own credential with the user's full rights. OR's scoped path is dead: AuthorizationService.php:257 authorizeJwt / :506 authorizeApiKey have no caller in lib/, so TokenGrantSource::bindFromConsumer (only called at :376) never runs; Consumers CRUD route appinfo/routes.php:13",
-    "change": "scoped-api-tokens"
+    "change": "scoped-api-tokens",
+    "requirement": [
+     "A token or Consumer may carry a grant narrower than its user",
+     "A token carries a required end date and is warned before it lapses (REQ-SAT-003)"
+    ]
    },
    "reachedOn": "Nextcloud personal security settings (app passwords); API /api/consumers",
    "provider": "nextcloud",
@@ -4130,7 +4830,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Middleware/LanguageMiddleware.php:101 (Accept-Language/_lang, Content-Language header :161) registered lib/AppInfo/Application.php:657; translations resolved at lib/Service/Object/RenderObject.php:658",
-    "spec": "openspec/specs/i18n-api-language-negotiation"
+    "spec": "openspec/specs/i18n-api-language-negotiation",
+    "requirement": [
+     "The system MUST accept `?_lang=` and `?language=` query parameters",
+     "Resolution precedence MUST be query → header → register-default → 'nl'"
+    ]
    },
    "reachedOn": "API only: any object GET with Accept-Language",
    "provider": "openregister",
@@ -4300,7 +5004,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Search/ObjectsProvider.php:326 search, registered lib/AppInfo/Application.php:1313",
-    "spec": "openspec/specs/unified-search-provider"
+    "spec": "openspec/specs/unified-search-provider",
+    "requirement": "OpenRegister MUST be the single fleet-wide unified search provider for register objects"
    },
    "reachedOn": "Nextcloud unified search",
    "provider": "openregister",
@@ -4512,7 +5217,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:2105 applyAccessControlFilters in every search query; related-row subquery requires access predicate lib/Service/Query/RelatedRowExistsClause.php",
-    "spec": "openspec/specs/zoeken-filteren"
+    "spec": "openspec/specs/zoeken-filteren",
+    "requirement": "Access control in search results (RBAC and multi-tenancy)"
    },
    "reachedOn": "/tables, /objects, unified search",
    "provider": "openregister",
@@ -4577,7 +5283,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "search logged at lib/Service/Object/SearchQueryHandler.php:946; stats incl. non_empty_searches lib/Db/SearchTrailMapper.php:299; routes appinfo/routes.php:1422-1433; UI src/views/logs/SearchTrailIndex.vue:153-211 flags 0-result searches",
-    "spec": "openspec/specs/search-trail-recording"
+    "spec": "openspec/specs/search-trail-recording",
+    "requirement": [
+     "A configurable recording mode admin setting controls which searches are recorded",
+     "openspec/specs/zoeken-filteren :: Saved searches and search trails",
+     "openspec/specs/zoeken-filteren :: Search-trail analytics dashboard"
+    ]
    },
    "reachedOn": "/search-trails",
    "provider": "openregister",
@@ -4613,7 +5324,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/PermissionHandler.php:414 hasPermission on schema authorization; list filter lib/Db/MagicMapper/MagicRbacHandler.php:482 called lib/Db/MagicMapper/MagicSearchHandler.php:2145; edited in src/views/settings/sections/PermissionMatrix.vue:543 (saveSchema)",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": [
+     "Permission Types (read, create, update, delete, list)",
+     "Nextcloud Group Mapping"
+    ]
    },
    "reachedOn": "OpenRegister admin settings, Permission Matrix section (src/settings.js); schema edit dialog /schemas",
    "provider": "openregister",
@@ -4649,7 +5364,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "conditional 'match' rules compiled to SQL lib/Db/MagicMapper/MagicRbacHandler.php:852 processConditionalRule and :1942 buildMatchConditionsSql, applied via :482 applyRbacFilters from MagicSearchHandler.php:2145; single-object path PermissionHandler.php:636",
-    "spec": "openspec/specs/row-field-level-security"
+    "spec": "openspec/specs/row-field-level-security",
+    "requirement": "Schemas MUST support row-level security rules via conditional authorization matching"
    },
    "reachedOn": "every object list /objects and API GET /api/objects/{register}/{schema} (routes.php:1164); rules set in schema authorization JSON",
    "provider": "openregister",
@@ -4726,7 +5442,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "objectSharing#createShare appinfo/routes.php:103 (lib/Service/Rbac/ObjectSharingService.php); Shares tab src/views/object/ObjectDetails.vue:438 CnObjectAccessTab, rendered by ObjectsIndex.vue:31",
-    "change": "object-level-sharing-and-private-scope"
+    "change": "object-level-sharing-and-private-scope",
+    "requirement": [
+     "Access can be granted on a single object",
+     "A grant carries a permission, and the verb is enforced where the action happens"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id Shares tab",
    "provider": "openregister",
@@ -4760,7 +5480,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/MagicMapper/MagicOrganizationHandler.php:130 applyOrganizationFilter called lib/Db/MagicMapper/MagicSearchHandler.php:2135; organisation#index appinfo/routes.php:1750; page src/manifest.json:101 (organisation)",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": [
+     "openspec/specs/auth-system :: Multi-tenancy isolation MUST restrict data access to the user's active organisation",
+     "Multi-Tenancy Integration with Scopes"
+    ]
    },
    "reachedOn": "/organisation",
    "provider": "openregister",
@@ -4834,7 +5558,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/settings/sections/PermissionMatrix.vue:543 saves schema authorization via schemaStore.saveSchema; RbacConfiguration.vue; mounted src/views/settings/Settings.vue:36-39",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": "openspec/changes/rights-screen-stated :: Rights are managed in a permission matrix screen (REQ-RSS-001)"
    },
    "reachedOn": "Nextcloud admin settings > OpenRegister (Permission Matrix, RBAC configuration)",
    "provider": "openregister",
@@ -4868,7 +5593,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "No SSO code in OpenRegister: grep saml/oidc/sso in lib/ and lib/Settings/connections.json found nothing. Sign-in is Nextcloud's (user_oidc / user_saml apps).",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Sign-in is the Nextcloud sign-in (REQ-PPC-001)"
    },
    "reachedOn": "Nextcloud login",
    "provider": "nextcloud",
@@ -4901,7 +5627,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:1390 @PublicPage on index (:1402), routes.php:1164; public grant checked PermissionHandler.php:2248 publicGroupExplicitlyGranted; 'Public' column in src/views/settings/sections/PermissionMatrix.vue",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": "openspec/specs/auth-system :: The role hierarchy MUST include admin bypass, owner privileges, public access, and authenticated access"
    },
    "reachedOn": "API: GET /api/objects/{register}/{schema} anonymous; set in admin Permission Matrix",
    "provider": "openregister",
@@ -4934,7 +5661,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/SaveObject.php:5980 encryptProperties; decrypt lib/Service/Object/RenderObject.php:804 (x-openregister-encrypted); occ lib/Command/EncryptFieldCommand.php",
-    "spec": "openspec/specs/field-level-encryption"
+    "spec": "openspec/specs/field-level-encryption",
+    "requirement": [
+     "Flagged properties are encrypted on save",
+     "Authorized reads are decrypted; unauthorized reads never see ciphertext"
+    ]
    },
    "reachedOn": "transparent on every object write/read; flag set in schema property",
    "provider": "openregister",
@@ -5002,7 +5733,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectPermissionsController.php:118 index returns principals, verbs and the rule/level granting each, plus denies; routes.php:115; history as-of :179 routes.php:114",
-    "change": "permission-provenance-and-deny"
+    "change": "permission-provenance-and-deny",
+    "requirement": [
+     "An object answers who holds which right on it, and how that changed (REQ-PPD-007)",
+     "Every effective permission names the rule that decided it (REQ-PPD-004)"
+    ]
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}/{id}/permissions",
    "provider": "openregister",
@@ -5094,7 +5829,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/AuditTrailMapper.php:582 createAuditTrail stores user, time and changed old/new; object tab src/views/object/ObjectDetails.vue (Audit Trails); routes.php:1341-1342; page src/manifest.json:173",
-    "spec": "openspec/specs/audit-trail-immutable"
+    "spec": "openspec/specs/audit-trail-immutable",
+    "requirement": "Every mutation MUST produce an immutable audit trail entry"
    },
    "reachedOn": "/audit-trails and the object detail Audit Trails tab",
    "provider": "openregister",
@@ -5134,7 +5870,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/GetObject.php:197 writes createAuditTrail(action: 'read') on every user-facing find while auditTrailsEnabled is on (:451), opt-out per call via $_audit (:157, used by lib/Controller/FlowNodeRunController.php:402); read entries carry no diff lib/Db/AuditTrailMapper.php:861 and are counted beside create, update and delete :1834",
     "spec": "openspec/specs/audit-trail-immutable",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "Every user-facing read of an object is logged as a read"
    },
    "reachedOn": "/audit-trails (action read)",
    "provider": "openregister",
@@ -5210,7 +5947,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/logs/AuditTrailIndex.vue:50 export action calling /api/audit-trails/export (:581), auditTrail#export routes.php:1350, index routes.php:1342; page src/manifest.json:173",
-    "spec": "openspec/specs/enhanced-audit-trail"
+    "spec": "openspec/specs/enhanced-audit-trail",
+    "requirement": [
+     "openspec/changes/audit-and-dashboard-screens-stated :: The audit trail page browses, filters and exports entries (REQ-ADS-001)",
+     "openspec/specs/audit-trail-immutable :: Audit-Trail Access, Export, and Administrative Deletion Surface"
+    ]
    },
    "reachedOn": "/audit-trails",
    "provider": "openregister",
@@ -5470,7 +6211,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/RetentionService.php:421 placeLegalHold; checked before destroy lib/BackgroundJob/DestructionExecutionJob.php:199; routes.php:2006-2008, 2015-2017",
-    "spec": "openspec/specs/archival-destruction-workflow"
+    "spec": "openspec/specs/archival-destruction-workflow",
+    "requirement": [
+     "openspec/specs/retention-management :: The system MUST support legal holds (bevriezing)",
+     "Each matter holds an object with its own legal hold"
+    ]
    },
    "reachedOn": "API only: POST /api/archival/legal-holds",
    "provider": "openregister",
@@ -5503,7 +6248,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/TransferController.php:268 queues TransferExecutionJob -> lib/Service/Edepot/EdepotTransferService.php (SIP via SipPackageBuilder, REST/SFTP/Integriq transports); proof lib/Service/Edepot/TransferRecordService.php; routes.php:2041-2049",
-    "spec": "openspec/specs/edepot-transfer"
+    "spec": "openspec/specs/edepot-transfer",
+    "requirement": [
+     "The system MUST assemble SIP packages for e-Depot transfer",
+     "The system MUST track transfer status per object",
+     "The system MUST log all transfer actions in the audit trail"
+    ]
    },
    "reachedOn": "API only: /api/transfers; e-Depot settings API routes.php:2035",
    "provider": "openregister",
@@ -5636,7 +6386,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "DSAR cases routes.php:554-564 with lib/Service/Gdpr/DataSubjectDeadline.php (1 month, +2 extension); deadline column + overdue filter src/views/avg/AvgIndex.vue:565,607; erase routes.php:490",
-    "spec": "openspec/specs/gdpr-data-subject-rights"
+    "spec": "openspec/specs/gdpr-data-subject-rights",
+    "requirement": [
+     "Data-subject-request object model with status lifecycle",
+     "EU art-12 legal-deadline computation",
+     "Erasure honours legal hold and is mode-parameterised"
+    ]
    },
    "reachedOn": "/avg Cases tab",
    "provider": "openregister",
@@ -5709,7 +6464,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "subject-scoped pseudonymise lib/Service/Gdpr/DataSubjectRequestService.php:240 via erase (default mode) routes.php:490; file anonymise routes.php:1826. lib/Service/Archival/AnonymisationSweep.php has no caller (git grep -w)",
-    "change": "anonymising-as-an-archival-outcome"
+    "change": "anonymising-as-an-archival-outcome",
+    "requirement": [
+     "Anonymising is an archival action a result type can choose (REQ-AAO-001)",
+     "A schema declares how it is anonymised (REQ-AAO-002)",
+     "The archival anonymisation runs through the pseudonymise primitive (REQ-AAO-005)"
+    ]
    },
    "reachedOn": "API: POST /api/gdpr/erase; /avg erasure",
    "provider": "openregister",
@@ -5743,7 +6503,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/FilesController.php:572 create, routes appinfo/routes.php:1453-1460; stored in the Nextcloud filesystem via IRootFolder lib/Service/File/FolderManagementHandler.php:103; Files tab src/views/object/ObjectDetails.vue:250",
-    "spec": "openspec/specs/file-actions"
+    "spec": "openspec/specs/file-actions",
+    "requirement": [
+     "openspec/specs/object-interactions :: File Attachments on Objects",
+     "File creation and upsert run a fixed validate-write-own-tag pipeline"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id (Files tab)",
    "provider": "openregister",
@@ -5971,7 +6735,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/TextExtractionService.php:262 entity recognition then :284 riskLevelService->updateRiskLevel; shown src/components/files-sidebar/ExtractionTab.vue:105 Risk level; filter lib/Controller/FileExtractionController.php:151; Corrections round 8 (2026-09-28), openregister#4104: the regex detector has no BSN pattern and files a BSN as PHONE at best, and the Presidio path asks for US_SSN, so a Dutch BSN is never flagged as a citizen service number and its file is rated medium instead of very high, lib/Service/TextExtraction/EntityRecognitionHandler.php:505-526 and :869, lib/Service/RiskLevelService.php:78 and :82 at 555af72.",
-    "spec": "openspec/specs/file-risk-classification"
+    "spec": "openspec/specs/file-risk-classification",
+    "requirement": [
+     "RiskLevelService MUST classify a file's PII risk from its detected entities",
+     "RiskLevelService MUST persist and expose risk levels through Nextcloud files metadata"
+    ]
    },
    "reachedOn": "Nextcloud Files sidebar and /files",
    "provider": "openregister",
@@ -6005,7 +6773,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "OpenRegister writes attachments through Nextcloud IRootFolder lib/Service/File/FolderManagementHandler.php:103, so S3 primary storage or external mounts configured in Nextcloud apply; no OpenRegister-specific S3 setting (searched lib/Settings/connections.json, lib/Service/File for s3/objectstore).",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Files are written through Nextcloud's storage layer (REQ-PPC-006)"
    },
    "reachedOn": "Nextcloud admin storage configuration",
    "provider": "nextcloud",
@@ -6038,7 +6807,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/WebhookEventListener.php:146 dispatchEvent, registered for created/updated/deleted lib/AppInfo/Application.php:3554-3556; CRUD appinfo/routes.php:1915-1919; page src/manifest.json:245 (webhooks)",
-    "spec": "openspec/specs/event-driven-architecture"
+    "spec": "openspec/specs/event-driven-architecture",
+    "requirement": [
+     "Webhook entities MUST support event subscription configuration with wildcard matching",
+     "Webhook delivery MUST support CloudEvents v1.0 format with configurable payload strategies"
+    ]
    },
    "reachedOn": "/webhooks",
    "provider": "openregister",
@@ -6370,7 +7143,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:3269 interceptRequest(eventType 'object.creating') lets a pre-event webhook rewrite the payload (lib/Service/WebhookService.php:1383); only on create, and an interceptor failure is caught and logged (:3277) so it cannot refuse the save",
-    "change": "flow-code-step-in-a-sidecar"
+    "change": "flow-code-step-in-a-sidecar",
+    "requirement": [
+     "openspec/specs/schema-hooks :: Sync Hook Response Format",
+     "openspec/specs/schema-hooks :: Stoppable Events for Hook-Based Rejection",
+     "A code step runs authored JavaScript outside Nextcloud"
+    ]
    },
    "reachedOn": "API only: webhook with interception",
    "provider": "openregister",
@@ -6435,7 +7213,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BulkAction/ApplyRuleAction.php:62 registered by lib/Listener/BulkActionRegistrationListener.php:60 (Application.php:3068); POST /api/bulk-jobs appinfo/routes.php:1292 queues lib/BackgroundJob/BulkJobRunner via lib/Service/BulkJob/BulkJobService.php:313",
-    "change": "bulk-action-jobs"
+    "change": "bulk-action-jobs",
+    "requirement": [
+     "A bulk action is one job with an actor, a selection and a reason (REQ-BAJ-001)",
+     "A bulk action reports progress, is cancellable and is safe to retry (REQ-BAJ-003)"
+    ]
    },
    "reachedOn": "API only: POST /api/bulk-jobs",
    "provider": "openregister",
@@ -6661,7 +7443,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Configurations bundle register+schemas(+objects): configuration#export routes.php:1715 from src/modals/configuration/ExportConfiguration.vue, configurations#import routes.php:1727 from ImportConfiguration.vue",
-    "spec": "openspec/specs/data-import-export"
+    "spec": "openspec/specs/data-import-export",
+    "requirement": "Configuration import/export MUST support full register portability @e2e exclude backend configuration import/export — covered by PHPUnit"
    },
    "reachedOn": "/configurations",
    "provider": "openregister",
@@ -6757,7 +7540,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "No importer for another product's base: git grep -i 'airtable|baserow|nocodb' in lib, src and appinfo finds none. The only neighbour is lib/Service TablesSchemaSyncService, which mounts a Nextcloud Tables table as a read-only virtual schema (occ openregister:tables:sync), not an import.",
-    "change": "import-preview-and-conflict-policy"
+    "change": "import-preview-and-conflict-policy",
+    "requirement": "A whole base from another product is imported as one job (REQ-IPC-006)"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -6791,7 +7575,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Per-configuration export with includeObjects ExportConfiguration.vue:23 (routes.php:1715) and re-import ImportRegister.vue:508 (routes.php:1656); no all-data backup/restore (grep -i backup in lib/Controller, lib/Command finds none)",
-    "change": "exchange-encrypted-instance-export"
+    "change": "exchange-encrypted-instance-export",
+    "requirement": [
+     "openspec/changes/import-preview-and-conflict-policy :: The instance serialises and loads, without secrets (REQ-IPC-005)",
+     "A load checks the whole set before writing anything",
+     "An instance set can be encrypted with a passphrase or an export key"
+    ]
    },
    "reachedOn": "/configurations, /registers",
    "provider": "openregister",
@@ -6857,7 +7646,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/McpServerController.php:129 handle (NoAdminRequired, session user) route appinfo/routes.php:1987; objects CRUD tools lib/Mcp/BuiltIn/ObjectsToolProvider.php:151 via ObjectService (RBAC on), registered lib/AppInfo/Application.php:3840",
-    "spec": "openspec/specs/ai-mcp"
+    "spec": "openspec/specs/ai-mcp",
+    "requirement": [
+     "REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools through the existing ABI",
+     "REQ-DERIVED-005 — Writes go through ObjectService with RBAC intact"
+    ]
    },
    "reachedOn": "API only: POST /api/mcp (MCP Streamable HTTP)",
    "provider": "openregister",
@@ -7183,7 +7976,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/DeleteObject.php:843 canDelete + :913 applyDeletionActions (RESTRICT/CASCADE/SET_NULL, ReferentialIntegrityService.php:113); blocked delete -> 409 ObjectsController.php:4256",
-    "spec": "openspec/specs/referential-integrity"
+    "spec": "openspec/specs/referential-integrity",
+    "requirement": "Requirement 1: Schema properties with $ref MUST support configurable onDelete behavior"
    },
    "reachedOn": "/objects (delete refused or links cleaned); onDelete declared in schema JSON",
    "provider": "openregister",
@@ -7217,7 +8011,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/SaveObject.php:4250/4422 validateReferences throws ReferenceValidationException (:5055) for properties with validateReference: true",
-    "spec": "openspec/specs/reference-existence-validation"
+    "spec": "openspec/specs/reference-existence-validation",
+    "requirement": "Save MUST reject objects with invalid references when validateReference is enabled"
    },
    "reachedOn": "/objects (save refused)",
    "provider": "openregister",
@@ -7251,7 +8046,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/dashboard/DashboardIndex.vue:36 object, register, schema and search counts, activity over a date range :277; page src/manifest.json:53 (route /)",
-    "spec": "openspec/specs/built-in-dashboards"
+    "spec": "openspec/specs/built-in-dashboards",
+    "requirement": [
+     "openspec/changes/audit-and-dashboard-screens-stated :: The app opens on a dashboard of registers, counts and activity (REQ-ADS-002)",
+     "DashboardService MUST assemble OR-canned statistics and chart payloads with fail-soft semantics"
+    ]
    },
    "reachedOn": "/",
    "provider": "openregister",
@@ -7354,7 +8153,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/info.xml:4 app id openregister, packaged as a Nextcloud app store app; runs on the Nextcloud database with no extra service (optional LLM, anonymiser and e-Depot connections listed in lib/Settings/connections.json)",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "The app installs from the app store with nothing else to run (REQ-PPC-007)"
    },
    "reachedOn": "Nextcloud app store",
    "provider": "openregister",
@@ -7453,7 +8253,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "l10n/nl.json carries 3275 translated strings; UI strings go through t('openregister', ...) e.g. src/views/dashboard/DashboardIndex.vue:49",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Every interface string is translatable (REQ-PPC-008)"
    },
    "reachedOn": "every page",
    "provider": "openregister",
@@ -7486,7 +8287,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "an organisation carries an OTAP environment (lib/Db/Organisation.php:271) that changes quota behaviour (lib/Middleware/TenantQuotaMiddleware.php:289); configuration drafts deploy with preview and rollback appinfo/routes.php:526-530; git grep -i promot in lib finds no promotion between environments",
-    "change": "configuration-as-a-deployment"
+    "change": "configuration-as-a-deployment",
+    "requirement": [
+     "openspec/specs/environment-otap :: Configuration promotion MUST transfer settings between OTAP environments",
+     "A deployment applies a draft set as one named unit, and a rollback is a deployment (REQ-CAD-002)"
+    ]
    },
    "reachedOn": "API only: /api/configuration/draft-sets",
    "provider": "openregister",
@@ -7715,7 +8520,11 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1171,1177 objects are addressed by {id} (uuid or slug) only; lib/Service/Import/MatchResolver.php:116 resolve() matches an import row on several declared properties, but only inside import previews (routes.php:1336), not as the record's identity in the API or in links",
-    "change": "modelling-composite-identity"
+    "change": "modelling-composite-identity",
+    "requirement": [
+     "A schema may declare one identity over a combination of fields",
+     "An object can be addressed by its key"
+    ]
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -7928,7 +8737,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account, minted since #4061 from the object detail page (src/components/access-links/ObjectAccessLinks.vue) and opened on a public page (/links/{anchor}, lib/Controller/AccessLinkPageController.php, src/views/accessLink/AccessLinkPage.vue) -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances",
-    "change": "or-form-and-journey-registry"
+    "change": "or-form-and-journey-registry",
+    "requirement": "A form link MAY open an existing record for change (REQ-FJR-008)"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -7964,7 +8774,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server apps/user_ldap (LDAP and Active Directory user and group backend, admin setting LDAP/AD integration); Open Register has no own login and resolves every user through Nextcloud's IUserSession, so LDAP accounts sign in to it unchanged",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Accounts and groups come from Nextcloud user backends (REQ-PPC-002)"
    },
    "reachedOn": "Nextcloud login page, configured under admin settings LDAP/AD integration",
    "provider": "nextcloud",
@@ -8000,7 +8811,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchemaProperty.vue:380 'Facetable' switch per property -> lib/Db/MagicMapper.php:3580-3584 createTableIndexes adds CREATE INDEX on each facetable column (and on relation columns :3552); runs on table creation lib/Db/MagicMapper.php:2309 and on resync src/components/cards/RegisterSchemaCard.vue:952 -> appinfo/routes.php:279 tables#sync -> lib/Controller/TablesController.php:140 -> lib/Db/MagicMapper/MagicTableHandler.php:473 updateTableIndexes",
-    "change": "modelling-property-index-switch"
+    "change": "modelling-property-index-switch",
+    "requirement": "A property can ask for an index without being a facet"
    },
    "reachedOn": "schema property editor (Facetable) plus the register card's table sync",
    "provider": "openregister",
@@ -8075,7 +8887,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server apps/settings/lib/Settings/Personal/Security/Authtokens.php 'Devices and sessions' in personal security settings; apps/settings/appinfo/routes.php:16 AuthSettings#destroy revokes a session, :17 wipe a device; Open Register's own /api/user/me/tokens (appinfo/routes.php:1907, lib/Service/UserService.php:1317) lists only its API tokens, not sessions",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Sessions are Nextcloud sessions (REQ-PPC-003)"
    },
    "reachedOn": "Nextcloud personal settings, Security, Devices and sessions",
    "provider": "nextcloud",
@@ -8147,7 +8960,11 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "record files live in Nextcloud storage (object store primary storage keeps the bucket private, nextcloud/server lib/private/Files/ObjectStore/S3.php) and are served only through Nextcloud; an expiring public link comes from a Nextcloud share, lib/Service/ShareLinkService.php:290 sets the expiration; Open Register's own access links with a required expiry (lib/Db/AccessLink.php:292, subject file :101) are minted at appinfo/routes.php accessLink#mint, which the object detail page calls since #4061 (src/components/access-links/ObjectAccessLinks.vue, object subject only); a link over one file is still minted through the API",
-    "change": "access-by-link-not-by-account"
+    "change": "access-by-link-not-by-account",
+    "requirement": [
+     "A publication link opens one object, view or file as its own principal (REQ-ABL-001)",
+     "A link declares its capabilities, carries an expiry and may carry a password (REQ-ABL-002)"
+    ]
    },
    "reachedOn": "Nextcloud Files share link with an expiry date; Open Register access links from the object's Access links tab (object subject) or POST /api/access-links (file subject)",
    "provider": "nextcloud",
@@ -8253,7 +9070,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/integration-registry: lib/AppInfo/Application.php, lib/Listener/LeafScriptListener.php, lib/Service/Integration/ExternalIntegrationRouter.php, lib/Support/FleetAppId.php.",
-    "spec": "openspec/specs/integration-registry"
+    "spec": "openspec/specs/integration-registry",
+    "requirement": [
+     "The system MUST define an `IntegrationProvider` interface",
+     "The 8 built-in NC types MUST be migrated to providers"
+    ]
    },
    "reachedOn": "record detail sidebar tabs",
    "provider": "openregister",
@@ -8336,7 +9157,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server core/Controller/WebAuthnController.php:29 passwordless WebAuthn login, lib/private/Authentication/Login/WebAuthnChain.php:12; devices registered under apps/settings/lib/Settings/Personal/Security/WebAuthn.php; Open Register uses the Nextcloud session, so a passkey sign-in reaches it",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "A second factor the instance enforces is never skipped (REQ-PPC-004)"
    },
    "reachedOn": "Nextcloud login page, passkeys added in personal settings, Security",
    "provider": "nextcloud",
@@ -8471,7 +9293,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server apps/settings/lib/Mailer/NewUserMailHelper.php:54 the welcome and set-password mail uses getUserLanguage($user); the password reset mail (core/Controller/LostController.php:66 IL10N) is sent in the language of the reset request; Open Register's own notification mail resolves the recipient's locale per user, lib/Service/Notification/AnnotationNotificationDispatcher.php:685 resolveUserLocale",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Mail goes out in the recipient's language (REQ-PPC-009)"
    },
    "reachedOn": "Nextcloud account mails; Open Register notifications per recipient",
    "provider": "nextcloud",
@@ -8507,7 +9330,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/ValidateObject.php:1827 validates the whole object against the schema with the Opis JSON Schema validator, so a property of type object with its own properties, required list and formats is checked before save; nested objects keep their structure for validation (ValidateObject.php:837 'nested-object'); the nested schema is set through src/views/schema/SchemaDetails.vue:60 upload modal -> src/modals/schema/UploadSchema.vue:144 -> src/store/modules/schema.js:321 /api/schemas/upload",
-    "spec": "openspec/specs/runtime-schema-api"
+    "spec": "openspec/specs/runtime-schema-api",
+    "requirement": "openspec/changes/modelling-stated-requirements :: An object-typed property is validated against its own JSON Schema (REQ-MSR-002)"
    },
    "reachedOn": "schema details, upload schema (JSON Schema) modal, then every object save",
    "provider": "openregister",
@@ -8582,7 +9406,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server lib/private/Security/Ip/RemoteAddress.php:19 config allowed_admin_ranges; lib/private/AppFramework/Middleware/Security/SecurityMiddleware.php:162 refuses admin-only controller methods from other addresses; lib/private/Group/Manager.php:325 isAdmin answers false outside the ranges, which also covers Open Register's in-method admin checks",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Administrator rights pass Nextcloud's admin network check (REQ-PPC-005)"
    },
    "reachedOn": "Nextcloud config.php allowed_admin_ranges, applied to every Open Register admin route",
    "provider": "nextcloud",
@@ -8618,7 +9443,11 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "grep diagram, mermaid, cytoscape, vis-network and erd in src: no diagram component (the two hits are wording in delete modals); the model is exported as OpenAPI per register (appinfo/routes.php:1667 oas#generate), not drawn",
-    "change": "modelling-schema-diagram"
+    "change": "modelling-schema-diagram",
+    "requirement": [
+     "A register's model is available as nodes and edges",
+     "The register page draws the model"
+    ]
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -8654,7 +9483,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/webhook/EditWebhook.vue:407 filters field (key: value per line, placeholder :625) -> appinfo/routes.php:1917 webhooks#create, :1918 update -> lib/Db/Webhook.php:146 filters; delivery lib/Service/WebhookService.php:734 skips a webhook whose filters do not match, :952 passesFilters with dot-path keys; the payload carries the record values, lib/Listener/WebhookEventListener.php:171 'object' => jsonSerialize()",
-    "spec": "openspec/specs/webhook-payload-mapping"
+    "spec": "openspec/specs/webhook-payload-mapping",
+    "requirement": [
+     "Event filtering MUST support register, schema, and property-level conditions",
+     "openspec/specs/event-driven-architecture :: Filtered object-event subscriptions MUST be declared from boot() and MUST honour both slugs and ids"
+    ]
    },
    "reachedOn": "webhooks page, edit webhook modal (filters), for example object.status: open",
    "provider": "openregister",
@@ -8745,7 +9578,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-decision-tables: lib/Service/Dmn/DecisionTableEvaluator.php, lib/Service/Dmn/DecisionTableValidator.php, lib/Service/Flow/FlowFieldPath.php, lib/Service/Flow/Nodes/DecisionTableNode.php.",
-    "spec": "openspec/specs/flow-decision-tables"
+    "spec": "openspec/specs/flow-decision-tables",
+    "requirement": "A decision-table step evaluates its table against every item"
    },
    "reachedOn": "flow editor",
    "provider": "openregister",
@@ -8917,7 +9751,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/credential-broker: lib/AppHost/Repair/GenericInitializeSettings.php, lib/AppInfo/Application.php, lib/Controller/CredentialController.php, lib/Repair/ImportCredentialBrokerRegister.php.",
-    "spec": "openspec/specs/credential-broker"
+    "spec": "openspec/specs/credential-broker",
+    "requirement": [
+     "A token set is never resolved app-side",
+     "Broker capability tokens are bound to the specific request",
+     "openspec/specs/credential-oauth2-connect :: The callback exchanges the code and mints a token-set credential"
+    ]
    },
    "reachedOn": "/credentials",
    "provider": "openregister",

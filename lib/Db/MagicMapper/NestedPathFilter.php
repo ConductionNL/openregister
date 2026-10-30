@@ -43,7 +43,7 @@ use OCA\OpenRegister\Support\NullFilter;
  * (plain `json` on PostgreSQL, JSON on MariaDB/MySQL), read with `#>>` and
  * `JSON_EXTRACT` respectively.
  *
- * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
  */
 class NestedPathFilter {
 
@@ -69,7 +69,7 @@ class NestedPathFilter {
 	 *
 	 * @return array{0: array<string,mixed>, 1: list<array{root: string, path: list<string>, value: mixed}>} The column filters and the path filters.
 	 *
-	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
 	public function split(array $filters, array $properties): array {
 		$plain = [];
@@ -110,7 +110,7 @@ class NestedPathFilter {
 	 *
 	 * @return string|null The expression.
 	 *
-	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
 	public function expression(string $column, array $path, bool $isPostgres): ?string {
 		if ($path === []) {
@@ -143,7 +143,7 @@ class NestedPathFilter {
 	 *
 	 * @return list<string> The conditions, all of which must hold.
 	 *
-	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
 	public function conditions(string $expression, mixed $value, callable $bind, bool $isPostgres): array {
 		if ($value === 'IS NULL' || $value === null) {
@@ -229,7 +229,7 @@ class NestedPathFilter {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter is the one reader of the isnull value, shared with the list and aggregation paths.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private static function presenceConditions(string $expression, array $value, callable $bind): array {
 		$conditions = [];

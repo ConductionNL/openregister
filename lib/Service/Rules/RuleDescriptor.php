@@ -197,7 +197,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 *
 	 * @return array{property: string, value: string}|null The scope, or null when the rule applies to every object.
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getScope(): ?array {
 		return $this->scope;
