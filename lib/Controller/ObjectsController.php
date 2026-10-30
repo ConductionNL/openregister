@@ -5769,7 +5769,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-suppress PossiblyUnusedMethod
 	 *
-	 * @spec openspec/changes/presence-departs-from-a-closing-tab/specs/realtime-updates/spec.md#requirement-a-closing-tab-can-say-it-left
+	 * @spec openspec/specs/realtime-updates/spec.md#requirement-a-closing-tab-can-say-it-left
 	 */
 	#[NoAdminRequired]
 	public function presenceDepartByBeacon(string $register, string $schema, string $id): JSONResponse {

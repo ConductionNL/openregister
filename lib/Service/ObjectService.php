@@ -2702,7 +2702,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @throws ValidationException When one or more readOnly properties were mutated.
      *
-     * @spec openspec/changes/readonly-is-stamped-by-system-operations/specs/object-lifecycle/spec.md#requirement-a-system-operation-may-stamp-a-readonly-property
+     * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-system-operation-may-stamp-a-readonly-property
      */
     private function enforceReadOnlyOnUpdate(array $object, ?string $uuid): void
     {

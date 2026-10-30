@@ -345,7 +345,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAScopeFilterKeepsThatScopeAndTheSchemaWideRules(): void {
 		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'a']);
@@ -363,7 +363,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFlowIsScopedThroughItsTriggerNode(): void {
 		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'b']);
@@ -381,7 +381,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testWithoutAFilterEveryRuleIsListedWithItsScope(): void {
 		$service = $this->scopedService();
