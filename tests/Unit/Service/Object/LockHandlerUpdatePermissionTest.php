@@ -47,12 +47,32 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 
 	private const OBJ = 'obj-11111111-2222-3333-4444-555555555555';
 
+	/**
+	 * The mapper that resolves and locks the object.
+	 *
+	 * @var MagicMapper
+	 */
 	private MagicMapper $magic;
 
+	/**
+	 * The RBAC check under test.
+	 *
+	 * @var PermissionHandler
+	 */
 	private PermissionHandler $permissions;
 
+	/**
+	 * The object's schema.
+	 *
+	 * @var Schema
+	 */
 	private Schema $schema;
 
+	/**
+	 * The object asked for.
+	 *
+	 * @var ObjectEntity
+	 */
 	private ObjectEntity $object;
 
 	/**
@@ -73,7 +93,7 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 		$this->magic->method('findAcrossAllSources')->willReturn(
 			[
 				'object' => $this->object,
-				'register' => $this->createMock(Register::class),
+				'register' => $this->createMock(originalClassName: Register::class),
 				'schema' => $this->schema,
 			]
 		);
@@ -86,15 +106,15 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			$this->magic,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(AdvisoryLockStore::class),
-			null,
-			$this->permissions
+			magicMapper: $this->magic,
+			auditTrailMapper: $this->createMock(originalClassName: AuditTrailMapper::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			groupManager: $this->createMock(originalClassName: IGroupManager::class),
+			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+			advisory: $this->createMock(originalClassName: AdvisoryLockStore::class),
+			runLocks: null,
+			permissionHandler: $this->permissions
 		);
 	}//end handler()
 
@@ -114,10 +134,10 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 				true,
 				$this->object
 			)
-			->willThrowException(new NotAuthorizedException('No update permission'));
+			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
 		$this->magic->expects($this->never())->method('lockObjectEntity');
 
-		$this->expectException(NotAuthorizedException::class);
+		$this->expectException(exception: NotAuthorizedException::class);
 		$this->handler()->lock(identifier: self::OBJ);
 	}//end testAReaderWithoutUpdatePermissionCannotLock()
 
@@ -134,7 +154,7 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 
 		$result = $this->handler()->lock(identifier: self::OBJ);
 
-		$this->assertSame(self::OBJ, $result['uuid']);
+		$this->assertSame(expected: self::OBJ, actual: $result['uuid']);
 	}//end testAWriterTakesTheLock()
 
 	/**
