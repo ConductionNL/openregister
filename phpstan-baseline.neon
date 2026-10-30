@@ -6,11 +6,6 @@ parameters:
 			path: lib/AppInfo/Application.php
 
 		-
-			message: "#^Parameter \\#2 \\$listener of method OCP\\\\AppFramework\\\\Bootstrap\\\\IRegistrationContext\\:\\:registerEventListener\\(\\) expects class\\-string\\<OCP\\\\EventDispatcher\\\\IEventListener\\<OCP\\\\EventDispatcher\\\\Event\\>\\>, 'OCA\\\\\\\\OpenRegister\\\\\\\\Listener\\\\\\\\NativeFlowTriggerListener' given\\.$#"
-			count: 9
-			path: lib/AppInfo/Application.php
-
-		-
 			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
 			count: 1
 			path: lib/AppInfo/Application.php

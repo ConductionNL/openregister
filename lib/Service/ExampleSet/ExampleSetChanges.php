@@ -349,6 +349,8 @@ class ExampleSetChanges {
 	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
 	 */
 	private function writtenAgain(array $entry, array $resolved): array {
 		$again = [];
@@ -360,15 +362,32 @@ class ExampleSetChanges {
 				continue;
 			}
 
-			$undone = (($held['found'] === (bool) $set['had']) && $this->sameAs(stored: $held['value'], value: $set['old']) === true);
-			$moved  = ($held['found'] === true && $this->sameAs(stored: $held['value'], value: $set['new']) === true);
-			if ($undone === true || $moved === true) {
+			$moved = ($held['found'] === true && $this->sameAs(stored: $held['value'], value: $set['new']) === true);
+			if ($this->undone(held: $held, set: $set) === true || $moved === true) {
 				$again[$path] = $want;
 			}
 		}
 
 		return $again;
 	}//end writtenAgain()
+
+	/**
+	 * Whether a held field is back at what the change replaced. A field that reads back null was never set, as one
+	 * the object did not have.
+	 *
+	 * @param array{found: bool, value: mixed} $held The field as read back.
+	 * @param array<string, mixed>             $set  The record's entry for the field: `had`, `old` and `new`.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 */
+	private function undone(array $held, array $set): bool {
+		$isSet  = ($held['found'] === true && $held['value'] !== null);
+		$hadSet = ((bool) $set['had'] === true && $set['old'] !== null);
+
+		return $isSet === $hadSet && $this->sameAs(stored: $held['value'], value: $set['old']) === true;
+	}//end undone()
 
 	/**
 	 * Whether a stored value is the given value as the store keeps it: the same keys and values in any key order,
