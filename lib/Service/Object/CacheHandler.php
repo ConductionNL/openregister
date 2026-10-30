@@ -59,6 +59,7 @@ use RuntimeException;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Cache operations require many utility methods
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API for comprehensive cache management
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Public API for comprehensive cache management
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache invalidation and warming logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Cache handler requires multiple dependencies for comprehensive caching
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)

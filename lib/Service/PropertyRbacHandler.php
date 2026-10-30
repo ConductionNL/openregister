@@ -478,7 +478,7 @@ class PropertyRbacHandler {
 	 *
 	 * @return array<int, string> Top-level property names to carry forward (possibly empty).
 	 *
-	 * @spec openspec/changes/omitted-unwritable-properties-are-kept/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
 	 */
 	public function collectOmittedProtectedProperties(Schema $schema, array $incoming, array $stored): array {
 		if ($schema->hasPropertyAuthorization() === false || $this->isAdmin() === true) {

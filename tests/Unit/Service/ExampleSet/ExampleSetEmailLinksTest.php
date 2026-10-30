@@ -119,7 +119,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md
 	 */
 	public function testALinkCarriesTheSenderNameAndItsDetails(): void {
 		$row = self::subsidyMail(extra: [

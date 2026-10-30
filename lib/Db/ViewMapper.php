@@ -313,7 +313,7 @@ class ViewMapper extends QBMapper {
 	 * @return View[] The views, each with its `access` set.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
-	 * @spec openspec/changes/views-list-leaves-out-others-private-views/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function findAllFor(ViewerReach $reach): array {
 		$this->verifyRbacPermission(action: 'read', entityType: 'view');

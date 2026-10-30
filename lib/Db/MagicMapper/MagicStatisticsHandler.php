@@ -595,7 +595,7 @@ class MagicStatisticsHandler {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete field mapping requires comprehensive handling
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
 		try {
@@ -783,7 +783,7 @@ class MagicStatisticsHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function skipUnknownMetadataField(string $field): void {
 		if (isset(self::$skippedFields[$field]) === true) {

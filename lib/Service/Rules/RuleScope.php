@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\Rules;
  * Descriptive only. A scoped rule still carries its own condition; the scope
  * lets the inventory list one kind of object's rules.
  *
- * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleScope {
 
@@ -43,7 +43,7 @@ final class RuleScope {
 	 *
 	 * @return array{property: string, value: string}|null The scope, or null for a rule about every object.
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function fromDeclaration(array $declaration): ?array {
 		$scope = ($declaration['scope'] ?? null);
@@ -71,7 +71,7 @@ final class RuleScope {
 	 *
 	 * @return bool True when the rule is listed.
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function admits(?array $scope, array $filter): bool {
 		if ($filter === [] || $scope === null) {
