@@ -29,8 +29,8 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
-use OCA\OpenRegister\Service\McpDiscoveryService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
@@ -49,22 +49,22 @@ class McpController extends Controller {
 	/**
 	 * MCP discovery service instance
 	 *
-	 * @var McpDiscoveryService
+	 * @var McpCatalogueInterface
 	 */
-	private readonly McpDiscoveryService $mcpDiscoveryService;
+	private readonly McpCatalogueInterface $mcpDiscoveryService;
 
 	/**
 	 * McpController constructor
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
-	 * @param McpDiscoveryService  $mcpDiscoveryService  MCP discovery service
+	 * @param McpCatalogueInterface  $mcpDiscoveryService  MCP discovery service
 	 * @param GrantableRightsIndex $grantableRightsIndex The cached menu of rights that may be offered
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		McpDiscoveryService $mcpDiscoveryService,
+		McpCatalogueInterface $mcpDiscoveryService,
 		private readonly GrantableRightsIndex $grantableRightsIndex,
 	) {
 		parent::__construct(appName: $appName, request: $request);

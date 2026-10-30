@@ -2007,13 +2007,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return bool True when the rule should fire for this event.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) matches() handles four trigger types
-	 * (created/updated/transition/calculatedChange) each with sub-conditions (action filter,
-	 * field-change condition, boundary-crossing operators); each branch is a distinct spec
-	 * requirement and cannot be merged.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Each trigger type has optional sub-conditions that
-	 * can independently pass or fail; the NPath count reflects spec-mandated combinations,
-	 * not accidental branching.
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function matches($triggerSpec, string $trigger, array $context): bool {
 		// App-defined event: `"trigger": "booking.confirmed"`. The name is the
@@ -2041,100 +2035,148 @@ class AnnotationNotificationDispatcher {
 			return false;
 		}
 
-		// Optional action filter for `transition` triggers.
-		if ($trigger === 'transition' && isset($triggerSpec['action']) === true) {
-			$expected = $triggerSpec['action'];
-			$actual = ($context['action'] ?? null);
-			if (is_array($expected) === true) {
-				if (in_array($actual, $expected, true) === false) {
-					return false;
-				}
-			} elseif ((string)$expected !== (string)$actual) {
-				return false;
-			}
-		}
-
-		// Optional field filter for `created` triggers — the rule fires only
-		// when the created object's fields satisfy every declared equality
-		// (e.g. `channel == "telefoon"`). Evaluated against the created
-		// object's data forwarded as `_data`. A condition-less `created` rule
-		// matches on type alone (back-compat). Fail-closed when data is absent.
-		if ($trigger === 'created' && isset($triggerSpec['filter']) === true) {
-			$filter = $triggerSpec['filter'];
-			if (is_array($filter) === false) {
-				return false;
-			}
-
-			$data = ($context['_data'] ?? null);
-			if (is_array($data) === false) {
-				return false;
-			}
-
-			return $this->createdFilterMatches(filter: $filter, data: $data);
-		}
-
-		// Optional non-numeric field-change `condition` for `updated` triggers.
-		// Engages ONLY when the trigger declares a `condition`; condition-less
-		// `updated` rules match on type alone (back-compat). Reads the old/new
-		// object data the listener forwards; fail-closed when either is absent
-		// (mirrors the `calculatedChange` guard below).
-		if ($trigger === 'updated' && isset($triggerSpec['condition']) === true) {
-			$condition = $triggerSpec['condition'];
-			if (is_array($condition) === false) {
-				return false;
-			}
-
-			$newData = ($context['_newData'] ?? null);
-			$oldData = ($context['_oldData'] ?? null);
-			if (is_array($newData) === false || is_array($oldData) === false) {
-				return false;
-			}
-
-			return $this->fieldChangeConditionMatches(condition: $condition, oldData: $oldData, newData: $newData);
-		}
-
-		// `calculatedChange` boundary-crossing check.
-		// `field` names the calculated property to monitor.
-		// `condition` operators the NEW value must satisfy.
-		// `previously` operators the OLD value must satisfy.
-		// Both must hold simultaneously. When either condition or
-		// previously is absent the gate is open (partial spec is treated
-		// as "just the declared side must match"). When _newData/_oldData
-		// are absent in context (e.g. missing old object) the check
-		// cannot be evaluated and the rule is skipped (fail-closed).
-		if ($trigger === 'calculatedChange') {
-			$field = (string)($triggerSpec['field'] ?? '');
-			if ($field === '') {
-				return false;
-			}
-
-			$newData = ($context['_newData'] ?? null);
-			$oldData = ($context['_oldData'] ?? null);
-			if (is_array($newData) === false || is_array($oldData) === false) {
-				return false;
-			}
-
-			$newValue = ($newData[$field] ?? null);
-			$oldValue = ($oldData[$field] ?? null);
-
-			$condition = ($triggerSpec['condition'] ?? null);
-			$previously = ($triggerSpec['previously'] ?? null);
-
-			if (is_array($condition) === true
-				&& $this->numericConditionMatches(value: $newValue, operators: $condition) === false
-			) {
-				return false;
-			}
-
-			if (is_array($previously) === true
-				&& $this->numericConditionMatches(value: $oldValue, operators: $previously) === false
-			) {
-				return false;
-			}
-		}//end if
-
-		return true;
+		return match ($trigger) {
+			'transition' => $this->transitionActionMatches(triggerSpec: $triggerSpec, context: $context),
+			'created' => $this->createdTriggerMatches(triggerSpec: $triggerSpec, context: $context),
+			'updated' => $this->updatedTriggerMatches(triggerSpec: $triggerSpec, context: $context),
+			'calculatedChange' => $this->calculatedChangeMatches(triggerSpec: $triggerSpec, context: $context),
+			default => true,
+		};
 	}//end matches()
+
+	/**
+	 * Apply a `transition` trigger's optional `action` filter: one action or a list of them.
+	 *
+	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
+	 * @param array<string, mixed> $context     Per-event context, carrying `action`.
+	 *
+	 * @return bool True when no action is declared or the event's action is among them.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function transitionActionMatches(array $triggerSpec, array $context): bool {
+		if (isset($triggerSpec['action']) === false) {
+			return true;
+		}
+
+		$expected = $triggerSpec['action'];
+		$actual = ($context['action'] ?? null);
+		if (is_array($expected) === true) {
+			return in_array($actual, $expected, true);
+		}
+
+		return (string)$expected === (string)$actual;
+	}//end transitionActionMatches()
+
+	/**
+	 * Apply a `created` trigger's optional field `filter`.
+	 *
+	 * The rule fires only when the created object's fields, forwarded as
+	 * `_data`, satisfy the filter (e.g. `channel == "telefoon"`). A rule
+	 * without a filter matches on type alone. Fail-closed when the filter is
+	 * malformed or the data is absent.
+	 *
+	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
+	 * @param array<string, mixed> $context     Per-event context, carrying `_data`.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function createdTriggerMatches(array $triggerSpec, array $context): bool {
+		if (isset($triggerSpec['filter']) === false) {
+			return true;
+		}
+
+		$filter = $triggerSpec['filter'];
+		$data = ($context['_data'] ?? null);
+		if (is_array($filter) === false || is_array($data) === false) {
+			return false;
+		}
+
+		return $this->createdFilterMatches(filter: $filter, data: $data);
+	}//end createdTriggerMatches()
+
+	/**
+	 * Apply an `updated` trigger's optional non-numeric field-change `condition`.
+	 *
+	 * A rule without a condition matches on type alone. Reads the old and new
+	 * object data the listener forwards; fail-closed when the condition is
+	 * malformed or either side is absent.
+	 *
+	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
+	 * @param array<string, mixed> $context     Per-event context, carrying `_oldData` and `_newData`.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function updatedTriggerMatches(array $triggerSpec, array $context): bool {
+		if (isset($triggerSpec['condition']) === false) {
+			return true;
+		}
+
+		$condition = $triggerSpec['condition'];
+		$change = $this->changedObjectData(context: $context);
+		if (is_array($condition) === false || $change === null) {
+			return false;
+		}
+
+		return $this->fieldChangeConditionMatches(condition: $condition, oldData: $change['old'], newData: $change['new']);
+	}//end updatedTriggerMatches()
+
+	/**
+	 * Apply a `calculatedChange` trigger's boundary-crossing check.
+	 *
+	 * `field` names the calculated property to monitor; the NEW value must
+	 * satisfy the `condition` operators and the OLD value the `previously`
+	 * operators. A side that is not declared is open. Fail-closed when the
+	 * field is missing or the old or new data is absent.
+	 *
+	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
+	 * @param array<string, mixed> $context     Per-event context, carrying `_oldData` and `_newData`.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function calculatedChangeMatches(array $triggerSpec, array $context): bool {
+		$field = (string)($triggerSpec['field'] ?? '');
+		$change = $this->changedObjectData(context: $context);
+		if ($field === '' || $change === null) {
+			return false;
+		}
+
+		$condition = ($triggerSpec['condition'] ?? null);
+		if (is_array($condition) === true
+			&& $this->numericConditionMatches(value: ($change['new'][$field] ?? null), operators: $condition) === false
+		) {
+			return false;
+		}
+
+		$previously = ($triggerSpec['previously'] ?? null);
+		return is_array($previously) === false
+			|| $this->numericConditionMatches(value: ($change['old'][$field] ?? null), operators: $previously) === true;
+	}//end calculatedChangeMatches()
+
+	/**
+	 * The old and new object data an update event forwards, or null when either is absent.
+	 *
+	 * @param array<string, mixed> $context Per-event context.
+	 *
+	 * @return array{old: array, new: array}|null
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function changedObjectData(array $context): ?array {
+		$newData = ($context['_newData'] ?? null);
+		$oldData = ($context['_oldData'] ?? null);
+		if (is_array($newData) === false || is_array($oldData) === false) {
+			return null;
+		}
+
+		return ['old' => $oldData, 'new' => $newData];
+	}//end changedObjectData()
 
 	/**
 	 * Evaluate a set of plain comparison operators against a numeric value.
@@ -3506,18 +3548,19 @@ class AnnotationNotificationDispatcher {
 
 	/**
 	 * Filter resolved recipients down to users who have subscribed to
-	 * the object's (register, schema). Non-uid recipients (email
-	 * literals, webhook urls, etc) pass through unchanged because the
-	 * subscription store is user-scoped only.
+	 * the object's (register, schema). A recipient is a uid string, as the
+	 * recipient resolver returns it, or a `{kind, uid}` entry. Entries that
+	 * are not a user (email literals, webhook urls, etc) pass through
+	 * unchanged because the subscription store is user-scoped only.
 	 *
 	 * Null-safe: when the SubscriptionMapper isn't wired (legacy
 	 * fixtures) or the object lacks register/schema metadata, the
 	 * filter is a no-op and every recipient is kept.
 	 *
-	 * @param array<int, array> $recipients The resolved recipient list.
+	 * @param array<int, mixed> $recipients The resolved recipient list.
 	 * @param ObjectEntity $object The object the event fired on.
 	 *
-	 * @return array<int, array>
+	 * @return array<int, mixed>
 	 */
 	private function filterBySubscription(array $recipients, ObjectEntity $object): array {
 		if ($this->subscriptionMapper === null) {
@@ -3550,21 +3593,40 @@ class AnnotationNotificationDispatcher {
 		return array_values(
 			array_filter(
 				$recipients,
-				static function (array $recipient) use ($subscribedSet): bool {
-					$kind = ($recipient['kind'] ?? null);
-					$uid = ($recipient['uid'] ?? null);
-					if ($kind !== 'user' || is_string($uid) === false || $uid === '') {
-						// Non-user recipients (email literal, webhook url,
-						// talk room, group expansion that already produced
-						// a user) bypass the subscription filter so legacy
-						// wire shapes still receive notifications.
-						return true;
-					}
-
-					return isset($subscribedSet[$uid]);
-				}
+				fn (mixed $recipient): bool => $this->keepsSubscribedRecipient(recipient: $recipient, subscribedSet: $subscribedSet)
 			)
 		);
 
 	}//end filterBySubscription()
+
+	/**
+	 * Whether a recipient survives the subscription filter.
+	 *
+	 * A uid string, or a `{kind: user, uid}` entry, survives only when the
+	 * uid subscribed. Entries that are not a user (email literals, webhook
+	 * urls, talk rooms) bypass the filter so legacy wire shapes still
+	 * receive notifications.
+	 *
+	 * @param mixed              $recipient     A uid or a recipient entry.
+	 * @param array<string, int> $subscribedSet The subscribed uids, as keys.
+	 *
+	 * @return bool
+	 */
+	private function keepsSubscribedRecipient(mixed $recipient, array $subscribedSet): bool {
+		if (is_string($recipient) === true) {
+			return isset($subscribedSet[$recipient]);
+		}
+
+		if (is_array($recipient) === false) {
+			return true;
+		}
+
+		$kind = ($recipient['kind'] ?? null);
+		$uid  = ($recipient['uid'] ?? null);
+		if ($kind !== 'user' || is_string($uid) === false || $uid === '') {
+			return true;
+		}
+
+		return isset($subscribedSet[$uid]);
+	}//end keepsSubscribedRecipient()
 }//end class

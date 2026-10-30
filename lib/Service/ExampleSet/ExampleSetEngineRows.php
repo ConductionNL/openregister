@@ -45,9 +45,10 @@ abstract class ExampleSetEngineRows {
 	 * The parts `--refresh` writes again: a saved view, a task, a note, a read state, an export and an appointment carry
 	 * values that age, a party link caches its party's name and e-mail address, and a case plan's items move on as
 	 * the case is worked (a refresh puts them back in their declared states). A flow is updated where it is, so a
-	 * changed declaration reaches it without a new uuid.
+	 * changed declaration reaches it without a new uuid. An email link carries the sender and the details its row
+	 * shows, so a changed declaration reaches it.
 	 */
-	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties', 'appointments', 'casePlans', 'flows'];
+	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties', 'appointments', 'casePlans', 'flows', 'emailLinks'];
 
 	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).
@@ -175,7 +176,7 @@ abstract class ExampleSetEngineRows {
 	}//end checkFragment()
 
 	/**
-	 * Write the rows of one fragment that the record does not hold.
+	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
 	 * @param array<string, mixed> $context  The context placeholders draw on.
@@ -186,6 +187,9 @@ abstract class ExampleSetEngineRows {
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
 	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$part    = $this->part();
@@ -223,6 +227,10 @@ abstract class ExampleSetEngineRows {
 			$report[$part][$name] = ['created', 'refreshed'][(int) $held];
 			$changed = true;
 		}//end foreach
+
+		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: $part, noun: $this->noun(), report: $report, record: $record) === true) {
+			$changed = true;
+		}
 
 		return $changed;
 	}//end installFragment()

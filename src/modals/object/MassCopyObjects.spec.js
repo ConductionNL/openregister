@@ -6,7 +6,11 @@ import { objectStore } from '../../store/store.js'
 
 jest.mock('../../store/store.js', () => ({
 	navigationStore: {},
-	objectStore: { selectedObjects: [], saveObject: jest.fn(), refreshObjectList: jest.fn() },
+	objectStore: {
+		selectedObjects: [],
+		saveObject: jest.fn(),
+		refreshObjectList: jest.fn(),
+	},
 }))
 jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('@nextcloud/l10n', () => ({ translate: (app, s) => s }))
@@ -90,7 +94,10 @@ describe('MassCopyObjects.copyObjects', () => {
 	})
 
 	it('saves a stripped, renamed copy of each object under its register and schema', async () => {
-		objectStore.selectedObjects = [stored(1, { name: 'root', title: 't' }), stored(2)]
+		objectStore.selectedObjects = [
+			stored(1, { name: 'root', title: 't' }),
+			stored(2),
+		]
 		objectStore.saveObject.mockResolvedValue({ response: { ok: true } })
 		const ctx = context({ value: 'prefix', pattern: 'Copy of {name} #{id}' })
 
@@ -101,11 +108,21 @@ describe('MassCopyObjects.copyObjects', () => {
 		expect(first).toEqual({
 			name: 'Copy of Name 1 #1',
 			title: 'Copy of Name 1 #1',
-			'@self': { name: 'Copy of Name 1 #1', register: 1, schema: 2, owner: 'kept' },
+			'@self': {
+				name: 'Copy of Name 1 #1',
+				register: 1,
+				schema: 2,
+				owner: 'kept',
+			},
 		})
 		expect(firstScope).toEqual({ register: 1, schema: 2 })
 		expect(objectStore.saveObject.mock.calls[1][0]).toEqual({
-			'@self': { name: 'Copy of Name 2 #2', register: 1, schema: 2, owner: 'kept' },
+			'@self': {
+				name: 'Copy of Name 2 #2',
+				register: 1,
+				schema: 2,
+				owner: 'kept',
+			},
 		})
 		expect(ctx.successCount).toBe(2)
 		expect(ctx.totalCount).toBe(2)
@@ -117,7 +134,10 @@ describe('MassCopyObjects.copyObjects', () => {
 	})
 
 	it('uses the custom pattern and falls back through the name sources', async () => {
-		const noName = { id: 9, '@self': { title: 'Titled', register: 1, schema: 2 } }
+		const noName = {
+			id: 9,
+			'@self': { title: 'Titled', register: 1, schema: 2 },
+		}
 		const nothing = { '@self': { id: 4, register: 1, schema: 2 } }
 		objectStore.selectedObjects = [noName, nothing]
 		objectStore.saveObject.mockResolvedValue({ response: { ok: true } })
@@ -125,10 +145,14 @@ describe('MassCopyObjects.copyObjects', () => {
 
 		await copy(ctx)
 
-		expect(objectStore.saveObject.mock.calls[0][0]['@self'].name).toBe('Custom Titled (9)')
+		expect(objectStore.saveObject.mock.calls[0][0]['@self'].name).toBe(
+			'Custom Titled (9)',
+		)
 		// The copy shares @self with the original, so the original's @self.id is
 		// already gone when the name is built.
-		expect(objectStore.saveObject.mock.calls[1][0]['@self'].name).toBe('Custom Object undefined (ID)')
+		expect(objectStore.saveObject.mock.calls[1][0]['@self'].name).toBe(
+			'Custom Object undefined (ID)',
+		)
 	})
 
 	it('defaults to "Copy of {name}" without a pattern', async () => {
@@ -136,7 +160,9 @@ describe('MassCopyObjects.copyObjects', () => {
 		objectStore.saveObject.mockResolvedValue({ response: { ok: true } })
 		const ctx = context(null)
 		await copy(ctx)
-		expect(objectStore.saveObject.mock.calls[0][0]['@self'].name).toBe('Copy of Name 5')
+		expect(objectStore.saveObject.mock.calls[0][0]['@self'].name).toBe(
+			'Copy of Name 5',
+		)
 	})
 
 	it('carries on past a failing copy and counts only the saved ones', async () => {
@@ -149,7 +175,11 @@ describe('MassCopyObjects.copyObjects', () => {
 
 		await copy(ctx)
 
-		expect(console.error).toHaveBeenCalledWith('Failed to copy object:', undefined, expect.any(Error))
+		expect(console.error).toHaveBeenCalledWith(
+			'Failed to copy object:',
+			undefined,
+			expect.any(Error),
+		)
 		expect(ctx.successCount).toBe(1)
 		expect(ctx.success).toBe(true)
 	})
@@ -171,7 +201,11 @@ describe('MassCopyObjects.copyObjects', () => {
 describe('MassCopyObjects.getPreviewName', () => {
 	it.each([
 		[null, { value: 'x', pattern: '{name}' }, 'Preview Name'],
-		[{ '@self': { name: 'A', id: 3 } }, { value: 'x', pattern: '{name}-{id}' }, 'A-3'],
+		[
+			{ '@self': { name: 'A', id: 3 } },
+			{ value: 'x', pattern: '{name}-{id}' },
+			'A-3',
+		],
 		[{ id: 8, name: 'Root' }, null, 'Copy of Root'],
 		[{ '@self': { id: 2 } }, { value: 'custom' }, 'Custom Object 2 (2)'],
 	])('previews %j', (object, pattern, expected) => {

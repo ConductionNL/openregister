@@ -8,7 +8,10 @@ jest.mock('../../store/store.js', () => ({
 	schemaStore: { schemaItem: { id: 7 } },
 }))
 jest.mock('@nextcloud/vue', () => ({}))
-jest.mock('@nextcloud/l10n', () => ({ translate: (app, s) => s, translatePlural: (app, s) => s }))
+jest.mock('@nextcloud/l10n', () => ({
+	translate: (app, s) => s,
+	translatePlural: (app, s) => s,
+}))
 jest.mock('vue-material-design-icons/Check.vue', () => ({}))
 jest.mock('vue-material-design-icons/DatabaseSearch.vue', () => ({}))
 jest.mock('vue-material-design-icons/Refresh.vue', () => ({}))
@@ -52,7 +55,12 @@ describe('ExploreSchema.startAnalysis', () => {
 	it('stores the analysis and seeds a configuration per new suggestion', async () => {
 		const data = {
 			suggestions: [
-				{ property_name: 'title', recommended_type: 'string', max_length: 9, min_length: 1 },
+				{
+					property_name: 'title',
+					recommended_type: 'string',
+					max_length: 9,
+					min_length: 1,
+				},
 				{ property_name: 'kept', recommended_type: 'number' },
 			],
 		}
@@ -90,7 +98,10 @@ describe('ExploreSchema.startAnalysis', () => {
 	})
 
 	it('reports an error the endpoint returns', async () => {
-		global.fetch = answer({ ok: true, json: () => Promise.resolve({ error: 'no objects' }) })
+		global.fetch = answer({
+			ok: true,
+			json: () => Promise.resolve({ error: 'no objects' }),
+		})
 		const ctx = context()
 		await ctx.startAnalysis()
 		expect(ctx.error).toBe('no objects')
@@ -109,11 +120,17 @@ describe('ExploreSchema.togglePropertySelection', () => {
 	it('selects a property with a configuration from its suggestion, and unselects it', () => {
 		const ctx = context()
 		ctx.selectedProperties = []
-		ctx.explorationData = { suggestions: [{ property_name: 'age', recommended_type: 'integer' }] }
+		ctx.explorationData = {
+			suggestions: [{ property_name: 'age', recommended_type: 'integer' }],
+		}
 
 		ctx.togglePropertySelection('age')
 		expect(ctx.selectedProperties).toEqual(['age'])
-		expect(ctx.selectedPropertiesConfig.age).toMatchObject({ selected: true, type: 'integer', order: 100 })
+		expect(ctx.selectedPropertiesConfig.age).toMatchObject({
+			selected: true,
+			type: 'integer',
+			order: 100,
+		})
 
 		ctx.togglePropertySelection('age')
 		expect(ctx.selectedProperties).toEqual([])
