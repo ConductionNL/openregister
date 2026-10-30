@@ -2999,7 +2999,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function applyRetentionClocks(ObjectEntity $entity): void {
 		if ($this->container === null) {

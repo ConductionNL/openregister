@@ -758,7 +758,7 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @return int The object count this export would write.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function countExportRows(?Register $register = null, ?Schema $schema = null, array $filters = []): int {
 		return count($this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters));
@@ -777,7 +777,7 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @return ObjectEntity[] The objects this export would write.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function fetchExportObjects(?Register $register = null, ?Schema $schema = null, array $filters = []): array {
 		return $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);

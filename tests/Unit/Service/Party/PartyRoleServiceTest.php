@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * A party on an object, in a role, and which one the object is filed against.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 class PartyRoleServiceTest extends TestCase {
 
@@ -189,7 +189,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testTwoGemachtigdenOnOneCase(): void {
 		$first = $this->storedLink(partyUuid: 'party-a', role: 'gemachtigde');
@@ -275,7 +275,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testAnUndeclaredPartyKindIsRefusedNamingTheKind(): void {
 		$this->schemaAccepts(kinds: [['key' => 'organisation', 'label' => 'Organisatie']]);
@@ -298,7 +298,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testARoleOutsideTheKindsRolesIsRefused(): void {
 		$this->schemaAccepts(
@@ -323,7 +323,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testASchemaDeclaringNoKindsAcceptsAnyParty(): void {
 		$this->schemaAccepts(kinds: []);
@@ -349,7 +349,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testReplacingThePrimaryPartyIsRecorded(): void {
 		$this->schemaAccepts(kinds: []);
@@ -391,7 +391,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testOneRoleGoesAndTheOtherStays(): void {
 		$kept = $this->storedLink(partyUuid: 'party-a', role: 'aanvrager');
@@ -417,7 +417,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testRemovingAPartyThatIsNotThereIs404(): void {
 		$this->rows = [];

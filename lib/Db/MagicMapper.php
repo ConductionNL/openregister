@@ -1580,7 +1580,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array Array of ObjectEntity objects from all tables, sorted by relevance.
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	public function searchAcrossMultipleTables(array $query, array $registerSchemaPairs): array {
 		// The `_recent` lens (`recently-opened-means-opened`): the same order,
@@ -1628,7 +1628,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array Array of ObjectEntity objects from all tables.
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function dispatchCrossTableSearch(array $query, array $registerSchemaPairs): array {
 		$this->logger->debug(
@@ -12685,7 +12685,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array{results: array, total: int, registers: array, schemas: array}
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function getGlobalSearchResult(array $results, array $searchQuery, bool $_rbac): array {
 		$registersCache = [];

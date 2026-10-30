@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+ * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * Order, page and stamp a `_recent` result set assembled in PHP.
  *
- * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+ * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
  */
 final class RecentLensOrder {
 
@@ -48,7 +48,7 @@ final class RecentLensOrder {
 	 *
 	 * @return array<string, string>|null Object uuid => ISO 8601 last read, newest first.
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	public static function views(array $query): ?array {
 		$views = ($query['_recentViews'] ?? null);
@@ -69,7 +69,7 @@ final class RecentLensOrder {
 	 *
 	 * @return bool True when the page is ordered by the history.
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	public static function ordersPage(array $query): bool {
 		return self::views(query: $query) !== null && empty($query['_order']) === true;
@@ -83,7 +83,7 @@ final class RecentLensOrder {
 	 *
 	 * @return array<int, mixed> The objects in history order.
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	public static function sort(array $objects, array $views): array {
 		$position = array_flip(array_map('strval', array_keys($views)));
@@ -110,7 +110,7 @@ final class RecentLensOrder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	public static function stamp(array $objects, array $views): void {
 		foreach ($objects as $object) {

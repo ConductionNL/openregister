@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  *   it would scatter a single refusal rule across four services, which is
  *   exactly how an unchecked write path appears.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+ * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
  */
 class PartyRoleService {
 
@@ -90,7 +90,7 @@ class PartyRoleService {
 	 * @return array<string, mixed> The listing: `results`, `total`, `byRole`, the
 	 *         schema's `kinds` and `roles`, and the `primary` party's uuid.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function listForObject(string $objectUuid, int|string|null $schemaId): array {
 		$results = [];
@@ -134,7 +134,7 @@ class PartyRoleService {
 	 *
 	 * @throws Exception 400 for an undeclared kind or role, 404 for an unknown party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function addParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload): ContactLink {
 		return $this->linkParty(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, linkedBy: null);
@@ -214,7 +214,7 @@ class PartyRoleService {
 	 *
 	 * @throws Exception 404 when the party holds no such role.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function removeParty(string $objectUuid, string $partyUuid, ?string $role = null): int {
 		$targets = array_values(
@@ -252,7 +252,7 @@ class PartyRoleService {
 	 *
 	 * @throws Exception 400 for an undeclared kind or role, 404 for an unknown party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function replacePrimaryParty(ObjectEntity $object, string $partyUuid, ?string $role = null): ContactLink {
 		$objectUuid = (string)($object->getUuid() ?? '');
@@ -296,7 +296,7 @@ class PartyRoleService {
 	 *
 	 * @throws Exception 400 naming the kind or the role, 404 when the party is unknown.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function assertAcceptedParty(int|string|null $schemaId, string $partyUuid, ?string $role, bool $unscoped): void {
 		$schema = $this->schemaOf(schemaId: $schemaId);

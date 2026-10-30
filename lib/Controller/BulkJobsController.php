@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ use OCP\IUserSession;
  * public method here is one route, and the count is the size of the resource
  * rather than a sign the class does two things.
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 class BulkJobsController extends Controller {
 
@@ -107,7 +107,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The catalogue.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -130,7 +130,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The jobs.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -179,7 +179,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -198,7 +198,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The previewed job with its counts.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
@@ -240,7 +240,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The running job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function commit(int $id): JSONResponse {
@@ -278,7 +278,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function cancel(int $id): JSONResponse {
@@ -354,7 +354,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The running job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function retry(int $id): JSONResponse {
@@ -421,7 +421,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The members.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -458,7 +458,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return DataDownloadResponse|JSONResponse The outcome report.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
  * of the same question, and an administrator who has found one has found the
  * other.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class PurposeGuard {
 	/**
@@ -86,7 +86,7 @@ class PurposeGuard {
 	 *
 	 * @return bool True when the read must name a purpose.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function isRequired(?Register $register, ?Schema $schema): bool {
 		if ($this->annotated(register: $register, schema: $schema) === false) {
@@ -124,7 +124,7 @@ class PurposeGuard {
 	 *
 	 * @throws PurposeRefusedException When a purpose is needed and none is usable.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function enforce(?Register $register, ?Schema $schema): ?string {
 		if ($this->isRequired(register: $register, schema: $schema) === false) {
@@ -162,7 +162,7 @@ class PurposeGuard {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function recordRefusal(
 		PurposeRefusedException $refusal,
@@ -195,7 +195,7 @@ class PurposeGuard {
 	 *
 	 * @return bool True when either carries the annotation.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function annotated(?Register $register, ?Schema $schema): bool {
 		if ($schema !== null && $this->readsTrue(configuration: $schema->getConfiguration()) === true) {
@@ -221,7 +221,7 @@ class PurposeGuard {
 	 *
 	 * @return bool True when the annotation is present and affirmative.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function readsTrue(mixed $configuration): bool {
 		if (is_array($configuration) === false) {

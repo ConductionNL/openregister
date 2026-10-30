@@ -77,7 +77,7 @@ class BulkSelectionResolver {
 	 *
 	 * @return array<int, string> The selected uuids.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function resolveUuids(
 		string $selectionType,
@@ -116,7 +116,7 @@ class BulkSelectionResolver {
 	 *
 	 * @return array<string, ObjectEntity> The objects, keyed by uuid.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function hydrate(array $uuids, ?int $registerId, ?int $schemaId): array {
 		$objects = [];

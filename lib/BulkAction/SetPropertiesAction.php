@@ -47,7 +47,7 @@ class SetPropertiesAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return string The action id.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -58,7 +58,7 @@ class SetPropertiesAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getLabel(): string {
 		return 'Set properties';
@@ -69,7 +69,7 @@ class SetPropertiesAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getDescription(): string {
 		return 'Writes the same properties on every selected object. Objects that already carry those values are skipped.';
@@ -80,7 +80,7 @@ class SetPropertiesAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return bool False.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function requiresJustification(): bool {
 		return false;
@@ -91,7 +91,7 @@ class SetPropertiesAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return array<int, string> The homogeneity guard.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getGuards(): array {
 		return [self::GUARD_HOMOGENEITY];
@@ -106,7 +106,7 @@ class SetPropertiesAction extends AbstractPropertyWriteAction {
 	 *
 	 * @throws InvalidArgumentException When no properties were given.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function validateParameters(array $parameters): void {
 		$properties = ($parameters['properties'] ?? null);

@@ -376,7 +376,7 @@ class StateFieldRuleListener implements IEventListener {
 	 *
 	 * @return bool True when the property is recorded as not supplied.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private static function isRecordedAsNotSupplied(string $property, array $data): bool {
 		$record = ($data[Schema::NOT_SUPPLIED_KEY] ?? null);

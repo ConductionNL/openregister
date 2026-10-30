@@ -1541,7 +1541,7 @@ class CalculationEvaluator {
 	 *
 	 * @return array<int, string> The property names the expression reads.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function referencedProperties(mixed $expression): array {
 		$names = [];

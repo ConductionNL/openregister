@@ -1351,7 +1351,7 @@ class ObjectService implements ObjectServiceInterface
      * @return void
      *
      * @spec openspec/specs/avg-verwerkingsregister/spec.md
-     * @spec openspec/changes/read-history-on-audit-trail/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
      */
     private function logProcessingRead(ObjectEntity $object): void
     {
@@ -2576,7 +2576,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @return RepeatingGroupValidator The validator.
      *
-     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     private function repeatingGroups(): RepeatingGroupValidator
     {
@@ -2592,7 +2592,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @return NotSuppliedHandler The handler.
      *
-     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     private function notSupplied(): NotSuppliedHandler
     {
@@ -2621,7 +2621,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @throws ValidationException When a group or the not-supplied record is refused.
      *
-     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     private function enforceDeclaredShapes(array $object): void
     {
@@ -2863,7 +2863,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @throws ValidationException When the payload names one or more lens properties.
      *
-     * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enforceLensesAreReadOnly(array $object): void
     {

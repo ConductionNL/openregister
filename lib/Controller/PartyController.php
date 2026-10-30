@@ -19,7 +19,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		return $this->withObject(
@@ -117,7 +117,7 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
 		return $this->withWritableObject(
@@ -149,7 +149,7 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function replacePrimary(string $register, string $schema, string $id): JSONResponse {
 		return $this->withWritableObject(
@@ -187,7 +187,7 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function destroy(string $register, string $schema, string $id, string $partyUuid): JSONResponse {
 		return $this->withWritableObject(
@@ -228,7 +228,7 @@ class PartyController extends Controller {
 	 *   the party record goes through ObjectService (RBAC, tenant scoped), and
 	 *   an unreadable party answers 404 rather than its link rows.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function show(string $partyUuid): JSONResponse {
 		try {
@@ -268,7 +268,7 @@ class PartyController extends Controller {
 	 *   object id. Every result goes through ObjectService, which is RBAC and
 	 *   tenant scoped, and the cap is the proportionality control.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function search(): JSONResponse {
 		try {
@@ -294,7 +294,7 @@ class PartyController extends Controller {
 	 * @no-admin-idor-exempt Takes an address, not an object id, and answers
 	 *   only with parties the acting user may read through ObjectService.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function resolve(): JSONResponse {
 		$address = trim((string)$this->request->getParam('address', ''));

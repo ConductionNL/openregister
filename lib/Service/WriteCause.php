@@ -186,7 +186,7 @@ final class WriteCause {
 	 *
 	 * @template T
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public static function asLookup(callable $operation): mixed {
 		if (self::current()['cause'] !== self::PERSON) {

@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -78,7 +78,7 @@ class CodedValueGuard {
 	 *
 	 * @throws CodedValueException When a coded value is refused.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at = null): void {
 		$errors = $this->collectViolations(object: $object, schema: $schema, at: $at);
@@ -105,7 +105,7 @@ class CodedValueGuard {
 	 *
 	 * @return array<string,string> The refusals keyed by property name.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function collectViolations(array $object, Schema $schema, ?DateTimeInterface $at = null): array {
 		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
@@ -307,7 +307,7 @@ class CodedValueGuard {
 	 *
 	 * @return array<string,float> The scores, keyed by target property.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function rolledUpScores(array $object, Schema $schema): array {
 		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
 /**
  * Reads a party record and the things that hang off it.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+ * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One class answers everything
  *   a party record is asked: its declaration, its addresses, its indicators,
@@ -93,7 +93,7 @@ class PartyService {
 	 *
 	 * @return ObjectEntity|null The party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function find(string $partyUuid): ?ObjectEntity {
 		if (trim($partyUuid) === '') {
@@ -190,7 +190,7 @@ class PartyService {
 	 *
 	 * @return PartyDefinition|null The declaration.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function definitionFor(ObjectEntity $party): ?PartyDefinition {
 		$schemaId = (string)($party->getSchema() ?? '');
@@ -219,7 +219,7 @@ class PartyService {
 	 *
 	 * @return array<int, array{schema: Schema, definition: PartyDefinition}> The party schemas.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function partySchemas(): array {
 		$found = [];
@@ -245,7 +245,7 @@ class PartyService {
 	 *
 	 * @return array<int, array{kind: string, type: string, value: string, label: string|null}> The addresses.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function addresses(ObjectEntity $party, ?PartyDefinition $definition = null): array {
 		$definition ??= $this->definitionFor(party: $party);
@@ -278,7 +278,7 @@ class PartyService {
 	 *
 	 * @return array<int, array{kind: string, type: string, value: string, label: string|null}> The addresses.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function addressesOfKind(ObjectEntity $party, string $kind, ?PartyDefinition $definition = null): array {
 		return array_values(
@@ -302,7 +302,7 @@ class PartyService {
 	 *
 	 * @return array<int, array{key: string, label: string, effect: string, note: string|null}> The indicators.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function indicators(ObjectEntity $party, ?PartyDefinition $definition = null): array {
 		$definition ??= $this->definitionFor(party: $party);
@@ -338,7 +338,7 @@ class PartyService {
 	 *
 	 * @return ObjectEntity|null The party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function resolveByAddress(string $address): ?ObjectEntity {
 		$needle = self::normaliseValue(value: $address);
@@ -384,7 +384,7 @@ class PartyService {
 	 *
 	 * @throws Exception 400 naming the cycle or the depth.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function assertParentAllowed(string $partyUuid, ?string $parentUuid): void {
 		if ($parentUuid === null || trim($parentUuid) === '') {
@@ -428,7 +428,7 @@ class PartyService {
 	 *
 	 * @throws Exception 400 when the chain is longer than the schema allows.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	private function parentOf(string $cursor, string $partyUuid, int $depth): ?string {
 		$ancestor = $this->find(partyUuid: $cursor);

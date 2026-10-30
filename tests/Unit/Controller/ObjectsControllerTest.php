@@ -5810,7 +5810,7 @@ class ObjectsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb(): void {
 		$this->grantExport(allowed: false);
@@ -5833,7 +5833,7 @@ class ObjectsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function testExportRefusedWhenTheRightServiceIsUnavailable(): void {
 		$this->primeExportEntities();

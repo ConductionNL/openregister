@@ -83,7 +83,7 @@ class ErasurePreviewController extends Controller {
 	 *   DataSubjectRequestService::findSubjectObjects, which loads every object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true), so a caller only ever counts objects it may read.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function create(): JSONResponse {
 		$subject = trim((string)($this->request->getParam(key: 'subject') ?? ''));
@@ -122,7 +122,7 @@ class ErasurePreviewController extends Controller {
 	 *   create, unless they are an administrator, and answers `unknown` rather than `forbidden` so the existence
 	 *   of a request about a data subject is not disclosed.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function show(string $id): JSONResponse {
 		try {
@@ -143,7 +143,7 @@ class ErasurePreviewController extends Controller {
 	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded in-body: as show(), through ErasurePreviewStore::load.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function approve(string $id): JSONResponse {
 		try {
@@ -170,7 +170,7 @@ class ErasurePreviewController extends Controller {
 	 *   preview the caller did not create, and every destruction is re-checked per object by
 	 *   DestroyRightService::refusalFor and RetentionClockService::refusalFor.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function run(string $id): JSONResponse {
 		try {

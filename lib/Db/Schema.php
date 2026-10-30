@@ -1437,7 +1437,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
 	 */
 	private function validateRolesAssignment(mixed $roles, string $context): void {
 		if (is_array($roles) === false) {
@@ -2474,7 +2474,7 @@ class Schema extends Entity implements JsonSerializable {
 	 * @return array<string, array{through: string, property: string, label?: string}>
 	 *                                                                                The declared lenses, keyed by property name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getLenses(): array {
 		$configuration = $this->getConfiguration();
@@ -2557,7 +2557,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getListPresentation(): array {
 		$configuration = $this->getConfiguration();
@@ -2642,7 +2642,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getGeoInheritance(): array {
 		$configuration = $this->getConfiguration();
@@ -3257,7 +3257,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
 	 * is a named constructor reading a config block; there is no instance to inject.
@@ -3704,7 +3704,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @throws InvalidArgumentException When the value is not a list of valid entries.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function validatePartyKindsValue(mixed $value): array {
 		if (is_array($value) === false || array_is_list($value) === false) {
@@ -3785,7 +3785,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function getPartyKinds(): array {
 		$configured = $this->configuration['partyKinds'] ?? null;
@@ -3809,7 +3809,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The annotation as stored.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function getPartyAnnotation(): array {
 		$configured = $this->configuration['x-openregister-party'] ?? null;
@@ -4128,7 +4128,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, string> Reason codes mapped to their labels.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function notSuppliedReasons(): array {
 		$configuration = ($this->getConfiguration() ?? []);

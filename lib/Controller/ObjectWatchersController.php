@@ -95,7 +95,7 @@ class ObjectWatchersController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	#[NoAdminRequired]
 	public function watch(string $register, string $schema, string $id): JSONResponse {

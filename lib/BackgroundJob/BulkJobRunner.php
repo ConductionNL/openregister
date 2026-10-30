@@ -70,7 +70,7 @@ class BulkJobRunner extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	protected function run($argument): void {
 		$jobId = ($argument['job_id'] ?? null);

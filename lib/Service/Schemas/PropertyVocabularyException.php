@@ -36,7 +36,7 @@ use Exception;
  * catches the validator's generic failure keeps working. A caller that wants
  * the 422 catches this one first.
  *
- * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 class PropertyVocabularyException extends Exception {
 
