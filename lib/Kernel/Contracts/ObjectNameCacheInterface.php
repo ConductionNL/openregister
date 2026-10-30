@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Kernel\Contracts;
 /**
  * Reads, warms and clears the cache of object display names. Implemented by CacheHandler.
  *
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag) forceWarmup mirrors CacheHandler's existing public signature.
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) getAllObjectNames() mirrors CacheHandler's existing signature.
  */
 interface ObjectNameCacheInterface {
 

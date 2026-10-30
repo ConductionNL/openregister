@@ -34,16 +34,17 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
 /**
  * Checks, installs and proves an example set.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One install flow: check, accounts, objects, proof.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     One install flow: check, accounts, objects, proof.
  * @SuppressWarnings(PHPMD.TooManyMethods)            Each part of a fragment has its own check and write step.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)    One collaborator per part of a fragment, each small and separately tested.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)    The constructor takes one collaborator per part of a fragment.
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)      The install flow for every part of a fragment lives in one class.
  *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
@@ -178,6 +179,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *                              run made), `types`, `dropped`, `missing`, `lost` and `ok`.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::runAs() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function install(array $plan, array $adopt=[], string $password='', ?DateTimeImmutable $today=null): array {
 		$today  = ($today ?? $this->today(timezone: (string) $plan['timezone']));
@@ -215,7 +218,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		}
 
 		try {
-			return $this->installHeld(plan: $plan, adopt: $adopt, password: $password, today: $today, report: $report);
+			// Every write of the run is the set's import, its run the set, so a history can leave the set's upkeep
+			// out and the trail can find one load. A row the set declares with its own cause keeps that cause.
+			return WriteCause::runAs(
+				cause: WriteCause::IMPORT,
+				run: 'example-set:'.$set,
+				operation: fn (): array => $this->installHeld(plan: $plan, adopt: $adopt, password: $password, today: $today, report: $report)
+			);
 		} finally {
 			$this->lock?->release(set: $set);
 		}
@@ -338,9 +347,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One pass per object: held, kept, refused,
-	 *                                               not made or written, each answered in place.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The same pass; splitting it would scatter the per-object outcome.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  One pass per object: held, kept, refused,
+	 *                                                not made or written, each answered in place.
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The same pass, kept in one place.
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];

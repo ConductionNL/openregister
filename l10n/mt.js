@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Min approva l-lista, u meta.",
         "Who made it.": "Min għamilha.",
         "Who rejected the list, and why.": "Min irrifjuta l-lista, u għaliex.",
-        "Woo published": "Ippubblikat skont il-Woo"
+        "Woo published": "Ippubblikat skont il-Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF jeħtieġ server tal-uffiċċju (Collabora jew Euro-Office), u ma hemm l-ebda wieħed installat. Itlob lill-amministratur tiegħek jinstalla wieħed, jew niżżel ir-rapport f'format ieħor.",
+        "The report could not be downloaded.": "Ir-rapport ma setax jitniżżel."
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

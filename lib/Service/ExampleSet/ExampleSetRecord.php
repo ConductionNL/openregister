@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 
 /**
@@ -244,7 +244,7 @@ class ExampleSetRecord {
 				return;
 			}
 
-			$this->appConfig->deleteKey(Application::APP_ID, self::PREFIX.$set);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, self::PREFIX.$set);
 			return;
 		}
 
@@ -335,9 +335,9 @@ class ExampleSetRecord {
 	 * @return string
 	 */
 	private function stored(string $set): string {
-		$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', true);
+		$json = $this->appConfig->getValueString(AppIdentity::APP_ID, self::PREFIX.$set, '', true);
 		if ($json === '') {
-			$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', false);
+			$json = $this->appConfig->getValueString(AppIdentity::APP_ID, self::PREFIX.$set, '', false);
 		}
 
 		return $json;
@@ -352,6 +352,6 @@ class ExampleSetRecord {
 	 * @return void
 	 */
 	private function store(string $set, string $json): void {
-		$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, $json, true);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::PREFIX.$set, $json, true);
 	}//end store()
 }//end class

@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Ποιος ενέκρινε τη λίστα και πότε.",
         "Who made it.": "Ποιος το κατασκεύασε.",
         "Who rejected the list, and why.": "Ποιος απέρριψε τη λίστα και γιατί.",
-        "Woo published": "Δημοσιεύτηκε βάσει της Woo"
+        "Woo published": "Δημοσιεύτηκε βάσει της Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Ένα PDF χρειάζεται διακομιστή γραφείου (Collabora ή Euro-Office) και δεν είναι εγκατεστημένος κανένας. Ζητήστε από τον διαχειριστή σας να εγκαταστήσει έναν ή κατεβάστε την αναφορά σε άλλη μορφή.",
+        "The report could not be downloaded.": "Δεν ήταν δυνατή η λήψη της αναφοράς."
     },
     "nplurals=2; plural=(n != 1);"
 )

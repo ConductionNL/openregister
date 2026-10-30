@@ -47,9 +47,9 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the flows of an example set.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Check, write, prove and delete for one flow type sit together.
- *
  * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One check, write, proof and delete step per flow part.
  */
 class ExampleSetFlows extends ExampleSetEngineRows {
 	/**

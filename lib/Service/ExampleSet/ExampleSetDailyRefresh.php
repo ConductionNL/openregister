@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use Throwable;
 
@@ -73,7 +73,7 @@ class ExampleSetDailyRefresh {
 	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function sets(): array {
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::KEY, '[]'), true);
+		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::KEY, '[]'), true);
 		if (is_array($decoded) === false) {
 			return [];
 		}
@@ -99,7 +99,7 @@ class ExampleSetDailyRefresh {
 			$sets[] = $set;
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, self::KEY, (string) json_encode($sets));
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::KEY, (string) json_encode($sets));
 	}//end mark()
 
 	/**
