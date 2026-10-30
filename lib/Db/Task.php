@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -180,7 +181,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
-class Task extends Entity implements JsonSerializable {
+class Task extends Entity implements JsonSerializable, TaskInterface {
 
 	/**
 	 * The six CMMN plan-item states (ADR-098 D4). Nothing else is persistable.
@@ -230,55 +231,6 @@ class Task extends Entity implements JsonSerializable {
 	 * @var array<int, string>
 	 */
 	public const OUTCOME_BEHAVIOURS = ['skip', 'error', 'dead_letter'];
-
-	/**
-	 * Performer types (ADR-098 D3).
-	 *
-	 * DELIBERATELY NOT A CLOSED SET at the storage level: the column is a
-	 * plain string, and this list is the vocabulary the service validates
-	 * against today. `external` (a portal party, ADR-098 D3 as amended
-	 * 2026-08-31 for flow-portal-task) was admitted exactly that way: an
-	 * append to this array, not a migration.
-	 */
-	public const PERFORMER_USER = 'user';
-
-	public const PERFORMER_GROUP = 'group';
-
-	public const PERFORMER_AGENT = 'agent';
-
-	public const PERFORMER_WORKER = 'worker';
-
-	/**
-	 * A party outside the instance, reached through the portal seam. Its
-	 * performer reference is a PARTY reference (see EXTERNAL_PARTY_PREFIX),
-	 * never a Nextcloud uid, group or role; it is never pooled, claimed or
-	 * delegated, and only the matched portal subject may complete it.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
-	 */
-	public const PERFORMER_EXTERNAL = 'external';
-
-	/**
-	 * The prefix an external task's assignee carries. A Nextcloud uid cannot
-	 * contain a colon, so a party reference can never collide with a uid and
-	 * a uid can never be mistaken for the matched party.
-	 *
-	 * @var string
-	 */
-	public const EXTERNAL_PARTY_PREFIX = 'party:';
-
-	/**
-	 * The performer types known to this release.
-	 *
-	 * @var array<int, string>
-	 */
-	public const PERFORMER_TYPES = [
-		self::PERFORMER_USER,
-		self::PERFORMER_GROUP,
-		self::PERFORMER_AGENT,
-		self::PERFORMER_WORKER,
-		self::PERFORMER_EXTERNAL,
-	];
 
 	/**
 	 * The one normalised priority scale.

@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Task;
 use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Computes overdue, days-until-due and days-overdue from the stored deadlines.
@@ -65,7 +66,7 @@ final class TaskTemporalProjection {
 	 * task's state is untouched by the clock (due_at advises; the enforcing
 	 * sweep on expires_at belongs to flow-business-timers).
 	 *
-	 * @param Task $task The task to project.
+	 * @param TaskInterface $task The task to project.
 	 * @param DateTimeInterface|null $now The clock, injectable for tests;
 	 *                                    null means the real clock.
 	 *
@@ -73,7 +74,7 @@ final class TaskTemporalProjection {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
 	 */
-	public function project(Task $task, ?DateTimeInterface $now = null): array {
+	public function project(TaskInterface $task, ?DateTimeInterface $now = null): array {
 		$now ??= $this->now();
 		$deadline = ($task->getDueAt() ?? $task->getExpiresAt());
 

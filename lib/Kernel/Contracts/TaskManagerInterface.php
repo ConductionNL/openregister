@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Task;
 
 /**
  * Creates, claims, assigns, resolves and cancels tasks and records their history. Implemented by Task\TaskService.
@@ -34,11 +33,11 @@ interface TaskManagerInterface {
 	 * @param string $assignee The performer reference.
 	 * @param string|null $actor The assigning identity — requester or admin.
 	 *
-	 * @return Task The assigned task.
+	 * @return TaskInterface The assigned task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function assign(string $uuid, string $assignee, ?string $actor): Task;
+	public function assign(string $uuid, string $assignee, ?string $actor): TaskInterface;
 
 	/**
 	 * The audit trail of a task, oldest first.
@@ -58,11 +57,11 @@ interface TaskManagerInterface {
 	 * @param string|null $reason Why, recorded on task and audit.
 	 * @param string|null $actor The cancelling identity.
 	 *
-	 * @return Task The terminated task.
+	 * @return TaskInterface The terminated task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function cancel(string $uuid, ?string $reason, ?string $actor): Task;
+	public function cancel(string $uuid, ?string $reason, ?string $actor): TaskInterface;
 
 	/**
 	 * Check or uncheck ONE checklist item, addressed by its id.
@@ -72,13 +71,13 @@ interface TaskManagerInterface {
 	 * @param bool $checked The new checked value.
 	 * @param string|null $actor The acting identity — must be the assignee.
 	 *
-	 * @return Task The task with the one item changed.
+	 * @return TaskInterface The task with the one item changed.
 	 *
 	 * @throws \OCA\OpenRegister\Exception\TaskValidationException When no item carries that id.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
 	 */
-	public function checkChecklistItem(string $uuid, string $itemId, bool $checked, ?string $actor): Task;
+	public function checkChecklistItem(string $uuid, string $itemId, bool $checked, ?string $actor): TaskInterface;
 
 	/**
 	 * Claim: assign IF still unassigned — the database decides the race.
@@ -90,13 +89,13 @@ interface TaskManagerInterface {
 	 * @param string $uuid The task uuid.
 	 * @param string|null $actor The claiming identity.
 	 *
-	 * @return Task The claimed task.
+	 * @return TaskInterface The claimed task.
 	 *
 	 * @throws \OCA\OpenRegister\Exception\TaskConflictException When another claimer won, or the task is terminal.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function claim(string $uuid, ?string $actor): Task;
+	public function claim(string $uuid, ?string $actor): TaskInterface;
 
 	/**
 	 * Create a task.
@@ -116,7 +115,7 @@ interface TaskManagerInterface {
 	 * @param array<string, mixed> $data The task fields, canonical or legacy.
 	 * @param string|null $actor The creating identity.
 	 *
-	 * @return Task The created task, with candidates indexed and creation audited.
+	 * @return TaskInterface The created task, with candidates indexed and creation audited.
 	 *
 	 * @throws \OCA\OpenRegister\Exception\TaskValidationException On any refused value.
 	 * @throws \OCA\OpenRegister\Exception\TaskAccessDeniedException Without an acting identity.
@@ -128,7 +127,7 @@ interface TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function create(array $data, ?string $actor): Task;
+	public function create(array $data, ?string $actor): TaskInterface;
 
 	/**
 	 * Delegate: the assignee hands the task to a delegate, with a mandate.
@@ -143,11 +142,11 @@ interface TaskManagerInterface {
 	 * @param string $mandate The authority relied on.
 	 * @param string|null $actor The delegating identity — must be the assignee.
 	 *
-	 * @return Task The delegated task.
+	 * @return TaskInterface The delegated task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
-	public function delegate(string $uuid, string $delegate, string $mandate, ?string $actor): Task;
+	public function delegate(string $uuid, string $delegate, string $mandate, ?string $actor): TaskInterface;
 
 	/**
 	 * Edit a task's own fields: title, description, due date, priority.
@@ -161,26 +160,26 @@ interface TaskManagerInterface {
 	 * @param array<string, mixed> $changes The new values by field.
 	 * @param string|null $actor The editing identity.
 	 *
-	 * @return Task The task as it now stands.
+	 * @return TaskInterface The task as it now stands.
 	 *
 	 * @throws \OCA\OpenRegister\Exception\TaskValidationException When a field is unknown or invalid.
 	 *
 	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
-	public function edit(string $uuid, array $changes, ?string $actor): Task;
+	public function edit(string $uuid, array $changes, ?string $actor): TaskInterface;
 
 	/**
 	 * Fetch a task by uuid.
 	 *
 	 * @param string $uuid The task uuid.
 	 *
-	 * @return Task The task.
+	 * @return TaskInterface The task.
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
-	public function get(string $uuid): Task;
+	public function get(string $uuid): TaskInterface;
 
 	/**
 	 * Offer a task to a candidate pool, optionally routing it.
@@ -196,11 +195,11 @@ interface TaskManagerInterface {
 	 *                                   routingFallback, each optional.
 	 * @param string|null $actor The offering identity.
 	 *
-	 * @return Task The offered task.
+	 * @return TaskInterface The offered task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
-	public function offer(string $uuid, array $pool, ?string $actor): Task;
+	public function offer(string $uuid, array $pool, ?string $actor): TaskInterface;
 
 	/**
 	 * Reassign a task to a different performer.
@@ -209,11 +208,11 @@ interface TaskManagerInterface {
 	 * @param string $assignee The new performer reference.
 	 * @param string|null $actor The reassigning identity — requester or admin.
 	 *
-	 * @return Task The reassigned task.
+	 * @return TaskInterface The reassigned task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function reassign(string $uuid, string $assignee, ?string $actor): Task;
+	public function reassign(string $uuid, string $assignee, ?string $actor): TaskInterface;
 
 	/**
 	 * Append an audit entry that records a FACT about the task without
@@ -225,13 +224,13 @@ interface TaskManagerInterface {
 	 * @param string|null $actor The acting identity.
 	 * @param string $reason What is being recorded.
 	 *
-	 * @return Task The task, unchanged.
+	 * @return TaskInterface The task, unchanged.
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	public function record(string $uuid, string $action, ?string $actor, string $reason): Task;
+	public function record(string $uuid, string $action, ?string $actor, string $reason): TaskInterface;
 
 	/**
 	 * Resolve: the assignee finishes the work with a `resolved` outcome.
@@ -241,11 +240,11 @@ interface TaskManagerInterface {
 	 * @param string|null $comment Completion comment.
 	 * @param string|null $actor The resolving identity — must be the assignee.
 	 *
-	 * @return Task The resolved task.
+	 * @return TaskInterface The resolved task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): Task;
+	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): TaskInterface;
 
 	/**
 	 * Cancellation propagation: a run reached a terminal status.
@@ -272,9 +271,9 @@ interface TaskManagerInterface {
 	 * @param string $uuid The task uuid.
 	 * @param string|null $actor The returning identity — must be the assignee.
 	 *
-	 * @return Task The pooled task.
+	 * @return TaskInterface The pooled task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function unclaim(string $uuid, ?string $actor): Task;
+	public function unclaim(string $uuid, ?string $actor): TaskInterface;
 }//end interface

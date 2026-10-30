@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -154,7 +155,7 @@ class TaskSubjectLocator {
 	 * sees; it is not an access check. A pair that cannot be read leaves its
 	 * subjects to the caller's fallback.
 	 *
-	 * @param array<int, Task> $tasks The tasks.
+	 * @param array<int, TaskInterface> $tasks The tasks.
 	 *
 	 * @return array<string, mixed> Subject objects keyed by uuid.
 	 *
@@ -187,7 +188,7 @@ class TaskSubjectLocator {
 	/**
 	 * Located subject uuids grouped by `registerId:schemaId`.
 	 *
-	 * @param array<int, Task> $tasks The tasks.
+	 * @param array<int, TaskInterface> $tasks The tasks.
 	 *
 	 * @return array<string, array<int, string>> Uuids per pair.
 	 *
