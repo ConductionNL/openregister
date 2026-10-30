@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -45,7 +46,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex schema analysis and property inference logic
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SchemaService {
+class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * Maximum number of objects sampled when exploring a schema's properties.
 	 *

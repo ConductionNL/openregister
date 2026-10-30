@@ -56,9 +56,7 @@ describe('isValidPropertyValue', () => {
 		[undefined, true],
 		['', true],
 	])('accepts an empty %j when not required', (value, expected) => {
-		expect(isValidPropertyValue(value, { type: 'string' }, false)).toBe(
-			expected,
-		)
+		expect(isValidPropertyValue(value, { type: 'string' }, false)).toBe(expected)
 		expect(isValidPropertyValue(value, { type: 'string' }, undefined)).toBe(
 			expected,
 		)
@@ -136,9 +134,9 @@ describe('convertInputValue', () => {
 
 	it('formats a picked date for a formatted property', () => {
 		const picked = new Date(2026, 9, 29, 12, 30)
-		expect(
-			convertInputValue(picked, { type: 'string', format: 'date' }),
-		).toBe('2026-10-29')
+		expect(convertInputValue(picked, { type: 'string', format: 'date' })).toBe(
+			'2026-10-29',
+		)
 	})
 
 	it('keeps a picked date when the property has no format', () => {

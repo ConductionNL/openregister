@@ -3,12 +3,8 @@
 /**
  * OpenRegister Word Extractor
  *
- * Dedicated handler for extracting plain text from Word-family documents
- * (docx/doc/odt via PhpWord). Split out of the TextExtractionService god-class
- * (extract-god-class-services) so each format lives in its own single-
- * responsibility class, mirroring the EmlParser / SpreadsheetExtractor /
- * PdfExtractor handlers. Behaviour is identical to the former
- * TextExtractionService::extractWord() and its helpers.
+ * Dedicated handler for extracting plain text from Word-family documents:
+ * docx and odt through WordTextReader, legacy doc through PhpWord.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -52,13 +48,66 @@ class WordExtractor {
 	/**
 	 * Extract plain text from a Word-family document.
 	 *
+	 * DOCX and ODT are read by {@see WordTextReader}; legacy binary .doc by PhpWord.
+	 *
 	 * @param File $file The document to extract.
+	 *
+	 * @return string|null The extracted text, or null when empty / on per-document failure.
+	 *
+	 * @throws Exception When a .doc arrives and the PhpWord library is unavailable.
+	 *
+	 * @spec openspec/specs/text-extraction-word/spec.md
+	 */
+	public function extract(File $file): ?string {
+		$readerName = $this->resolveWordReader(mimeType: (string)$file->getMimeType(), fileName: (string)$file->getName());
+		if ($readerName === 'MsDoc') {
+			return $this->extractWithPhpWord(file: $file, readerName: $readerName);
+		}
+
+		return $this->extractPackage(file: $file, readerName: $readerName);
+	}//end extract()
+
+	/**
+	 * Extract DOCX or ODT text with {@see WordTextReader}.
+	 *
+	 * @param File   $file       The document.
+	 * @param string $readerName `Word2007` or `ODText`.
+	 *
+	 * @return string|null The text, or null when empty or unreadable.
+	 */
+	private function extractPackage(File $file, string $readerName): ?string {
+		try {
+			$text = (new WordTextReader())->read(bytes: $file->getContent(), format: $readerName);
+		} catch (\Throwable $e) {
+			$text = null;
+			$this->logger->error(
+				message: '[WordExtractor] Word extraction failed; returning null',
+				context: ['fileId' => $file->getId(), 'reader' => $readerName, 'exception' => get_class($e)]
+			);
+		}
+
+		if ($text === null || trim($text) === '') {
+			$this->logger->warning(
+				message: '[WordExtractor] Word extraction returned empty text',
+				context: ['fileId' => $file->getId(), 'reader' => $readerName]
+			);
+			return null;
+		}
+
+		return $text;
+	}//end extractPackage()
+
+	/**
+	 * Extract legacy binary .doc text with PhpWord's MsDoc reader.
+	 *
+	 * @param File   $file       The document.
+	 * @param string $readerName The PhpWord reader name.
 	 *
 	 * @return string|null The extracted text, or null when empty / on per-document failure.
 	 *
 	 * @throws Exception When the PhpWord library is unavailable.
 	 */
-	public function extract(File $file): ?string {
+	private function extractWithPhpWord(File $file, string $readerName): ?string {
 		// Check if PhpWord library is available (deployment error — still throws).
 		if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
 			$this->logger->warning(
@@ -73,8 +122,6 @@ class WordExtractor {
 			$msg .= 'Run: composer require phpoffice/phpword';
 			throw new Exception($msg);
 		}
-
-		$readerName = $this->resolveWordReader(mimeType: (string)$file->getMimeType(), fileName: (string)$file->getName());
 
 		$tempFile = null;
 		try {
@@ -164,7 +211,7 @@ class WordExtractor {
 			);
 			return null;
 		}//end try
-	}//end extract()
+	}//end extractWithPhpWord()
 
 	/**
 	 * Recursively walk PhpWord elements accumulating their text.

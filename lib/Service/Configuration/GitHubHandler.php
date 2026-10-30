@@ -26,6 +26,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\Http\Client\IClient;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -48,7 +49,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class GitHubHandler {
+class GitHubHandler implements GitHubClientInterface {
 	/**
 	 * GitHub API base URL
 	 */
@@ -189,17 +190,13 @@ class GitHubHandler {
 	 *     sha: null|string, stars: 0|mixed, url: mixed}>,
 	 *     page: int, per_page: int}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  GitHub API search has many response conditions
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Search involves many conditional data extractions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full search implementation requires comprehensive handling
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array {
 		try {
-			// Simplified single-phase search strategy to minimize API calls.
-			// Search directly for x-openregister content in JSON files.
-			// This targets actual config files immediately, avoiding multi-phase searches.
+			// One Code Search call per request: search directly for the
+			// `x-openregister` property in JSON files, so the results are
+			// actual configuration files.
 			$this->logger->info(
 				message: '[GitHubHandler] Searching for OpenRegister configurations',
 				context: [
@@ -211,103 +208,19 @@ class GitHubHandler {
 				]
 			);
 
-			// Build search query targeting actual configuration files.
-			// Search for "x-openregister" content in JSON files.
-			// GitHub Code Search looks for exact text matches in file content.
-			// We search for the exact property name that should appear in JSON files.
-			$searchQuery = '"x-openregister" extension:json';
-			if (empty($search) === false) {
-				// If search term is provided, add it to the query.
-				// GitHub Code Search supports searching in specific repos: repo:owner/repo.
-				// Or we can add the search term as additional filter.
-				$searchQuery .= ' ' . $search;
-			}
-
-			$this->logger->debug(
-				message: '[GitHubHandler] GitHub Code Search query',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'query' => $searchQuery,
+			$data = $this->codeSearchPage(
+				query: [
+					'q' => self::configurationSearchQuery(search: $search),
 					'page' => $page,
+					// GitHub max is 100.
 					'per_page' => min($perPage, 100),
 				]
 			);
 
-			// Use GitHub pagination directly (max 100 per page, 1000 results total).
-			// This uses only 1 Code Search API call per search request.
-			$response = $this->client->request(
-				'GET',
-				self::API_BASE . '/search/code',
-				[
-					'query' => [
-						'q' => $searchQuery,
-						'page' => $page,
-						'per_page' => min($perPage, 100),
-						// GitHub max is 100.
-						'sort' => 'stars',
-						// Sort by repository stars for quality.
-						'order' => 'desc',
-					],
-					'headers' => $this->getHeaders(),
-				]
-			);
-
-			$data = json_decode($response->getBody(), true);
-
-			$this->logger->debug(
-				message: '[GitHubHandler] GitHub Code Search response',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'total_count' => $data['total_count'] ?? 0,
-					'items_count' => count($data['items'] ?? []),
-					'incomplete_results' => $data['incomplete_results'] ?? false,
-				]
-			);
 			$allResults = [];
-
-			// Process and format results.
 			foreach ($data['items'] ?? [] as $item) {
-				$owner = $item['repository']['owner']['login'];
-				$repo = $item['repository']['name'];
-				$defaultBranch = $item['repository']['default_branch'] ?? 'main';
-				$path = $item['path'];
-				$fileSha = $item['sha'] ?? null;
-
-				// Get enriched config details (from cache or by fetching from raw.githubusercontent.com).
-				// This doesn't count against API rate limit.
-				$configDetails = $this->getEnrichedConfigDetails(
-					owner: $owner,
-					repo: $repo,
-					path: $path,
-					branch: $defaultBranch,
-					fileSha: $fileSha
-				);
-
-				$allResults[] = [
-					'repository' => $item['repository']['full_name'],
-					'owner' => $owner,
-					'repo' => $repo,
-					'path' => $path,
-					'url' => $item['html_url'],
-					'stars' => $item['repository']['stargazers_count'] ?? 0,
-					'description' => $item['repository']['description'] ?? '',
-					'name' => basename($path, '.json'),
-					'branch' => $defaultBranch,
-					'raw_url' => "https://raw.githubusercontent.com/{$owner}/{$repo}/{$defaultBranch}/{$path}",
-					'sha' => $fileSha,
-					// Repository owner/organization info.
-					'organization' => [
-						'name' => $owner,
-						'avatar_url' => $item['repository']['owner']['avatar_url'] ?? '',
-						'type' => $item['repository']['owner']['type'] ?? 'User',
-						'url' => $item['repository']['owner']['html_url'] ?? '',
-					],
-					// Config details - enriched from actual file content.
-					'config' => $configDetails,
-				];
-			}//end foreach
+				$allResults[] = $this->configurationSearchResult(item: $item);
+			}
 
 			$this->logger->info(
 				message: '[GitHubHandler] Search complete',
@@ -317,42 +230,169 @@ class GitHubHandler {
 					'total_found' => $data['total_count'] ?? 0,
 					'returned_in_page' => count($allResults),
 					'api_calls_used' => 1,
-					// Only 1 Code Search API call.
 				]
 			);
 
 			return [
 				'total_count' => $data['total_count'] ?? 0,
-				// GitHub's total count.
 				'results' => $allResults,
 				'page' => $page,
 				'per_page' => $perPage,
 			];
 		} catch (GuzzleException $e) {
-			$errorMessage = $e->getMessage();
-			$statusCode = null;
-
-			// Extract HTTP status code if available.
-			if ($e instanceof RequestException && $e->hasResponse() === true) {
-				$statusCode = $e->getResponse()->getStatusCode();
-			}
-
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub API search failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $errorMessage,
-					'status_code' => $statusCode,
-					'_search' => $search ?? '',
-				]
-			);
-
-			// Provide user-friendly error messages based on status code.
-			$userMessage = $this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage);
-			throw new Exception($userMessage);
+			throw $this->searchFailure(exception: $e, search: $search);
 		}//end try
 	}//end searchConfigurations()
+
+	/**
+	 * The Code Search query for configuration files, narrowed by the user's terms.
+	 *
+	 * GitHub Code Search matches exact text, so the query looks for the
+	 * `x-openregister` property name; terms such as `repo:owner/repo` are appended.
+	 *
+	 * @param string $search The user's search terms, possibly empty.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private static function configurationSearchQuery(string $search): string {
+		$searchQuery = '"x-openregister" extension:json';
+		if (empty($search) === false) {
+			$searchQuery .= ' '.$search;
+		}
+
+		return $searchQuery;
+	}//end configurationSearchQuery()
+
+	/**
+	 * Fetch one page of GitHub Code Search results, sorted by repository stars.
+	 *
+	 * @param array{q: string, page: int, per_page: int} $query The query, page and page size.
+	 *
+	 * @return array<string, mixed> The decoded response.
+	 *
+	 * @throws GuzzleException If the request fails.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function codeSearchPage(array $query): array {
+		$this->logger->debug(
+			message: '[GitHubHandler] GitHub Code Search query',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'query' => $query['q'],
+				'page' => $query['page'],
+				'per_page' => $query['per_page'],
+			]
+		);
+
+		$response = $this->client->request(
+			'GET',
+			self::API_BASE.'/search/code',
+			[
+				'query' => $query + ['sort' => 'stars', 'order' => 'desc'],
+				'headers' => $this->getHeaders(),
+			]
+		);
+
+		$data = json_decode($response->getBody(), true);
+
+		$this->logger->debug(
+			message: '[GitHubHandler] GitHub Code Search response',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'total_count' => $data['total_count'] ?? 0,
+				'items_count' => count($data['items'] ?? []),
+				'incomplete_results' => $data['incomplete_results'] ?? false,
+			]
+		);
+
+		return $data;
+	}//end codeSearchPage()
+
+	/**
+	 * One search hit as a configuration result, with details read from the file.
+	 *
+	 * The details come from the cache or from raw.githubusercontent.com, which
+	 * does not count against the API rate limit.
+	 *
+	 * @param array<string, mixed> $item The Code Search item.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function configurationSearchResult(array $item): array {
+		$repository = $item['repository'];
+		$owner = $repository['owner']['login'];
+		$repo = $repository['name'];
+		$defaultBranch = $repository['default_branch'] ?? 'main';
+		$path = $item['path'];
+		$fileSha = $item['sha'] ?? null;
+
+		$configDetails = $this->getEnrichedConfigDetails(
+			owner: $owner,
+			repo: $repo,
+			path: $path,
+			branch: $defaultBranch,
+			fileSha: $fileSha
+		);
+
+		return [
+			'repository' => $repository['full_name'],
+			'owner' => $owner,
+			'repo' => $repo,
+			'path' => $path,
+			'url' => $item['html_url'],
+			'stars' => $repository['stargazers_count'] ?? 0,
+			'description' => $repository['description'] ?? '',
+			'name' => basename($path, '.json'),
+			'branch' => $defaultBranch,
+			'raw_url' => "https://raw.githubusercontent.com/{$owner}/{$repo}/{$defaultBranch}/{$path}",
+			'sha' => $fileSha,
+			'organization' => [
+				'name' => $owner,
+				'avatar_url' => $repository['owner']['avatar_url'] ?? '',
+				'type' => $repository['owner']['type'] ?? 'User',
+				'url' => $repository['owner']['html_url'] ?? '',
+			],
+			'config' => $configDetails,
+		];
+	}//end configurationSearchResult()
+
+	/**
+	 * Log a failed search and turn it into an exception with a user-facing message.
+	 *
+	 * @param GuzzleException $exception The request failure.
+	 * @param string          $search    The user's search terms.
+	 *
+	 * @return Exception
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function searchFailure(GuzzleException $exception, string $search): Exception {
+		$errorMessage = $exception->getMessage();
+		$statusCode = null;
+		if ($exception instanceof RequestException && $exception->hasResponse() === true) {
+			$statusCode = $exception->getResponse()->getStatusCode();
+		}
+
+		$this->logger->error(
+			message: '[GitHubHandler] GitHub API search failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $errorMessage,
+				'status_code' => $statusCode,
+				'_search' => $search,
+			]
+		);
+
+		return new Exception($this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage));
+	}//end searchFailure()
 
 	/**
 	 * Get user-friendly error message based on GitHub API error
