@@ -114,6 +114,8 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 				'items' => ['type' => 'file'],
 			],
 			'website' => ['type' => 'string', 'title' => 'Website'],
+			'occurredAt' => ['type' => 'string', 'format' => 'date-time', 'title' => 'Occurred at'],
+			'validUntil' => ['type' => 'string', 'format' => 'date', 'title' => 'Valid until'],
 		]);
 		$this->testSchema = $this->schemaMapper->insert($schema);
 	}
@@ -276,6 +278,96 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		);
 		$this->assertSame('Updated First Object', $updated->getObject()['naam']);
 	}//end testBulkSaveMixedInsertAndUpdate()
+
+	/**
+	 * Integration coverage for #4773 against a REAL database: a bulk write
+	 * carrying `date`/`date-time` properties as ISO-8601-with-offset strings
+	 * (the shape every `ObjectService::saveObjects()` caller uses) must
+	 * persist without the SQLSTATE[22007] MySQL used to reject it with, and
+	 * must store the SAME representation the non-bulk insert path
+	 * (`MagicMapper::insert()` → `prepareObjectDataForTable()`) does for the
+	 * identical input — the unit-level reflection tests in
+	 * `MagicBulkHandlerDateNormalizationTest` pin the row shape in isolation;
+	 * this pins that the two real write paths agree once actual persistence
+	 * is involved.
+	 *
+	 * @return void
+	 */
+	public function testBulkDateTimeWriteMatchesNonBulkWriteAndPersistsWithoutSqlError(): void {
+		$bulkUuid = Uuid::v4()->toRfc4122();
+		$nonBulkUuid = Uuid::v4()->toRfc4122();
+		$this->createdUuids[] = $bulkUuid;
+		$this->createdUuids[] = $nonBulkUuid;
+
+		$occurredAt = '2026-10-13T15:50:03+02:00';
+		$validUntil = '2026-10-20T23:30:00-05:00';
+
+		// Reaching the assertions below at all is the regression check: this
+		// exact ISO-8601-with-offset shape used to fail outright with
+		// SQLSTATE[22007] on the bulk path before #4773.
+		$this->objectMapper->saveObjectsToRegisterSchemaTable(
+			[
+				[
+					'uuid' => $bulkUuid,
+					'naam' => 'Bulk date test',
+					'occurredAt' => $occurredAt,
+					'validUntil' => $validUntil,
+				],
+			],
+			$this->testRegister,
+			$this->testSchema
+		);
+
+		$nonBulkEntity = new ObjectEntity();
+		$nonBulkEntity->setUuid($nonBulkUuid);
+		$nonBulkEntity->setRegister((string)$this->testRegister->getId());
+		$nonBulkEntity->setSchema((string)$this->testSchema->getId());
+		$nonBulkEntity->setObject(
+			[
+				'naam' => 'Non-bulk date test',
+				'occurredAt' => $occurredAt,
+				'validUntil' => $validUntil,
+			]
+		);
+		$this->objectMapper->insert($nonBulkEntity, $this->testRegister, $this->testSchema);
+
+		$bulkStored = $this->objectMapper->findInRegisterSchemaTable(
+			identifier: $bulkUuid,
+			register: $this->testRegister,
+			schema: $this->testSchema,
+			_rbac: false,
+			_multitenancy: false
+		);
+		$nonBulkStored = $this->objectMapper->findInRegisterSchemaTable(
+			identifier: $nonBulkUuid,
+			register: $this->testRegister,
+			schema: $this->testSchema,
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$bulkData = $bulkStored->getObject();
+		$nonBulkData = $nonBulkStored->getObject();
+
+		// Concrete expected values, not just bulk-vs-non-bulk equality: a
+		// regression shared by both paths (e.g. in DateTimeNormalizer itself)
+		// would pass an equality-only check. +02:00 converts to UTC for the
+		// date-time; the date keeps its given wall-clock day, read back bare
+		// (no time component) at this API boundary.
+		$this->assertSame('2026-10-13T13:50:03+00:00', $bulkData['occurredAt']);
+		$this->assertSame('2026-10-20', $bulkData['validUntil']);
+
+		$this->assertSame(
+			$nonBulkData['occurredAt'],
+			$bulkData['occurredAt'],
+			'bulk and non-bulk writes must read back an identical date-time representation'
+		);
+		$this->assertSame(
+			$nonBulkData['validUntil'],
+			$bulkData['validUntil'],
+			'bulk and non-bulk writes must read back an identical date representation'
+		);
+	}//end testBulkDateTimeWriteMatchesNonBulkWriteAndPersistsWithoutSqlError()
 
 	// -----------------------------------------------------------------------
 	// MetadataHydrationHandler tests
