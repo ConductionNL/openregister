@@ -549,7 +549,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	}//end referenceFields()
 
 	/**
-	 * Make the changes of one fragment that the record does not hold.
+	 * Make the changes of one fragment that the record does not hold, and let go of the held ones it no longer
+	 * declares.
 	 *
 	 * @param array<string, mixed> $plan     The plan.
 	 * @param array<string, mixed> $fragment The fragment.
@@ -560,6 +561,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
 	private function installChanges(array $plan, array $fragment, array $context, array $report, array &$record): array {
 		$refresh = (($plan['refresh'] ?? false) === true);
@@ -591,6 +595,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				$this->record->write(set: (string) $plan['set'], record: $record);
 			}
 		}//end foreach
+
+		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: 'changes', noun: 'change', report: $report, record: $record) === true) {
+			$this->record->write(set: (string) $plan['set'], record: $record);
+		}
 
 		return $report;
 	}//end installChanges()

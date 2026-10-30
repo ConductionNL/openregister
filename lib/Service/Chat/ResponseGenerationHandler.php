@@ -160,11 +160,6 @@ class ResponseGenerationHandler {
 	 * @psalm-param  array{text: string, sources: list<array>} $context
 	 * @psalm-return string
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)          LLPhantMessage factory methods are standard LLPhant pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Response generation requires many conditional API calls
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Response generation requires many conditional API calls
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function generateResponse(
@@ -192,8 +187,115 @@ class ResponseGenerationHandler {
 
 		// Get enabled tools for agent, filtered by selectedTools.
 		$toolsStartTime = microtime(true);
-		$tools = $this->toolHandler->getAgentTools(agent: $agent, selectedTools: $selectedTools);
+		$tools = $this->agentTools(agent: $agent, selectedTools: $selectedTools);
 		$toolsTime = microtime(true) - $toolsStartTime;
+
+		$llmConfig = $this->settingsService->getLLMSettingsOnly();
+		$chatProvider = $this->chatProvider(llmConfig: $llmConfig, hasTools: empty($tools) === false);
+
+		try {
+			return $this->generateWithProvider(
+				request: [
+					'provider' => $chatProvider,
+					'config' => $this->buildChatConfig(llmConfig: $llmConfig, agent: $agent),
+					'messageHistory' => $this->conversation(
+						messageHistory: $messageHistory,
+						turn: ['agent' => $agent, 'userMessage' => $userMessage, 'context' => $context, 'cnAiContext' => $cnAiContext]
+					),
+					'tools' => $tools,
+					'channel' => $channel,
+				],
+				timings: ['start' => $startTime, 'tools' => $toolsTime]
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ResponseGenerationHandler] Failed to generate response',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'provider' => $chatProvider ?? 'unknown',
+					'error' => $e->getMessage(),
+				]
+			);
+			throw new Exception('Failed to generate response: ' . $e->getMessage(), $e->getCode(), $e);
+		}//end try
+	}//end generateResponse()
+
+	/**
+	 * Put the system prompt before the history and the user's message after it.
+	 *
+	 * The system prompt is the agent's prompt or the default, then the app
+	 * context and the retrieved RAG context.
+	 *
+	 * @param array $messageHistory Array of LLPhantMessage objects.
+	 * @param array $turn           The agent, the user's message, the RAG context and the app context.
+	 *
+	 * @return array The full conversation as LLPhantMessage objects.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) LLPhantMessage factory methods are standard LLPhant pattern
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function conversation(array $messageHistory, array $turn): array {
+		$systemPrompt = ($turn['agent']?->getPrompt() ?? 'You are a helpful AI assistant that helps users find and understand their data.');
+		$systemPrompt .= $this->appContextPrompt(cnAiContext: $turn['cnAiContext']);
+		$systemPrompt .= $this->ragContextPrompt(contextText: $turn['context']['text']);
+		array_unshift($messageHistory, LLPhantMessage::system($systemPrompt));
+		$messageHistory[] = LLPhantMessage::user($turn['userMessage']);
+		return $messageHistory;
+	}//end conversation()
+
+	/**
+	 * Run the chat, log its performance and record its usage.
+	 *
+	 * Only OllamaChat accumulates token usage today; other providers leave it
+	 * empty. The usage is exposed for per-run cost recording (run-analytics).
+	 *
+	 * @param array                $request Provider, config, conversation, tools and channel.
+	 * @param array<string, float> $timings The start time and the tool loading time.
+	 *
+	 * @return string The generated response.
+	 *
+	 * @throws Exception When the API call fails.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function generateWithProvider(array $request, array $timings): string {
+		$request['functions'] = [];
+		if (empty($request['tools']) === false) {
+			$request['functions'] = $this->toolHandler->convertToolsToFunctions($request['tools']);
+		}
+
+		$llmStartTime = microtime(true);
+		$result = $this->runChat(request: $request);
+		$llmTime = microtime(true) - $llmStartTime;
+
+		$this->logPerformance(
+			request: $request + ['response' => $result['response']],
+			timings: ['total' => microtime(true) - $timings['start'], 'tools' => $timings['tools'], 'llm' => $llmTime]
+		);
+
+		$this->lastUsage = [];
+		if ($result['chat'] instanceof OllamaChat) {
+			$this->lastUsage = $result['chat']->lastUsage;
+		}
+
+		$this->lastUsage['llmSeconds'] = round($llmTime, 2);
+		return $result['response'];
+	}//end generateWithProvider()
+
+	/**
+	 * The agent's enabled tools, filtered by the selected tools.
+	 *
+	 * @param Agent|null $agent         Agent configuration.
+	 * @param array      $selectedTools Tools selected for this request.
+	 *
+	 * @return array The tools.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function agentTools(?Agent $agent, array $selectedTools): array {
+		$tools = $this->toolHandler->getAgentTools(agent: $agent, selectedTools: $selectedTools);
 		if (empty($tools) === false) {
 			$this->logger->info(
 				message: '[ResponseGenerationHandler] Agent has tools enabled',
@@ -206,12 +308,23 @@ class ResponseGenerationHandler {
 			);
 		}
 
-		// Get LLM configuration.
-		$llmConfig = $this->settingsService->getLLMSettingsOnly();
+		return $tools;
+	}//end agentTools()
 
-		// Get chat provider.
+	/**
+	 * The configured chat provider.
+	 *
+	 * @param array $llmConfig The LLM settings.
+	 * @param bool  $hasTools  Whether the agent has tools enabled, for the log.
+	 *
+	 * @return mixed The chat provider.
+	 *
+	 * @throws Exception When no chat provider is configured (code 503).
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function chatProvider(array $llmConfig, bool $hasTools): mixed {
 		$chatProvider = $llmConfig['chatProvider'] ?? null;
-
 		if (empty($chatProvider) === true) {
 			throw new Exception(
 				'Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.',
@@ -226,277 +339,279 @@ class ResponseGenerationHandler {
 				'line' => __LINE__,
 				'provider' => $chatProvider,
 				'llmConfig' => $llmConfig,
-				'hasTools' => empty($tools) === false,
+				'hasTools' => $hasTools,
 			]
 		);
+		return $chatProvider;
+	}//end chatProvider()
 
-		try {
-			// Configure LLM client based on provider.
-			// Ollama uses its own native config and chat class.
-			if ($chatProvider === 'ollama') {
-				$ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-				if (empty($ollamaConfig['url']) === true) {
-					throw new Exception('Ollama URL is not configured');
-				}
+	/**
+	 * Build the LLPhant configuration for the chat provider.
+	 *
+	 * Ollama uses its own native config and chat class; OpenAI and Fireworks
+	 * (an OpenAI-compatible API) use OpenAIConfig.
+	 *
+	 * @param array      $llmConfig The LLM settings.
+	 * @param Agent|null $agent     Agent configuration, for its model and temperature.
+	 *
+	 * @return OllamaConfig|OpenAIConfig The provider configuration.
+	 *
+	 * @throws Exception When the provider is unsupported or misses its URL or API key.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function buildChatConfig(array $llmConfig, ?Agent $agent): OllamaConfig|OpenAIConfig {
+		$chatProvider = $llmConfig['chatProvider'];
+		$config = match ($chatProvider) {
+			'ollama' => $this->ollamaConfig(ollamaConfig: ($llmConfig['ollamaConfig'] ?? []), agent: $agent),
+			'openai' => $this->openAIConfig(openaiConfig: ($llmConfig['openaiConfig'] ?? []), agent: $agent),
+			'fireworks' => $this->fireworksConfig(fireworksConfig: ($llmConfig['fireworksConfig'] ?? []), agent: $agent),
+			default => throw new Exception("Unsupported chat provider: {$chatProvider}"),
+		};
 
-				// Use native Ollama configuration.
-				$config = new OllamaConfig();
-				$config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
-				// Use agent model if set and not empty, otherwise fallback to global config.
-				$agentModel = $agent?->getModel();
-				$config->model = ($ollamaConfig['chatModel'] ?? 'llama2');
-				if (empty($agentModel) === false) {
-					$config->model = $agentModel;
-				}
+		// Through modelOptions, NOT a property: the chat classes read
+		// $config->modelOptions and send it as the API arguments, and nothing
+		// in LLPhant reads a temperature property.
+		if ($agent?->getTemperature() !== null) {
+			$config->modelOptions['temperature'] = $agent->getTemperature();
+		}
 
-				// Set temperature from agent or default.
-				if ($agent?->getTemperature() !== null) {
-					$config->modelOptions['temperature'] = $agent->getTemperature();
-				}
-			} elseif ($chatProvider === 'openai') {
-				// OpenAI uses OpenAIConfig.
-				$config = new OpenAIConfig();
+		return $config;
+	}//end buildChatConfig()
 
-				$openaiConfig = $llmConfig['openaiConfig'] ?? [];
-				if (empty($openaiConfig['apiKey']) === true) {
-					throw new Exception('OpenAI API key is not configured', 503);
-				}
+	/**
+	 * Build the native Ollama configuration.
+	 *
+	 * @param array      $ollamaConfig The Ollama settings.
+	 * @param Agent|null $agent        Agent configuration, for its model.
+	 *
+	 * @return OllamaConfig The configuration.
+	 *
+	 * @throws Exception When the Ollama URL is not configured.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function ollamaConfig(array $ollamaConfig, ?Agent $agent): OllamaConfig {
+		if (empty($ollamaConfig['url']) === true) {
+			throw new Exception('Ollama URL is not configured');
+		}
 
-				$config->apiKey = $openaiConfig['apiKey'];
-				// Use agent model if set and not empty, otherwise fallback to global config.
-				$agentModel = $agent?->getModel();
-				$config->model = ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
-				if (empty($agentModel) === false) {
-					$config->model = $agentModel;
-				}
+		$config = new OllamaConfig();
+		$config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
+		$config->model = $this->chatModel(agent: $agent, default: ($ollamaConfig['chatModel'] ?? 'llama2'));
+		return $config;
+	}//end ollamaConfig()
 
-				// OrganizationId is NOT set here. LLPhant has no organization
-				// support of any kind, so the previous assignment created a
-				// dynamic property nothing ever read. Dropping it removes the
-				// pretence rather than the behaviour: there was none.
+	/**
+	 * Build the OpenAI configuration.
+	 *
+	 * LLPhant has no organization support of any kind, so no organization id is set.
+	 *
+	 * @param array      $openaiConfig The OpenAI settings.
+	 * @param Agent|null $agent        Agent configuration, for its model.
+	 *
+	 * @return OpenAIConfig The configuration.
+	 *
+	 * @throws Exception When the OpenAI API key is not configured.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function openAIConfig(array $openaiConfig, ?Agent $agent): OpenAIConfig {
+		$config = new OpenAIConfig();
+		if (empty($openaiConfig['apiKey']) === true) {
+			throw new Exception('OpenAI API key is not configured', 503);
+		}
 
-				// Set temperature from agent or default (OpenAI).
-				if ($agent?->getTemperature() !== null) {
-					// Through modelOptions, NOT a property. OpenAIChat reads
-					// $config->modelOptions and sends it as the API arguments;
-					// nothing in LLPhant ever reads a temperature property, so
-					// the old assignment created a dynamic property that was
-					// silently discarded and the agent's temperature never
-					// reached the model.
-					$config->modelOptions['temperature'] = $agent->getTemperature();
-				}
-			} elseif ($chatProvider === 'fireworks') {
-				// Fireworks uses OpenAIConfig.
-				$config = new OpenAIConfig();
+		$config->apiKey = $openaiConfig['apiKey'];
+		$config->model = $this->chatModel(agent: $agent, default: ($openaiConfig['chatModel'] ?? 'gpt-4o-mini'));
+		return $config;
+	}//end openAIConfig()
 
-				$fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-				if (empty($fireworksConfig['apiKey']) === true) {
-					throw new Exception('Fireworks AI API key is not configured', 503);
-				}
+	/**
+	 * Build the configuration for the OpenAI-compatible Fireworks AI API.
+	 *
+	 * @param array      $fireworksConfig The Fireworks settings.
+	 * @param Agent|null $agent           Agent configuration, for its model.
+	 *
+	 * @return OpenAIConfig The configuration, with the base URL ending in /v1.
+	 *
+	 * @throws Exception When the Fireworks API key is not configured.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function fireworksConfig(array $fireworksConfig, ?Agent $agent): OpenAIConfig {
+		$config = new OpenAIConfig();
+		if (empty($fireworksConfig['apiKey']) === true) {
+			throw new Exception('Fireworks AI API key is not configured', 503);
+		}
 
-				$config->apiKey = $fireworksConfig['apiKey'];
-				// Use agent model if set and not empty, otherwise fallback to global config.
-				$agentModel = $agent?->getModel();
-				$config->model = ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
-				if (empty($agentModel) === false) {
-					$config->model = $agentModel;
-				}
+		$config->apiKey = $fireworksConfig['apiKey'];
+		$config->model = $this->chatModel(
+			agent: $agent,
+			default: ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct')
+		);
 
-				// Fireworks AI uses OpenAI-compatible API.
-				$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-				if (str_ends_with($baseUrl, '/v1') === false) {
-					$baseUrl .= '/v1';
-				}
+		$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+		if (str_ends_with($baseUrl, '/v1') === false) {
+			$baseUrl .= '/v1';
+		}
 
-				$config->url = $baseUrl;
+		$config->url = $baseUrl;
+		return $config;
+	}//end fireworksConfig()
 
-				// Set temperature from agent or default (Fireworks).
-				if ($agent?->getTemperature() !== null) {
-					// Through modelOptions, NOT a property. OpenAIChat reads
-					// $config->modelOptions and sends it as the API arguments;
-					// nothing in LLPhant ever reads a temperature property, so
-					// the old assignment created a dynamic property that was
-					// silently discarded and the agent's temperature never
-					// reached the model.
-					$config->modelOptions['temperature'] = $agent->getTemperature();
-				}
-			}//end if
+	/**
+	 * The agent's model when it has one, otherwise the configured model.
+	 *
+	 * @param Agent|null $agent   Agent configuration.
+	 * @param mixed      $default The model from the provider settings.
+	 *
+	 * @return mixed The model to use.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function chatModel(?Agent $agent, mixed $default): mixed {
+		$agentModel = $agent?->getModel();
+		if (empty($agentModel) === false) {
+			return $agentModel;
+		}
 
-			if ($chatProvider !== 'ollama' && $chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
-				throw new Exception("Unsupported chat provider: {$chatProvider}");
+		return $default;
+	}//end chatModel()
+
+	/**
+	 * Render the CnAiContext snapshot the widget sends with each message for the system prompt.
+	 *
+	 * Without it the LLM has no idea which app the user is in, and calls
+	 * another app's tools. The snapshot is small and free-form (typically
+	 * {app, slug, view, objectId}); it is rendered as a bullet list so the
+	 * model can quote individual fields.
+	 *
+	 * @param array $cnAiContext The app context snapshot.
+	 *
+	 * @return string The prompt section, or an empty string without a snapshot.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function appContextPrompt(array $cnAiContext): string {
+		if (empty($cnAiContext) === true) {
+			return '';
+		}
+
+		$prompt = "\n\nCURRENT APP CONTEXT (this is where the user is RIGHT NOW — prefer tools that match this app):\n";
+		foreach ($cnAiContext as $key => $value) {
+			if (is_scalar($value) === true) {
+				$prompt .= "- {$key}: " . (string)$value . "\n";
+				continue;
 			}
 
-			// Build system prompt.
-			$defaultPrompt = 'You are a helpful AI assistant that helps users find and understand their data.';
-			$systemPrompt = $agent?->getPrompt() ?? $defaultPrompt;
+			$prompt .= "- {$key}: " . json_encode($value, JSON_UNESCAPED_SLASHES) . "\n";
+		}
 
-			// Inject the CnAiContext snapshot the widget sends with each
-			// message. Without this the LLM has no idea which app the user
-			// is in — so on /apps/openbuild/ it would call decidesk tools
-			// (or default to OpenRegister-platform language) instead of
-			// routing to openbuild.*. The snapshot is small and free-form
-			// (typically {app, slug, view, objectId}); we render it as a
-			// bullet list so the model can quote individual fields.
-			if (empty($cnAiContext) === false) {
-				$systemPrompt .= "\n\nCURRENT APP CONTEXT (this is where the user is RIGHT NOW — prefer tools that match this app):\n";
-				foreach ($cnAiContext as $key => $value) {
-					if (is_scalar($value) === true) {
-						$systemPrompt .= "- {$key}: " . (string)$value . "\n";
-						continue;
-					}
+		return $prompt;
+	}//end appContextPrompt()
 
-					$systemPrompt .= "- {$key}: " . json_encode($value, JSON_UNESCAPED_SLASHES) . "\n";
-				}
-			}
+	/**
+	 * Render the retrieved RAG context for the system prompt.
+	 *
+	 * @param mixed $contextText The retrieved context text.
+	 *
+	 * @return string The prompt section, or an empty string without context.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function ragContextPrompt(mixed $contextText): string {
+		if (empty($contextText) === true) {
+			return '';
+		}
 
-			if (empty($context['text']) === false) {
-				$systemPrompt .= "\n\nUse the following context to answer the user's question:\n\n";
-				$systemPrompt .= "CONTEXT:\n" . $context['text'] . "\n\n";
-				$systemPrompt .= "If the context doesn't contain relevant information, say so honestly. ";
-				$systemPrompt .= 'Always cite which sources you used when answering.';
-			}
+		$prompt = "\n\nUse the following context to answer the user's question:\n\n";
+		$prompt .= "CONTEXT:\n" . $contextText . "\n\n";
+		$prompt .= "If the context doesn't contain relevant information, say so honestly. ";
+		return $prompt . 'Always cite which sources you used when answering.';
+	}//end ragContextPrompt()
 
-			// Add system message to history.
-			array_unshift($messageHistory, LLPhantMessage::system($systemPrompt));
+	/**
+	 * Send the conversation to the provider's chat client.
+	 *
+	 * Ollama runs through OllamaChat; OpenAI and the OpenAI-compatible Fireworks
+	 * API run through OpenAIChat (OpenAIChat::__construct() type-errors when
+	 * given an OllamaConfig).
+	 *
+	 * @param array $request Provider, config, message history, tools, functions and channel.
+	 *
+	 * @return array{response: string, chat: OpenAIChat|OllamaChat} The response and the chat client used.
+	 *
+	 * @throws Exception When the API call fails.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function runChat(array $request): array {
+		$chat = match ($request['provider']) {
+			'ollama' => new OllamaChat($request['config']),
+			default => new OpenAIChat($request['config']),
+		};
 
-			// Add current user message.
-			$messageHistory[] = LLPhantMessage::user($userMessage);
+		return ['response' => $this->invokeChatWithTools(chat: $chat, request: $request), 'chat' => $chat];
+	}//end runChat()
 
-			// Convert tools to functions if agent has tools enabled.
-			$functions = [];
-			if (empty($tools) === false) {
-				$functions = $this->toolHandler->convertToolsToFunctions($tools);
-			}
-
-			// Initialize $response (and $llmTime, $chat) BEFORE entering any
-			// provider branch. The Ollama branch skips the OpenAIChat
-			// initialisation block; without this default-empty seed the
-			// logger access on `$response` below would tank with an
-			// undefined-variable error if every provider branch chose
-			// not to assign — an easy regression vector when a new
-			// provider is added. The Fireworks/Ollama branches below
-			// overwrite this unconditionally for their own provider.
-			// $chat = null keeps the `instanceof OllamaChat` usage-capture
-			// check below well-defined on every provider path.
-			$chat = null;
-			$response = '';
-			$llmTime = 0.0;
-			$llmStartTime = microtime(true);
-
-			// Skip the OpenAIChat instantiation for Ollama — Ollama uses OllamaConfig + OllamaChat
-			// (instantiated in the dedicated branch below). OpenAIChat::__construct() type-errors when
-			// given OllamaConfig.
-			if ($chatProvider !== 'ollama') {
-				// Create chat instance based on provider (OpenAI / Fireworks both use OpenAIConfig).
-				$chat = new OpenAIChat($config);
-
-				// Add functions if available.
-				if (empty($functions) === false) {
-					// Convert array-based function definitions to FunctionInfo objects.
-					$functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
-						functions: $functions,
-						tools: $tools
-					);
-					$functionInfoObjects = $this->wrapToolsForStreaming(
-						functionInfoObjects: $functionInfoObjects,
-						channel: $channel
-					);
-					$chat->setTools($functionInfoObjects);
-				}
-
-				$response = $this->invokeChat(
-					chat: $chat,
-					messageHistory: $messageHistory,
-					channel: $channel,
-					provider: $chatProvider
-				);
-				$llmTime = microtime(true) - $llmStartTime;
-			}//end if
-
-			if ($chatProvider === 'fireworks') {
-				/*
-				 * For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
-				 *
-				 * @psalm-suppress UndefinedPropertyFetch LLPhant config has dynamic properties
-				 */
-
-				$response = $this->callFireworksChatAPIWithHistory(
-					apiKey: $config->apiKey,
-					model: $config->model,
-					baseUrl: $config->url,
-					messageHistory: $messageHistory,
-					functions: $functions
-				);
-				$llmTime = microtime(true) - $llmStartTime;
-			} elseif ($chatProvider === 'ollama') {
-				// Use native Ollama chat with LLPhant's built-in tool support.
-				$chat = new OllamaChat($config);
-
-				// Add functions if available - Ollama supports tools via LLPhant!
-				if (empty($functions) === false) {
-					// Convert array-based function definitions to FunctionInfo objects.
-					$functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
-						functions: $functions,
-						tools: $tools
-					);
-					$functionInfoObjects = $this->wrapToolsForStreaming(
-						functionInfoObjects: $functionInfoObjects,
-						channel: $channel
-					);
-					$chat->setTools($functionInfoObjects);
-				}
-
-				$response = $this->invokeChat(
-					chat: $chat,
-					messageHistory: $messageHistory,
-					channel: $channel,
-					provider: $chatProvider
-				);
-				$llmTime = microtime(true) - $llmStartTime;
-			}//end if
-
-			$totalTime = microtime(true) - $startTime;
-
-			$this->logger->info(
-				message: '[ResponseGenerationHandler] Response generated - PERFORMANCE',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $chatProvider,
-					'model' => $config->model,
-					'responseLength' => strlen($response),
-					'timings' => [
-						'total' => round($totalTime, 2) . 's',
-						'toolsLoading' => round($toolsTime, 3) . 's',
-						'llmGeneration' => round($llmTime, 2) . 's',
-						'overhead' => round($totalTime - $llmTime - $toolsTime, 3) . 's',
-					],
-				]
+	/**
+	 * Register the request's functions as tools on the chat client and invoke it.
+	 *
+	 * @param OpenAIChat|OllamaChat $chat    The chat client.
+	 * @param array                 $request Provider, message history, tools, functions and channel.
+	 *
+	 * @return string The assistant's textual response.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function invokeChatWithTools(OpenAIChat|OllamaChat $chat, array $request): string {
+		if (empty($request['functions']) === false) {
+			$functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
+				functions: $request['functions'],
+				tools: $request['tools']
 			);
-
-			// Expose the LLM token/latency usage for per-run cost recording (run-analytics).
-			// Only OllamaChat accumulates usage today; other providers leave it empty.
-			$this->lastUsage = [];
-			if ($chat instanceof OllamaChat) {
-				$this->lastUsage = $chat->lastUsage;
-			}
-
-			$this->lastUsage['llmSeconds'] = round($llmTime, 2);
-
-			return $response;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ResponseGenerationHandler] Failed to generate response',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $chatProvider ?? 'unknown',
-					'error' => $e->getMessage(),
-				]
+			$chat->setTools(
+				$this->wrapToolsForStreaming(functionInfoObjects: $functionInfoObjects, channel: $request['channel'])
 			);
-			throw new Exception('Failed to generate response: ' . $e->getMessage(), $e->getCode(), $e);
-		}//end try
-	}//end generateResponse()
+		}
+
+		return $this->invokeChat(
+			chat: $chat,
+			messageHistory: $request['messageHistory'],
+			channel: $request['channel'],
+			provider: $request['provider']
+		);
+	}//end invokeChatWithTools()
+
+	/**
+	 * Log the provider, model, response length and timings of a generated response.
+	 *
+	 * @param array                $request The chat request with the response.
+	 * @param array<string, float> $timings Total, tools and LLM time in seconds.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function logPerformance(array $request, array $timings): void {
+		$this->logger->info(
+			message: '[ResponseGenerationHandler] Response generated - PERFORMANCE',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $request['provider'],
+				'model' => $request['config']->model,
+				'responseLength' => strlen($request['response']),
+				'timings' => [
+					'total' => round($timings['total'], 2) . 's',
+					'toolsLoading' => round($timings['tools'], 3) . 's',
+					'llmGeneration' => round($timings['llm'], 2) . 's',
+					'overhead' => round($timings['total'] - $timings['llm'] - $timings['tools'], 3) . 's',
+				],
+			]
+		);
+	}//end logPerformance()
 
 	/**
 	 * Invoke the active LLPhant chat instance, preferring streaming when a
@@ -600,7 +715,7 @@ class ResponseGenerationHandler {
 		}
 
 		// Non-streaming fallback — load-bearing for POST /api/chat/send,
-		// for providers without streaming support (Fireworks today), and
+		// for providers whose streaming surface throws MissingFeatureException, and
 		// for Ollama-with-tools where our StreamingToolInstanceWrapper
 		// still fires from the blocking callFunction path so tool_call /
 		// tool_result frames reach the SSE consumer even without token
@@ -684,159 +799,4 @@ class ResponseGenerationHandler {
 
 		return $assembled;
 	}//end streamChat()
-
-	/**
-	 * Call Fireworks AI chat API with full message history
-	 *
-	 * Similar to callFireworksChatAPI but supports full conversation history.
-	 * Converts LLPhant message objects to API format.
-	 *
-	 * @param string $apiKey Fireworks API key.
-	 * @param string $model Model identifier.
-	 * @param string $baseUrl Base API URL.
-	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param array $functions Function definitions for tool calling (optional).
-	 *
-	 * @return string Generated response text
-	 *
-	 * @throws \Exception If API call fails
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  API call requires handling many response scenarios
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
-	 *
-	 * @spec openspec/specs/chat-ai/spec.md
-	 */
-	private function callFireworksChatAPIWithHistory(
-		string $apiKey,
-		string $model,
-		string $baseUrl,
-		array $messageHistory,
-		array $functions = [],
-	): string {
-		$url = rtrim($baseUrl, '/') . '/chat/completions';
-
-		// Note: Function calling with Fireworks AI is not yet implemented.
-		// Functions will be ignored for Fireworks provider.
-		if (empty($functions) === false) {
-			$msg = '[ResponseGenerationHandler] Function calling not yet supported for Fireworks AI. Tools will be ignored.';
-			$this->logger->warning(
-				message: $msg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'functionCount' => count($functions),
-				]
-			);
-		}
-
-		$this->logger->debug(
-			message: '[ResponseGenerationHandler] Calling Fireworks chat API with history',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'url' => $url,
-				'model' => $model,
-				'historyCount' => count($messageHistory),
-			]
-		);
-
-		// Convert LLPhant messages to API format.
-		// LLPhant Message properties are public, so we can access them directly.
-		$messages = [];
-		foreach ($messageHistory as $msg) {
-			// Convert ChatRole enum to string value.
-			$roleString = $msg->role->value;
-			$content = $msg->content;
-
-			$messages[] = [
-				'role' => $roleString,
-				'content' => $content,
-			];
-		}
-
-		// Log final message count.
-		$this->logger->debug(
-			message: '[ResponseGenerationHandler] Prepared messages for API',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'messageCount' => count($messages),
-			]
-		);
-
-		$payload = [
-			'model' => $model,
-			'messages' => $messages,
-		];
-
-		$ch = curl_init($url);
-		curl_setopt($ch, CURLOPT_POST, true);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt(
-			$ch,
-			CURLOPT_HTTPHEADER,
-			[
-				'Authorization: Bearer ' . $apiKey,
-				'Content-Type: application/json',
-			]
-		);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-		curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-		// Longer timeout for conversations.
-		$response = curl_exec($ch);
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		$curlError = curl_error($ch);
-		// No curl_close(): deprecated since PHP 8.0 and a no-op — the
-		// CurlHandle object is freed when it goes out of scope.
-		if ($curlError !== '') {
-			throw new Exception("Fireworks API request failed: {$curlError}");
-		}
-
-		if ($httpCode !== 200) {
-			// Parse error response.
-			$errorData = [];
-			if (is_string($response) === true) {
-				$errorData = json_decode($response, true);
-			}
-
-			$fallbackError = 'Unknown error';
-			if (is_string($response) === true) {
-				$fallbackError = $response;
-			}
-
-			$errorMessage = $errorData['error']['message'] ?? $errorData['error'] ?? $fallbackError;
-
-			// Make error messages user-friendly.
-			if ($httpCode === 401 || $httpCode === 403) {
-				throw new Exception('Authentication failed. Please check your Fireworks API key.');
-			}
-
-			if ($httpCode === 404) {
-				throw new Exception("Model not found: {$model}. Please check the model name.");
-			}
-
-			if ($httpCode === 429) {
-				throw new Exception('Rate limit exceeded. Please try again later.');
-			}
-
-			throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
-		}//end if
-
-		$data = [];
-		if (is_string($response) === true) {
-			$data = json_decode($response, true);
-		}
-
-		if (isset($data['choices'][0]['message']['content']) === false) {
-			$responseStr = 'Invalid response';
-			if (is_string($response) === true) {
-				$responseStr = $response;
-			}
-
-			throw new Exception('Unexpected Fireworks API response format: ' . $responseStr);
-		}
-
-		return $data['choices'][0]['message']['content'];
-	}//end callFireworksChatAPIWithHistory()
 }//end class

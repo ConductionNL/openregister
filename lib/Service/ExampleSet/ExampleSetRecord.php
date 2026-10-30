@@ -252,6 +252,43 @@ class ExampleSetRecord {
 	}//end write()
 
 	/**
+	 * Let go of the entries of one part that a fragment's app holds and the fragment no longer declares: the proof
+	 * and remove leave what they wrote alone, and the report names each under `left`. An entry another part keys
+	 * by an object (`<app>/<key>#references`) is not a declaration of this part and stays.
+	 *
+	 * @param array<string, mixed> $fragment The fragment, as gathered for this run.
+	 * @param string               $part     The record part, which is also the fragment's list of declarations.
+	 * @param string               $noun     The part's word in the report.
+	 * @param array<string, mixed> $report   The report; gains a `left` line per entry let go.
+	 * @param array<string, mixed> $record   The record; loses the entries let go.
+	 *
+	 * @return bool Whether the record changed and is to be written.
+	 *
+	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 */
+	public static function letGoUndeclared(array $fragment, string $part, string $noun, array &$report, array &$record): bool {
+		$prefix   = $fragment['app'].'/';
+		$declared = [];
+		foreach ((array) ($fragment[$part] ?? []) as $entry) {
+			$declared[$prefix.($entry['key'] ?? '')] = true;
+		}
+
+		$changed = false;
+		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
+			$name = (string) $name;
+			if (str_starts_with($name, $prefix) === false || str_contains($name, '#') === true || isset($declared[$name]) === true) {
+				continue;
+			}
+
+			unset($record[$part][$name]);
+			$report['left'][] = $noun.' '.$name.': the set no longer declares it';
+			$changed          = true;
+		}
+
+		return $changed;
+	}//end letGoUndeclared()
+
+	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
 	 *
 	 * @param string                                                         $set    The set id.

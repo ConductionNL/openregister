@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\CacheWarmupJob;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -60,7 +61,7 @@ class CacheWarmupJobTest extends TestCase {
 
 		$timeFactory = $this->createMock(ITimeFactory::class);
 
-		$this->registerService(CacheHandler::class, function () {
+		$this->registerService(ObjectNameCacheInterface::class, function () {
 			return $this->cacheHandler;
 		});
 
