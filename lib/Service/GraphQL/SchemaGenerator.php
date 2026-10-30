@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\GraphQL\Scalar\UriType;
 use OCA\OpenRegister\Service\GraphQL\Scalar\UuidType;
 use OCA\OpenRegister\Service\GraphQL\SchemaGenerator\CompositionHandler;
 use OCA\OpenRegister\Service\GraphQL\SchemaGenerator\TypeMapperHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 
 /**
  * Generates a GraphQL schema from OpenRegister register/schema definitions.
@@ -121,12 +122,19 @@ class SchemaGenerator {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param RegisterMapper           $registerMapper Register mapper
+	 * @param SchemaMapper             $schemaMapper   Schema mapper
+	 * @param PropertyRbacHandler|null $propertyRbac   Handed to the type mapper, which asks it whether a
+	 *                                                 governed property may be described to this caller.
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container autowires this class and always supplies it; null happens
+		// only in a hand-built test, and then a GOVERNED property is withheld
+		// from the type mapper, which is the safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 	}//end __construct()
 
@@ -403,6 +411,7 @@ class SchemaGenerator {
 			objectTypeFactory: $objectTypeFactory,
 			fieldNameConverter: $fieldNameConverter,
 			typeNameConverter: $typeNameConverter,
+			propertyRbac: $this->propertyRbac,
 		);
 
 		$this->compositionHandler = new CompositionHandler(
