@@ -2,7 +2,7 @@
 
 ## 1. Frozen guard
 
-- [ ] 1.1 `FrozenObjectDeleteGuardListener` on `ObjectDeletingEvent`, registered beside the other delete guards. Verify: `tests/Unit/Listener/FrozenObjectDeleteGuardListenerTest.php` with a real `ObjectDeletingEvent` for a frozen and an unfrozen object, and a cascade meeting a frozen child.
+- [x] 1.1 `FrozenObjectDeleteGuardListener` on `ObjectDeletingEvent`, registered beside the other delete guards. Verify: `tests/Unit/Listener/FrozenObjectDeleteGuardListenerTest.php` with a real `ObjectDeletingEvent` for a frozen and an unfrozen object, and a cascade meeting a frozen child.
 
 ## 2. Dates
 
@@ -11,7 +11,7 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Newman: freeze a record, try `DELETE` (refused), unfreeze, delete (done).
+- [ ] 3.1 Newman: freeze a record, try `DELETE` (refused), unfreeze, delete (done). Collection written: `tests/newman/openregister-frozen-delete.postman_collection.json`; tick after its first live pass.
 - [ ] 3.2 Newman: set a client's end date, read its and its contact's destruction dates, clear it, read them again.
 - [ ] 3.3 Document both in `docs/` beside archiving and freezing.
 
