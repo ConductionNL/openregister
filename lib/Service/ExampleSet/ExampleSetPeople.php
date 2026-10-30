@@ -470,11 +470,12 @@ class ExampleSetPeople {
 	}//end refusals()
 
 	/**
-	 * Refuse members and sub-admins on a group that exists and that this set did not create.
+	 * Refuse sub-admins on a group that exists and that this set did not create.
 	 *
-	 * A set grants rights only inside the groups it made: adding its cast to,
-	 * or making them sub-admin of, a group somebody else runs would widen that
-	 * group behind its owner's back.
+	 * A sub-admin manages the group's accounts, so making a cast person one of a
+	 * group somebody else runs would hand out that group behind its owner's
+	 * back. Members are not refused: a set adds its cast to groups an app made
+	 * (dossiq's `behandelaars`), which the example-sets spec requires.
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $record The set's record.
@@ -482,28 +483,18 @@ class ExampleSetPeople {
 	 * @return array<int, string>
 	 */
 	private function foreignGroupRefusals(array $plan, array $record): array {
-		$own     = array_map('strval', (array) ($record['groups'] ?? []));
-		$granted = [];
-		foreach ($this->declaredMemberships(plan: $plan) as [$gid]) {
-			$granted[$gid]['members'] = true;
-		}
-
-		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid]) {
-			$granted[$gid]['sub-admins'] = true;
-		}
-
+		$own      = array_map('strval', (array) ($record['groups'] ?? []));
 		$refusals = [];
-		foreach ($granted as $gid => $kinds) {
+		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid]) {
 			$gid = (string) $gid;
 			if (in_array($gid, $own, true) === true || $this->accounts->groupExists(gid: $gid) === false) {
 				continue;
 			}
 
-			$refusals[] = 'group "'.$gid.'": it exists and this set did not create it, so the set may not add '
-				.implode(' or ', array_keys($kinds)).' to it';
+			$refusals[$gid] = 'group "'.$gid.'": it exists and this set did not create it, so the set may not name sub-admins of it';
 		}
 
-		return $refusals;
+		return array_values($refusals);
 	}//end foreignGroupRefusals()
 
 	/**

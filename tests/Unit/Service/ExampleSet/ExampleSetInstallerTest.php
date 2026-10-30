@@ -282,7 +282,8 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 	public function testRemoveDeletesExactlyWhatTheInstallMade(): void {
 		$foreign = $this->store->seed(register: 'cases', schema: 'case', data: ['title' => 'not ours']);
-		$this->accounts->users['someone'] = ['displayName' => 'Someone', 'email' => '', 'password' => 'x'];
+		$this->accounts->groups['cases-handlers'] = ['someone'];
+		$this->accounts->users['someone']         = ['displayName' => 'Someone', 'email' => '', 'password' => 'x'];
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
 		$report = $this->remover->remove(set: 'demo');
@@ -303,7 +304,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 				'readStates'       => 0,
 				'flows'            => 0,
 				'memberships'      => 2,
-				'groups'           => 2,
+				'groups'           => 1,
 				'accounts'         => 2,
 				'register imports' => 0,
 				'organisations'    => 0,
@@ -312,6 +313,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		);
 		$this->assertSame([$foreign], $this->store->ids(register: 'cases', schema: 'case'));
 		$this->assertSame([], $this->store->ids(register: 'brp', schema: 'person'));
+		$this->assertSame(['someone'], $this->accounts->groups['cases-handlers'], 'a group that existed before stays, with its own members');
 		$this->assertArrayNotHasKey('demo-staff', $this->accounts->groups);
 		$this->assertSame(['someone'], array_keys($this->accounts->users));
 		$this->assertSame([], $this->config, 'the record is gone');

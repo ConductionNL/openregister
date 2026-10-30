@@ -30,8 +30,7 @@ class ExampleSetGroupNamesTest extends ExampleSetTestCase {
 		parent::setUp();
 		$this->app(app: 'openregister', fragment: $this->castFile());
 		$this->app(app: 'alpha', fragment: ['groups' => [
-			// No members: a set adds nobody to a group it did not create.
-			['group' => 'behandelaars', 'displayName' => 'Behandelaars', 'members' => []],
+			['group' => 'behandelaars', 'displayName' => 'Behandelaars', 'members' => ['esra']],
 			['group' => 'redactie', 'displayName' => 'Redactie', 'members' => []],
 		]]);
 		$this->accounts->groups['behandelaars'] = [];
