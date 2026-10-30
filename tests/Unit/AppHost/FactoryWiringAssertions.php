@@ -33,12 +33,13 @@ trait FactoryWiringAssertions {
 	/**
 	 * Fail when the built service holds null for a nullable object dependency.
 	 *
-	 * @param object               $service   The service the factory built.
-	 * @param array<string,string> $allowList "Class::$param" => why the factory leaves it out.
+	 * @param object               $service    The service the factory built.
+	 * @param array<string,string> $allowList  "Class::$param" => why the factory leaves it out.
+	 * @param array<string,string> $properties "Class::$param" => the property that holds it, when its name differs.
 	 *
 	 * @return void
 	 */
-	private function assertFactorySuppliedEveryOptionalDependency(object $service, array $allowList=[]): void {
+	private function assertFactorySuppliedEveryOptionalDependency(object $service, array $allowList=[], array $properties=[]): void {
 		$class       = new ReflectionClass(objectOrClass: $service);
 		$constructor = $class->getConstructor();
 		if ($constructor === null) {
@@ -55,12 +56,13 @@ trait FactoryWiringAssertions {
 				continue;
 			}
 
+			$name = ($properties[$key] ?? $parameter->getName());
 			$this->assertTrue(
-				condition: $class->hasProperty($parameter->getName()),
-				message: $key.' is optional but has no property of that name to check; wire it or allow-list it with a reason.'
+				condition: $class->hasProperty($name),
+				message: $key.' is optional but has no property $'.$name.' to check; map it to the property that holds it, or allow-list it with a reason.'
 			);
 
-			$property = $class->getProperty($parameter->getName());
+			$property = $class->getProperty($name);
 			$this->assertTrue(
 				condition: $property->isInitialized($service) === true && $property->getValue($service) !== null,
 				message: $key.' is never supplied by its factory: a registerService() factory overrides autowiring, so an omitted argument stays null.'

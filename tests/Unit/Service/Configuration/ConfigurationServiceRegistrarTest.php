@@ -12,11 +12,35 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
+use OCA\OpenRegister\Tests\Unit\AppHost\FactoryWiringAssertions;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use OCP\AppFramework\IAppContainer;
 
 class ConfigurationServiceRegistrarTest extends TestCase {
+	use FactoryWiringAssertions;
+
+	/**
+	 * Optional dependencies these factories leave out on purpose.
+	 *
+	 * @var array<string,string>
+	 */
+	private const LEFT_OUT = [
+		'OCA\OpenRegister\Service\Settings\ValidationOperationsHandler::$validateHandler' => 'Resolved from the container on first use'
+			.' by getValidateHandler().',
+		'OCA\OpenRegister\Service\SettingsService::$objectCacheService'                  => 'Assigned in the constructor and never read.',
+	];
+
+	/**
+	 * Optional dependencies stored under another property name.
+	 *
+	 * @var array<string,string>
+	 */
+	private const HELD_BY = [
+		'OCA\OpenRegister\Service\SettingsService::$validOpsHandler'     => 'validationOperationsHandler',
+		'OCA\OpenRegister\Service\SettingsService::$objRetentionHandler' => 'objectRetentionHandler',
+		'OCA\OpenRegister\Service\SettingsService::$cfgSettingsHandler'  => 'configurationSettingsHandler',
+	];
 
 	/**
 	 * register() registers the configuration, settings and deployment services, in this order.
@@ -57,7 +81,9 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 	/**
 	 * Every factory builds an instance of the name it is registered under.
 	 *
-	 * The container hands each factory a test double for every service it asks for.
+	 * The container hands each factory a test double for every service it asks
+	 * for. Each built service must also hold every nullable object dependency
+	 * its constructor declares, except those on LEFT_OUT.
 	 *
 	 * @return void
 	 */
@@ -75,7 +101,9 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 		);
 
 		foreach ($context->factories as $name => $factory) {
-			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
+			$service = $factory($container);
+			$this->assertInstanceOf(expected: $name, actual: $service, message: $name);
+			$this->assertFactorySuppliedEveryOptionalDependency(service: $service, allowList: self::LEFT_OUT, properties: self::HELD_BY);
 		}
 	}//end testEveryFactoryBuildsItsService()
 
