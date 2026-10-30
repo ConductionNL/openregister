@@ -167,7 +167,6 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 		$this->assertStringNotContainsString(needle: self::BSN, haystack: (string)$file['content']);
 	}//end testTheListExportShowsItMasked()
-
 	/**
 	 * The person schema, its BSN explicit-reveal.
 	 *
@@ -182,24 +181,35 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 	}//end personSchema()
 
 	/**
-	 * An entry naming no schema masks every value, a list value included.
+	 * An administrator controller over this log service and audit mapper.
 	 *
-	 * @return void
+	 * @param LogService       $logService The log service.
+	 * @param AuditTrailMapper $trails     The audit mapper.
+	 * @param IRequest|null    $request    The request.
+	 *
+	 * @return AuditTrailController The controller.
 	 */
-	public function testAnEntryWithoutASchemaAndAListValueAreMasked(): void {
-		$masker = new ExplicitRevealTrailMasker(schemaMapper: $this->createMock(originalClassName: SchemaMapper::class));
-		$rows   = $masker->mask(entries: [['schema' => null, 'changed' => ['pin' => '4321']], ['schema' => '', 'changed' => ['codes' => ['123457609']]]]);
+	private function adminController(LogService $logService, AuditTrailMapper $trails, ?IRequest $request = null): AuditTrailController {
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(originalClassName: IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groups = $this->createMock(originalClassName: IGroupManager::class);
+		$groups->method('isAdmin')->willReturn(true);
 
-		$this->assertSame(expected: '*****', actual: $rows[0]['changed']['pin']);
-		$this->assertSame(expected: '*****', actual: $rows[1]['changed']['codes']);
-
-		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
-		$schemas->method('find')->willReturn($this->personSchema());
-		$listed = (new ExplicitRevealTrailMasker(schemaMapper: $schemas))->mask(
-			entries: [['schema' => 7, 'changed' => ['citizenServiceNumber' => ['123457609', '987654321']]]]
+		return new AuditTrailController(
+			'openregister',
+			($request ?? $this->createMock(originalClassName: IRequest::class)),
+			$logService,
+			$trails,
+			$this->createMock(originalClassName: AuditHashService::class),
+			$session,
+			$groups,
+			$this->createMock(originalClassName: ReadableAuditTrailLister::class),
+			$this->createMock(originalClassName: AuditTrailPageService::class),
+			$this->createMock(originalClassName: ObjectHistoryForReaders::class)
 		);
-		$this->assertSame(expected: '*****', actual: $listed[0]['changed']['citizenServiceNumber']);
-	}//end testAnEntryWithoutASchemaAndAListValueAreMasked()
+	}//end adminController()
 
 	/**
 	 * The scoped trail a non-administrator reads (`readable`) shows it masked.
@@ -245,37 +255,6 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 	}//end testTheReadableTrailShowsItMasked()
 
 	/**
-	 * An administrator controller over this log service and audit mapper.
-	 *
-	 * @param LogService       $logService The log service.
-	 * @param AuditTrailMapper $trails     The audit mapper.
-	 * @param IRequest|null    $request    The request.
-	 *
-	 * @return AuditTrailController The controller.
-	 */
-	private function adminController(LogService $logService, AuditTrailMapper $trails, ?IRequest $request = null): AuditTrailController {
-		$user = $this->createMock(originalClassName: IUser::class);
-		$user->method('getUID')->willReturn('admin');
-		$session = $this->createMock(originalClassName: IUserSession::class);
-		$session->method('getUser')->willReturn($user);
-		$groups = $this->createMock(originalClassName: IGroupManager::class);
-		$groups->method('isAdmin')->willReturn(true);
-
-		return new AuditTrailController(
-			'openregister',
-			($request ?? $this->createMock(originalClassName: IRequest::class)),
-			$logService,
-			$trails,
-			$this->createMock(originalClassName: AuditHashService::class),
-			$session,
-			$groups,
-			$this->createMock(originalClassName: ReadableAuditTrailLister::class),
-			$this->createMock(originalClassName: AuditTrailPageService::class),
-			$this->createMock(originalClassName: ObjectHistoryForReaders::class)
-		);
-	}//end adminController()
-
-	/**
 	 * The administrator's history of one object shows it masked.
 	 *
 	 * @return void
@@ -298,4 +277,42 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$this->assertSame(expected: 200, actual: $response->getStatus());
 		$this->assertStringNotContainsString(needle: self::BSN, haystack: (string)json_encode(value: $response->getData()));
 	}//end testTheAdminObjectHistoryShowsItMasked()
+
+	/**
+	 * The subject audit trail shows it masked.
+	 *
+	 * @return void
+	 */
+	public function testTheSubjectAuditTrailShowsItMasked(): void {
+		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
+		$trails->method('findByIdentifier')->willReturn([$this->entry()]);
+		$request = $this->createMock(originalClassName: IRequest::class);
+		$request->method('getParam')->willReturn('123457609');
+
+		$response = $this->adminController(logService: $this->logService(trails: $trails), trails: $trails, request: $request)
+			->subjectAuditTrail();
+
+		$this->assertStringNotContainsString(needle: '"' . self::BSN . '"', haystack: (string)json_encode(value: $response->getData()));
+		$this->assertStringContainsString(needle: self::MASK, haystack: (string)json_encode(value: $response->getData()));
+	}//end testTheSubjectAuditTrailShowsItMasked()
+
+	/**
+	 * An entry naming no schema masks every value, a list value included.
+	 *
+	 * @return void
+	 */
+	public function testAnEntryWithoutASchemaAndAListValueAreMasked(): void {
+		$masker = new ExplicitRevealTrailMasker(schemaMapper: $this->createMock(originalClassName: SchemaMapper::class));
+		$rows   = $masker->mask(entries: [['schema' => null, 'changed' => ['pin' => '4321']], ['schema' => '', 'changed' => ['codes' => ['123457609']]]]);
+
+		$this->assertSame(expected: '*****', actual: $rows[0]['changed']['pin']);
+		$this->assertSame(expected: '*****', actual: $rows[1]['changed']['codes']);
+
+		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
+		$schemas->method('find')->willReturn($this->personSchema());
+		$listed = (new ExplicitRevealTrailMasker(schemaMapper: $schemas))->mask(
+			entries: [['schema' => 7, 'changed' => ['citizenServiceNumber' => ['123457609', '987654321']]]]
+		);
+		$this->assertSame(expected: '*****', actual: $listed[0]['changed']['citizenServiceNumber']);
+	}//end testAnEntryWithoutASchemaAndAListValueAreMasked()
 }//end class
