@@ -27,7 +27,7 @@ use ReflectionMethod;
  * Runs matches() over every combination of a trigger corpus, a list of active
  * events and a list of contexts, and compares each answer with
  * `fixtures/dispatcher-matches-golden.json`. Each trigger maps to one string
- * per event, one character per context: T (true), F (false) or E (error).
+ * per event (the empty event is keyed `(empty)`), one character per context: T (true), F (false) or E (error).
  * Set `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher
@@ -138,7 +138,7 @@ final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 					}
 				}
 
-				$actual[$name][$event] = $answers;
+				$actual[$name][($event === '') ? '(empty)' : $event] = $answers;
 			}
 		}
 
