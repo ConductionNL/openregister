@@ -68,7 +68,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 	 * Every factory builds an instance of the name it is registered under.
 	 *
 	 * The container hands each factory a test double for every service it asks
-	 * for, or, for a final class, the service its own factory builds.
+	 * for; see serviceFor().
 	 *
 	 * @return void
 	 */
@@ -81,8 +81,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use (&$doubles, &$container, $context) {
 				if (isset($doubles[$id]) === false) {
-					$final        = (new ReflectionClass(objectOrClass: $id))->isFinal();
-					$doubles[$id] = $final === true ? $context->factories[$id]($container) : $this->createMock(originalClassName: $id);
+					$doubles[$id] = $this->serviceFor(id: $id, factories: $context->factories, container: $container);
 				}
 
 				return $doubles[$id];
@@ -165,4 +164,29 @@ class ObjectSourceRegistrarTest extends TestCase {
 
 		ObjectSourceRegistrar::boot(server: $server);
 	}//end testBootStopsWithoutARegistry()
+
+	/**
+	 * A test double for a service, or, for a final class, a real instance.
+	 *
+	 * A final class registered here is built by its own factory; any other
+	 * final class is created without running its constructor.
+	 *
+	 * @param string                  $id        The service id the factory asks for.
+	 * @param array<string, callable> $factories The registered factories by name.
+	 * @param IAppContainer           $container The container to hand a factory.
+	 *
+	 * @return object
+	 */
+	private function serviceFor(string $id, array $factories, IAppContainer $container): object {
+		$class = new ReflectionClass(objectOrClass: $id);
+		if ($class->isFinal() === false) {
+			return $this->createMock(originalClassName: $id);
+		}
+
+		if (isset($factories[$id]) === true) {
+			return $factories[$id]($container);
+		}
+
+		return $class->newInstanceWithoutConstructor();
+	}//end serviceFor()
 }//end class
