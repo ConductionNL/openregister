@@ -22,7 +22,7 @@ Read with `GrantConstraints::reaches()` against the request's clock. A row past 
 
 ## D-3. Rows from an app, at check time
 
-`matrix.rowsFrom` names a provider. In `compileDepartmentMatrix()` OpenRegister dispatches `MatrixRowsRequestedEvent` with the schema, the register and the provider id. Listeners call `addRows(array $rows)`. The rows are added to the declared rows before compiling.
+`matrix.rowsFrom` names a provider. In `compileDepartmentMatrix()` OpenRegister dispatches `MatrixRowsRequestedEvent` with the schema, the register and the provider id. Listeners call `addRows(array $rows, string $appId)`. Only rows added by the app that owns the provider id (the part before the first dot, `dossiq` in `dossiq.case-type-rights`) are kept, and a row granting `public`, `authenticated` or `admin` is dropped. The rows are added to the declared rows before compiling.
 
 - The event fires once per request per (schema, provider). The result is kept in the handler for the rest of the request.
 - 🔴 The listener runs inside an authorization decision. It must read without RBAC (as `DepartmentMatrixPersonValues` does) and must not ask the permission handler anything. A listener that throws contributes no rows; the matrix only adds ways in, so the failure direction is closed.

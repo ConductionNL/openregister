@@ -102,7 +102,8 @@ class MatrixRowsFromAppsBothPathsTest extends TestCase {
 		$calls = 0;
 		[$php, $sql] = $this->bothPaths(
 			static fn (MatrixRowsRequestedEvent $event) => $event->addRows(
-				[['value' => '$self', 'group' => 'intakers', 'actions' => ['read'], 'where' => ['status' => 's1']]]
+				[['value' => '$self', 'group' => 'intakers', 'actions' => ['read'], 'where' => ['status' => 's1']]],
+				'test'
 			),
 			$calls
 		);
@@ -139,7 +140,8 @@ class MatrixRowsFromAppsBothPathsTest extends TestCase {
 		$calls = 0;
 		[$php, $sql] = $this->bothPaths(
 			static fn (MatrixRowsRequestedEvent $event) => $event->addRows(
-				[['value' => '$self', 'group' => 'intakers', 'actions' => ['read'], 'where' => ['phase' => 'p1']]]
+				[['value' => '$self', 'group' => 'intakers', 'actions' => ['read'], 'where' => ['phase' => 'p1']]],
+				'test'
 			),
 			$calls
 		);
