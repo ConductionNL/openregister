@@ -81,7 +81,7 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification|null The prepared notification, or null when there is no edit.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	private function renderEditedTemplate(INotification $notification, string $languageCode): ?INotification {
 		if ($this->templates === null) {
@@ -257,7 +257,7 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification The prepared notification
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function prepareSecuritySettingChanged(INotification $notification, $l): INotification {
 		$parameters = $notification->getSubjectParameters();

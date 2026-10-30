@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Audit
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class PurposeRefusedException extends Exception {
 	/**
@@ -92,7 +92,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return string The rule id.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function getRule(): string {
 		return $this->rule;
@@ -103,7 +103,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return string|null The purpose code, or null when none was named.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function getPurpose(): ?string {
 		return $this->purpose;
@@ -116,7 +116,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return int The status code.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function getStatusCode(): int {
 		return 403;
@@ -127,7 +127,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function toResponseBody(): array {
 		return array_merge(

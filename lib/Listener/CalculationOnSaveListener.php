@@ -393,7 +393,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @return array<string, mixed>|null Calculations map, or null when nothing is declared.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function getCalculations(Schema $schema): ?array {
 		$config = ($schema->getConfiguration() ?? []);

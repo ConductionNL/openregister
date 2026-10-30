@@ -1092,7 +1092,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The condition, or null when no `_ids` restriction was asked.
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function idConditionSql(array $query, mixed $connection): ?string {
 		$ids = ($query['_ids'] ?? null);
@@ -3601,7 +3601,7 @@ class MagicSearchHandler {
 	 *
 	 * @return boolean True when the recency order was applied.
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
 	private function applyRecencyOrder(IQueryBuilder $qb, mixed $recentViews): bool {
 		if (is_array($recentViews) === false || $recentViews === []) {
@@ -3635,7 +3635,7 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
 	private function applyViewedAt(array $objects, mixed $recentViews): void {
 		if (is_array($recentViews) === false || $recentViews === []) {

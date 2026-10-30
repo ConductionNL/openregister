@@ -83,7 +83,7 @@ import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
  * caller's access inside the query, so a caller who may read one of three sees
  * one of three and a total of one.
  *
- * Spec: openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * Spec: openspec/specs/linked-entity-types/spec.md
  */
 export default {
 	name: 'ReferencedByTab',
@@ -145,7 +145,7 @@ export default {
 		/**
 		 * Read the records that reference this object, grouped by schema.
 		 *
-		 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+		 * @spec openspec/specs/linked-entity-types/spec.md
 		 * @return {Promise<void>}
 		 */
 		async fetchReferencedBy() {

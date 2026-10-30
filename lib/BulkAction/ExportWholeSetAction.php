@@ -56,7 +56,7 @@ use Throwable;
  *     Files folder. Splitting the class would move the collaborators, not
  *     reduce them.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportWholeSetAction implements BulkActionInterface {
 
@@ -101,7 +101,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @return string The action id.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -112,7 +112,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getLabel(): string {
 		return 'Export the whole set';
@@ -123,7 +123,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getDescription(): string {
 		return 'Writes every selected object to a file per schema, in the field order the profile declares.';
@@ -134,7 +134,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @return bool False.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function requiresJustification(): bool {
 		return false;
@@ -148,7 +148,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @return array<int, string> No guards.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getGuards(): array {
 		return [];
@@ -163,7 +163,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @throws InvalidArgumentException When no whole-set profile is named.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function validateParameters(array $parameters): void {
 		$profileId = ($parameters['profileId'] ?? null);
@@ -204,7 +204,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *     private __construct exists so an outcome cannot be built without
 	 *     saying which of the four it is.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
 		if ($actor === null) {

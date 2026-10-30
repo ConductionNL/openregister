@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Runs a party query against the cap.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+ * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
  */
 class PartySearchService {
 
@@ -71,7 +71,7 @@ class PartySearchService {
 	 *
 	 * @return int The cap, at least one.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function cap(): int {
 		$cap = $this->config->getValueInt('openregister', self::CAP_KEY, self::DEFAULT_CAP);
@@ -95,7 +95,7 @@ class PartySearchService {
 	 *
 	 * @throws Exception 400 when the query is empty, 403 naming the cap when it is exceeded.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function search(string $query, int|string|null $schemaId = null): array {
 		$term = trim($query);

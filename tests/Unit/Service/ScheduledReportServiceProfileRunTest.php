@@ -24,7 +24,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);

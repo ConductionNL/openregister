@@ -137,7 +137,7 @@ class Version1Date20260915061500 extends SimpleMigrationStep {
 	 *
 	 * @return integer 1 when the table was created, 0 when it was already there.
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/changes/archive/2026-10-05-favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	private function createViews(ISchemaWrapper $schema): int {
 		if ($schema->hasTable(self::VIEWS_TABLE) === true) {

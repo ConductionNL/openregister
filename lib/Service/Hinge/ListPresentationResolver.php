@@ -62,7 +62,7 @@ class ListPresentationResolver {
 	 * @return array{declared: bool, columns: array<int, array>, searchFields: array<int, string>}
 	 *                                                                                            The list surface.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function resolve(Schema $schema): array {
 		$declaration = $schema->getListPresentation();

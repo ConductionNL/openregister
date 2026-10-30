@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -92,7 +92,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @throws InvalidArgumentException When the scope is unusable or the caller is anonymous.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function mint(
 		string $userId,
@@ -157,7 +157,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return CalendarFeedToken|null The live token, or null.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function resolve(string $token): ?CalendarFeedToken {
 		$token = trim($token);
@@ -183,7 +183,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function noteRead(CalendarFeedToken $token): void {
 		try {
@@ -202,7 +202,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return bool True when a token was revoked, false when there was none to revoke.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function revoke(int $id, string $userId): bool {
 		if (trim($userId) === '') {
@@ -233,7 +233,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return array<int, array<string, mixed>> The serialised tokens, with their URLs.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function listForUser(string $userId): array {
 		$userId = trim($userId);
@@ -258,7 +258,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return string The absolute feed URL.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function feedUrl(string $token): string {
 		return $this->urlGenerator->getAbsoluteURL(

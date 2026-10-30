@@ -31,6 +31,13 @@ The object query SHALL accept `_recent=true`, returning the current user's viewe
 - **THEN** the result equals the one for `_watching=true` and `status=open`
 - @e2e tests/e2e/ci/favourites-and-recent.spec.ts
 
+#### Scenario: a recent chip composes with a filter
+
+- **GIVEN** a user who opened three cases, one of them with status `open`
+- **WHEN** the index page queries with `_recent=true` and `status=open`
+- **THEN** only that open case is returned
+- @e2e exclude {composition with a property filter is the generic `_ids` restriction; covered by SearchQueryHandlerPersonalLensesTest and the favourites e2e composition test}
+
 ### Requirement: A user can watch an object they may read
 
 The system SHALL let a user who may read an object follow it and unfollow it, storing the follow per user outside the object so that following writes no audit entry and no version on the object. Every follow SHALL carry a notification switch. `PUT .../watch` SHALL accept an optional body `{"notify": true|false}`: given, it sets the switch; absent, a new follow notifies and an existing follow keeps its setting. Object reads and lists SHALL carry `@self.watching` and, when the caller follows the object, `@self.watchNotify` for the current user only.

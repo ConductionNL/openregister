@@ -246,7 +246,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function deletedRefusal(
 		string $id,
@@ -944,7 +944,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -1193,7 +1193,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the read may proceed.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function refuseUnboundPurpose(array $resolved): ?JSONResponse {
 		if ($this->purposeGuard === null) {
@@ -5845,7 +5845,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
 		try {
@@ -6060,7 +6060,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal to return, or null when the export may run.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	private function exportRefusalFor(Schema $schema, Register $register): ?JSONResponse {
 		$rightService = null;
@@ -6108,7 +6108,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function recordExportRefusal(
 		\OCA\OpenRegister\Service\Export\ExportRefusedException $refusal,
@@ -6139,7 +6139,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function recordExportCompleted(Register $register, Schema $schema, string $format, int $rowCount): void {
 		$recorder = $this->exportAuditRecorder();
@@ -6234,7 +6234,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return int The row count, header excluded.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function countCsvExportRows(string $csv): int {
 		$lines = array_filter(explode("\n", $csv), static fn ($line) => trim($line) !== '');
@@ -6249,7 +6249,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return int The row count, or 0 when the payload is not a list.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function countJsonExportRows(string $json): int {
 		$decoded = json_decode($json, true);
@@ -6271,7 +6271,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return int The row count, each sheet header excluded.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function countSpreadsheetExportRows(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet): int {
 		$rows = 0;
@@ -7183,7 +7183,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse The grouped reverse view, or 404 when the object is gone.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function referencedBy(
 		string $id,
@@ -7248,7 +7248,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse A GeoJSON FeatureCollection, or 404 when the object is gone.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function geoFeatures(
 		string $id,

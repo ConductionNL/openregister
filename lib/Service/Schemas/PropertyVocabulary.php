@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Schemas;
  * drift apart, which is what makes "generated from the validator's own list" a
  * claim a build can refute.
  *
- * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 final class PropertyVocabulary {
 
@@ -48,7 +48,7 @@ final class PropertyVocabulary {
 	 * @return array<int, array{type: string, category: string, constraints: array<int, string>,
 	 *   formats: array<int, string>, conversion: string, conversionNote: string, description: string}> The type rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function types(): array {
 		$rows = [];
@@ -73,7 +73,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> Type names in declaration order.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function typeNames(): array {
 		return array_map('strval', array_keys(PropertyValidatorHandler::TYPES));
@@ -86,7 +86,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return bool True when the validator accepts this type.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function hasType(string $type): bool {
 		return array_key_exists($type, PropertyValidatorHandler::TYPES);
@@ -99,7 +99,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> The constraint keys, in declaration order.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function constraintsFor(string $type): array {
 		$keys = [];
@@ -125,7 +125,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> The formats, empty for every type but string.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function formatsFor(string $type): array {
 		if ($type !== 'string') {
@@ -141,7 +141,7 @@ final class PropertyVocabulary {
 	 * @return array<int, array{key: string, appliesTo: array<int, string>, value: string,
 	 *   enforced: bool, breaking: bool, description: string}> The constraint rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function constraints(): array {
 		$rows = [];
@@ -168,7 +168,7 @@ final class PropertyVocabulary {
 	 * @return array<int, array{key: string, value: string, enforced: bool, description: string,
 	 *   allowedValues?: array<int, string>}> The modifier rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function modifiers(): array {
@@ -196,7 +196,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, array{key: string, enforced: bool, description: string}> The pass-through rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function passthrough(): array {
 		$rows = [];
@@ -219,7 +219,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> The accepted property keys.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the four tables and merges them
 	 *                                       once. Re-merging them here would be the second list
@@ -236,7 +236,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return bool True when a property may carry this key.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the localisation rule because it is
 	 *                                       the thing that enforces it. Spelling the suffix check
@@ -264,7 +264,7 @@ final class PropertyVocabulary {
 	 * @return array{keys: array<int, string>, separator: string, languageTagPattern: string,
 	 *   example: string, description: string} The localisation rule.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function localisation(): array {
 		return [
@@ -281,7 +281,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> Unique category names in declaration order.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function categories(): array {
 		$categories = [];
@@ -299,7 +299,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<string, mixed> Types, constraints, modifiers, pass-through keys and the counts.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function all(): array {
 		$types = $this->types();

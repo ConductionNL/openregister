@@ -1618,7 +1618,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function validateCalculationsAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -1940,7 +1940,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateExtendingFormAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2059,7 +2059,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function validateHingeAnnotations(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2215,7 +2215,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	private function validatePartyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);

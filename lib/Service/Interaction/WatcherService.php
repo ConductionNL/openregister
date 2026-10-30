@@ -156,7 +156,7 @@ class WatcherService {
 	 *
 	 * @return Watcher The subscription.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function watch(
 		ObjectEntity $object,
@@ -194,7 +194,7 @@ class WatcherService {
 	 *
 	 * @return Watcher The follow as it now stands.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function followQuietly(ObjectEntity $object, ?string $register = null, ?string $schema = null): Watcher {
 		$uid = $this->requireCaller();
@@ -343,7 +343,7 @@ class WatcherService {
 	 *
 	 * @throws NotAuthorizedException When the object carries no uuid to hang the row on.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
 	 */
 	public function followAssigned(
 		ObjectEntity $object,
@@ -417,7 +417,7 @@ class WatcherService {
 	 *
 	 * @return boolean|null The switch, or null when the caller does not follow it.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function notifyForCaller(string $objectUuid): ?bool {
 		if ($objectUuid === '') {
@@ -436,7 +436,7 @@ class WatcherService {
 	 *
 	 * @return array<string, bool> Uuid to notify; empty when anonymous.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	private function followsOfCaller(): array {
 		$uid = $this->callerUid();
@@ -529,7 +529,7 @@ class WatcherService {
 	 *
 	 * @return array<int, string> The uids to notify.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	public function watcherUids(string $objectUuid): array {
 		if ($objectUuid === '') {

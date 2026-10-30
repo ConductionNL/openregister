@@ -1059,7 +1059,7 @@ return [
         // is generated as the principal the token names and holds exactly what
         // that principal may list. An unknown, revoked or expired token gets
         // the same 404 as any other.
-        // @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+        // @spec openspec/specs/calendar-provider/spec.md
         ['name' => 'calendarFeed#feed', 'url' => '/api/public/calendar-feeds/{token}.ics', 'verb' => 'GET', 'requirements' => ['token' => '[^/.]+']],
         ['name' => 'calendarFeed#index', 'url' => '/api/calendar-feeds', 'verb' => 'GET'],
         ['name' => 'calendarFeed#mint', 'url' => '/api/calendar-feeds', 'verb' => 'POST'],
@@ -1123,7 +1123,7 @@ return [
         // window. A retired value is absent here and still resolves through
         // the three routes above, which is the whole point of retiring
         // rather than deleting (REQ-CLH-001, REQ-CLH-002).
-        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+        // @spec openspec/specs/skos-concept-registers/spec.md
         ['name' => 'vocabulary#propertyOptions', 'url' => '/api/vocabulary/options', 'verb' => 'GET'],
 
         // Activity — Tier-2 read-only API. NC Activity entries are
@@ -1716,7 +1716,7 @@ return [
         // and a conversion over populated objects is previewed before it is
         // taken. An unsupported one is refused with its reason and never
         // attempted (REQ-CLH-005).
-        // @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+        // @spec openspec/specs/runtime-schema-api/spec.md
         ['name' => 'schemaMigration#conversions', 'url' => '/api/schemas/property-conversions', 'verb' => 'GET'],
         ['name' => 'schemaMigration#previewConversion', 'url' => '/api/schemas/{id}/conversions/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // Schema import from external standards (schema-import-standards). Admin-gated by NC framework default.

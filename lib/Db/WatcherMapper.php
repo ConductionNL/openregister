@@ -148,7 +148,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return array<int, Watcher> The rows.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	public function findNotifyingByObject(string $objectUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -174,7 +174,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return array<string, bool> Object uuid to whether that follow notifies.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function notifyMapForUser(string $userId): array {
 		$qb = $this->db->getQueryBuilder();
@@ -273,7 +273,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return Watcher The stored row.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function subscribe(
 		string $userId,

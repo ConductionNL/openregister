@@ -1039,7 +1039,7 @@ class QueryHandler {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public static function declaresLenses(array $schemas): bool {
 		foreach ($schemas as $schema) {

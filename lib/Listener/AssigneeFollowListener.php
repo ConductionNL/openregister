@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+ * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Follows an object for its new assignee.
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+ * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
  *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent>
  */
@@ -85,7 +85,7 @@ final class AssigneeFollowListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatedEvent) === false && ($event instanceof ObjectCreatedEvent) === false) {

@@ -97,7 +97,7 @@ class DestructionScopeService {
 	 *     total: int, unknown: array<int, string>,
 	 *     unavailable: array<int, string>, destroyable: bool} The preview.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function preview(ObjectEntity $object, ?Schema $schema): array {
 		$declared = $this->reader->declaredOn(schema: $schema);
@@ -141,7 +141,7 @@ class DestructionScopeService {
 	 *
 	 * @throws DestructionRefusedException When the scope cannot be honoured.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destroy(ObjectEntity $object, ?Schema $schema): array {
 		$preview = $this->preview(object: $object, schema: $schema);

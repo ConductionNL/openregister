@@ -647,7 +647,7 @@ class PropertyValidatorHandler {
 	 *
 	 * @return array<int, string> The accepted property keys.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function vocabularyKeys(): array {
 		return array_values(
@@ -669,7 +669,7 @@ class PropertyValidatorHandler {
 	 *
 	 * @return bool True when the key is a localised spelling of a prose modifier.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function isLocalisedKey(string $key): bool {
 		$colon = strpos($key, ':');
@@ -700,7 +700,7 @@ class PropertyValidatorHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function assertKeysAreInTheVocabulary(array $property, string $path): void {
 		$known = self::vocabularyKeys();

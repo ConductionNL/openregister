@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  * @category Service
  * @package  OCA\OpenRegister\Service\Rbac
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 final class PrincipalReach {
 	/**
@@ -99,7 +99,7 @@ final class PrincipalReach {
 	 *
 	 * @return bool True when the authorization layer can remove it.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public static function isRevocable(?string $source): bool {
 		return in_array(needle: (string)$source, haystack: self::REVOCABLE, strict: true);
@@ -112,7 +112,7 @@ final class PrincipalReach {
 	 *
 	 * @return bool True when the source is a member.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public static function isMember(?string $source): bool {
 		return in_array(needle: (string)$source, haystack: self::SOURCES, strict: true);

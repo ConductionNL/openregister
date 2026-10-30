@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class FileMetadataFormHandler {
 	 *
 	 * @return array{changed: array<int, array>, unchanged: array<int, int>, failed: array<int, array>}
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function save(ObjectEntity $object, array $entries): array {
 		$changed = [];
@@ -138,7 +138,7 @@ class FileMetadataFormHandler {
 	 *
 	 * @throws Exception When the file cannot be found or the rename is refused.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function saveOne(ObjectEntity $object, int $fileId, array $entry): ?array {
 		$node = $this->fileService->getFile(object: $object, file: (string)$fileId);
@@ -190,7 +190,7 @@ class FileMetadataFormHandler {
 	 *
 	 * @return string|null The requested value, or null when absent.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function requested(array $entry, string $key): ?string {
 		if (array_key_exists($key, $entry) === false || is_scalar($entry[$key]) === false) {

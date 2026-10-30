@@ -40,7 +40,7 @@ class HingeAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings, empty when all is well.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function validate(array $schema): array {
 		$properties = ($schema['properties'] ?? []);

@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+ * @spec openspec/specs/deletion-audit-trail/spec.md
  */
 
 declare(strict_types=1);

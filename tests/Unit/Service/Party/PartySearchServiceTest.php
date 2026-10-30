@@ -25,7 +25,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * A person query over the administered cap is refused, never truncated.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 class PartySearchServiceTest extends TestCase {
 
@@ -112,7 +112,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testABroadSearchIsRefusedNotTruncated(): void {
 		$this->capIs(cap: 10);
@@ -134,7 +134,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testTheRefusedAttemptIsOnTheTrail(): void {
 		$this->capIs(cap: 10);
@@ -168,7 +168,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testAQueryInsideTheCapAnswers(): void {
 		$this->capIs(cap: 10);
@@ -192,7 +192,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testAnEmptyQueryIsRefused(): void {
 		$this->capIs(cap: 10);
@@ -209,7 +209,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testANonsenseCapFallsBackToTheDefault(): void {
 		$this->capIs(cap: 0);

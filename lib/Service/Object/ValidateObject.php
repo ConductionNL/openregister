@@ -406,7 +406,7 @@ class ValidateObject {
 	 *
 	 * @return NotSuppliedHandler The handler.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function notSupplied(): NotSuppliedHandler {
 		if ($this->notSuppliedHandler === null) {
