@@ -597,7 +597,8 @@ class ExportHandler {
 	 *
 	 * Rewrites the `$ref` (an id or a URL ending in one), the
 	 * `objectConfiguration` register and schema ids, and the legacy `register`
-	 * URL. A reference to an unknown id is left as it is.
+	 * URL. A reference to an unknown id is left as it is. A node or
+	 * `objectConfiguration` decoded as an object is read as an array.
 	 *
 	 * @param mixed          $node  The property or `items` node.
 	 * @param ExportSlugMaps $slugs The schema and register slugs by id.
@@ -607,6 +608,14 @@ class ExportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function withReferenceSlugs(mixed $node, ExportSlugMaps $slugs): mixed {
+		if (is_object($node) === true) {
+			$node = (array)$node;
+		}
+
+		if (is_object($node['objectConfiguration'] ?? null) === true) {
+			$node['objectConfiguration'] = (array)$node['objectConfiguration'];
+		}
+
 		if (($node['$ref'] ?? null) !== null) {
 			$node['$ref'] = $slugs->schemaSlug(schemaId: $this->getLastNumericSegment(url: $node['$ref'])) ?? $node['$ref'];
 		}
