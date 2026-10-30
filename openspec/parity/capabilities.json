@@ -4068,7 +4068,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "POST .../links appinfo/routes.php:105 -> lib/Controller/ObjectSharingController.php:241 createLink with expiration; access links with expiry appinfo/routes.php:1052,1066 -> lib/Controller/AccessLinkController.php:299; recipient read lib/Controller/ObjectShareLinkController.php:129 returns JSON. Shares tab src/views/object/ObjectDetails.vue:438 (CnObjectAccessTab, nextcloud-vue).",
-    "change": "access-by-link-not-by-account"
+    "change": "access-by-link-not-by-account",
+    "requirement": [
+     "A link declares its capabilities, carries an expiry and may carry a password (REQ-ABL-002)",
+     "A revoked or expired link answers 404, and every use is recorded (REQ-ABL-003)"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id (Shares tab); recipient: API only GET /api/shared/{token}",
    "provider": "openregister",
@@ -5320,7 +5324,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/PermissionHandler.php:414 hasPermission on schema authorization; list filter lib/Db/MagicMapper/MagicRbacHandler.php:482 called lib/Db/MagicMapper/MagicSearchHandler.php:2145; edited in src/views/settings/sections/PermissionMatrix.vue:543 (saveSchema)",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": [
+     "Permission Types (read, create, update, delete, list)",
+     "Nextcloud Group Mapping"
+    ]
    },
    "reachedOn": "OpenRegister admin settings, Permission Matrix section (src/settings.js); schema edit dialog /schemas",
    "provider": "openregister",
@@ -5356,7 +5364,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "conditional 'match' rules compiled to SQL lib/Db/MagicMapper/MagicRbacHandler.php:852 processConditionalRule and :1942 buildMatchConditionsSql, applied via :482 applyRbacFilters from MagicSearchHandler.php:2145; single-object path PermissionHandler.php:636",
-    "spec": "openspec/specs/row-field-level-security"
+    "spec": "openspec/specs/row-field-level-security",
+    "requirement": "Schemas MUST support row-level security rules via conditional authorization matching"
    },
    "reachedOn": "every object list /objects and API GET /api/objects/{register}/{schema} (routes.php:1164); rules set in schema authorization JSON",
    "provider": "openregister",
@@ -5433,7 +5442,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "objectSharing#createShare appinfo/routes.php:103 (lib/Service/Rbac/ObjectSharingService.php); Shares tab src/views/object/ObjectDetails.vue:438 CnObjectAccessTab, rendered by ObjectsIndex.vue:31",
-    "change": "object-level-sharing-and-private-scope"
+    "change": "object-level-sharing-and-private-scope",
+    "requirement": [
+     "Access can be granted on a single object",
+     "A grant carries a permission, and the verb is enforced where the action happens"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id Shares tab",
    "provider": "openregister",
@@ -5467,7 +5480,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/MagicMapper/MagicOrganizationHandler.php:130 applyOrganizationFilter called lib/Db/MagicMapper/MagicSearchHandler.php:2135; organisation#index appinfo/routes.php:1750; page src/manifest.json:101 (organisation)",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": [
+     "openspec/specs/auth-system :: Multi-tenancy isolation MUST restrict data access to the user's active organisation",
+     "Multi-Tenancy Integration with Scopes"
+    ]
    },
    "reachedOn": "/organisation",
    "provider": "openregister",
@@ -5541,7 +5558,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/settings/sections/PermissionMatrix.vue:543 saves schema authorization via schemaStore.saveSchema; RbacConfiguration.vue; mounted src/views/settings/Settings.vue:36-39",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": "openspec/changes/rights-screen-stated :: Rights are managed in a permission matrix screen (REQ-RSS-001)"
    },
    "reachedOn": "Nextcloud admin settings > OpenRegister (Permission Matrix, RBAC configuration)",
    "provider": "openregister",
@@ -5609,7 +5627,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:1390 @PublicPage on index (:1402), routes.php:1164; public grant checked PermissionHandler.php:2248 publicGroupExplicitlyGranted; 'Public' column in src/views/settings/sections/PermissionMatrix.vue",
-    "spec": "openspec/specs/rbac-scopes"
+    "spec": "openspec/specs/rbac-scopes",
+    "requirement": "openspec/specs/auth-system :: The role hierarchy MUST include admin bypass, owner privileges, public access, and authenticated access"
    },
    "reachedOn": "API: GET /api/objects/{register}/{schema} anonymous; set in admin Permission Matrix",
    "provider": "openregister",
@@ -5642,7 +5661,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/SaveObject.php:5980 encryptProperties; decrypt lib/Service/Object/RenderObject.php:804 (x-openregister-encrypted); occ lib/Command/EncryptFieldCommand.php",
-    "spec": "openspec/specs/field-level-encryption"
+    "spec": "openspec/specs/field-level-encryption",
+    "requirement": [
+     "Flagged properties are encrypted on save",
+     "Authorized reads are decrypted; unauthorized reads never see ciphertext"
+    ]
    },
    "reachedOn": "transparent on every object write/read; flag set in schema property",
    "provider": "openregister",
@@ -5710,7 +5733,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectPermissionsController.php:118 index returns principals, verbs and the rule/level granting each, plus denies; routes.php:115; history as-of :179 routes.php:114",
-    "change": "permission-provenance-and-deny"
+    "change": "permission-provenance-and-deny",
+    "requirement": [
+     "An object answers who holds which right on it, and how that changed (REQ-PPD-007)",
+     "Every effective permission names the rule that decided it (REQ-PPD-004)"
+    ]
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}/{id}/permissions",
    "provider": "openregister",
@@ -8933,7 +8960,11 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "record files live in Nextcloud storage (object store primary storage keeps the bucket private, nextcloud/server lib/private/Files/ObjectStore/S3.php) and are served only through Nextcloud; an expiring public link comes from a Nextcloud share, lib/Service/ShareLinkService.php:290 sets the expiration; Open Register's own access links with a required expiry (lib/Db/AccessLink.php:292, subject file :101) are minted at appinfo/routes.php accessLink#mint, which the object detail page calls since #4061 (src/components/access-links/ObjectAccessLinks.vue, object subject only); a link over one file is still minted through the API",
-    "change": "access-by-link-not-by-account"
+    "change": "access-by-link-not-by-account",
+    "requirement": [
+     "A publication link opens one object, view or file as its own principal (REQ-ABL-001)",
+     "A link declares its capabilities, carries an expiry and may carry a password (REQ-ABL-002)"
+    ]
    },
    "reachedOn": "Nextcloud Files share link with an expiry date; Open Register access links from the object's Access links tab (object subject) or POST /api/access-links (file subject)",
    "provider": "nextcloud",
@@ -9720,7 +9751,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/credential-broker: lib/AppHost/Repair/GenericInitializeSettings.php, lib/AppInfo/Application.php, lib/Controller/CredentialController.php, lib/Repair/ImportCredentialBrokerRegister.php.",
-    "spec": "openspec/specs/credential-broker"
+    "spec": "openspec/specs/credential-broker",
+    "requirement": [
+     "A token set is never resolved app-side",
+     "Broker capability tokens are bound to the specific request",
+     "openspec/specs/credential-oauth2-connect :: The callback exchanges the code and mints a token-set credential"
+    ]
    },
    "reachedOn": "/credentials",
    "provider": "openregister",
