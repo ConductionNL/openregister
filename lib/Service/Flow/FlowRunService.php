@@ -1523,6 +1523,9 @@ class FlowRunService {
 	private function withoutSecrets(array $result, mixed $secretRef): array {
 		$result['log'] = ObjectActionSecrets::redactLog(log: (array)($result['log'] ?? []), ref: $secretRef);
 		$result['items'] = ObjectActionSecrets::redactItems(items: (array)($result['items'] ?? []), ref: $secretRef);
+		// Copies a later step made (`json.code` from `{{inputs.pin}}`): whole strings only.
+		$result['log']   = (array)ObjectActionSecrets::redactCopies(data: $result['log'], ref: $secretRef);
+		$result['items'] = (array)ObjectActionSecrets::redactCopies(data: $result['items'], ref: $secretRef);
 		if (is_string($result['error'] ?? null) === true) {
 			$result['error'] = ObjectActionSecrets::redactText(text: $result['error'], ref: $secretRef);
 		}
@@ -1607,7 +1610,7 @@ class FlowRunService {
 
 		$run->setStatus($status);
 		$run->setItems($result['items']);
-		$run->setContext($context);
+		$run->setContext((array)ObjectActionSecrets::redactCopies(data: $context, ref: $secretRef));
 		$run->setLog($log);
 		$run->setError(($result['error'] ?? null));
 		$run->setUpdated(new DateTime());

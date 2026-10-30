@@ -13,8 +13,9 @@
  *
  * The steps carry the values in their items, so whatever stores a run (its
  * log of step inputs and outputs, its step rows, its final items, its context)
- * passes it through {@see redactItems()} and {@see redactLog()} first:
- * by key, so no unrelated value that happens to equal a secret is touched.
+ * passes it through {@see redactItems()} and {@see redactLog()} first (by
+ * key), and {@see redactCopies()} (a whole string equal to a secret of four
+ * or more characters), so no timestamp, uuid or counter is cut into.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -55,7 +56,8 @@ final class ObjectActionSecrets {
 	public const REDACTED = '[redacted]';
 
 	/**
-	 * The shortest secret also looked for inside a longer free text.
+	 * The shortest secret also looked for outside its own key: as a whole
+	 * copied string value, or as a whole token in a free text.
 	 */
 	public const MIN_EMBEDDED_LENGTH = 4;
 
@@ -186,6 +188,56 @@ final class ObjectActionSecrets {
 
 		return $text;
 	}//end redactText()
+
+	/**
+	 * The data with every STRING whose whole value equals a held value of at
+	 * least {@see MIN_EMBEDDED_LENGTH} characters replaced: the copies a later
+	 * step made (`json.code` set from `{{inputs.pin}}`).
+	 *
+	 * Exact match only, never a substring, so a timestamp or a uuid that
+	 * contains the same digits stays intact; integers and objects are never
+	 * touched, and a shorter secret is left to the key pass. The limit: a
+	 * secret embedded inside a longer string is not found.
+	 *
+	 * @param mixed $data The data.
+	 * @param mixed $ref  The reference.
+	 *
+	 * @return mixed The data.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
+	 */
+	public static function redactCopies(mixed $data, mixed $ref): mixed {
+		$secrets = self::copyableSecrets(ref: $ref);
+		if ($secrets === []) {
+			return $data;
+		}
+
+		return self::replaceCopies(data: $data, secrets: $secrets);
+	}//end redactCopies()
+
+	/**
+	 * Walk the data, replacing whole-string copies.
+	 *
+	 * @param mixed              $data    The data.
+	 * @param array<int, string> $secrets The secrets.
+	 *
+	 * @return mixed The data.
+	 */
+	private static function replaceCopies(mixed $data, array $secrets): mixed {
+		if (is_string($data) === true && in_array($data, $secrets, true) === true) {
+			return self::REDACTED;
+		}
+
+		if (is_array($data) === false) {
+			return $data;
+		}
+
+		foreach ($data as $key => $value) {
+			$data[$key] = self::replaceCopies(data: $value, secrets: $secrets);
+		}
+
+		return $data;
+	}//end replaceCopies()
 
 	/**
 	 * Whether a held value occurs in the data: a string equal to it, or, for a

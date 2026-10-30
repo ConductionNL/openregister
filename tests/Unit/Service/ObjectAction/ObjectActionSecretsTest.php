@@ -44,7 +44,7 @@ class ObjectActionSecretsTest extends TestCase {
 		try {
 			$run = new \OCA\OpenRegister\Db\FlowRun();
 			$run->setContext([ObjectActionSecrets::CONTEXT_KEY => $ref]);
-			$items = ['hop' => [['json' => ['uuid' => self::UUID, 'inputs' => ['pin' => '2026', 'reason' => 'ok']], 'binary' => []]]];
+			$items = ['hop' => [['json' => ['uuid' => self::UUID, 'code' => '2026', 'inputs' => ['pin' => '2026', 'reason' => 'ok']], 'binary' => []]]];
 
 			$commit = (new ReflectionClass(objectOrClass: FlowRunCommit::class))->newInstanceWithoutConstructor();
 			$method = new \ReflectionMethod(objectOrMethod: FlowRunCommit::class, method: 'storedPlaceItems');
@@ -57,6 +57,7 @@ class ObjectActionSecretsTest extends TestCase {
 		$this->assertSame(expected: self::UUID, actual: $json['uuid']);
 		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $json['inputs']['pin']);
 		$this->assertSame(expected: 'ok', actual: $json['inputs']['reason']);
+		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $json['code'], message: 'a copy is redacted too');
 	}//end testStoredPlaceItemsRedactTheInputAndKeepTheSubject()
 
 	/**
@@ -74,6 +75,28 @@ class ObjectActionSecretsTest extends TestCase {
 
 		$this->assertSame(expected: 'PIN [redacted] refused on 2026-10-30 for ' . self::UUID, actual: $text);
 	}//end testErrorTextReplacesWholeTokensOnly()
+
+	/**
+	 * A whole-string copy is redacted; timestamps, uuids, ints and a short secret are not touched.
+	 *
+	 * @return void
+	 */
+	public function testCopiesAreRedactedWholeStringsOnly(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '2026', 'digit' => '1']);
+		try {
+			$data = ObjectActionSecrets::redactCopies(
+				data: ['json' => ['code' => '2026', 'created' => '2026-10-30T10:00:00+00:00', 'uuid' => self::UUID, 'n' => '1', 'count' => 2026]],
+				ref: $ref
+			);
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(
+			expected: ['code' => '[redacted]', 'created' => '2026-10-30T10:00:00+00:00', 'uuid' => self::UUID, 'n' => '1', 'count' => 2026],
+			actual: $data['json']
+		);
+	}//end testCopiesAreRedactedWholeStringsOnly()
 
 	/**
 	 * Flow state holding a held value is detected.

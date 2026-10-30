@@ -691,8 +691,9 @@ class FlowRunCommit {
 
 	/**
 	 * The per-place items as stored: a writeOnly action input held under the
-	 * run's inputsRef is redacted at `json.inputs.<name>`, and nothing else is
-	 * touched, so a resume reads the subject and counters it stored. The walk
+	 * run's inputsRef is redacted at `json.inputs.<name>` and wherever a string
+	 * equals it whole (a copy; four or more characters), so a resume reads the
+	 * subject, timestamps and counters it stored. The walk
 	 * carries on with the values this request still holds.
 	 *
 	 * @param FlowRun              $run        The locked run row.
@@ -707,7 +708,9 @@ class FlowRunCommit {
 
 		foreach ($placeItems as $place => $items) {
 			if (is_array($items) === true) {
-				$placeItems[$place] = ObjectActionSecrets::redactItems(items: $items, ref: $ref);
+				$items = ObjectActionSecrets::redactItems(items: $items, ref: $ref);
+				// A whole-string copy a later step made, e.g. `json.code`.
+				$placeItems[$place] = ObjectActionSecrets::redactCopies(data: $items, ref: $ref);
 			}
 		}
 
