@@ -108,6 +108,11 @@ class NamesController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with object names or error
 	 *
+	 * @no-admin-idor-exempt Guarded in the name cache, not here: CacheHandler::visibleNames()
+	 *   returns only names the caller may read (object read RBAC + multitenancy, and the
+	 *   caller's organisation scope for organisation names), so an id the caller cannot
+	 *   read resolves to nothing.
+	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	#[NoAdminRequired]
@@ -260,6 +265,11 @@ class NamesController extends Controller {
 	 * @throws \Exception If name lookup fails
 	 *
 	 * @return JSONResponse JSON response with object names or error
+	 *
+	 * @no-admin-idor-exempt Guarded in the name cache, not here: CacheHandler::visibleNames()
+	 *   returns only names the caller may read (object read RBAC + multitenancy, and the
+	 *   caller's organisation scope for organisation names), so an id the caller cannot
+	 *   read resolves to nothing.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
