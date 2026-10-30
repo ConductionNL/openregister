@@ -71,7 +71,7 @@ class LlmSettingsHandlerTest extends TestCase {
 		$this->assertNull($result['fireworksConfig']['chatModel']);
 		$this->assertSame('https://api.fireworks.ai/inference/v1', $result['fireworksConfig']['baseUrl']);
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -100,7 +100,7 @@ class LlmSettingsHandlerTest extends TestCase {
 		$this->assertSame('ollama', $result['chatProvider']);
 		$this->assertSame('sk-123', $result['openaiConfig']['apiKey']);
 		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('_vec_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -133,7 +133,7 @@ class LlmSettingsHandlerTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -150,7 +150,7 @@ class LlmSettingsHandlerTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**

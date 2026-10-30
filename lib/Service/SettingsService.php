@@ -369,7 +369,7 @@ class SettingsService {
 	// ============================================
 	// DELEGATION METHODS TO HANDLERS
 	// ============================================
-	// SearchBackendHandler methods (2)
+	// SearchBackendHandler methods (1)
 
 	/**
 	 * Get search backend configuration
@@ -380,28 +380,8 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function getSearchBackendConfig(): array {
-		// The external Solr/Elasticsearch backends were removed; the built-in
-		// database (Magic-Tables) search is the only backend.
-		return [
-			'active' => 'database',
-			'available' => ['database'],
-		];
+		return $this->searchBackendHandler->getSearchBackendConfig();
 	}//end getSearchBackendConfig()
-
-	/**
-	 * Update search backend configuration
-	 *
-	 * @param array $data Search backend configuration data
-	 *
-	 * @return array Updated configuration
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
-	 */
-	public function updateSearchBackendConfig(array $data): array {
-		// Extract backend string from data array (database is the only valid backend).
-		$backend = $data['backend'] ?? $data['active'] ?? 'database';
-		return $this->searchBackendHandler->updateSearchBackendConfig($backend);
-	}//end updateSearchBackendConfig()
 
 	// LlmSettingsHandler methods (2).
 

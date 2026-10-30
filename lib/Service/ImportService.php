@@ -421,7 +421,6 @@ class ImportService implements ObjectImporterInterface {
 				];
 			}
 
-			// Schedule SOLR warmup job after successful Excel import.
 			$finalResult = [
 				$sheetTitle => $sheetSummary,
 				'importJobId' => $importJobId,
@@ -520,7 +519,6 @@ class ImportService implements ObjectImporterInterface {
 				'slug' => $schema->getSlug(),
 			];
 
-			// Schedule SOLR warmup job after successful CSV import.
 			$finalResult = [
 				$sheetTitle => $sheetSummary,
 				'importJobId' => $importJobId,

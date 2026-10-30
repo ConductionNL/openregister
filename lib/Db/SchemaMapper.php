@@ -406,7 +406,6 @@ class SchemaMapper extends QBMapper {
 
 		// Verify RBAC permission to read if RBAC is enabled.
 		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 
@@ -1049,7 +1048,6 @@ class SchemaMapper extends QBMapper {
 	): array {
 		// Verify RBAC permission to read if RBAC is enabled.
 		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 

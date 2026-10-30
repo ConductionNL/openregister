@@ -62,7 +62,7 @@ class SettingsServiceDeepTest extends TestCase {
 
 	private MockObject|IAppContainer $container;
 
-	private MockObject|SearchBackendHandler $searchBackendHandler;
+	private SearchBackendHandler $searchBackendHandler;
 
 	private MockObject|LlmSettingsHandler $llmSettingsHandler;
 
@@ -97,7 +97,7 @@ class SettingsServiceDeepTest extends TestCase {
 		$userManager = $this->createMock(IUserManager::class);
 		$objectCacheService = $this->createMock(CacheHandler::class);
 
-		$this->searchBackendHandler = $this->createMock(SearchBackendHandler::class);
+		$this->searchBackendHandler = new SearchBackendHandler();
 		$this->llmSettingsHandler = $this->createMock(LlmSettingsHandler::class);
 		$this->fileSettingsHandler = $this->createMock(FileSettingsHandler::class);
 		$this->objectRetentionHandler = $this->createMock(ObjectRetentionHandler::class);
@@ -302,42 +302,6 @@ class SettingsServiceDeepTest extends TestCase {
 		$this->assertCount(1, $result['available']);
 
 	}//end testGetSearchBackendConfigReturnsDatabase()
-
-	// =========================================================================
-	// updateSearchBackendConfig
-	// =========================================================================
-
-	/**
-	 * Test updateSearchBackendConfig with active key
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendConfigWithActiveKey(): void {
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('elasticsearch')
-			->willReturn(['active' => 'elasticsearch']);
-
-		$result = $this->service->updateSearchBackendConfig(['active' => 'elasticsearch']);
-		$this->assertEquals('elasticsearch', $result['active']);
-
-	}//end testUpdateSearchBackendConfigWithActiveKey()
-
-	/**
-	 * Test updateSearchBackendConfig with backend key
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendConfigWithBackendKey(): void {
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('database')
-			->willReturn(['active' => 'database']);
-
-		$result = $this->service->updateSearchBackendConfig(['backend' => 'database']);
-		$this->assertEquals('database', $result['active']);
-
-	}//end testUpdateSearchBackendConfigWithBackendKey()
 
 	// =========================================================================
 	// getDatabaseInfo
