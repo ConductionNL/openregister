@@ -18,9 +18,12 @@ use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(StoredEntity::class)]
+#[UsesClass(Register::class)]
+#[UsesClass(Schema::class)]
 class StoredEntityTest extends TestCase {
 
 	/**
