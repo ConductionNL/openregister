@@ -166,8 +166,10 @@ final class ObjectActionSecrets {
 	/**
 	 * A free text (an error message) with every held value of at least
 	 * {@see MIN_EMBEDDED_LENGTH} characters replaced where it stands as a whole
-	 * token: not inside a longer run of letters, digits or dashes, so a date
-	 * or a uuid that contains the same digits is left alone.
+	 * token: not inside a longer run of letters or digits. Punctuation (a dash,
+	 * an underscore) is a boundary, so "PIN-2026" and "user_2026" are caught;
+	 * a date such as 2026-10-30 in the text loses its year too, which is
+	 * acceptable in a free-text error and nowhere else.
 	 *
 	 * @param string|null $text The text.
 	 * @param mixed       $ref  The reference.
@@ -182,7 +184,7 @@ final class ObjectActionSecrets {
 		}
 
 		foreach (self::copyableSecrets(ref: $ref) as $secret) {
-			$pattern = '/(?<![A-Za-z0-9-])' . preg_quote($secret, '/') . '(?![A-Za-z0-9-])/';
+			$pattern = '/(?<![A-Za-z0-9])' . preg_quote($secret, '/') . '(?![A-Za-z0-9])/';
 			$text    = (string)preg_replace($pattern, self::REDACTED, $text);
 		}
 

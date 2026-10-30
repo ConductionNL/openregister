@@ -61,19 +61,20 @@ class ObjectActionSecretsTest extends TestCase {
 	}//end testStoredPlaceItemsRedactTheInputAndKeepTheSubject()
 
 	/**
-	 * An error text loses a held value where it stands as a whole token only.
+	 * An error text loses a held value where it stands as a whole token, with
+	 * punctuation as a boundary; a run of letters and digits (a uuid) is not cut.
 	 *
 	 * @return void
 	 */
 	public function testErrorTextReplacesWholeTokensOnly(): void {
 		$ref = ObjectActionSecrets::hold(values: ['pin' => '2026']);
 		try {
-			$text = ObjectActionSecrets::redactText(text: 'PIN 2026 refused on 2026-10-30 for ' . self::UUID, ref: $ref);
+			$text = ObjectActionSecrets::redactText(text: 'PIN-2026 for user_2026 refused, ref ' . self::UUID, ref: $ref);
 		} finally {
 			ObjectActionSecrets::release(ref: $ref);
 		}
 
-		$this->assertSame(expected: 'PIN [redacted] refused on 2026-10-30 for ' . self::UUID, actual: $text);
+		$this->assertSame(expected: 'PIN-[redacted] for user_[redacted] refused, ref ' . self::UUID, actual: $text);
 	}//end testErrorTextReplacesWholeTokensOnly()
 
 	/**
