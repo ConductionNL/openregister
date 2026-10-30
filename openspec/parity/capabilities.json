@@ -3003,7 +3003,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/DeletedController.php:374 restore, window per row :188 withWindows (destroyable-from date, days remaining); routes appinfo/routes.php:1438; page src/views/deleted/DeletedIndex.vue:213 Restore, :200 purge date; manifest id deleted src/manifest.json:165",
-    "spec": "openspec/specs/deletion-audit-trail"
+    "spec": "openspec/specs/deletion-audit-trail",
+    "requirement": [
+     "Requirement 3: Soft-deleted objects MUST be restorable through the trash API",
+     "Requirement 2: The system MUST support configurable retention periods before purge",
+     "Requirement 11: The trash/recycle bin API MUST support listing, filtering, and statistics for deleted objects"
+    ]
    },
    "reachedOn": "/deleted",
    "provider": "openregister",
@@ -3177,7 +3182,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "NotesProvider registered lib/AppInfo/Application.php:2117; lib/Service/NoteService.php wraps ICommentsManager; routes appinfo/routes.php:1493-1494 -> lib/Controller/NotesController.php:172; rendered via CnIntegrationWidget src/views/object/ObjectDetails.vue:413",
-    "spec": "openspec/specs/object-interactions"
+    "spec": "openspec/specs/object-interactions",
+    "requirement": "Notes on Objects via ICommentsManager"
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
@@ -3250,7 +3256,12 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-favourites-and-recent, backend only: PUT/DELETE .../favourite appinfo/routes.php:183,189 -> lib/Controller/ObjectFavouriteController.php; views registered on the audit trail through lib/Service/Interaction/ReadHistoryService.php registerAuditRead (read-history-on-audit-trail, replaced recordObjectView); _favourite/_recent lenses in lib/Service/Object/SearchQueryHandler.php:88. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
     "change": "record-star-follow-and-unread-on-screen",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": [
+     "openspec/specs/object-interactions :: A user can star an object without changing it",
+     "openspec/specs/object-interactions :: Favourites and recent are lenses on the object query",
+     "The Tables page filters on following and recent"
+    ]
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/favourite, GET /api/objects?_favourite / _recent",
    "provider": "openregister",
@@ -3355,7 +3366,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Anonymous create: lib/Controller/ObjectsController.php:3250 create is @PublicPage with AnonRateLimit, gated by schema RBAC; route appinfo/routes.php:1171. No public form page: templates/ holds only index.php and settings; formLinks (appinfo/routes.php:1104) only links NC Forms, no submission-to-record path.",
-    "change": "or-form-and-journey-registry"
+    "change": "or-form-and-journey-registry",
+    "requirement": [
+     "Anonymous submission MUST be throttled and MUST stamp no ownership",
+     "A journey MUST declare steps, branching, writes and access"
+    ]
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema} (anonymous)",
    "provider": "openregister",
@@ -5094,7 +5109,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/AuditTrailMapper.php:582 createAuditTrail stores user, time and changed old/new; object tab src/views/object/ObjectDetails.vue (Audit Trails); routes.php:1341-1342; page src/manifest.json:173",
-    "spec": "openspec/specs/audit-trail-immutable"
+    "spec": "openspec/specs/audit-trail-immutable",
+    "requirement": "Every mutation MUST produce an immutable audit trail entry"
    },
    "reachedOn": "/audit-trails and the object detail Audit Trails tab",
    "provider": "openregister",
@@ -5134,7 +5150,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/GetObject.php:197 writes createAuditTrail(action: 'read') on every user-facing find while auditTrailsEnabled is on (:451), opt-out per call via $_audit (:157, used by lib/Controller/FlowNodeRunController.php:402); read entries carry no diff lib/Db/AuditTrailMapper.php:861 and are counted beside create, update and delete :1834",
     "spec": "openspec/specs/audit-trail-immutable",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "Every user-facing read of an object is logged as a read"
    },
    "reachedOn": "/audit-trails (action read)",
    "provider": "openregister",
@@ -5210,7 +5227,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/logs/AuditTrailIndex.vue:50 export action calling /api/audit-trails/export (:581), auditTrail#export routes.php:1350, index routes.php:1342; page src/manifest.json:173",
-    "spec": "openspec/specs/enhanced-audit-trail"
+    "spec": "openspec/specs/enhanced-audit-trail",
+    "requirement": [
+     "openspec/changes/audit-and-dashboard-screens-stated :: The audit trail page browses, filters and exports entries (REQ-ADS-001)",
+     "openspec/specs/audit-trail-immutable :: Audit-Trail Access, Export, and Administrative Deletion Surface"
+    ]
    },
    "reachedOn": "/audit-trails",
    "provider": "openregister",
@@ -5470,7 +5491,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/RetentionService.php:421 placeLegalHold; checked before destroy lib/BackgroundJob/DestructionExecutionJob.php:199; routes.php:2006-2008, 2015-2017",
-    "spec": "openspec/specs/archival-destruction-workflow"
+    "spec": "openspec/specs/archival-destruction-workflow",
+    "requirement": [
+     "openspec/specs/retention-management :: The system MUST support legal holds (bevriezing)",
+     "Each matter holds an object with its own legal hold"
+    ]
    },
    "reachedOn": "API only: POST /api/archival/legal-holds",
    "provider": "openregister",
@@ -5503,7 +5528,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/TransferController.php:268 queues TransferExecutionJob -> lib/Service/Edepot/EdepotTransferService.php (SIP via SipPackageBuilder, REST/SFTP/Integriq transports); proof lib/Service/Edepot/TransferRecordService.php; routes.php:2041-2049",
-    "spec": "openspec/specs/edepot-transfer"
+    "spec": "openspec/specs/edepot-transfer",
+    "requirement": [
+     "The system MUST assemble SIP packages for e-Depot transfer",
+     "The system MUST track transfer status per object",
+     "The system MUST log all transfer actions in the audit trail"
+    ]
    },
    "reachedOn": "API only: /api/transfers; e-Depot settings API routes.php:2035",
    "provider": "openregister",
@@ -5636,7 +5666,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "DSAR cases routes.php:554-564 with lib/Service/Gdpr/DataSubjectDeadline.php (1 month, +2 extension); deadline column + overdue filter src/views/avg/AvgIndex.vue:565,607; erase routes.php:490",
-    "spec": "openspec/specs/gdpr-data-subject-rights"
+    "spec": "openspec/specs/gdpr-data-subject-rights",
+    "requirement": [
+     "Data-subject-request object model with status lifecycle",
+     "EU art-12 legal-deadline computation",
+     "Erasure honours legal hold and is mode-parameterised"
+    ]
    },
    "reachedOn": "/avg Cases tab",
    "provider": "openregister",
@@ -5709,7 +5744,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "subject-scoped pseudonymise lib/Service/Gdpr/DataSubjectRequestService.php:240 via erase (default mode) routes.php:490; file anonymise routes.php:1826. lib/Service/Archival/AnonymisationSweep.php has no caller (git grep -w)",
-    "change": "anonymising-as-an-archival-outcome"
+    "change": "anonymising-as-an-archival-outcome",
+    "requirement": [
+     "Anonymising is an archival action a result type can choose (REQ-AAO-001)",
+     "A schema declares how it is anonymised (REQ-AAO-002)",
+     "The archival anonymisation runs through the pseudonymise primitive (REQ-AAO-005)"
+    ]
    },
    "reachedOn": "API: POST /api/gdpr/erase; /avg erasure",
    "provider": "openregister",
@@ -5743,7 +5783,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/FilesController.php:572 create, routes appinfo/routes.php:1453-1460; stored in the Nextcloud filesystem via IRootFolder lib/Service/File/FolderManagementHandler.php:103; Files tab src/views/object/ObjectDetails.vue:250",
-    "spec": "openspec/specs/file-actions"
+    "spec": "openspec/specs/file-actions",
+    "requirement": [
+     "openspec/specs/object-interactions :: File Attachments on Objects",
+     "File creation and upsert run a fixed validate-write-own-tag pipeline"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id (Files tab)",
    "provider": "openregister",
@@ -5971,7 +6015,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/TextExtractionService.php:262 entity recognition then :284 riskLevelService->updateRiskLevel; shown src/components/files-sidebar/ExtractionTab.vue:105 Risk level; filter lib/Controller/FileExtractionController.php:151; Corrections round 8 (2026-09-28), openregister#4104: the regex detector has no BSN pattern and files a BSN as PHONE at best, and the Presidio path asks for US_SSN, so a Dutch BSN is never flagged as a citizen service number and its file is rated medium instead of very high, lib/Service/TextExtraction/EntityRecognitionHandler.php:505-526 and :869, lib/Service/RiskLevelService.php:78 and :82 at 555af72.",
-    "spec": "openspec/specs/file-risk-classification"
+    "spec": "openspec/specs/file-risk-classification",
+    "requirement": [
+     "RiskLevelService MUST classify a file's PII risk from its detected entities",
+     "RiskLevelService MUST persist and expose risk levels through Nextcloud files metadata"
+    ]
    },
    "reachedOn": "Nextcloud Files sidebar and /files",
    "provider": "openregister",
@@ -6038,7 +6086,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/WebhookEventListener.php:146 dispatchEvent, registered for created/updated/deleted lib/AppInfo/Application.php:3554-3556; CRUD appinfo/routes.php:1915-1919; page src/manifest.json:245 (webhooks)",
-    "spec": "openspec/specs/event-driven-architecture"
+    "spec": "openspec/specs/event-driven-architecture",
+    "requirement": [
+     "Webhook entities MUST support event subscription configuration with wildcard matching",
+     "Webhook delivery MUST support CloudEvents v1.0 format with configurable payload strategies"
+    ]
    },
    "reachedOn": "/webhooks",
    "provider": "openregister",
@@ -6370,7 +6422,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:3269 interceptRequest(eventType 'object.creating') lets a pre-event webhook rewrite the payload (lib/Service/WebhookService.php:1383); only on create, and an interceptor failure is caught and logged (:3277) so it cannot refuse the save",
-    "change": "flow-code-step-in-a-sidecar"
+    "change": "flow-code-step-in-a-sidecar",
+    "requirement": [
+     "openspec/specs/schema-hooks :: Sync Hook Response Format",
+     "openspec/specs/schema-hooks :: Stoppable Events for Hook-Based Rejection",
+     "A code step runs authored JavaScript outside Nextcloud"
+    ]
    },
    "reachedOn": "API only: webhook with interception",
    "provider": "openregister",
@@ -6435,7 +6492,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BulkAction/ApplyRuleAction.php:62 registered by lib/Listener/BulkActionRegistrationListener.php:60 (Application.php:3068); POST /api/bulk-jobs appinfo/routes.php:1292 queues lib/BackgroundJob/BulkJobRunner via lib/Service/BulkJob/BulkJobService.php:313",
-    "change": "bulk-action-jobs"
+    "change": "bulk-action-jobs",
+    "requirement": [
+     "A bulk action is one job with an actor, a selection and a reason (REQ-BAJ-001)",
+     "A bulk action reports progress, is cancellable and is safe to retry (REQ-BAJ-003)"
+    ]
    },
    "reachedOn": "API only: POST /api/bulk-jobs",
    "provider": "openregister",
@@ -7251,7 +7312,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/dashboard/DashboardIndex.vue:36 object, register, schema and search counts, activity over a date range :277; page src/manifest.json:53 (route /)",
-    "spec": "openspec/specs/built-in-dashboards"
+    "spec": "openspec/specs/built-in-dashboards",
+    "requirement": [
+     "openspec/changes/audit-and-dashboard-screens-stated :: The app opens on a dashboard of registers, counts and activity (REQ-ADS-002)",
+     "DashboardService MUST assemble OR-canned statistics and chart payloads with fail-soft semantics"
+    ]
    },
    "reachedOn": "/",
    "provider": "openregister",
@@ -7486,7 +7551,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "an organisation carries an OTAP environment (lib/Db/Organisation.php:271) that changes quota behaviour (lib/Middleware/TenantQuotaMiddleware.php:289); configuration drafts deploy with preview and rollback appinfo/routes.php:526-530; git grep -i promot in lib finds no promotion between environments",
-    "change": "configuration-as-a-deployment"
+    "change": "configuration-as-a-deployment",
+    "requirement": [
+     "openspec/specs/environment-otap :: Configuration promotion MUST transfer settings between OTAP environments",
+     "A deployment applies a draft set as one named unit, and a rollback is a deployment (REQ-CAD-002)"
+    ]
    },
    "reachedOn": "API only: /api/configuration/draft-sets",
    "provider": "openregister",
@@ -8253,7 +8322,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/integration-registry: lib/AppInfo/Application.php, lib/Listener/LeafScriptListener.php, lib/Service/Integration/ExternalIntegrationRouter.php, lib/Support/FleetAppId.php.",
-    "spec": "openspec/specs/integration-registry"
+    "spec": "openspec/specs/integration-registry",
+    "requirement": [
+     "The system MUST define an `IntegrationProvider` interface",
+     "The 8 built-in NC types MUST be migrated to providers"
+    ]
    },
    "reachedOn": "record detail sidebar tabs",
    "provider": "openregister",
@@ -8654,7 +8727,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/webhook/EditWebhook.vue:407 filters field (key: value per line, placeholder :625) -> appinfo/routes.php:1917 webhooks#create, :1918 update -> lib/Db/Webhook.php:146 filters; delivery lib/Service/WebhookService.php:734 skips a webhook whose filters do not match, :952 passesFilters with dot-path keys; the payload carries the record values, lib/Listener/WebhookEventListener.php:171 'object' => jsonSerialize()",
-    "spec": "openspec/specs/webhook-payload-mapping"
+    "spec": "openspec/specs/webhook-payload-mapping",
+    "requirement": [
+     "Event filtering MUST support register, schema, and property-level conditions",
+     "openspec/specs/event-driven-architecture :: Filtered object-event subscriptions MUST be declared from boot() and MUST honour both slugs and ids"
+    ]
    },
    "reachedOn": "webhooks page, edit webhook modal (filters), for example object.status: open",
    "provider": "openregister",
@@ -8745,7 +8822,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-decision-tables: lib/Service/Dmn/DecisionTableEvaluator.php, lib/Service/Dmn/DecisionTableValidator.php, lib/Service/Flow/FlowFieldPath.php, lib/Service/Flow/Nodes/DecisionTableNode.php.",
-    "spec": "openspec/specs/flow-decision-tables"
+    "spec": "openspec/specs/flow-decision-tables",
+    "requirement": "A decision-table step evaluates its table against every item"
    },
    "reachedOn": "flow editor",
    "provider": "openregister",
