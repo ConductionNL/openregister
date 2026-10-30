@@ -37,31 +37,38 @@ class ReferencedCalculationJobTest extends TestCase {
 
 	private IUserManager&MockObject $userManager;
 
+	private IUserSession&MockObject $session;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->resolver    = $this->createMock(DeferredEntryObjectResolver::class);
 		$this->refresher   = $this->createMock(ReferencedCalculationRefresher::class);
 		$this->userManager = $this->createMock(IUserManager::class);
-		$this->userManager->method('get')->willReturn($this->createMock(IUser::class));
+		$this->session     = $this->createMock(IUserSession::class);
 	}//end setUp()
 
 	private function runJob(array $entries): void {
+		$this->runJobAs('alice', $entries);
+	}//end runJob()
+
+	private function runJobAs(string $userId, array $entries): void {
 		$job = new ReferencedCalculationJob(
 			time: $this->createMock(ITimeFactory::class),
-			userSession: $this->createMock(IUserSession::class),
+			userSession: $this->session,
 			userManager: $this->userManager,
 			organisation: $this->createMock(OrganisationService::class),
 			logger: new NullLogger(),
 			resolver: $this->resolver,
 			refresher: $this->refresher,
 		);
-		$argument = (new DeferredListenerContext(userId: 'alice', orgUuid: null, entries: $entries))->toJobArguments();
+		$argument = (new DeferredListenerContext(userId: $userId, orgUuid: null, entries: $entries))->toJobArguments();
 		$method   = (new \ReflectionClass($job))->getMethod('run');
 		$method->setAccessible(true);
 		$method->invoke($job, $argument);
-	}//end runJob()
+	}//end runJobAs()
 
 	public function testTheEntryIsRefreshedAtItsDepth(): void {
+		$this->userManager->method('get')->willReturn($this->createMock(IUser::class));
 		$object = new ObjectEntity();
 		$object->setUuid('type-1');
 		$this->resolver->method('resolve')->willReturn($object);
@@ -71,9 +78,45 @@ class ReferencedCalculationJobTest extends TestCase {
 	}//end testTheEntryIsRefreshedAtItsDepth()
 
 	public function testAGoneObjectRefreshesNothing(): void {
+		$this->userManager->method('get')->willReturn($this->createMock(IUser::class));
 		$this->resolver->method('resolve')->willReturn(null);
 		$this->refresher->expects($this->never())->method('refreshChanged');
 
 		$this->runJob([['uuid' => 'gone', 'changed' => ['startableFlows'], 'depth' => 0]]);
 	}//end testAGoneObjectRefreshesNothing()
+
+	public function testTheEntryRunsAsTheUserOfTheOriginalUpdate(): void {
+		$alice = $this->createMock(IUser::class);
+		$bob   = $this->createMock(IUser::class);
+		$this->userManager->method('get')->willReturnCallback(static fn (string $uid): ?IUser => ['alice' => $alice, 'bob' => $bob][$uid] ?? null);
+		$object = new ObjectEntity();
+		$object->setUuid('type-1');
+		$this->resolver->method('resolve')->willReturn($object);
+
+		$current = null;
+		$this->session->method('getUser')->willReturnCallback(static function () use (&$current) {
+			return $current;
+		});
+		$this->session->method('setUser')->willReturnCallback(static function (?IUser $user) use (&$current): void {
+			$current = $user;
+		});
+		$seen = [];
+		$this->refresher->method('refreshChanged')->willReturnCallback(static function () use (&$seen, &$current): int {
+			$seen[] = $current;
+			return 1;
+		});
+
+		// The job's own actor is alice (captured first in the process); the entry was bob's update.
+		$this->runJobAs('alice', [['uuid' => 'type-1', 'changed' => ['startableFlows'], 'depth' => 1, 'actor' => 'bob']]);
+
+		$this->assertSame([$bob], $seen);
+	}//end testTheEntryRunsAsTheUserOfTheOriginalUpdate()
+
+	public function testAnEntryWhoseUserIsGoneIsSkipped(): void {
+		$this->userManager->method('get')->willReturnCallback(fn (string $uid): ?IUser => $uid === 'alice' ? $this->createMock(IUser::class) : null);
+		$this->resolver->method('resolve')->willReturn(new ObjectEntity());
+		$this->refresher->expects($this->never())->method('refreshChanged');
+
+		$this->runJobAs('alice', [['uuid' => 'type-1', 'changed' => ['startableFlows'], 'depth' => 1, 'actor' => 'gone']]);
+	}//end testAnEntryWhoseUserIsGoneIsSkipped()
 }//end class

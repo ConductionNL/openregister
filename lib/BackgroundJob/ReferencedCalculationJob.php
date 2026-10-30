@@ -13,7 +13,11 @@
  * Each entry carries the changed fields read by a dependent (computed
  * inline from the old and new data, which a job cannot see) and the cascade
  * depth, so a refresh queued from one of these re-saves stops at the
- * refresher's MAX_DEPTH. Idempotent: a re-save recomputes from current data.
+ * refresher's MAX_DEPTH. Each entry also names the user whose update queued
+ * it, and runs as that user: the job's own actor is whoever
+ * ListenerDeferralService captured first in the process that queued it,
+ * which for a refresh queued from inside another refresh job need not be
+ * the same person. Idempotent: a re-save recomputes from current data.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -41,6 +45,7 @@ use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -51,6 +56,20 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
  */
 class ReferencedCalculationJob extends ActorForwardedJob {
+	/**
+	 * The session the entry's own actor is set on.
+	 *
+	 * @var IUserSession
+	 */
+	private IUserSession $session;
+
+	/**
+	 * Resolves the entry's actor.
+	 *
+	 * @var IUserManager
+	 */
+	private IUserManager $users;
+
 	/**
 	 * Wire the refresh collaborators on top of the actor plumbing.
 	 *
@@ -73,6 +92,8 @@ class ReferencedCalculationJob extends ActorForwardedJob {
 		private readonly DeferredEntryObjectResolver $resolver,
 		private readonly ReferencedCalculationRefresher $refresher,
 	) {
+		$this->session = $userSession;
+		$this->users   = $userManager;
 		parent::__construct(
 			time: $time,
 			userSession: $userSession,
@@ -103,7 +124,17 @@ class ReferencedCalculationJob extends ActorForwardedJob {
 				continue;
 			}
 
+			$actor = $this->actorOf(entry: $entry);
+			if ($actor === false) {
+				continue;
+			}
+
+			$previous = $this->session->getUser();
 			try {
+				if ($actor !== null) {
+					$this->session->setUser($actor);
+				}
+
 				$this->refresher->refreshChanged(updated: $object, changed: $changed, depth: (int) ($entry['depth'] ?? 0));
 			} catch (\Throwable $e) {
 				$this->logger->warning(
@@ -115,7 +146,34 @@ class ReferencedCalculationJob extends ActorForwardedJob {
 						'error' => $e->getMessage(),
 					]
 				);
-			}
+			} finally {
+				$this->session->setUser($previous);
+			}//end try
 		}//end foreach
 	}//end runDeferred()
+
+	/**
+	 * The user whose update queued the entry: null to keep the job's actor, false when that user is gone.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 *
+	 * @return IUser|null|false
+	 */
+	private function actorOf(array $entry): IUser|null|false {
+		$uid = ($entry['actor'] ?? null);
+		if (is_string($uid) === false || $uid === '') {
+			return null;
+		}
+
+		$user = $this->users->get($uid);
+		if ($user === null) {
+			$this->logger->warning(
+				message: '[ReferencedCalculationJob] The user of the original update no longer resolves; entry skipped',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => ($entry['uuid'] ?? null), 'actor' => $uid]
+			);
+			return false;
+		}
+
+		return $user;
+	}//end actorOf()
 }//end class

@@ -19,6 +19,8 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\ReferencedCalculationListener;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -53,7 +55,12 @@ class ReferencedCalculationListenerTest extends TestCase {
 	}//end event()
 
 	private function listener(): ReferencedCalculationListener {
-		return new ReferencedCalculationListener(refresher: $this->refresher, logger: new NullLogger(), deferral: $this->deferral);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		return new ReferencedCalculationListener(refresher: $this->refresher, logger: new NullLogger(), deferral: $this->deferral, session: $session);
 	}//end listener()
 
 	public function testARefreshIsQueuedAndNoReferrerIsReSavedInTheRequest(): void {
@@ -63,18 +70,26 @@ class ReferencedCalculationListenerTest extends TestCase {
 
 		$this->refresher->expects($this->never())->method('refreshChanged');
 		$this->refresher->expects($this->never())->method('refresh');
+		// Captured, then asserted outside: the listener swallows whatever its
+		// collaborators throw, an assertion failure included.
+		$calls = [];
 		$this->deferral->expects($this->once())->method('defer')->willReturnCallback(
-			function (string $jobClass, array $entry): void {
-				$this->assertSame(ReferencedCalculationJob::class, $jobClass);
-				$this->assertSame('type-1', $entry['uuid']);
-				$this->assertSame('7', $entry['register']);
-				$this->assertSame('1', $entry['schema']);
-				$this->assertSame(['startableFlows'], $entry['changed']);
-				$this->assertSame(0, $entry['depth']);
+			static function (string $jobClass, array $entry, int $chunkSize, ?string $dedupeKey) use (&$calls): void {
+				$calls[] = [$jobClass, $entry, $dedupeKey];
 			}
 		);
 
 		$this->listener()->handle($this->event());
+
+		[$jobClass, $entry, $dedupeKey] = $calls[0];
+		$this->assertSame(ReferencedCalculationJob::class, $jobClass);
+		$this->assertSame('type-1', $entry['uuid']);
+		$this->assertSame('7', $entry['register']);
+		$this->assertSame('1', $entry['schema']);
+		$this->assertSame(['startableFlows'], $entry['changed']);
+		$this->assertSame(0, $entry['depth']);
+		$this->assertSame('alice', $entry['actor'], 'the entry names the user of the update');
+		$this->assertSame('type-1|startableFlows', $dedupeKey);
 	}//end testARefreshIsQueuedAndNoReferrerIsReSavedInTheRequest()
 
 	public function testAnUnreadChangeQueuesNothing(): void {
@@ -91,10 +106,16 @@ class ReferencedCalculationListenerTest extends TestCase {
 		$this->deferral->method('isDeferralEnabled')->willReturn(false);
 
 		$this->deferral->expects($this->never())->method('defer');
-		$this->refresher->expects($this->once())->method('refreshChanged')
-			->with($this->anything(), ['startableFlows'], 1)
-			->willReturn(3);
+		$calls = [];
+		$this->refresher->expects($this->once())->method('refreshChanged')->willReturnCallback(
+			static function (mixed $updated, array $changed, int $depth) use (&$calls): int {
+				$calls[] = [$changed, $depth];
+				return 3;
+			}
+		);
 
 		$this->listener()->handle($this->event());
+
+		$this->assertSame([[['startableFlows'], 1]], $calls);
 	}//end testTheKillSwitchRefreshesInline()
 }//end class

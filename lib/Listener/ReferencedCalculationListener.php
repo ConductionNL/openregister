@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -65,11 +66,13 @@ class ReferencedCalculationListener implements IEventListener {
 	 * @param ReferencedCalculationRefresher $refresher Re-saves the objects that read the updated one.
 	 * @param LoggerInterface                $logger    The logger.
 	 * @param ListenerDeferralService        $deferral  Queues the refresh as an actor-forwarded job.
+	 * @param IUserSession                   $session   Names the user whose update this is, per entry.
 	 */
 	public function __construct(
 		private readonly ReferencedCalculationRefresher $refresher,
 		private readonly LoggerInterface $logger,
 		private readonly ListenerDeferralService $deferral,
+		private readonly IUserSession $session,
 	) {
 	}//end __construct()
 
@@ -103,6 +106,11 @@ class ReferencedCalculationListener implements IEventListener {
 				return;
 			}
 
+			// The entry names its own actor: ListenerDeferralService captures one
+			// per process, which in a cron process running several refresh jobs
+			// is the first job's user, not the one whose update this is.
+			$sorted = $changed;
+			sort($sorted);
 			$this->deferral->defer(
 				jobClass: ReferencedCalculationJob::class,
 				entry: [
@@ -112,8 +120,10 @@ class ReferencedCalculationListener implements IEventListener {
 					'version'  => $updated->getVersion(),
 					'changed'  => $changed,
 					'depth'    => $depth,
+					'actor'    => $this->session->getUser()?->getUID(),
 				],
-				chunkSize: self::CHUNK_SIZE
+				chunkSize: self::CHUNK_SIZE,
+				dedupeKey: (string) $updated->getUuid().'|'.implode(',', $sorted)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ReferencedCalculationListener] refresh failed: '.$e->getMessage());
