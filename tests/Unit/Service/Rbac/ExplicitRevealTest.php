@@ -133,6 +133,19 @@ class ExplicitRevealTest extends TestCase {
 	}//end testTheMaskKeepsTheLastFour()
 
 	/**
+	 * A short value (a PIN, a house number) shows none of its characters:
+	 * its last four would be the whole value, or most of it.
+	 *
+	 * @return void
+	 */
+	public function testTheMaskOfAShortValueShowsNoCharacter(): void {
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '1234'));
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '12345'));
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '12345678'));
+		$this->assertSame(expected: '*****6789', actual: ExplicitReveal::mask(value: '123456789'));
+	}//end testTheMaskOfAShortValueShowsNoCharacter()
+
+	/**
 	 * A read without a grant gets the mask and records nothing, admins included.
 	 *
 	 * @return void
