@@ -1,0 +1,7 @@
+# Screens
+
+- OrEigenschap https://identity.conduction.nl/screens/board?id=openregister/OrEigenschap
+- OrObjectBewerken https://identity.conduction.nl/screens/board?id=openregister/OrObjectBewerken
+- OrObjecten https://identity.conduction.nl/screens/board?id=openregister/OrObjecten
+- OrRegister https://identity.conduction.nl/screens/board?id=openregister/OrRegister
+- OrSchema https://identity.conduction.nl/screens/board?id=openregister/OrSchema
