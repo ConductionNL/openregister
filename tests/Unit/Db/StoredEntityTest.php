@@ -22,9 +22,14 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Kernel\Contracts\WebhookInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(StoredEntity::class)]
+#[UsesClass(ObjectEntity::class)]
+#[UsesClass(Register::class)]
+#[UsesClass(Schema::class)]
+#[UsesClass(Webhook::class)]
 class StoredEntityTest extends TestCase {
 
 	/**
