@@ -47,7 +47,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
  *
  * Built-in IMcpToolProvider exposing the integration registry as an
  * AI-agent discovery + invocation surface. Registered alongside the other
- * built-ins in Application::registerMcpToolProviders().
+ * built-ins in McpProviderDiscovery::register().
  *
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn

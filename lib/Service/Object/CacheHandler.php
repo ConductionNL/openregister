@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -63,7 +64,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class CacheHandler {
+class CacheHandler implements ObjectNameCacheInterface {
 
 	/**
 	 * In-memory cache of objects indexed by ID/UUID
@@ -118,7 +119,7 @@ class CacheHandler {
 	 * therefore never served (fail closed).
 	 *
 	 * @var array<int|string, string|null> Keyed identically to $nameCache — see
-	 *      the key-coercion note there.
+	 *                                     the key-coercion note there.
 	 */
 	private array $nameOrganisations = [];
 
@@ -605,9 +606,9 @@ class CacheHandler {
 	/**
 	 * Record the owning organisation and the source of a cached name.
 	 *
-	 * @param string      $key          The name-cache key (object id or uuid)
+	 * @param string $key The name-cache key (object id or uuid)
 	 * @param string|null $organisation The owning organisation UUID, or null when unknown
-	 * @param string|null $source       NAME_SOURCE_ORGANISATION, "<register>:<schema>", or null when unknown
+	 * @param string|null $source NAME_SOURCE_ORGANISATION, "<register>:<schema>", or null when unknown
 	 *
 	 * @return void
 	 *
@@ -627,7 +628,7 @@ class CacheHandler {
 	 * The name source of an object: "<registerId>:<schemaId>", the table its read rule lives on.
 	 *
 	 * @param mixed $register The object's register id
-	 * @param mixed $schema   The object's schema id
+	 * @param mixed $schema The object's schema id
 	 *
 	 * @return string|null The source, or null when either id is missing
 	 *
@@ -649,9 +650,9 @@ class CacheHandler {
 	 * unchanged is deliberate: every existing invalidation site removes
 	 * `name_<identifier>` and keeps working untouched.
 	 *
-	 * @param string      $name         The cached name
+	 * @param string $name The cached name
 	 * @param string|null $organisation The owning organisation UUID
-	 * @param string|null $source       The name source (see $nameSources)
+	 * @param string|null $source The name source (see $nameSources)
 	 *
 	 * @return array{n: string, o: string|null, s: string|null} The envelope stored in the distributed cache
 	 *
@@ -774,8 +775,8 @@ class CacheHandler {
 	 * nearly always points into its own register, and one lookup across every
 	 * magic table is a UNION over all of them (1.7k tables: 1.5-3.6 s).
 	 *
-	 * @param array    $identifiers Array of object IDs/UUIDs to preload
-	 * @param int|null $registerId  The register to look in first, or null for every table.
+	 * @param array $identifiers Array of object IDs/UUIDs to preload
+	 * @param int|null $registerId The register to look in first, or null for every table.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -841,7 +842,7 @@ class CacheHandler {
 	 * Load objects by identifier, from one register's tables first when given.
 	 *
 	 * @param array<int|string> $identifiers The identifiers to load.
-	 * @param int|null          $registerId  The register to look in first.
+	 * @param int|null $registerId The register to look in first.
 	 *
 	 * @return ObjectEntity[] The objects found.
 	 */
@@ -1405,9 +1406,9 @@ class CacheHandler {
 	 * @param string $name Object name to cache
 	 * @param int $ttl Cache TTL in seconds (default: 24 hours)
 	 * @param string|null $organisation Owning organisation UUID (SEC-CTRL-2 step 2)
-	 * @param string|null $source       Where the name came from: NAME_SOURCE_ORGANISATION or
-	 *                                  "<registerId>:<schemaId>" (see objectNameSource()). Without
-	 *                                  one the entry is never served; the next lookup resolves it again.
+	 * @param string|null $source Where the name came from: NAME_SOURCE_ORGANISATION or
+	 *                            "<registerId>:<schemaId>" (see objectNameSource()). Without
+	 *                            one the entry is never served; the next lookup resolves it again.
 	 *
 	 * @return void
 	 *
@@ -2072,7 +2073,7 @@ class CacheHandler {
 	 * @param array $uuids Array of UUIDs to look up.
 	 *
 	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
-	 *         name, owning organisation and name source.
+	 *                                                                                            name, owning organisation and name source.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Table discovery, schema bulk-load
@@ -2188,12 +2189,12 @@ class CacheHandler {
 	/**
 	 * Query a single magic table for names by UUIDs.
 	 *
-	 * @param string      $tableName The table name (with oc_ prefix).
-	 * @param array       $uuids     Array of UUIDs to look up.
-	 * @param string|null $source    The table's name source, "<registerId>:<schemaId>".
+	 * @param string $tableName The table name (with oc_ prefix).
+	 * @param array $uuids Array of UUIDs to look up.
+	 * @param string|null $source The table's name source, "<registerId>:<schemaId>".
 	 *
 	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
-	 *         name, owning organisation and name source.
+	 *                                                                                            name, owning organisation and name source.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */

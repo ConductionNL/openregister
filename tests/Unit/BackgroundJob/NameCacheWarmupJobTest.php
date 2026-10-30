@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,7 +42,7 @@ class NameCacheWarmupJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Register mocks into the container so run() can resolve them.
-		$this->registerService(CacheHandler::class, function () {
+		$this->registerService(ObjectNameCacheInterface::class, function () {
 			return $this->cacheHandler;
 		});
 		$this->registerService(LoggerInterface::class, function () {

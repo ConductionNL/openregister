@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 /**
- * Application::collectPerAppMcpProviders() probe-cache tests (#308).
+ * PerAppMcpProviderProbe::collectPerAppMcpProviders() probe-cache tests (#308).
  *
  * The per-app MCP provider discovery loop lives in the DI factory in
- * Application, NOT in McpToolsService (every log line was merely TAGGED
+ * PerAppMcpProviderProbe, NOT in McpToolsService (every log line was merely TAGGED
  * '[McpToolsService]', which is what misled the original diagnosis on #308).
  * The factory is registered `$shared`, so it runs once per request — the
  * waste it caused was CROSS-request: on every MCP/chat turn it re-read every
@@ -33,8 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Mcp\PerAppMcpProviderProbe;
 use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -42,7 +42,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
 
@@ -163,11 +162,11 @@ class ArrayProbeCache implements ICache {
 }//end class
 
 /**
- * Application subclass that COUNTS the two protected probe seams so tests can
+ * PerAppMcpProviderProbe subclass that COUNTS the two protected probe seams so tests can
  * assert that a warm request skips the expensive work rather than merely
  * producing the same result.
  */
-class CountingProbeApplication extends Application {
+class CountingProbeApplication extends PerAppMcpProviderProbe {
 
 	/**
 	 * Every appId passed to buildMcpProviderCandidates(), in order. This seam
@@ -354,13 +353,10 @@ class PerAppMcpProbeCacheTest extends TestCase {
 	 * @return CountingProbeApplication The app instance, for asserting counts.
 	 */
 	private function invokeCollect(ContainerInterface $container, array &$providers): CountingProbeApplication {
-		// newInstanceWithoutConstructor() — Application::__construct() reaches
-		// \OC::$server, which is out of scope for this local unit harness; the
-		// method under test reads only its parameters and its own seams.
-		$app = (new ReflectionClass(CountingProbeApplication::class))->newInstanceWithoutConstructor();
+		$app = new CountingProbeApplication();
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$method = new ReflectionMethod(Application::class, 'collectPerAppMcpProviders');
+		$method = new ReflectionMethod(PerAppMcpProviderProbe::class, 'collectPerAppMcpProviders');
 		$method->setAccessible(true);
 		$method->invokeArgs($app, [$container, $logger, &$providers]);
 
