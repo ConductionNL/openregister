@@ -26,8 +26,10 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(StoredEntity::class)]
+#[UsesClass(ObjectEntity::class)]
 #[UsesClass(Register::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(Webhook::class)]
 class StoredEntityTest extends TestCase {
 
 	/**
