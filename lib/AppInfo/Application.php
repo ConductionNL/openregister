@@ -46,13 +46,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\McpProviderDiscovery;
-use OCA\OpenRegister\Middleware\LanguageMiddleware;
-use OCA\OpenRegister\Notification\AnnotationNotifier;
-use OCA\OpenRegister\Notification\Notifier;
+use OCA\OpenRegister\Middleware\MiddlewareRegistrar;
+use OCA\OpenRegister\Notification\NotifierRegistrar;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
-use OCA\OpenRegister\Search\ObjectsProvider;
+use OCA\OpenRegister\Search\SearchProviderRegistrar;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -97,7 +95,6 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -454,8 +451,7 @@ class Application extends App implements IBootstrap {
 		// The contracts other components type-hint, bound to their services.
 		ContractBindings::register(context: $context);
 
-		// Register the LanguageMiddleware for Accept-Language header parsing.
-		$context->registerMiddleware(LanguageMiddleware::class);
+		MiddlewareRegistrar::register(context: $context);
 
 		// Register the default no-op TranslationProvider. Operators replace
 		// this binding with a real provider (LibreTranslate / DeepL / etc.)
@@ -466,97 +462,6 @@ class Application extends App implements IBootstrap {
 				return new IdentityTranslationProvider();
 			}
 		);
-
-		// Register the TenantQuotaMiddleware for tenant quota enforcement and status checks.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\TenantQuotaMiddleware::class);
-
-		// Register the OasValidationMiddleware for opt-in request-body
-		// validation against per-operation OAS schemas. Activates only on
-		// POST/PUT/PATCH with `?_validate=true`; pass-through otherwise.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\OasValidationMiddleware::class);
-
-		// Writes the request's reveals of audited properties, once, after the
-		// controller has answered (ledger row 5.6, D-2). Registered LAST of the
-		// middlewares so it runs closest to the response: everything the read
-		// path was going to collect has been collected by then, and a
-		// middleware that flushed earlier would write a shorter trail than the
-		// request actually produced.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RevealAuditMiddleware::class);
-
-		// Register the RateLimitMiddleware to wire SecurityService brute-force
-		// protection into the inbound API auth path (issue #1834). Records
-		// failed Basic/Bearer/session auth on protected endpoints (keyed on
-		// identity+trusted-IP) and pre-emptively blocks locked-out callers.
-		// Fail-OPEN: any limiter error allows the request through.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
-
-		// Register the PublicApiCorsMiddleware: reflects the request Origin onto
-		// `@PublicPage` responses so browsers on other origins (e.g. a marketing
-		// site posting a lead into a public-create schema) can read the result.
-		// Scoped to public endpoints only and never sets allow-credentials.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\PublicApiCorsMiddleware::class);
-
-		// Register the ChatCompatMiddleware (or-chat-proxy-deprecation): adds
-		// Deprecation/Sunset/Link response headers to every chat/agents/
-		// conversations controller response and forwards those requests
-		// server-side to hermiq. ON by default since
-		// or-chat-engine-decommission; operators opt out via the
-		// `openregister.chat.proxyTo` appconfig value (any value != 'hermiq').
-		// Any failure falls back to serving the request locally unchanged.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ChatCompatMiddleware::class);
-
-		// Register the ObjectSourceErrorMiddleware (dbal-virtual-registers D8):
-		// maps DbalObjectSourceException thrown during reads against an
-		// external-database-backed schema onto its declared 502/503 status —
-		// an unreachable or failing external database must never surface as a
-		// bare 500. All other exceptions are rethrown untouched.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ObjectSourceErrorMiddleware::class);
-
-		// Register the EncryptedFieldFilterMiddleware (field-level-object-encryption):
-		// maps EncryptedFieldFilterException — thrown when a caller filters/
-		// searches/facets on a field flagged `x-openregister-encrypted` — onto a
-		// clear HTTP 400 instead of a silent zero-row result or a bare 500.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware::class);
-
-		// Register the UnknownMetadataFieldMiddleware: maps
-		// UnknownMetadataFieldException — thrown when a `@self` filter names a
-		// field that no metadata column corresponds to — onto an HTTP 400 that
-		// names the field and lists the filterable ones, instead of the opaque
-		// driver-level 500 an unresolvable column name used to produce.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
-
-		// Register the RelatedRowFilterMiddleware: maps
-		// RelatedRowFilterNotSupportedException — a `_related`/`_referenced`
-		// filter on a multi-schema facet route that cannot honour it — onto an
-		// HTTP 400 with the exception's message, not an uncaught 500.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RelatedRowFilterMiddleware::class);
-
-		// Register the MaintenanceModeMiddleware (admin-operations-console
-		// D-6): while maintenance mode holds, every controller but the
-		// operations console is refused with the administered message, so the
-		// instance can be closed without locking out the administrator who
-		// closed it and has to open it again.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\MaintenanceModeMiddleware::class);
-
-		// Register the ApiVersionMiddleware (api-as-a-versioned-surface): names
-		// the contract version that answered on every API response, carries the
-		// RFC 8594 end date when that version is deprecated, and refuses a call
-		// naming a withdrawn version with 410 or an undeclared one with 400.
-		// It decorates and refuses; it never changes which controller runs, so a
-		// deprecated version keeps exactly the behaviour it had before.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
-
-		// Register the ApiCallerMiddleware (api-as-a-versioned-surface): binds a
-		// caller to its administered source addresses, bounds it to its
-		// administered ceiling, and records which route and version it called.
-		// Registered AFTER ApiVersionMiddleware so the version this call speaks
-		// is already resolvable when the record is written.
-		//
-		// An instance that has administered neither a ceiling nor a binding
-		// behaves exactly as it did before: the limiter fails open, the binding
-		// only refuses a caller an administrator actually bound, and the record
-		// swallows its own failures.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
 
 		// Every outbound call this app makes goes through the administered
 		// proxy (api-as-a-versioned-surface, design D-6). Most gemeenten have
@@ -746,11 +651,7 @@ class Application extends App implements IBootstrap {
 		$this->registerCacheAndFileHandlers(context: $context);
 		ConfigurationServiceRegistrar::register(context: $context);
 
-		$context->registerSearchProvider(ObjectsProvider::class);
-		// The entries beside the objects. Two providers, because a Woo
-		// request asks for every mention of a subject and the answer is a
-		// list of entries, each naming the case it sits on.
-		$context->registerSearchProvider(\OCA\OpenRegister\Search\TimelineEntriesProvider::class);
+		SearchProviderRegistrar::register(context: $context);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 
@@ -762,25 +663,7 @@ class Application extends App implements IBootstrap {
 		(new McpProviderDiscovery())->register(context: $context);
 		ObservabilityRegistrar::register(context: $context, appId: self::APP_ID);
 
-		// Register the annotation-driven INotifier so notifications fired by
-		// AnnotationNotificationDispatcher get a parsed subject — without
-		// this Nextcloud silently drops the notification.
-		$context->registerNotifierService(AnnotationNotifier::class);
-
-		// 🔴 AND the hand-written one, which was NEVER REGISTERED.
-		//
-		// `AnnotationNotifier::prepare()` deliberately re-throws
-		// UnknownNotificationException for the subjects it does not own, and its
-		// comment says they are "rendered by Notifier" — but nothing ever
-		// registered Notifier, so nothing rendered them. Nextcloud drops a
-		// notification no notifier claims, silently. Every
-		// `configuration_update_available`, `handoff_drain_failed`,
-		// `scheduled_report_delivered` and `scheduled_report_failed` this app has
-		// ever dispatched was written to the store and then discarded at parse
-		// time, and the class rendering them was written, complete, and
-		// unreachable — the same orphaned-capability shape as
-		// TriggerScheduleNode::validateConfig().
-		$context->registerNotifierService(Notifier::class);
+		NotifierRegistrar::register(context: $context);
 
 		// Surface URN identifier surface via Nextcloud capabilities API so
 		// clients can discover URN endpoints + the instance slug without
