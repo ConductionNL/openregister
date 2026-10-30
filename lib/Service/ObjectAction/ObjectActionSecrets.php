@@ -13,7 +13,8 @@
  *
  * The steps carry the values in their items, so whatever stores a run (its
  * log of step inputs and outputs, its step rows, its final items, its context)
- * passes it through {@see redact()} first.
+ * passes it through {@see redactItems()} and {@see redactLog()} first:
+ * by key, so no unrelated value that happens to equal a secret is touched.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -54,8 +55,7 @@ final class ObjectActionSecrets {
 	public const REDACTED = '[redacted]';
 
 	/**
-	 * The shortest secret also redacted where it is embedded in a longer
-	 * string; a shorter one is redacted only where it is the whole value.
+	 * The shortest secret also looked for inside a longer free text.
 	 */
 	public const MIN_EMBEDDED_LENGTH = 4;
 
@@ -100,19 +100,139 @@ final class ObjectActionSecrets {
 	}//end read()
 
 	/**
-	 * Replace every held value of this reference inside a run's data by
-	 * `[redacted]`: a value that equals a secret, and, for a secret of at least
-	 * {@see MIN_EMBEDDED_LENGTH} characters, a secret embedded in a longer
-	 * string (a message a step built from it). Objects are left as they are.
+	 * Items with the held inputs of this reference redacted where the
+	 * `openregister.action-inputs` node puts them: `json.inputs.<name>`.
 	 *
-	 * @param mixed $data The data to store.
-	 * @param mixed $ref  The reference the run's context carries.
+	 * BY KEY, NEVER BY VALUE. A secret "1" or "2026" also occurs in counters,
+	 * timestamps and uuids, and those carry what a resumed run needs; only
+	 * the named input is replaced.
 	 *
-	 * @return mixed The data, without the held values.
+	 * @param array<int|string, mixed> $items Flow items.
+	 * @param mixed                    $ref   The reference the run's context carries.
+	 *
+	 * @return array<int|string, mixed> The items.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
 	 */
-	public static function redact(mixed $data, mixed $ref): mixed {
+	public static function redactItems(array $items, mixed $ref): array {
+		$names = array_keys(self::read(ref: $ref));
+		if ($names === []) {
+			return $items;
+		}
+
+		foreach ($items as $index => $item) {
+			if (is_array($item) === false || is_array($item['json']['inputs'] ?? null) === false) {
+				continue;
+			}
+
+			foreach ($names as $name) {
+				if (array_key_exists($name, $item['json']['inputs']) === true) {
+					$item['json']['inputs'][$name] = self::REDACTED;
+				}
+			}
+
+			$items[$index] = $item;
+		}
+
+		return $items;
+	}//end redactItems()
+
+	/**
+	 * Log entries with the item samples of each step (`input`, `output`) redacted.
+	 *
+	 * @param array<int, mixed> $log The entries.
+	 * @param mixed             $ref The reference.
+	 *
+	 * @return array<int, mixed> The entries.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
+	 */
+	public static function redactLog(array $log, mixed $ref): array {
+		foreach ($log as $index => $entry) {
+			foreach (['input', 'output'] as $side) {
+				if (is_array($entry) === true && is_array($entry[$side]['items'] ?? null) === true) {
+					$entry[$side]['items'] = self::redactItems(items: $entry[$side]['items'], ref: $ref);
+				}
+			}
+
+			$log[$index] = $entry;
+		}
+
+		return $log;
+	}//end redactLog()
+
+	/**
+	 * A free text (an error message) with every held value of at least
+	 * {@see MIN_EMBEDDED_LENGTH} characters replaced. Text only: it carries
+	 * nothing a resume reads.
+	 *
+	 * @param string|null $text The text.
+	 * @param mixed       $ref  The reference.
+	 *
+	 * @return string|null The text.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
+	 */
+	public static function redactText(?string $text, mixed $ref): ?string {
+		if ($text === null) {
+			return null;
+		}
+
+		foreach (self::secretStrings(ref: $ref) as $secret) {
+			if (strlen($secret) >= self::MIN_EMBEDDED_LENGTH) {
+				$text = str_replace($secret, self::REDACTED, $text);
+			}
+		}
+
+		return $text;
+	}//end redactText()
+
+	/**
+	 * Whether a held value occurs in the data: a string equal to it, or, for a
+	 * value of at least {@see MIN_EMBEDDED_LENGTH} characters, containing it.
+	 *
+	 * @param mixed $data The data.
+	 * @param mixed $ref  The reference.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
+	 */
+	public static function occursIn(mixed $data, mixed $ref): bool {
+		$secrets = self::secretStrings(ref: $ref);
+		if ($secrets === []) {
+			return false;
+		}
+
+		$found = false;
+		$data  = (array)$data;
+		array_walk_recursive(
+			$data,
+			static function (mixed $value) use ($secrets, &$found): void {
+				if ($found === true || is_string($value) === false) {
+					return;
+				}
+
+				foreach ($secrets as $secret) {
+					if ($value === $secret || (strlen($secret) >= self::MIN_EMBEDDED_LENGTH && str_contains($value, $secret) === true)) {
+						$found = true;
+						return;
+					}
+				}
+			}
+		);
+
+		return $found;
+	}//end occursIn()
+
+	/**
+	 * The held values as non-empty strings.
+	 *
+	 * @param mixed $ref The reference.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function secretStrings(mixed $ref): array {
 		$secrets = [];
 		foreach (self::read(ref: $ref) as $value) {
 			if ((is_string($value) === true || is_int($value) === true || is_float($value) === true) && (string)$value !== '') {
@@ -120,63 +240,8 @@ final class ObjectActionSecrets {
 			}
 		}
 
-		if ($secrets === []) {
-			return $data;
-		}
-
-		return self::redactValues(data: $data, secrets: $secrets);
-	}//end redact()
-
-	/**
-	 * Walk the data, replacing the secrets.
-	 *
-	 * @param mixed              $data    The data.
-	 * @param array<int, string> $secrets The secret values.
-	 *
-	 * @return mixed The data, redacted.
-	 */
-	private static function redactValues(mixed $data, array $secrets): mixed {
-		if (is_array($data) === true) {
-			foreach ($data as $key => $value) {
-				$data[$key] = self::redactValues(data: $value, secrets: $secrets);
-			}
-
-			return $data;
-		}
-
-		if (is_string($data) === false && is_int($data) === false && is_float($data) === false) {
-			return $data;
-		}
-
-		return self::redactScalar(value: $data, secrets: $secrets);
-	}//end redactValues()
-
-	/**
-	 * One scalar without the secrets: the whole value when it is one, else
-	 * each long-enough secret embedded in a string.
-	 *
-	 * @param string|int|float   $value   The value.
-	 * @param array<int, string> $secrets The secret values.
-	 *
-	 * @return string|int|float The value, redacted.
-	 */
-	private static function redactScalar(string|int|float $value, array $secrets): string|int|float {
-		if (in_array((string)$value, $secrets, true) === true) {
-			return self::REDACTED;
-		}
-
-		if (is_string($value) === false) {
-			return $value;
-		}
-
-		foreach ($secrets as $secret) {
-			if (strlen($secret) >= self::MIN_EMBEDDED_LENGTH) {
-				$value = str_replace($secret, self::REDACTED, $value);
-			}
-		}
-
-		return $value;
-	}//end redactScalar()
+		return $secrets;
+	}//end secretStrings()
 
 	/**
 	 * Forget the values held under a reference.

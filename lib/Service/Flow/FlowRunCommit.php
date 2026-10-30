@@ -691,8 +691,9 @@ class FlowRunCommit {
 
 	/**
 	 * The per-place items as stored: a writeOnly action input held under the
-	 * run's inputsRef is redacted. The walk carries on with the values this
-	 * request still holds; only the stored row loses them.
+	 * run's inputsRef is redacted at `json.inputs.<name>`, and nothing else is
+	 * touched, so a resume reads the subject and counters it stored. The walk
+	 * carries on with the values this request still holds.
 	 *
 	 * @param FlowRun              $run        The locked run row.
 	 * @param array<string, mixed> $placeItems The per-place items.
@@ -704,7 +705,13 @@ class FlowRunCommit {
 	private function storedPlaceItems(FlowRun $run, array $placeItems): array {
 		$ref = (($run->getContext() ?? [])[ObjectActionSecrets::CONTEXT_KEY] ?? null);
 
-		return (array)ObjectActionSecrets::redact(data: $placeItems, ref: $ref);
+		foreach ($placeItems as $place => $items) {
+			if (is_array($items) === true) {
+				$placeItems[$place] = ObjectActionSecrets::redactItems(items: $items, ref: $ref);
+			}
+		}
+
+		return $placeItems;
 	}//end storedPlaceItems()
 
 	/**

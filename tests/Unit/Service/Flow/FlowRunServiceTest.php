@@ -784,6 +784,46 @@ class FlowRunServiceTest extends TestCase {
 		$this->assertStringContainsString(needle: 'approved', haystack: (string)json_encode(value: $run->getItems()));
 	}//end testAWriteOnlyInputIsNotStoredInTheRunLogOrItems()
 
+	/**
+	 * Redaction is by key: a secret that equals a counter or sits inside the
+	 * subject uuid changes nothing but the named input, and a run that
+	 * suspends resumes on the subject it stored.
+	 *
+	 * @return void
+	 */
+	public function testAShortSecretRedactsOnlyTheInputAndTheResumeKeepsTheSubject(): void {
+		$uuid = '2026aaaa-1111-4111-8111-000000002026';
+		$ref  = ObjectActionSecrets::hold(values: ['pin' => '2026', 'digit' => '1']);
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs'], ['id' => 'hop', 'type' => 'test.wait']],
+			'edges' => [['id' => 'e1', 'from' => 'inputs', 'to' => 'hop']],
+		];
+		try {
+			$run = $this->service->queue(
+				flowId: 'f1',
+				subject: ['uuid' => $uuid],
+				user: 'alice',
+				context: ['action' => 'sign', 'inputs' => [], ObjectActionSecrets::CONTEXT_KEY => $ref]
+			);
+			$run = $this->service->execute(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['uuid' => $uuid, 'count' => 1]));
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_SUSPENDED, actual: $run->getStatus());
+		$json = $run->getItems()[0]['json'];
+		$this->assertSame(expected: $uuid, actual: $json['uuid']);
+		$this->assertSame(expected: 1, actual: $json['count']);
+		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $json['inputs']['pin']);
+		$this->assertSame(expected: 1, actual: $run->getLog()[0]['itemsIn']);
+
+		$run = $this->service->execute(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['uuid' => $uuid, 'count' => 1]));
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertSame(expected: $uuid, actual: $run->getItems()[0]['json']['uuid']);
+	}//end testAShortSecretRedactsOnlyTheInputAndTheResumeKeepsTheSubject()
+
 	public function testTheLogAccumulatesAcrossASuspension(): void {
 		$run = $this->service->queue('f1', user: 'alice');
 		$run = $this->service->execute($run, $this->waitFlow(), new RunSubject());

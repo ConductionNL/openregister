@@ -1475,6 +1475,34 @@ class FlowRunService {
 
 
 	/**
+	 * Persist the flow's state, unless it would store a writeOnly action input.
+	 *
+	 * Flow state outlives the run and the request, and no key tells where an
+	 * author put a value, so a state that contains a held value is not saved
+	 * at all (loudly): a lost state write is recoverable, a stored PIN is not.
+	 *
+	 * @param FlowRun              $run       The run.
+	 * @param array<string, mixed> $context   The run context, holding the state handle.
+	 * @param mixed                $secretRef The run's inputsRef.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 */
+	private function persistFlowState(FlowRun $run, array $context, mixed $secretRef): void {
+		$handle = ($context[FlowStateHandle::CONTEXT_KEY] ?? null);
+		if ($handle instanceof FlowStateHandle && ObjectActionSecrets::occursIn(data: $handle->all(), ref: $secretRef) === true) {
+			$this->logger->error(
+				message: '[FlowRunService] Flow state not saved: it holds a writeOnly action input',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid()]
+			);
+			return;
+		}
+
+		$this->flowState->persist(run: $run, context: $context);
+	}//end persistFlowState()
+
+	/**
 	 * Write back what a walk produced.
 	 *
 	 * @param FlowRun $run The run to update.
@@ -1491,13 +1519,18 @@ class FlowRunService {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
 
 		// 🔴 A WRITEONLY ACTION INPUT NEVER REACHES STORAGE. The steps carry it
-		// in their items (the action-inputs node puts it there so later steps
-		// can read `{{inputs.pin}}`), and the log samples every step's items,
-		// so the log, the step rows, the final items and the context are all
-		// redacted here, the one place a walk's result is stored.
+		// in their items at `json.inputs.<name>` (the action-inputs node puts it
+		// there so later steps can read `{{inputs.pin}}`), and the log samples
+		// every step's items, so the log, the step rows, the final items and
+		// the error are redacted here, the one place a walk's result is stored.
+		// By key, never by value: the context and the items carry the subject
+		// uuid and counters a resumed run reads, which a value match corrupts.
 		$secretRef = (((array)($result['context'] ?? []))[ObjectActionSecrets::CONTEXT_KEY] ?? null);
-		$result['log'] = ObjectActionSecrets::redact(data: (array)($result['log'] ?? []), ref: $secretRef);
-		$result['items'] = ObjectActionSecrets::redact(data: (array)($result['items'] ?? []), ref: $secretRef);
+		$result['log'] = ObjectActionSecrets::redactLog(log: (array)($result['log'] ?? []), ref: $secretRef);
+		$result['items'] = ObjectActionSecrets::redactItems(items: (array)($result['items'] ?? []), ref: $secretRef);
+		if (is_string($result['error'] ?? null) === true) {
+			$result['error'] = ObjectActionSecrets::redactText(text: $result['error'], ref: $secretRef);
+		}
 
 		// The log is appended, not replaced: a resumed run's history is the
 		// whole run, not just the segment since it last woke up.
@@ -1530,7 +1563,7 @@ class FlowRunService {
 		// Only written when a node actually changed something: a flow that
 		// merely READS its state should not touch the row on every tick, and a
 		// five-minute schedule makes that difference thousands of writes a week.
-		$this->flowState->persist(run: $run, context: $context);
+		$this->persistFlowState(run: $run, context: $context, secretRef: $secretRef);
 		unset($context[FlowStateHandle::CONTEXT_KEY]);
 
 		// Same reason as the state handle one line up: it is a live collaborator,
@@ -1553,8 +1586,6 @@ class FlowRunService {
 		// question — a flow with two approval steps would auto-approve the
 		// second one the moment the first was granted.
 		unset($context[self::SIGNAL_CONTEXT_KEY]);
-
-		$context = ObjectActionSecrets::redact(data: $context, ref: $secretRef);
 
 		$run->setStatus($status);
 		$run->setItems((array)($result['items'] ?? []));
