@@ -4868,7 +4868,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "No SSO code in OpenRegister: grep saml/oidc/sso in lib/ and lib/Settings/connections.json found nothing. Sign-in is Nextcloud's (user_oidc / user_saml apps).",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Sign-in is the Nextcloud sign-in (REQ-PPC-001)"
    },
    "reachedOn": "Nextcloud login",
    "provider": "nextcloud",
@@ -6005,7 +6006,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "OpenRegister writes attachments through Nextcloud IRootFolder lib/Service/File/FolderManagementHandler.php:103, so S3 primary storage or external mounts configured in Nextcloud apply; no OpenRegister-specific S3 setting (searched lib/Settings/connections.json, lib/Service/File for s3/objectstore).",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Files are written through Nextcloud's storage layer (REQ-PPC-006)"
    },
    "reachedOn": "Nextcloud admin storage configuration",
    "provider": "nextcloud",
@@ -7354,7 +7356,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/info.xml:4 app id openregister, packaged as a Nextcloud app store app; runs on the Nextcloud database with no extra service (optional LLM, anonymiser and e-Depot connections listed in lib/Settings/connections.json)",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "The app installs from the app store with nothing else to run (REQ-PPC-007)"
    },
    "reachedOn": "Nextcloud app store",
    "provider": "openregister",
@@ -7453,7 +7456,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "l10n/nl.json carries 3275 translated strings; UI strings go through t('openregister', ...) e.g. src/views/dashboard/DashboardIndex.vue:49",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Every interface string is translatable (REQ-PPC-008)"
    },
    "reachedOn": "every page",
    "provider": "openregister",
@@ -7964,7 +7968,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server apps/user_ldap (LDAP and Active Directory user and group backend, admin setting LDAP/AD integration); Open Register has no own login and resolves every user through Nextcloud's IUserSession, so LDAP accounts sign in to it unchanged",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Accounts and groups come from Nextcloud user backends (REQ-PPC-002)"
    },
    "reachedOn": "Nextcloud login page, configured under admin settings LDAP/AD integration",
    "provider": "nextcloud",
@@ -8075,7 +8080,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server apps/settings/lib/Settings/Personal/Security/Authtokens.php 'Devices and sessions' in personal security settings; apps/settings/appinfo/routes.php:16 AuthSettings#destroy revokes a session, :17 wipe a device; Open Register's own /api/user/me/tokens (appinfo/routes.php:1907, lib/Service/UserService.php:1317) lists only its API tokens, not sessions",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Sessions are Nextcloud sessions (REQ-PPC-003)"
    },
    "reachedOn": "Nextcloud personal settings, Security, Devices and sessions",
    "provider": "nextcloud",
@@ -8336,7 +8342,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server core/Controller/WebAuthnController.php:29 passwordless WebAuthn login, lib/private/Authentication/Login/WebAuthnChain.php:12; devices registered under apps/settings/lib/Settings/Personal/Security/WebAuthn.php; Open Register uses the Nextcloud session, so a passkey sign-in reaches it",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "A second factor the instance enforces is never skipped (REQ-PPC-004)"
    },
    "reachedOn": "Nextcloud login page, passkeys added in personal settings, Security",
    "provider": "nextcloud",
@@ -8471,7 +8478,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server apps/settings/lib/Mailer/NewUserMailHelper.php:54 the welcome and set-password mail uses getUserLanguage($user); the password reset mail (core/Controller/LostController.php:66 IL10N) is sent in the language of the reset request; Open Register's own notification mail resolves the recipient's locale per user, lib/Service/Notification/AnnotationNotificationDispatcher.php:685 resolveUserLocale",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Mail goes out in the recipient's language (REQ-PPC-009)"
    },
    "reachedOn": "Nextcloud account mails; Open Register notifications per recipient",
    "provider": "nextcloud",
@@ -8582,7 +8590,8 @@
     "state": "built",
     "owner": "nextcloud/server",
     "evidence": "nextcloud/server lib/private/Security/Ip/RemoteAddress.php:19 config allowed_admin_ranges; lib/private/AppFramework/Middleware/Security/SecurityMiddleware.php:162 refuses admin-only controller methods from other addresses; lib/private/Group/Manager.php:325 isAdmin answers false outside the ranges, which also covers Open Register's in-method admin checks",
-    "spec": "none"
+    "change": "platform-provided-capabilities",
+    "requirement": "Administrator rights pass Nextcloud's admin network check (REQ-PPC-005)"
    },
    "reachedOn": "Nextcloud config.php allowed_admin_ranges, applied to every Open Register admin route",
    "provider": "nextcloud",
