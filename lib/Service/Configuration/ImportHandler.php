@@ -4398,7 +4398,7 @@ class ImportHandler {
 		$configuration = new Configuration();
 		$configuration->setTitle($info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}");
 		$configuration->setDescription(
-			($info['description'] ?? $xOpenregister['description'] ?? $data['description']) ?? "Configuration imported by application {$appId}"
+			$info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}"
 		);
 		$configuration->setType($xOpenregister['type'] ?? $data['type'] ?? 'app');
 		$configuration->setApp($appId);
@@ -5999,7 +5999,6 @@ class ImportHandler {
 		$notes = (array)($relatedItems['notes'] ?? []);
 		$tasks = (array)($relatedItems['tasks'] ?? []);
 
-		// Debug: per seed object.
 		$this->logger->debug(
 			message: '[ImportHandler] Processing related items for seed object',
 			context: [
@@ -6013,117 +6012,26 @@ class ImportHandler {
 		);
 
 		$filesCreated = 0;
-		$notesCreated = 0;
-		$tasksCreated = 0;
-
 		if (count($files) > 0 && $this->fileService !== null) {
-			foreach ($files as $fileSpec) {
-				$name = (string)($fileSpec['name'] ?? '');
-				$content = ($fileSpec['content'] ?? null);
-				if ($name === '' || is_string($content) === false) {
-					continue;
-				}
+			$filesCreated = $this->seedRelatedFiles(object: $object, files: $files);
+		}
 
-				$tags = (array)($fileSpec['tags'] ?? []);
-				$share = (bool)($fileSpec['share'] ?? false);
-
-				// `base64:` prefix means the content was encoded; strip + decode.
-				if (str_starts_with($content, 'base64:') === true) {
-					$decoded = base64_decode(substr($content, 7), strict: true);
-					if ($decoded === false) {
-						$this->logger->warning(
-							message: '[ImportHandler] Seed file base64 decode failed - skipping',
-							context: ['object_uuid' => $object->getUuid(), 'name' => $name]
-						);
-						continue;
-					}
-
-					$content = $decoded;
-				}
-
-				try {
-					$this->fileService->addFile($object, $name, $content, $share, $tags);
-					$filesCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed file creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'name' => $name,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
-
-		if (count($notes) > 0 && $this->noteService !== null && $hasUserContext === false) {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping seed notes - no user session available',
-				context: ['object_uuid' => $object->getUuid(), 'count' => count($notes)]
+		// Notes and tasks are written as the logged-in user, so without one they are skipped.
+		$notesCreated = 0;
+		if (count($notes) > 0 && $this->noteService !== null) {
+			$notesCreated = $this->seedRelatedNotes(
+				object: $object,
+				notes: $this->itemsForUser(items: $notes, context: ['kind' => 'notes', 'object' => $object, 'user' => $hasUserContext])
 			);
-		} elseif (count($notes) > 0 && $this->noteService !== null) {
-			foreach ($notes as $noteSpec) {
-				$message = (string)($noteSpec['message'] ?? '');
-				if ($message === '') {
-					continue;
-				}
+		}
 
-				try {
-					$this->noteService->createNote((string)$object->getUuid(), $message);
-					$notesCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed note creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}
-		}//end if
-
-		if (count($tasks) > 0 && $this->taskService !== null && $hasUserContext === false) {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping seed tasks - no user session available',
-				context: ['object_uuid' => $object->getUuid(), 'count' => count($tasks)]
+		$tasksCreated = 0;
+		if (count($tasks) > 0 && $this->taskService !== null) {
+			$tasksCreated = $this->seedRelatedTasks(
+				tasks: $this->itemsForUser(items: $tasks, context: ['kind' => 'tasks', 'object' => $object, 'user' => $hasUserContext]),
+				owner: ['object' => $object, 'registerId' => $registerId, 'schemaId' => $schemaId, 'title' => $objectTitle]
 			);
-		} elseif (count($tasks) > 0 && $this->taskService !== null) {
-			foreach ($tasks as $taskSpec) {
-				$summary = (string)($taskSpec['summary'] ?? '');
-				if ($summary === '') {
-					continue;
-				}
-
-				$taskData = [
-					'summary' => $summary,
-					'description' => (string)($taskSpec['description'] ?? ''),
-					'status' => (string)($taskSpec['status'] ?? 'needs-action'),
-					'priority' => (int)($taskSpec['priority'] ?? 0),
-					'due' => $taskSpec['due'] ?? null,
-				];
-				try {
-					$this->taskService->createTask(
-						$registerId,
-						$schemaId,
-						(string)$object->getUuid(),
-						$objectTitle,
-						$taskData
-					);
-					$tasksCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed task creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'summary' => $summary,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
+		}
 
 		$result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
 		$result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
@@ -6141,6 +6049,165 @@ class ImportHandler {
 			]
 		);
 	}//end processRelatedItems()
+
+	/**
+	 * The seed notes or tasks to create: all of them with a user session, none without one.
+	 *
+	 * @param array                $items   The seed notes or tasks.
+	 * @param array<string, mixed> $context The `kind` (notes or tasks), the `object` and whether a `user` is logged in.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function itemsForUser(array $items, array $context): array {
+		if ($context['user'] === true) {
+			return $items;
+		}
+
+		$this->logger->warning(
+			message: "[ImportHandler] Skipping seed {$context['kind']} - no user session available",
+			context: ['object_uuid' => $context['object']->getUuid(), 'count' => count($items)]
+		);
+
+		return [];
+	}//end itemsForUser()
+
+	/**
+	 * Attach a seed object's files; a `base64:` prefix marks encoded content.
+	 *
+	 * A file without a name or with non-string content is skipped, and so is
+	 * one whose base64 does not decode; a failed write is logged and skipped.
+	 *
+	 * @param ObjectEntity $object The seed object.
+	 * @param array        $files  The file specs: name, content, tags, share.
+	 *
+	 * @return int The number of files created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedFiles(ObjectEntity $object, array $files): int {
+		$created = 0;
+		foreach ($files as $fileSpec) {
+			$name = (string)($fileSpec['name'] ?? '');
+			$content = ($fileSpec['content'] ?? null);
+			if ($name === '' || is_string($content) === false) {
+				continue;
+			}
+
+			if (str_starts_with($content, 'base64:') === true) {
+				$content = base64_decode(substr($content, 7), strict: true);
+			}
+
+			if ($content === false) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed file base64 decode failed - skipping',
+					context: ['object_uuid' => $object->getUuid(), 'name' => $name]
+				);
+				continue;
+			}
+
+			try {
+				$this->fileService->addFile($object, $name, $content, (bool)($fileSpec['share'] ?? false), (array)($fileSpec['tags'] ?? []));
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed file creation failed',
+					context: [
+						'object_uuid' => $object->getUuid(),
+						'name' => $name,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+
+		return $created;
+	}//end seedRelatedFiles()
+
+	/**
+	 * Add a seed object's notes; one without a message is skipped, a failed one logged.
+	 *
+	 * @param ObjectEntity $object The seed object.
+	 * @param array        $notes  The note specs: message.
+	 *
+	 * @return int The number of notes created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedNotes(ObjectEntity $object, array $notes): int {
+		$created = 0;
+		foreach ($notes as $noteSpec) {
+			$message = (string)($noteSpec['message'] ?? '');
+			if ($message === '') {
+				continue;
+			}
+
+			try {
+				$this->noteService->createNote((string)$object->getUuid(), $message);
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed note creation failed',
+					context: [
+						'object_uuid' => $object->getUuid(),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		return $created;
+	}//end seedRelatedNotes()
+
+	/**
+	 * Add a seed object's tasks; one without a summary is skipped, a failed one logged.
+	 *
+	 * @param array                $tasks The task specs: summary, description, status, priority, due.
+	 * @param array<string, mixed> $owner The seed `object`, its `registerId`, `schemaId` and `title`.
+	 *
+	 * @return int The number of tasks created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedTasks(array $tasks, array $owner): int {
+		$created = 0;
+		foreach ($tasks as $taskSpec) {
+			$summary = (string)($taskSpec['summary'] ?? '');
+			if ($summary === '') {
+				continue;
+			}
+
+			$taskData = [
+				'summary' => $summary,
+				'description' => (string)($taskSpec['description'] ?? ''),
+				'status' => (string)($taskSpec['status'] ?? 'needs-action'),
+				'priority' => (int)($taskSpec['priority'] ?? 0),
+				'due' => $taskSpec['due'] ?? null,
+			];
+			try {
+				$this->taskService->createTask(
+					$owner['registerId'],
+					$owner['schemaId'],
+					(string)$owner['object']->getUuid(),
+					$owner['title'],
+					$taskData
+				);
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed task creation failed',
+					context: [
+						'object_uuid' => $owner['object']->getUuid(),
+						'summary' => $summary,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+
+		return $created;
+	}//end seedRelatedTasks()
 
 	/**
 	 * Ensure Nextcloud app dependencies are met for seedData import.

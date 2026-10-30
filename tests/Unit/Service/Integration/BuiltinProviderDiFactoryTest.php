@@ -8,7 +8,7 @@
  * per-provider *Test classes) construct each provider DIRECTLY with
  * mocked constructor args. That shape proves a provider behaves
  * correctly once built, but it is blind to a mis-wired DI factory
- * closure in Application::registerBuiltinIntegrationProviders().
+ * closure in IntegrationRegistrar::registerBuiltinIntegrationProviders().
  *
  * That blind spot bit us in production: when CalendarProvider,
  * EmailProvider and TasksProvider gained Tier-2 constructor args, their
@@ -47,13 +47,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
@@ -67,7 +67,6 @@ use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
-use ReflectionClass;
 use ReflectionMethod;
 
 /**
@@ -120,23 +119,7 @@ class BuiltinProviderDiFactoryTest extends TestCase {
 				}
 			);
 
-		// The constructor is SKIPPED on purpose. OCP\AppFramework\App::__construct
-		// assigns `\OC::$server->getRegisteredAppContainer()` to $container, and
-		// NC 35 declares that property as `private DIContainer $container` where
-		// NC 32-34 leave it untyped. Without a real server behind the seam the
-		// assignment is null, which 32-34 swallow and 35 refuses outright:
-		//
-		//   TypeError: Cannot assign null to property
-		//   OCP\AppFramework\App::$container of type DIContainer
-		//
-		// registerBuiltinIntegrationProviders() never reads $this->container — the
-		// `$container` its closures name is their own parameter, supplied by the
-		// caller below — so an instance without the constructor is all this test
-		// needs, and it needs no server fake on any version.
-		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-		$method = new ReflectionMethod(Application::class, 'registerBuiltinIntegrationProviders');
-		$method->setAccessible(true);
-		$method->invoke($app, $context);
+		(new ReflectionMethod(IntegrationRegistrar::class, 'registerBuiltinIntegrationProviders'))->invoke(null, $context);
 
 		return $factories;
 	}//end captureFactories()
