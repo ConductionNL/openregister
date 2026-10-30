@@ -541,4 +541,41 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$this->assertEquals($local, $result['merged']['authorization']);
 		$this->assertSame([], $result['replacedLocal']);
 	}//end testADecisionKeepsALocalBlockTheShippedDefinitionLacks()
+
+	/**
+	 * The destruction-list schema imported at 1.0.0 (no authorization) takes the
+	 * authorization 1.1.0 ships: the instance's empty block (`getAuthorization() ?? []`)
+	 * is no local change against a baseline that has none.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyLiveAuthorizationTakesTheShippedBlockOnUpgrade(): void {
+		$descriptor = json_decode((string) file_get_contents(__DIR__.'/../../../../lib/Settings/destruction_list_register.json'), true);
+		$schema     = $descriptor['components']['schemas']['destructionList'];
+		$incoming   = ['properties' => $schema['properties'], 'required' => $schema['required'], 'authorization' => $schema['authorization']];
+		$baseline   = ['properties' => $schema['properties'], 'required' => $schema['required']];
+		$live       = $baseline + ['authorization' => []];
+
+		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+
+		$this->assertSame([], $result['conflicts']);
+		foreach (['read', 'create', 'update', 'delete'] as $action) {
+			$this->assertEqualsCanonicalizing(['archivaris', 'admin'], $result['merged']['authorization'][$action], $action);
+		}
+	}//end testAnEmptyLiveAuthorizationTakesTheShippedBlockOnUpgrade()
+
+	/**
+	 * A block the instance itself filled in is still its own: only an EMPTY one equals absence.
+	 *
+	 * @return void
+	 */
+	public function testALocalAuthorizationAgainstAnAbsentBaselineStaysLocal(): void {
+		$baseline = $this->shipped();
+		$live     = $baseline + ['authorization' => ['read' => ['medewerkers']]];
+		$incoming = $baseline + ['authorization' => ['read' => ['admin']]];
+
+		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+
+		$this->assertSame(['medewerkers'], $result['merged']['authorization']['read']);
+	}//end testALocalAuthorizationAgainstAnAbsentBaselineStaysLocal()
 }//end class
