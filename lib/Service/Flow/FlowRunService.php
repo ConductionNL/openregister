@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -1481,11 +1482,22 @@ class FlowRunService {
 	 *
 	 * @return FlowRun The updated run.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function persistResult(FlowRun $run, array $result): FlowRun {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
+
+		// 🔴 A WRITEONLY ACTION INPUT NEVER REACHES STORAGE. The steps carry it
+		// in their items (the action-inputs node puts it there so later steps
+		// can read `{{inputs.pin}}`), and the log samples every step's items,
+		// so the log, the step rows, the final items and the context are all
+		// redacted here, the one place a walk's result is stored.
+		$secretRef = (((array)($result['context'] ?? []))[ObjectActionSecrets::CONTEXT_KEY] ?? null);
+		$result['log'] = ObjectActionSecrets::redact(data: (array)($result['log'] ?? []), ref: $secretRef);
+		$result['items'] = ObjectActionSecrets::redact(data: (array)($result['items'] ?? []), ref: $secretRef);
 
 		// The log is appended, not replaced: a resumed run's history is the
 		// whole run, not just the segment since it last woke up.
@@ -1541,6 +1553,8 @@ class FlowRunService {
 		// question — a flow with two approval steps would auto-approve the
 		// second one the moment the first was granted.
 		unset($context[self::SIGNAL_CONTEXT_KEY]);
+
+		$context = ObjectActionSecrets::redact(data: $context, ref: $secretRef);
 
 		$run->setStatus($status);
 		$run->setItems((array)($result['items'] ?? []));

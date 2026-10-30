@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -260,6 +261,12 @@ class FlowRunServiceTest extends TestCase {
 					$event->registerNode($this->doneBranch);
 					$event->registerNode($this->retryBranch);
 					$event->registerNode($this->asker);
+					$event->registerNode(
+						new \OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode(
+							$this->createMock(\OCP\IL10N::class),
+							$this->createMock(\OCP\IURLGenerator::class)
+						)
+					);
 				}
 			}
 		);
@@ -748,6 +755,34 @@ class FlowRunServiceTest extends TestCase {
 		// Otherwise the due-runs query keeps picking up a finished run.
 		$this->assertNull($run->getResumeAt());
 	}
+
+	/**
+	 * A writeOnly action input reaches the steps but never the stored run:
+	 * not its log of step inputs and outputs, not its final items.
+	 *
+	 * @return void
+	 */
+	public function testAWriteOnlyInputIsNotStoredInTheRunLogOrItems(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321-9876']);
+		try {
+			$run = $this->service->queue(
+				flowId: 'f1',
+				user: 'alice',
+				context: ['action' => 'sign', 'inputs' => ['reason' => 'approved'], ObjectActionSecrets::CONTEXT_KEY => $ref]
+			);
+			$flow = ['id' => 'f1', 'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs']], 'edges' => []];
+			$run = $this->service->execute(run: $run, flow: $flow, subject: new RunSubject());
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getLog()));
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getItems()));
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getContext()));
+		// The control: the storable input is still there, so the step did run.
+		$this->assertStringContainsString(needle: 'approved', haystack: (string)json_encode(value: $run->getItems()));
+	}//end testAWriteOnlyInputIsNotStoredInTheRunLogOrItems()
 
 	public function testTheLogAccumulatesAcrossASuspension(): void {
 		$run = $this->service->queue('f1', user: 'alice');
