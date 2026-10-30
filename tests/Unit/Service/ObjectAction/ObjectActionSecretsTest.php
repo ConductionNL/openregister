@@ -99,20 +99,45 @@ class ObjectActionSecretsTest extends TestCase {
 	}//end testCopiesAreRedactedWholeStringsOnly()
 
 	/**
-	 * Flow state holding a held value is detected.
+	 * Flow state keeps its other values; only a copied secret is replaced.
 	 *
 	 * @return void
 	 */
-	public function testFlowStateIsChecked(): void {
-		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321-9876']);
+	public function testFlowStateIsRedactedValueByValue(): void {
+		$stored = null;
+		$states = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class);
+		$states->method('put')->willReturnCallback(
+			static function (string $flowId, array $state) use (&$stored): \OCA\OpenRegister\Db\FlowState {
+				$stored = $state;
+				return new \OCA\OpenRegister\Db\FlowState();
+			}
+		);
+		$service = new \OCA\OpenRegister\Service\Flow\FlowRunService(
+			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowRunMapper::class),
+			$states,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowEngine::class),
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
+			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
+			$this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
+		);
+		$handle = new \OCA\OpenRegister\Service\Flow\FlowStateHandle(values: []);
+		$handle->set(key: 'cursor', value: '1');
+		$handle->set(key: 'since', value: '2026-10-30T10:00:00+00:00');
+		$handle->set(key: 'lastCode', value: '2026');
+		$run = new \OCA\OpenRegister\Db\FlowRun();
+		$run->setFlowId('f1');
+
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '2026', 'digit' => '1']);
 		try {
-			$inState  = ObjectActionSecrets::occursIn(data: ['last' => ['code' => 'x4321-9876']], ref: $ref);
-			$notState = ObjectActionSecrets::occursIn(data: ['count' => 4321], ref: $ref);
+			$method = new \ReflectionMethod(objectOrMethod: \OCA\OpenRegister\Service\Flow\FlowRunService::class, method: 'persistFlowState');
+			$method->invoke($service, $run, [\OCA\OpenRegister\Service\Flow\FlowStateHandle::CONTEXT_KEY => $handle], $ref);
 		} finally {
 			ObjectActionSecrets::release(ref: $ref);
 		}
 
-		$this->assertTrue(condition: $inState);
-		$this->assertFalse(condition: $notState);
-	}//end testFlowStateIsChecked()
+		$this->assertSame(
+			expected: ['cursor' => '1', 'since' => '2026-10-30T10:00:00+00:00', 'lastCode' => '[redacted]'],
+			actual: $stored
+		);
+	}//end testFlowStateIsRedactedValueByValue()
 }//end class

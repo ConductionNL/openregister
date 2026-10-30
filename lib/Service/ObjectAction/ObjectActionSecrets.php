@@ -240,44 +240,6 @@ final class ObjectActionSecrets {
 	}//end replaceCopies()
 
 	/**
-	 * Whether a held value occurs in the data: a string equal to it, or, for a
-	 * value of at least {@see MIN_EMBEDDED_LENGTH} characters, containing it.
-	 *
-	 * @param mixed $data The data.
-	 * @param mixed $ref  The reference.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
-	 */
-	public static function occursIn(mixed $data, mixed $ref): bool {
-		$secrets = self::secretStrings(ref: $ref);
-		if ($secrets === []) {
-			return false;
-		}
-
-		$found = false;
-		$data  = (array)$data;
-		array_walk_recursive(
-			$data,
-			static function (mixed $value) use ($secrets, &$found): void {
-				if ($found === true || is_string($value) === false) {
-					return;
-				}
-
-				foreach ($secrets as $secret) {
-					if ($value === $secret || (strlen($secret) >= self::MIN_EMBEDDED_LENGTH && str_contains($value, $secret) === true)) {
-						$found = true;
-						return;
-					}
-				}
-			}
-		);
-
-		return $found;
-	}//end occursIn()
-
-	/**
 	 * The held values long enough to be looked for outside their own key.
 	 *
 	 * @param mixed $ref The reference.

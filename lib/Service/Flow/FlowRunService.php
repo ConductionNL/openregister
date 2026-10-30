@@ -1475,11 +1475,11 @@ class FlowRunService {
 
 
 	/**
-	 * Persist the flow's state, unless it would store a writeOnly action input.
+	 * Persist the flow's state with any copied writeOnly action input redacted.
 	 *
 	 * Flow state outlives the run and the request, and no key tells where an
-	 * author put a value, so a state that contains a held value is not saved
-	 * at all (loudly): a lost state write is recoverable, a stored PIN is not.
+	 * author put a value, so each value that is a whole copy of a held secret
+	 * (four or more characters) is replaced; the rest of the write stands.
 	 *
 	 * @param FlowRun              $run       The run.
 	 * @param array<string, mixed> $context   The run context, holding the state handle.
@@ -1491,12 +1491,15 @@ class FlowRunService {
 	 */
 	private function persistFlowState(FlowRun $run, array $context, mixed $secretRef): void {
 		$handle = ($context[FlowStateHandle::CONTEXT_KEY] ?? null);
-		if ($handle instanceof FlowStateHandle && ObjectActionSecrets::occursIn(data: $handle->all(), ref: $secretRef) === true) {
-			$this->logger->error(
-				message: '[FlowRunService] Flow state not saved: it holds a writeOnly action input',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid()]
-			);
-			return;
+		if ($handle instanceof FlowStateHandle && $handle->isDirty() === true) {
+			// Value by value, by the same whole-string rule as the items: the
+			// rest of the state (cursors, timestamps) is written as it is.
+			$redacted = (array)ObjectActionSecrets::redactCopies(data: $handle->all(), ref: $secretRef);
+			foreach ($handle->all() as $key => $value) {
+				if (($redacted[$key] ?? null) !== $value) {
+					$handle->set(key: (string)$key, value: $redacted[$key]);
+				}
+			}
 		}
 
 		$this->flowState->persist(run: $run, context: $context);
