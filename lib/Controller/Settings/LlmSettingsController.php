@@ -521,4 +521,33 @@ class LlmSettingsController extends Controller {
 			);
 		}
 	}//end clearAllEmbeddings()
+
+	/**
+	 * Get statistics of the database vector store
+	 *
+	 * Admin only: the method carries no NoAdminRequired annotation.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The getVectorStats() shape plus a success flag
+	 *
+	 * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md#requirement-the-system-must-expose-vector-statistics-and-surface-embedding-model-rotation-needs
+	 */
+	public function getVectorStats(): JSONResponse {
+		try {
+			$stats = $this->vectorizationService->getVectorStats();
+
+			return new JSONResponse(data: array_merge(['success' => true], $stats));
+		} catch (Exception $e) {
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'error' => $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}
+	}//end getVectorStats()
 }//end class
