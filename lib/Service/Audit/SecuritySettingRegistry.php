@@ -87,9 +87,6 @@ class SecuritySettingRegistry {
 		],
 		'retention.auditTrailsEnabled' => ['label' => 'Audit trail', 'default' => true, 'secret' => false, 'type' => 'json'],
 		'retention.searchTrailsEnabled' => ['label' => 'Search trail', 'default' => true, 'secret' => false, 'type' => 'json'],
-		'solr.username' => ['label' => 'Search index user name', 'default' => 'solr', 'secret' => false, 'type' => 'json'],
-		'solr.password' => ['label' => 'Search index password', 'default' => 'SolrRocks', 'secret' => true, 'type' => 'json'],
-		'solr.zookeeperPassword' => ['label' => 'Search cluster password', 'default' => '', 'secret' => true, 'type' => 'json'],
 		'@flow_audit_enabled' => ['label' => 'Audit trail for automated flows', 'default' => false, 'secret' => false, 'type' => 'bool'],
 		'@flow_oversight_enabled' => ['label' => 'Oversight of automated flows', 'default' => true, 'secret' => false, 'type' => 'bool'],
 		'@flow_kill_switch' => ['label' => 'Emergency stop for automated flows', 'default' => false, 'secret' => false, 'type' => 'bool'],
@@ -130,7 +127,7 @@ class SecuritySettingRegistry {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isSecret(string $path): bool {
-		if ((self::SETTINGS[$path]['secret'] ?? false) === true) {
+		if (($this->definition(path: $path)['secret'] ?? false) === true) {
 			return true;
 		}
 
@@ -143,6 +140,17 @@ class SecuritySettingRegistry {
 
 		return false;
 	}//end isSecret()
+
+	/**
+	 * The registry entry of a setting.
+	 *
+	 * @param string $path The setting path.
+	 *
+	 * @return array{label: string, default: mixed, secret: bool, type: string}|null The entry, or null when unregistered.
+	 */
+	private function definition(string $path): ?array {
+		return (self::SETTINGS[$path] ?? null);
+	}//end definition()
 
 	/**
 	 * The label an announcement shows for a setting.

@@ -39,7 +39,6 @@ use Psr\Log\LoggerInterface;
  * - find(), findSilent(), findAll(), count()
  * - searchObjects(), searchObjectsPaginated()
  * - Async and sync pagination
- * - Solr vs Database routing
  * - Performance optimizations
  *
  * @category Service

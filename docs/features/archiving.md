@@ -135,6 +135,20 @@ POST /api/objects/{register}/{schema}/{id}/legal-hold
 
 Objects with active legal holds are excluded from destruction lists. Legal holds appear in audit trail and MDTO metadata.
 
+### Frozen records cannot be deleted
+
+A frozen record (`POST /api/objects/{register}/{schema}/{id}/freeze`) refuses every change to its data, and it refuses deletion too. A `DELETE` on a frozen record answers 409 with a message that names who froze it and since when:
+
+```
+409 Conflict
+{
+  "error": "This record is locked by Anna de Vries since 2026-10-30. Unlock it before deleting it.",
+  "errors": { "code": "object-frozen", "frozenBy": "anna", "frozenAt": "2026-10-30T09:12:00+00:00" }
+}
+```
+
+The refusal holds on every delete path: the single delete, the bulk delete and a cascade. A cascade that reaches a frozen record is refused as a whole. To delete the record, unfreeze it first (`DELETE /api/objects/{register}/{schema}/{id}/freeze`).
+
 ## e-Depot Transfer
 
 ### MDTO XML Generation

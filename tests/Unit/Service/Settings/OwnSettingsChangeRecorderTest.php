@@ -209,21 +209,19 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 	}//end testOrganisationDoorRecordsTheChangedKey()
 
 	/**
-	 * The full save (PUT /api/settings) is recorded, and a secret is marked.
+	 * The full save (PUT /api/settings) is recorded, and a plain setting is not marked as a secret.
 	 *
 	 * @return void
 	 */
-	public function testFullSaveRecordsAndMarksSecrets(): void {
-		$this->store['solr'] = json_encode(['password' => 'old-secret', 'host' => 'solr']);
+	public function testFullSaveRecordsTheChangedKey(): void {
+		$this->store['retention'] = json_encode(['auditTrailsEnabled' => true]);
 
-		$this->configurationHandler()->updateSettings(['solr' => ['password' => 'new-secret', 'host' => 'solr']]);
+		$this->configurationHandler()->updateSettings(['retention' => ['auditTrailsEnabled' => false]]);
 
-		$this->assertSame(['old-secret', 'new-secret'], $this->lastChange('solr.password'));
+		$this->assertSame([true, false], $this->lastChange('retention.auditTrailsEnabled'));
 		$call = $this->recorded[array_key_last($this->recorded)];
-		$this->assertContains('solr.password', $call['secretKeys']);
-		$this->assertContains('solr.zookeeperPassword', $call['secretKeys']);
-		$this->assertNotContains('solr.host', $call['secretKeys']);
-	}//end testFullSaveRecordsAndMarksSecrets()
+		$this->assertNotContains('retention.auditTrailsEnabled', $call['secretKeys']);
+	}//end testFullSaveRecordsTheChangedKey()
 
 	/**
 	 * The retention door on ObjectRetentionHandler is recorded.
@@ -337,17 +335,4 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 		$this->assertSame([100, 200], $this->lastChange('fileManagement.maxFileSize'));
 	}//end testFileDoorRecordsTheChangedKey()
 
-	/**
-	 * The search backend door is recorded (openregister#4100).
-	 *
-	 * @return void
-	 */
-	public function testSearchBackendDoorRecords(): void {
-		$this->store['search_backend'] = json_encode(['active' => 'solr']);
-
-		$handler = new SearchBackendHandler($this->appConfig, $this->createMock(LoggerInterface::class), 'openregister', $this->recorder());
-		$handler->updateSearchBackendConfig('database');
-
-		$this->assertSame(['solr', 'database'], $this->lastChange('search_backend.active'));
-	}//end testSearchBackendDoorRecords()
 }//end class

@@ -594,8 +594,7 @@ class RenderObject {
 	 * @return void
 	 *
 	 * Used by list pipelines that bypass the full renderEntity pipeline (the
-	 * cheap-path when no extend/fields/filter/unset is requested, or the SOLR/index
-	 * path which never renders rows). Walks rows, collects UUIDs, issues a single
+	 * cheap-path when no extend/fields/filter/unset is requested). Walks rows, collects UUIDs, issues a single
 	 * batched FileMapper lookup, and writes the lightweight ID list onto each row's
 	 * `\@self.files` (or the equivalent property on an ObjectEntity).
 	 *

@@ -17,7 +17,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Branch coverage tests for LlmSettingsController — targets remaining uncovered
  * branches in updateLLMSettings, testEmbedding, testChat, clearAllEmbeddings,
- * getVectorStats, checkEmbeddingModelMismatch, patchLLMSettings.
+ * checkEmbeddingModelMismatch, patchLLMSettings.
  */
 class LlmSettingsControllerBranchTest extends TestCase {
 	private LlmSettingsController $controller;
@@ -299,17 +299,5 @@ class LlmSettingsControllerBranchTest extends TestCase {
 
 		$response = $this->controller->clearAllEmbeddings();
 		$this->assertSame(500, $response->getStatus());
-	}
-
-	// =========================================================================
-	// getVectorStats
-	// =========================================================================
-
-	public function testGetVectorStatsSuccess(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
-	}
-
-	public function testGetVectorStatsException(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
 	}
 }

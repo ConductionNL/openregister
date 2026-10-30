@@ -2752,6 +2752,8 @@ class Schema extends Entity implements JsonSerializable {
 	 *   Example: 'profile.avatar' (should contain base64 encoded image data)
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
+	 *   a file property of this schema, unless the property sets its own.
 	 * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
@@ -2882,7 +2884,9 @@ class Schema extends Entity implements JsonSerializable {
 		// ever be declared.
 		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
 		// caller's own drafts out of the schema's lists by default.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
+		// `autoShare` is the schema-level default FilePropertyHandler reads for
+		// every file property.
+		$boolFields = ['allowFiles', 'autoShare', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
@@ -2900,7 +2904,11 @@ class Schema extends Entity implements JsonSerializable {
 		// UniqueConstraintEvaluator and UniqueConstraintListener read (named
 		// refuse/report constraints, beside the legacy `unique`). Off this
 		// list every save dropped it in silence and no constraint ever fired.
+		// `autoPublish` is the retired name of `autoShare`. It is kept unvalidated
+		// and never acted on, so FilePropertyHandler can still log the
+		// deprecation warning that names `autoShare`.
 		$passThrough = [
+			'autoPublish',
 			'unique',
 			'uniqueConstraints',
 			'facetCacheTtl',
