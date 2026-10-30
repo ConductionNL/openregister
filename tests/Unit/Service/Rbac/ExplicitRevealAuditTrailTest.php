@@ -33,9 +33,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
+use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\LogService;
-use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -45,6 +48,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\LogService
  * @covers \OCA\OpenRegister\Controller\AuditTrailController
+ * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
@@ -196,4 +200,47 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		);
 		$this->assertSame(expected: '*****', actual: $listed[0]['changed']['citizenServiceNumber']);
 	}//end testAnEntryWithoutASchemaAndAListValueAreMasked()
+
+	/**
+	 * The scoped trail a non-administrator reads (`readable`) shows it masked.
+	 *
+	 * @return void
+	 */
+	public function testTheReadableTrailShowsItMasked(): void {
+		$entry = $this->entry();
+		$entry->setObjectUuid('obj-1');
+		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
+		$trails->method('findAll')->willReturnCallback(
+			static function (?int $limit = null, ?int $offset = null) use ($entry): array {
+				if (($offset ?? 0) > 0) {
+					return [];
+				}
+
+				return [$entry];
+			}
+		);
+		$object = new ObjectEntity();
+		$object->setUuid('obj-1');
+		$object->setSchema('7');
+		$objects = $this->createMock(originalClassName: MagicMapper::class);
+		$objects->method('findMultipleAcrossAllMagicTables')->willReturn([$object]);
+		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
+		$schemas->method('find')->willReturn($this->personSchema());
+		$permissions = $this->createMock(originalClassName: PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturn(true);
+		$reads = $this->createMock(originalClassName: ReadEventVisibility::class);
+		$reads->method('maySeeReadEvents')->willReturn(true);
+
+		$lister = new ReadableAuditTrailLister(
+			auditTrailMapper: $trails,
+			objectMapper: $objects,
+			schemaMapper: $schemas,
+			permissionHandler: $permissions,
+			readEvents: $reads
+		);
+		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', limit: 20));
+
+		$this->assertStringContainsString(needle: 'obj-1', haystack: $encoded);
+		$this->assertStringNotContainsString(needle: self::BSN, haystack: $encoded);
+	}//end testTheReadableTrailShowsItMasked()
 }//end class
