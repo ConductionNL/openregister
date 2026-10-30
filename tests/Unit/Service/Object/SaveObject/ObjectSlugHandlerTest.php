@@ -432,6 +432,45 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->assertSame('hello-world', $this->handler->slugForRestore($entity, $this->register, $this->schema([])));
 	}
 
+	public function testMoveKeepsTheSlugWhenTheTargetHasNoHolder(): void {
+		// Review finding (Robert, 30-10): a move or migration re-checks the slug in the target.
+		$this->magicMapper->method('findSlugHolders')->willReturn([]);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
+
+		$this->assertSame('hello-world', $this->handler->slugForMove($entity, $this->register, $this->schema(['objectSlugField' => 'title'])));
+		$this->assertSame([], $this->warnings);
+	}
+
+	public function testMoveDropsASlugTheTargetAlreadyHolds(): void {
+		$this->magicMapper->method('findSlugHolders')->willReturn([self::UUID_B]);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
+
+		$this->assertNull($this->handler->slugForMove($entity, $this->register, $this->schema(['objectSlugField' => 'title'])));
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('was moved without a slug', $this->warnings[0]);
+		$this->assertStringContainsString(self::UUID_B, $this->warnings[0]);
+	}
+
+	public function testMoveSuffixesATakenSlugWhenTheTargetAsksForIt(): void {
+		$this->magicMapper->method('findSlugHolders')->willReturnCallback(
+			fn ($register, $schema, string $slug) => ($slug === 'hello-world') ? [self::UUID_B] : []
+		);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
+
+		$slug = $this->handler->slugForMove($entity, $this->register, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]));
+
+		$this->assertMatchesRegularExpression('/^hello-world-\d{14}$/', (string)$slug);
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('(move)', $this->warnings[0]);
+	}
+
+	public function testMoveIntoAnUnmanagedSchemaKeepsTheSlug(): void {
+		$this->magicMapper->expects($this->never())->method('findSlugHolders');
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
+
+		$this->assertSame('hello-world', $this->handler->slugForMove($entity, $this->register, $this->schema([])));
+	}
+
 	public function testAnEmptySourceFieldGivesNoSlug(): void {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => '']);

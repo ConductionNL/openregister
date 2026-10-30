@@ -219,4 +219,45 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 
 		$this->assertAmbiguous($response);
 	}
+	public function patchRoutes(): array {
+		return [
+			'patch' => ['patch'],
+			'postPatch' => ['postPatch'],
+		];
+	}//end patchRoutes()
+
+	/**
+	 * Review finding (Robert, 30-10): the unfiltered PATCH lookup must not answer
+	 * 409 when the caller can read none of the holders; it decides on the
+	 * caller's own filtered set, as PUT does.
+	 *
+	 * @dataProvider patchRoutes
+	 */
+	public function testPatchDecidesAnAmbiguousSlugOnWhatTheCallerMayRead(string $route): void {
+		$ambiguous = new MultipleObjectsReturnedException('Identifier "hello-world" matches more than one object in this register and schema');
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('getRegister')->willReturn(7);
+		$objectService->method('getSchema')->willReturn(4);
+		$calls = [];
+		$objectService->method('findSilent')->willReturnCallback(
+			function (string $id, ?array $extend, bool $files, $register, $schema, bool $rbac, bool $multi) use ($ambiguous, &$calls) {
+				$calls[] = [$rbac, $multi];
+				if ($rbac === false) {
+					throw $ambiguous;
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('none readable');
+			}
+		);
+		$controller = $this->controller($objectService, admin: false);
+
+		$response = match ($route) {
+			'patch' => $controller->patch('zaken', 'persoon', 'hello-world', $objectService),
+			'postPatch' => $controller->postPatch('zaken', 'persoon', 'hello-world', $objectService),
+		};
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame([[false, false], [true, true]], $calls);
+		$this->assertStringNotContainsString('ambiguous', json_encode($response->getData()));
+	}
 }//end class

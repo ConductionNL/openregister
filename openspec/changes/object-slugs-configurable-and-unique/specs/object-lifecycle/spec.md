@@ -90,11 +90,14 @@ slug is taken, the object MUST be saved without a slug, the save MUST succeed, a
 warning MUST be logged that names the register, the schema, the slug, the uuid of the
 object saved without it and the uuid of the object holding it. The same slug MAY exist
 in a different schema or a different register. A soft-deleted object MUST NOT hold its
-slug for this check. The same rules MUST apply when a soft-deleted object is restored
-and when a configuration's seed data creates an object: a slug another live object holds
-by then MUST NOT be written, so the object is restored (or seeded) without a slug, or
-with the suffixed slug when `objectSlugSuffix` is `true`, and the collision warning
-MUST be logged.
+slug for this check. The same rules MUST apply when a soft-deleted object is restored,
+when an object is moved or migrated to another register or schema (its slug is checked
+against the target's live holders), and when a configuration's seed data creates an
+object: a slug another live object holds by then MUST NOT be written, so the object is
+restored, moved (or seeded) without a slug, or with the suffixed slug when
+`objectSlugSuffix` is `true`, and the collision warning MUST be logged. A seed object's
+client slug is its explicit `slug` only; its title MUST NOT be used as one, so a seed
+without a `slug` gets the slug of the schema's configured source, as through the API.
 
 #### Scenario: Second object with the same source value is saved without a slug
 - **GIVEN** a schema with `objectSlugField: "title"` and `objectSlugSuffix` absent

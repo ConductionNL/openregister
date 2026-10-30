@@ -231,7 +231,7 @@ class ObjectSlugBatch {
 	 *
 	 * @return string The key.
 	 */
-	private function fold(string $slug): string {
+	public function fold(string $slug): string {
 		return mb_strtolower(trim($slug));
 	}//end fold()
 }//end class

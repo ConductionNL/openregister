@@ -169,6 +169,46 @@ class LogServiceTest extends TestCase {
 		$this->service->count('1', '2', 'dubbel');
 	}
 
+	public function testGetLogsPrefersTheLiveHolderOverADeletedOneWithTheSameSlug(): void {
+		// Review finding (Robert, 30-10): a slug freed by a delete goes to the next
+		// object, so a deleted and a live object can share it; the live one is meant.
+		$live = $this->createObjectEntity(43, '1', '2');
+		$register = $this->createRegister(1);
+		$schema = $this->createSchema(2);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturnCallback(
+			function (string $id, $reg, $sch, bool $rbac, bool $multi, bool $includeDeleted) use ($live) {
+				if ($includeDeleted === true) {
+					throw new \OCP\AppFramework\Db\MultipleObjectsReturnedException('a deleted and a live object hold "dubbel"');
+				}
+
+				return $live;
+			}
+		);
+		$this->auditTrailMapper->method('findAll')->willReturn(['log-live']);
+
+		$this->assertSame(['log-live'], $this->service->getLogs('1', '2', 'dubbel'));
+	}
+
+	public function testGetLogsStaysAmbiguousWhenNoHolderIsLive(): void {
+		$this->registerMapper->method('find')->willReturn($this->createRegister(1));
+		$this->schemaMapper->method('find')->willReturn($this->createSchema(2));
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturnCallback(
+			function (string $id, $reg, $sch, bool $rbac, bool $multi, bool $includeDeleted) {
+				if ($includeDeleted === true) {
+					throw new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two deleted objects hold "dubbel"');
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('no live holder');
+			}
+		);
+		$this->auditTrailMapper->expects($this->never())->method('findAll');
+
+		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
+		$this->service->getLogs('1', '2', 'dubbel');
+	}
+
 	public function testCountReturnsLogCount(): void {
 		$object = $this->createObjectEntity(42, '1', '2');
 		$register = $this->createRegister(1);

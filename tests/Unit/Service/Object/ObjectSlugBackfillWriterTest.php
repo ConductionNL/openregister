@@ -78,11 +78,16 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		);
 
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->logger->method('info')->willReturnCallback(
+		// The overflow change list is logged at warning level, so it survives
+		// Nextcloud's default loglevel; only those lines are collected here.
+		$this->logger->method('warning')->willReturnCallback(
 			function ($message): void {
-				$this->infos[] = (string)$message;
+				if (str_contains((string)$message, 'Slug backfill changes') === true) {
+					$this->infos[] = (string)$message;
+				}
 			}
 		);
+		$this->logger->expects($this->never())->method('info');
 
 		$this->writer = new ObjectSlugBackfillWriter(
 			magicMapper: $this->magicMapper,
@@ -139,6 +144,27 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->assertCount(1, $this->audits);
 		$this->assertCount(500, $this->audits[0]['changes'], 'the entry lists chunk 1 only');
 	}//end testAFailingSecondChunkKeepsTheFirstAuditsItAndEvictsTheCache()
+
+	public function testASlugTakenDuringTheRunIsSkippedNotWrittenTwice(): void {
+		// Review finding (Robert, 30-10): a save during a long backfill may take a
+		// planned slug; the chunk re-checks the holders right before it writes.
+		$this->magicMapper->method('findSlugState')->willReturn(
+			['holders' => ['slug-2' => ['ffffffff-0000-0000-0000-000000000000']], 'stored' => []]
+		);
+		$written = [];
+		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
+			function (...$args) use (&$written): int {
+				$written[] = $args['slug'] ?? $args[3];
+				return 1;
+			}
+		);
+
+		$skipped = $this->writer->write($this->plan(3), $this->register, $this->schema, ['assigned' => 3, 'skipped' => 0]);
+
+		$this->assertSame(1, $skipped);
+		$this->assertSame(['slug-1', 'slug-3'], $written);
+		$this->assertCount(2, $this->audits[0]['changes']);
+	}
 
 	public function testARunOverTheEntryCapLogsTheFullListInParts(): void {
 		// Review finding r2routes-f6: the entry holds the first 1,000; the log holds all 2,500.

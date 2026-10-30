@@ -55,7 +55,7 @@ class ObjectSlugLog {
 	 * @param string      $holderUuid Who holds it.
 	 * @param string      $objectUuid Who wanted it.
 	 * @param string|null $suffixed   The suffixed slug that was also taken, if tried.
-	 * @param string      $path       single | bulk | backfill | restore | seed.
+	 * @param string      $path       single | bulk | backfill | restore | move | seed.
 	 *
 	 * @return void
 	 *
@@ -79,6 +79,7 @@ class ObjectSlugLog {
 			'backfill' => 'gets no slug from the backfill',
 			'restore' => 'was restored without a slug',
 			'seed' => 'was seeded without a slug',
+			'move' => 'was moved without a slug',
 			default => 'was saved without a slug',
 		};
 
@@ -114,7 +115,7 @@ class ObjectSlugLog {
 	 * @param string   $holderUuid Who holds it.
 	 * @param string   $objectUuid Who wanted it.
 	 * @param string   $suffixed   The suffixed slug the object gets.
-	 * @param string   $path       restore | seed.
+	 * @param string   $path       restore | move | seed.
 	 *
 	 * @return void
 	 *
@@ -223,7 +224,7 @@ class ObjectSlugLog {
 	 *
 	 * @param Register|null $register The register.
 	 * @param Schema        $schema   The schema.
-	 * @param string        $path     single | bulk | backfill | restore | seed | lookup.
+	 * @param string        $path     single | bulk | backfill | restore | move | seed | lookup.
 	 *
 	 * @return array<string, mixed>
 	 */

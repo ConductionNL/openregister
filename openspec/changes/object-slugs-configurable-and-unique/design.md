@@ -272,6 +272,15 @@ single row is. The query orders those rows first and reads at most 50 (`ORDER BY
 the id/uuid match, then `_id`), so the pick never depends on which rows a cut-off kept; a
 identifier counts as an id only when it is a canonical non-negative integer, the same rule in the query and in the pick (`007` is a slug, not id 7).
 
+Two lookups read wider than the caller and decide the ambiguity again on the narrower set.
+PATCH reads without RBAC and multitenancy; when that finds more than one holder, the
+lookup is repeated with the caller's flags (as PUT reads), so one readable holder is the
+target, several are a 409 and none is a 404, and a 409 never reveals a holder the caller
+cannot see. The administrators' history reads deleted rows too; when that finds more than
+one holder, the live rows alone decide, because a slug freed by a delete goes to the next
+object. Slugs are compared case-folded wherever a set of holders is built in PHP (bulk
+save, backfill planner, duplicate report), as a case-insensitive collation would.
+
 *Alternative rejected:* checking in `ObjectService` (the plan's ~6321). The service does
 not see the rows, so it would need a second query. The mapper already holds both rows.
 
@@ -381,14 +390,23 @@ schema opts in with plain configuration keys, like `objectNameField`.
 - **[Race] Two concurrent saves with the same candidate both pass the check** → both
   hold the slug. Mitigation: rare (needs the same title in the same register + schema
   within milliseconds). The 409 lookup and the backfill duplicate report make it visible.
-  An index is ruled out by D9.
+  An index is ruled out by D9. The backfill reads the held slugs once at the start; to
+  keep its window as short, each write chunk re-reads the holders of its slugs right
+  before writing and skips a slug taken meanwhile (counted as skipped, logged).
 - **[Restore] Restoring a soft-deleted object whose slug was taken in the meantime.**
   `MagicMapper::restoreObject()` is not part of the save pipeline, so it calls
   `ObjectSlugHandler::slugForRestore()` (resolved lazily through the container, as
   MagicMapper needs it to exist first): a taken slug is replaced by the suffixed one when
   `objectSlugSuffix` is on and cleared otherwise, in the same UPDATE that clears
   `_deleted`, with the usual collision warning. The seed import (`ImportHandler`) goes
-  through `ObjectSlugHandler::applyOnSave()` for the same reason.
+  through `ObjectSlugHandler::applyOnSave()` for the same reason; a seed's explicit
+  `slug` is its client slug, its title is not (the configured source decides).
+- **[Move / migrate] An object carried to another register or schema keeps a slug decided
+  in the source.** `MoveObject::move()` and `MigrationHandler` do not run the save
+  pipeline, so both call `ObjectSlugHandler::slugForMove()` before the write: the slug
+  stays when it is free in the target, is suffixed when the target has
+  `objectSlugSuffix`, and is cleared otherwise, with the collision warning. A target
+  without `objectSlugField` keeps the slug unchanged (D8).
 - **[Re-import with new uuid] A reset-sync creates a new object while the old one still
   holds the slug** → the new object waits without a slug until the old one is deleted,
   then gets it on its next save or by the backfill (issue plan Q8, working assumption).

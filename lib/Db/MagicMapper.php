@@ -7135,6 +7135,8 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * List every slug held by more than one live object in a register+schema table.
 	 *
+	 * Slugs are compared case-folded; the report is keyed by the lower-cased slug.
+	 *
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema.
 	 *
@@ -7151,18 +7153,21 @@ class MagicMapper extends AbstractObjectMapper {
 		$slugCol = self::METADATA_PREFIX . 'slug';
 		$deletedCol = self::METADATA_PREFIX . 'deleted';
 
+		// Grouped case-folded: on a case-insensitive collation `Hello-World` and
+		// `hello-world` are one slug, and the save paths compare them that way.
 		$sub = $this->db->getQueryBuilder();
-		$sub->select($slugCol)
+		$folded = $sub->func()->lower($slugCol);
+		$sub->selectAlias($folded, 'slug_key')
 			->from($tableName)
 			->where($sub->expr()->isNotNull($slugCol))
 			->andWhere($sub->expr()->neq($slugCol, $sub->createNamedParameter('')))
 			->andWhere($sub->expr()->isNull($deletedCol))
-			->groupBy($slugCol)
+			->groupBy($folded)
 			->having('COUNT(*) > 1');
 		$result = $sub->executeQuery();
 		$slugs = [];
 		while (($row = $result->fetch()) !== false) {
-			$slugs[] = (string)$row[$slugCol];
+			$slugs[] = (string)$row['slug_key'];
 		}
 
 		$result->closeCursor();
@@ -7175,13 +7180,13 @@ class MagicMapper extends AbstractObjectMapper {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
 				->from($tableName)
-				->where($qb->expr()->in($slugCol, $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
+				->where($qb->expr()->in($qb->func()->lower($slugCol), $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
 				->andWhere($qb->expr()->isNull($deletedCol))
 				->orderBy(self::METADATA_PREFIX . 'created', 'ASC')
 				->addOrderBy(self::METADATA_PREFIX . 'id', 'ASC');
 			$rows = $qb->executeQuery();
 			while (($row = $rows->fetch()) !== false) {
-				$duplicates[(string)$row[$slugCol]][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
+				$duplicates[mb_strtolower((string)$row[$slugCol])][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
 			}
 
 			$rows->closeCursor();

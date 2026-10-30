@@ -198,13 +198,14 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	public function testAUuidLessSeedStoredUnderASuffixedSlugIsNotCopiedAgain(): void {
 		$schema = $this->makeSchema(['naam' => ['type' => 'string'], 'title' => ['type' => 'string']]);
 		$schema->setConfiguration(['objectSlugField' => 'naam', 'objectSlugSuffix' => true]);
-		$this->onlyHeldSlug = 'school-de-linde';
+		// The configured source (`naam`) decides the slug, not the title (review Robert, 30-10).
+		$this->onlyHeldSlug = 'de-linde';
 
 		$lookups = [];
 		$this->importSeed($schema, $lookups, ['other-uuid'], ['title' => 'School De Linde', 'naam' => 'De Linde'], 2);
 
 		$this->assertCount(1, $this->inserted, 'the second import finds the suffixed copy');
-		$this->assertMatchesRegularExpression('/^school-de-linde-\d{14}$/', (string)$this->inserted[0]->getSlug());
+		$this->assertMatchesRegularExpression('/^de-linde-\d{14}$/', (string)$this->inserted[0]->getSlug());
 	}//end testAUuidLessSeedStoredUnderASuffixedSlugIsNotCopiedAgain()
 
 	/**
@@ -219,9 +220,24 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		$this->importSeed($schema, $lookups, [], ['title' => 'School De Linde', 'naam' => 'De Linde'], 2);
 
 		$this->assertCount(1, $this->inserted, 'the second import finds the first object');
-		$this->assertSame('school-de-linde', $this->inserted[0]->getSlug());
-		$this->assertSame(['school-de-linde', 'school-de-linde'], $lookups, 'the lookup uses the stored form');
+		// The configured source (`naam`) decides the slug, not the title (review Robert, 30-10).
+		$this->assertSame('de-linde', $this->inserted[0]->getSlug());
+		$this->assertSame(['de-linde', 'de-linde'], $lookups, 'the lookup uses the stored form');
 	}//end testAUuidLessSeedWithACapitalisedTitleIsImportedOnce()
+
+	/**
+	 * Review finding (Robert, 30-10): an explicit seed `slug` is still the client
+	 * slug and wins over the configured source, as it does through the API.
+	 */
+	public function testAnExplicitSeedSlugStillWinsOverTheConfiguredSource(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string'], 'title' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, [], ['slug' => 'eigen-slug', 'title' => 'School De Linde', 'naam' => 'De Linde']);
+
+		$this->assertSame('eigen-slug', $this->inserted[0]->getSlug());
+	}//end testAnExplicitSeedSlugStillWinsOverTheConfiguredSource()
 
 	/**
 	 * A real slug handler over a mapper that reports the given holders, or none.

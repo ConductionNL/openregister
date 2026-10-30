@@ -218,7 +218,14 @@ class ObjectSlugBackfillService {
 	 * @return list<array{uuid: string, old: ?string, new: ?string}>
 	 */
 	private function planFill(array $rows, Register $register, Schema $schema, array &$summary, bool $log): array {
-		$taken = $this->magicMapper->findAllSlugs(register: $register, schema: $schema);
+		// Keyed case-folded, as bulk save does: on a case-insensitive collation
+		// `Hello-World` and `hello-world` are one slug (ObjectSlugHandler::foldKey()).
+		$taken = [];
+		foreach ($this->magicMapper->findAllSlugs(register: $register, schema: $schema) as $held => $holders) {
+			$key = $this->slugHandler->foldKey(slug: (string)$held);
+			$taken[$key] = array_merge($taken[$key] ?? [], $holders);
+		}
+
 		$plan = [];
 		foreach ($rows as $row) {
 			$candidate = $row['candidate'];
@@ -233,8 +240,8 @@ class ObjectSlugBackfillService {
 				register: $register,
 				schema: $schema,
 				objectUuid: $uuid,
-				holderOf: static function (string $wanted) use (&$taken, $uuid): ?string {
-					foreach ($taken[$wanted] ?? [] as $holder) {
+				holderOf: function (string $wanted) use (&$taken, $uuid): ?string {
+					foreach ($taken[$this->slugHandler->foldKey(slug: $wanted)] ?? [] as $holder) {
 						if ($holder !== $uuid) {
 							return $holder;
 						}
@@ -250,7 +257,7 @@ class ObjectSlugBackfillService {
 				continue;
 			}
 
-			$taken[$slug][] = $uuid;
+			$taken[$this->slugHandler->foldKey(slug: $slug)][] = $uuid;
 			$plan[] = ['uuid' => $uuid, 'old' => null, 'new' => $slug];
 			$summary['assigned']++;
 		}//end foreach

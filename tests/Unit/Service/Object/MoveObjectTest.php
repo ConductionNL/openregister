@@ -188,6 +188,42 @@ final class MoveObjectTest extends TestCase {
 	}
 
 	/**
+	 * Review finding (Robert, 30-10): the slug is re-checked in the target before the
+	 * write, and a failed write puts the source slug back.
+	 *
+	 * @return void
+	 */
+	public function testTheSlugIsDecidedForTheTargetBeforeTheWrite(): void {
+		$object = $this->object();
+		$object->setSlug('hello-world');
+		$slugs = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class);
+		$slugs->expects(self::once())->method('slugForMove')
+			->with($object, self::callback(fn (Register $r) => (int)$r->getId() === 2), self::callback(fn (Schema $s) => (int)$s->getId() === 20))
+			->willReturn(null);
+		$seen = 'unset';
+		$objects = $this->createMock(MagicMapper::class);
+		$objects->method('updateObjectEntity')->willReturnCallback(
+			function (ObjectEntity $entity) use (&$seen): ObjectEntity {
+				$seen = $entity->getSlug();
+				throw new \RuntimeException('disk full');
+			}
+		);
+
+		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger(), $slugs))->move(
+			object: $object,
+			sourceRegister: $this->register(1),
+			sourceSchema: $this->schema(10),
+			targetRegister: $this->register(2),
+			targetSchema: $this->schema(20),
+			actor: 'anna',
+		);
+
+		self::assertNull($seen, 'the target write carries the decided slug');
+		self::assertFalse($outcome['moved']);
+		self::assertSame('hello-world', $object->getSlug(), 'a failed write puts the source slug back');
+	}
+
+	/**
 	 * 🔴 The row is written at the target BEFORE it is removed from the source.
 	 *
 	 * @return void

@@ -3427,6 +3427,44 @@ class ObjectsController extends Controller {
 	}//end ambiguousIdentifierResponse()
 
 	/**
+	 * Decide an ambiguous PATCH identifier on what the caller may read.
+	 *
+	 * The PATCH lookup reads without RBAC and multitenancy. When that finds
+	 * more than one object for a slug, the ambiguity is decided again on the
+	 * caller's own filtered set, as PUT does: one readable object is the
+	 * target, more than one is a 409, none is a 404. So a slug the caller can
+	 * see only once never reveals a second holder it cannot see.
+	 *
+	 * @param string $id       The identifier as the caller sent it.
+	 * @param array  $resolved The resolved register and schema (`registerEntity`, `schemaEntity`).
+	 * @param bool   $rbac     Whether RBAC applies to this caller.
+	 * @param bool   $multi    Whether multitenancy applies to this caller.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the 409/404 response.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rbac and multi are the caller's access flags, passed through.
+	 */
+	private function findReadableForPatch(string $id, array $resolved, bool $rbac, bool $multi): ObjectEntity|JSONResponse {
+		try {
+			return $this->objectService->findSilent(
+				id: $id,
+				_extend: [],
+				files: false,
+				register: $resolved['registerEntity'],
+				schema: $resolved['schemaEntity'],
+				_rbac: $rbac,
+				_multitenancy: $multi
+			);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+	}//end findReadableForPatch()
+
+	/**
 	 * Add the actions this caller may take on the record being returned.
 	 *
 	 * Written into `@self.actions`, beside the rest of the record's own
@@ -4245,7 +4283,10 @@ class ObjectsController extends Controller {
 					_multitenancy: false
 				);
 			} catch (MultipleObjectsReturnedException $e) {
-				return $this->ambiguousIdentifierResponse(id: $id);
+				$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
+				if ($existingObject instanceof JSONResponse) {
+					return $existingObject;
+				}
 			} catch (\Exception $e) {
 				// If we can't find the object, return 404.
 				$this->logger->warning(
@@ -4472,7 +4513,10 @@ class ObjectsController extends Controller {
 					_multitenancy: false
 				);
 			} catch (MultipleObjectsReturnedException $e) {
-				return $this->ambiguousIdentifierResponse(id: $id);
+				$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
+				if ($existingObject instanceof JSONResponse) {
+					return $existingObject;
+				}
 			} catch (\Exception $e) {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}

@@ -47,6 +47,9 @@ use Throwable;
  * slug is set as sent, no query, no log (design D8, BC1).
  *
  * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Design D1: this is the one owner of every slug
+ *   write (save, bulk, restore, move, seed, backfill), so each writer has its entry point here.
  */
 class ObjectSlugHandler {
 
@@ -304,6 +307,42 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForRestore(ObjectEntity $entity, Register $register, Schema $schema): ?string {
+		return $this->slugAtTarget(entity: $entity, register: $register, schema: $schema, path: 'restore');
+	}//end slugForRestore()
+
+	/**
+	 * The slug an object keeps when a move or migration takes it to another register or schema.
+	 *
+	 * The slug was decided in the source register+schema, so it is checked
+	 * again against the target's live holders before the write: it stays
+	 * when it is free there, is suffixed when the target has
+	 * `objectSlugSuffix` on, and is cleared otherwise (the collision is
+	 * logged as on a save). A target schema without `objectSlugField` keeps
+	 * the slug unchanged, as a save there would.
+	 *
+	 * @param ObjectEntity $entity   The object being moved (still carrying its uuid).
+	 * @param Register     $register The target register.
+	 * @param Schema       $schema   The target schema.
+	 *
+	 * @return string|null The slug to store at the target.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
+		return $this->slugAtTarget(entity: $entity, register: $register, schema: $schema, path: 'move');
+	}//end slugForMove()
+
+	/**
+	 * Re-check an object's existing slug against the live holders of a register+schema.
+	 *
+	 * @param ObjectEntity $entity   The object.
+	 * @param Register     $register The register it lands in.
+	 * @param Schema       $schema   The schema it lands in.
+	 * @param string       $path     restore | move (log context).
+	 *
+	 * @return string|null The slug to store; the entity's own slug when nothing changes.
+	 */
+	private function slugAtTarget(ObjectEntity $entity, Register $register, Schema $schema, string $path): ?string {
 		$slug = $entity->getSlug();
 		if ($slug === null || $slug === '' || $this->isManaged(schema: $schema) === false) {
 			return $slug;
@@ -318,9 +357,22 @@ class ObjectSlugHandler {
 			holderOf: function (string $wanted) use ($register, $schema, $uuid): ?string {
 				return ($this->magicMapper->findSlugHolders(register: $register, schema: $schema, slug: $wanted, excludeUuid: $uuid)[0] ?? null);
 			},
-			path: 'restore'
+			path: $path
 		);
-	}//end slugForRestore()
+	}//end slugAtTarget()
+
+	/**
+	 * The key two slugs share when a case-insensitive collation treats them as one.
+	 *
+	 * Bulk save and the backfill planner compare slugs through this one fold.
+	 *
+	 * @param string $slug The slug.
+	 *
+	 * @return string The folded key.
+	 */
+	public function foldKey(string $slug): string {
+		return $this->batch->fold(slug: $slug);
+	}//end foldKey()
 
 	/**
 	 * Decide the slugs of one register+schema group of a bulk save, in batch order.
@@ -354,7 +406,7 @@ class ObjectSlugHandler {
 	 * @param Schema   $schema     The schema (suffix switch, log line).
 	 * @param string   $objectUuid The object being decided.
 	 * @param callable $holderOf   fn(string $slug): ?string — uuid holding $slug, other than this object.
-	 * @param string   $path       single | bulk | backfill | restore | seed (log context; restore and seed always log a suffixed outcome).
+	 * @param string   $path       single | bulk | backfill | restore | move | seed (log context; restore, move and seed always log a suffixed outcome).
 	 * @param bool     $log        Log a collision (false for a backfill dry run).
 	 * @param string|null $suffixed The suffixed slug to try, when the caller already computed it.
 	 *
@@ -385,7 +437,7 @@ class ObjectSlugHandler {
 		if ($suffixOn === true) {
 			$tried = ($suffixed ?? $this->withSuffix(slug: $candidate));
 			if ($holderOf($tried) === null) {
-				if ($log === true && in_array($path, ['restore', 'seed'], true) === true) {
+				if ($log === true && in_array($path, ['restore', 'move', 'seed'], true) === true) {
 					$this->log->suffixedInstead(
 						register: $register,
 						schema: $schema,

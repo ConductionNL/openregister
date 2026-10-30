@@ -132,10 +132,35 @@ class ObjectSlugBackfillWriter {
 	 * @throws Throwable When a write fails (the chunk is rolled back first).
 	 */
 	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$applied, int &$skipped): void {
+		// The plan was made against the slugs held when the run started; a save
+		// during a long run may have taken one since. Re-check the chunk's slugs
+		// (one query) right before writing it, so the window is one chunk, not the run.
+		$holders = $this->magicMapper->findSlugState(
+			register: $register,
+			schema: $schema,
+			slugs: array_values(array_filter(array_column($chunk, 'new'), static fn ($slug): bool => is_string($slug) && $slug !== '')),
+			uuids: []
+		)['holders'] ?? [];
+
 		$written = [];
 		$this->db->beginTransaction();
 		try {
 			foreach ($chunk as $step) {
+				if ($this->takenMeanwhile(step: $step, holders: $holders) === true) {
+					$skipped++;
+					$this->logger->warning(
+						sprintf(
+							'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: slug "%s" was taken by another object while the backfill ran',
+							$step['uuid'],
+							(string)$register->getSlug(),
+							(string)$schema->getSlug(),
+							(string)$step['new']
+						),
+						['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]
+					);
+					continue;
+				}
+
 				$updated = $this->magicMapper->updateSlugColumn(
 					register: $register,
 					schema: $schema,
@@ -168,6 +193,24 @@ class ObjectSlugBackfillWriter {
 
 		array_push($applied, ...$written);
 	}//end writeChunk()
+
+	/**
+	 * Whether another live object took the planned slug after the plan was made.
+	 *
+	 * @param array{uuid: string, old: ?string, new: ?string} $step    The planned write.
+	 * @param array<string, list<string>>                     $holders Slug => live holder uuids, read just now.
+	 *
+	 * @return bool True when someone else holds it now.
+	 */
+	private function takenMeanwhile(array $step, array $holders): bool {
+		foreach ($holders[(string)$step['new']] ?? [] as $holder) {
+			if ($holder !== $step['uuid']) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end takenMeanwhile()
 
 	/**
 	 * Evict the schema's cached objects; a failure is logged, not thrown, so it
@@ -271,7 +314,9 @@ class ObjectSlugBackfillWriter {
 
 		$parts = array_chunk($applied, AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES);
 		foreach ($parts as $index => $part) {
-			$this->logger->info(
+			// Warning, not info: Nextcloud's default loglevel (2) drops info lines,
+			// and these are the only record of the changes beyond the audit entry.
+			$this->logger->warning(
 				message: sprintf(
 					'[ObjectSlug] Slug backfill changes (register %s, schema %s, part %d of %d): %s',
 					(string)$register->getId(),

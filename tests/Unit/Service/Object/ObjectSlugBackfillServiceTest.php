@@ -188,6 +188,23 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertStringContainsString('gets no slug from the backfill', $this->warnings[0]);
 	}
 
+	public function testAMixedCaseExistingSlugBlocksTheLowerCaseCandidate(): void {
+		// Review finding (Robert, 30-10): bulk save folds case, the backfill must too,
+		// or a case-insensitive collation ends up with two holders of one slug.
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findAllSlugs')->willReturn(['Hello-World' => [self::UUID_C]]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([$this->row(1, self::UUID_A, 'Hello World')]),
+			$this->page([])
+		);
+
+		$result = $this->service->run($this->register, $this->schema());
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame(0, $result['summary']['assigned']);
+		$this->assertSame(1, $result['summary']['collisions']);
+	}
+
 	/**
 	 * Rows as the next run reads them: the plan of the previous run applied.
 	 *

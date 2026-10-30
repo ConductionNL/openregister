@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use SimpleXMLElement;
 
 /**
@@ -229,7 +230,8 @@ class LogService {
 	 * @return ObjectEntity The object, deleted or not.
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists in the register and schema.
-	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When the slug is held by more than one object.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When the slug is held by more than one live object,
+	 *                                                                   or only by deleted ones.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
@@ -250,14 +252,33 @@ class LogService {
 			return $result['object'];
 		}
 
-		return $this->unifiedObjectMapper->findInRegisterSchemaTable(
-			identifier: $id,
-			register: $registerEntity,
-			schema: $schemaEntity,
-			_rbac: false,
-			_multitenancy: false,
-			includeDeleted: true
-		);
+		try {
+			return $this->unifiedObjectMapper->findInRegisterSchemaTable(
+				identifier: $id,
+				register: $registerEntity,
+				schema: $schemaEntity,
+				_rbac: false,
+				_multitenancy: false,
+				includeDeleted: true
+			);
+		} catch (MultipleObjectsReturnedException $e) {
+			// A slug freed by a delete goes to the next object that saves without
+			// one, so a deleted and a live object can share it. The single live
+			// holder is the one meant; only when the live rows alone are still
+			// ambiguous, or none is live, is the lookup refused.
+			try {
+				return $this->unifiedObjectMapper->findInRegisterSchemaTable(
+					identifier: $id,
+					register: $registerEntity,
+					schema: $schemaEntity,
+					_rbac: false,
+					_multitenancy: false,
+					includeDeleted: false
+				);
+			} catch (DoesNotExistException $none) {
+				throw $e;
+			}
+		}//end try
 	}//end findObjectInScope()
 
 	/**

@@ -5483,20 +5483,24 @@ class ImportHandler {
 	 * stored the seed under the suffixed slug; the plain slug lookup does not find it, and
 	 * the next import would copy it again.
 	 *
-	 * @param string   $objectSlug The seed's slug, else its title.
+	 * @param array    $objectData The seed object.
 	 * @param Schema   $schema     The schema the seed is imported into.
 	 * @param Register $register   The register it is imported into.
 	 *
 	 * @return ObjectEntity|null The object, or null when none is stored under a suffixed variant.
 	 */
-	private function findSuffixedSeed(string $objectSlug, Schema $schema, Register $register): ?ObjectEntity {
+	private function findSuffixedSeed(array $objectData, Schema $schema, Register $register): ?ObjectEntity {
 		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
 		$managed = ($this->slugHandler !== null && $this->slugHandler->isManaged(schema: $schema) === true);
 		if ($managed === false || $this->routingMapper === null || $suffixOn === false) {
 			return null;
 		}
 
-		$candidate = $this->slugHandler->candidate(objectData: [], schema: $schema, clientSlug: $objectSlug);
+		$candidate = $this->slugHandler->candidate(
+			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
+			schema: $schema,
+			clientSlug: $this->seedClientSlug(objectData: $objectData)
+		);
 		if ($candidate === null) {
 			return null;
 		}
@@ -5530,7 +5534,8 @@ class ImportHandler {
 	 *
 	 * A schema with managed slugs stores the normalised slug, so the raw seed
 	 * slug or title (`School De Linde`) would never find the object it created
-	 * on the previous import; the lookup uses the same candidate the save does.
+	 * on the previous import; the lookup uses the same candidate the save does:
+	 * an explicit seed `slug`, else the schema's configured slug source.
 	 *
 	 * @param array  $objectData The seed object.
 	 * @param string $objectSlug The seed's slug, else its title.
@@ -5546,11 +5551,32 @@ class ImportHandler {
 		$candidate = $this->slugHandler->candidate(
 			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
 			schema: $schema,
-			clientSlug: $objectSlug
+			clientSlug: $this->seedClientSlug(objectData: $objectData)
 		);
 
 		return ($candidate ?? $objectSlug);
 	}//end seedLookupSlug()
+
+	/**
+	 * The slug a seed object asks for itself: its explicit `slug`, never its title.
+	 *
+	 * The title only serves the idempotency lookup of a schema without managed
+	 * slugs; on a managed schema the configured source (`objectSlugField`,
+	 * `@schema.name`) decides, exactly as it does for the same object saved
+	 * through the API (#4037).
+	 *
+	 * @param array $objectData The seed object.
+	 *
+	 * @return string|null The explicit slug, or null when the seed has none.
+	 */
+	private function seedClientSlug(array $objectData): ?string {
+		$slug = $objectData['slug'] ?? null;
+		if (is_scalar($slug) === false || trim((string)$slug) === '') {
+			return null;
+		}
+
+		return (string)$slug;
+	}//end seedClientSlug()
 
 	/**
 	 * Remove the seed format's top-level `uuid` and `slug` from an object's data.
@@ -6000,7 +6026,7 @@ class ImportHandler {
 					}//end try
 
 					if ($existingObject === null && isset($objectData['uuid']) === false && $objectRegister !== null) {
-						$existingObject = $this->findSuffixedSeed(objectSlug: (string)$objectSlug, schema: $objectSchema, register: $objectRegister);
+						$existingObject = $this->findSuffixedSeed(objectData: $objectData, schema: $objectSchema, register: $objectRegister);
 					}
 
 					if ($existingObject !== null) {
@@ -6053,7 +6079,7 @@ class ImportHandler {
 							entity: $objectEntity,
 							schema: $objectSchema,
 							originalSlug: null,
-							clientSlug: (string)$objectSlug,
+							clientSlug: $this->seedClientSlug(objectData: $objectData),
 							path: 'seed'
 						);
 					}
