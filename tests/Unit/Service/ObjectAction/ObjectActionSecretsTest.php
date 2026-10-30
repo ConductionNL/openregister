@@ -157,4 +157,46 @@ class ObjectActionSecretsTest extends TestCase {
 			actual: $stored
 		);
 	}//end testFlowStateIsRedactedValueByValue()
+
+	/**
+	 * A suspended run's correlation key is read from the redacted context.
+	 *
+	 * @return void
+	 */
+	public function testTheCorrelationKeyIsReadFromTheRedactedContext(): void {
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowRunMapper::class);
+		$runs->method('update')->willReturnArgument(0);
+		$service = new \OCA\OpenRegister\Service\Flow\FlowRunService(
+			$runs,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowEngine::class),
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
+			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
+			$this->createMock(originalClassName: \Psr\Container\ContainerInterface::class)
+		);
+		$run = new \OCA\OpenRegister\Db\FlowRun();
+		$run->setFlowId('f1');
+
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321']);
+		try {
+			$result = [
+				'status' => \OCA\OpenRegister\Db\FlowRun::STATUS_SUSPENDED,
+				'log' => [],
+				'items' => [],
+				'context' => [
+					ObjectActionSecrets::CONTEXT_KEY => $ref,
+					\OCA\OpenRegister\Service\Flow\FlowResumeState::CONTEXT_KEY => new \OCA\OpenRegister\Service\Flow\FlowResumeState(
+						byNode: ['wait' => ['correlationKey' => '4321']]
+					),
+				],
+			];
+			$method = new \ReflectionMethod(objectOrMethod: \OCA\OpenRegister\Service\Flow\FlowRunService::class, method: 'persistResult');
+			$stored = $method->invoke($service, $run, $result);
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $stored->getCorrelationKey());
+		$this->assertStringNotContainsString(needle: '4321', haystack: (string)json_encode(value: $stored->getContext()));
+	}//end testTheCorrelationKeyIsReadFromTheRedactedContext()
 }//end class

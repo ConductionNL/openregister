@@ -1613,7 +1613,8 @@ class FlowRunService {
 
 		$run->setStatus($status);
 		$run->setItems($result['items']);
-		$run->setContext((array)ObjectActionSecrets::redactCopies(data: $context, ref: $secretRef));
+		$context = (array)ObjectActionSecrets::redactCopies(data: $context, ref: $secretRef);
+		$run->setContext($context);
 		$run->setLog($log);
 		$run->setError(($result['error'] ?? null));
 		$run->setUpdated(new DateTime());
