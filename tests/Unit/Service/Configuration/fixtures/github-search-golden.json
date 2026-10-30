@@ -1,0 +1,1716 @@
+{
+    "connect-failed": {
+        "threw": "Exception",
+        "message": "GitHub API request failed. Please try again or check your API token configuration in Settings.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "could not connect",
+                    "status_code": null,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "forbidden": {
+        "threw": "Exception",
+        "message": "Access forbidden. Please check your GitHub API token permissions in Settings.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 403",
+                    "status_code": 403,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "forbidden-rate-no-token": {
+        "threw": "Exception",
+        "message": "GitHub API rate limit exceeded (60 requests/hour for unauthenticated). Please configure a GitHub API token in Settings to increase to 5,000 requests/hour (30/minute for Code Search).",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 403: API rate limit exceeded",
+                    "status_code": 403,
+                    "_search": ""
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ]
+        ]
+    },
+    "forbidden-rate-token": {
+        "threw": "Exception",
+        "message": "GitHub Code Search API rate limit exceeded (30 requests per minute). Please wait a few minutes before trying again. The discovery search makes multiple API calls to find configurations.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 403: API rate limit exceeded",
+                    "status_code": 403,
+                    "_search": ""
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ]
+        ]
+    },
+    "no-items-key": {
+        "returned": {
+            "total_count": 0,
+            "results": [],
+            "page": 1,
+            "per_page": 30
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search response",
+                {
+                    "total_count": 0,
+                    "items_count": 0,
+                    "incomplete_results": false
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Search complete",
+                {
+                    "total_found": 0,
+                    "returned_in_page": 0,
+                    "api_calls_used": 1
+                }
+            ]
+        ]
+    },
+    "no-terms": {
+        "returned": {
+            "total_count": 4,
+            "results": [
+                {
+                    "repository": "org/app",
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "lib/Settings/full.json",
+                    "url": "https://github.com/org/app/blob/main/lib/Settings/full.json",
+                    "stars": 12,
+                    "description": "An app",
+                    "name": "full",
+                    "branch": "develop",
+                    "raw_url": "https://raw.githubusercontent.com/org/app/develop/lib/Settings/full.json",
+                    "sha": "sha-cached",
+                    "organization": {
+                        "name": "org",
+                        "avatar_url": "https://a/1",
+                        "type": "Organization",
+                        "url": "https://github.com/org"
+                    },
+                    "config": {
+                        "title": "Cached",
+                        "type": "app"
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "config.json",
+                    "url": "https://github.com/me/tool/blob/main/config.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "config",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/config.json",
+                    "sha": null,
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "Fresh",
+                        "description": "",
+                        "version": "2.0.0",
+                        "app": "tool",
+                        "type": "app",
+                        "openregister": null
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "dir/fresh.json",
+                    "url": "https://github.com/me/tool/blob/main/dir/fresh.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "fresh",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json",
+                    "sha": "sha-fresh",
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "Fresh",
+                        "description": "",
+                        "version": "2.0.0",
+                        "app": "tool",
+                        "type": "app",
+                        "openregister": null
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "broken.json",
+                    "url": "https://github.com/me/tool/blob/main/broken.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "broken",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/broken.json",
+                    "sha": "sha-broken",
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "broken",
+                        "description": "",
+                        "version": "v.unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                }
+            ],
+            "page": 1,
+            "per_page": 30
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search response",
+                {
+                    "total_count": 4,
+                    "items_count": 4,
+                    "incomplete_results": false
+                }
+            ],
+            [
+                "cache.get",
+                "config_org_app_sha-cached"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using cached config details",
+                {
+                    "cache_key": "config_org_app_sha-cached"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/config.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/config.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "cache.get",
+                "config_me_tool_sha-fresh"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "cache.set",
+                "config_me_tool_sha-fresh",
+                {
+                    "title": "Fresh",
+                    "description": "",
+                    "version": "2.0.0",
+                    "app": "tool",
+                    "type": "app",
+                    "openregister": null
+                },
+                604800
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Cached config details",
+                {
+                    "cache_key": "config_me_tool_sha-fresh"
+                }
+            ],
+            [
+                "cache.get",
+                "config_me_tool_sha-broken"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/broken.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/broken.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] Failed to enrich configuration details",
+                {
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "broken.json",
+                    "error": "raw fetch failed"
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Search complete",
+                {
+                    "total_found": 4,
+                    "returned_in_page": 4,
+                    "api_calls_used": 1
+                }
+            ]
+        ]
+    },
+    "not-found": {
+        "threw": "Exception",
+        "message": "Repository or resource not found on GitHub. Please check the repository exists and is public.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 404",
+                    "status_code": 404,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "per-page-capped": {
+        "returned": {
+            "total_count": 4,
+            "results": [
+                {
+                    "repository": "org/app",
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "lib/Settings/full.json",
+                    "url": "https://github.com/org/app/blob/main/lib/Settings/full.json",
+                    "stars": 12,
+                    "description": "An app",
+                    "name": "full",
+                    "branch": "develop",
+                    "raw_url": "https://raw.githubusercontent.com/org/app/develop/lib/Settings/full.json",
+                    "sha": "sha-cached",
+                    "organization": {
+                        "name": "org",
+                        "avatar_url": "https://a/1",
+                        "type": "Organization",
+                        "url": "https://github.com/org"
+                    },
+                    "config": {
+                        "title": "Cached",
+                        "type": "app"
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "config.json",
+                    "url": "https://github.com/me/tool/blob/main/config.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "config",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/config.json",
+                    "sha": null,
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "Fresh",
+                        "description": "",
+                        "version": "2.0.0",
+                        "app": "tool",
+                        "type": "app",
+                        "openregister": null
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "dir/fresh.json",
+                    "url": "https://github.com/me/tool/blob/main/dir/fresh.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "fresh",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json",
+                    "sha": "sha-fresh",
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "Fresh",
+                        "description": "",
+                        "version": "2.0.0",
+                        "app": "tool",
+                        "type": "app",
+                        "openregister": null
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "broken.json",
+                    "url": "https://github.com/me/tool/blob/main/broken.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "broken",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/broken.json",
+                    "sha": "sha-broken",
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "broken",
+                        "description": "",
+                        "version": "v.unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                }
+            ],
+            "page": 1,
+            "per_page": 250
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "x",
+                    "page": 1,
+                    "per_page": 250
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json x",
+                    "page": 1,
+                    "per_page": 100
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json x",
+                        "page": 1,
+                        "per_page": 100,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search response",
+                {
+                    "total_count": 4,
+                    "items_count": 4,
+                    "incomplete_results": false
+                }
+            ],
+            [
+                "cache.get",
+                "config_org_app_sha-cached"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using cached config details",
+                {
+                    "cache_key": "config_org_app_sha-cached"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/config.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/config.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "cache.get",
+                "config_me_tool_sha-fresh"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "cache.set",
+                "config_me_tool_sha-fresh",
+                {
+                    "title": "Fresh",
+                    "description": "",
+                    "version": "2.0.0",
+                    "app": "tool",
+                    "type": "app",
+                    "openregister": null
+                },
+                604800
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Cached config details",
+                {
+                    "cache_key": "config_me_tool_sha-fresh"
+                }
+            ],
+            [
+                "cache.get",
+                "config_me_tool_sha-broken"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/broken.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/broken.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] Failed to enrich configuration details",
+                {
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "broken.json",
+                    "error": "raw fetch failed"
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Search complete",
+                {
+                    "total_found": 4,
+                    "returned_in_page": 4,
+                    "api_calls_used": 1
+                }
+            ]
+        ]
+    },
+    "server-error": {
+        "threw": "Exception",
+        "message": "GitHub API is temporarily unavailable. Please try again in a few minutes.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 500",
+                    "status_code": 500,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "teapot": {
+        "threw": "Exception",
+        "message": "GitHub API request failed. Please try again or check your API token configuration in Settings.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 418",
+                    "status_code": 418,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "teapot-rate": {
+        "threw": "Exception",
+        "message": "GitHub API rate limit exceeded. Please wait a few minutes or configure an API token in Settings.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 418: API rate limit exceeded",
+                    "status_code": 418,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "unauthorized": {
+        "threw": "Exception",
+        "message": "GitHub API authentication failed. Please check your API token in Settings or remove it to use unauthenticated access (60 requests/hour limit).",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 401",
+                    "status_code": 401,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "unavailable": {
+        "threw": "Exception",
+        "message": "GitHub API is temporarily unavailable. Please try again in a few minutes.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 503",
+                    "status_code": 503,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "unprocessable": {
+        "threw": "Exception",
+        "message": "Invalid search query. Please try different search terms.",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API search failed",
+                {
+                    "error": "HTTP 422",
+                    "status_code": 422,
+                    "_search": ""
+                }
+            ]
+        ]
+    },
+    "with-terms": {
+        "returned": {
+            "total_count": 4,
+            "results": [
+                {
+                    "repository": "org/app",
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "lib/Settings/full.json",
+                    "url": "https://github.com/org/app/blob/main/lib/Settings/full.json",
+                    "stars": 12,
+                    "description": "An app",
+                    "name": "full",
+                    "branch": "develop",
+                    "raw_url": "https://raw.githubusercontent.com/org/app/develop/lib/Settings/full.json",
+                    "sha": "sha-cached",
+                    "organization": {
+                        "name": "org",
+                        "avatar_url": "https://a/1",
+                        "type": "Organization",
+                        "url": "https://github.com/org"
+                    },
+                    "config": {
+                        "title": "Cached",
+                        "type": "app"
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "config.json",
+                    "url": "https://github.com/me/tool/blob/main/config.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "config",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/config.json",
+                    "sha": null,
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "Fresh",
+                        "description": "",
+                        "version": "2.0.0",
+                        "app": "tool",
+                        "type": "app",
+                        "openregister": null
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "dir/fresh.json",
+                    "url": "https://github.com/me/tool/blob/main/dir/fresh.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "fresh",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json",
+                    "sha": "sha-fresh",
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "Fresh",
+                        "description": "",
+                        "version": "2.0.0",
+                        "app": "tool",
+                        "type": "app",
+                        "openregister": null
+                    }
+                },
+                {
+                    "repository": "me/tool",
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "broken.json",
+                    "url": "https://github.com/me/tool/blob/main/broken.json",
+                    "stars": 0,
+                    "description": "",
+                    "name": "broken",
+                    "branch": "main",
+                    "raw_url": "https://raw.githubusercontent.com/me/tool/main/broken.json",
+                    "sha": "sha-broken",
+                    "organization": {
+                        "name": "me",
+                        "avatar_url": "",
+                        "type": "User",
+                        "url": ""
+                    },
+                    "config": {
+                        "title": "broken",
+                        "description": "",
+                        "version": "v.unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                }
+            ],
+            "page": 2,
+            "per_page": 10
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "repo:org/app",
+                    "page": 2,
+                    "per_page": 10
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json repo:org/app",
+                    "page": 2,
+                    "per_page": 10
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json repo:org/app",
+                        "page": 2,
+                        "per_page": 10,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search response",
+                {
+                    "total_count": 4,
+                    "items_count": 4,
+                    "incomplete_results": false
+                }
+            ],
+            [
+                "cache.get",
+                "config_org_app_sha-cached"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using cached config details",
+                {
+                    "cache_key": "config_org_app_sha-cached"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/config.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/config.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "cache.get",
+                "config_me_tool_sha-fresh"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/dir/fresh.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "cache.set",
+                "config_me_tool_sha-fresh",
+                {
+                    "title": "Fresh",
+                    "description": "",
+                    "version": "2.0.0",
+                    "app": "tool",
+                    "type": "app",
+                    "openregister": null
+                },
+                604800
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Cached config details",
+                {
+                    "cache_key": "config_me_tool_sha-fresh"
+                }
+            ],
+            [
+                "cache.get",
+                "config_me_tool_sha-broken"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/me/tool/main/broken.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/me/tool/main/broken.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] Failed to enrich configuration details",
+                {
+                    "owner": "me",
+                    "repo": "tool",
+                    "path": "broken.json",
+                    "error": "raw fetch failed"
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Search complete",
+                {
+                    "total_found": 4,
+                    "returned_in_page": 4,
+                    "api_calls_used": 1
+                }
+            ]
+        ]
+    },
+    "zero-terms": {
+        "returned": {
+            "total_count": 0,
+            "results": [],
+            "page": 1,
+            "per_page": 30
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Searching for OpenRegister configurations",
+                {
+                    "search_terms": "0",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search query",
+                {
+                    "query": "\"x-openregister\" extension:json",
+                    "page": 1,
+                    "per_page": 30
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "\"x-openregister\" extension:json",
+                        "page": 1,
+                        "per_page": 30,
+                        "sort": "stars",
+                        "order": "desc"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub Code Search response",
+                {
+                    "total_count": 0,
+                    "items_count": 0,
+                    "incomplete_results": true
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Search complete",
+                {
+                    "total_found": 0,
+                    "returned_in_page": 0,
+                    "api_calls_used": 1
+                }
+            ]
+        ]
+    }
+}
