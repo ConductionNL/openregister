@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
+use OCA\OpenRegister\Tests\Unit\AppHost\FactoryWiringAssertions;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
@@ -26,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 class MapperRegistrarTest extends TestCase {
+	use FactoryWiringAssertions;
 
 	/**
 	 * register() registers the hand-built mappers, in this order.
@@ -51,7 +53,10 @@ class MapperRegistrarTest extends TestCase {
 	/**
 	 * Every factory builds an instance of the name it is registered under.
 	 *
-	 * The container hands each factory a test double for every service it asks for.
+	 * The container hands each factory a test double for every service it asks
+	 * for. Each built service must also hold every nullable object dependency
+	 * its constructor declares: the factory overrides autowiring, so one it
+	 * leaves out is never supplied (openregister#5143).
 	 *
 	 * @return void
 	 */
@@ -69,7 +74,9 @@ class MapperRegistrarTest extends TestCase {
 		);
 
 		foreach ($context->factories as $name => $factory) {
-			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
+			$service = $factory($container);
+			$this->assertInstanceOf(expected: $name, actual: $service, message: $name);
+			$this->assertFactorySuppliedEveryOptionalDependency(service: $service);
 		}
 	}//end testEveryFactoryBuildsItsService()
 	/**
