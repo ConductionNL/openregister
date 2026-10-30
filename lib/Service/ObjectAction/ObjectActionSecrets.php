@@ -163,8 +163,9 @@ final class ObjectActionSecrets {
 
 	/**
 	 * A free text (an error message) with every held value of at least
-	 * {@see MIN_EMBEDDED_LENGTH} characters replaced. Text only: it carries
-	 * nothing a resume reads.
+	 * {@see MIN_EMBEDDED_LENGTH} characters replaced where it stands as a whole
+	 * token: not inside a longer run of letters, digits or dashes, so a date
+	 * or a uuid that contains the same digits is left alone.
 	 *
 	 * @param string|null $text The text.
 	 * @param mixed       $ref  The reference.
@@ -178,10 +179,9 @@ final class ObjectActionSecrets {
 			return null;
 		}
 
-		foreach (self::secretStrings(ref: $ref) as $secret) {
-			if (strlen($secret) >= self::MIN_EMBEDDED_LENGTH) {
-				$text = str_replace($secret, self::REDACTED, $text);
-			}
+		foreach (self::copyableSecrets(ref: $ref) as $secret) {
+			$pattern = '/(?<![A-Za-z0-9-])' . preg_quote($secret, '/') . '(?![A-Za-z0-9-])/';
+			$text    = (string)preg_replace($pattern, self::REDACTED, $text);
 		}
 
 		return $text;
@@ -224,6 +224,22 @@ final class ObjectActionSecrets {
 
 		return $found;
 	}//end occursIn()
+
+	/**
+	 * The held values long enough to be looked for outside their own key.
+	 *
+	 * @param mixed $ref The reference.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function copyableSecrets(mixed $ref): array {
+		return array_values(
+			array_filter(
+				self::secretStrings(ref: $ref),
+				static fn (string $secret): bool => strlen($secret) >= self::MIN_EMBEDDED_LENGTH
+			)
+		);
+	}//end copyableSecrets()
 
 	/**
 	 * The held values as non-empty strings.

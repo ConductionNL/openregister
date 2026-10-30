@@ -60,22 +60,36 @@ class ObjectActionSecretsTest extends TestCase {
 	}//end testStoredPlaceItemsRedactTheInputAndKeepTheSubject()
 
 	/**
-	 * An error text loses a held value; flow state holding one is detected.
+	 * An error text loses a held value where it stands as a whole token only.
 	 *
 	 * @return void
 	 */
-	public function testErrorTextAndFlowStateAreChecked(): void {
+	public function testErrorTextReplacesWholeTokensOnly(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '2026']);
+		try {
+			$text = ObjectActionSecrets::redactText(text: 'PIN 2026 refused on 2026-10-30 for ' . self::UUID, ref: $ref);
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: 'PIN [redacted] refused on 2026-10-30 for ' . self::UUID, actual: $text);
+	}//end testErrorTextReplacesWholeTokensOnly()
+
+	/**
+	 * Flow state holding a held value is detected.
+	 *
+	 * @return void
+	 */
+	public function testFlowStateIsChecked(): void {
 		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321-9876']);
 		try {
-			$text     = ObjectActionSecrets::redactText(text: 'PIN 4321-9876 was refused', ref: $ref);
 			$inState  = ObjectActionSecrets::occursIn(data: ['last' => ['code' => 'x4321-9876']], ref: $ref);
 			$notState = ObjectActionSecrets::occursIn(data: ['count' => 4321], ref: $ref);
 		} finally {
 			ObjectActionSecrets::release(ref: $ref);
 		}
 
-		$this->assertSame(expected: 'PIN [redacted] was refused', actual: $text);
 		$this->assertTrue(condition: $inState);
 		$this->assertFalse(condition: $notState);
-	}//end testErrorTextAndFlowStateAreChecked()
+	}//end testFlowStateIsChecked()
 }//end class
