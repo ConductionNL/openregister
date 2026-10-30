@@ -1854,5 +1854,10 @@
     "no-console": {
       "count": 4
     }
+  },
+  "tests/Unit/Service/fixtures/import-from-json-golden.json": {
+    "json/no-empty-keys": {
+      "count": 3
+    }
   }
 }
