@@ -2851,7 +2851,7 @@ class PermissionHandler {
 	 * @return array<string, mixed>|null The block, with the matrix's rules in it.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function compileDepartmentMatrix(?array $authorization, Schema $schema): ?array {
 		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
@@ -2908,7 +2908,7 @@ class PermissionHandler {
 	 *
 	 * @return MatrixRowsFromApps The asker of app-contributed matrix rows.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function matrixRowsFromApps(): MatrixRowsFromApps {
 		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
@@ -3778,7 +3778,7 @@ class PermissionHandler {
 	 *
 	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
 	 *
-	 * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function grantNothingWhenEmpty(array $authorization): array {
 		if ($authorization !== []) {

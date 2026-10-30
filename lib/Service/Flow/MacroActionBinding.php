@@ -77,7 +77,7 @@ final class MacroActionBinding {
 	 *
 	 * @return bool True for a uuid.
 	 *
-	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	public static function namesUuid(string $flow): bool {
 		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $flow) === 1;
@@ -90,7 +90,7 @@ final class MacroActionBinding {
 	 *
 	 * @return self The resolved binding.
 	 *
-	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	public function resolvedTo(string $flowUuid): self {
 		return new self(action: $this->action, flow: $flowUuid);

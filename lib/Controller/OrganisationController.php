@@ -801,7 +801,7 @@ class OrganisationController extends Controller {
 	 *
 	 * @return array<string, string|null> The name, description and slug.
 	 *
-	 * @spec openspec/changes/organisation-lifecycle-audit/specs/tenant-lifecycle/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	private function auditedDetailsOf(object $organisation): array {
 		return [

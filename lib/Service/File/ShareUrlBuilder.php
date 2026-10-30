@@ -36,7 +36,7 @@ use OCP\IURLGenerator;
  * that case. No entry of `trusted_domains` is ever picked as a host: that
  * list says which hosts are allowed, not which one a visitor can reach.
  *
- * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
  */
 class ShareUrlBuilder {
 
@@ -66,7 +66,7 @@ class ShareUrlBuilder {
 	 *
 	 * @return string The absolute share link, without a trailing `/download`.
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function shareLink(string $token): string {
 		return $this->absolute(path: '/index.php/s/' . rawurlencode($token));
@@ -79,7 +79,7 @@ class ShareUrlBuilder {
 	 *
 	 * @return string The absolute address.
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function absolute(string $path): string {
 		$path = '/' . ltrim($path, '/');

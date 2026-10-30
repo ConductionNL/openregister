@@ -4513,7 +4513,7 @@ class MagicSearchHandler {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function convertRowToObjectEntity(
 		array $row,
@@ -4558,7 +4558,7 @@ class MagicSearchHandler {
 	 *
 	 * @return array{metadata: array<string, mixed>, object: array<string, mixed>}
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function splitRowColumns(array $row, Schema $schema): array {
 		$schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);

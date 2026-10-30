@@ -776,7 +776,7 @@ class FileMapper extends QBMapper {
 	 *
 	 * @phpstan-return string
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateShareUrl(string $token): string {
 		return $this->shareUrls->shareLink(token: $token);
@@ -796,7 +796,7 @@ class FileMapper extends QBMapper {
 	 *
 	 * @phpstan-return string
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateAuthenticatedAccessUrl(int $fileId): string {
 		return $this->shareUrls->absolute(path: '/index.php/core/preview?fileId=' . $fileId . '&x=1920&y=1080&a=1');
@@ -816,7 +816,7 @@ class FileMapper extends QBMapper {
 	 *
 	 * @phpstan-return string
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateAuthenticatedDownloadUrl(int $fileId): string {
 		return $this->shareUrls->absolute(path: '/index.php/apps/openregister/api/files/' . $fileId . '/download');

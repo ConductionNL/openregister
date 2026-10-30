@@ -77,7 +77,7 @@ class OrganisationUsageService {
 	 * @return array{storage: int|null, bandwidth: null, requests: int|null, objects: int|null, users: int, groups: int}
 	 *
 	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
-	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	public function measure(Organisation $organisation): array {
 		return [
@@ -124,7 +124,7 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The count, or null without an object quota or when it could not be counted.
 	 *
-	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	private function measureObjects(Organisation $organisation): ?int {
 		$uuid = $organisation->getUuid();
