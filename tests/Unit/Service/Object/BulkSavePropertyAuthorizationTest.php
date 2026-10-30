@@ -53,6 +53,11 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 
 	private SaveObjects $handler;
 
+	/**
+	 * The same handler built without its property authorization handler.
+	 */
+	private SaveObjects $unguarded;
+
 	private Schema $schema;
 
 	private Register $register;
@@ -89,6 +94,18 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('find')->willReturn($existing);
 		$mapper->method('findObjectsByUuidsInRegisterSchema')->willReturn([self::UUID => $existing]);
+
+		$this->unguarded = new SaveObjects(
+			objectEntityMapper: $mapper,
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			registerMapper: $this->createMock(RegisterMapper::class),
+			saveHandler: $this->createMock(SaveObject::class),
+			userSession: $session,
+			organisationService: $this->createMock(OrganisationService::class),
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $groups,
+			permissionHandler: $permissions,
+		);
 
 		$this->handler = new SaveObjects(
 			objectEntityMapper: $mapper,
@@ -160,6 +177,19 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 
 		$this->assertCount(1, $passed);
 	}//end testAnUnchangedProtectedValuePasses()
+
+	public function testWithoutThePropertyHandlerAGovernedRowIsRefused(): void {
+		$this->handler = $this->unguarded;
+
+		$result = [];
+		$passed = $this->safeguard(
+			rows: [['@self' => ['uuid' => self::UUID], 'title' => 'Offerte', 'restricted' => false]],
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertStringContainsString('Property authorization is unavailable', $result['invalid'][0]['error']);
+	}//end testWithoutThePropertyHandlerAGovernedRowIsRefused()
 
 	public function testASystemOperationWritesAProtectedPropertyAsTheObjectRuleLetsIt(): void {
 		$result = [];
