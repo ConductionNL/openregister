@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
+use OCA\OpenRegister\Service\File\Office\ConversionManagerConverter;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -24,21 +25,14 @@ use ReflectionMethod;
 /**
  * Unit tests for WordExtractor.
  *
- * NOTE: this test-runner container (php:8.3-cli, no ext-zip) cannot read a
- * real docx/odt fixture — PhpWord's Word2007/ODText readers hard-require
- * \ZipArchive (its PclZip fallback only covers writing, not
- * Shared\XMLReader::getDomFromZip() used on read). Because extract()
- * catches \Throwable and degrades to null on any per-document failure, the
- * container's missing ZipArchive class itself gives us a real (not
- * hand-waved) exercise of that degrade-to-null path: garbage bytes plus a
- * genuine docx/odt MIME type hit the same "reader blew up" branch that a
- * malformed real document would. The MsDoc (legacy .doc) reader does not
- * need ZipArchive, so garbage .doc bytes exercise the same null path via a
- * genuine PhpWord parse failure instead of an environment limitation.
+ * Garbage bytes under a genuine docx/doc MIME type exercise the degrade-to-null
+ * path a malformed real document takes. The MIME/extension to reader mapping
+ * is checked through reflection. Real documents are covered by
+ * {@see WordExtractorGoldenTest}.
  *
- * What IS fully, deterministically unit-testable here without any real
- * office file: the private resolveWordReader() MIME/extension → reader
- * mapping, verified via reflection.
+ * @covers \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\WordTextReader
+ * @uses   \OCA\OpenRegister\Service\TextExtraction\OoxmlPackage
  */
 class WordExtractorTest extends TestCase {
 
@@ -158,17 +152,15 @@ class WordExtractorTest extends TestCase {
 	}
 
 	/**
-	 * A per-document parse failure (here: a genuine PhpWord MsDoc parse
-	 * failure on non-OLE bytes, needing no ZipArchive) must degrade to
-	 * null rather than throwing, and must log an error without leaking
-	 * document content (ADR-005).
+	 * Legacy binary .doc is not read: null, and a log line without document
+	 * content (ADR-005).
 	 *
 	 * @return void
 	 */
-	public function testExtractReturnsNullOnUnparsableMsDocContent(): void {
-		$this->logger->expects($this->atLeastOnce())
-			->method('error')
-			->with($this->stringContains('[WordExtractor] Word extraction failed'));
+	public function testExtractReturnsNullForLegacyDoc(): void {
+		$this->logger->expects($this->once())
+			->method('info')
+			->with($this->stringContains('[WordExtractor] Legacy binary .doc is not supported'), ['fileId' => 303]);
 
 		$result = $this->extractor->extract(
 			file: $this->mockFile(content: 'not a real ole/doc binary', mime: 'application/msword', name: 'garbage.doc')
@@ -178,9 +170,8 @@ class WordExtractorTest extends TestCase {
 	}
 
 	/**
-	 * A docx-typed file that PhpWord's Word2007 reader cannot open (in this
-	 * container, missing ZipArchive; on a real deployment, a corrupt zip)
-	 * must likewise degrade to null instead of throwing.
+	 * A docx-typed file that is not a zip package must likewise degrade to
+	 * null instead of throwing.
 	 *
 	 * @return void
 	 */
@@ -194,5 +185,104 @@ class WordExtractorTest extends TestCase {
 		);
 
 		$this->assertNull($result);
+	}
+
+	/**
+	 * A converter double for legacy .doc that converts to the given target.
+	 *
+	 * @param string|null $target `docx`, `txt`, or null when no provider converts .doc.
+	 *
+	 * @return ConversionManagerConverter&MockObject
+	 */
+	private function docConverter(?string $target): ConversionManagerConverter {
+		$converter = $this->createMock(ConversionManagerConverter::class);
+		$converter->method('legacyDocTarget')->willReturn($target);
+
+		return $converter;
+	}
+
+	/**
+	 * With a provider for .doc to DOCX, the .doc is converted and read as DOCX.
+	 *
+	 * @return void
+	 */
+	public function testLegacyDocIsConvertedToDocxAndRead(): void {
+		$converter = $this->docConverter(target: 'docx');
+		$converter->expects($this->once())->method('convertLegacyDoc')
+			->with('doc bytes', 'docx')
+			->willReturn((string)file_get_contents(dirname(__DIR__, 3) . '/Data/Word/word-structures.docx'));
+
+		$text = (new WordExtractor(logger: $this->logger, officeConverter: $converter))->extract(
+			file: $this->mockFile(content: 'doc bytes', mime: 'application/msword', name: 'oud.doc')
+		);
+
+		$this->assertStringContainsString('Besluit op aanvraag', (string)$text);
+		$this->assertStringContainsString('Gemachtigde', (string)$text);
+	}
+
+	/**
+	 * With only a provider for .doc to plain text, that text is returned.
+	 *
+	 * @return void
+	 */
+	public function testLegacyDocIsConvertedToText(): void {
+		$converter = $this->docConverter(target: 'txt');
+		$converter->method('convertLegacyDoc')->with('doc bytes', 'txt')->willReturn("Oud document\n");
+
+		$text = (new WordExtractor(logger: $this->logger, officeConverter: $converter))->extract(
+			file: $this->mockFile(content: 'doc bytes', mime: 'application/msword', name: 'oud.doc')
+		);
+
+		$this->assertSame("Oud document\n", $text);
+	}
+
+	/**
+	 * Without a provider for .doc, nothing is converted and the result is null.
+	 *
+	 * @return void
+	 */
+	public function testLegacyDocWithoutProviderGivesNull(): void {
+		$converter = $this->docConverter(target: null);
+		$converter->expects($this->never())->method('convertLegacyDoc');
+		$this->logger->expects($this->once())->method('info')->with($this->stringContains('Legacy binary .doc is not supported'));
+
+		$this->assertNull((new WordExtractor(logger: $this->logger, officeConverter: $converter))->extract(
+			file: $this->mockFile(content: 'doc bytes', mime: 'application/msword', name: 'oud.doc')
+		));
+	}
+
+	/**
+	 * A failing conversion gives null and logs without document content.
+	 *
+	 * @return void
+	 */
+	public function testLegacyDocConversionFailureGivesNull(): void {
+		$converter = $this->docConverter(target: 'docx');
+		$converter->method('convertLegacyDoc')->willThrowException(new \RuntimeException('server down'));
+		$this->logger->expects($this->once())->method('error')
+			->with($this->stringContains('Word extraction failed'), $this->logicalNot($this->arrayHasKey('text')));
+
+		$this->assertNull((new WordExtractor(logger: $this->logger, officeConverter: $converter))->extract(
+			file: $this->mockFile(content: 'doc bytes', mime: 'application/msword', name: 'oud.doc')
+		));
+	}
+
+	/**
+	 * A file whose content cannot be read degrades to null and logs the failure.
+	 *
+	 * @return void
+	 */
+	public function testExtractReturnsNullWhenContentCannotBeRead(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getContent')->willThrowException(new \RuntimeException('storage gone'));
+		$file->method('getMimeType')->willReturn('application/vnd.oasis.opendocument.text');
+		$file->method('getName')->willReturn('gone.odt');
+		$file->method('getId')->willReturn(304);
+
+		$this->logger->expects($this->once())
+			->method('error')
+			->with($this->stringContains('[WordExtractor] Word extraction failed'));
+
+		$this->assertNull($this->extractor->extract(file: $file));
 	}
 }//end class

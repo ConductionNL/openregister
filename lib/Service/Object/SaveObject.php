@@ -340,6 +340,7 @@ class SaveObject {
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler
 	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
 	 * @param ContainerInterface|null $container App container, consulted lazily for the retention service (see resolveRetentionService)
+	 * @param UserActivityStamper|null $userActivity Stamps `@self.lastUserActivity` when a person writes
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -376,6 +377,7 @@ class SaveObject {
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
 		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
 		private readonly ?ContainerInterface $container = null,
+		private readonly ?UserActivityStamper $userActivity = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
 		$this->versionHandler = new ObjectVersionHandler();
@@ -3072,6 +3074,7 @@ class SaveObject {
 	 * @param bool $failIfExists Insert-only: throw ObjectExistsException rather than update when taken (default: false).
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
+	 * @param string|null $_owner An explicit owner for a new object, such as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
@@ -3101,6 +3104,7 @@ class SaveObject {
 		bool $failIfExists = false,
 		bool $_unowned = false,
 		bool $_dedupOverride = false,
+		?string $_owner = null,
 	): ObjectEntity {
 		// Extract UUID and @self metadata from data.
 		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -3330,7 +3334,7 @@ class SaveObject {
 						register: $register,
 						schema: $schema,
 						data: $data,
-						selfData: $selfData,
+						selfData: $this->selfDataForUpdate(selfData: $selfData, _rbac: $_rbac),
 						folderId: $folderId,
 						persist: $persist,
 						silent: $silent,
@@ -3426,7 +3430,8 @@ class SaveObject {
 				_multitenancy: $_multitenancy,
 				currentUser: $currentUser,
 				failIfExists: $failIfExists,
-				_unowned: $_unowned
+				_unowned: $_unowned,
+				_owner: $_owner
 			);
 
 			// An override is only on record once the object it overrode for
@@ -3722,6 +3727,36 @@ class SaveObject {
 	}//end findAndValidateExistingObject()
 
 	/**
+	 * The `@self` an update works from: a version the caller carries counts only for a trusted caller.
+	 *
+	 * An app's seed objects carry their shipped version in `@self.version`, and
+	 * an update takes it when it is higher than the stored one, so the next
+	 * import reads the seed as current (ObjectVersionHandler::advanceVersion()).
+	 * A caller judged by RBAC could send any higher version through the object
+	 * API, and a seed that reads as newer than every later shipped version
+	 * never receives the app's fix. So `@self.version` is dropped from the
+	 * update of a caller whose RBAC applies, and that update bumps the patch
+	 * like any other. The importer, an administrator and a system caller save
+	 * with RBAC off and keep it.
+	 *
+	 * @param array<string, mixed> $selfData The `@self` the caller sent.
+	 * @param bool                 $_rbac    Whether the save is judged for a signed-in caller.
+	 *
+	 * @return array<string, mixed> The `@self` the update uses.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors saveObject()'s own RBAC flag.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function selfDataForUpdate(array $selfData, bool $_rbac): array {
+		if ($_rbac === true) {
+			unset($selfData['version']);
+		}
+
+		return $selfData;
+	}//end selfDataForUpdate()
+
+	/**
 	 * Handle update of existing object.
 	 *
 	 * @param ObjectEntity $existingObject Existing object to update
@@ -3870,6 +3905,7 @@ class SaveObject {
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
 	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity Created object
 	 *
@@ -3894,6 +3930,7 @@ class SaveObject {
 		?IUser $currentUser = null,
 		bool $failIfExists = false,
 		bool $_unowned = false,
+		?string $_owner = null,
 	): ObjectEntity {
 		// Create a new object entity.
 		$objectEntity = new ObjectEntity();
@@ -3901,6 +3938,7 @@ class SaveObject {
 		$objectEntity->setSchema((string)$schemaId);
 		$objectEntity->setCreated(new DateTime());
 		$objectEntity->setUpdated(new DateTime());
+		$this->userActivity?->stamp(object: $objectEntity);
 
 		if ($uuid !== null) {
 			$objectEntity->setUuid($uuid);
@@ -3919,7 +3957,8 @@ class SaveObject {
 			selfData: $selfData,
 			_multitenancy: $_multitenancy,
 			currentUser: $currentUser,
-			_unowned: $_unowned
+			_unowned: $_unowned,
+			_owner: $_owner
 		);
 
 		// Apply archival metadata from schema archive configuration.
@@ -4217,6 +4256,7 @@ class SaveObject {
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4236,6 +4276,7 @@ class SaveObject {
 		bool $_multitenancy,
 		?IUser $currentUser = null,
 		bool $_unowned = false,
+		?string $_owner = null,
 	): ObjectEntity {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
@@ -4291,7 +4332,7 @@ class SaveObject {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $_unowned);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $_unowned, _owner: $_owner);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -4350,12 +4391,25 @@ class SaveObject {
 	 * from its side, because this method overrides a caller-set owner whenever
 	 * there is a session.
 	 *
+	 * EXPLICITLY OWNED. `$_owner` is the other service-level argument: a caller
+	 * that asserted who owns a new object, such as a portal subject's draft
+	 * owned by `portal:<subjectRef>` (decision 195, see DraftOwner), names
+	 * it here. No controller forwards it either.
+	 *
 	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
 	 * @param bool         $_unowned     Stamp the system identity even when a session exists.
+	 * @param string|null  $_owner       An explicit owner; wins over the session and the system identity.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false): void {
+	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
+		if ($_owner !== null && $_owner !== '') {
+			$objectEntity->setOwner($_owner);
+			return;
+		}
+
 		// DELIBERATELY UNOWNED. The system identifier rather than an empty
 		// string: rows persisted with an empty `_owner` are invisible to the
 		// REST list path's RBAC filter even for admins (openregister#1617), so
@@ -4409,8 +4463,15 @@ class SaveObject {
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the
-		// version this save produced, not the one it replaced.
-		$this->versionHandler->bumpVersion(entity: $existingObject);
+		// version this save produced, not the one it replaced. A higher
+		// version the save carries (a re-imported seed object) is taken
+		// instead, so the next import sees the seed as current.
+		$carriedVersion = null;
+		if (is_scalar($selfData['version'] ?? null) === true) {
+			$carriedVersion = (string)$selfData['version'];
+		}
+
+		$this->versionHandler->advanceVersion(entity: $existingObject, carried: $carriedVersion);
 
 		// Set folder ID if provided.
 		if ($folderId !== null) {
@@ -4436,13 +4497,14 @@ class SaveObject {
 		);
 
 		// A property the writer may not read was stripped from what they were
-		// shown, so omitting it is not a request to clear it: it is carried
-		// forward the same way (openregister#4170).
+		// shown, so omitting it is not a request to clear it (openregister#4170);
+		// one they may not update cannot be cleared by omission either, since that
+		// is the write the property rule refuses. Both are carried forward.
 		$omittedWriteOnly = array_values(
 			array_unique(
 				array_merge(
 					$omittedWriteOnly,
-					$this->propertyRbacHandler->collectOmittedUnreadableProperties(
+					$this->propertyRbacHandler->collectOmittedProtectedProperties(
 						schema: $schema,
 						incoming: $data,
 						stored: ($oldData ?? [])
@@ -4574,6 +4636,11 @@ class SaveObject {
 		// for did not happen. It is now REFUSED, and the refusal names the
 		// endpoint that does change an owner. See refuseOwnerClaim().
 		$this->refuseOwnerClaim(objectEntity: $objectEntity, selfData: $selfData);
+
+		// Decision 180: `@self.status`. A client may create an object as a
+		// draft and keep it one; it may not turn a saved object into a draft,
+		// and only the form submit (after full validation) may leave draft.
+		$objectEntity->setStatus((new DraftStatusPolicy())->resolveStatus(entity: $objectEntity, selfData: $selfData));
 
 		// SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
 		// @self when the caller is an admin or has verified membership in that organisation.
@@ -6264,6 +6331,7 @@ class SaveObject {
 		$preparedObject->setRegister((string)$registerId);
 		$preparedObject->setSchema((string)$schemaId);
 		$preparedObject->setUpdated(new DateTime());
+		$this->userActivity?->stamp(object: $preparedObject);
 
 		// Log that we're about to update using MagicMapper.
 		$this->logger->debug(

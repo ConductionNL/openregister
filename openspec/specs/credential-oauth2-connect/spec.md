@@ -203,9 +203,9 @@ A failure of this call SHALL NOT undo or alter the connection: the credential st
 - **WHEN** the identity call is refused, unreachable, or answers with something that is not JSON
 - **THEN** the stored token set is unchanged and the connection remains usable
 
-### Requirement: A person can connect, see and repair a connection from personal settings
+### Requirement: A person can connect, see and repair a connection from user settings
 
-OpenRegister's personal settings SHALL offer a "Connect account" action for every catalogue provider that is an OAuth2 token set, SHALL list the caller's existing connections with a status chip reading active, expired or relink needed, and SHALL offer a Reconnect action on a connection that needs one. The panel SHALL never display a token, a client secret, or an authorization code.
+OpenRegister's user settings dialog SHALL offer a "Connect account" action for every catalogue provider that is an OAuth2 token set, SHALL list the caller's existing connections with a status chip reading active, expired or relink needed, and SHALL offer a Reconnect action on a connection that needs one. The panel SHALL never display a token, a client secret, or an authorization code.
 
 `@e2e tests/e2e/credential-oauth2-connect.spec.ts`
 

@@ -128,4 +128,21 @@ class FileBatchHandlerTest extends TestCase {
 
 		$this->handler->executeBatch($object, 'publish', []);
 	}
+
+	/**
+	 * A delete the file service reports as not done is a failed item of the batch.
+	 */
+	public function testBatchDeleteOfAFileThatIsStillThereFails(): void {
+		$object = $this->createObjectEntity();
+
+		$this->fileService
+			->method('deleteFile')
+			->willReturnCallback(static fn ($file, $obj): bool => $file !== 43);
+
+		$result = $this->handler->executeBatch($object, 'delete', [42, 43]);
+
+		$this->assertEquals(1, $result['summary']['succeeded']);
+		$this->assertEquals(1, $result['summary']['failed']);
+		$this->assertFalse($result['results'][1]['success']);
+	}
 }

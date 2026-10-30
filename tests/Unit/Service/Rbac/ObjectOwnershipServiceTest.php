@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IGroupManager;
@@ -167,7 +169,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
-			new ObjectScopeResolver(),
+			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
 			$this->permissions,
 			$this->ownerWriter,
 			$this->authorizationWriter,
@@ -401,6 +403,30 @@ class ObjectOwnershipServiceTest extends TestCase {
 			newOwner: 'carol'
 		);
 	}//end testOnlyAnAdministratorMayAssignToSomebodyElse()
+
+	/**
+	 * A trusted system operation (an example-set install under occ, with no
+	 * session user) may assign a record; the same call without the system
+	 * scope is refused as before.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 */
+	public function testTheSystemScopeMayAssignWithoutASessionUser(): void {
+		$this->signIn(null);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->ownerWriter->expects($this->once())->method('writeOwner')->with($this->anything(), $this->anything(), 'uuid-1', 'carol');
+
+		$outcome = \OCA\OpenRegister\Service\SystemOperationContext::run(
+			fn () => $this->service->assign(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', '__system__'), newOwner: 'carol')
+		);
+		$this->assertSame('carol', $outcome['newOwner']);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->service->assign(register: new Register(), schema: new Schema(), object: $this->record('uuid-2', '__system__'), newOwner: 'carol');
+	}//end testTheSystemScopeMayAssignWithoutASessionUser()
 
 	/**
 	 * An administrator assigns a record to a named owner.
@@ -672,7 +698,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
-			new ObjectScopeResolver(),
+			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
 			$this->permissions,
 			$this->ownerWriter,
 			$this->authorizationWriter,

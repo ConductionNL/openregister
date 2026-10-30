@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
@@ -300,6 +301,27 @@ class ImportHandler {
 	private ?SelectionListSeeder $selectionListSeeder = null;
 
 	/**
+	 * The shipped version of each seed object, built on first use from the app config.
+	 *
+	 * @var SeedVersionLedger|null
+	 */
+	private ?SeedVersionLedger $seedVersions = null;
+
+	/**
+	 * The hash of the content each seed object was last shipped with, loaded on first use.
+	 *
+	 * @var SeedVersionLedger|null
+	 */
+	private ?SeedVersionLedger $seedHashes = null;
+
+	/**
+	 * Decides what a re-import writes to a stored seed whose version did not move.
+	 *
+	 * @var ShippedSeedContent
+	 */
+	private ShippedSeedContent $shippedContent;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -359,6 +381,7 @@ class ImportHandler {
 		$this->appDataPath = $appDataPath;
 		$this->uploadHandler = $uploadHandler;
 		$this->objectService = $objectService;
+		$this->shippedContent = new ShippedSeedContent();
 	}//end __construct()
 
 	/**
@@ -1432,6 +1455,18 @@ class ImportHandler {
 	private const SHIPPED_GUARD_KEYS = ['properties', 'required', 'authorization'];
 
 	/**
+	 * The generation of the rules an import writes by; raised when they change, so a stored hash does not skip it.
+	 */
+	private const IMPORT_RULES = 'seed-content-3:';
+
+	/**
+	 * Plain configuration keys an import compares besides the annotations.
+	 *
+	 * @var array<int, string>
+	 */
+	private const COMPARED_CONFIGURATION_KEYS = ['partyKinds', 'linkRoles'];
+
+	/**
 	 * Resolve an incoming shipped schema against what the instance changed.
 	 *
 	 * Returns the definition to write. When no guard is wired, or no baseline
@@ -1735,15 +1770,9 @@ class ImportHandler {
 		$incoming = [];
 		foreach ([$data, $incomingConfig] as $source) {
 			foreach ($source as $key => $value) {
-				if (is_string($key) === false || str_starts_with($key, 'x-openregister-') === false) {
-					continue;
+				if (self::isComparedConfigurationKey(key: $key) === true) {
+					$incoming[$key] = $value;
 				}
-
-				if (in_array($key, Schema::ANNOTATION_VOCABULARY, true) === false) {
-					continue;
-				}
-
-				$incoming[$key] = $value;
 			}
 		}
 
@@ -1756,6 +1785,31 @@ class ImportHandler {
 
 		return false;
 	}//end schemaAnnotationsDiffer()
+
+	/**
+	 * Whether an incoming configuration key is compared against the stored one.
+	 *
+	 * Annotations of the vocabulary, plus the party and role vocabularies: a
+	 * party kind a schema starts accepting is a configuration change with no
+	 * property or version change, and the party writer refuses that kind until
+	 * it lands.
+	 *
+	 * @param int|string $key The configuration key.
+	 *
+	 * @return bool True when the key is compared.
+	 */
+	private static function isComparedConfigurationKey(int|string $key): bool {
+		if (is_string($key) === false) {
+			return false;
+		}
+
+		if (in_array($key, self::COMPARED_CONFIGURATION_KEYS, true) === true) {
+			return true;
+		}
+
+		return str_starts_with($key, 'x-openregister-') === true
+			&& in_array($key, Schema::ANNOTATION_VOCABULARY, true) === true;
+	}//end isComparedConfigurationKey()
 
 	/**
 	 * Normalise a JSON-ish value into an order-insensitive canonical string.
@@ -1819,7 +1873,7 @@ class ImportHandler {
 		?string $version,
 	): ?Schema {
 		if ($registerSchemaIds !== null) {
-			return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds);
+			return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId);
 		}
 
 		if ($appId !== null && $appId !== '') {
@@ -1835,15 +1889,27 @@ class ImportHandler {
 	 * `SchemaMapper::findBySlugInIds()`. A same-slug schema owned elsewhere is
 	 * only logged for visibility — it is never reused.
 	 *
-	 * @param array $data The schema data (MUST carry a non-empty `slug`).
-	 * @param array $registerSchemaIds Pre-import schema ids of the target register(s).
+	 * Outside that set, the importing app's OWN row with this slug that no
+	 * register lists is adopted rather than forked: an import that stopped
+	 * after creating its schemas and before linking them leaves such a row,
+	 * and scoping to the register's list alone made every later import create
+	 * a twin (dossiq, 29 Sep: 17 slugs twice).
+	 *
+	 * @param array       $data              The schema data (MUST carry a non-empty `slug`).
+	 * @param array       $registerSchemaIds Pre-import schema ids of the target register(s).
+	 * @param string|null $appId             The importing application id, or null.
 	 *
 	 * @return Schema|null The schema already in scope, or null (create a new one).
 	 */
-	private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds): ?Schema {
+	private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds, ?string $appId=null): ?Schema {
 		$existingSchema = $this->schemaMapper->findBySlugInIds(slug: $data['slug'], schemaIds: $registerSchemaIds);
 		if ($existingSchema !== null) {
 			return $existingSchema;
+		}
+
+		$orphan = $this->findOwnUnlinkedSchema(slug: (string)$data['slug'], appId: $appId);
+		if ($orphan !== null) {
+			return $orphan;
 		}
 
 		// Visibility only: a same-slug row exists but is not (yet) in the
@@ -1868,6 +1934,47 @@ class ImportHandler {
 
 		return null;
 	}//end resolveSchemaWithinRegisterScope()
+
+	/**
+	 * The importing app's own schema row with this slug that no register
+	 * lists, the highest version when there are several; null without one or
+	 * without an app id.
+	 *
+	 * @param string      $slug  The schema slug.
+	 * @param string|null $appId The importing application id.
+	 *
+	 * @return Schema|null The row to adopt, or null.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-an-import-adopts-its-apps-own-unlinked-schema
+	 */
+	private function findOwnUnlinkedSchema(string $slug, ?string $appId): ?Schema {
+		if ($appId === null || $appId === '' || $slug === '') {
+			return null;
+		}
+
+		try {
+			$candidates = $this->schemaMapper->findBySlug(slug: $slug, limit: 50, _rbac: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$best = null;
+		foreach ($candidates as $candidate) {
+			if ($candidate->getApplication() !== $appId || $candidate->getSlug() !== $slug) {
+				continue;
+			}
+
+			if ($this->registerMapper->getAllRegisterIdsWithSchema((int)$candidate->getId()) !== []) {
+				continue;
+			}
+
+			if ($best === null || version_compare((string)($candidate->getVersion() ?? '0'), (string)($best->getVersion() ?? '0')) > 0) {
+				$best = $candidate;
+			}
+		}
+
+		return $best;
+	}//end findOwnUnlinkedSchema()
 
 	/**
 	 * Application-scoped fallback: resolve via
@@ -1970,9 +2077,6 @@ class ImportHandler {
 	 * @throws Exception If import fails.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Schema import requires many conditional transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -1985,453 +2089,23 @@ class ImportHandler {
 		bool $force = false,
 		?array $registerSchemaIds = null,
 	): Schema {
-		// Pre-validate the schema's shape against a minimal meta-schema
-		// before we mutate it. Catches structurally-invalid imports
-		// (no `properties` map, wrong type) early, before persistence,
-		// so the import API returns a clear error instead of a deep
-		// mapper failure later. Validator is null-safe: when not wired,
-		// import proceeds on the legacy path.
-		if ($this->schemaShapeValidator !== null) {
-			$shapeErrors = $this->schemaShapeValidator->validate(
-				body: $data,
-				schema: $this->minimalSchemaShapeMetaSchema()
-			);
-			if ($shapeErrors !== []) {
-				$msg = 'imported schema fails OAS-shape validation: ' . implode(
-					'; ',
-					array_map(
-						static fn ($e) => ($e['path'] . ' ' . $e['message']),
-						$shapeErrors
-					)
-				);
-				throw new RuntimeException($msg);
-			}
-		}
-
-		// Guard: a schema fragment MUST carry a non-empty slug. Without it the
-		// later `$this->schemaMapper->find($data['slug'])` lookup receives null
-		// and raises an uncaught \TypeError — which is an \Error, NOT an
-		// \Exception, so the caller's `catch (Exception)` never sees it and the
-		// WHOLE register import aborts on one bad fragment. Fail fast with a
-		// descriptive \RuntimeException (an \Exception) so the caller skips this
-		// fragment and continues importing the rest of the app's data layer.
-		$slug = $data['slug'] ?? null;
-		if (is_string($slug) === false || trim($slug) === '') {
-			$title = (string)($data['title'] ?? '');
-			$hint = 'no title';
-			if ($title !== '') {
-				$hint = "title '{$title}'";
-			}
-
-			$msg = "imported schema fragment is missing a 'slug' ({$hint}); skipping fragment";
-			$this->logger->error(
-				message: '[ImportHandler] ' . $msg,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new RuntimeException($msg);
-		}
+		$this->assertImportableSchemaShape(data: $data);
+		$this->assertImportableSchemaSlug(data: $data);
+		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
 
 		try {
-			// Remove id, uuid, and organisation from the data.
 			unset($data['id'], $data['uuid'], $data['organisation']);
+			$data = $this->normaliseImportedProperties(data: $data, slugsAndIdsMap: $slugsAndIdsMap);
 
-			// Fix properties that don't have types or have invalid formats.
-			if (($data['properties'] ?? null) !== null) {
-				foreach ($data['properties'] as $key => &$property) {
-					// Ensure property is always an array.
-					if (is_object($property) === true) {
-						$property = (array)$property;
-					}
-
-					// Only set title to key if no title exists, to preserve existing titles.
-					if (isset($property['title']) === false || empty($property['title']) === true) {
-						$property['title'] = $key;
-					}
-
-					// Fix empty objects that became arrays during JSON deserialization.
-					if (($property['objectConfiguration'] ?? null) !== null) {
-						if (is_array($property['objectConfiguration']) === true && $property['objectConfiguration'] === []) {
-							$property['objectConfiguration'] = new stdClass();
-						}
-					}
-
-					if (($property['fileConfiguration'] ?? null) !== null) {
-						if (is_array($property['fileConfiguration']) === true && $property['fileConfiguration'] === []) {
-							$property['fileConfiguration'] = new stdClass();
-						}
-					}
-
-					// Do the same for array items.
-					if (($property['items'] ?? null) !== null) {
-						if (is_object($property['items']) === true) {
-							$property['items'] = (array)$property['items'];
-						}
-
-						if (($property['items']['objectConfiguration'] ?? null) !== null) {
-							$itemsObjConfig = $property['items']['objectConfiguration'];
-							if (is_array($itemsObjConfig) === true && $itemsObjConfig === []) {
-								$property['items']['objectConfiguration'] = new stdClass();
-							}
-						}
-
-						if (($property['items']['fileConfiguration'] ?? null) !== null) {
-							$itemsFileConfig = $property['items']['fileConfiguration'];
-							if (is_array($itemsFileConfig) === true && $itemsFileConfig === []) {
-								$property['items']['fileConfiguration'] = new stdClass();
-							}
-						}
-					}
-
-					if (isset($property['type']) === false) {
-						$property['type'] = 'string';
-					}
-
-					if (($property['format'] ?? null) !== null
-						&& ($property['format'] === 'string'
-						|| $property['format'] === 'binary'
-						|| $property['format'] === 'byte')
-					) {
-						unset($property['format']);
-					}
-
-					if (($property['items']['format'] ?? null) !== null
-						&& ($property['items']['format'] === 'string'
-						|| $property['items']['format'] === 'binary'
-						|| $property['items']['format'] === 'byte')
-					) {
-						unset($property['items']['format']);
-					}
-
-					// Check if we have the schema for the slug and set that id.
-					if (($property['$ref'] ?? null) !== null) {
-						if (($slugsAndIdsMap[$property['$ref']] ?? null) !== null) {
-							$property['$ref'] = $slugsAndIdsMap[$property['$ref']];
-						} elseif (($this->schemasMap[$property['$ref']] ?? null) !== null) {
-							$property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
-						}
-					}
-
-					// 🔴 Both branches write to `items.$ref`. The second one used to
-					// write to `$property['$ref']` — the ARRAY's own ref — which did
-					// two wrong things at once: it left `items.$ref` as an unmapped
-					// slug, and it grafted a schema ID (an INT) onto the array
-					// property as a top-level `$ref`.
-					//
-					// That second effect is not cosmetic. `ValidateObject` strips a
-					// top-level `$ref` from string-typed properties and from
-					// `items`, but never from an array-typed property, so the int
-					// survived into the schema handed to Opis. Opis parses a
-					// property's subschema lazily — only when that property is
-					// PRESENT in the written data — and then throws
-					// `$ref must be a non-empty string` because an int is not a
-					// string. The message names neither the property nor the
-					// schema, so it reads like a broken register.
-					//
-					// Only reachable on the `schemasMap` fallback, i.e. when the
-					// referenced slug was not part of this import's own
-					// slug->id map. That is the FIRST install of a configuration
-					// whose cross-references resolve against already-present
-					// schemas — which is why it never showed on a long-lived
-					// instance and surfaced on every clean one (hermiq's `agent`
-					// schema: skillInstalls / contextRefs / delegationAllowlist).
-					if (($property['items']['$ref'] ?? null) !== null) {
-						if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
-							$property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
-						} elseif (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
-							$property['items']['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
-						}
-					}
-
-					// Ensure objectConfiguration is an array for consistent access before any checks.
-					$objConfig = $property['objectConfiguration'] ?? null;
-					if ($objConfig !== null && is_object($objConfig) === true) {
-						$property['objectConfiguration'] = (array)$property['objectConfiguration'];
-					}
-
-					// Handle register slug/ID in objectConfiguration (new structure).
-					if (is_array($property['objectConfiguration'] ?? null) === true
-						&& ($property['objectConfiguration']['register'] ?? null) !== null
-					) {
-						$registerSlug = (string)$property['objectConfiguration']['register'];
-						if (($this->registersMap[$registerSlug] ?? null) !== null) {
-							$property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-						} elseif ($registerSlug !== '') {
-							// Try to find existing register in database.
-							try {
-								$existingRegister = $this->registerMapper->find($registerSlug, _multitenancy: false);
-								$property['objectConfiguration']['register'] = $existingRegister->getId();
-								$this->registersMap[$registerSlug] = $existingRegister;
-							} catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
-								$msg = 'Register with slug %s not found during schema property import ';
-								$msg .= '(will be resolved after registers are imported).';
-								$this->logger->debug(
-									message: '[ImportHandler] ' . sprintf($msg, $registerSlug),
-									context: ['file' => __FILE__, 'line' => __LINE__]
-								);
-								unset($property['objectConfiguration']['register']);
-							}
-						}//end if
-					}//end if
-
-					// Handle schema slug/ID in objectConfiguration (new structure).
-					if (is_array($property['objectConfiguration'] ?? null) === true
-						&& ($property['objectConfiguration']['schema'] ?? null) !== null
-					) {
-						$schemaSlug = (string)$property['objectConfiguration']['schema'];
-						if ($schemaSlug !== '') {
-							if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
-								$property['objectConfiguration']['schema'] = $this->schemasMap[$schemaSlug]->getId();
-							}
-
-							if (($this->schemasMap[$schemaSlug] ?? null) === null) {
-								// Try to find existing schema in database.
-								try {
-									$existingSchema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
-									$property['objectConfiguration']['schema'] = $existingSchema->getId();
-									$this->schemasMap[$schemaSlug] = $existingSchema;
-								} catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
-									$msg = 'Schema with slug %s not found during schema property import ';
-									$msg .= '(will be resolved after schemas are imported).';
-									$this->logger->debug(
-										message: '[ImportHandler] ' . sprintf($msg, $schemaSlug),
-										context: ['file' => __FILE__, 'line' => __LINE__]
-									);
-									unset($property['objectConfiguration']['schema']);
-								}
-							}
-						}//end if
-					}//end if
-
-					// Ensure items and its objectConfiguration are arrays for consistent access.
-					if (($property['items'] ?? null) !== null) {
-						if (is_object($property['items']) === true) {
-							$property['items'] = (array)$property['items'];
-						}
-
-						if (is_array($property['items']) === true
-							&& ($property['items']['objectConfiguration'] ?? null) !== null
-							&& is_object($property['items']['objectConfiguration']) === true
-						) {
-							$property['items']['objectConfiguration'] = (array)$property['items']['objectConfiguration'];
-						}
-					}
-
-					// Handle register slug/ID in array items objectConfiguration (new structure).
-					if (is_array($property['items'] ?? []) === true
-						&& is_array($property['items']['objectConfiguration'] ?? []) === true
-						&& isset($property['items']['objectConfiguration']['register']) === true
-					) {
-						$registerSlug = (string)$property['items']['objectConfiguration']['register'];
-						if (($this->registersMap[$registerSlug] ?? null) !== null) {
-							$mappedRegister = $this->registersMap[$registerSlug];
-							$property['items']['objectConfiguration']['register'] = $mappedRegister->getId();
-						} elseif ($registerSlug !== '') {
-							// Try to find existing register in database.
-							try {
-								$existingRegister = $this->registerMapper->find($registerSlug, _multitenancy: false);
-								$property['items']['objectConfiguration']['register'] = $existingRegister->getId();
-								$this->registersMap[$registerSlug] = $existingRegister;
-							} catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
-								$msg = 'Register with slug %s not found during array items schema property ';
-								$msg .= 'import (will be resolved after registers are imported).';
-								$this->logger->debug(
-									message: '[ImportHandler] ' . sprintf($msg, $registerSlug),
-									context: ['file' => __FILE__, 'line' => __LINE__]
-								);
-								unset($property['items']['objectConfiguration']['register']);
-							}
-						}//end if
-					}//end if
-
-					// Handle schema slug/ID in array items objectConfiguration (new structure).
-					if (is_array($property['items'] ?? []) === true
-						&& is_array($property['items']['objectConfiguration'] ?? []) === true
-						&& isset($property['items']['objectConfiguration']['schema']) === true
-					) {
-						$schemaSlug = (string)$property['items']['objectConfiguration']['schema'];
-						if ($schemaSlug !== '') {
-							if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
-								$schemaId = $this->schemasMap[$schemaSlug]->getId();
-								$property['items']['objectConfiguration']['schema'] = $schemaId;
-							}
-
-							if (($this->schemasMap[$schemaSlug] ?? null) === null) {
-								// Try to find existing schema in database.
-								try {
-									$existingSchema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
-									$schemaId = $existingSchema->getId();
-									$property['items']['objectConfiguration']['schema'] = $schemaId;
-									$this->schemasMap[$schemaSlug] = $existingSchema;
-								} catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
-									$msg = 'Schema with slug %s not found during array items schema ';
-									$msg .= 'property import (will be resolved after schemas are imported).';
-									$this->logger->debug(
-										message: '[ImportHandler] ' . sprintf($msg, $schemaSlug),
-										context: ['file' => __FILE__, 'line' => __LINE__]
-									);
-									unset($property['items']['objectConfiguration']['schema']);
-								}
-							}
-						}//end if
-					}//end if
-
-					// Legacy support: Handle old register property structure.
-					if (($property['register'] ?? null) !== null) {
-						if (($slugsAndIdsMap[$property['register']] ?? null) !== null) {
-							$property['register'] = $slugsAndIdsMap[$property['register']];
-						} elseif (($this->registersMap[$property['register']] ?? null) !== null) {
-							$property['register'] = $this->registersMap[$property['register']]->getId();
-						}
-					}
-
-					if (is_array($property['items'] ?? []) === true && isset($property['items']['register']) === true) {
-						if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
-							$property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
-						} elseif (($this->registersMap[$property['items']['register']] ?? null) !== null) {
-							$property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
-						}
-					}
-				}//end foreach
-			}//end if
-
-			// Check if schema already exists by slug.
-			//
-			// PER-REGISTER SLUG-UNIQUENESS FIX (openspec/changes/
-			// per-register-schema-slug-uniqueness). A schema slug is unique
-			// WITHIN a register's own schema set — not globally, and not even
-			// per-application: an app can legitimately own several registers
-			// that each need their own schema under the same generic slug, and
-			// (the historical bug) an app-scoped or global lookup can still
-			// resolve to a schema owned by a completely different app/register
-			// that merely happens to share the slug (this is how OpenBuild's
-			// 'automation' import silently reused a CRM app's schema #71
-			// instead of creating its own). When the caller (importFromJson())
-			// knows which register(s) this slug is destined for, it passes
-			// their PRE-IMPORT schema-id set as $registerSchemaIds; resolution
-			// is then scoped to exactly that set via findBySlugInIds(). A slug
-			// shared by design across multiple registers still resolves (its id
-			// is already in every register that references it); a slug owned
-			// elsewhere but NOT in the target register's set is NOT reused —
-			// this register gets its own new schema instead (see the create
-			// path below). Without register context (a schema not declared by
-			// any register in this import) the previous application-scoped /
-			// global fallback is preserved for backward compatibility.
-			$existingSchema = $this->resolveExistingSchemaForImport(
-				data: $data,
-				registerSchemaIds: $registerSchemaIds,
-				appId: $appId,
-				version: $version
-			);
-
+			// A slug is resolved within the target register(s) when the caller
+			// knows them (per-register-schema-slug-uniqueness), so an app never
+			// reuses another register's schema that merely shares the slug.
+			$existingSchema = $this->resolveExistingSchemaForImport(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId, version: $version);
 			if ($existingSchema !== null) {
-				// Compare versions using version_compare for proper semver comparison.
-				$existingVersion = $existingSchema->getVersion() ?? '0.0.0';
-				$incomingVersion = $data['version'] ?? '0.0.0';
-				// The version field is an OPTIMISATION, not the source of truth.
-				// Apps routinely add a property (or change an authorization rule)
-				// on a schema via a register.d fragment WITHOUT bumping that
-				// schema's own `version`, so incoming == existing and this gate
-				// would skip the update — yet the configuration-level content
-				// version advances separately, leaving the instance "imported"
-				// but the schema stale. That silently drops columns (no place to
-				// persist the new property) and, when an authorization rule
-				// matches the new property, makes every read a 500 (#2075/#2082).
-				// So when the version says skip, still apply the update if the
-				// schema's structural content actually differs from what is
-				// stored. Content is authoritative; the version only lets us
-				// skip the no-op case cheaply.
-				$versionSaysSkip = ($force === false && version_compare($incomingVersion, $existingVersion, '<=') === true);
-				if ($versionSaysSkip === true && $this->schemaContentDiffers(data: $data, existing: $existingSchema) === false) {
-					$this->logger->debug(
-						message: '[ImportHandler] Skipping schema import: version not newer and content unchanged.',
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					return $existingSchema;
-				}
-
-				if ($versionSaysSkip === true) {
-					// Info: an update applied against the version ordering.
-					// Exactly the decision someone re-reads the log to find.
-					$this->logger->info(
-						message: '[ImportHandler] Schema version not newer but content differs; applying update anyway.',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schema_slug' => $existingSchema->getSlug(),
-							'schema_id' => $existingSchema->getId(),
-						]
-					);
-				}
-
-				// Update existing schema, but NOT with the incoming definition
-				// as it stands: with whatever survives the shipped-baseline
-				// guard. Without this, ADR-005's "descriptor is the source of
-				// truth" means a municipality's added property disappears on
-				// every upgrade and nothing records that it existed (row
-				// 11.36). The guard is null-safe and never throws, so an
-				// instance without a baseline imports exactly as it does
-				// today. Its baseline is recorded only after the write below
-				// succeeds, so a refused write cannot leave a baseline behind.
-				$guarded = $this->applyShippedBaselineGuard(
-					data: $data,
-					existing: $existingSchema,
-					appId: $appId,
-					appVersion: $version
-				);
-				$data = $guarded['data'];
-
-				// Classify the change against the stored definition, whatever
-				// path it came in by (#4102). An import has nobody to answer a
-				// breaking-change prompt, so a breaking change is recorded and
-				// logged rather than refused. The version the app ships is kept
-				// when it is newer; otherwise the classification decides it.
-				$changeSet = $this->classifyImportedSchemaChange(existing: $existingSchema, data: $data);
-				if (version_compare($incomingVersion, $existingVersion, '>') === false) {
-					// An import never moves a schema's version back. Pass 2 of
-					// importFromJson() re-imports the same data after Pass 1
-					// bumped it; nothing classifies then, and writing the
-					// incoming version back lost the bump the changelog names (#4163).
-					if ($existingSchema->getVersion() !== null) {
-						$data['version'] = $existingVersion;
-					}
-
-					if ($changeSet !== null && $changeSet->hasChanges() === true) {
-						$data['version'] = $this->schemaVersioning->nextVersion(existing: $existingSchema, changeSet: $changeSet);
-					}
-				}
-
-				$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$existingSchema->getId());
-				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
-				if ($owner !== null) {
-					$existingSchema->setOwner($owner);
-				}
-
-				if ($appId !== null) {
-					$existingSchema->setApplication($appId);
-				}
-
-				$existingSchema = $this->schemaMapper->update($existingSchema);
-				$this->installWhenNoEventFired(schema: $existingSchema, eventsBefore: $eventsBefore);
-				$this->recordPendingBaseline(guarded: $guarded, appId: $appId, appVersion: $version);
-				$this->recordImportedSchemaChange(schema: $existingSchema, changeSet: $changeSet, appId: $appId);
-
-				return $existingSchema;
-			}//end if
-
-			// Create new schema.
-			$schema = $this->schemaMapper->createFromArray($data);
-			$this->recordShippedBaseline(data: $data, appId: $appId, appVersion: $version);
-			if ($owner !== null) {
-				$schema->setOwner($owner);
+				return $this->updateImportedSchema(update: new ImportedSchemaUpdate(data: $data, existing: $existingSchema), options: $options);
 			}
 
-			if ($appId !== null) {
-				$schema->setApplication($appId);
-			}
-
-			$schema = $this->schemaMapper->update($schema);
-
-			return $schema;
+			return $this->createImportedSchema(data: $data, options: $options);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ImportHandler] Failed to import schema: ' . $e->getMessage(),
@@ -2440,6 +2114,535 @@ class ImportHandler {
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end importSchema()
+
+	/**
+	 * Refuse a schema whose shape fails the minimal meta-schema, before it is mutated.
+	 *
+	 * A structurally invalid import (no `properties` map, wrong type) then
+	 * fails with a clear error rather than deep in the mapper. Without a
+	 * shape validator wired the check stands down.
+	 *
+	 * @param array $data The schema data.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the shape is invalid.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function assertImportableSchemaShape(array $data): void {
+		if ($this->schemaShapeValidator === null) {
+			return;
+		}
+
+		$shapeErrors = $this->schemaShapeValidator->validate(
+			body: $data,
+			schema: $this->minimalSchemaShapeMetaSchema()
+		);
+		if ($shapeErrors === []) {
+			return;
+		}
+
+		$msg = 'imported schema fails OAS-shape validation: ' . implode(
+			'; ',
+			array_map(
+				static fn ($e) => ($e['path'] . ' ' . $e['message']),
+				$shapeErrors
+			)
+		);
+		throw new RuntimeException($msg);
+	}//end assertImportableSchemaShape()
+
+	/**
+	 * Refuse a schema fragment without a non-empty slug.
+	 *
+	 * The slug lookup would otherwise raise a \TypeError, an \Error the
+	 * caller's `catch (Exception)` never sees, aborting the whole register
+	 * import on one bad fragment. A \RuntimeException lets the caller skip
+	 * this fragment and import the rest.
+	 *
+	 * @param array $data The schema data.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the slug is missing or blank.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function assertImportableSchemaSlug(array $data): void {
+		$slug = $data['slug'] ?? null;
+		if (is_string($slug) === true && trim($slug) !== '') {
+			return;
+		}
+
+		$title = (string)($data['title'] ?? '');
+		$hint = 'no title';
+		if ($title !== '') {
+			$hint = "title '{$title}'";
+		}
+
+		$msg = "imported schema fragment is missing a 'slug' ({$hint}); skipping fragment";
+		$this->logger->error(
+			message: '[ImportHandler] ' . $msg,
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		throw new RuntimeException($msg);
+	}//end assertImportableSchemaSlug()
+
+	/**
+	 * Normalise every property of an imported schema and map its slugs to ids.
+	 *
+	 * @param array $data           The schema data.
+	 * @param array $slugsAndIdsMap Slugs with their IDs from this import.
+	 *
+	 * @return array The schema data.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function normaliseImportedProperties(array $data, array $slugsAndIdsMap): array {
+		if (($data['properties'] ?? null) === null) {
+			return $data;
+		}
+
+		$references = new ImportReferenceMap(slugsAndIds: $slugsAndIdsMap);
+		foreach ($data['properties'] as $key => &$property) {
+			$property = $this->normaliseImportedPropertyShape(key: $key, property: $property);
+			$property = $this->normaliseImportedProperty(property: $property, references: $references);
+		}
+
+		unset($property);
+		return $data;
+	}//end normaliseImportedProperties()
+
+	/**
+	 * Map one imported property's slugs to ids.
+	 *
+	 * @param array              $property   The property definition, its shape already normalised.
+	 * @param ImportReferenceMap $references This import's slug-to-id map.
+	 *
+	 * @return array The normalised property.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function normaliseImportedProperty(array $property, ImportReferenceMap $references): array {
+		$property = $this->mapImportedPropertySchemaRefs(property: $property, references: $references);
+		$property = $this->resolveImportedObjectConfigurations(property: $property);
+
+		return $this->mapImportedLegacyRegisters(property: $property, references: $references);
+	}//end normaliseImportedProperty()
+
+	/**
+	 * Give an imported property an array shape, a title, a type and object-typed empty configurations.
+	 *
+	 * Empty `objectConfiguration` / `fileConfiguration` maps decode from JSON
+	 * as `[]` and are turned back into objects. The binary-ish formats
+	 * `string`, `binary` and `byte` are dropped from the property and its items.
+	 *
+	 * @param int|string $key      The property name, the title when none is set.
+	 * @param mixed      $property The property definition.
+	 *
+	 * @return array The normalised property.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function normaliseImportedPropertyShape(int|string $key, mixed $property): array {
+		if (is_object($property) === true) {
+			$property = (array)$property;
+		}
+
+		if (isset($property['title']) === false || empty($property['title']) === true) {
+			$property['title'] = $key;
+		}
+
+		$property = $this->withObjectTypedEmptyConfigurations(definition: $property);
+		if (($property['items'] ?? null) !== null) {
+			if (is_object($property['items']) === true) {
+				$property['items'] = (array)$property['items'];
+			}
+
+			if (is_array($property['items']) === true) {
+				$property['items'] = $this->withObjectTypedEmptyConfigurations(definition: $property['items']);
+			}
+		}
+
+		if (isset($property['type']) === false) {
+			$property['type'] = 'string';
+		}
+
+		$property = $this->withoutBinaryFormat(definition: $property);
+		if (is_array($property['items'] ?? null) === true) {
+			$property['items'] = $this->withoutBinaryFormat(definition: $property['items']);
+		}
+
+		return $property;
+	}//end normaliseImportedPropertyShape()
+
+	/**
+	 * Turn empty `objectConfiguration` and `fileConfiguration` arrays into objects.
+	 *
+	 * @param array $definition A property or items definition.
+	 *
+	 * @return array The definition.
+	 */
+	private function withObjectTypedEmptyConfigurations(array $definition): array {
+		foreach (['objectConfiguration', 'fileConfiguration'] as $configKey) {
+			if (($definition[$configKey] ?? null) === []) {
+				$definition[$configKey] = new stdClass();
+			}
+		}
+
+		return $definition;
+	}//end withObjectTypedEmptyConfigurations()
+
+	/**
+	 * Drop a `format` of `string`, `binary` or `byte`.
+	 *
+	 * @param array $definition A property or items definition.
+	 *
+	 * @return array The definition.
+	 */
+	private function withoutBinaryFormat(array $definition): array {
+		if (in_array(($definition['format'] ?? null), ['string', 'binary', 'byte'], true) === true) {
+			unset($definition['format']);
+		}
+
+		return $definition;
+	}//end withoutBinaryFormat()
+
+	/**
+	 * Map a property's `$ref` and its `items.$ref` from slugs to schema ids.
+	 *
+	 * The items reference is written to `items.$ref`, never to the array
+	 * property's own `$ref`: an int `$ref` on an array-typed property survives
+	 * into the schema handed to Opis, which then fails with a message naming
+	 * neither property nor schema.
+	 *
+	 * @param array              $property   The property definition.
+	 * @param ImportReferenceMap $references This import's slug-to-id map.
+	 *
+	 * @return array The property.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function mapImportedPropertySchemaRefs(array $property, ImportReferenceMap $references): array {
+		if (($property['$ref'] ?? null) !== null) {
+			$property['$ref'] = $references->resolve(reference: $property['$ref'], entities: $this->schemasMap);
+		}
+
+		if (($property['items']['$ref'] ?? null) !== null) {
+			$property['items']['$ref'] = $references->resolve(reference: $property['items']['$ref'], entities: $this->schemasMap);
+		}
+
+		return $property;
+	}//end mapImportedPropertySchemaRefs()
+
+	/**
+	 * Map the legacy `register` keys of a property and its items from slugs to ids.
+	 *
+	 * @param array              $property   The property definition.
+	 * @param ImportReferenceMap $references This import's slug-to-id map.
+	 *
+	 * @return array The property.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function mapImportedLegacyRegisters(array $property, ImportReferenceMap $references): array {
+		if (($property['register'] ?? null) !== null) {
+			$property['register'] = $references->resolve(reference: $property['register'], entities: $this->registersMap);
+		}
+
+		if (is_array($property['items'] ?? null) === true && isset($property['items']['register']) === true) {
+			$property['items']['register'] = $references->resolve(reference: $property['items']['register'], entities: $this->registersMap);
+		}
+
+		return $property;
+	}//end mapImportedLegacyRegisters()
+
+	/**
+	 * Resolve the register and schema slugs in a property's and its items' `objectConfiguration`.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return array The property.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function resolveImportedObjectConfigurations(array $property): array {
+		if (is_object($property['objectConfiguration'] ?? null) === true) {
+			$property['objectConfiguration'] = (array)$property['objectConfiguration'];
+		}
+
+		if (is_array($property['objectConfiguration'] ?? null) === true) {
+			$property['objectConfiguration'] = $this->resolveConfigurationSlugs(config: $property['objectConfiguration'], where: 'schema property');
+		}
+
+		if (($property['items'] ?? null) !== null && is_object($property['items']) === true) {
+			$property['items'] = (array)$property['items'];
+		}
+
+		if (is_array($property['items'] ?? null) === false) {
+			return $property;
+		}
+
+		if (is_object($property['items']['objectConfiguration'] ?? null) === true) {
+			$property['items']['objectConfiguration'] = (array)$property['items']['objectConfiguration'];
+		}
+
+		if (is_array($property['items']['objectConfiguration'] ?? null) === true) {
+			$property['items']['objectConfiguration'] = $this->resolveConfigurationSlugs(
+				config: $property['items']['objectConfiguration'],
+				where: 'array items schema property'
+			);
+		}
+
+		return $property;
+	}//end resolveImportedObjectConfigurations()
+
+	/**
+	 * Resolve the `register` and `schema` slugs of one objectConfiguration to ids.
+	 *
+	 * @param array  $config The objectConfiguration.
+	 * @param string $where  Where the configuration sits, for the log message.
+	 *
+	 * @return array The configuration.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function resolveConfigurationSlugs(array $config, string $where): array {
+		if (($config['register'] ?? null) !== null) {
+			$config = $this->resolveConfigurationRegister(config: $config, where: $where);
+		}
+
+		if (($config['schema'] ?? null) !== null) {
+			$config = $this->resolveConfigurationSchema(config: $config, where: $where);
+		}
+
+		return $config;
+	}//end resolveConfigurationSlugs()
+
+	/**
+	 * Resolve an objectConfiguration's `register` slug to an id.
+	 *
+	 * A register not yet known is looked up and cached; one that does not
+	 * exist yet is dropped and resolved after the registers are imported.
+	 *
+	 * @param array  $config The objectConfiguration.
+	 * @param string $where  Where the configuration sits, for the log message.
+	 *
+	 * @return array The configuration.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function resolveConfigurationRegister(array $config, string $where): array {
+		$registerSlug = (string)$config['register'];
+		if (($this->registersMap[$registerSlug] ?? null) !== null) {
+			$config['register'] = $this->registersMap[$registerSlug]->getId();
+			return $config;
+		}
+
+		if ($registerSlug === '') {
+			return $config;
+		}
+
+		try {
+			$existingRegister = $this->registerMapper->find($registerSlug, _multitenancy: false);
+			$config['register'] = $existingRegister->getId();
+			$this->registersMap[$registerSlug] = $existingRegister;
+		} catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
+			$msg = 'Register with slug %s not found during %s import (will be resolved after registers are imported).';
+			$this->logger->debug(
+				message: '[ImportHandler] ' . sprintf($msg, $registerSlug, $where),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			unset($config['register']);
+		}
+
+		return $config;
+	}//end resolveConfigurationRegister()
+
+	/**
+	 * Resolve an objectConfiguration's `schema` slug to an id.
+	 *
+	 * A schema not yet known is looked up and cached; one that does not
+	 * exist yet is dropped and resolved after the schemas are imported.
+	 *
+	 * @param array  $config The objectConfiguration.
+	 * @param string $where  Where the configuration sits, for the log message.
+	 *
+	 * @return array The configuration.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function resolveConfigurationSchema(array $config, string $where): array {
+		$schemaSlug = (string)$config['schema'];
+		if ($schemaSlug === '') {
+			return $config;
+		}
+
+		if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
+			$config['schema'] = $this->schemasMap[$schemaSlug]->getId();
+			return $config;
+		}
+
+		try {
+			$existingSchema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
+			$config['schema'] = $existingSchema->getId();
+			$this->schemasMap[$schemaSlug] = $existingSchema;
+		} catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
+			$msg = 'Schema with slug %s not found during %s import (will be resolved after schemas are imported).';
+			$this->logger->debug(
+				message: '[ImportHandler] ' . sprintf($msg, $schemaSlug, $where),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			unset($config['schema']);
+		}
+
+		return $config;
+	}//end resolveConfigurationSchema()
+
+	/**
+	 * Update an existing schema from an import, unless nothing changed.
+	 *
+	 * The incoming definition is first passed through the shipped-baseline
+	 * guard, so a property an instance added survives the upgrade; the
+	 * baseline is recorded only after the write succeeds.
+	 *
+	 * @param ImportedSchemaUpdate $update  The normalised definition and the stored schema.
+	 * @param SchemaImportOptions  $options The caller's settings.
+	 *
+	 * @return Schema The stored schema.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function updateImportedSchema(ImportedSchemaUpdate $update, SchemaImportOptions $options): Schema {
+		$existing = $update->existing;
+		if ($this->isUnchangedReimport(update: $update, options: $options) === true) {
+			return $existing;
+		}
+
+		$guarded = $this->applyShippedBaselineGuard(
+			data: $update->data,
+			existing: $existing,
+			appId: $options->appId,
+			appVersion: $options->version
+		);
+		$changeSet = $this->classifyImportedSchemaChange(existing: $existing, data: $guarded['data']);
+		$data = $guarded['data'];
+		if (version_compare($update->incomingVersion(), $update->existingVersion(), '>') === false) {
+			$data = $this->withRetainedSchemaVersion(update: new ImportedSchemaUpdate(data: $data, existing: $existing), changeSet: $changeSet);
+		}
+
+		$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$existing->getId());
+		$schema = $this->schemaMapper->updateFromArray(id: $existing->getId(), object: $data);
+		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+		$this->installWhenNoEventFired(schema: $schema, eventsBefore: $eventsBefore);
+		$this->recordPendingBaseline(guarded: $guarded, appId: $options->appId, appVersion: $options->version);
+		$this->recordImportedSchemaChange(schema: $schema, changeSet: $changeSet, appId: $options->appId);
+
+		return $schema;
+	}//end updateImportedSchema()
+
+	/**
+	 * Whether a re-import may be skipped: its version is not newer and its content is unchanged.
+	 *
+	 * The version is an optimisation, not the source of truth: apps change a
+	 * schema through a register.d fragment without bumping its version, so a
+	 * content difference still applies the update (#2075/#2082).
+	 *
+	 * @param ImportedSchemaUpdate $update  The normalised definition and the stored schema.
+	 * @param SchemaImportOptions  $options The caller's settings.
+	 *
+	 * @return bool True when the import changes nothing.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function isUnchangedReimport(ImportedSchemaUpdate $update, SchemaImportOptions $options): bool {
+		if ($options->force === true || version_compare($update->incomingVersion(), $update->existingVersion(), '<=') === false) {
+			return false;
+		}
+
+		if ($this->schemaContentDiffers(data: $update->data, existing: $update->existing) === false) {
+			$this->logger->debug(
+				message: '[ImportHandler] Skipping schema import: version not newer and content unchanged.',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return true;
+		}
+
+		$this->logger->info(
+			message: '[ImportHandler] Schema version not newer but content differs; applying update anyway.',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schema_slug' => $update->existing->getSlug(),
+				'schema_id' => $update->existing->getId(),
+			]
+		);
+		return false;
+	}//end isUnchangedReimport()
+
+	/**
+	 * The schema data with the stored version kept, bumped when the change classification says so.
+	 *
+	 * Used when the import's version is not newer: an import never moves a
+	 * schema's version back (#4163).
+	 *
+	 * @param ImportedSchemaUpdate $update    The guarded definition and the stored schema.
+	 * @param SchemaChangeSet|null $changeSet The classified change, null when not classified.
+	 *
+	 * @return array The data.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function withRetainedSchemaVersion(ImportedSchemaUpdate $update, ?SchemaChangeSet $changeSet): array {
+		$data = $update->data;
+		if ($update->existing->getVersion() !== null) {
+			$data['version'] = $update->existingVersion();
+		}
+
+		if ($changeSet !== null && $changeSet->hasChanges() === true) {
+			$data['version'] = $this->schemaVersioning->nextVersion(existing: $update->existing, changeSet: $changeSet);
+		}
+
+		return $data;
+	}//end withRetainedSchemaVersion()
+
+	/**
+	 * Create a schema from an import.
+	 *
+	 * @param array               $data    The normalised schema data.
+	 * @param SchemaImportOptions $options The caller's settings.
+	 *
+	 * @return Schema The stored schema.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createImportedSchema(array $data, SchemaImportOptions $options): Schema {
+		$schema = $this->schemaMapper->createFromArray($data);
+		$this->recordShippedBaseline(data: $data, appId: $options->appId, appVersion: $options->version);
+
+		return $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+	}//end createImportedSchema()
+
+	/**
+	 * Set the import's owner and application on a schema, where given.
+	 *
+	 * @param Schema              $schema  The schema.
+	 * @param SchemaImportOptions $options The caller's settings.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function withImportOwnership(Schema $schema, SchemaImportOptions $options): Schema {
+		if ($options->owner !== null) {
+			$schema->setOwner($options->owner);
+		}
+
+		if ($options->appId !== null) {
+			$schema->setApplication($options->appId);
+		}
+
+		return $schema;
+	}//end withImportOwnership()
 
 	/**
 	 * Run the schema installers when the import's saves fired no update event.
@@ -2479,7 +2682,9 @@ class ImportHandler {
 	 * changes should re-trigger the version-gated import — and falls back to the whole
 	 * payload when `components` is absent. Key order is taken from the source config
 	 * files (deterministic for an unchanged release), so no normalisation is needed; a
-	 * reordering at most triggers one extra import pass.
+	 * reordering at most triggers one extra import pass. The import's own rules
+	 * (IMPORT_RULES) are part of the hash: when they change, the same content
+	 * imports differently, so every app imports once more.
 	 *
 	 * @param array $data The configuration data (pre-mutation snapshot).
 	 *
@@ -2492,7 +2697,7 @@ class ImportHandler {
 			$encoded = '';
 		}
 
-		return hash('sha256', $encoded);
+		return hash('sha256', self::IMPORT_RULES.$encoded);
 	}//end computeDefinitionHash()
 
 	/**
@@ -2739,7 +2944,7 @@ class ImportHandler {
 						'seedObjects' => 0,
 					],
 					'unchanged' => ['objects' => 0],
-					'failed' => ['schemas' => []],
+					'failed' => ['schemas' => [], 'objects' => []],
 				];
 			}//end if
 		}//end if
@@ -2792,6 +2997,9 @@ class ImportHandler {
 			],
 			'failed' => [
 				'schemas' => [],
+				// The listed objects this import could not write, each with
+				// its slug, schema and the reason, after one retry.
+				'objects' => [],
 			],
 		];
 
@@ -3296,245 +3504,49 @@ class ImportHandler {
 			}//end foreach
 		}//end foreach
 
-		if (count($seedObjects) > 0) {
-			foreach ($seedObjects as $objectData) {
-				// Log raw values before any mapping.
-				$rawRegister = $objectData['@self']['register'] ?? null;
-				$rawSchema = $objectData['@self']['schema'] ?? null;
-				$rawSlug = $objectData['@self']['slug'] ?? null;
+		// Set when a listed object was refused by a listener (an app's own
+		// validation on the save event). That refusal depends on what the
+		// instance holds, not on the file, so this import must not be
+		// remembered as done: the content hash below is withheld and the next
+		// run imports again instead of fast-skipping.
+		$refusedByListener = false;
 
-				// Only import objects with a slug.
-				$slug = $rawSlug;
-				if (empty($slug) === true) {
-					continue;
+		// A listed object that fails is tried once more after every other one
+		// has been written: an object may name another that comes later in the
+		// list, and a listener may judge it by a row a sibling writes. Only a
+		// second failure is recorded, in `failed.objects`, with the reason.
+		$retry = [];
+		foreach ($seedObjects as $objectData) {
+			if (empty($objectData['@self']['slug'] ?? null) === true) {
+				continue;
+			}
+
+			try {
+				$this->importListedObject(objectData: $objectData, appId: $appId, actingUser: $actingUser, result: $result);
+			} catch (\Throwable $e) {
+				$this->logger->debug(
+					message: '[ImportHandler] Object failed on the first pass, retried after the rest',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'objectSlug' => $objectData['@self']['slug'], 'error' => $e->getMessage()]
+				);
+				$retry[] = $objectData;
+			}
+		}
+
+		foreach ($retry as $objectData) {
+			try {
+				$this->importListedObject(objectData: $objectData, appId: $appId, actingUser: $actingUser, result: $result);
+			} catch (\Throwable $e) {
+				if ($e instanceof HookStoppedException === true) {
+					$refusedByListener = true;
 				}
 
-				// PER-ENTITY RESILIENCE: wrap the whole per-object resolve / search /
-				// save sequence so one validation-failing object (e.g. a name-missing
-				// or title-less seed fragment) is skipped with a warning instead of
-				// aborting every sibling object and the rest of the app import.
-				// Catch \Throwable so opis/json-schema validation throws and folder
-				// access denials are contained too.
-				try {
-					// Get the actual Register and Schema objects from maps (not IDs!).
-					// This is CRITICAL - passing objects avoids organisation filter in find().
-					$registerObject = $this->registersMap[$rawRegister] ?? null;
-					$schemaObject = $this->schemasMap[$rawSchema] ?? null;
+				$this->recordFailedObject(objectData: $objectData, appId: $appId, error: $e, result: $result);
+			}
+		}
 
-					// Fallback for object-only bundles that reference pre-existing
-					// registers/schemas (e.g. the rapportage templates that ship a
-					// dashboard against the already-imported reports/dashboard).
-					if ($registerObject === null && is_string($rawRegister) === true && $rawRegister !== '') {
-						try {
-							$registerObject = $this->registerMapper->find(
-								$rawRegister,
-								_rbac: false,
-								_multitenancy: false
-							);
-							$this->registersMap[$rawRegister] = $registerObject;
-						} catch (\Throwable $e) {
-							$registerObject = null;
-						}
-					}
-
-					if ($schemaObject === null && is_string($rawSchema) === true && $rawSchema !== '') {
-						try {
-							$schemaObject = $this->schemaMapper->find(
-								$rawSchema,
-								_rbac: false,
-								_multitenancy: false
-							);
-							$this->schemasMap[$rawSchema] = $schemaObject;
-						} catch (\Throwable $e) {
-							$schemaObject = null;
-						}
-					}
-
-					if ($registerObject === null || $schemaObject === null) {
-						$this->logger->warning(
-							message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'objectSlug' => $slug,
-								'registerSlug' => $rawRegister,
-								'schemaSlug' => $rawSchema,
-								'registerFound' => $registerObject !== null,
-								'schemaFound' => $schemaObject !== null,
-							]
-						);
-						continue;
-					}
-
-					// A seed whose schema slug resolved to ANOTHER app's schema,
-					// one its register does not list, is a stale seed, not a
-					// write target ({@see self::seedSchemaIsForeign()}).
-					if ($this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true) {
-						$result['skipped']['objects']++;
-						continue;
-					}
-
-					// Get IDs for searching existing objects.
-					$registerId = $registerObject->getId();
-					$schemaId = $schemaObject->getId();
-
-					// Use ObjectService::searchObjects to find existing object by register+schema+slug.
-					$search = [
-						'@self' => [
-							'register' => (int)$registerId,
-							'schema' => (int)$schemaId,
-							'slug' => $slug,
-						],
-						'_limit' => 1,
-					];
-					$this->logger->debug(
-						message: '[ImportHandler] Import object search filter',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]
-					);
-
-					// Search for existing object.
-					// Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
-					// This prevents duplicate objects with the same UUID being created.
-					$this->logger->debug(
-						message: "[ImportHandler] Searching: register=$registerId, schema=$schemaId, slug=$slug",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					$results = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
-					$resultCount = 0;
-					if (is_array($results) === true) {
-						$resultCount = count($results);
-					}
-
-					$this->logger->debug(
-						message: "[ImportHandler] Found $resultCount results",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					$existingObject = null;
-					if ((is_array($results) === true) && count($results) > 0) {
-						$existingObject = $results[0];
-					}
-
-					if ($existingObject === null) {
-						// Debug: fires once PER OBJECT during an import, and says
-						// only that the normal path was taken. The import's
-						// per-phase summaries are the info-level story.
-						$this->logger->debug(
-							message: '[ImportHandler] No existing object found - will create new object',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'registerId' => $registerId,
-								'schemaId' => $schemaId,
-								'slug' => $slug,
-							]
-						);
-					}
-
-					// Replace string slugs with integer IDs in objectData's @self metadata.
-					// This prevents any internal lookups from using string slugs.
-					$objectData['@self']['register'] = (int)$registerId;
-					$objectData['@self']['schema'] = (int)$schemaId;
-
-					// Identity, not data (live pass O6): a listed object may carry
-					// its uuid and slug at the top level, as seed data does. The
-					// uuid becomes the new object's uuid (an @self uuid wins), and
-					// both keys leave the data unless the schema declares them, so
-					// MagicMapper has nothing undeclared to discard.
-					$listedUuid = $this->listedObjectUuid(objectData: $objectData);
-					$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schemaObject);
-
-					if ($existingObject !== null) {
-						// Handle both ObjectEntity instances and array results from searchObjects.
-						// searchObjects returns ObjectEntity or arrays depending on configuration.
-						// @var ObjectEntity|array $existingObject.
-						$existingObjectData = $existingObject->jsonSerialize();
-						if (is_array($existingObject) === true) {
-							$existingObjectData = $existingObject;
-						}
-
-						$importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
-						$existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
-						if (version_compare($importedVersion, $existingVersion, '>') > 0) {
-							$uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
-							// CRITICAL: Pass Register and Schema OBJECTS, not IDs.
-							// This avoids organisation filter issues in find().
-							// Installer-time seeding runs in the repair/CLI context
-							// with no user session ('Anonymous'); bypass RBAC and
-							// multitenancy here as everywhere else in this trusted
-							// import path, otherwise seed objects on RBAC-guarded
-							// schemas (e.g. Retainer Drawdown) abort the whole import.
-							$object = $this->objectService->saveObject(
-								object: $objectData,
-								register: $registerObject,
-								schema: $schemaObject,
-								uuid: $uuid,
-								_rbac: false,
-								_multitenancy: false,
-								currentUser: $actingUser
-							);
-							$result['objects'][] = $object;
-						}
-
-						if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
-							// COUNTED, not just logged. Skipping an unchanged
-							// object is the DESIGNED behaviour of a re-import,
-							// but a debug line is invisible to the caller, and
-							// the caller is the one that has to tell an operator
-							// whether the import worked.
-							$result['unchanged']['objects']++;
-							$this->logger->debug(
-								message: '[ImportHandler] Skipped object update: imported version not higher',
-								context: [
-									'file' => __FILE__,
-									'line' => __LINE__,
-									'slug' => $slug,
-									'register' => $registerId,
-									'schema' => $schemaId,
-									'importedVersion' => $importedVersion,
-									'existingVersion' => $existingVersion,
-								]
-							);
-							continue;
-						}//end if
-					}//end if
-
-					if ($existingObject === null) {
-						// Create new object.
-						// CRITICAL: Pass Register and Schema OBJECTS, not IDs.
-						// This avoids organisation filter issues in find().
-						// Installer-time seeding runs without a user session
-						// ('Anonymous'); bypass RBAC/multitenancy as in the rest of
-						// this trusted import path so seed objects on RBAC-guarded
-						// schemas don't abort the whole import.
-						$object = $this->objectService->saveObject(
-							object: $objectData,
-							register: $registerObject,
-							schema: $schemaObject,
-							uuid: $listedUuid,
-							_rbac: false,
-							_multitenancy: false,
-							currentUser: $actingUser
-						);
-						$result['objects'][] = $object;
-					}//end if
-				} catch (\Throwable $e) {
-					// PER-ENTITY RESILIENCE: skip this object, keep importing the rest.
-					$result['skipped']['objects']++;
-					$this->logger->warning(
-						message: "[ImportHandler] Skipping object '{$slug}' - import failed: " . $e->getMessage(),
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'appId' => $appId,
-							'objectSlug' => $slug,
-							'registerSlug' => $rawRegister,
-							'schemaSlug' => $rawSchema,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-		}//end if
+		// The shipped versions the seeds above recorded are written once, not once per seed.
+		$this->seedVersions()->flush();
+		$this->seedHashes()->flush();
 
 		// Process OpenConnector integration if available.
 		if ($this->connectorConfigSvc !== null) {
@@ -3574,7 +3586,23 @@ class ImportHandler {
 			// the next run can fast-skip only when the definitional content is unchanged
 			// (#426). Storing it even when the per-entity gates ended up updating nothing
 			// is correct: it records "this exact config content has been seen".
-			$this->appConfig->setValueString('openregister', "imported_config_{$appId}_hash", $definitionHash);
+			// Withheld when a listener refused a listed object: the refusal
+			// depends on what the instance holds (a seed naming a row another
+			// step writes later), so the next run must import again rather than
+			// fast-skip on an unchanged hash. A failure the file itself causes
+			// (a schema validation error) does not withhold it: retrying the
+			// same content would fail the same way, on every repair.
+			$storedHash = $definitionHash;
+			if ($refusedByListener === true) {
+				$storedHash = '';
+				$this->logger->warning(
+					message: "[ImportHandler] {$appId}: a listener refused a listed object; "
+						. 'this import is not remembered as done, so the next run imports again',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'failedObjects' => $result['failed']['objects']]
+				);
+			}
+
+			$this->appConfig->setValueString('openregister', "imported_config_{$appId}_hash", $storedHash);
 			// Info: an app's configuration genuinely changed version. The
 			// far more common "unchanged, skipping" is debug — reporting the
 			// NON-event at info is what made a repair unreadable.
@@ -3621,6 +3649,482 @@ class ImportHandler {
 	}//end importFromJson()
 
 	/**
+	 * Import one object listed in a configuration (`components.objects`).
+	 *
+	 * A listed object with a stable `@self.slug` is a seed: shipped with the
+	 * app's register configuration and found again on every import by register,
+	 * schema and slug. A stored seed is updated when the shipped `@self.version`
+	 * is higher than the version the import last shipped it at, which
+	 * {@see SeedVersionLedger} remembers apart from the object (the stored
+	 * object's own version is bumped by every later edit, so it cannot be the
+	 * one compared); at the same or a lower version it is left alone and counted
+	 * as unchanged. An object the configuration does not list is never looked
+	 * at, so instance data is untouched.
+	 *
+	 * Throws on a failed save; the caller decides whether to retry or record it.
+	 *
+	 * @param array<string, mixed> $objectData The listed object, with `@self`.
+	 * @param string|null          $appId      The importing app.
+	 * @param IUser|null           $actingUser The user the save acts as.
+	 * @param array<string, mixed> $result     The import result, updated in place.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable When the object cannot be saved.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importListedObject(array $objectData, ?string $appId, ?IUser $actingUser, array &$result): void {
+		$seed = $this->listedSeed(objectData: $objectData, actor: ['appId' => $appId, 'user' => $actingUser]);
+		if ($seed === null) {
+			return;
+		}
+
+		// A seed whose schema slug resolved to ANOTHER app's schema,
+		// one its register does not list, is a stale seed, not a
+		// write target ({@see self::seedSchemaIsForeign()}).
+		if ($this->seedSchemaIsForeign(register: $seed->register, schema: $seed->schema, appId: $appId) === true) {
+			$result['skipped']['objects']++;
+			return;
+		}
+
+		$existingObject = $this->existingListedObject(seed: $seed);
+
+		// Integer ids, not slugs, in @self, so no internal lookup uses a slug.
+		$objectData['@self']['register'] = (int)$seed->register->getId();
+		$objectData['@self']['schema'] = (int)$seed->schema->getId();
+
+		// Identity, not data (live pass O6): a listed object may carry
+		// its uuid and slug at the top level, as seed data does. The
+		// uuid becomes the new object's uuid (an @self uuid wins), and
+		// both keys leave the data unless the schema declares them, so
+		// MagicMapper has nothing undeclared to discard.
+		$listedUuid = $this->listedObjectUuid(objectData: $objectData);
+		$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $seed->schema);
+
+		if ($existingObject === null) {
+			$result['objects'][] = $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
+			return;
+		}
+
+		// A search returns arrays or ObjectEntity instances. The array check
+		// comes first: calling jsonSerialize() on an array result threw, and
+		// the per-object catch reported it as a failed seed.
+		if (is_array($existingObject) === false) {
+			$existingObject = $existingObject->jsonSerialize();
+		}
+
+		$updated = $this->updateListedObject(seed: $seed, listed: ['data' => $objectData, 'existing' => $existingObject]);
+		if ($updated === null) {
+			// COUNTED, not just logged. Skipping an unchanged object is the
+			// DESIGNED behaviour of a re-import, but a debug line is invisible
+			// to the caller, and the caller is the one that has to tell an
+			// operator whether the import worked.
+			$result['unchanged']['objects']++;
+			return;
+		}
+
+		$result['objects'][] = $updated;
+	}//end importListedObject()
+
+	/**
+	 * The register, schema and context a listed object is imported into, or null when either is missing.
+	 *
+	 * The register and schema come from this import's maps first and, for
+	 * object-only bundles that reference pre-existing ones (e.g. the
+	 * rapportage templates that ship a dashboard against the already-imported
+	 * reports/dashboard), from the database. Passing the entities on, not
+	 * their ids, avoids the organisation filter in find().
+	 *
+	 * @param array<string, mixed>                       $objectData The listed object, with `@self`.
+	 * @param array{appId: ?string, user: IUser|null} $actor      The importing app and the acting user.
+	 *
+	 * @return ListedSeed|null
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function listedSeed(array $objectData, array $actor): ?ListedSeed {
+		$rawRegister = $objectData['@self']['register'] ?? null;
+		$rawSchema = $objectData['@self']['schema'] ?? null;
+		$slug = $objectData['@self']['slug'] ?? null;
+
+		$registerObject = $this->listedRegister(rawRegister: $rawRegister);
+		$schemaObject = $this->listedSchema(rawSchema: $rawSchema);
+		if ($registerObject === null || $schemaObject === null) {
+			$this->logger->warning(
+				message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'objectSlug' => $slug,
+					'registerSlug' => $rawRegister,
+					'schemaSlug' => $rawSchema,
+					'registerFound' => $registerObject !== null,
+					'schemaFound' => $schemaObject !== null,
+				]
+			);
+			return null;
+		}
+
+		return new ListedSeed(register: $registerObject, schema: $schemaObject, context: $actor + ['slug' => $slug]);
+	}//end listedSeed()
+
+	/**
+	 * A listed object's register, from this import's map or the database.
+	 *
+	 * @param mixed $rawRegister The `@self` register slug.
+	 *
+	 * @return Register|null
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function listedRegister(mixed $rawRegister): ?Register {
+		$register = $this->registersMap[$rawRegister] ?? null;
+		if ($register !== null || is_string($rawRegister) === false || $rawRegister === '') {
+			return $register;
+		}
+
+		try {
+			$register = $this->registerMapper->find($rawRegister, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$this->registersMap[$rawRegister] = $register;
+		return $register;
+	}//end listedRegister()
+
+	/**
+	 * A listed object's schema, from this import's map or the database.
+	 *
+	 * @param mixed $rawSchema The `@self` schema slug.
+	 *
+	 * @return Schema|null
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function listedSchema(mixed $rawSchema): ?Schema {
+		$schema = $this->schemasMap[$rawSchema] ?? null;
+		if ($schema !== null || is_string($rawSchema) === false || $rawSchema === '') {
+			return $schema;
+		}
+
+		try {
+			$schema = $this->schemaMapper->find($rawSchema, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$this->schemasMap[$rawSchema] = $schema;
+		return $schema;
+	}//end listedSchema()
+
+	/**
+	 * The stored object with a listed object's register, schema and slug, or null.
+	 *
+	 * The search bypasses RBAC and multitenancy so an object is found whatever
+	 * the organisation context, which keeps an import from creating a
+	 * duplicate with the same UUID.
+	 *
+	 * @param ListedSeed $seed The listed object's target.
+	 *
+	 * @return mixed The stored object (an array or ObjectEntity), or null.
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function existingListedObject(ListedSeed $seed): mixed {
+		$registerId = $seed->register->getId();
+		$schemaId = $seed->schema->getId();
+		$slug = $seed->slug;
+		$search = [
+			'@self' => [
+				'register' => (int)$registerId,
+				'schema' => (int)$schemaId,
+				'slug' => $slug,
+			],
+			'_limit' => 1,
+		];
+		$this->logger->debug(
+			message: '[ImportHandler] Import object search filter',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]
+		);
+		$this->logger->debug(
+			message: "[ImportHandler] Searching: register=$registerId, schema=$schemaId, slug=$slug",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		$results = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+		$resultCount = 0;
+		if (is_array($results) === true) {
+			$resultCount = count($results);
+		}
+
+		$this->logger->debug(
+			message: "[ImportHandler] Found $resultCount results",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		if ($resultCount > 0) {
+			return $results[0];
+		}
+
+		// Debug: fires once PER OBJECT during an import, and says only that
+		// the normal path was taken. The import's per-phase summaries are the
+		// info-level story.
+		$this->logger->debug(
+			message: '[ImportHandler] No existing object found - will create new object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $registerId,
+				'schemaId' => $schemaId,
+				'slug' => $slug,
+			]
+		);
+
+		return null;
+	}//end existingListedObject()
+
+	/**
+	 * Save a listed object into its register and schema.
+	 *
+	 * Installer-time seeding runs in the repair/CLI context with no user
+	 * session ('Anonymous'), so RBAC and multitenancy are bypassed here as
+	 * everywhere else in this trusted import path; otherwise seed objects on
+	 * RBAC-guarded schemas (e.g. Retainer Drawdown) abort the whole import.
+	 *
+	 * @param ListedSeed           $seed The listed object's target.
+	 * @param array<string, mixed> $save The object `data` and the `uuid` to save it under.
+	 *
+	 * @return ObjectEntity
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function saveListedObject(ListedSeed $seed, array $save): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: $save['data'],
+			register: $seed->register,
+			schema: $seed->schema,
+			uuid: $save['uuid'],
+			_rbac: false,
+			_multitenancy: false,
+			currentUser: $seed->actingUser
+		);
+	}//end saveListedObject()
+
+	/**
+	 * Create a listed object that is not stored yet, and remember what was shipped.
+	 *
+	 * @param ListedSeed           $seed   The listed object's target.
+	 * @param array<string, mixed> $listed The object `data` and its listed `uuid`.
+	 *
+	 * @return ObjectEntity
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function createListedObject(ListedSeed $seed, array $listed): ObjectEntity {
+		$objectData = $listed['data'];
+		$object = $this->saveListedObject(seed: $seed, save: $listed);
+
+		$seedKey = $seed->seedKey();
+		$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $objectData);
+		$this->rememberShippedVersion(
+			appId: $seed->appId,
+			seedKey: $seedKey,
+			version: (string)($objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0')
+		);
+
+		return $object;
+	}//end createListedObject()
+
+	/**
+	 * Update a stored listed object when its shipped version moved on.
+	 *
+	 * The shipped version is compared with the version this seed was last
+	 * SHIPPED at when the import remembers one, not with the object's own
+	 * version: every later save of the object bumps its patch, and a stored
+	 * `1.4.8` (shipped 1.4.7, edited once) would otherwise make a shipped
+	 * `1.4.8` look current and keep it from ever arriving.
+	 *
+	 * @param ListedSeed           $seed   The listed object's target.
+	 * @param array<string, mixed> $listed The shipped `data` and the `existing` stored object as an array.
+	 *
+	 * @return ObjectEntity|null The saved object, or null when it stays as it is.
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function updateListedObject(ListedSeed $seed, array $listed): ?ObjectEntity {
+		$objectData = $listed['data'];
+		$existing = $listed['existing'];
+		$listed['importedVersion'] = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
+		$listed['existingVersion'] = $existing['@self']['version'] ?? $existing['version'] ?? '1.0.0';
+		$listed['uuid'] = $existing['@self']['id'] ?? $existing['id'] ?? null;
+
+		$seedKey = $seed->seedKey();
+		$listed['shipped'] = null;
+		if ($seedKey !== null) {
+			$listed['shipped'] = $this->seedVersions()->shipped(appId: (string)$seed->appId, seed: $seedKey);
+		}
+
+		if (version_compare($listed['importedVersion'], ($listed['shipped'] ?? $listed['existingVersion']), '>') === false) {
+			return $this->followShippedContent(seed: $seed, listed: $listed);
+		}
+
+		$object = $this->saveListedObject(seed: $seed, save: $listed);
+		$this->rememberShippedVersion(appId: $seed->appId, seedKey: $seedKey, version: (string)$listed['importedVersion']);
+		$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $objectData);
+		return $object;
+	}//end updateListedObject()
+
+	/**
+	 * Follow shipped content whose version did not move ({@see ShippedSeedContent}).
+	 *
+	 * The content is remembered only once written, so a refused write is tried
+	 * again on the next import. A seed stored before the import remembered its
+	 * shipped version gets the shipped version remembered now: what the file
+	 * ships is what the instance holds, as the object cannot be told apart
+	 * from an edited one otherwise.
+	 *
+	 * @param ListedSeed           $seed   The listed object's target.
+	 * @param array<string, mixed> $listed The shipped `data`, the `existing` object, its `uuid` and the three versions.
+	 *
+	 * @return ObjectEntity|null The saved object, or null when it stays as it is.
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function followShippedContent(ListedSeed $seed, array $listed): ?ObjectEntity {
+		$seedKey = $seed->seedKey();
+		$remembered = null;
+		if ($seedKey !== null) {
+			$remembered = $this->seedHashes()->shipped(appId: (string)$seed->appId, seed: $seedKey);
+		}
+
+		$follow = $this->shippedContent->update(stored: $listed['existing'], shipped: $listed['data'], remembered: $remembered);
+		if ($follow !== null) {
+			$object = $this->saveListedObject(seed: $seed, save: ['data' => $follow, 'uuid' => $listed['uuid']]);
+			$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $listed['data']);
+			return $object;
+		}
+
+		$this->rememberShippedContent(appId: $seed->appId, seedKey: $seedKey, shipped: $listed['data']);
+		if ($listed['shipped'] === null) {
+			$this->rememberShippedVersion(appId: $seed->appId, seedKey: $seedKey, version: (string)$listed['importedVersion']);
+		}
+
+		$this->logger->debug(
+			message: '[ImportHandler] Skipped object update: imported version not higher',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'slug' => $seed->slug,
+				'register' => $seed->register->getId(),
+				'schema' => $seed->schema->getId(),
+				'importedVersion' => $listed['importedVersion'],
+				'existingVersion' => $listed['existingVersion'],
+				'shippedVersion' => $listed['shipped'],
+			]
+		);
+		return null;
+	}//end followShippedContent()
+
+	/**
+	 * The ledger of the versions the seed objects were last shipped at.
+	 *
+	 * @return SeedVersionLedger
+	 */
+	private function seedVersions(): SeedVersionLedger {
+		if ($this->seedVersions === null) {
+			$this->seedVersions = new SeedVersionLedger(appConfig: $this->appConfig);
+		}
+
+		return $this->seedVersions;
+	}//end seedVersions()
+
+	/**
+	 * The ledger of the hashes of the content the seed objects were last shipped with.
+	 *
+	 * @return SeedVersionLedger
+	 */
+	private function seedHashes(): SeedVersionLedger {
+		if ($this->seedHashes === null) {
+			$this->seedHashes = new SeedVersionLedger(appConfig: $this->appConfig, prefix: 'imported_seed_hashes_');
+		}
+
+		return $this->seedHashes;
+	}//end seedHashes()
+
+	/**
+	 * Remember the hash of the content a seed object was shipped with, when the import knows its app.
+	 *
+	 * @param string|null          $appId   The importing app.
+	 * @param string|null          $seedKey The seed's identity; null when there is no app to remember it under.
+	 * @param array<string, mixed> $shipped The seed as listed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function rememberShippedContent(?string $appId, ?string $seedKey, array $shipped): void {
+		if ($appId === null || $appId === '' || $seedKey === null) {
+			return;
+		}
+
+		$this->seedHashes()->record(appId: $appId, seed: $seedKey, version: $this->shippedContent->hash(shipped: $shipped));
+	}//end rememberShippedContent()
+
+	/**
+	 * Remember the version a seed object was shipped at, when the import knows its app.
+	 *
+	 * @param string|null $appId   The importing app.
+	 * @param string|null $seedKey The seed's identity; null when there is no app to remember it under.
+	 * @param string      $version The shipped version.
+	 *
+	 * @return void
+	 */
+	private function rememberShippedVersion(?string $appId, ?string $seedKey, string $version): void {
+		if ($appId === null || $appId === '' || $seedKey === null) {
+			return;
+		}
+
+		$this->seedVersions()->record(appId: $appId, seed: $seedKey, version: $version);
+	}//end rememberShippedVersion()
+
+	/**
+	 * Record a listed object that failed twice: counted, named and logged.
+	 *
+	 * @param array<string, mixed> $objectData The listed object, with `@self`.
+	 * @param string|null          $appId      The importing app.
+	 * @param \Throwable           $error      Why the save failed.
+	 * @param array<string, mixed> $result     The import result, updated in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function recordFailedObject(array $objectData, ?string $appId, \Throwable $error, array &$result): void {
+		$slug = (string)($objectData['@self']['slug'] ?? '');
+		$result['skipped']['objects']++;
+		$result['failed']['objects'][] = [
+			'slug' => $slug,
+			'register' => $objectData['@self']['register'] ?? null,
+			'schema' => $objectData['@self']['schema'] ?? null,
+			'error' => $error->getMessage(),
+			'refusedByListener' => ($error instanceof HookStoppedException),
+		];
+		$this->logger->warning(
+			message: "[ImportHandler] Skipping object '{$slug}' - import failed: " . $error->getMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'appId' => $appId,
+				'objectSlug' => $slug,
+				'registerSlug' => $objectData['@self']['register'] ?? null,
+				'schemaSlug' => $objectData['@self']['schema'] ?? null,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end recordFailedObject()
+
+	/**
 	 * Resolve `@ref:<slug>` seed-reference tokens to target object UUIDs.
 	 *
 	 * Seed objects declare relationships to sibling seed objects by slug using
@@ -3648,240 +4152,77 @@ class ImportHandler {
 	 * @return array The data with target `@self.id` populated and `@ref:` tokens resolved.
 	 */
 	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
-		if (($data['components']['objects'] ?? null) === null
-			|| is_array($data['components']['objects']) === false
-		) {
+		$objects = ($data['components']['objects'] ?? null);
+		if (is_array($objects) === false) {
 			return $data;
 		}
 
-		// Collect the slugs that are actually referenced, so we only resolve
-		// identities for genuine reference targets (and skip the work entirely
-		// when no object references another).
-		$referencedSlugs = [];
-		$refSchemaSlugs = [];
-		foreach ($data['components']['objects'] as $objectData) {
-			if (is_array($objectData) === true) {
-				$this->collectRefTargets(
-					value: $objectData,
-					bareSlugs: $referencedSlugs,
-					schemaSlugs: $refSchemaSlugs
-				);
-			}
-		}
-
-		if (count($referencedSlugs) === 0 && count($refSchemaSlugs) === 0) {
+		// Only genuine reference targets get a pre-resolved identity, and the
+		// work is skipped entirely when no object references another.
+		$index = new SeedReferenceIndex(logger: $this->logger);
+		$index->collectFromObjects(objects: $objects);
+		if ($index->isEmpty() === true) {
 			return $data;
 		}
 
-		// PASS 1 — assign a stable UUID to each referenced target and index it.
-		$uuidBySchemaSlug = [];
-		$uuidBySlug = [];
-		$ambiguousSlugs = [];
-
-		foreach ($data['components']['objects'] as &$targetData) {
-			if (is_array($targetData) === false) {
+		foreach ($objects as $position => $targetData) {
+			if (is_array($targetData) === false || $index->isReferenced(self: $targetData['@self'] ?? null) === false) {
 				continue;
 			}
 
-			$objectSlug = $targetData['@self']['slug'] ?? null;
-			if (empty($objectSlug) === true) {
+			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
+			if ($uuid === null) {
 				continue;
 			}
 
-			$schemaSlug = $targetData['@self']['schema'] ?? null;
-			$schemaSlugKey = null;
-			if (is_string($schemaSlug) === true && $schemaSlug !== '') {
-				$schemaSlugKey = $schemaSlug . ':' . $objectSlug;
-			}
+			$objects[$position]['@self']['id'] = $uuid;
+			$index->record(self: $objects[$position]['@self']);
+		}
 
-			// Only objects that something references need a pre-resolved identity.
-			$isReferenced = (array_key_exists($objectSlug, $referencedSlugs) === true
-				|| ($schemaSlugKey !== null && array_key_exists($schemaSlugKey, $refSchemaSlugs) === true));
-			if ($isReferenced === false) {
-				continue;
-			}
-
-			// A target whose register/schema cannot be resolved will be skipped
-			// by the import loop and never persisted; pre-assigning it an id
-			// would leave referrers pointing at a dangling, never-stored UUID.
-			// Leave it unmapped so replaceRefTokens logs the unresolved reference
-			// instead of silently fabricating one.
-			[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
-			if ($registerObject === null || $schemaObject === null) {
-				continue;
-			}
-
-			// Prefer the UUID already persisted for this register+schema+slug so
-			// re-imports stay idempotent and resolved references always match the
-			// id the import loop will keep on update; fall back to an explicit
-			// seed id (first import), then a freshly minted one.
-			$uuid = $this->findExistingSeedUuid(
-				register: $registerObject,
-				schema: $schemaObject,
-				slug: $objectSlug
-			);
-			if (empty($uuid) === true) {
-				$uuid = $targetData['@self']['id'] ?? null;
-			}
-
-			if (empty($uuid) === true) {
-				$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-			}
-
-			$targetData['@self']['id'] = $uuid;
-
-			if ($schemaSlugKey !== null) {
-				$uuidBySchemaSlug[$schemaSlugKey] = $uuid;
-			}
-
-			$isDuplicateSlug = (array_key_exists($objectSlug, $uuidBySlug) === true
-				&& $uuidBySlug[$objectSlug] !== $uuid);
-			if ($isDuplicateSlug === true) {
-				$ambiguousSlugs[$objectSlug] = true;
-			}
-
-			if ($isDuplicateSlug === false) {
-				$uuidBySlug[$objectSlug] = $uuid;
-			}
-		}//end foreach
-
-		unset($targetData);
-
-		// PASS 2 — replace @ref: tokens in every object's property values.
-		foreach ($data['components']['objects'] as &$objectData) {
-			if (is_array($objectData) === false) {
-				continue;
-			}
-
-			$self = $objectData['@self'] ?? null;
-			unset($objectData['@self']);
-
-			$objectData = $this->replaceRefTokens(
-				value: $objectData,
-				uuidBySchemaSlug: $uuidBySchemaSlug,
-				uuidBySlug: $uuidBySlug,
-				ambiguousSlugs: $ambiguousSlugs
-			);
-
-			if ($self !== null) {
-				$objectData['@self'] = $self;
-			}
-		}//end foreach
-
-		unset($objectData);
-
+		$data['components']['objects'] = $index->replaceInObjects(objects: $objects);
 		return $data;
 	}//end resolveSeedReferenceTokens()
 
 	/**
-	 * Recursively collect the slugs referenced by `@ref:` tokens in a value.
+	 * The UUID a referenced seed target is stored under.
 	 *
-	 * @param mixed $value The property value to scan.
-	 * @param array $bareSlugs Accumulator of "objectSlug" => true (by reference).
-	 * @param array $schemaSlugs Accumulator of "schemaSlug:objectSlug" => true (by reference).
+	 * Prefers the UUID already persisted for its register+schema+slug, so
+	 * re-imports stay idempotent and references match the id the import loop
+	 * keeps on update; then an explicit seed id; then a freshly minted one.
 	 *
-	 * @return void
+	 * A target whose register or schema cannot be resolved is skipped by the
+	 * import loop and never stored, so it gets no UUID: a referrer would
+	 * otherwise point at an id that never exists, and the token is logged as
+	 * unresolved instead.
+	 *
+	 * @param array       $targetData The referenced seed object.
+	 * @param string|null $appId      The importing app, for the foreign-schema guard.
+	 *
+	 * @return mixed The UUID, or null when the target will not be stored.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function collectRefTargets(mixed $value, array &$bareSlugs, array &$schemaSlugs): void {
-		if (is_array($value) === true) {
-			foreach ($value as $item) {
-				$this->collectRefTargets(value: $item, bareSlugs: $bareSlugs, schemaSlugs: $schemaSlugs);
-			}
-
-			return;
+	private function seedReferenceTargetUuid(array $targetData, ?string $appId): mixed {
+		[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
+		if ($registerObject === null || $schemaObject === null) {
+			return null;
 		}
 
-		if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
-			return;
-		}
-
-		$reference = substr($value, strlen('@ref:'));
-		if (str_contains($reference, ':') === true) {
-			$schemaSlugs[$reference] = true;
-			return;
-		}
-
-		$bareSlugs[$reference] = true;
-	}//end collectRefTargets()
-
-	/**
-	 * Recursively replace `@ref:` tokens in a value with resolved target UUIDs.
-	 *
-	 * A token is matched only when it spans the whole string value, in one of:
-	 *  - `@ref:<slug>`               — resolved by slug (must be unambiguous).
-	 *  - `@ref:<schema-slug>:<slug>` — resolved by schema + slug (explicit).
-	 *
-	 * @param mixed $value The property value (scalar, list, or map).
-	 * @param array $uuidBySchemaSlug Map of "schemaSlug:objectSlug" => uuid.
-	 * @param array $uuidBySlug Map of "objectSlug" => uuid.
-	 * @param array $ambiguousSlugs Set of slugs that map to multiple objects.
-	 *
-	 * @return mixed The value with any `@ref:` tokens replaced.
-	 */
-	private function replaceRefTokens(
-		mixed $value,
-		array $uuidBySchemaSlug,
-		array $uuidBySlug,
-		array $ambiguousSlugs,
-	): mixed {
-		if (is_array($value) === true) {
-			foreach ($value as $key => $item) {
-				$value[$key] = $this->replaceRefTokens(
-					value: $item,
-					uuidBySchemaSlug: $uuidBySchemaSlug,
-					uuidBySlug: $uuidBySlug,
-					ambiguousSlugs: $ambiguousSlugs
-				);
-			}
-
-			return $value;
-		}
-
-		if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
-			return $value;
-		}
-
-		$reference = substr($value, strlen('@ref:'));
-		$schemaSlug = null;
-		$objectSlug = $reference;
-		if (str_contains($reference, ':') === true) {
-			[$schemaSlug, $objectSlug] = explode(':', $reference, 2);
-		}
-
-		if ($schemaSlug !== null && $schemaSlug !== '') {
-			if (array_key_exists($schemaSlug . ':' . $objectSlug, $uuidBySchemaSlug) === true) {
-				return $uuidBySchemaSlug[$schemaSlug . ':' . $objectSlug];
-			}
-
-			$this->logger->warning(
-				message: '[ImportHandler] Unresolved seed reference "' . $value . '" — no imported object for that schema+slug.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $value;
-		}
-
-		if (array_key_exists($objectSlug, $ambiguousSlugs) === true) {
-			$this->logger->warning(
-				message: '[ImportHandler] Ambiguous seed reference "' . $value . '"; slug exists in '
-					. 'multiple schemas — use @ref:<schema>:<slug>. Left unresolved.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $value;
-		}
-
-		if (array_key_exists($objectSlug, $uuidBySlug) === true) {
-			return $uuidBySlug[$objectSlug];
-		}
-
-		$this->logger->warning(
-			message: '[ImportHandler] Unresolved seed reference "' . $value . '" — no imported object with that slug.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
+		$uuid = $this->findExistingSeedUuid(
+			register: $registerObject,
+			schema: $schemaObject,
+			slug: $targetData['@self']['slug']
 		);
+		if (empty($uuid) === true) {
+			$uuid = $targetData['@self']['id'] ?? null;
+		}
 
-		return $value;
-	}//end replaceRefTokens()
+		if (empty($uuid) === true) {
+			$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+		}
+
+		return $uuid;
+	}//end seedReferenceTargetUuid()
 
 	/**
 	 * Resolve a seed object's `@self` register + schema slugs to their entities,
@@ -4087,347 +4428,39 @@ class ImportHandler {
 	 *     rules: array
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       App import requires many conditional transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration lookup and metadata mapping has many branches
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) App import with entity tracking requires detailed logic
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function importFromApp(string $appId, array $data, string $version, bool $force = false): array {
 		try {
-			// Ensure data is consistently an array by converting any stdClass objects.
-			$data = $this->ensureArrayStructure(data: $data);
+			$import = new AppImport(
+				appId: $appId,
+				data: $this->ensureArrayStructure(data: $data),
+				version: $version,
+				force: $force
+			);
 
-			// Try to find existing configuration for this app.
-			// First check by sourceUrl (unique identifier), then by appId.
-			$configuration = null;
-			$xOpenregister = $data['x-openregister'] ?? [];
-			$sourceUrl = $xOpenregister['sourceUrl'] ?? null;
+			$configuration = ($this->findAppConfiguration(import: $import) ?? $this->createAppConfiguration(import: $import));
 
-			// If sourceUrl is provided, try to find by sourceUrl first (ensures uniqueness).
-			if ($sourceUrl !== null) {
-				try {
-					$configuration = $this->configurationMapper->findBySourceUrl($sourceUrl, systemLookup: true);
-					if ($configuration !== null) {
-						$this->logger->debug(
-							message: '[ImportHandler] Found existing configuration by sourceUrl',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'sourceUrl' => $sourceUrl,
-								'configurationId' => $configuration->getId(),
-								'currentVersion' => $configuration->getVersion(),
-							]
-						);
-					}
-				} catch (Exception $e) {
-					// No configuration found by sourceUrl.
-				}
-			}
-
-			// If not found by sourceUrl, try by appId.
-			if ($configuration === null) {
-				try {
-					$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
-					if (count($configurations) > 0) {
-						// Use the first (most recent) configuration.
-						$configuration = $configurations[0];
-						$this->logger->debug(
-							message: "[ImportHandler] Found existing configuration for app {$appId}",
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'configurationId' => $configuration->getId(),
-								'currentVersion' => $configuration->getVersion(),
-							]
-						);
-
-						// Check version and decide if we should update or skip.
-						$existingVersion = $configuration->getVersion() ?? '0.0.0';
-						$newVersion = $version ?? '0.0.0';
-
-						// Only skip if not forced AND version is not newer.
-						// Note: We deliberately do NOT early-return here, even when skipping,
-						// because we still want to check for seedData changes.
-						// The importFromJson method will handle version checks for schemas/registers.
-						if ($force === false && version_compare($newVersion, $existingVersion, '<=') === true) {
-							$msg = "Config version ({$existingVersion}) up-to-date, checking seedData";
-							$this->logger->debug(
-								message: '[ImportHandler] ' . $msg,
-								context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId, 'force' => $force]
-							);
-							// Continue to importFromJson, which will skip schemas/registers but may import seedData.
-						}
-					}//end if
-				} catch (Exception $e) {
-					// No existing configuration found, we'll create a new one.
-					$this->logger->debug(
-						message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-				}//end try
-			}//end if
-
-			// Create new configuration if none exists.
-			if ($configuration === null) {
-				$configuration = new Configuration();
-
-				// Extract metadata following OAS standard first, then x-openregister extension.
-				$info = $data['info'] ?? [];
-				$xOpenregister = $data['x-openregister'] ?? [];
-
-				// Standard OAS properties from info section.
-				$defaultTitle = "Configuration for {$appId}";
-				$defaultDesc = "Configuration imported by application {$appId}";
-				$title = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? $defaultTitle;
-				$desc = $info['description'] ?? $xOpenregister['description'] ?? $data['description'];
-				$description = $desc ?? $defaultDesc;
-
-				// OpenRegister-specific properties.
-				$type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
-
-				$configuration->setTitle($title);
-				$configuration->setDescription($description);
-				$configuration->setType($type);
-				$configuration->setApp($appId);
-				$configuration->setVersion($version);
-
-				// Mark as local configuration (maintained by the app).
-				$configuration->setIsLocal(true);
-				$configuration->setSyncEnabled(false);
-				$configuration->setSyncStatus('never');
-
-				// Set version requirements from x-openregister if available.
-				if (($xOpenregister['openregister'] ?? null) !== null) {
-					$configuration->setOpenregister($xOpenregister['openregister']);
-				}
-
-				// Set additional metadata from x-openregister if available.
-				// Note: Internal properties (autoUpdate, notificationGroups, owner, organisation).
-				// Are not imported as they are instance-specific settings.
-				if (($xOpenregister['sourceType'] ?? null) !== null) {
-					$configuration->setSourceType($xOpenregister['sourceType']);
-				}
-
-				if (($xOpenregister['sourceUrl'] ?? null) !== null) {
-					$configuration->setSourceUrl($xOpenregister['sourceUrl']);
-				}
-
-				// Support both nested github structure (new) and flat structure (backward compatibility).
-				if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
-					// New nested structure.
-					if (($xOpenregister['github']['repo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['github']['repo']);
-					}
-
-					if (($xOpenregister['github']['branch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['github']['branch']);
-					}
-
-					if (($xOpenregister['github']['path'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['github']['path']);
-					}
-				}
-
-				if (($xOpenregister['github'] ?? null) === null || is_array($xOpenregister['github']) === false) {
-					// Legacy flat structure (backward compatibility).
-					if (($xOpenregister['githubRepo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['githubRepo']);
-					}
-
-					if (($xOpenregister['githubBranch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['githubBranch']);
-					}
-
-					if (($xOpenregister['githubPath'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['githubPath']);
-					}
-				}//end if
-
-				$configuration->setRegisters([]);
-				$configuration->setSchemas([]);
-				$configuration->setObjects([]);
-
-				// Insert the configuration to get an ID.
-				$configuration = $this->configurationMapper->insert($configuration);
-
-				$this->logger->debug(
-					message: "[ImportHandler] Created new configuration for app {$appId}",
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'configurationId' => $configuration->getId(),
-						'version' => $version,
-					]
-				);
-			}//end if
-
-			// Perform the import using the configuration entity, under its own
-			// import job id so the objects it creates can be removed by job
-			// later (a setup wizard's "remove this example set").
+			// Run under its own import job id so the objects it creates can be
+			// removed by job later (a setup wizard's "remove this example set").
 			$result = $this->importFromJsonAsJob(
-				data: $data,
+				data: $import->data,
 				configuration: $configuration,
 				appId: $appId,
 				version: $version,
 				force: $force
 			);
 
-			// Update the configuration with the import results.
+			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
 			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
-				// Merge imported entity IDs with existing ones.
-				$existingRegisterIds = $configuration->getRegisters() ?? [];
-				$existingSchemaIds = $configuration->getSchemas() ?? [];
-				$existingObjectIds = $configuration->getObjects() ?? [];
-
-				foreach ($result['registers'] as $register) {
-					$isRegister = $register instanceof Register;
-					$alreadyExists = in_array($register->getId(), $existingRegisterIds, true);
-					if ($isRegister === true && $alreadyExists === false) {
-						$existingRegisterIds[] = $register->getId();
-					}
-				}
-
-				foreach ($result['schemas'] as $schema) {
-					if ($schema instanceof Schema && in_array($schema->getId(), $existingSchemaIds, true) === false) {
-						$existingSchemaIds[] = $schema->getId();
-					}
-				}
-
-				foreach ($result['objects'] as $object) {
-					if ($object instanceof ObjectEntity && in_array($object->getId(), $existingObjectIds, true) === false) {
-						$existingObjectIds[] = $object->getId();
-					}
-				}
-
-				$configuration->setRegisters($existingRegisterIds);
-				$configuration->setSchemas($existingSchemaIds);
-				$configuration->setObjects($existingObjectIds);
-				$configuration->setVersion($version);
-
-				// Update metadata following OAS standard first, then x-openregister extension.
-				// This ensures sourceUrl and other tracking info stays current.
-				$info = $data['info'] ?? [];
-				$xOpenregister = $data['x-openregister'] ?? [];
-
-				// Standard OAS properties from info section.
-				if (($info['title'] ?? null) !== null) {
-					$configuration->setTitle($info['title']);
-				} elseif (($xOpenregister['title'] ?? null) !== null) {
-					$configuration->setTitle($xOpenregister['title']);
-				}
-
-				if (($info['description'] ?? null) !== null) {
-					$configuration->setDescription($info['description']);
-				} elseif (($xOpenregister['description'] ?? null) !== null) {
-					$configuration->setDescription($xOpenregister['description']);
-				}
-
-				// OpenRegister-specific properties from x-openregister.
-				if (($xOpenregister['sourceType'] ?? null) !== null) {
-					$configuration->setSourceType($xOpenregister['sourceType']);
-				}
-
-				if (($xOpenregister['sourceUrl'] ?? null) !== null) {
-					$configuration->setSourceUrl($xOpenregister['sourceUrl']);
-				}
-
-				// Update github properties (nested or flat).
-				if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
-					if (($xOpenregister['github']['repo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['github']['repo']);
-					}
-
-					if (($xOpenregister['github']['branch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['github']['branch']);
-					}
-
-					if (($xOpenregister['github']['path'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['github']['path']);
-					}
-				}
-
-				if (($xOpenregister['github'] ?? null) === null || is_array($xOpenregister['github']) === false) {
-					// Legacy flat structure.
-					if (($xOpenregister['githubRepo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['githubRepo']);
-					}
-
-					if (($xOpenregister['githubBranch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['githubBranch']);
-					}
-
-					if (($xOpenregister['githubPath'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['githubPath']);
-					}
-				}//end if
-
-				$this->configurationMapper->update($configuration);
-
-				$this->logger->debug(
-					message: "[ImportHandler] Updated configuration entity for app {$appId}",
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'configurationId' => $configuration->getId(),
-						'totalRegisters' => count($existingRegisterIds ?? []),
-						'totalSchemas' => count($existingSchemaIds ?? []),
-						'totalObjects' => count($existingObjectIds ?? []),
-					]
-				);
-			}//end if
-
-			// **AUTO-REGISTER CREATION (runtime-schema-api / data-import-export spec)**:
-			// When a runtime caller (e.g. OpenBuild's schema editor) imports an OAS
-			// marked as `x-openregister.type=application`, the installer-time `repair`
-			// step that normally provisions a Register row does NOT run. Without this
-			// step, the smoke-test foot-gun reappears: schemas exist but no Register
-			// wraps them, so slug-aware searches return zero. This block closes that gap.
-			$this->autoCreateRegisterIfApplication(
-				data: $data,
-				appId: $appId,
-				schemas: $result['schemas'],
-				configuration: $configuration,
-				result: $result
-			);
-
-			// REGISTER FOLDERS AT IMPORT (register-folder-at-import): an
-			// API-created register gets its Files folder at creation; an
-			// app-imported one did not, so the first upload had to make it
-			// (portaliq#29). Every register this import returned, including an
-			// auto-created one, gets its folder here. The id is recorded as
-			// bookkeeping (no update event, no organisation check) and a
-			// failure is logged, never thrown: the first upload still makes it.
-			try {
-				$this->folderProvisioner?->ensureFolders(registers: ($result['registers'] ?? []));
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: "[ImportHandler] Register folder provisioning failed for app {$appId}: " . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
+				$this->trackAppImportResult(import: $import, update: $update);
 			}
 
-			// MAGIC-TABLE COLUMN SYNC (fixes #2082): reconcile the physical
-			// table of EVERY imported schema, in every register that holds it.
-			//
-			// The two pre-existing ensureTableForRegisterSchema() call sites
-			// only cover (a) registers that were just auto-created and (b)
-			// schemas that ship seed objects. An EXISTING schema in an
-			// EXISTING register with no seed data — by far the common case for
-			// an app shipping a `register.d` fragment that adds a property —
-			// was never reconciled, so the new column was simply absent until
-			// something happened to write an object of that type.
-			//
-			// Observed 2026-07-24 on softwarecatalog: `beoordeeling` gained a
-			// `status` property and `gebruik` gained TIME fields; neither
-			// column existed afterwards, not even after a FORCED re-import.
-			// Because the schema's own RBAC read rule matched on `status`, the
-			// generated SQL referenced a non-existent column and EVERY read —
-			// including the anonymous public path — returned HTTP 500.
-			$this->ensureMagicTablesForImportedSchemas(schemas: $result['schemas'] ?? []);
+			$this->finishAppImport(import: $import, update: $update);
 
-			return $result;
+			return $update->result;
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: "[ImportHandler] Failed to import configuration for app {$appId}: " . $e->getMessage(),
@@ -4436,6 +4469,325 @@ class ImportHandler {
 			throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
 		}//end try
 	}//end importFromApp()
+
+	/**
+	 * Find the Configuration an app import updates: by its `sourceUrl`
+	 * first, which is unique, then by the app id.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return Configuration|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function findAppConfiguration(AppImport $import): ?Configuration {
+		$sourceUrl = ($import->extension()['sourceUrl'] ?? null);
+		if ($sourceUrl !== null) {
+			try {
+				$configuration = $this->configurationMapper->findBySourceUrl($sourceUrl, systemLookup: true);
+				if ($configuration !== null) {
+					$this->logger->debug(
+						message: '[ImportHandler] Found existing configuration by sourceUrl',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'sourceUrl' => $sourceUrl,
+							'configurationId' => $configuration->getId(),
+							'currentVersion' => $configuration->getVersion(),
+						]
+					);
+					return $configuration;
+				}
+			} catch (Exception $e) {
+				// No configuration found by sourceUrl.
+			}
+		}//end if
+
+		return $this->findAppConfigurationByApp(import: $import);
+	}//end findAppConfiguration()
+
+	/**
+	 * Find the most recent Configuration of the importing app.
+	 *
+	 * An up-to-date version is only logged: the import still runs, because
+	 * importFromJson() skips unchanged schemas and registers but may still
+	 * import seed data.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return Configuration|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function findAppConfigurationByApp(AppImport $import): ?Configuration {
+		$appId = $import->appId;
+		try {
+			$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+		if (count($configurations) === 0) {
+			return null;
+		}
+
+		$configuration = $configurations[0];
+		$this->logger->debug(
+			message: "[ImportHandler] Found existing configuration for app {$appId}",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'configurationId' => $configuration->getId(),
+				'currentVersion' => $configuration->getVersion(),
+			]
+		);
+
+		$existingVersion = $configuration->getVersion() ?? '0.0.0';
+		if ($import->force === false && version_compare($import->version, $existingVersion, '<=') === true) {
+			$this->logger->debug(
+				message: "[ImportHandler] Config version ({$existingVersion}) up-to-date, checking seedData",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId, 'force' => $import->force]
+			);
+		}
+
+		return $configuration;
+	}//end findAppConfigurationByApp()
+
+	/**
+	 * Create and insert the Configuration of a first app import.
+	 *
+	 * Title and description follow the OAS `info` block first, then the
+	 * `x-openregister` extension, then the top level. Instance-specific
+	 * settings (autoUpdate, notificationGroups, owner, organisation) are not
+	 * imported.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return Configuration
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createAppConfiguration(AppImport $import): Configuration {
+		$appId = $import->appId;
+		$data  = $import->data;
+		$info  = $import->info();
+		$xOpenregister = $import->extension();
+
+		$configuration = new Configuration();
+		$configuration->setTitle($info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}");
+		$configuration->setDescription(
+			$info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}"
+		);
+		$configuration->setType($xOpenregister['type'] ?? $data['type'] ?? 'app');
+		$configuration->setApp($appId);
+		$configuration->setVersion($import->version);
+
+		// A local configuration is maintained by the app.
+		$configuration->setIsLocal(true);
+		$configuration->setSyncEnabled(false);
+		$configuration->setSyncStatus('never');
+
+		if (($xOpenregister['openregister'] ?? null) !== null) {
+			$configuration->setOpenregister($xOpenregister['openregister']);
+		}
+
+		$this->applyConfigurationSource(configuration: $configuration, xOpenregister: $xOpenregister);
+
+		$configuration->setRegisters([]);
+		$configuration->setSchemas([]);
+		$configuration->setObjects([]);
+
+		$configuration = $this->configurationMapper->insert($configuration);
+
+		$this->logger->debug(
+			message: "[ImportHandler] Created new configuration for app {$appId}",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'configurationId' => $configuration->getId(),
+				'version' => $import->version,
+			]
+		);
+
+		return $configuration;
+	}//end createAppConfiguration()
+
+	/**
+	 * Copy the source type, source url and GitHub location from the
+	 * `x-openregister` extension onto a Configuration.
+	 *
+	 * GitHub is read from the nested `github` object, or from the flat
+	 * `githubRepo` / `githubBranch` / `githubPath` keys when there is none.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 * @param mixed         $xOpenregister The `x-openregister` extension block.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function applyConfigurationSource(Configuration $configuration, mixed $xOpenregister): void {
+		if (($xOpenregister['sourceType'] ?? null) !== null) {
+			$configuration->setSourceType($xOpenregister['sourceType']);
+		}
+
+		if (($xOpenregister['sourceUrl'] ?? null) !== null) {
+			$configuration->setSourceUrl($xOpenregister['sourceUrl']);
+		}
+
+		$github = [
+			'repo'   => ($xOpenregister['githubRepo'] ?? null),
+			'branch' => ($xOpenregister['githubBranch'] ?? null),
+			'path'   => ($xOpenregister['githubPath'] ?? null),
+		];
+		if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
+			$github = [
+				'repo'   => ($xOpenregister['github']['repo'] ?? null),
+				'branch' => ($xOpenregister['github']['branch'] ?? null),
+				'path'   => ($xOpenregister['github']['path'] ?? null),
+			];
+		}
+
+		if ($github['repo'] !== null) {
+			$configuration->setGithubRepo($github['repo']);
+		}
+
+		if ($github['branch'] !== null) {
+			$configuration->setGithubBranch($github['branch']);
+		}
+
+		if ($github['path'] !== null) {
+			$configuration->setGithubPath($github['path']);
+		}
+	}//end applyConfigurationSource()
+
+	/**
+	 * Record what an app import brought in on its Configuration: the ids of
+	 * the registers, schemas and objects, the version, and the current
+	 * title, description and source.
+	 *
+	 * @param AppImport                   $import The app import.
+	 * @param ImportedConfigurationUpdate $update The configuration and the import result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function trackAppImportResult(AppImport $import, ImportedConfigurationUpdate $update): void {
+		$configuration = $update->configuration;
+		$result        = $update->result;
+
+		$registerIds = $this->appendNewEntityIds(
+			ids: ($configuration->getRegisters() ?? []),
+			entities: array_filter($result['registers'], static fn ($entity): bool => $entity instanceof Register)
+		);
+		$schemaIds   = $this->appendNewEntityIds(
+			ids: ($configuration->getSchemas() ?? []),
+			entities: array_filter($result['schemas'], static fn ($entity): bool => $entity instanceof Schema)
+		);
+		$objectIds   = $this->appendNewEntityIds(
+			ids: ($configuration->getObjects() ?? []),
+			entities: array_filter($result['objects'], static fn ($entity): bool => $entity instanceof ObjectEntity)
+		);
+
+		$configuration->setRegisters($registerIds);
+		$configuration->setSchemas($schemaIds);
+		$configuration->setObjects($objectIds);
+		$configuration->setVersion($import->version);
+
+		$info          = $import->info();
+		$xOpenregister = $import->extension();
+		$title         = ($info['title'] ?? $xOpenregister['title'] ?? null);
+		if ($title !== null) {
+			$configuration->setTitle($title);
+		}
+
+		$description = ($info['description'] ?? $xOpenregister['description'] ?? null);
+		if ($description !== null) {
+			$configuration->setDescription($description);
+		}
+
+		$this->applyConfigurationSource(configuration: $configuration, xOpenregister: $xOpenregister);
+
+		$this->configurationMapper->update($configuration);
+
+		$this->logger->debug(
+			message: "[ImportHandler] Updated configuration entity for app {$import->appId}",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'configurationId' => $configuration->getId(),
+				'totalRegisters' => count($registerIds),
+				'totalSchemas' => count($schemaIds),
+				'totalObjects' => count($objectIds),
+			]
+		);
+	}//end trackAppImportResult()
+
+	/**
+	 * Append the ids of entities not yet in the list.
+	 *
+	 * @param array<int, mixed>               $ids      The ids already tracked.
+	 * @param array<int|string, \OCP\AppFramework\Db\Entity> $entities The imported entities.
+	 *
+	 * @return array<int, mixed>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function appendNewEntityIds(array $ids, array $entities): array {
+		foreach ($entities as $entity) {
+			if (in_array($entity->getId(), $ids, true) === false) {
+				$ids[] = $entity->getId();
+			}
+		}
+
+		return $ids;
+	}//end appendNewEntityIds()
+
+	/**
+	 * The steps every app import ends with: an application register when the
+	 * data declares one, a Files folder per register, and a magic-table
+	 * sync per imported schema.
+	 *
+	 * The application register closes the gap a runtime caller leaves: it
+	 * skips the installer's repair step, so without it the schemas exist
+	 * but no register wraps them. A folder failure is logged, never thrown;
+	 * the first upload still makes the folder. The magic-table sync reaches
+	 * an existing schema in an existing register that ships no seed data,
+	 * which no other step reconciles (#2082).
+	 *
+	 * @param AppImport                   $import The app import.
+	 * @param ImportedConfigurationUpdate $update The configuration and the import result; an
+	 *                                            auto-created register is added to the result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function finishAppImport(AppImport $import, ImportedConfigurationUpdate $update): void {
+		$this->autoCreateRegisterIfApplication(
+			data: $import->data,
+			appId: $import->appId,
+			schemas: $update->result['schemas'],
+			configuration: $update->configuration,
+			result: $update->result
+		);
+
+		try {
+			$this->folderProvisioner?->ensureFolders(registers: ($update->result['registers'] ?? []));
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: "[ImportHandler] Register folder provisioning failed for app {$import->appId}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		$this->ensureMagicTablesForImportedSchemas(schemas: $update->result['schemas'] ?? []);
+	}//end finishAppImport()
 
 	/**
 	 * Run importFromJson() for an app under its own import job id.
@@ -4611,8 +4963,7 @@ class ImportHandler {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-branch auto-create / reconcile logic.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Idempotent insert-or-update with multiple optional fields.
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function autoCreateRegisterIfApplication(
 		array $data,
@@ -4621,35 +4972,13 @@ class ImportHandler {
 		Configuration $configuration,
 		array &$result,
 	): void {
-		$xOpenregister = $data['x-openregister'] ?? [];
-		$type = $xOpenregister['type'] ?? null;
-
-		// Only trigger on `application`-typed configurations.
-		if ($type !== 'application') {
+		$details = $this->applicationRegisterDetails(data: $data, appId: $appId);
+		if ($details === null) {
 			return;
 		}
 
-		// Derive register attributes from the OAS document.
-		$info = $data['info'] ?? [];
-		$slug = $xOpenregister['app'] ?? $appId;
-		if (is_string($slug) === false || $slug === '') {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
-			);
-			return;
-		}
-
-		$title = $info['title'] ?? $xOpenregister['title'] ?? $appId;
-		$description = $info['description'] ?? $xOpenregister['description'] ?? null;
-
-		// Collect numeric schema IDs from the import result.
-		$newSchemaIds = [];
-		foreach ($schemas as $schema) {
-			if ($schema instanceof Schema && $schema->getId() !== null) {
-				$newSchemaIds[] = (int)$schema->getId();
-			}
-		}
+		$details['schemas'] = $schemas;
+		$details['schemaIds'] = self::savedSchemaIds(schemas: $schemas);
 
 		// Idempotent lookup on (slug, organisationId). The find cache on
 		// RegisterMapper already keys by slug, so this is cheap.
@@ -4659,139 +4988,23 @@ class ImportHandler {
 		$existingRegisters = $this->registerMapper->findAll(
 			limit: 1,
 			offset: 0,
-			filters: ['slug' => $slug],
+			filters: ['slug' => $details['slug']],
 			_rbac: false,
 			_multitenancy: true
 		);
 
 		$register = null;
 		if (count($existingRegisters) > 0) {
-			$register = $existingRegisters[0];
-
-			// Reconcile: refresh title/description and union schema IDs.
-			$register->setTitle($title);
-			if ($description !== null) {
-				$register->setDescription($description);
-			}
-
-			// Reconcile schema references. Union the freshly-imported (app-owned)
-			// ids in, but first PRUNE any currently-listed id that is now
-			// SHADOWED by a newly-imported schema sharing the same slug. This
-			// self-heals a register that — before the cross-app slug-collision
-			// fix — had a FOREIGN app's same-slug schema bound into it (e.g.
-			// pipelinq's 'conversation' #701 living in hermiq's register). Once
-			// the app imports its OWN 'conversation', the foreign shadow is
-			// dropped from THIS app's register so a slug resolves unambiguously
-			// to the app's own schema.
-			$currentSchemaIds = $register->getSchemas() ?? [];
-
-			// Map lower(slug) -> app-owned id for everything we just imported.
-			$newSlugToId = [];
-			foreach ($schemas as $schema) {
-				if ($schema instanceof Schema
-					&& $schema->getId() !== null
-					&& $schema->getSlug() !== null
-				) {
-					$newSlugToId[strtolower($schema->getSlug())] = (int)$schema->getId();
-				}
-			}
-
-			// Drop any currently-listed id whose slug matches a freshly-imported
-			// schema but whose id differs (the shadowed, foreign/stale one).
-			$prunedSchemaIds = [];
-			foreach ($currentSchemaIds as $currentId) {
-				$currentId = (int)$currentId;
-				$keep = true;
-				try {
-					$existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
-					if ($existingSlug !== null) {
-						$slugKey = strtolower($existingSlug);
-						if (isset($newSlugToId[$slugKey]) === true && $newSlugToId[$slugKey] !== $currentId) {
-							$keep = false;
-							$this->logger->debug(
-								message: sprintf(
-									"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
-									$slug,
-									$currentId,
-									$existingSlug,
-									$newSlugToId[$slugKey]
-								),
-								context: ['file' => __FILE__, 'line' => __LINE__]
-							);
-						}
-					}
-				} catch (\Throwable $ignore) {
-					// Missing / undecodable schema id — keep it as-is; nothing to compare against.
-				}//end try
-
-				if ($keep === true) {
-					$prunedSchemaIds[] = $currentId;
-				}
-			}//end foreach
-
-			// Union the freshly-imported app-owned ids into the pruned list.
-			$unionSchemaIds = $prunedSchemaIds;
-			foreach ($newSchemaIds as $newId) {
-				if (in_array($newId, $unionSchemaIds, true) === false) {
-					$unionSchemaIds[] = $newId;
-				}
-			}
-
-			$register->setSchemas($unionSchemaIds);
-			$register = $this->registerMapper->update($register);
-
-			$this->logger->debug(
-				message: '[ImportHandler] Auto-Register reconciled (idempotent re-import)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'slug' => $slug,
-					'unionSchemaIds' => $unionSchemaIds,
-				]
-			);
-		}//end if
+			$register = $this->reconcileApplicationRegister(register: $existingRegisters[0], details: $details);
+		}
 
 		if ($register === null) {
-			// Fresh insert: derive a new Register entity.
-			$register = $this->registerMapper->createFromArray(
-				object: [
-					'title' => $title,
-					'description' => $description ?? '',
-					'slug' => $slug,
-					'schemas' => $newSchemaIds,
-					'source' => 'import',
-				]
-			);
-
-			// Info: a register was CREATED. Structural and rare.
-			$this->logger->info(
-				message: '[ImportHandler] Auto-Register created from x-openregister.type=application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'slug' => $slug,
-					'schemaIds' => $newSchemaIds,
-				]
-			);
-		}//end if
+			$register = $this->createApplicationRegister(details: $details);
+		}
 
 		// Surface the auto-created register in the import result so callers
 		// see a complete (Configuration, Schemas, Register) triple.
-		$resultRegisters = $result['registers'] ?? [];
-		$alreadyPresent = false;
-		foreach ($resultRegisters as $existing) {
-			if ($existing instanceof Register && $existing->getId() === $register->getId()) {
-				$alreadyPresent = true;
-				break;
-			}
-		}
-
-		if ($alreadyPresent === false) {
-			$resultRegisters[] = $register;
-			$result['registers'] = $resultRegisters;
-		}
+		$result['registers'] = self::withRegister(registers: ($result['registers'] ?? []), register: $register);
 
 		// Keep the Configuration entity's registers[] field in sync so the
 		// triple stays consistent and a follow-up `_extend=registers` GET
@@ -4803,47 +5016,266 @@ class ImportHandler {
 			$this->configurationMapper->update($configuration);
 		}
 
-		// EAGER MAGIC-TABLE CREATION (fixes #1615): provision the per-schema
-		// magic table for EVERY imported schema, not just those that ship
-		// seed data. Without this, log-style schemas (call_log, job_log,
-		// synchronization_log, …) — which typically have no seed data —
-		// never get their `oc_openregister_table_{registerId}_{schemaId}`
-		// table created on `occ app:enable`, and the first runtime write
-		// from a service like CallService throws "relation does not exist".
-		//
-		// Idempotent on re-import: ensureTableForRegisterSchema short-
-		// circuits when the table already exists (see MagicTableHandler
-		// line 109-112). The seed-objects loop further down still calls
-		// the same method as a defensive no-op.
 		if ($this->magicMapper !== null) {
-			foreach ($schemas as $schema) {
-				if ($schema instanceof Schema === false) {
-					continue;
-				}
-
-				try {
-					$this->magicMapper->ensureTableForRegisterSchema(
-						register: $register,
-						schema: $schema
-					);
-				} catch (\Exception $e) {
-					// Non-fatal: surfaced via logger so the rest of the
-					// import (other schemas, seed data) still completes.
-					$this->logger->warning(
-						message: '[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schema_id' => $schema->getId(),
-							'schema_slug' => $schema->getSlug(),
-							'register_id' => $register->getId(),
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
+			$this->ensureApplicationMagicTables(register: $register, schemas: $schemas);
+		}
 	}//end autoCreateRegisterIfApplication()
+
+	/**
+	 * The slug, title and description of the register an `application` configuration declares.
+	 *
+	 * Null when the configuration is not of type `application`, or when it
+	 * names no usable slug (which is logged).
+	 *
+	 * @param array  $data  The full OAS document.
+	 * @param string $appId The app identifier, the fallback slug and title.
+	 *
+	 * @return array{slug: string, title: mixed, description: mixed}|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function applicationRegisterDetails(array $data, string $appId): ?array {
+		$xOpenregister = $data['x-openregister'] ?? [];
+		if (($xOpenregister['type'] ?? null) !== 'application') {
+			return null;
+		}
+
+		$slug = $xOpenregister['app'] ?? $appId;
+		if (is_string($slug) === false || $slug === '') {
+			$this->logger->warning(
+				message: '[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
+			);
+			return null;
+		}
+
+		$info = $data['info'] ?? [];
+		return [
+			'slug' => $slug,
+			'title' => $info['title'] ?? $xOpenregister['title'] ?? $appId,
+			'description' => $info['description'] ?? $xOpenregister['description'] ?? null,
+		];
+	}//end applicationRegisterDetails()
+
+	/**
+	 * The ids of the imported schemas that have been saved.
+	 *
+	 * @param array $schemas The imported schemas.
+	 *
+	 * @return array<int, int>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function savedSchemaIds(array $schemas): array {
+		$ids = [];
+		foreach ($schemas as $schema) {
+			if ($schema instanceof Schema && $schema->getId() !== null) {
+				$ids[] = (int)$schema->getId();
+			}
+		}
+
+		return $ids;
+	}//end savedSchemaIds()
+
+	/**
+	 * Create the register an `application` configuration declares.
+	 *
+	 * @param array<string, mixed> $details The slug, title, description and saved schema ids.
+	 *
+	 * @return Register
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createApplicationRegister(array $details): Register {
+		$register = $this->registerMapper->createFromArray(
+			object: [
+				'title' => $details['title'],
+				'description' => $details['description'] ?? '',
+				'slug' => $details['slug'],
+				'schemas' => $details['schemaIds'],
+				'source' => 'import',
+			]
+		);
+
+		// Info: a register was CREATED. Structural and rare.
+		$this->logger->info(
+			message: '[ImportHandler] Auto-Register created from x-openregister.type=application',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'slug' => $details['slug'],
+				'schemaIds' => $details['schemaIds'],
+			]
+		);
+
+		return $register;
+	}//end createApplicationRegister()
+
+	/**
+	 * Refresh an existing application register on re-import.
+	 *
+	 * The title and description are refreshed, and the freshly imported
+	 * (app-owned) schema ids are unioned in after pruning any listed id that a
+	 * new schema with the same slug now shadows. That self-heals a register
+	 * that, before the cross-app slug-collision fix, had a FOREIGN app's
+	 * same-slug schema bound into it (e.g. pipelinq's 'conversation' #701
+	 * living in hermiq's register): once the app imports its OWN
+	 * 'conversation', the foreign shadow is dropped so a slug resolves
+	 * unambiguously to the app's own schema.
+	 *
+	 * @param Register             $register The existing register.
+	 * @param array<string, mixed> $details  The slug, title, description, schemas and saved schema ids.
+	 *
+	 * @return Register The updated register.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function reconcileApplicationRegister(Register $register, array $details): Register {
+		$register->setTitle($details['title']);
+		if ($details['description'] !== null) {
+			$register->setDescription($details['description']);
+		}
+
+		$unionSchemaIds = $this->unshadowedSchemaIds(register: $register, details: $details);
+		foreach ($details['schemaIds'] as $newId) {
+			if (in_array($newId, $unionSchemaIds, true) === false) {
+				$unionSchemaIds[] = $newId;
+			}
+		}
+
+		$register->setSchemas($unionSchemaIds);
+		$register = $this->registerMapper->update($register);
+
+		$this->logger->debug(
+			message: '[ImportHandler] Auto-Register reconciled (idempotent re-import)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'slug' => $details['slug'],
+				'unionSchemaIds' => $unionSchemaIds,
+			]
+		);
+
+		return $register;
+	}//end reconcileApplicationRegister()
+
+	/**
+	 * A register's listed schema ids, without those a freshly imported schema shadows.
+	 *
+	 * A listed id is shadowed when its schema's slug matches a newly imported
+	 * schema (case-insensitively) but its id differs. An id whose schema
+	 * cannot be loaded is kept: there is nothing to compare it against.
+	 *
+	 * @param Register             $register The existing register.
+	 * @param array<string, mixed> $details  The register slug and the imported schemas.
+	 *
+	 * @return array<int, int>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function unshadowedSchemaIds(Register $register, array $details): array {
+		$newSlugToId = [];
+		foreach ($details['schemas'] as $schema) {
+			if ($schema instanceof Schema && $schema->getId() !== null && $schema->getSlug() !== null) {
+				$newSlugToId[strtolower($schema->getSlug())] = (int)$schema->getId();
+			}
+		}
+
+		$kept = [];
+		foreach ($register->getSchemas() ?? [] as $currentId) {
+			$currentId = (int)$currentId;
+			try {
+				$existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
+			} catch (\Throwable $ignore) {
+				$existingSlug = null;
+			}
+
+			$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
+			if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $currentId) {
+				$kept[] = $currentId;
+				continue;
+			}
+
+			$this->logger->debug(
+				message: sprintf(
+					"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
+					$details['slug'],
+					$currentId,
+					$existingSlug,
+					$shadowedBy
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}//end foreach
+
+		return $kept;
+	}//end unshadowedSchemaIds()
+
+	/**
+	 * A result's registers with the given one added, unless a register with its id is already there.
+	 *
+	 * @param array    $registers The result's registers.
+	 * @param Register $register  The register to add.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function withRegister(array $registers, Register $register): array {
+		foreach ($registers as $existing) {
+			if ($existing instanceof Register && $existing->getId() === $register->getId()) {
+				return $registers;
+			}
+		}
+
+		$registers[] = $register;
+		return $registers;
+	}//end withRegister()
+
+	/**
+	 * Provision the magic table of every imported schema in an application register.
+	 *
+	 * EAGER MAGIC-TABLE CREATION (fixes #1615): every imported schema, not
+	 * just those that ship seed data. Without this, log-style schemas
+	 * (call_log, job_log, synchronization_log, …), which typically have no
+	 * seed data, never get their `oc_openregister_table_{registerId}_{schemaId}`
+	 * table on `occ app:enable`, and the first runtime write from a service
+	 * like CallService throws "relation does not exist". Idempotent on
+	 * re-import: ensureTableForRegisterSchema short-circuits when the table
+	 * already exists. A failure is logged so the rest of the import completes.
+	 *
+	 * @param Register $register The application register.
+	 * @param array    $schemas  The imported schemas.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function ensureApplicationMagicTables(Register $register, array $schemas): void {
+		foreach ($schemas as $schema) {
+			if ($schema instanceof Schema === false) {
+				continue;
+			}
+
+			try {
+				$this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schema_id' => $schema->getId(),
+						'schema_slug' => $schema->getSlug(),
+						'register_id' => $register->getId(),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+	}//end ensureApplicationMagicTables()
 
 	/**
 	 * Import configuration from a file path.
@@ -4975,10 +5407,6 @@ class ImportHandler {
 	 *
 	 * @throws Exception If configuration creation/update fails.
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Configuration creation requires many conditional checks
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity ID collection and metadata mapping has many branches
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Configuration tracking involves detailed entity management
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function createOrUpdateConfiguration(
@@ -4992,150 +5420,16 @@ class ImportHandler {
 			// Ensure data is consistently an array by converting any stdClass objects.
 			$data = $this->ensureArrayStructure(data: $data);
 
-			// Try to find existing configuration for this app.
-			$existingConfig = null;
-			try {
-				$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
-				if (count($configurations) > 0) {
-					$existingConfig = $configurations[0];
-				}
-			} catch (Exception $e) {
-				// No existing configuration found, we'll create a new one.
-			}
-
-			// Extract metadata following OAS standard first, then x-openregister extension.
-			$info = $data['info'] ?? [];
-			$xOpenregister = $data['x-openregister'] ?? [];
-
-			// Standard OAS properties from info section.
-			$defaultTitle = "Configuration for {$appId}";
-			$defaultDesc = "Imported configuration for application {$appId}";
-			$title = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? $defaultTitle;
-			$description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? $defaultDesc;
-
-			// OpenRegister-specific properties.
-			$type = $xOpenregister['type'] ?? $data['type'] ?? 'imported';
-
-			// Collect IDs of imported entities.
-			$registerIds = [];
-			foreach ($result['registers'] as $register) {
-				if ($register instanceof Register) {
-					$registerIds[] = $register->getId();
-				}
-			}
-
-			$schemaIds = [];
-			foreach ($result['schemas'] as $schema) {
-				if ($schema instanceof Schema) {
-					$schemaIds[] = $schema->getId();
-				}
-			}
-
-			$objectIds = [];
-			foreach ($result['objects'] as $object) {
-				if ($object instanceof ObjectEntity) {
-					$objectIds[] = $object->getId();
-				}
-			}
+			$existingConfig = $this->existingAppConfiguration(appId: $appId);
+			$fields = self::appConfigurationFields(data: $data, appId: $appId)
+				+ ['app' => $appId, 'version' => $version, 'owner' => $owner]
+				+ self::importedEntityIds(result: $result);
 
 			if ($existingConfig !== null) {
-				// Update existing configuration.
-				$existingConfig->setTitle($title);
-				$existingConfig->setDescription($description);
-				$existingConfig->setType($type);
-				$existingConfig->setVersion($version);
+				return $this->updateAppConfiguration(configuration: $existingConfig, fields: $fields);
+			}
 
-				// Merge with existing IDs to avoid losing previously imported entities.
-				$existingRegisterIds = $existingConfig->getRegisters() ?? [];
-				$existingSchemaIds = $existingConfig->getSchemas() ?? [];
-				$existingObjectIds = $existingConfig->getObjects() ?? [];
-
-				$existingConfig->setRegisters(array_unique(array_merge($existingRegisterIds, $registerIds)));
-				$existingConfig->setSchemas(array_unique(array_merge($existingSchemaIds, $schemaIds)));
-				$existingConfig->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
-
-				$configuration = $this->configurationMapper->update($existingConfig);
-				$this->logger->debug(
-					message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}//end if
-
-			if ($existingConfig === null) {
-				// Create new configuration.
-				$configuration = new Configuration();
-				$configuration->setTitle($title);
-				$configuration->setDescription($description);
-				$configuration->setType($type);
-				$configuration->setApp($appId);
-				$configuration->setVersion($version);
-				$configuration->setRegisters($registerIds);
-				$configuration->setSchemas($schemaIds);
-				$configuration->setObjects($objectIds);
-
-				// Mark as local configuration (maintained by the app).
-				$configuration->setIsLocal(true);
-				$configuration->setSyncEnabled(false);
-				$configuration->setSyncStatus('never');
-
-				// Set version requirements from x-openregister if available.
-				if (($xOpenregister['openregister'] ?? null) !== null) {
-					$configuration->setOpenregister($xOpenregister['openregister']);
-				}
-
-				// Set additional metadata from x-openregister if available.
-				if (($xOpenregister['sourceType'] ?? null) !== null) {
-					$configuration->setSourceType($xOpenregister['sourceType']);
-				}
-
-				if (($xOpenregister['sourceUrl'] ?? null) !== null) {
-					$configuration->setSourceUrl($xOpenregister['sourceUrl']);
-				}
-
-				// Support both nested github structure (new) and flat structure (backward compatibility).
-				if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
-					// New nested structure.
-					if (($xOpenregister['github']['repo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['github']['repo']);
-					}
-
-					if (($xOpenregister['github']['branch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['github']['branch']);
-					}
-
-					if (($xOpenregister['github']['path'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['github']['path']);
-					}
-				}
-
-				if (($xOpenregister['github'] ?? null) === null || is_array($xOpenregister['github']) === false) {
-					// Legacy flat structure (backward compatibility).
-					if (($xOpenregister['githubRepo'] ?? null) !== null) {
-						$configuration->setGithubRepo($xOpenregister['githubRepo']);
-					}
-
-					if (($xOpenregister['githubBranch'] ?? null) !== null) {
-						$configuration->setGithubBranch($xOpenregister['githubBranch']);
-					}
-
-					if (($xOpenregister['githubPath'] ?? null) !== null) {
-						$configuration->setGithubPath($xOpenregister['githubPath']);
-					}
-				}//end if
-
-				// Set owner from parameter if provided (for backward compatibility).
-				if ($owner !== null) {
-					$configuration->setOwner($owner);
-				}
-
-				$configuration = $this->configurationMapper->insert($configuration);
-				$this->logger->debug(
-					message: "[ImportHandler] Created new configuration for app {$appId} with version {$version}",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}//end if
-
-			return $configuration;
+			return $this->insertAppConfiguration(fields: $fields);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: "[ImportHandler] Failed to create or update configuration for app {$appId}: " . $e->getMessage(),
@@ -5144,6 +5438,181 @@ class ImportHandler {
 			throw new Exception('Failed to create or update configuration: ' . $e->getMessage());
 		}//end try
 	}//end createOrUpdateConfiguration()
+
+	/**
+	 * The first configuration an app already has, or null when it has none or the lookup fails.
+	 *
+	 * @param string $appId The application ID.
+	 *
+	 * @return Configuration|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function existingAppConfiguration(string $appId): ?Configuration {
+		try {
+			$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
+		} catch (Exception $e) {
+			return null;
+		}
+
+		return ($configurations[0] ?? null);
+	}//end existingAppConfiguration()
+
+	/**
+	 * The title, description and type an import declares, and its `x-openregister` block.
+	 *
+	 * The OAS `info` section wins, then the `x-openregister` extension, then
+	 * the document's top level.
+	 *
+	 * @param array  $data  The import data.
+	 * @param string $appId The application ID, for the default title and description.
+	 *
+	 * @return array{title: mixed, description: mixed, type: mixed, x-openregister: mixed}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function appConfigurationFields(array $data, string $appId): array {
+		$info = $data['info'] ?? [];
+		$xOpenregister = $data['x-openregister'] ?? [];
+
+		return [
+			'title' => $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}",
+			'description' => $info['description'] ?? $xOpenregister['description'] ?? $data['description']
+				?? "Imported configuration for application {$appId}",
+			'type' => $xOpenregister['type'] ?? $data['type'] ?? 'imported',
+			'x-openregister' => $xOpenregister,
+		];
+	}//end appConfigurationFields()
+
+	/**
+	 * The ids of the registers, schemas and objects an import produced.
+	 *
+	 * @param array $result The import result.
+	 *
+	 * @return array{registers: array<int, mixed>, schemas: array<int, mixed>, objects: array<int, mixed>}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function importedEntityIds(array $result): array {
+		$ids = [];
+		foreach (['registers' => Register::class, 'schemas' => Schema::class, 'objects' => ObjectEntity::class] as $kind => $class) {
+			$ids[$kind] = [];
+			foreach ($result[$kind] as $entity) {
+				if ($entity instanceof $class) {
+					$ids[$kind][] = $entity->getId();
+				}
+			}
+		}
+
+		return $ids;
+	}//end importedEntityIds()
+
+	/**
+	 * Update an app's configuration, adding the newly imported ids to the ones it tracks.
+	 *
+	 * @param Configuration        $configuration The existing configuration.
+	 * @param array<string, mixed> $fields        Title, description, type, app, version and imported ids.
+	 *
+	 * @return Configuration The updated configuration.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function updateAppConfiguration(Configuration $configuration, array $fields): Configuration {
+		$configuration->setTitle($fields['title']);
+		$configuration->setDescription($fields['description']);
+		$configuration->setType($fields['type']);
+		$configuration->setVersion($fields['version']);
+
+		// Merge with existing IDs to avoid losing previously imported entities.
+		$configuration->setRegisters(array_unique(array_merge(($configuration->getRegisters() ?? []), $fields['registers'])));
+		$configuration->setSchemas(array_unique(array_merge(($configuration->getSchemas() ?? []), $fields['schemas'])));
+		$configuration->setObjects(array_unique(array_merge(($configuration->getObjects() ?? []), $fields['objects'])));
+
+		$configuration = $this->configurationMapper->update($configuration);
+		$this->logger->debug(
+			message: "[ImportHandler] Updated existing configuration for app {$fields['app']} with version {$fields['version']}",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $configuration;
+	}//end updateAppConfiguration()
+
+	/**
+	 * Create a local configuration for an app, maintained by the app itself.
+	 *
+	 * @param array<string, mixed> $fields Title, description, type, app, version, owner,
+	 *                                     imported ids and the `x-openregister` block.
+	 *
+	 * @return Configuration The inserted configuration.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function insertAppConfiguration(array $fields): Configuration {
+		$configuration = new Configuration();
+		$configuration->setTitle($fields['title']);
+		$configuration->setDescription($fields['description']);
+		$configuration->setType($fields['type']);
+		$configuration->setApp($fields['app']);
+		$configuration->setVersion($fields['version']);
+		$configuration->setRegisters($fields['registers']);
+		$configuration->setSchemas($fields['schemas']);
+		$configuration->setObjects($fields['objects']);
+		$configuration->setIsLocal(true);
+		$configuration->setSyncEnabled(false);
+		$configuration->setSyncStatus('never');
+
+		self::applySourceMetadata(configuration: $configuration, xOpenregister: $fields['x-openregister']);
+
+		// Owner from the caller, for backward compatibility.
+		if ($fields['owner'] !== null) {
+			$configuration->setOwner($fields['owner']);
+		}
+
+		$configuration = $this->configurationMapper->insert($configuration);
+		$this->logger->debug(
+			message: "[ImportHandler] Created new configuration for app {$fields['app']} with version {$fields['version']}",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $configuration;
+	}//end insertAppConfiguration()
+
+	/**
+	 * Copy the version requirement, source and GitHub location an `x-openregister` block declares.
+	 *
+	 * GitHub comes from the nested `github` map, or, when there is none, from
+	 * the legacy flat `githubRepo`/`githubBranch`/`githubPath` keys. A value
+	 * that is absent leaves the field as it is.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 * @param mixed         $xOpenregister The `x-openregister` block.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function applySourceMetadata(Configuration $configuration, mixed $xOpenregister): void {
+		$github = ($xOpenregister['github'] ?? null);
+		$values = [
+			'setOpenregister' => ($xOpenregister['openregister'] ?? null),
+			'setSourceType' => ($xOpenregister['sourceType'] ?? null),
+			'setSourceUrl' => ($xOpenregister['sourceUrl'] ?? null),
+			'setGithubRepo' => ($xOpenregister['githubRepo'] ?? null),
+			'setGithubBranch' => ($xOpenregister['githubBranch'] ?? null),
+			'setGithubPath' => ($xOpenregister['githubPath'] ?? null),
+		];
+		if (is_array($github) === true) {
+			$values['setGithubRepo'] = ($github['repo'] ?? null);
+			$values['setGithubBranch'] = ($github['branch'] ?? null);
+			$values['setGithubPath'] = ($github['path'] ?? null);
+		}
+
+		foreach ($values as $setter => $value) {
+			if ($value !== null) {
+				$configuration->$setter($value);
+			}
+		}
+	}//end applySourceMetadata()
 
 	/**
 	 * Import seed data objects from configuration.
@@ -5792,7 +6261,6 @@ class ImportHandler {
 		$notes = (array)($relatedItems['notes'] ?? []);
 		$tasks = (array)($relatedItems['tasks'] ?? []);
 
-		// Debug: per seed object.
 		$this->logger->debug(
 			message: '[ImportHandler] Processing related items for seed object',
 			context: [
@@ -5806,117 +6274,26 @@ class ImportHandler {
 		);
 
 		$filesCreated = 0;
-		$notesCreated = 0;
-		$tasksCreated = 0;
-
 		if (count($files) > 0 && $this->fileService !== null) {
-			foreach ($files as $fileSpec) {
-				$name = (string)($fileSpec['name'] ?? '');
-				$content = ($fileSpec['content'] ?? null);
-				if ($name === '' || is_string($content) === false) {
-					continue;
-				}
+			$filesCreated = $this->seedRelatedFiles(object: $object, files: $files);
+		}
 
-				$tags = (array)($fileSpec['tags'] ?? []);
-				$share = (bool)($fileSpec['share'] ?? false);
-
-				// `base64:` prefix means the content was encoded; strip + decode.
-				if (str_starts_with($content, 'base64:') === true) {
-					$decoded = base64_decode(substr($content, 7), strict: true);
-					if ($decoded === false) {
-						$this->logger->warning(
-							message: '[ImportHandler] Seed file base64 decode failed - skipping',
-							context: ['object_uuid' => $object->getUuid(), 'name' => $name]
-						);
-						continue;
-					}
-
-					$content = $decoded;
-				}
-
-				try {
-					$this->fileService->addFile($object, $name, $content, $share, $tags);
-					$filesCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed file creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'name' => $name,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
-
-		if (count($notes) > 0 && $this->noteService !== null && $hasUserContext === false) {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping seed notes - no user session available',
-				context: ['object_uuid' => $object->getUuid(), 'count' => count($notes)]
+		// Notes and tasks are written as the logged-in user, so without one they are skipped.
+		$notesCreated = 0;
+		if (count($notes) > 0 && $this->noteService !== null) {
+			$notesCreated = $this->seedRelatedNotes(
+				object: $object,
+				notes: $this->itemsForUser(items: $notes, context: ['kind' => 'notes', 'object' => $object, 'user' => $hasUserContext])
 			);
-		} elseif (count($notes) > 0 && $this->noteService !== null) {
-			foreach ($notes as $noteSpec) {
-				$message = (string)($noteSpec['message'] ?? '');
-				if ($message === '') {
-					continue;
-				}
+		}
 
-				try {
-					$this->noteService->createNote((string)$object->getUuid(), $message);
-					$notesCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed note creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}
-		}//end if
-
-		if (count($tasks) > 0 && $this->taskService !== null && $hasUserContext === false) {
-			$this->logger->warning(
-				message: '[ImportHandler] Skipping seed tasks - no user session available',
-				context: ['object_uuid' => $object->getUuid(), 'count' => count($tasks)]
+		$tasksCreated = 0;
+		if (count($tasks) > 0 && $this->taskService !== null) {
+			$tasksCreated = $this->seedRelatedTasks(
+				tasks: $this->itemsForUser(items: $tasks, context: ['kind' => 'tasks', 'object' => $object, 'user' => $hasUserContext]),
+				owner: ['object' => $object, 'registerId' => $registerId, 'schemaId' => $schemaId, 'title' => $objectTitle]
 			);
-		} elseif (count($tasks) > 0 && $this->taskService !== null) {
-			foreach ($tasks as $taskSpec) {
-				$summary = (string)($taskSpec['summary'] ?? '');
-				if ($summary === '') {
-					continue;
-				}
-
-				$taskData = [
-					'summary' => $summary,
-					'description' => (string)($taskSpec['description'] ?? ''),
-					'status' => (string)($taskSpec['status'] ?? 'needs-action'),
-					'priority' => (int)($taskSpec['priority'] ?? 0),
-					'due' => $taskSpec['due'] ?? null,
-				];
-				try {
-					$this->taskService->createTask(
-						$registerId,
-						$schemaId,
-						(string)$object->getUuid(),
-						$objectTitle,
-						$taskData
-					);
-					$tasksCreated++;
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Seed task creation failed',
-						context: [
-							'object_uuid' => $object->getUuid(),
-							'summary' => $summary,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end if
+		}
 
 		$result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
 		$result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
@@ -5934,6 +6311,165 @@ class ImportHandler {
 			]
 		);
 	}//end processRelatedItems()
+
+	/**
+	 * The seed notes or tasks to create: all of them with a user session, none without one.
+	 *
+	 * @param array                $items   The seed notes or tasks.
+	 * @param array<string, mixed> $context The `kind` (notes or tasks), the `object` and whether a `user` is logged in.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function itemsForUser(array $items, array $context): array {
+		if ($context['user'] === true) {
+			return $items;
+		}
+
+		$this->logger->warning(
+			message: "[ImportHandler] Skipping seed {$context['kind']} - no user session available",
+			context: ['object_uuid' => $context['object']->getUuid(), 'count' => count($items)]
+		);
+
+		return [];
+	}//end itemsForUser()
+
+	/**
+	 * Attach a seed object's files; a `base64:` prefix marks encoded content.
+	 *
+	 * A file without a name or with non-string content is skipped, and so is
+	 * one whose base64 does not decode; a failed write is logged and skipped.
+	 *
+	 * @param ObjectEntity $object The seed object.
+	 * @param array        $files  The file specs: name, content, tags, share.
+	 *
+	 * @return int The number of files created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedFiles(ObjectEntity $object, array $files): int {
+		$created = 0;
+		foreach ($files as $fileSpec) {
+			$name = (string)($fileSpec['name'] ?? '');
+			$content = ($fileSpec['content'] ?? null);
+			if ($name === '' || is_string($content) === false) {
+				continue;
+			}
+
+			if (str_starts_with($content, 'base64:') === true) {
+				$content = base64_decode(substr($content, 7), strict: true);
+			}
+
+			if ($content === false) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed file base64 decode failed - skipping',
+					context: ['object_uuid' => $object->getUuid(), 'name' => $name]
+				);
+				continue;
+			}
+
+			try {
+				$this->fileService->addFile($object, $name, $content, (bool)($fileSpec['share'] ?? false), (array)($fileSpec['tags'] ?? []));
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed file creation failed',
+					context: [
+						'object_uuid' => $object->getUuid(),
+						'name' => $name,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+
+		return $created;
+	}//end seedRelatedFiles()
+
+	/**
+	 * Add a seed object's notes; one without a message is skipped, a failed one logged.
+	 *
+	 * @param ObjectEntity $object The seed object.
+	 * @param array        $notes  The note specs: message.
+	 *
+	 * @return int The number of notes created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedNotes(ObjectEntity $object, array $notes): int {
+		$created = 0;
+		foreach ($notes as $noteSpec) {
+			$message = (string)($noteSpec['message'] ?? '');
+			if ($message === '') {
+				continue;
+			}
+
+			try {
+				$this->noteService->createNote((string)$object->getUuid(), $message);
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed note creation failed',
+					context: [
+						'object_uuid' => $object->getUuid(),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		return $created;
+	}//end seedRelatedNotes()
+
+	/**
+	 * Add a seed object's tasks; one without a summary is skipped, a failed one logged.
+	 *
+	 * @param array                $tasks The task specs: summary, description, status, priority, due.
+	 * @param array<string, mixed> $owner The seed `object`, its `registerId`, `schemaId` and `title`.
+	 *
+	 * @return int The number of tasks created.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedRelatedTasks(array $tasks, array $owner): int {
+		$created = 0;
+		foreach ($tasks as $taskSpec) {
+			$summary = (string)($taskSpec['summary'] ?? '');
+			if ($summary === '') {
+				continue;
+			}
+
+			$taskData = [
+				'summary' => $summary,
+				'description' => (string)($taskSpec['description'] ?? ''),
+				'status' => (string)($taskSpec['status'] ?? 'needs-action'),
+				'priority' => (int)($taskSpec['priority'] ?? 0),
+				'due' => $taskSpec['due'] ?? null,
+			];
+			try {
+				$this->taskService->createTask(
+					$owner['registerId'],
+					$owner['schemaId'],
+					(string)$owner['object']->getUuid(),
+					$owner['title'],
+					$taskData
+				);
+				$created++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ImportHandler] Seed task creation failed',
+					context: [
+						'object_uuid' => $owner['object']->getUuid(),
+						'summary' => $summary,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+
+		return $created;
+	}//end seedRelatedTasks()
 
 	/**
 	 * Ensure Nextcloud app dependencies are met for seedData import.

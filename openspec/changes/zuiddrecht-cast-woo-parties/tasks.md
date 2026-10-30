@@ -1,0 +1,2 @@
+- [x] T01 Cast person J. van Wijk and organisation Bewonersvereniging Lindelaan with their BRP and KvK entries
+- [x] T02 PHPUnit: the shipped Zuiddrecht set names them and resolves

@@ -42,6 +42,17 @@ use Symfony\Component\Console\Output\OutputInterface;
  * reports the drift, `--apply` calls the same `ensureTableForRegisterSchema()`
  * sync the import path uses, creating the missing columns. It is the
  * remediation for instances that already drifted before #2086/#2075 shipped.
+ *
+ * It also reconciles the METADATA columns (`_archived`, `_frozen`, `_status`,
+ * ...) of every physical magic table, including tables whose schema no
+ * register lists any more. Those were invisible to this command: measured on
+ * 14 October 2026, it answered "No drift" while 38 tables lacked `_archived`
+ * and every list of them failed, because 37 of the 38 were not linked from a
+ * register. The metadata pass uses the same MagicMetadataColumnHealer the
+ * request path and the AddObjectStateColumns repair step use. No maintenance
+ * mode is needed.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
  */
 class ReconcileMagicTablesCommand extends Command {
 	/**
@@ -62,12 +73,15 @@ class ReconcileMagicTablesCommand extends Command {
 	 * Configure the command name, description and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:tables:reconcile')
 			->setDescription(
-				'Detect and repair magic-table column drift — physical columns missing for schema '
-				. 'properties that were added to an existing schema without a subsequent write.'
+				'Detect and repair magic-table column drift: physical columns missing for schema '
+				. 'properties that were added to an existing schema without a subsequent write, and '
+				. 'metadata columns (_archived, _frozen, _status, ...) missing from any magic table.'
 			)
 			->addOption(
 				'apply',
@@ -92,10 +106,19 @@ class ReconcileMagicTablesCommand extends Command {
 	 * @param OutputInterface $output Console output.
 	 *
 	 * @return int 0 on success (including "nothing to do"); 1 when a repair failed.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$apply = (bool)$input->getOption('apply');
 		$registerFilter = $input->getOption('register');
+
+		$metadata = $this->reconcileMetadataColumns(
+			output: $output,
+			apply: $apply,
+			registerFilter: $registerFilter
+		);
+		$metadataNames = array_keys($this->magicMapper->getMetadataColumnDefinitions());
 
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
@@ -137,6 +160,14 @@ class ReconcileMagicTablesCommand extends Command {
 						currentColumns: $currentColumns,
 						requiredColumns: $requiredColumns
 					);
+					// Metadata columns were reported (and on --apply added) by
+					// the metadata pass above; reporting them again here would
+					// count the same drift twice.
+					$missing = array_diff_key($missing, array_flip($metadataNames));
+					$narrow = $this->magicMapper->findDecimalColumnsNeedingWiden(
+						currentColumns: $currentColumns,
+						requiredColumns: $requiredColumns
+					);
 				} catch (\Throwable $e) {
 					$output->writeln(
 						sprintf(
@@ -150,23 +181,38 @@ class ReconcileMagicTablesCommand extends Command {
 					continue;
 				}//end try
 
-				if (empty($missing) === true) {
+				if (empty($missing) === true && empty($narrow) === true) {
 					continue;
 				}
 
 				$driftTables++;
-				$driftColumns += count($missing);
+				$driftColumns += count($missing) + count($narrow);
 
-				$output->writeln(
-					sprintf(
-						'r%d schema=%s(#%d) missing %d: %s',
-						$register->getId(),
-						$schema->getSlug(),
-						$schema->getId(),
-						count($missing),
-						implode(', ', array_keys($missing))
-					)
-				);
+				if (empty($missing) === false) {
+					$output->writeln(
+						sprintf(
+							'r%d schema=%s(#%d) missing %d: %s',
+							$register->getId(),
+							$schema->getSlug(),
+							$schema->getId(),
+							count($missing),
+							implode(', ', array_keys($missing))
+						)
+					);
+				}
+
+				if (empty($narrow) === false) {
+					$output->writeln(
+						sprintf(
+							'r%d schema=%s(#%d) number columns to widen %d: %s',
+							$register->getId(),
+							$schema->getSlug(),
+							$schema->getId(),
+							count($narrow),
+							implode(', ', $narrow)
+						)
+					);
+				}
 
 				if ($apply === false) {
 					continue;
@@ -177,6 +223,11 @@ class ReconcileMagicTablesCommand extends Command {
 						register: $register,
 						schema: $schema
 					);
+					$this->magicMapper->widenDecimalColumns(
+						tableName: $tableName,
+						currentColumns: $currentColumns,
+						requiredColumns: $requiredColumns
+					);
 					$repaired++;
 				} catch (\Throwable $e) {
 					$failed++;
@@ -186,6 +237,11 @@ class ReconcileMagicTablesCommand extends Command {
 				}
 			}//end foreach
 		}//end foreach
+
+		$driftTables += $metadata['tables'];
+		$driftColumns += $metadata['columns'];
+		$repaired += $metadata['repaired'];
+		$failed += $metadata['failed'];
 
 		if ($driftTables === 0) {
 			$output->writeln('<info>No magic-table column drift found.</info>');
@@ -218,4 +274,87 @@ class ReconcileMagicTablesCommand extends Command {
 
 		return 1;
 	}//end execute()
+
+	/**
+	 * Report, and with --apply add, the metadata columns every magic table must carry.
+	 *
+	 * Walks the physical tables rather than the register to schema links, so a
+	 * table no register lists any more is still reconciled.
+	 *
+	 * @param OutputInterface $output         Console output.
+	 * @param bool            $apply          Whether to add the missing columns.
+	 * @param mixed           $registerFilter The --register option, null for every register.
+	 *
+	 * @return array{tables: int, columns: int, repaired: int, failed: int} The counts for the summary.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 */
+	private function reconcileMetadataColumns(OutputInterface $output, bool $apply, mixed $registerFilter): array {
+		$counts = ['tables' => 0, 'columns' => 0, 'repaired' => 0, 'failed' => 0];
+
+		foreach ($this->magicMapper->listMagicTableNames() as $tableName) {
+			if ($this->tableBelongsToRegister(tableName: $tableName, registerFilter: $registerFilter) === false) {
+				continue;
+			}
+
+			try {
+				$missing = $this->magicMapper->inspectMetadataColumns(tableName: $tableName);
+			} catch (\Throwable $e) {
+				$output->writeln(sprintf('<comment>skip %s: %s</comment>', $tableName, $e->getMessage()));
+				continue;
+			}
+
+			if ($missing === []) {
+				continue;
+			}
+
+			$counts['tables']++;
+			$counts['columns'] += count($missing);
+			$output->writeln(
+				sprintf(
+					'%s metadata missing %d: %s',
+					$tableName,
+					count($missing),
+					implode(', ', array_keys($missing))
+				)
+			);
+
+			if ($apply === false) {
+				continue;
+			}
+
+			$result = $this->magicMapper->healMetadataColumns(tableName: $tableName);
+			if ($result['failed'] === []) {
+				$counts['repaired']++;
+				continue;
+			}
+
+			$counts['failed']++;
+			foreach ($result['failed'] as $column => $reason) {
+				$output->writeln(sprintf('  <error>%s: %s</error>', $column, $reason));
+			}
+		}//end foreach
+
+		return $counts;
+	}//end reconcileMetadataColumns()
+
+	/**
+	 * Whether a table belongs to the register the --register option names.
+	 *
+	 * @param string $tableName      Bare magic table name (`openregister_table_<register>_<schema>`).
+	 * @param mixed  $registerFilter The --register option, null for every register.
+	 *
+	 * @return bool True when no filter is set or the table's register id matches it.
+	 */
+	private function tableBelongsToRegister(string $tableName, mixed $registerFilter): bool {
+		if ($registerFilter === null) {
+			return true;
+		}
+
+		if (preg_match('/^'.preg_quote(MagicMapper::TABLE_PREFIX, '/').'(\d+)_\d+$/', $tableName, $matches) !== 1) {
+			return false;
+		}
+
+		return (int)$matches[1] === (int)$registerFilter;
+	}//end tableBelongsToRegister()
 }//end class

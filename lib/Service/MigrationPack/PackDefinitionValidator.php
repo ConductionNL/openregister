@@ -33,7 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\MigrationPack;
 
-use InvalidArgumentException;
+use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
+use OCP\IL10N;
 
 /**
  * Structural + business-rule validator for a migration-pack JSON document.
@@ -66,6 +67,21 @@ class PackDefinitionValidator {
 	public const ALLOWED_ID_STRATEGY_TYPES = ['sourceField', 'generate'];
 
 	/**
+	 * Constructor.
+	 *
+	 * Every message is shown to the person editing the pack (the pack editor
+	 * lists them under the save error), so each goes through the app's
+	 * translations; the property names and values inside them stay as written.
+	 *
+	 * @param IL10N $l10n The app's translations.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+	) {
+
+	}//end __construct()
+
+	/**
 	 * Validate a pack definition document.
 	 *
 	 * @param array<string, mixed> $definition The decoded pack definition JSON.
@@ -96,14 +112,14 @@ class PackDefinitionValidator {
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When the definition is invalid. The message joins every error found.
+	 * @throws InvalidPackDefinitionException When the definition is invalid. It carries every error found.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
 	public function assertValid(array $definition): void {
 		$errors = $this->validate(definition: $definition);
 		if (empty($errors) === false) {
-			throw new InvalidArgumentException('Invalid migration pack definition: ' . implode('; ', $errors));
+			throw new InvalidPackDefinitionException(errors: $errors);
 		}
 	}//end assertValid()
 
@@ -117,11 +133,11 @@ class PackDefinitionValidator {
 	private function validateId(array $definition): array {
 		$id = $definition['id'] ?? null;
 		if (is_string($id) === false || $id === '') {
-			return ['"id" is required and must be a non-empty string'];
+			return [$this->l10n->t('"%s" is required and must be a non-empty string', ['id'])];
 		}
 
 		if (preg_match('/^[a-z0-9][a-z0-9-]*$/', $id) !== 1) {
-			return ['"id" must be a lowercase slug (letters, digits, hyphens), got "' . $id . '"'];
+			return [$this->l10n->t('"id" must be a lowercase slug (letters, digits, hyphens), got "%s"', [$id])];
 		}
 
 		return [];
@@ -137,7 +153,7 @@ class PackDefinitionValidator {
 	private function validateName(array $definition): array {
 		$name = $definition['name'] ?? null;
 		if (is_string($name) === false || $name === '') {
-			return ['"name" is required and must be a non-empty string'];
+			return [$this->l10n->t('"%s" is required and must be a non-empty string', ['name'])];
 		}
 
 		return [];
@@ -154,8 +170,10 @@ class PackDefinitionValidator {
 		$format = $definition['sourceFormat'] ?? null;
 		if (is_string($format) === false || in_array($format, self::ALLOWED_SOURCE_FORMATS, true) === false) {
 			return [
-				'"sourceFormat" must be one of: ' . implode(', ', self::ALLOWED_SOURCE_FORMATS)
-				. ' (got ' . var_export($format, true) . ')',
+				$this->l10n->t(
+					'%1$s must be one of: %2$s (got %3$s)',
+					['"sourceFormat"', implode(', ', self::ALLOWED_SOURCE_FORMATS), var_export($format, true)]
+				),
 			];
 		}
 
@@ -172,7 +190,7 @@ class PackDefinitionValidator {
 	private function validateVersion(array $definition): array {
 		$version = $definition['version'] ?? null;
 		if (is_string($version) === false || preg_match('/^\d+\.\d+\.\d+$/', $version) !== 1) {
-			return ['"version" must be a semver string (MAJOR.MINOR.PATCH), got ' . var_export($version, true)];
+			return [$this->l10n->t('"version" must be a semver string (MAJOR.MINOR.PATCH), got %s', [var_export($version, true)])];
 		}
 
 		return [];
@@ -181,9 +199,15 @@ class PackDefinitionValidator {
 	/**
 	 * Validate the `fieldMappings` array and every entry within it.
 	 *
+	 * Errors name a mapping by its position counted from 1 ("Mapping row 4"),
+	 * the number the pack editor shows in its table, not the 0-based array
+	 * index.
+	 *
 	 * @param array<string, mixed> $definition The pack definition.
 	 *
 	 * @return string[]
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-transform-type validation requires many branches.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Per-transform-type validation requires many branches.
@@ -191,33 +215,36 @@ class PackDefinitionValidator {
 	private function validateFieldMappings(array $definition): array {
 		$mappings = $definition['fieldMappings'] ?? null;
 		if (is_array($mappings) === false || empty($mappings) === true) {
-			return ['"fieldMappings" is required and must be a non-empty array'];
+			return [$this->l10n->t('"fieldMappings" is required and must be a non-empty array')];
 		}
 
 		$errors = [];
-		foreach ($mappings as $index => $mapping) {
-			$path = 'fieldMappings[' . $index . ']';
+		foreach (array_values($mappings) as $position => $mapping) {
+			$number = ($position + 1);
 			if (is_array($mapping) === false) {
-				$errors[] = $path . ' must be an object';
+				$errors[] = $this->l10n->t('Mapping row %s must be an object', [$number]);
 				continue;
 			}
 
 			$source = $mapping['source'] ?? null;
 			if (is_string($source) === false || $source === '') {
-				$errors[] = $path . '.source is required and must be a non-empty string';
+				$errors[] = $this->l10n->t('Mapping row %1$s: %2$s is required and must be a non-empty string', [$number, 'source']);
 			}
 
 			$target = $mapping['target'] ?? null;
 			if (is_string($target) === false || $target === '') {
-				$errors[] = $path . '.target is required and must be a non-empty string';
+				$errors[] = $this->l10n->t('Mapping row %1$s: %2$s is required and must be a non-empty string', [$number, 'target']);
 			}
 
 			if (isset($mapping['required']) === true && is_bool($mapping['required']) === false) {
-				$errors[] = $path . '.required must be a boolean when present';
+				$errors[] = $this->l10n->t('Mapping row %s: required must be a boolean when present', [$number]);
 			}
 
 			if (isset($mapping['transform']) === true) {
-				$errors = array_merge($errors, $this->validateTransform(transform: $mapping['transform'], path: $path . '.transform'));
+				$errors = array_merge(
+					$errors,
+					$this->validateTransform(transform: $mapping['transform'], path: $this->l10n->t('Mapping row %s: transform', [$number]))
+				);
 			}
 		}//end foreach
 
@@ -237,55 +264,57 @@ class PackDefinitionValidator {
 	 */
 	private function validateTransform($transform, string $path): array {
 		if (is_array($transform) === false) {
-			return [$path . ' must be an object with a "type" key'];
+			return [$this->l10n->t('%s must be an object with a "type" key', [$path])];
 		}
 
 		$type = $transform['type'] ?? null;
 		if (is_string($type) === false || in_array($type, self::ALLOWED_TRANSFORM_TYPES, true) === false) {
 			return [
-				$path . '.type must be one of: ' . implode(', ', self::ALLOWED_TRANSFORM_TYPES)
-				. ' (got ' . var_export($type, true) . ')',
+				$this->l10n->t(
+					'%1$s must be one of: %2$s (got %3$s)',
+					[$path . '.type', implode(', ', self::ALLOWED_TRANSFORM_TYPES), var_export($type, true)]
+				),
 			];
 		}
 
 		switch ($type) {
 			case 'date':
 				if (isset($transform['sourceFormat']) === true && is_string($transform['sourceFormat']) === false) {
-					return [$path . '.sourceFormat must be a string when present'];
+					return [$this->l10n->t('%s must be a string when present', [$path . '.sourceFormat'])];
 				}
 
 				if (isset($transform['targetFormat']) === true && is_string($transform['targetFormat']) === false) {
-					return [$path . '.targetFormat must be a string when present'];
+					return [$this->l10n->t('%s must be a string when present', [$path . '.targetFormat'])];
 				}
 				break;
 
 			case 'bool-map':
 				if (is_array($transform['map'] ?? null) === false || empty($transform['map']) === true) {
-					return [$path . '.map is required and must be a non-empty object for a bool-map transform'];
+					return [$this->l10n->t('%1$s is required and must be a non-empty object for a %2$s transform', [$path . '.map', 'bool-map'])];
 				}
 				break;
 
 			case 'lookup':
 				if (is_array($transform['map'] ?? null) === false || empty($transform['map']) === true) {
-					return [$path . '.map is required and must be a non-empty object for a lookup transform'];
+					return [$this->l10n->t('%1$s is required and must be a non-empty object for a %2$s transform', [$path . '.map', 'lookup'])];
 				}
 				break;
 
 			case 'concat':
 				if (is_array($transform['fields'] ?? null) === false || empty($transform['fields']) === true) {
-					return [$path . '.fields is required and must be a non-empty array for a concat transform'];
+					return [$this->l10n->t('%1$s is required and must be a non-empty array for a %2$s transform', [$path . '.fields', 'concat'])];
 				}
 
 				foreach ($transform['fields'] as $fieldIndex => $field) {
 					if (is_string($field) === false || $field === '') {
-						return [$path . '.fields[' . $fieldIndex . '] must be a non-empty string'];
+						return [$this->l10n->t('%s must be a non-empty string', [$path . '.fields[' . $fieldIndex . ']'])];
 					}
 				}
 				break;
 
 			case 'const':
 				if (array_key_exists('value', $transform) === false) {
-					return [$path . '.value is required for a const transform'];
+					return [$this->l10n->t('%1$s is required for a %2$s transform', [$path . '.value', 'const'])];
 				}
 				break;
 
@@ -311,7 +340,7 @@ class PackDefinitionValidator {
 		}
 
 		if (is_array($definition['defaults']) === false) {
-			return ['"defaults" must be an object of target-property => default value when present'];
+			return [$this->l10n->t('"defaults" must be an object of target-property => default value when present')];
 		}
 
 		return [];
@@ -330,12 +359,12 @@ class PackDefinitionValidator {
 		}
 
 		if (is_array($definition['skipRows']) === false) {
-			return ['"skipRows" must be an array of row numbers when present'];
+			return [$this->l10n->t('"skipRows" must be an array of row numbers when present')];
 		}
 
 		foreach ($definition['skipRows'] as $row) {
 			if (is_int($row) === false || $row < 1) {
-				return ['"skipRows" entries must be positive integers'];
+				return [$this->l10n->t('"skipRows" entries must be positive integers')];
 			}
 		}
 
@@ -352,21 +381,23 @@ class PackDefinitionValidator {
 	private function validateIdStrategy(array $definition): array {
 		$idStrategy = $definition['idStrategy'] ?? null;
 		if (is_array($idStrategy) === false) {
-			return ['"idStrategy" is required and must be an object with a "type" key'];
+			return [$this->l10n->t('"idStrategy" is required and must be an object with a "type" key')];
 		}
 
 		$type = $idStrategy['type'] ?? null;
 		if (is_string($type) === false || in_array($type, self::ALLOWED_ID_STRATEGY_TYPES, true) === false) {
 			return [
-				'idStrategy.type must be one of: ' . implode(', ', self::ALLOWED_ID_STRATEGY_TYPES)
-				. ' (got ' . var_export($type, true) . ')',
+				$this->l10n->t(
+					'%1$s must be one of: %2$s (got %3$s)',
+					['idStrategy.type', implode(', ', self::ALLOWED_ID_STRATEGY_TYPES), var_export($type, true)]
+				),
 			];
 		}
 
 		if ($type === 'sourceField'
 			&& (is_string($idStrategy['field'] ?? null) === false || $idStrategy['field'] === '')
 		) {
-			return ['idStrategy.field is required and must be a non-empty string when idStrategy.type is "sourceField"'];
+			return [$this->l10n->t('idStrategy.field is required and must be a non-empty string when idStrategy.type is "sourceField"')];
 		}
 
 		return [];

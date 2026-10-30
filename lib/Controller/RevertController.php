@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\RevertHandler;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -50,11 +51,14 @@ class RevertController extends Controller {
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param RevertHandler $revertService The revert service
+	 * @param ObjectService|null $objectService Renders the reverted object as every object read does
+	 *                                          (property rules, write-only, explicit reveal); null only in tests
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly RevertHandler $revertService,
+		private readonly ?ObjectService $objectService = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -113,6 +117,12 @@ class RevertController extends Controller {
 				until: $until,
 				overwriteVersion: $overwriteVersion
 			);
+
+			// The answer is a read of the object: rendered under the caller's rules,
+			// never the raw stored entity (an explicit-reveal value stays masked).
+			if ($this->objectService !== null) {
+				return new JSONResponse(data: $this->objectService->renderEntity(entity: $revertedObject, _rbac: true));
+			}
 
 			return new JSONResponse(data: $revertedObject->jsonSerialize());
 		} catch (DoesNotExistException $e) {

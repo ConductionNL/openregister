@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} fallew",
         "0 = unlimited": "0 = bla limitu",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Fluss imexxi sensiela ta' passi meta jiġri xi ħaġa — oġġett jinbidel, skeda tiskatta, jew tmexxih int stess. Din il-lista turi l-flussi ta' kull app.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Par ta' ċwievet VAPID huwa kkonfigurat. L-utenti jistgħu jattivaw in-notifiki tal-browser mill-issettjar personali tagħhom, u dawn jiġu kkunsinnati anke meta t-tab tal-browser ikun magħluq.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Par ta' ċwievet VAPID huwa kkonfigurat. L-utenti jistgħu jattivaw in-notifiki tal-browser mill-issettjar tal-utent tagħhom, u dawn jiġu kkunsinnati anke meta t-tab tal-browser ikun magħluq.",
         "A deactivation request is pending.": "Talba għad-diżattivazzjoni qiegħda pendenti.",
         "AI Assistant": "Assistent tal-IA",
         "AI Chat": "Chat tal-IA",

@@ -41,6 +41,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -211,6 +212,44 @@ class ExplodingCallService {
 }//end class
 
 /**
+ * Stand-in for integriq's CallService, whose `call` takes `withholdBodies`:
+ * remembers the options and the flag it was handed.
+ */
+class WithholdingCallService {
+	/**
+	 * The request options the router handed to call().
+	 *
+	 * @var array<string,mixed>|null
+	 */
+	public ?array $receivedConfig = null;
+
+	/**
+	 * The withholdBodies flag the router handed to call().
+	 *
+	 * @var bool|null
+	 */
+	public ?bool $receivedWithholdBodies = null;
+
+	public function __construct(
+		private object $log,
+	) {
+	}//end __construct()
+
+	public function call(
+		$source,
+		string $endpoint = '',
+		string $method = 'GET',
+		array $config = [],
+		bool $persistLog = true,
+		bool $withholdBodies = false,
+	) {
+		$this->receivedConfig = $config;
+		$this->receivedWithholdBodies = $withholdBodies;
+		return $this->log;
+	}//end call()
+}//end class
+
+/**
  * Unit tests for ExternalIntegrationRouter.
  */
 class ExternalIntegrationRouterTest extends TestCase {
@@ -324,10 +363,11 @@ class ExternalIntegrationRouterTest extends TestCase {
 	 *
 	 * @param ObjectService $objectService Answers the source lookup.
 	 * @param object|null $callService The connector CallService stand-in.
+	 * @param LoggerInterface|null $logger The logger to assert on; a null logger when none.
 	 *
 	 * @return ExternalIntegrationRouter
 	 */
-	private function routerOn(ObjectService $objectService, ?object $callService = null): ExternalIntegrationRouter {
+	private function routerOn(ObjectService $objectService, ?object $callService = null, ?LoggerInterface $logger = null): ExternalIntegrationRouter {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn(true);
 		$appManager->method('isEnabledForUser')->willReturn(true);
@@ -347,7 +387,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 			}
 		);
 
-		return new ExternalIntegrationRouter($appManager, $container, new NullLogger());
+		return new ExternalIntegrationRouter($appManager, $container, ($logger ?? new NullLogger()));
 	}//end routerOn()
 
 	/**
@@ -917,4 +957,76 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$this->assertSame(['id' => 'm1'], $envelope['body']);
 		$this->assertSame('{"type":"RaadpleegMetBurgerservicenummer"}', (string)$callService->sent[0]->getBody());
 	}//end testCallWithMetaSendsAnArrayBodyAsJson()
+
+	public function testSourceConfigurationAnswersTheSourcesConfiguration(): void {
+		$source = $this->sourceEntity(['slug' => 'brp-haalcentraal', 'configuration' => ['residentCount' => true, 'mock' => false]]);
+		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), new ExplodingCallService());
+
+		$this->assertSame(
+			['residentCount' => true, 'mock' => false],
+			$router->sourceConfiguration(new FakeExternalProvider(source: 'brp-haalcentraal'))
+		);
+	}//end testSourceConfigurationAnswersTheSourcesConfiguration()
+
+	public function testSourceConfigurationFailsLikeCallWhenTheSourceIsMissing(): void {
+		$router = $this->routerOn($this->objectService([]), new ExplodingCallService());
+
+		try {
+			$router->sourceConfiguration(new FakeExternalProvider(source: 'brp-haalcentraal'));
+			$this->fail('Expected ProviderUnavailableException');
+		} catch (ProviderUnavailableException $e) {
+			$this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING, $e->getCause());
+		}
+	}//end testSourceConfigurationFailsLikeCallWhenTheSourceIsMissing()
+
+	public function testWithheldBodiesReachTheConnectorAndNotTheRequestOptions(): void {
+		$source = $this->sourceEntity(['slug' => 'brp-haalcentraal', 'location' => 'https://brp.example']);
+		$callService = new WithholdingCallService(
+			$this->integriqCallLog(['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '{"personen":[{},{}]}', 'encoding' => 'UTF-8']])
+		);
+		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), $callService);
+
+		$envelope = $router->callWithMeta(
+			new FakeExternalProvider(source: 'brp-haalcentraal'),
+			'POST',
+			'personen',
+			['body' => ['type' => 'ZoekMetAdresseerbaarObjectIdentificatie'], 'withholdBodies' => true]
+		);
+
+		$this->assertTrue($callService->receivedWithholdBodies);
+		$this->assertArrayNotHasKey('withholdBodies', $callService->receivedConfig);
+		$this->assertSame(['type' => 'ZoekMetAdresseerbaarObjectIdentificatie'], $callService->receivedConfig['json']);
+		$this->assertCount(2, $envelope['body']['personen']);
+	}//end testWithheldBodiesReachTheConnectorAndNotTheRequestOptions()
+
+	public function testWithoutTheOptionTheConnectorRecordsBodiesAsBefore(): void {
+		$source = $this->sourceEntity(['slug' => 'kvk', 'location' => 'https://kvk.example']);
+		$callService = new WithholdingCallService(
+			$this->integriqCallLog(['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '{}', 'encoding' => 'UTF-8']])
+		);
+		$router = $this->routerOn($this->objectService(['integriq/kvk' => $source]), $callService);
+
+		$router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+
+		$this->assertFalse($callService->receivedWithholdBodies);
+	}//end testWithoutTheOptionTheConnectorRecordsBodiesAsBefore()
+
+	public function testAConnectorThatCannotWithholdBodiesIsNotCalled(): void {
+		$source = $this->sourceEntity(['slug' => 'brp-haalcentraal', 'location' => 'https://brp.example']);
+		$callService = new FakeCallService(
+			$this->integriqCallLog(['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '{}', 'encoding' => 'UTF-8']])
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), $callService, $logger);
+
+		try {
+			$router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), 'POST', 'personen', ['withholdBodies' => true]);
+			$this->fail('Expected ProviderUnavailableException');
+		} catch (ProviderUnavailableException $e) {
+			$this->assertSame(ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES, $e->getCause());
+		}
+
+		$this->assertNull($callService->receivedSource);
+	}//end testAConnectorThatCannotWithholdBodiesIsNotCalled()
 }//end class

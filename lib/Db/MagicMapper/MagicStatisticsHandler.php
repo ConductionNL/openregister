@@ -93,6 +93,20 @@ class MagicStatisticsHandler {
 	private const METADATA_PREFIX = '_';
 
 	/**
+	 * Metadata fields already noted as skipped in this process, by field.
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $skippedFields = [];
+
+	/**
+	 * Tells metadata columns from underscore-named property columns.
+	 *
+	 * @var MagicMetadataColumn
+	 */
+	private MagicMetadataColumn $columnRoles;
+
+	/**
 	 * Callable for counting objects in a register-schema table.
 	 *
 	 * Set via setCountCallback() after construction to avoid circular dependency.
@@ -119,6 +133,7 @@ class MagicStatisticsHandler {
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
 		private readonly SchemaTypeConverter $schemaTypeConverter,
 	) {
+		$this->columnRoles = new MagicMetadataColumn();
 	}//end __construct()
 
 	/**
@@ -579,6 +594,8 @@ class MagicStatisticsHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Row to entity conversion requires many field mappings
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete field mapping requires comprehensive handling
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
 		try {
@@ -610,9 +627,8 @@ class MagicStatisticsHandler {
 			$objectData = [];
 
 			foreach ($row as $columnName => $value) {
-				if (str_starts_with($columnName, self::METADATA_PREFIX) === true) {
-					// This is a metadata field.
-					$metadataField = substr($columnName, strlen(self::METADATA_PREFIX));
+				$metadataField = $this->columnRoles->field(column: $columnName, columnToPropertyMap: $columnToPropertyMap);
+				if ($metadataField !== null) {
 
 					// Handle datetime fields.
 					if (in_array(
@@ -620,6 +636,7 @@ class MagicStatisticsHandler {
 						[
 							'created',
 							'updated',
+							'last_user_activity',
 							'expires',
 						],
 						true
@@ -713,21 +730,16 @@ class MagicStatisticsHandler {
 					continue;
 				}
 
-				$method = 'set' . ucfirst($field);
-				// Use is_callable() instead of method_exists() to support magic methods.
-				// Entity base class uses __call() for property setters.
-				if (is_callable([$objectEntity, $method]) === false) {
-					$this->logger->warning(
-						message: '[MagicStatisticsHandler] Method is not callable for metadata field',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'method' => $method]
-					);
+				// Entity setters are magic (__call), so is_callable() is true for
+				// any name; ask whether ObjectEntity has the attribute instead.
+				$attribute = $this->columnRoles->attribute(field: $field);
+				if ($attribute === null) {
+					$this->skipUnknownMetadataField(field: $field);
 					continue;
 				}
 
+				$method = 'set' . ucfirst($attribute);
 				$objectEntity->$method($value);
-				// Debug critical fields.
-				if (in_array($field, ['id', 'uuid', 'owner'], true) === true) {
-				}
 			}//end foreach
 
 			// Set object data.
@@ -761,6 +773,29 @@ class MagicStatisticsHandler {
 			return null;
 		}//end try
 	}//end convertRowToObjectEntity()
+
+	/**
+	 * Note, once per field and process, a metadata column ObjectEntity has no attribute for.
+	 *
+	 * Such a column is skipped, not an error: the row is still read.
+	 *
+	 * @param string $field The metadata field without its prefix.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function skipUnknownMetadataField(string $field): void {
+		if (isset(self::$skippedFields[$field]) === true) {
+			return;
+		}
+
+		self::$skippedFields[$field] = true;
+		$this->logger->debug(
+			message: '[MagicStatisticsHandler] Skipped a metadata column ObjectEntity has no attribute for',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
+		);
+	}//end skipUnknownMetadataField()
 
 	/**
 	 * Sanitize column name for safe database usage

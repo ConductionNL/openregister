@@ -1,5 +1,6 @@
 <template>
 	<CnAppRoot
+		ref="appRoot"
 		appId="openregister"
 		appDisplayName="Open Register"
 		:aiCompanion="true"
@@ -46,6 +47,24 @@
 			     fallback, which is what hid the flow sidebar. -->
 			<component :is="pageSidebarComponent" v-if="pageSidebarComponent" />
 		</template>
+		<!--
+			The user settings dialog. Every per-person setting lives here;
+			OpenRegister adds nothing to Nextcloud's personal settings (Ruben,
+			11 Oct 2026). Filling this slot drops CnAppRoot's fallback sections,
+			so UserSettings repeats them and gets the walkthrough replay from
+			walkthroughSettings() below.
+		-->
+		<template #user-settings>
+			<UserSettings
+				:manifest="manifest"
+				:walkthrough="walkthroughSettings()"
+				@continueWalkthrough="
+					appRoot() && appRoot().continueWalkthroughFromSettings()
+				"
+				@restartWalkthrough="
+					appRoot() && appRoot().restartWalkthroughFromSettings()
+				" />
+		</template>
 		<!-- Global modal and dialog hosts, mounted below the router-view. -->
 		<template #footer>
 			<Modals />
@@ -62,6 +81,7 @@ import Dialogs from './dialogs/Dialogs.vue'
 import Modals from './modals/Modals.vue'
 import MainMenu from './navigation/MainMenu.vue'
 import SideBars from './sidebars/SideBars.vue'
+import UserSettings from './views/settings/UserSettings.vue'
 import { initializeAppData } from './services/AppInitializationService.js'
 import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 
@@ -74,6 +94,7 @@ export default {
 		Modals,
 		Dialogs,
 		SideBars,
+		UserSettings,
 	},
 
 	/**
@@ -159,9 +180,69 @@ export default {
 
 		// Set up dashboard store watchers to keep dashboard data in sync, after stores are reactive
 		setupDashboardStoreWatchers()
+
+		// `#user-settings` opens the user settings dialog: the deep link that
+		// replaces OpenRegister's old form in Nextcloud's personal settings.
+		window.addEventListener('hashchange', this.openUserSettingsFromHash)
+		this.openUserSettingsFromHash()
+	},
+
+	/**
+	 * Drop the hash listener mounted() added.
+	 *
+	 * @return {void}
+	 */
+	beforeUnmount() {
+		window.removeEventListener('hashchange', this.openUserSettingsFromHash)
 	},
 
 	methods: {
+		/**
+		 * The mounted CnAppRoot, or null before it mounts.
+		 *
+		 * @return {object|null} The CnAppRoot instance.
+		 */
+		appRoot() {
+			return this.$refs.appRoot || null
+		},
+
+		/**
+		 * Open the user settings dialog when the location hash is
+		 * `#user-settings`.
+		 *
+		 * @return {void}
+		 */
+		openUserSettingsFromHash() {
+			const root = this.appRoot()
+			if (root && window.location.hash === '#user-settings') {
+				root.userSettingsOpen = true
+			}
+		},
+
+		/**
+		 * The walkthrough replay section CnAppRoot draws in its own fallback,
+		 * which filling the #user-settings slot switches off. Reads CnAppRoot's
+		 * state and labels, so the wording and the behaviour stay the library's.
+		 *
+		 * @return {object|null} Section props for UserSettings, or null without a tour.
+		 */
+		walkthroughSettings() {
+			const root = this.appRoot()
+			if (!root || !root.walkthroughEnabled) {
+				return null
+			}
+			const inProgress = Boolean(root.walkthroughProgressValue)
+			return {
+				sectionName: root.restartWalkthroughSectionName,
+				hint: root.restartWalkthroughHint,
+				inProgress,
+				continueLabel: root.continueWalkthroughLabel,
+				restartLabel: inProgress
+					? root.startOverWalkthroughLabel
+					: root.restartWalkthroughLabel,
+			}
+		},
+
 		/**
 		 * Translate function passed down to CnAppRoot / CnAppNav /
 		 * CnPageRenderer. Closes over the Nextcloud translate import so the lib

@@ -45,6 +45,11 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Controller\ViewsController
  * @covers \OCA\OpenRegister\Service\ViewService
  * @covers \OCA\OpenRegister\Service\Rbac\ViewShareResolver
+ * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareListValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
+ * @uses \OCA\OpenRegister\Service\View\ViewAlert
  */
 class ViewUpdateJudgedByChangeTest extends TestCase {
 

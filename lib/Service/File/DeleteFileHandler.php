@@ -125,12 +125,27 @@ class DeleteFileHandler {
 			throw new NotPermittedException("File {$file->getName()} is not deletable by the current session");
 		}
 
+		$fileId = $file->getId();
 		try {
 			$file->delete();
+			$survives = ($this->rootFolder->getFirstNodeById($fileId) !== null);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[DeleteFileHandler] Failed to delete file: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		if ($survives === true) {
+			// Through the Node API Nextcloud ignores an operation a listener
+			// aborted (the frozen-object guard does): delete() returns, the file
+			// is still there. Saying true here makes every caller (the example
+			// set remover, the merge) believe a file is gone that is not.
+			$this->logger->warning(
+				message: '[DeleteFileHandler] The file was not deleted: it is still there after delete() '
+					. '(an operation was aborted, for instance by a frozen object).',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 			);
 			return false;
 		}

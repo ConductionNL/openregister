@@ -136,6 +136,42 @@ class ObjectVersionHandler {
 	}//end bumpVersion()
 
 	/**
+	 * Move an object's version on update, taking a higher version the save carries.
+	 *
+	 * An app's register configuration ships its seed objects with a version
+	 * (`@self.version`), and its import updates a stored seed only when the
+	 * shipped version is higher. A plain bump would leave the stored row on its
+	 * own patch line (`0.0.4` after an update to the shipped `1.4.7`), so the
+	 * next import would read the seed as outdated again and re-apply it. The
+	 * carried version is therefore taken when it is a usable version AND higher
+	 * than the stored one. Anything else (absent, equal, lower, free text) is an
+	 * ordinary save and bumps the patch, so a client that echoes back the
+	 * version it read never stalls the sequence.
+	 *
+	 * @param ObjectEntity $entity  The entity being updated.
+	 * @param string|null  $carried The `@self.version` the save carries, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function advanceVersion(ObjectEntity $entity, ?string $carried): void {
+		$next = $this->parse(version: $carried);
+		if ($next === null) {
+			$this->bumpVersion(entity: $entity);
+			return;
+		}
+
+		$current = $this->parse(version: $entity->getVersion());
+		if ($current !== null && $next <= $current) {
+			$this->bumpVersion(entity: $entity);
+			return;
+		}
+
+		$entity->setVersion(implode('.', $next));
+	}//end advanceVersion()
+
+	/**
 	 * Parse a version string into its three integer components.
 	 *
 	 * Deliberately strict: only `major.minor.patch` with three non-negative

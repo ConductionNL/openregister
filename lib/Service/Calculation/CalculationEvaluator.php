@@ -298,6 +298,20 @@ class CalculationEvaluator {
 			'result' => 'integer',
 			'description' => 'Signed whole calendar months between the later and the earlier date.',
 		],
+		'graduated' => [
+			'category' => 'arithmetic',
+			'arity' => '2..3',
+			'operands' => ['number', 'bands', 'number'],
+			'result' => 'number',
+			'description' => 'Amount a quantity accrues over rate bands ({upTo, rate}, the last may leave out upTo), capped by an optional third operand.',
+		],
+		'bandRate' => [
+			'category' => 'arithmetic',
+			'arity' => '2',
+			'operands' => ['number', 'bands'],
+			'result' => 'number',
+			'description' => 'The rate of the band a unit falls in, counting units from 1. Null when no band covers it.',
+		],
 		'sha256' => [
 			'category' => 'string',
 			'arity' => '1',
@@ -311,11 +325,13 @@ class CalculationEvaluator {
 	 * Constructor.
 	 *
 	 * @param PlaceholderResolver $placeholders Shared placeholder resolver for literal-string interpolation.
+	 * @param RateSchedule        $rates        The arithmetic behind graduated and bandRate.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly PlaceholderResolver $placeholders,
+		private readonly RateSchedule $rates = new RateSchedule(),
 	) {
 	}//end __construct()
 
@@ -426,6 +442,8 @@ class CalculationEvaluator {
 			'round' => $this->roundVal(object: $object, args: $args),
 			'year' => $this->yearOf(object: $object, args: $args),
 			'monthsElapsed' => $this->monthsElapsed(object: $object, args: $args),
+			'graduated' => $this->rateSchedule(object: $object, args: $args, cumulative: true),
+			'bandRate' => $this->rateSchedule(object: $object, args: $args, cumulative: false),
 			'sha256' => $this->sha256Of(object: $object, args: $args),
 			default => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
 		};//end match
@@ -1446,6 +1464,41 @@ class CalculationEvaluator {
 
 		return $this->calendarDiff(from: $earlier, to: $later, unit: 'months');
 	}//end monthsElapsed()
+
+	/**
+	 * Graduated([quantity, bands, cap?]) and bandRate([unit, bands]) over a rate schedule.
+	 *
+	 * Null-safe like the other arithmetic operators: a quantity or a schedule
+	 * that resolves to null yields null, so a record that has not started
+	 * accruing yet has no amount rather than an invented zero.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param mixed $args `[quantity, bands]` or `[quantity, bands, cap]`.
+	 * @param bool $cumulative True for graduated (the accrued amount), false for bandRate.
+	 *
+	 * @return int|float|null The amount or the rate, or null when an operand is null.
+	 *
+	 * @throws EvaluationException When an operand is missing or not numeric, or the schedule is malformed.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function rateSchedule(array $object, mixed $args, bool $cumulative): int|float|null {
+		if (is_array($args) === false || array_is_list($args) === false || count($args) < 2) {
+			throw new EvaluationException('graduated/bandRate requires (quantity, bands).');
+		}
+
+		$cap = null;
+		if ($cumulative === true && isset($args[2]) === true) {
+			$cap = $this->evaluateNode(object: $object, expression: $args[2]);
+		}
+
+		return $this->rates->evaluate(
+			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
+			bands: $this->evaluateNode(object: $object, expression: $args[1]),
+			cap: $cap,
+			cumulative: $cumulative
+		);
+	}//end rateSchedule()
 
 	/**
 	 * Sha256(value): lowercase hex SHA-256 digest of the stringified operand.

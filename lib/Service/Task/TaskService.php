@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -94,7 +95,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
-class TaskService {
+class TaskService implements TaskManagerInterface {
 
 	/**
 	 * Constructor.
@@ -157,6 +158,8 @@ class TaskService {
 	 *                                         not. Nullable for hand-built
 	 *                                         test services; absent, tasks are
 	 *                                         written as given.
+	 * @param TaskEdit|null $editor Validates and applies an edit of a
+	 *                              task's own fields; absent, a plain one.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -173,6 +176,7 @@ class TaskService {
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 		private readonly ?TaskSubjectAccessGuard $subjects = null,
 		private readonly ?TaskSubjectLocator $locator = null,
+		private readonly ?TaskEdit $editor = null,
 	) {
 
 	}//end __construct()
@@ -218,12 +222,17 @@ class TaskService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function create(array $data, ?string $actor): Task {
 		// Located first, so the access guard below reads the subject from its
 		// own table instead of searching every magic table for it. A refusal
 		// reads the same either way: location says where, never whether.
 		$data = $this->locate(data: $data);
+
+		// Blocked is derived from blockedBy, for administrators too: nobody
+		// writes the state by hand (a-task-may-wait-on-another-task D-6).
+		(new TaskBlockerGuard(tasks: $this->tasks))->refuseHandWrittenState(data: $data);
 
 		if ($this->authorization->isAdministrator(uid: $actor) === false) {
 			// A task is an annotation ON an object, so it inherits that
@@ -252,7 +261,14 @@ class TaskService {
 			}
 		}
 
-		return $this->import(data: $data, actor: $actor);
+		// An ordinary caller may only name a blocker they may read; an
+		// administrator reads every task, so for them it could only pass.
+		$mayReadBlocker = null;
+		if ($this->authorization->isAdministrator(uid: $actor) === false) {
+			$mayReadBlocker = fn (Task $blocker): bool => $this->authorization->mayRead(task: $blocker, uid: $actor);
+		}
+
+		return $this->import(data: $data, actor: $actor, mayReadBlocker: $mayReadBlocker);
 	}//end create()
 
 	/**
@@ -263,6 +279,8 @@ class TaskService {
 	 *
 	 * @param array<string, mixed> $data The task fields, canonical or legacy.
 	 * @param string|null $actor The creating identity.
+	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
+	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -270,11 +288,13 @@ class TaskService {
 	 * @throws TaskAccessDeniedException Without an acting identity.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function import(array $data, ?string $actor): Task {
+	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null): Task {
 		$data = $this->locate(data: $data);
 		$task = $this->builder->fromData(data: $data, actor: $actor);
 		$this->refuseUnrenderableForm(task: $task);
+		(new TaskBlockerGuard(tasks: $this->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 		$this->pending = [
 			'assignee' => null,
@@ -390,6 +410,46 @@ class TaskService {
 			}
 		);
 	}//end offer()
+
+	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * Authorization runs first (the assignee, a pool member or an
+	 * administrator; a denial is audited and writes nothing), then the
+	 * values are validated, then the change and its audit entry are written
+	 * in one transaction. An edit that changes nothing writes nothing.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param array<string, mixed> $changes The new values by field.
+	 * @param string|null $actor The editing identity.
+	 *
+	 * @return Task The task as it now stands.
+	 *
+	 * @throws TaskValidationException When a field is unknown or invalid.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	public function edit(string $uuid, array $changes, ?string $actor): Task {
+		$task = $this->openTaskFor(verb: 'edit', uuid: $uuid, actor: $actor);
+		$changed = ($this->editor ?? new TaskEdit())->apply(task: $task, changes: $changes);
+		if ($changed === []) {
+			return $task;
+		}
+
+		return $this->transactional(
+			mutation: function () use ($task, $changed, $actor): Task {
+				$persisted = $this->persistOpen(task: $task);
+				$this->appendAudit(
+					task: $persisted,
+					action: 'edit',
+					actor: $actor,
+					reason: sprintf('Changed: %s.', implode(', ', $changed))
+				);
+
+				return $persisted;
+			}
+		);
+	}//end edit()
 
 	/**
 	 * Claim: assign IF still unassigned — the database decides the race.
@@ -999,6 +1059,27 @@ class TaskService {
 	public function get(string $uuid): Task {
 		return $this->tasks->findByUuid(uuid: $uuid);
 	}//end get()
+
+	/**
+	 * Every task carrying this external key, terminal ones included.
+	 *
+	 * A task added once per thing is looked up by its key before it is added
+	 * again; a completed or cancelled one still counts as added.
+	 *
+	 * @param string $key The external key.
+	 *
+	 * @return array<int, Task> The tasks; empty for a blank key.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function findByKey(string $key): array {
+		$key = trim($key);
+		if ($key === '') {
+			return [];
+		}
+
+		return $this->tasks->findByKey(key: $key);
+	}//end findByKey()
 
 	/**
 	 * Resolve, authorize and audit a verb's task WITHOUT running the verb.

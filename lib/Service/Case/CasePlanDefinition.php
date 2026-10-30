@@ -293,9 +293,22 @@ class CasePlanDefinition {
 				throw new CaseValidationException(message: sprintf("'%s' is a %s and cannot contain children; only a stage nests.", $key, $type));
 			}
 
-			if (isset($node['flow']) === true) {
-				throw new CaseValidationException(message: sprintf("'%s' is a %s and cannot bind a flow; only a stage is realised by a run.", $key, $type));
+			if (isset($node['flow']) === true && $type !== CaseItem::TYPE_PROCESS_TASK) {
+				throw new CaseValidationException(
+					message: sprintf("'%s' is a %s and cannot bind a flow; only a stage or a process task is realised by a run.", $key, $type)
+				);
 			}
+		}
+
+		if ($type === CaseItem::TYPE_PROCESS_TASK) {
+			$flow = trim((string)($node['flow'] ?? ''));
+			if ($flow === '') {
+				throw new CaseValidationException(
+					message: sprintf("'%s' is a process task and names no flow; a process task without a flow would be work nobody does.", $key)
+				);
+			}
+
+			$flows[$key] = $flow;
 		}
 
 		$node['key'] = $key;

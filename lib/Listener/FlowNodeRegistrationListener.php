@@ -28,6 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
@@ -53,6 +56,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
@@ -95,6 +100,11 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param UserTaskNode $userTask The built-in "Ask a person" node.
 	 * @param PortalTaskNode $portalTask The built-in "Ask a party outside the organisation" node.
 	 * @param DecisionTableNode $decisionTable The built-in "Evaluate a decision table" node.
+	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
+	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
+	 * @param ActionInputsNode $actionInputs The built-in step that makes an action's inputs readable.
+	 * @param TransitionNode $transition The built-in "Lifecycle transition" node.
+	 * @param LinkObjectNode $linkObject The built-in "Create or link an object" node.
 	 */
 	public function __construct(
 		private readonly SetFieldsNode $setFields,
@@ -124,6 +134,11 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly UserTaskNode $userTask,
 		private readonly PortalTaskNode $portalTask,
 		private readonly DecisionTableNode $decisionTable,
+		private readonly CaseOpenNode $caseOpen,
+		private readonly CaseAdvanceNode $caseAdvance,
+		private readonly ActionInputsNode $actionInputs,
+		private readonly TransitionNode $transition,
+		private readonly LinkObjectNode $linkObject,
 	) {
 
 	}//end __construct()
@@ -143,6 +158,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		}
 
 		$event->registerNode(node: $this->setFields);
+		$event->registerNode(node: $this->actionInputs);
 		$event->registerNode(node: $this->explode);
 		$event->registerNode(node: $this->filter);
 		$event->registerNode(node: $this->wait);
@@ -154,6 +170,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 		$event->registerNode(node: $this->subFlow);
 		$event->registerNode(node: $this->router);
 		$event->registerNode(node: $this->objectWrite);
+		$event->registerNode(node: $this->transition);
+		$event->registerNode(node: $this->linkObject);
 		$event->registerNode(node: $this->objectRead);
 		$event->registerNode(node: $this->flowState);
 		$event->registerNode(node: $this->map);
@@ -194,6 +212,11 @@ class FlowNodeRegistrationListener implements IEventListener {
 		// hook rather than the unlock node, so neither is an end node.
 		$event->registerNode(node: $this->lockObject);
 		$event->registerNode(node: $this->unlockObject);
+
+		// The flow engine touching the case layer (one-engine-bpmn-and-cmmn):
+		// a process opens a case plan on its object, or moves one plan item.
+		$event->registerNode(node: $this->caseOpen);
+		$event->registerNode(node: $this->caseAdvance);
 
 		// Entry points. Registered like any other node so the palette can offer
 		// them and the preflight can check their config — a trigger is where a

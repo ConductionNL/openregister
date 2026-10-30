@@ -45,6 +45,14 @@ Implementation below.
     field unchanged; a node with no `IFlowNodeConfigForm` returns a body with
     NO `configForm` key (existing "absent, not empty" convention from
     `FlowNodeRegistry::palette()`, not a new failure mode).
+- [x] 6. The caller's `config` reaches the node. `run()` built a merged step
+  but `executeNode()` re-pins the PUBLISHED graph, which replaced it, so a
+  picker's choice was dropped. `executeNode()` now takes `config` and overlays
+  it on the pinned step (caller keys win); the controller passes it.
+  - unit tests: `FlowRunServiceExecuteNodeTest::testTheCallersConfigOverlaysThePublishedStep`,
+    `testExecuteNodeRunsWithThePublishedConfigByDefault`;
+    `FlowNodeRunControllerTest::testAnAuthorizedCallerRunsTheNodeAndReceivesTheRun`
+    asserts the config is passed.
 - [ ] 4. `composer check:strict` exits 0.
 - [x] 5. `@spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md`
   on every changed/added method.

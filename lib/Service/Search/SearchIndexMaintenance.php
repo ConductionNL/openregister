@@ -56,6 +56,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The work spans registers, schemas, the magic
  *                                                mapper and the connection; naming them is the
  *                                                job rather than a sign of one too many.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Inventory, concurrent rebuild, snapshot and
+ *                                                   restore of the search indexes are one job;
+ *                                                   the rebuild runs on PostgreSQL only and
+ *                                                   refuses elsewhere with its reason.
  */
 class SearchIndexMaintenance {
 	/**
@@ -180,6 +184,49 @@ class SearchIndexMaintenance {
 
 		return $indexes;
 	}//end indexesFor()
+
+	/**
+	 * The index names of many tables, in one read per 500 tables.
+	 *
+	 * The status page lists every table in scope; one pg_indexes query per
+	 * table took 6.5 s for 1,688 tables on a demo instance, long enough that a
+	 * settings card still showed its spinner when the page was read.
+	 *
+	 * @param array<int, string> $tableNames The tables, without the prefix.
+	 *
+	 * @return array<string, array<int, string>> Each table's index names, sorted, keyed as given.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function indexNamesFor(array $tableNames): array {
+		$names = [];
+		foreach ($tableNames as $tableName) {
+			$names[(string)$tableName] = [];
+		}
+
+		if ($names === [] || $this->supportsConcurrentRebuild() === false) {
+			return $names;
+		}
+
+		$prefix = $this->prefix();
+		foreach (array_chunk(array_keys($names), 500) as $chunk) {
+			$full = array_map(static fn (string $name): string => $prefix . $name, $chunk);
+			$placeholders = implode(', ', array_fill(0, count($full), '?'));
+			$statement    = $this->db->prepare(
+				'SELECT tablename, indexname FROM pg_indexes WHERE tablename IN ('.$placeholders.') ORDER BY tablename, indexname'
+			);
+			$statement->execute($full);
+
+			while (($row = $statement->fetch()) !== false) {
+				$table = substr((string)$row['tablename'], strlen($prefix));
+				if (array_key_exists($table, $names) === true) {
+					$names[$table][] = (string)$row['indexname'];
+				}
+			}
+		}
+
+		return $names;
+	}//end indexNamesFor()
 
 	/**
 	 * Rebuild the indexes of every table in scope, beside the ones in use.

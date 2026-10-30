@@ -124,8 +124,6 @@
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Db/MagicMapper/MagicRbacHandler.php" method="hasPermission"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/MagicMapper/MagicRbacHandler.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/MagicMapper/MagicSearchHandler.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Db/MagicMapper/MagicSearchHandler.php" method="buildObjectFilterConditionsSql"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Db/MagicMapper/MagicSearchHandler.php" method="applyObjectFilters"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Db/MultiTenancyTrait.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/ObjectHandlers/HyperFacetHandler.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Db/OrganisationMapper.php"/>
@@ -430,10 +428,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/TextExtraction/SpreadsheetExtractor.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TextExtraction/WordExtractor.php" method="extract"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/TextExtraction/WordExtractor.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/TextExtraction/WordExtractor.php" method="walkWordElements"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/TextExtraction/WordExtractor.php" method="walkWordElements"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/TimeTrackerLinkService.php" method="applyRefreshedInfo"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/TranslationProjectionService.php"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TranslationProjectionService.php" method="project"/>

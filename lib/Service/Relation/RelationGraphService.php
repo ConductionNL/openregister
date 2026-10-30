@@ -339,13 +339,31 @@ class RelationGraphService {
 	 */
 	public function export(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
 		$graph = $this->graph(rootUuid: $rootUuid, depth: $depth, language: $language);
+
+		return ['rows' => $this->rowsOf(graph: $graph), 'graph' => $graph];
+	}//end export()
+
+	/**
+	 * The export rows of a graph, header first.
+	 *
+	 * Separate from export() so a caller that narrows the graph first (the
+	 * controller drops the nodes of schemas whose purpose was not named) writes
+	 * the rows of what it kept, not of the whole walk.
+	 *
+	 * @param array<string, mixed> $graph The graph, as graph() answers it or narrowed.
+	 *
+	 * @return array<int, array<int, string>> The rows.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function rowsOf(array $graph): array {
 		$titles = [];
-		foreach ($graph['nodes'] as $node) {
+		foreach (($graph['nodes'] ?? []) as $node) {
 			$titles[(string)$node['uuid']] = (string)($node['title'] ?? $node['uuid']);
 		}
 
 		$rows = [['from', 'fromTitle', 'relation', 'direction', 'to', 'toTitle', 'origin', 'distance']];
-		foreach ($graph['edges'] as $edge) {
+		foreach (($graph['edges'] ?? []) as $edge) {
 			$rows[] = [
 				(string)$edge['from'],
 				($titles[(string)$edge['from']] ?? ''),
@@ -358,12 +376,12 @@ class RelationGraphService {
 			];
 		}
 
-		if ($graph['truncated'] === true) {
-			$rows[] = ['truncated', (string)$graph['truncatedBy'], '', '', '', '', '', ''];
+		if (($graph['truncated'] ?? false) === true) {
+			$rows[] = ['truncated', (string)($graph['truncatedBy'] ?? ''), '', '', '', '', '', ''];
 		}
 
-		return ['rows' => $rows, 'graph' => $graph];
-	}//end export()
+		return $rows;
+	}//end rowsOf()
 
 	/**
 	 * Every edge touching a level of the walk, from both edge sources.

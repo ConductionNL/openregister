@@ -1,3 +1,4 @@
 # Screens
 
-- OrConfiguraties https://identity.conduction.nl/screens/board?id=openregister/OrConfiguraties
+- LpStore https://identity.conduction.nl/screens/board?id=launchpad/LpStore
+- LpBeheerDelen https://identity.conduction.nl/screens/board?id=launchpad/LpBeheerDelen

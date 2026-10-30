@@ -33,12 +33,14 @@ use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
 use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCP\IUserSession;
 use OCP\L10N\IFactory;
 use OCP\Mail\IMailer;
 use OCP\Mail\IMessage;
@@ -53,6 +55,8 @@ use Psr\Log\AbstractLogger;
  * @uses \OCA\OpenRegister\Event\ViewAlertCrossedEvent
  * @uses \OCA\OpenRegister\Service\Notification\EmailSender
  * @uses \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
  */
 class ViewAlertCrossedListenerTest extends TestCase {
@@ -123,6 +127,10 @@ class ViewAlertCrossedListenerTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'teamleads');
 		$groupManager->method('get')->willReturnCallback(static fn (string $gid): ?IGroup => ($gid === 'teamleads' ? $group : null));
+		$groupManager->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => $uid === 'admin');
+		$groupManager->method('isInGroup')->willReturnCallback(
+			static fn (string $uid, string $gid): bool => ($gid === 'teamleads' && in_array($uid, ['alice', 'bob'], true) === true)
+		);
 
 		$this->warnings = new \ArrayObject();
 		$logger = new class($this->warnings) extends AbstractLogger {
@@ -186,7 +194,8 @@ class ViewAlertCrossedListenerTest extends TestCase {
 			email: new EmailSender(userManager: $userManager, mailer: $mailer, logger: $logger),
 			l10nFactory: $factory,
 			userManager: $userManager,
-			logger: $logger
+			logger: $logger,
+			viewers: new ViewerReachResolver(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $logger)
 		);
 	}//end listener()
 
@@ -245,15 +254,20 @@ class ViewAlertCrossedListenerTest extends TestCase {
 	}//end recordingMessage()
 
 	/**
-	 * A view owned by `owner`, named "Overdue cases".
+	 * A view owned by `owner`, named "Overdue cases", public unless told otherwise.
+	 *
+	 * @param bool                           $isPublic   Whether everyone reads it.
+	 * @param array<int, array<string,mixed>> $sharedWith Its shares.
 	 *
 	 * @return View
 	 */
-	private function view(): View {
+	private function view(bool $isPublic=true, array $sharedWith=[]): View {
 		$view = new View();
 		$view->setUuid('view-uuid-1');
 		$view->setName('Overdue cases');
 		$view->setOwner('owner');
+		$view->setIsPublic($isPublic);
+		$view->setSharedWith($sharedWith);
 
 		return $view;
 	}//end view()
@@ -263,14 +277,15 @@ class ViewAlertCrossedListenerTest extends TestCase {
 	 *
 	 * @param array<string, mixed> $declared The alert block as a view stores it.
 	 * @param int $count The count that crossed.
+	 * @param View|null $view The view that crossed, a public one by default.
 	 *
 	 * @return ViewAlertCrossedEvent
 	 */
-	private function crossing(array $declared, int $count = 23): ViewAlertCrossedEvent {
+	private function crossing(array $declared, int $count = 23, ?View $view = null): ViewAlertCrossedEvent {
 		$alert = ViewAlert::parse($declared);
 		$this->assertNotNull($alert);
 
-		return new ViewAlertCrossedEvent(view: $this->view(), alert: $alert, count: $count);
+		return new ViewAlertCrossedEvent(view: ($view ?? $this->view()), alert: $alert, count: $count);
 	}//end crossing()
 
 	/**
@@ -370,7 +385,7 @@ class ViewAlertCrossedListenerTest extends TestCase {
 	 * The sweep's event reaches this listener: Application subscribes it.
 	 */
 	public function testTheListenerIsSubscribedToTheCrossingEvent(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/ListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(
@@ -378,4 +393,42 @@ class ViewAlertCrossedListenerTest extends TestCase {
 			$application
 		);
 	}//end testTheListenerIsSubscribedToTheCrossingEvent()
+
+	/**
+	 * 🔴 A RECIPIENT WHO NO LONGER READS THE VIEW IS NOT TOLD ABOUT IT.
+	 *
+	 * The save judged the recipients at one instant. After the owner un-publishes
+	 * the view, bob (who reached it only because it was public) must stop getting
+	 * its name and count; carol (shared by name) and the owner still do, and an
+	 * administrator reads everything. The drop is logged.
+	 */
+	public function testARecipientWhoNoLongerReadsTheViewIsDroppedAndLogged(): void {
+		$private = $this->view(isPublic: false, sharedWith: [['user' => 'carol', 'mode' => 'read']]);
+		$this->listener()->handle(
+			$this->crossing(
+				['operator' => 'gte', 'threshold' => 20, 'recipients' => ['user:bob', 'user:carol', 'user:owner']],
+				view: $private
+			)
+		);
+
+		$users = array_column($this->notified, 'user');
+		sort($users);
+		$this->assertSame(['carol'], $users, 'bob lost the view, owner is not a user on this server');
+		$this->assertStringContainsString('bob', implode("\n", $this->warnings->getArrayCopy()));
+	}//end testARecipientWhoNoLongerReadsTheViewIsDroppedAndLogged()
+
+	/**
+	 * A group the view is still shared with keeps its members; a group it was removed from loses them.
+	 */
+	public function testAGroupRecipientFollowsTheViewsShares(): void {
+		$sharedWithTeam = $this->view(isPublic: false, sharedWith: [['group' => 'teamleads', 'mode' => 'read']]);
+		$this->listener()->handle($this->crossing(['operator' => 'gte', 'threshold' => 20, 'recipients' => ['teamleads']], view: $sharedWithTeam));
+		$users = array_column($this->notified, 'user');
+		sort($users);
+		$this->assertSame(['alice', 'bob'], $users);
+
+		$this->notified = [];
+		$this->listener()->handle($this->crossing(['operator' => 'gte', 'threshold' => 20, 'recipients' => ['teamleads']], view: $this->view(isPublic: false)));
+		$this->assertSame([], $this->notified, 'the share was removed, so the group no longer reads the view');
+	}//end testAGroupRecipientFollowsTheViewsShares()
 }//end class

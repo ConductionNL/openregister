@@ -104,7 +104,7 @@
 						{{
 							t(
 								'openregister',
-								'A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.',
+								'A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.',
 							)
 						}}
 					</p>

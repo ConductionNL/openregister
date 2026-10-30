@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
 
 /**
  * The inventory, derived on every read and stored nowhere.
@@ -67,12 +69,20 @@ final class RuleInventoryService {
 	public const DEFAULT_IDLE_DAYS = 90;
 
 	/**
+	 * Reads a declaration's scope and applies the inventory's scope filter.
+	 *
+	 * @var RuleScope
+	 */
+	private readonly RuleScope $scopes;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowTriggerMapper $triggers The derived flow trigger index.
 	 * @param RuleRunSummaryMapper $summaries Last run and last error per rule.
 	 * @param PropertyCalculations $propertyCalculations Lifts a property's own calculation into the one map.
 	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
+	 * @param FlowPublishedGraph|null $published Reads a flow's published graph, where its trigger node's scope lives.
 	 *
 	 * @return void
 	 */
@@ -81,7 +91,9 @@ final class RuleInventoryService {
 		private readonly RuleRunSummaryMapper $summaries,
 		private readonly PropertyCalculations $propertyCalculations,
 		private readonly RuleVocabulary $vocabulary,
+		private readonly ?FlowPublishedGraph $published = null,
 	) {
+		$this->scopes = new RuleScope();
 	}//end __construct()
 
 	/**
@@ -126,12 +138,19 @@ final class RuleInventoryService {
 	 * @param Schema $schema The schema to read.
 	 * @param int $idleDays How long a rule may go unevaluated before it is flagged.
 	 * @param DateTime|null $now The moment to measure the idle window from.
+	 * @param array<string, mixed> $scope Property => value: only the rules with that scope, plus those without one.
 	 *
 	 * @return array<int, array<string, mixed>> The inventory rows.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function inventory(Schema $schema, int $idleDays = self::DEFAULT_IDLE_DAYS, ?DateTime $now = null): array {
+	public function inventory(
+		Schema $schema,
+		int $idleDays = self::DEFAULT_IDLE_DAYS,
+		?DateTime $now = null,
+		array $scope = []
+	): array {
 		$slug = (string)($schema->getSlug() ?? '');
 		$summaries = $this->summaries->findBySchema(schemaSlug: $slug);
 		$measuredAt = ($now ?? new DateTime());
@@ -139,6 +158,10 @@ final class RuleInventoryService {
 
 		$rows = [];
 		foreach ($this->describe(schema: $schema) as $descriptor) {
+			if ($this->scopes->admits(scope: $descriptor->getScope(), filter: $scope) === false) {
+				continue;
+			}
+
 			$row = $descriptor->jsonSerialize();
 			$summary = ($summaries[$descriptor->getId()] ?? null);
 
@@ -224,7 +247,8 @@ final class RuleInventoryService {
 				enabled: ($declaration['enabled'] ?? true) !== false,
 				actions: [RuleVocabulary::ACTION_SET_VALUE],
 				condition: ($declaration['expression'] ?? null),
-				maxObjects: $this->ceilingOf(declaration: $declaration)
+				maxObjects: $this->ceilingOf(declaration: $declaration),
+				scope: $this->scopes->fromDeclaration(declaration: $declaration)
 			);
 		}
 
@@ -266,7 +290,8 @@ final class RuleInventoryService {
 				enabled: ($block['enabled'] ?? true) !== false,
 				actions: RuleVocabulary::KINDS[RuleVocabulary::KIND_STATE_FIELD_RULE]['actions'],
 				condition: ($block['condition'] ?? null),
-				maxObjects: $this->ceilingOf(declaration: $block)
+				maxObjects: $this->ceilingOf(declaration: $block),
+				scope: $this->scopes->fromDeclaration(declaration: $block)
 			);
 		}
 
@@ -308,7 +333,8 @@ final class RuleInventoryService {
 				enabled: ($spec['enabled'] ?? true) !== false,
 				actions: [RuleVocabulary::ACTION_REFUSE_TRANSITION],
 				condition: $spec['condition'],
-				maxObjects: $this->ceilingOf(declaration: $spec)
+				maxObjects: $this->ceilingOf(declaration: $spec),
+				scope: $this->scopes->fromDeclaration(declaration: $spec)
 			);
 		}
 
@@ -356,7 +382,8 @@ final class RuleInventoryService {
 				source: ('openregister_flow_triggers.' . (string)$uuid),
 				enabled: $flow['enabled'],
 				actions: [RuleVocabulary::ACTION_RUN_FLOW],
-				condition: ['events' => $events]
+				condition: ['events' => $events],
+				scope: $this->flowScopeOf(flowUuid: (string)$uuid, schemaSlug: $slug)
 			);
 		}
 
@@ -383,4 +410,37 @@ final class RuleInventoryService {
 
 		return $ceiling;
 	}//end ceilingOf()
+	/**
+	 * The scope of a flow, read from its object trigger node for this schema.
+	 *
+	 * The published graph is the one that runs, so it is the one asked.
+	 *
+	 * @param string $flowUuid The flow's uuid.
+	 * @param string $schemaSlug The schema the inventory lists.
+	 *
+	 * @return array{property: string, value: string}|null The scope, or null when the trigger node declares none.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function flowScopeOf(string $flowUuid, string $schemaSlug): ?array {
+		$graph = $this->published?->graphOf(flowId: $flowUuid);
+		if (is_array($graph) === false) {
+			return null;
+		}
+
+		foreach ((array)($graph['nodes'] ?? []) as $node) {
+			if (is_array($node) === false || ($node['type'] ?? null) !== FlowTriggerDerivation::OBJECT_TRIGGER) {
+				continue;
+			}
+
+			$config = (array)($node['config'] ?? []);
+			$schema = (string)($config['schema'] ?? '');
+			$scope = $this->scopes->fromDeclaration(declaration: $config);
+			if ($scope !== null && ($schema === $schemaSlug || $schema === '')) {
+				return $scope;
+			}
+		}
+
+		return null;
+	}//end flowScopeOf()
 }//end class

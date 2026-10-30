@@ -1,0 +1,1267 @@
+{
+    "OCA\\OpenRegister\\Event\\AgentCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "AgentCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "AgentCreatedEvent",
+            {
+                "objectType": "agent",
+                "action": "created",
+                "agent": {
+                    "entity": "Agent",
+                    "from": "getAgent"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\AgentDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "AgentDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "AgentDeletedEvent",
+            {
+                "objectType": "agent",
+                "action": "deleted",
+                "agent": {
+                    "entity": "Agent",
+                    "from": "getAgent"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\AgentUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "AgentUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "AgentUpdatedEvent",
+            {
+                "objectType": "agent",
+                "action": "updated",
+                "agent": {
+                    "entity": "Agent",
+                    "from": "getAgent"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ApplicationCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ApplicationCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "ApplicationCreatedEvent",
+            {
+                "objectType": "application",
+                "action": "created",
+                "application": {
+                    "entity": "Application",
+                    "from": "getApplication"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ApplicationDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ApplicationDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "ApplicationDeletedEvent",
+            {
+                "objectType": "application",
+                "action": "deleted",
+                "application": {
+                    "entity": "Application",
+                    "from": "getApplication"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ApplicationUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ApplicationUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "ApplicationUpdatedEvent",
+            {
+                "objectType": "application",
+                "action": "updated",
+                "application": {
+                    "entity": "Application",
+                    "from": "getNewApplication"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ConfigurationCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ConfigurationCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "ConfigurationCreatedEvent",
+            {
+                "objectType": "configuration",
+                "action": "created",
+                "configuration": {
+                    "entity": "Configuration",
+                    "from": "getConfiguration"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ConfigurationDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ConfigurationDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "ConfigurationDeletedEvent",
+            {
+                "objectType": "configuration",
+                "action": "deleted",
+                "configuration": {
+                    "entity": "Configuration",
+                    "from": "getConfiguration"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ConfigurationUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ConfigurationUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "ConfigurationUpdatedEvent",
+            {
+                "objectType": "configuration",
+                "action": "updated",
+                "configuration": {
+                    "entity": "Configuration",
+                    "from": "getConfiguration"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ConversationCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ConversationCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "ConversationCreatedEvent",
+            {
+                "objectType": "conversation",
+                "action": "created",
+                "conversation": {
+                    "entity": "Conversation",
+                    "from": "getConversation"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ConversationDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ConversationDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "ConversationDeletedEvent",
+            {
+                "objectType": "conversation",
+                "action": "deleted",
+                "conversation": {
+                    "entity": "Conversation",
+                    "from": "getConversation"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ConversationUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ConversationUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "ConversationUpdatedEvent",
+            {
+                "objectType": "conversation",
+                "action": "updated",
+                "conversation": {
+                    "entity": "Conversation",
+                    "from": "getConversation"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectCreatedEvent",
+            {
+                "objectType": "object",
+                "action": "create",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                },
+                "objectUuid": "uuid-getObject",
+                "register": "register-getObject",
+                "schema": "schema-getObject",
+                "timestamp": "<timestamp>"
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectCreatingEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectCreatingEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectCreatingEvent",
+            {
+                "objectType": "object",
+                "action": "creating",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                },
+                "register": "register-getObject",
+                "schema": "schema-getObject"
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectDeletedEvent",
+            {
+                "objectType": "object",
+                "action": "delete",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                },
+                "objectUuid": "uuid-getObject",
+                "register": "register-getObject",
+                "schema": "schema-getObject",
+                "timestamp": "<timestamp>"
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectDeletingEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectDeletingEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectDeletingEvent",
+            {
+                "objectType": "object",
+                "action": "deleting",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectLockedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectLockedEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectLockedEvent",
+            {
+                "objectType": "object",
+                "action": "locked",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectRevertedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectRevertedEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectRevertedEvent",
+            {
+                "objectType": "object",
+                "action": "reverted",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                },
+                "revertPoint": "from-getRevertPoint"
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectTransitionedEvent": [
+        [
+            "warning",
+            "[WebhookEventListener] Could not extract payload from event",
+            "ObjectTransitionedEvent"
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectUnlockedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectUnlockedEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectUnlockedEvent",
+            {
+                "objectType": "object",
+                "action": "unlocked",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectUpdatedEvent",
+            {
+                "objectType": "object",
+                "action": "update",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getNewObject",
+                        "slug": null,
+                        "name": "uuid-getNewObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getNewObject",
+                        "schema": "schema-getNewObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getNewObject"
+                },
+                "objectUuid": "uuid-getNewObject",
+                "register": "register-getNewObject",
+                "schema": "schema-getNewObject",
+                "timestamp": "<timestamp>"
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectUpdatingEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectUpdatingEvent",
+            {
+                "objectType": "object",
+                "action": "updating",
+                "newObject": {
+                    "@self": {
+                        "id": "uuid-getNewObject",
+                        "slug": null,
+                        "name": "uuid-getNewObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getNewObject",
+                        "schema": "schema-getNewObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getNewObject"
+                },
+                "oldObject": {
+                    "@self": {
+                        "id": "uuid-getOldObject",
+                        "slug": null,
+                        "name": "uuid-getOldObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getOldObject",
+                        "schema": "schema-getOldObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getOldObject"
+                },
+                "register": "register-getNewObject",
+                "schema": "schema-getNewObject"
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\OrganisationCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "OrganisationCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "OrganisationCreatedEvent",
+            {
+                "objectType": "organisation",
+                "action": "created",
+                "organisation": {
+                    "entity": "Organisation",
+                    "from": "getOrganisation"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\OrganisationDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "OrganisationDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "OrganisationDeletedEvent",
+            {
+                "objectType": "organisation",
+                "action": "deleted",
+                "organisation": {
+                    "entity": "Organisation",
+                    "from": "getOrganisation"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\OrganisationUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "OrganisationUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "OrganisationUpdatedEvent",
+            {
+                "objectType": "organisation",
+                "action": "updated",
+                "organisation": {
+                    "entity": "Organisation",
+                    "from": "getOrganisation"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "RegisterCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "RegisterCreatedEvent",
+            {
+                "objectType": "register",
+                "action": "created",
+                "register": {
+                    "entity": "Register",
+                    "from": "getRegister"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\RegisterDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "RegisterDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "RegisterDeletedEvent",
+            {
+                "objectType": "register",
+                "action": "deleted",
+                "register": {
+                    "entity": "Register",
+                    "from": "getRegister"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\RegisterUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "RegisterUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "RegisterUpdatedEvent",
+            {
+                "objectType": "register",
+                "action": "updated",
+                "register": {
+                    "entity": "Register",
+                    "from": "getNewRegister"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\SchemaCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "SchemaCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "SchemaCreatedEvent",
+            {
+                "objectType": "schema",
+                "action": "created",
+                "schema": {
+                    "entity": "Schema",
+                    "from": "getSchema"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\SchemaDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "SchemaDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "SchemaDeletedEvent",
+            {
+                "objectType": "schema",
+                "action": "deleted",
+                "schema": {
+                    "entity": "Schema",
+                    "from": "getSchema"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\SchemaUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "SchemaUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "SchemaUpdatedEvent",
+            {
+                "objectType": "schema",
+                "action": "updated",
+                "schema": {
+                    "entity": "Schema",
+                    "from": "getNewSchema"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\SourceCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "SourceCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "SourceCreatedEvent",
+            {
+                "objectType": "source",
+                "action": "created",
+                "source": {
+                    "entity": "Source",
+                    "from": "getSource"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\SourceDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "SourceDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "SourceDeletedEvent",
+            {
+                "objectType": "source",
+                "action": "deleted",
+                "source": {
+                    "entity": "Source",
+                    "from": "getSource"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\SourceUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "SourceUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "SourceUpdatedEvent",
+            {
+                "objectType": "source",
+                "action": "updated",
+                "source": {
+                    "entity": "Source",
+                    "from": "getSource"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ViewCreatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ViewCreatedEvent"
+        ],
+        [
+            "dispatch",
+            "ViewCreatedEvent",
+            {
+                "objectType": "view",
+                "action": "created",
+                "view": {
+                    "entity": "View",
+                    "from": "getView"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ViewDeletedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ViewDeletedEvent"
+        ],
+        [
+            "dispatch",
+            "ViewDeletedEvent",
+            {
+                "objectType": "view",
+                "action": "deleted",
+                "view": {
+                    "entity": "View",
+                    "from": "getView"
+                }
+            }
+        ]
+    ],
+    "OCA\\OpenRegister\\Event\\ViewUpdatedEvent": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ViewUpdatedEvent"
+        ],
+        [
+            "dispatch",
+            "ViewUpdatedEvent",
+            {
+                "objectType": "view",
+                "action": "updated",
+                "view": {
+                    "entity": "View",
+                    "from": "getView"
+                }
+            }
+        ]
+    ],
+    "OCP\\EventDispatcher\\Event": [
+        [
+            "warning",
+            "[WebhookEventListener] Could not extract payload from event",
+            "Event"
+        ]
+    ],
+    "ObjectRevertedEvent without revert point": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectRevertedEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectRevertedEvent",
+            {
+                "objectType": "object",
+                "action": "reverted",
+                "object": {
+                    "@self": {
+                        "id": "uuid-getObject",
+                        "slug": null,
+                        "name": "uuid-getObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getObject",
+                        "schema": "schema-getObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getObject"
+                },
+                "revertPoint": null
+            }
+        ]
+    ],
+    "ObjectUpdatingEvent without old object": [
+        [
+            "debug",
+            "[WebhookEventListener] Processing event for webhooks",
+            "ObjectUpdatingEvent"
+        ],
+        [
+            "dispatch",
+            "ObjectUpdatingEvent",
+            {
+                "objectType": "object",
+                "action": "updating",
+                "newObject": {
+                    "@self": {
+                        "id": "uuid-getNewObject",
+                        "slug": null,
+                        "name": "uuid-getNewObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getNewObject",
+                        "schema": "schema-getNewObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getNewObject"
+                },
+                "oldObject": null,
+                "register": "register-getNewObject",
+                "schema": "schema-getNewObject"
+            }
+        ]
+    ]
+}

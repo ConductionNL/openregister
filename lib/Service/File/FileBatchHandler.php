@@ -185,7 +185,12 @@ class FileBatchHandler {
 				$this->fileService->unpublishFile(object: $object, filePath: $fileId);
 				break;
 			case 'delete':
-				$this->fileService->deleteFile(file: $fileId, object: $object);
+				// FileService answers false for a file that is still there (an
+				// operation a listener aborted, such as the frozen-object guard):
+				// that is a failed delete, not a succeeded one.
+				if ($this->fileService->deleteFile(file: $fileId, object: $object) === false) {
+					throw new Exception('The file could not be deleted');
+				}
 				break;
 			case 'label':
 				$labels = $params['labels'] ?? [];

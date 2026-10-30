@@ -280,11 +280,15 @@ class FlowNodeRunController extends Controller {
 
 		$flowDocument = ($this->subjects->resolveFlow(flowId: $id) ?? ['id' => $id, 'nodes' => [$mergedStep], 'edges' => []]);
 
+		// The caller's config goes in explicitly: executeNode() re-pins the
+		// PUBLISHED graph, which replaces every node in $flowDocument, so a
+		// $mergedStep placed there alone never reached the node.
 		$run = $this->runner->executeNode(
 			run: $run,
 			flow: $flowDocument,
 			subject: $object,
-			nodeId: $nodeId
+			nodeId: $nodeId,
+			config: $callerConfig
 		);
 
 		return new JSONResponse($run->jsonSerialize(), Http::STATUS_CREATED);

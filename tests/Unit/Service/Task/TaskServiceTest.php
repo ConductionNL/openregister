@@ -64,6 +64,7 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
+ * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class TaskServiceTest extends TestCase {
 
@@ -1244,4 +1245,18 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 	}//end setUpAuditRecorder()
+	/**
+	 * A task is found by its external key; a blank key asks nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function testATaskIsFoundByItsKey(): void {
+		$task = $this->openTask();
+		$this->tasks->expects($this->once())->method('findByKey')->with('dossiq:once:rule:t:r:case-1')->willReturn([$task]);
+
+		$this->assertSame([$task], $this->service()->findByKey(key: ' dossiq:once:rule:t:r:case-1 '));
+		$this->assertSame([], $this->service()->findByKey(key: '  '));
+	}//end testATaskIsFoundByItsKey()
 }//end class

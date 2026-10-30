@@ -10,8 +10,9 @@
  * the vocabulary.
  *
  * BACKWARD: when a task the graph raised reaches a terminal state, this class
- * wakes the run (D-2: `signal()` with an EMPTY payload, because the answer is
- * in the task row, not in transit) and spends the node's `advance` budget by
+ * wakes the run (D-2: the answer is in the task row, not in transit; the
+ * signal carries the task's outcome bag so it cannot erase what another
+ * listener on the same event signalled) and spends the node's `advance` budget by
  * calling the SAME advance path the worker and a synchronous run use
  * ({@see FlowRunAdvancer::advance()}). There is no second walk implementation:
  * the budget travels as a per-walk ceiling on the run context and the engine's
@@ -323,7 +324,11 @@ class FlowTaskBridge {
 	 *
 	 * Three steps, each of which may legitimately do nothing:
 	 *
-	 * 1. `signal()` with an empty payload parks the run as due. Null means the
+	 * 1. `signal()` with the task's outcome bag parks the run as due. It used
+	 *    to send an empty payload, and `signal()` assigns the payload outright,
+	 *    so a second listener's payload (dossiq's ask step sends who answered)
+	 *    was erased whenever this one ran last. The bag carries the same
+	 *    fields the items get, `completedBy` included. Null means the
 	 *    run is not suspended: it is mid-walk (and will read the task itself)
 	 *    or already terminal. Nothing more to do.
 	 * 2. The node's stored budget decides whether to go on. Zero returns here,
@@ -361,7 +366,7 @@ class FlowTaskBridge {
 		}
 
 		$runService = $this->container->get(FlowRunService::class);
-		$woken = $runService->signal(run: $run, payload: []);
+		$woken = $runService->signal(run: $run, payload: self::outcomeBagFor(task: $task));
 		if ($woken === null) {
 			return null;
 		}

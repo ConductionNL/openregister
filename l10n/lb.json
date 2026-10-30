@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} mislukt",
         "0 = unlimited": "0 = onbeperkt",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "E Flux féiert eng Rei vu Schrëtt aus, wann eppes geschitt — en Objet ännert sech, en Zäitplang gëtt ausgeléist oder Dir féiert en selwer aus. Dës Lëscht weist d'Fluxe vun all App.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "E VAPID-Schlësselpaar ass konfiguréiert. Benotzer kënnen a hire perséinlechen Astellunge Browser-Notifikatiounen aktivéieren, déi och geliwwert ginn, wann de Browser-Tab zou ass.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "E VAPID-Schlësselpaar ass konfiguréiert. Benotzer kënnen a hire Benotzerastellunge Browser-Notifikatiounen aktivéieren, déi och geliwwert ginn, wann de Browser-Tab zou ass.",
         "A deactivation request is pending.": "Er is een deactiveringsverzoek in behandeling.",
         "AI Assistant": "KI-Assistent",
         "AI Chat": "KI-Chat",

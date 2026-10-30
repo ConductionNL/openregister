@@ -66,6 +66,11 @@ use Throwable;
  * avoid. Graph-mode derivation is the extractable block if the class grows
  * again; it is left alone here so the provider change stays readable as a
  * diff.
+ *
+ * @SuppressWarnings(PHPMD.TooManyMethods) The two helpers past the threshold
+ * (`inputPresentation()`, `publishedOptions()`) shape the published `inputs`
+ * contract, and live beside `publishedInputs()` for the reason above: one
+ * place decides what a client is told a transition asks for.
  */
 class TransitionEngine {
 	/**
@@ -902,7 +907,7 @@ class TransitionEngine {
 	 * machine; a `graph` block derives moves from FK-scoped siblings. Static
 	 * wins over both delegating modes wherever more than one is declared.
 	 *
-	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string,blocked?:bool}>
+	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool,label?:string,options?:list<array{value:string,label:string}>}>,label?:string,blocked?:bool}>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
 	 * guard + per-transition from/requires/description checks each add one branch; none can be removed
@@ -1026,7 +1031,7 @@ class TransitionEngine {
 	 * @param ObjectEntity $object The object whose actions are being listed.
 	 * @param string $tag The `provider` DI tag off the annotation.
 	 *
-	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string,blocked?:bool}>
+	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool,label?:string,options?:list<array{value:string,label:string}>}>,label?:string,blocked?:bool}>
 	 *
 	 * @throws LifecycleProviderException When the tag resolves to nothing, resolves to the
 	 *                          wrong type, or the provider throws while answering.
@@ -1076,7 +1081,7 @@ class TransitionEngine {
 	 *
 	 * @param array<int|string, mixed> $entries Whatever the provider returned.
 	 *
-	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>,label?:string,blocked?:bool}>
+	 * @return list<array{action:string,to:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool,label?:string,options?:list<array{value:string,label:string}>}>,label?:string,blocked?:bool}>
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1332,7 +1337,7 @@ class TransitionEngine {
 	 * @param Schema $schema The schema whose lifecycle declares the transition.
 	 * @param string $action The transition action name.
 	 *
-	 * @return array<int, array{field: string, required: bool}>|null The declared inputs, or null when the action is not declared.
+	 * @return list<array{field:string,required:bool,label?:string,options?:list<array{value:string,label:string}>}>|null Null when undeclared.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
 	 */
@@ -1352,30 +1357,124 @@ class TransitionEngine {
 	}//end declaredInputs()
 
 	/**
-	 * The response shape of a declared `inputs` list: `[{field, required}]`.
+	 * The response shape of a declared `inputs` list: `[{field, required}]`,
+	 * plus `label` and `options` on an input that declares them.
 	 *
 	 * Runs the declaration through the SAME normalisation the allowlist uses,
 	 * so what a client is told the transition accepts is exactly what the
 	 * write path will accept; a malformed entry the allowlist skips is not
 	 * published either.
 	 *
+	 * `label` and `options` only say how to ASK for the value: the words to
+	 * put beside the field, and the values to pick from instead of typing
+	 * one. They change nothing the allowlist accepts. The value is still
+	 * validated by whoever writes it (the save path, or the provider), so an
+	 * input that offers choices never becomes a second authority on them.
+	 * Both keys are absent on an input that declares neither, so the shape
+	 * of an existing declaration is unchanged.
+	 *
 	 * @param array<int, mixed> $inputs The transition's declared `inputs` list.
 	 *
-	 * @return array<int, array{field: string, required: bool}> The published list, in declaration order.
+	 * @return list<array{field:string,required:bool,label?:string,options?:list<array{value:string,label:string}>}> In declaration order.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function publishedInputs(array $inputs): array {
+		$asked     = $this->inputPresentation(inputs: $inputs);
 		$published = [];
 		foreach ($this->normaliseDeclaredInputs(inputs: $inputs) as $field => $required) {
-			$published[] = [
-				'field' => (string)$field,
-				'required' => $required,
-			];
+			$published[] = array_merge(
+				[
+					'field' => (string)$field,
+					'required' => $required,
+				],
+				($asked[(string)$field] ?? [])
+			);
 		}
 
 		return $published;
 	}//end publishedInputs()
+
+	/**
+	 * How each declared input asks for its value: its `label` and `options`.
+	 *
+	 * Keyed by field name, and a later declaration of the same field replaces
+	 * an earlier one, which is how {@see normaliseDeclaredInputs()} treats the
+	 * `required` flag of a repeated field too.
+	 *
+	 * @param array<int, mixed> $inputs The transition's declared `inputs` list.
+	 *
+	 * @return array<string, array{label?: string, options?: list<array{value: string, label: string}>}> The presentation per field.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function inputPresentation(array $inputs): array {
+		$presentation = [];
+		foreach ($inputs as $input) {
+			if (is_array($input) === false || (string)($input['field'] ?? '') === '') {
+				continue;
+			}
+
+			$asked = [];
+			$label = ($input['label'] ?? null);
+			if (is_string($label) === true && trim($label) !== '') {
+				$asked['label'] = trim($label);
+			}
+
+			$options = $this->publishedOptions(options: ($input['options'] ?? null));
+			if ($options !== []) {
+				$asked['options'] = $options;
+			}
+
+			$presentation[(string)$input['field']] = $asked;
+		}
+
+		return $presentation;
+	}//end inputPresentation()
+
+	/**
+	 * The choices an input offers, as `[{value, label}]`.
+	 *
+	 * An option without a usable value is dropped rather than published: a
+	 * choice that cannot be sent is not a choice. An option without a label
+	 * is labelled by its value, so nothing renders blank.
+	 *
+	 * @param mixed $options The declared `options`, whatever was spelled.
+	 *
+	 * @return list<array{value: string, label: string}> The usable options, in declaration order.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function publishedOptions(mixed $options): array {
+		if (is_array($options) === false) {
+			return [];
+		}
+
+		$published = [];
+		foreach ($options as $option) {
+			$value = null;
+			if (is_array($option) === true) {
+				$value = ($option['value'] ?? null);
+			}
+
+			if ((is_string($value) === false && is_int($value) === false) || trim((string)$value) === '') {
+				continue;
+			}
+
+			$label = ($option['label'] ?? null);
+			if (is_string($label) === false || trim($label) === '') {
+				$label = (string)$value;
+			}
+
+			$published[] = [
+				'value' => (string)$value,
+				'label' => trim($label),
+			];
+		}
+
+		return $published;
+	}//end publishedOptions()
 
 	/**
 	 * Validate a transition `data` payload against the declared `inputs` allowlist.

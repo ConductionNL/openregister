@@ -54,6 +54,7 @@ class RoutesTest extends TestCase {
 				'health#index',
 				'store#search',
 				'store#install',
+				'store#publish',
 				'dashboard#catchAll',
 			],
 			$names

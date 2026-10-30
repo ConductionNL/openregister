@@ -17,7 +17,7 @@
  * WHERE MAY THE FLOW SEND SOMEBODY AFTERWARDS. An attacker-chosen redirect target on
  * a callback is an open redirect, so a proposed return URL is reduced to a PATH on
  * this instance and anything carrying its own scheme or host is discarded in favour
- * of personal settings. The reduced value is then carried inside the signed state, so
+ * of the app page. The reduced value is then carried inside the signed state, so
  * the callback only ever redirects somewhere the instance itself approved rather than
  * to anything present in the request that came back.
  *
@@ -97,10 +97,8 @@ class OAuth2Endpoints {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	public function safeReturnUrl(string $candidate): string {
-		$fallback = $this->urlGenerator->linkToRouteAbsolute(
-			'settings.PersonalSettings.index',
-			['section' => 'additional']
-		);
+		// The app's own page: Connected accounts is in its user settings dialog.
+		$fallback = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
 		$candidate = trim($candidate);
 		if ($candidate === '') {

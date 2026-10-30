@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -57,6 +58,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 class ImportServiceRegisterAutoCreateTest extends TestCase {
+	use PassThroughL10nTrait;
+
 
 	/** @var RegisterMapper&MockObject */
 	private RegisterMapper $registerMapper;
@@ -125,7 +128,7 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$translationCsvCodec,
 			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new MappingEngine(),
+			new MappingEngine($this->passThroughL10n()),
 			$this->createMock(ValidateObject::class),
 			$container
 		);

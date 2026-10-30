@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -45,6 +46,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 class ImportServiceMigrationPackTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	/** @var SchemaMapper&MockObject */
 	private SchemaMapper $schemaMapper;
 
@@ -76,7 +79,7 @@ class ImportServiceMigrationPackTest extends TestCase {
 			$groupManager,
 			$translationCsvCodec,
 			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new MappingEngine(),
+			new MappingEngine($this->passThroughL10n()),
 			$this->validateObjectHandler,
 			$this->createMock(\Psr\Container\ContainerInterface::class)
 		);

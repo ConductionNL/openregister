@@ -41,10 +41,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
@@ -432,6 +434,9 @@ class MagicFacetHandler {
 	 * @param array $query The search query with filters and facet config.
 	 *
 	 * @return array Merged facet results across all tables.
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException When the query carries `_related` or `_referenced`.
+	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacetsUnion(array $tableConfigs, array $query): array {
@@ -440,6 +445,11 @@ class MagicFacetHandler {
 		if (empty($tableConfigs) === true) {
 			return [];
 		}
+
+		// A `_related`/`_referenced` filter cannot be honoured in these raw-SQL
+		// arms. Refuse HERE, before the per-facet queries, whose own catch blocks
+		// would turn the refusal into empty buckets with only a log line.
+		$this->searchHandler?->refuseRelatedRowFilters(query: $query);
 
 		// Extract facet configuration.
 		$facetConfig = $query['_facets'] ?? [];
@@ -669,7 +679,8 @@ class MagicFacetHandler {
 				$whereConditions = $this->searchHandler->buildWhereConditionsSql(
 					query: $baseQuery,
 					schema: $tcSchema,
-					registerId: ($tc['register'] ?? null)?->getId()
+					registerId: ($tc['register'] ?? null)?->getId(),
+					tableName: $tableName
 				);
 				foreach ($whereConditions as $condition) {
 					// Skip '1=0' conditions - they mean filter column doesn't exist on this schema.
@@ -738,8 +749,14 @@ class MagicFacetHandler {
 
 			// Batch resolve labels AFTER normalization (so we only resolve individual UUIDs).
 			$labelMap = [];
+			$firstConfig = reset($tableConfigs);
+			if ($isMetadata === false
+				&& $this->anyHoldsObjectReferences(tableConfigs: $tableConfigs, column: $field) === false
+			) {
+				$uuidsToResolve = [];
+			}
+
 			if (empty($uuidsToResolve) === false && $isMetadata === false) {
-				$firstConfig = reset($tableConfigs);
 				$labelMap = $this->batchResolveUuidLabels(
 					uuids: $uuidsToResolve,
 					field: $field,
@@ -918,7 +935,8 @@ class MagicFacetHandler {
 				$whereConditions = $this->searchHandler->buildWhereConditionsSql(
 					query: $baseQuery,
 					schema: $tcSchema,
-					registerId: ($tc['register'] ?? null)?->getId()
+					registerId: ($tc['register'] ?? null)?->getId(),
+					tableName: $tableName
 				);
 				foreach ($whereConditions as $condition) {
 					if ($condition === '1=0') {
@@ -1181,8 +1199,16 @@ class MagicFacetHandler {
 	 * @return bool Whether the facet may be offered.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function callerMayFacet(Schema $schema, string $property): bool {
+		// An explicit-reveal value is shown only through the logged reveal; its
+		// distinct values in a facet would list it unmasked, for anyone.
+		if (in_array($property, ExplicitReveal::explicitProperties(schema: $schema), true) === true) {
+			return false;
+		}
+
 		if ($schema->hasPropertyAuthorization() === false) {
 			// Nothing on this schema is governed at property level, so there is
 			// no question to ask and no handler to resolve.
@@ -1400,6 +1426,12 @@ class MagicFacetHandler {
 			}
 		}
 
+		$objectReferences = $isMetadata === true
+			|| $this->holdsObjectReferences(schema: $schema, column: $field) === true;
+		if ($objectReferences === false) {
+			$uuidsToResolve = [];
+		}
+
 		// Batch resolve all UUID labels at once (after normalization).
 		$labelMap = [];
 		if (empty($uuidsToResolve) === false && $isMetadata === false) {
@@ -1412,20 +1444,26 @@ class MagicFacetHandler {
 		}
 
 		// Build final buckets with labels.
+		$batchKeys = [];
+		if ($isMetadata === false) {
+			$batchKeys = array_flip($uuidsToResolve);
+		}
+
 		$buckets = [];
 		foreach ($normalizedBuckets as $bucket) {
 			$key = $bucket['key'];
 
-			// Use batch-resolved label if available, otherwise fall back to individual lookup.
-			$label = $this->getFieldLabel(
-				field: $field,
-				value: $key,
-				isMetadata: $isMetadata,
-				register: $register,
-				schema: $schema
-			);
-			if (isset($labelMap[$key]) === true) {
-				$label = $labelMap[$key];
+			$label = (string)$key;
+			if ($objectReferences === true) {
+				$label = $this->resolveBucketLabel(
+					key: $key,
+					labelMap: $labelMap,
+					batchResolved: is_string($key) === true && isset($batchKeys[$key]) === true,
+					field: $field,
+					isMetadata: $isMetadata,
+					register: $register,
+					schema: $schema
+				);
 			}
 
 			$buckets[] = [
@@ -1446,6 +1484,107 @@ class MagicFacetHandler {
 
 		return $result;
 	}//end getTermsFacet()
+
+	/**
+	 * Whether the values of a faceted column can be OpenRegister object references.
+	 *
+	 * A property that declares a `referenceType` holds the id of an entity an
+	 * integration manages (a Nextcloud group, a contact, a calendar), never an
+	 * object, so its values are not looked up as object names. Such an id can
+	 * still look like a UUID, and a name lookup for a UUID no object carries
+	 * scans every magic table.
+	 *
+	 * @param Schema $schema The schema the column belongs to.
+	 * @param string $column The column name as the facet queries it.
+	 *
+	 * @return bool False when the property declares a referenceType.
+	 *
+	 * @spec exclude facet label performance guard; object-reference labels unchanged, a UUID-shaped integration id is labelled in full
+	 */
+	private function holdsObjectReferences(Schema $schema, string $column): bool {
+		foreach ($schema->getProperties() ?? [] as $name => $property) {
+			if ($this->sanitizeColumnName(name: (string)$name) !== $column || is_array($property) === false) {
+				continue;
+			}
+
+			$referenceType = $property['referenceType'] ?? null;
+			return is_string($referenceType) === false || $referenceType === '';
+		}
+
+		return true;
+	}//end holdsObjectReferences()
+
+	/**
+	 * Whether any table of a union facet can hold object references in a column.
+	 *
+	 * Two schemas in one union can share a column name with a different meaning,
+	 * so the name lookup is skipped only when every schema declares a
+	 * referenceType for it; one schema holding object references keeps it.
+	 *
+	 * @param array<int, array{schema: Schema}> $tableConfigs The union's table configurations.
+	 * @param string                            $column       The column name as the facet queries it.
+	 *
+	 * @return bool False only when every schema declares a referenceType for the column.
+	 *
+	 * @spec exclude performance guard on facet label resolution, the multi-schema form of holdsObjectReferences()
+	 */
+	private function anyHoldsObjectReferences(array $tableConfigs, string $column): bool {
+		foreach ($tableConfigs as $config) {
+			if ($this->holdsObjectReferences(schema: $config['schema'], column: $column) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyHoldsObjectReferences()
+
+	/**
+	 * Pick the label for one terms bucket.
+	 *
+	 * A key the batch lookup already asked about is never looked up again on its
+	 * own: a UUID the batch could not name (a dangling reference, or an object the
+	 * caller may not read) would otherwise cost a scan of every magic table per
+	 * bucket.
+	 *
+	 * @param mixed                 $key           The bucket key.
+	 * @param array<string, string> $labelMap      Labels from batchResolveUuidLabels().
+	 * @param bool                  $batchResolved Whether the batch lookup already asked about this key.
+	 * @param string                $field         The facet field.
+	 * @param bool                  $isMetadata    Whether this is a metadata field.
+	 * @param Register              $register      The register context.
+	 * @param Schema                $schema        The schema context.
+	 *
+	 * @return string The bucket label.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec exclude performance-only refactor of the facet label loop; output is unchanged
+	 */
+	private function resolveBucketLabel(
+		mixed $key,
+		array $labelMap,
+		bool $batchResolved,
+		string $field,
+		bool $isMetadata,
+		Register $register,
+		Schema $schema,
+	): string {
+		if (is_string($key) === true && isset($labelMap[$key]) === true) {
+			return $labelMap[$key];
+		}
+
+		if ($batchResolved === true) {
+			return substr((string)$key, 0, 8) . '...';
+		}
+
+		return $this->getFieldLabel(
+			field: $field,
+			value: $key,
+			isMetadata: $isMetadata,
+			register: $register,
+			schema: $schema
+		);
+	}//end resolveBucketLabel()
 
 	/**
 	 * Order facet groups so the NULL group is always the first row.
@@ -1696,8 +1835,9 @@ class MagicFacetHandler {
 			}
 
 			// Load ALL columns for this table in one query (instead of one query per column).
+			// table_name is compared as stored, so PostgreSQL can use the catalog index.
 			$sql = 'SELECT LOWER(column_name) as col FROM information_schema.columns
-                    WHERE LOWER(table_name) = ?';
+                    WHERE table_name = ?';
 
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([$fullTableNameLower]);
@@ -1740,10 +1880,12 @@ class MagicFacetHandler {
 		string $tableName,
 		?Schema $schema = null,
 	): void {
-		// Exclude deleted objects by default.
-		$includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-		if ($includeDeleted === false) {
-			$queryBuilder->andWhere($queryBuilder->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		// The deleted lens, spelled once in DeletedLens so the facets
+		// count the rows the list shows.
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $baseQuery), columnPrefix: '');
+		if ($deleted !== null) {
+			$queryBuilder->andWhere($queryBuilder->createFunction($deleted));
 		}
 
 		// Apply metadata filters from @self.
@@ -1836,6 +1978,7 @@ class MagicFacetHandler {
 			'_schema',
 			'_schemas',
 			'_includeDeleted',
+			'_deleted',
 			'_empty',
 			'@self',
 		];
@@ -1882,6 +2025,9 @@ class MagicFacetHandler {
 				);
 				continue;
 			}
+
+			// A PHP boolean compares in its string form (boolean-filter-values).
+			$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
 
 			// Handle regular field filtering.
 			if (is_array($value) === true) {

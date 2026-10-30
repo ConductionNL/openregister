@@ -353,18 +353,27 @@ class ViewService {
 	/**
 	 * Delete a view by ID.
 	 *
-	 * @param int|string $id The ID of the view to delete
-	 * @param string $owner The owner user ID (for access control)
+	 * Only the owner or an administrator deletes. `find()` is not the guard
+	 * here: it also lets a reader of a public view through.
+	 *
+	 * @param int|string  $id    The ID of the view to delete
+	 * @param ViewerReach $reach The caller and whether they administer the instance
 	 *
 	 * @return void
 	 *
+	 * @throws DoesNotExistException When the caller neither owns nor administers the view
 	 * @throws Exception If deletion fails
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
 	 */
-	public function delete(int|string $id, string $owner): void {
+	public function delete(int|string $id, ViewerReach $reach): void {
 		try {
-			$view = $this->find(id: $id, owner: $owner);
+			$view = $this->viewMapper->find($id);
+			if ($view->getOwner() !== $reach->userId && $reach->isAdmin === false) {
+				throw new DoesNotExistException('View not found or access denied');
+			}
+
 			$this->viewMapper->delete($view);
 		} catch (Exception $e) {
 			$this->logger->error(

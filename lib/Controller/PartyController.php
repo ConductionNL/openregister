@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -60,6 +62,7 @@ class PartyController extends Controller {
 	 * @param PartyService $parties The party records.
 	 * @param PartyIndicatorGuard $indicators The declared effects.
 	 * @param PartySearchService $search The capped party query.
+	 * @param PermissionHandler $permissions The object-level permission check a party write asks.
 	 */
 	public function __construct(
 		string $appName,
@@ -69,6 +72,7 @@ class PartyController extends Controller {
 		private readonly PartyService $parties,
 		private readonly PartyIndicatorGuard $indicators,
 		private readonly PartySearchService $search,
+		private readonly PermissionHandler $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -116,7 +120,7 @@ class PartyController extends Controller {
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -148,7 +152,7 @@ class PartyController extends Controller {
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function replacePrimary(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -186,7 +190,7 @@ class PartyController extends Controller {
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function destroy(string $register, string $schema, string $id, string $partyUuid): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -340,6 +344,47 @@ class PartyController extends Controller {
 			return $this->errorResponse(exception: $e);
 		}//end try
 	}//end withObject()
+
+	/**
+	 * Run a handler against a resolved object the caller may update.
+	 *
+	 * Who holds a role on an object is part of the object, so a party write
+	 * asks the same `update` verdict as any other write on it, before anything
+	 * is written. A refusal is a 403.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema The schema slug.
+	 * @param string $id The object id.
+	 * @param callable $handler What to do with the object.
+	 *
+	 * @return JSONResponse The handler's response, or the error.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 */
+	private function withWritableObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
+		return $this->withObject(
+			register: $register,
+			schema: $schema,
+			id: $id,
+			handler: function (ObjectEntity $object) use ($handler): JSONResponse {
+				$schemaEntity = $this->objects->getCurrentSchemaEntity();
+				if ($schemaEntity === null) {
+					throw new NotAuthorizedException(message: 'The object\'s schema could not be read, so its update right cannot be asked');
+				}
+
+				$this->permissions->checkPermission(
+					schema: $schemaEntity,
+					action: 'update',
+					userId: null,
+					objectOwner: $object->getOwner(),
+					_rbac: true,
+					object: $object
+				);
+
+				return $handler($object);
+			}
+		);
+	}//end withWritableObject()
 
 	/**
 	 * A trimmed request parameter, or null when it carries nothing.

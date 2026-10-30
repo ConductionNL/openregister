@@ -67,12 +67,18 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 

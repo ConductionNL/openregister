@@ -1,0 +1,453 @@
+{
+  "info": {
+    "name": "OpenRegister frozen object files (REQ-OAS-007)",
+    "description": "object-archive-state task W.4. Freezes an object, gets 409 with the marker on a file upload, reads its files, unfreezes, uploads again. The WebDAV PUT into the frozen folder is not in this collection: the folder lives in the openregister account's home, which no API user reaches over WebDAV without a share; that door is covered by FrozenNodeWriteListenerTest with the real Nextcloud events. Not registered in run-all.sh until its first live pass (decision 139).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{adminUser}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{adminPassword}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": "admin"
+    },
+    {
+      "key": "run",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Create register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+              "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create schema",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+              "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attach schema to register",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\", \"schemas\": [\"{{schemaId}}\"]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('register updated', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create object",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"levering\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('objectId', (b['@self'] && b['@self'].id) || b.uuid || b.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Freeze the object",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"reason\": \"Woo-levering\", \"state\": \"geleverd\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('frozen', () => pm.response.to.have.status(200));",
+              "pm.test('marker carries the state', () => pm.expect(pm.response.json().frozen.state).to.eql('geleverd'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Upload to the frozen object is 409 with the marker",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"manifest.txt\", \"content\": \"x\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('409', () => pm.response.to.have.status(409));",
+              "const b = pm.response.json();",
+              "pm.test('body names state, by, at, reason', () => { pm.expect(b.state).to.eql('frozen'); pm.expect(b.reason).to.eql('Woo-levering'); pm.expect(b.by).to.be.a('string'); pm.expect(b.at).to.be.a('string'); pm.expect(b.error).to.match(/frozen/i); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reading the files stays allowed",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unfreeze",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('unfrozen', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Upload after the unfreeze goes through",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"manifest.txt\", \"content\": \"x\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleanup object",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+        }
+      }
+    },
+    {
+      "name": "Cleanup schema",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+        }
+      }
+    },
+    {
+      "name": "Cleanup register",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+        }
+      }
+    }
+  ]
+}

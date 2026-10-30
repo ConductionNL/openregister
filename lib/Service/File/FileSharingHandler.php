@@ -23,8 +23,6 @@ namespace OCA\OpenRegister\Service\File;
 use Exception;
 use OCP\Files\File;
 use OCP\Files\Node;
-use OCP\IConfig;
-use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
@@ -58,16 +56,14 @@ class FileSharingHandler {
 	 *
 	 * @param IManager $shareManager Share manager for share operations.
 	 * @param IUserManager $userManager User manager for user operations.
-	 * @param IURLGenerator $urlGenerator URL generator for creating share links.
-	 * @param IConfig $config Configuration service.
+	 * @param ShareUrlBuilder $shareUrls Builds share links for the host the visitor used.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param FileOwnershipHandler $fileOwnershipHandler Ownership handler for user operations.
 	 */
 	public function __construct(
 		private readonly IManager $shareManager,
 		private readonly IUserManager $userManager,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly IConfig $config,
+		private readonly ShareUrlBuilder $shareUrls,
 		private readonly LoggerInterface $logger,
 		private readonly FileOwnershipHandler $fileOwnershipHandler,
 	) {
@@ -82,9 +78,11 @@ class FileSharingHandler {
 	 *
 	 * @psalm-return   string
 	 * @phpstan-return string
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function getShareLink(IShare $share): string {
-		return $this->getCurrentDomain() . '/index.php/s/' . $share->getToken();
+		return $this->shareUrls->shareLink(token: $share->getToken());
 	}//end getShareLink()
 
 	/**
@@ -289,23 +287,4 @@ class FileSharingHandler {
 			return null;
 		}//end try
 	}//end shareFolderWithUser()
-
-	/**
-	 * Get the current domain with correct protocol.
-	 *
-	 * @return string The current http/https domain URL.
-	 *
-	 * @psalm-return   string
-	 * @phpstan-return string
-	 */
-	private function getCurrentDomain(): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		$trustedDomains = $this->config->getSystemValue('trusted_domains');
-
-		if (($trustedDomains[1] ?? null) !== null) {
-			$baseUrl = str_replace(search: 'localhost', replace: $trustedDomains[1], subject: $baseUrl);
-		}
-
-		return $baseUrl;
-	}//end getCurrentDomain()
 }//end class

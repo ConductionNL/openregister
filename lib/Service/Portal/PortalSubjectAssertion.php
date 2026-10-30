@@ -18,6 +18,12 @@
  * every assertion is refused: an unconfigured verifier that admitted would
  * be the fail-open this class exists to prevent.
  *
+ * Both values are read through `IAppConfig::getValueString()`. Portaliq
+ * stores its secret SENSITIVE (encrypted at rest), and only IAppConfig
+ * decrypts it; the legacy `IConfig::getAppValue()` returns the ciphertext,
+ * and every HMAC check then failed (401 on every portal action, 13-14 Oct
+ * 2026).
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -38,7 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Portal;
 
 use OCA\OpenRegister\Exception\PortalSubjectException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\IRequest;
 
 /**
@@ -79,10 +85,10 @@ class PortalSubjectAssertion {
 	/**
 	 * Constructor.
 	 *
-	 * @param IConfig $config Where the shared secret is read from.
+	 * @param IAppConfig $config Where the shared secret is read from (sensitive values come back decrypted).
 	 */
 	public function __construct(
-		private readonly IConfig $config,
+		private readonly IAppConfig $config,
 	) {
 
 	}//end __construct()
@@ -210,15 +216,20 @@ class PortalSubjectAssertion {
 	/**
 	 * The shared secret: OpenRegister's own key, else portaliq's.
 	 *
+	 * Read through IAppConfig, non-lazy as stored, so a sensitive value
+	 * comes back decrypted.
+	 *
 	 * @return string The secret, or '' when neither is set.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
 	private function secret(): string {
-		$own = trim((string)$this->config->getAppValue('openregister', self::CONFIG_SECRET, ''));
+		$own = trim($this->config->getValueString('openregister', self::CONFIG_SECRET, '', lazy: false));
 		if ($own !== '') {
 			return $own;
 		}
 
-		return trim((string)$this->config->getAppValue('portaliq', 'jwt_signing_secret', ''));
+		return trim($this->config->getValueString('portaliq', 'jwt_signing_secret', '', lazy: false));
 	}//end secret()
 
 	/**

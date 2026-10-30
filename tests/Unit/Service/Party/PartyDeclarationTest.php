@@ -180,6 +180,31 @@ class PartyDeclarationTest extends TestCase {
 	}//end testThePartyKindsRoundTrip()
 
 	/**
+	 * A kind keeps the identity shapes it has in a shared vocabulary, so a
+	 * host can check a "colleague" against a vocabulary that accepts
+	 * natural persons.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-kind-names-its-identity-shapes
+	 */
+	public function testAPartyKindKeepsItsIdentityShapes(): void {
+		$schema = $this->schema(
+			configuration: [
+				'partyKinds' => [
+					['key' => 'colleague', 'label' => 'Colleague', 'identityShapes' => ['naturalPerson', ' ', 'naturalPerson']],
+					['key' => 'address', 'identityShapes' => 'none'],
+				],
+			]
+		);
+
+		$kinds = $schema->getPartyKinds();
+
+		$this->assertSame(['naturalPerson'], $kinds[0]['identityShapes']);
+		$this->assertArrayNotHasKey('identityShapes', $kinds[1]);
+	}//end testAPartyKindKeepsItsIdentityShapes()
+
+	/**
 	 * A duplicate key and a key wider than the column each lose only that
 	 * configuration key, never the whole configuration.
 	 *

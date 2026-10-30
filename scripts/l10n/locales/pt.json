@@ -50,6 +50,7 @@
 		"{count} widget(s)": "'widget' is the Portuguese term too; the count and the optional-plural parenthesis are unchanged.",
 		"{property} - {other}": "Two placeholders and a separating dash; nothing translatable.",
 		"Normal": "Same spelling and meaning in Portuguese (normal).",
-		"Token": "Established loan; Portuguese security and API writing uses 'o token' unchanged, and this bundle already writes 'Criar novo token'."
+		"Token": "Established loan; Portuguese security and API writing uses 'o token' unchanged, and this bundle already writes 'Criar novo token'.",
+		"Monumental": "Same spelling and meaning in Portuguese as an adjective (here: listed as a monument)."
 	}
 }

@@ -91,6 +91,16 @@ use Throwable;
  * stateless security predicate; injecting it would make the host-lock substitutable.
  */
 class CredentialOauth2Controller extends Controller {
+
+	/**
+	 * Reopens the user settings dialog, where Connected accounts lives, on the
+	 * page the person comes back to. OpenRegister has no form in Nextcloud's
+	 * personal settings any more (11 Oct 2026).
+	 *
+	 * @var string
+	 */
+	private const USER_SETTINGS_HASH = '#user-settings';
+
 	/**
 	 * The brute-force action every failed callback is registered under.
 	 *
@@ -351,10 +361,10 @@ class CredentialOauth2Controller extends Controller {
 			// in hand. Report failure without echoing the provider's own words.
 			$this->logger->warning('[CredentialOauth2Controller] connect failed: ' . $failure->getMessage());
 
-			return new RedirectResponse($returnUrl . '?connected=failed');
+			return new RedirectResponse($returnUrl . '?connected=failed' . self::USER_SETTINGS_HASH);
 		}
 
-		return new RedirectResponse($returnUrl . '?connected=ok');
+		return new RedirectResponse($returnUrl . '?connected=ok' . self::USER_SETTINGS_HASH);
 	}//end callback()
 
 	/**

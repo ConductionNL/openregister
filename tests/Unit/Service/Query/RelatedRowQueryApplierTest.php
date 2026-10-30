@@ -27,11 +27,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\PropertyReadGuard;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -42,8 +45,12 @@ use Psr\Log\NullLogger;
  * `RelatedRowQueryApplier`.
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @covers \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
@@ -53,16 +60,19 @@ class RelatedRowQueryApplierTest extends TestCase {
 	/**
 	 * Build an applier whose schema lookup returns the given rows.
 	 *
-	 * @param array<int, Schema> $found What findBySlug returns.
+	 * @param array<int, Schema> $found       What findBySlug returns.
+	 * @param bool               $tableExists Whether the related schema's table exists.
+	 * @param PropertyReadGuard|null $guard   The property read guard, when the test needs to decide it.
 	 *
 	 * @return RelatedRowQueryApplier The applier.
 	 */
-	private function applierFinding(array $found): RelatedRowQueryApplier {
+	private function applierFinding(array $found, bool $tableExists=true, ?PropertyReadGuard $guard=null): RelatedRowQueryApplier {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('findBySlug')->willReturn($found);
 
 		$tableHandler = $this->createMock(MagicTableHandler::class);
-		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('oc_openregister_table_1_2');
+		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
+		$tableHandler->method('existsTableForRegisterSchema')->willReturn($tableExists);
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('buildRbacPredicateForAlias')->willReturn('rel0._owner = \'alice\'');
@@ -70,11 +80,20 @@ class RelatedRowQueryApplierTest extends TestCase {
 		return new RelatedRowQueryApplier(
 			schemaMapper: $schemaMapper,
 			tableHandler: $tableHandler,
-			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger(), guard: $guard)
 		);
 	}//end applierFinding()
+
+	/**
+	 * An organisation scope that admits every organisation (admin bypass, system context).
+	 *
+	 * @return callable The scope resolver.
+	 */
+	private function allOrganisations(): callable {
+		return static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+	}//end allOrganisations()
 
 	/**
 	 * A schema.
@@ -84,6 +103,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 	private function schema(): Schema {
 		$schema = new Schema();
 		$schema->setId(2);
+		$schema->setProperties(['case' => ['type' => 'string'], 'value' => ['type' => 'number']]);
 
 		return $schema;
 	}//end schema()
@@ -130,7 +150,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$applied = $this->applierFinding([])->apply(
 			qb: $qb,
 			query: ['_limit' => 10],
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(0, $applied);
@@ -154,7 +175,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$this->applierFinding([])->apply(
 			qb: $qb,
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 	}//end testAnUnresolvableSchemaIsRefusedNotSkipped()
 
@@ -172,7 +194,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$this->applierFinding([$this->schema(), $this->schema()])->apply(
 			qb: $this->createMock(IQueryBuilder::class),
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 	}//end testAnAmbiguousSchemaNameIsRefused()
 
@@ -193,7 +216,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$applied = $this->applierFinding([$this->schema()])->apply(
 			qb: $qb,
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(1, $applied);
@@ -224,9 +248,206 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$applied = $this->applierFinding([$this->schema()])->apply(
 			qb: $qb,
 			query: $query,
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(1, $applied);
 	}//end testTheRegisterMayComeFromTheQueryItself()
+
+	/**
+	 * 🔴 A REFERENCED SCHEMA WITHOUT A TABLE MATCHES NOTHING, IT DOES NOT FAIL.
+	 *
+	 * A schema that has never stored an object has no magic table. Rendering
+	 * the subquery against it answered HTTP 500 (`relation does not exist`).
+	 * No row can exist there, so the block narrows to the empty set.
+	 *
+	 * @return void
+	 */
+	public function testAReferencedSchemaWithoutATableMatchesNothing(): void {
+		$conditions = [];
+		$qb = $this->createMock(originalClassName: IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnArgument(0);
+		$qb->expects($this->never())->method('setParameter');
+		$qb->method('andWhere')->willReturnCallback(
+			function ($condition) use (&$conditions, $qb) {
+				$conditions[] = $condition;
+				return $qb;
+			}
+		);
+
+		$applied = $this->applierFinding(found: [$this->schema()], tableExists: false)->apply(
+			qb: $qb,
+			query: [
+				'_referenced' => [
+					'subsidieAanvraag' => [
+						'subsidieaanvraag' => ['case' => '9eab0293-7ce5-4bcf-b7aa-0ab79a1eab4f'],
+					],
+				],
+			],
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
+		);
+
+		$this->assertSame(expected: 1, actual: $applied);
+		$this->assertSame(expected: ['1 = 0'], actual: $conditions);
+	}//end testAReferencedSchemaWithoutATableMatchesNothing()
+
+	/**
+	 * 🔴 A CONDITION ON A PROPERTY THE CALLER MAY NOT READ IS REFUSED.
+	 *
+	 * The related schema's row predicate says which rows may be consulted, not
+	 * which of their fields: `gt`/`lt` on a withheld `salary` is a binary search
+	 * for its value. The query ends, and nothing is added to it.
+	 *
+	 * @return void
+	 */
+	public function testAConditionOnAnUnreadablePropertyIsRefused(): void {
+		$guard = $this->createMock(PropertyReadGuard::class);
+		$guard->expects($this->atLeastOnce())->method('mayRead')->willReturn(false);
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->expects($this->never())->method('andWhere');
+
+		$this->expectException(InvalidArgumentException::class);
+
+		$this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
+			qb: $qb,
+			query: $this->relatedQuery(),
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
+		);
+	}//end testAConditionOnAnUnreadablePropertyIsRefused()
+
+	/**
+	 * The control: the same block with a readable property is applied.
+	 *
+	 * @return void
+	 */
+	public function testAConditionOnAReadablePropertyIsApplied(): void {
+		$guard = $this->createMock(PropertyReadGuard::class);
+		$guard->method('mayRead')->willReturn(true);
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnArgument(0);
+		$qb->expects($this->once())->method('andWhere');
+
+		$applied = $this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
+			qb: $qb,
+			query: $this->relatedQuery(),
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
+		);
+
+		$this->assertSame(1, $applied);
+	}//end testAConditionOnAReadablePropertyIsApplied()
+	/**
+	 * 🔴 THE RELATED ROWS ARE CONFINED TO THE CALLER'S ORGANISATION.
+	 *
+	 * The row predicate carries no `_organisation` term, so on a schema with no
+	 * authorization block a foreign organisation's row satisfied a related-row
+	 * condition. The subquery now carries the boundary the list applies.
+	 *
+	 * @return void
+	 */
+	public function testTheRelatedRowsAreConfinedToTheCallersOrganisation(): void {
+		$sql        = [];
+		$parameters = [];
+		$qb         = $this->createMock(IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnCallback(static function (string $text) use (&$sql): string {
+			$sql[] = $text;
+			return $text;
+		});
+		$qb->method('setParameter')->willReturnCallback(function (string $name, mixed $value) use (&$parameters, $qb) {
+			$parameters[$name] = $value;
+			return $qb;
+		});
+
+		$this->applierFinding([$this->schema()])->apply(
+			qb: $qb,
+			query: $this->relatedQuery(),
+			register: $this->register(),
+			organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_IN_OR_NULL, 'uuids' => ['org-a', 'org-b']]
+		);
+
+		$this->assertStringContainsString("(rel0._owner = 'alice') AND (rel0._organisation IN (:rel0_org0, :rel0_org1) OR rel0._organisation IS NULL)", $sql[0]);
+		$this->assertSame('org-a', $parameters['rel0_org0']);
+		$this->assertSame('org-b', $parameters['rel0_org1']);
+	}//end testTheRelatedRowsAreConfinedToTheCallersOrganisation()
+
+	/**
+	 * No organisation, or a scope the renderer does not know, matches nothing; null-only matches the org-less rows.
+	 *
+	 * @return void
+	 */
+	public function testAScopeThatAdmitsNothingMatchesNothing(): void {
+		$cases = [
+			'none'    => [['mode' => MagicOrganizationHandler::SCOPE_NONE, 'uuids' => []], 'AND 1 = 0'],
+			'unknown' => [['mode' => 'surprise', 'uuids' => ['org-a']], 'AND 1 = 0'],
+			'empty'   => [['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => []], 'AND 1 = 0'],
+			'null'    => [['mode' => MagicOrganizationHandler::SCOPE_NULL_ONLY, 'uuids' => []], 'AND rel0._organisation IS NULL'],
+		];
+
+		foreach ($cases as $label => [$scope, $expected]) {
+			$sql = [];
+			$qb  = $this->createMock(IQueryBuilder::class);
+			$qb->method('createFunction')->willReturnCallback(static function (string $text) use (&$sql): string {
+				$sql[] = $text;
+				return $text;
+			});
+
+			$this->applierFinding([$this->schema()])->apply(
+				qb: $qb,
+				query: $this->relatedQuery(),
+				register: $this->register(),
+				organisationScopeFor: static fn (): array => $scope
+			);
+
+			$this->assertStringContainsString($expected, $sql[0], $label);
+		}
+	}//end testAScopeThatAdmitsNothingMatchesNothing()
+	/**
+	 * 🔴 A METADATA COLUMN OR AN UNKNOWN NAME IS NOT A PROPERTY OF THE RELATED SCHEMA.
+	 *
+	 * Without the lookup, `_owner`, `_authorization` and `_status` of readable
+	 * rows could be compared with `gt`/`lt` (sharing metadata by binary search),
+	 * and an unknown name reached the database as an unknown column.
+	 *
+	 * @return void
+	 */
+	public function testAFieldThatIsNotAPropertyOfTheRelatedSchemaIsRefused(): void {
+		foreach (['_owner', '_authorization', '_status', 'noSuchProperty'] as $field) {
+			$qb = $this->createMock(IQueryBuilder::class);
+			$qb->expects($this->never())->method('andWhere');
+
+			try {
+				$this->applierFinding([$this->schema()])->apply(
+					qb: $qb,
+					query: ['_related' => ['caseProperty' => ['case' => [$field => ['gt' => 'a']]]]],
+					register: $this->register(),
+					organisationScopeFor: $this->allOrganisations()
+				);
+				$this->fail('Expected a refusal for ' . $field);
+			} catch (InvalidArgumentException $e) {
+				$this->assertStringContainsString("'" . $field . "'", $e->getMessage());
+			}
+		}
+	}//end testAFieldThatIsNotAPropertyOfTheRelatedSchemaIsRefused()
+
+	/**
+	 * The foreign key the join compares is a property of the related schema too, for `_related`.
+	 *
+	 * @return void
+	 */
+	public function testAForeignKeyThatIsNotAPropertyIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("'_organisation'");
+
+		$this->applierFinding([$this->schema()])->apply(
+			qb: $this->createMock(IQueryBuilder::class),
+			query: ['_related' => ['caseProperty' => ['_organisation' => ['value' => 'x']]]],
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
+		);
+	}//end testAForeignKeyThatIsNotAPropertyIsRefused()
 }//end class

@@ -65,12 +65,14 @@ class MagicTableHandler {
 	 * @param IAppConfig $appConfig App configuration for feature flags
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
 	 * @param MagicMapper $magicMapper Parent MagicMapper for callback access to helpers
+	 * @param MagicMetadataColumnHealer|null $metadataColumns Adds missing metadata columns on first use of a table
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly MagicMapper $magicMapper,
+		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
 	}//end __construct()
 
@@ -303,6 +305,8 @@ class MagicTableHandler {
 	 * @param Schema $schema The schema context
 	 *
 	 * @return bool True if specialized table exists, false if should use generic storage
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function existsTableForRegisterSchema(Register $register, Schema $schema): bool {
 		$registerId = $register->getId();
@@ -313,6 +317,7 @@ class MagicTableHandler {
 		$cachedTime = MagicMapper::getTableExistsCache(key: $cacheKey);
 		if ($cachedTime !== null) {
 			if ((time() - $cachedTime) < MagicMapper::TABLE_CACHE_TIMEOUT) {
+				$this->ensureMetadataColumns(register: $register, schema: $schema);
 				return true;
 			}
 
@@ -327,10 +332,39 @@ class MagicTableHandler {
 		if ($exists === true) {
 			// Cache positive result.
 			MagicMapper::setTableExistsCache(key: $cacheKey, value: time());
+			$this->ensureMetadataColumns(register: $register, schema: $schema);
 		}
 
 		return $exists;
 	}//end existsTableForRegisterSchema()
+
+	/**
+	 * Give an existing table any metadata column it lacks, before it is queried.
+	 *
+	 * Every list, count, facet and cross-table search asks
+	 * existsTableForRegisterSchema() before it queries a table, and every one
+	 * of those queries carries `_archived IS NULL`. Checking here means a table
+	 * that never got the column (an upgrade step that did not run, a restore
+	 * from an old backup) heals on its first use instead of failing every
+	 * request. The healer answers from a memo after the first call, so this
+	 * costs an array lookup per call in the normal case.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 */
+	private function ensureMetadataColumns(Register $register, Schema $schema): void {
+		if ($this->metadataColumns === null) {
+			return;
+		}
+
+		$this->metadataColumns->ensure(
+			tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema)
+		);
+	}//end ensureMetadataColumns()
 
 	/**
 	 * Check if register+schema table exists (with caching)

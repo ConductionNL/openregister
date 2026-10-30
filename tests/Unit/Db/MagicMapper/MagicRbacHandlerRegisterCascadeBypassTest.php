@@ -260,7 +260,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		$pdo->sqliteCreateFunction('JSON_UNQUOTE', static fn ($value) => $value, 1);
 		$pdo->exec(
 			'CREATE TABLE t (_uuid TEXT, _owner TEXT, _organisation TEXT, _authorization TEXT,'
-			. ' _deleted TEXT, _archived TEXT, _expires TEXT, _published TEXT, _depublished TEXT)'
+			. ' _deleted TEXT, _archived TEXT, _status TEXT, _expires TEXT, _published TEXT, _depublished TEXT)'
 		);
 		$pdo->exec(
 			"INSERT INTO t (_uuid, _owner, _organisation) VALUES"

@@ -411,6 +411,36 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
+	 * Decision 180: a draft is validated even with hard validation off, with every required property excused.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function testADraftIsValidatedWithRequiredExcusedWhateverTheFlag(): void {
+		$object = ['@self' => ['status' => 'draft'], 'preferredDate' => '06-12345678'];
+
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(false);
+		$schema->setRequired(['title', 'description']);
+		$schema->setProperties(['title' => ['type' => 'string'], 'description' => ['type' => 'string'], 'preferredDate' => ['type' => 'string', 'format' => 'date-time']]);
+		$this->setPrivateProperty('currentSchema', $schema);
+
+		$invalid = (new \Opis\JsonSchema\Validator())->validate(
+			json_decode('{"preferredDate":"06-12345678"}'),
+			json_decode('{"type":"object","properties":{"preferredDate":{"type":"string","format":"date-time"}}}')
+		);
+		$this->validateHandler->expects($this->once())
+			->method('validateObject')
+			->with($this->anything(), $schema, $this->anything(), $this->anything(), ['title' => 'draft', 'description' => 'draft'])
+			->willReturn($invalid);
+		$this->validateHandler->method('generateErrorMessage')->willReturn('preferredDate must match format date-time');
+
+		// Spec scenario: a type-invalid draft is refused.
+		$this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
+		$this->invokePrivateMethod('validateObjectIfRequired', [$object, null]);
+	}
+
+	/**
 	 * Test validateObjectIfRequired calls validator when hard validation is enabled.
 	 *
 	 * @return void

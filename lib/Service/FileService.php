@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
+use OCA\OpenRegister\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -85,9 +86,7 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\IConfig;
 use OCP\IGroupManager;
-use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -114,13 +113,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class FileService {
-
-	/**
-	 * Configuration service
-	 *
-	 * @var IConfig
-	 */
-	private IConfig $config;
 
 	/**
 	 * File mapper
@@ -179,11 +171,11 @@ class FileService {
 	private ISystemTagObjectMapper $systemTagMapper;
 
 	/**
-	 * URL generator
+	 * Builds share links for the host the visitor used
 	 *
-	 * @var IURLGenerator
+	 * @var ShareUrlBuilder
 	 */
-	private IURLGenerator $urlGenerator;
+	private ShareUrlBuilder $shareUrls;
 
 	/**
 	 * User manager
@@ -376,7 +368,6 @@ class FileService {
 	/**
 	 * Constructor
 	 *
-	 * @param IConfig $config Configuration service
 	 * @param FileMapper $fileMapper File mapper
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
@@ -384,7 +375,7 @@ class FileService {
 	 * @param IManager $shareManager Share manager
 	 * @param ISystemTagManager $systemTagManager System tag manager
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag mapper
-	 * @param IURLGenerator $urlGenerator URL generator
+	 * @param ShareUrlBuilder $shareUrls Share link builder
 	 * @param IUserManager $userManager User manager
 	 * @param IUserSession $userSession User session
 	 * @param FileValidationHandler $fileValidHandler File validation handler
@@ -408,7 +399,6 @@ class FileService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		IConfig $config,
 		FileMapper $fileMapper,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,
@@ -416,7 +406,7 @@ class FileService {
 		IManager $shareManager,
 		ISystemTagManager $systemTagManager,
 		ISystemTagObjectMapper $systemTagMapper,
-		IURLGenerator $urlGenerator,
+		ShareUrlBuilder $shareUrls,
 		IUserManager $userManager,
 		IUserSession $userSession,
 		FileValidationHandler $fileValidHandler,
@@ -442,7 +432,6 @@ class FileService {
 			message: '[FileService] FileService constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->config = $config;
 		$this->fileMapper = $fileMapper;
 		$this->groupManager = $groupManager;
 		// REMOVED: registerMapper assignment (unused, caused circular dependency).
@@ -450,7 +439,7 @@ class FileService {
 		$this->shareManager = $shareManager;
 		$this->systemTagManager = $systemTagManager;
 		$this->systemTagMapper = $systemTagMapper;
-		$this->urlGenerator = $urlGenerator;
+		$this->shareUrls = $shareUrls;
 		$this->userManager = $userManager;
 		$this->userSession = $userSession;
 		$this->fileValidationHandler = $fileValidHandler;
@@ -970,26 +959,12 @@ class FileService {
 	 * @param IShare $share An IShare object we are getting the share link for
 	 *
 	 * @return string The share link needed to get the file or folder for the given IShare object
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function getShareLink(IShare $share): string {
-		return $this->getCurrentDomain() . '/index.php/s/' . $share->getToken();
+		return $this->shareUrls->shareLink(token: $share->getToken());
 	}//end getShareLink()
-
-	/**
-	 * Gets and returns the current host/domain with correct protocol.
-	 *
-	 * @return string The current http/https domain URL
-	 */
-	private function getCurrentDomain(): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		$trustedDomains = $this->config->getSystemValue('trusted_domains');
-
-		if (($trustedDomains[1] ?? null) !== null) {
-			$baseUrl = str_replace(search: 'localhost', replace: $trustedDomains[1], subject: $baseUrl);
-		}
-
-		return $baseUrl;
-	}//end getCurrentDomain()
 
 	/**
 	 * Gets or creates the OpenRegister user for file operations.
@@ -2362,8 +2337,22 @@ class FileService {
 		// Copy first.
 		$newFile = $this->copyFile(sourceObject: $sourceObject, fileId: $fileId, targetObject: $targetObject);
 
-		// Delete source.
-		$this->deleteFile(file: $fileId, object: $sourceObject);
+		// Delete source. A source that is still there afterwards (the
+		// frozen-object guard aborted the delete, which Nextcloud does not
+		// report) makes this a copy, not a move: the copy is taken back and the
+		// caller told, instead of leaving the file in two objects.
+		if ($this->deleteFile(file: $fileId, object: $sourceObject) === false) {
+			try {
+				$this->deleteFile(file: $newFile, object: $targetObject);
+			} catch (Exception $e) {
+				$this->logger->warning(
+					message: "[FileService] Could not take back the copy of file {$fileId} after the source could not be deleted: " . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+
+			throw new Exception('The file could not be moved: it could not be removed from the source object');
+		}
 
 		$sourceUuid = $sourceObject->getUuid();
 		$targetUuid = $targetObject->getUuid();

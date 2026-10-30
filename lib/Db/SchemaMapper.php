@@ -42,11 +42,14 @@ use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
+use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
+use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
-use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
@@ -257,7 +260,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param MacroActionValidator|null $macroActions Verifies the flows macro actions bind to.
+	 * @param ObjectActionValidator|null $objectActions Verifies every declared action, the flows macros bind to included.
 	 *
 	 * @return void
 	 */
@@ -273,9 +276,10 @@ class SchemaMapper extends QBMapper {
 		// LAST AND NULLABLE so every existing construction of this mapper keeps
 		// working. Nextcloud's container always supplies it; null happens only
 		// in a hand-built test, and then the SHAPE refusals below still fire —
-		// only the three questions about the flow itself are skipped, which the
-		// save says out loud rather than passing over in silence.
-		private readonly ?MacroActionValidator $macroActions = null,
+		// only the questions about other records (the bound flow, the step
+		// nodes, the saver) are skipped, which the save says out loud rather
+		// than passing over in silence.
+		private readonly ?ObjectActionValidator $objectActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -1224,6 +1228,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateDepartmentMatrix(schema: $schema);
 		$this->validateRevealAudit(schema: $schema);
 		$this->validateReversibilityDeclaration(schema: $schema);
+		$this->validateReviewDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
 
@@ -1297,6 +1302,30 @@ class SchemaMapper extends QBMapper {
 	}//end validateReversibilityDeclaration()
 
 	/**
+	 * Refuse an `x-openregister-review` declaration the ownership rule cannot honour.
+	 *
+	 * Refused rather than logged: a mistyped ownership read as open would leave
+	 * a four-eyes review open while its author believes it is closed.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws ReviewDeclarationException When the declaration is unsound.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 */
+	private function validateReviewDeclaration(Schema $schema): void {
+		$errors = (new ReviewAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
+
+		if ($errors === []) {
+			return;
+		}
+
+		throw new ReviewDeclarationException(errors: $errors);
+	}//end validateReviewDeclaration()
+
+	/**
 	 * R07: surface dropped `x-openregister-*` keys via the structured
 	 * logger. Schema::validateConfigurationArray accumulates unknown
 	 * keys on the entity (no DI surface for a logger inside the
@@ -1337,33 +1366,41 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When a macro binding cannot run.
+	 * @throws InvalidArgumentException When a macro binding cannot run or a declared action is malformed.
 	 *
 	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
 	private function validateMacroActions(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
 
-		if ($this->macroActions === null) {
-			// No validator wired: the shape is still checked, and the save says
-			// which half did not run rather than reporting a clean pass.
-			$refusals = MacroActionBinding::refusals(configuration: $configuration);
+		if ($this->objectActions !== null) {
+			$refusals = $this->objectActions->refusals(schema: $schema);
 			if ($refusals !== []) {
 				throw new InvalidArgumentException(implode(' ', $refusals));
-			}
-
-			if (MacroActionBinding::parse(configuration: $configuration) !== []) {
-				$this->logger->warning(
-					'[SchemaMapper] Macro bindings saved without verifying their flows: no validator is wired'
-				);
 			}
 
 			return;
 		}
 
-		$refusals = $this->macroActions->refusals(configuration: $configuration);
+		// No validator wired: the shape is still checked, and the save says
+		// which half did not run rather than reporting a clean pass.
+		$refusals = array_merge(
+			ObjectActionDefinition::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? [])),
+			MacroActionBinding::refusals(configuration: $configuration)
+		);
 		if ($refusals !== []) {
 			throw new InvalidArgumentException(implode(' ', $refusals));
+		}
+
+		$runnable = array_filter(
+			ObjectActionDefinition::parse(configuration: $configuration),
+			static fn (ObjectActionDefinition $definition): bool => $definition->isRunnable()
+		);
+		if ($runnable !== []) {
+			$this->logger->warning(
+				'[SchemaMapper] Declared actions saved without verifying their flows: no validator is wired'
+			);
 		}
 	}//end validateMacroActions()
 
@@ -2792,6 +2829,8 @@ class SchemaMapper extends QBMapper {
 	 * - Simple property names: "name"
 	 * - Twig-style templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
 	 * - Pipe-separated fallbacks: "name | identifier | type" (uses first available)
+	 * - Dot-notation paths into an object property: "description.nl.longDescription",
+	 *   valid when the first segment is a property (the reader walks the rest)
 	 *
 	 * @param string $fieldValue The field value to validate
 	 * @param array $propertyKeys Array of valid property keys
@@ -2800,6 +2839,8 @@ class SchemaMapper extends QBMapper {
 	 * @throws \Exception If field references non-existent properties
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void {
 		// Check if it's a Twig-style template (contains {{ ... }}).
@@ -2833,7 +2874,7 @@ class SchemaMapper extends QBMapper {
 			// Validate that at least one fallback field exists in properties.
 			$hasValidField = false;
 			foreach ($fallbackFields as $field) {
-				if (in_array($field, $propertyKeys, true) === true) {
+				if ($this->isPropertyPath(path: $field, propertyKeys: $propertyKeys) === true) {
 					$hasValidField = true;
 					break;
 				}
@@ -2848,13 +2889,36 @@ class SchemaMapper extends QBMapper {
 			return;
 		}//end if
 
-		// Simple property name - must exist in property keys.
-		if (in_array($fieldValue, $propertyKeys, true) === false) {
+		// Simple property name or dot-notation path - its first segment must be a property.
+		if ($this->isPropertyPath(path: $fieldValue, propertyKeys: $propertyKeys) === false) {
 			throw new Exception(
 				"The value for {$fieldName} ('{$fieldValue}') does not exist as a property in the schema."
 			);
 		}
 	}//end validateConfigField()
+
+	/**
+	 * Whether a configuration path names a property of the schema.
+	 *
+	 * A plain name must be a property; a dot-notation path must start with one,
+	 * as MetadataHydrationHandler::getValueFromPath() reads it.
+	 *
+	 * @param string            $path         The property name or dot-notation path.
+	 * @param array<int|string> $propertyKeys The schema's property keys.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 */
+	private function isPropertyPath(string $path, array $propertyKeys): bool {
+		if (in_array($path, $propertyKeys, true) === true) {
+			return true;
+		}
+
+		$first = strstr($path, '.', true);
+
+		return $first !== false && $first !== '' && in_array($first, $propertyKeys, true) === true;
+	}//end isPropertyPath()
 
 	/**
 	 * Build required fields array from schema or property flags

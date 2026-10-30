@@ -65,6 +65,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setBases(?array $bases)
  * @method bool getSkipAnonymization()
  * @method void setSkipAnonymization(bool $skipAnonymization)
+ * @method string|null getDecisionUuid()
+ * @method void setDecisionUuid(?string $decisionUuid)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
@@ -221,6 +223,16 @@ class EntityRelation extends Entity implements JsonSerializable {
 	protected bool $skipAnonymization = false;
 
 	/**
+	 * The uuid of this occurrence's current decision, or null while undecided.
+	 *
+	 * The decision is its own object (`openregister_decisions`): who decided,
+	 * when, the verdict and a note. The relation only links it (decision 197).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $decisionUuid = null;
+
+	/**
 	 * Created at timestamp.
 	 *
 	 * @var DateTime|null
@@ -249,6 +261,7 @@ class EntityRelation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'anonymizedValue', type: 'string');
 		$this->addType(fieldName: 'bases', type: 'json');
 		$this->addType(fieldName: 'skipAnonymization', type: 'boolean');
+		$this->addType(fieldName: 'decisionUuid', type: 'string');
 		$this->addType(fieldName: 'createdAt', type: 'datetime');
 	}//end __construct()
 
@@ -264,7 +277,8 @@ class EntityRelation extends Entity implements JsonSerializable {
 	 *     confidence: float, detectionMethod: null|string,
 	 *     context: null|string, anonymized: bool,
 	 *     anonymizedValue: null|string, bases: array|null,
-	 *     skipAnonymization: bool, createdAt: null|string}
+	 *     skipAnonymization: bool, decision: null|string,
+ *     createdAt: null|string}
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -287,6 +301,7 @@ class EntityRelation extends Entity implements JsonSerializable {
 			'anonymizedValue' => $this->anonymizedValue,
 			'bases' => $this->bases,
 			'skipAnonymization' => $this->skipAnonymization,
+			'decision' => $this->decisionUuid,
 			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
 		];
 	}//end jsonSerialize()

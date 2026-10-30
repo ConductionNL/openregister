@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -450,7 +451,7 @@ class ViewServiceTest extends TestCase {
 		$this->viewMapper->method('find')->willReturn(value: $view);
 		$this->viewMapper->expects($this->once())->method('delete');
 
-		$this->service->delete(id: 1, owner: 'user1');
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user1', groups: [], isAdmin: false));
 	}//end testDeleteRemovesView()
 
 	/**
@@ -464,8 +465,40 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: DoesNotExistException::class);
 
-		$this->service->delete(id: 1, owner: 'user2');
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user2', groups: [], isAdmin: false));
 	}//end testDeleteThrowsForPrivateViewOfOtherUser()
+
+	/**
+	 * Test that delete() refuses a public view of another owner before deleting it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
+	 */
+	public function testDeleteThrowsForPublicViewOfOtherUser(): void {
+		$view = $this->createView(id: 1, owner: 'user1', isPublic: true);
+		$this->viewMapper->method('find')->willReturn(value: $view);
+		$this->viewMapper->expects($this->never())->method('delete');
+
+		$this->expectException(exception: DoesNotExistException::class);
+
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user2', groups: [], isAdmin: false));
+	}//end testDeleteThrowsForPublicViewOfOtherUser()
+
+	/**
+	 * Test that an administrator deletes a view of another owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
+	 */
+	public function testDeleteByAdministratorRemovesViewOfOtherUser(): void {
+		$view = $this->createView(id: 1, owner: 'user1', isPublic: false);
+		$this->viewMapper->method('find')->willReturn(value: $view);
+		$this->viewMapper->expects($this->once())->method('delete');
+
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'admin', groups: [], isAdmin: true));
+	}//end testDeleteByAdministratorRemovesViewOfOtherUser()
 
 	/**
 	 * Test that delete() throws and logs when the mapper throws an exception.
@@ -479,7 +512,7 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: Exception::class);
 
-		$this->service->delete(id: 999, owner: 'user1');
+		$this->service->delete(id: 999, reach: new ViewerReach(userId: 'user1', groups: [], isAdmin: false));
 	}//end testDeleteThrowsAndLogsOnFailure()
 
 	// ── presentation config (REQ-VIEW-PRES-01) ──

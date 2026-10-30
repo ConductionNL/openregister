@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -72,7 +73,7 @@ class ImportTrustConfigurationRegister implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const CONFIG_APP_ID = 'openregister.trust-configuration';
+	private const CONFIG_APP_ID = DescriptorConfigIds::TRUST_CONFIGURATION;
 
 	/**
 	 * Constructor.

@@ -105,7 +105,7 @@ class GenericStoreControllerTest extends TestCase {
 		$this->manifestLoader = $this->getMockBuilder(ManifestLoader::class)
 			->disableOriginalConstructor()->onlyMethods(['loadStore'])->getMock();
 		$this->storeService = $this->getMockBuilder(GenericStoreService::class)
-			->disableOriginalConstructor()->onlyMethods(['search', 'resolve'])->getMock();
+			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'publish'])->getMock();
 		$this->installer = $this->getMockBuilder(GenericStoreInstaller::class)
 			->disableOriginalConstructor()->onlyMethods(['install'])->getMock();
 		$this->catalog = $this->getMockBuilder(FederatedStoreCatalog::class)
@@ -113,7 +113,7 @@ class GenericStoreControllerTest extends TestCase {
 		$this->gitHubSource = $this->getMockBuilder(GitHubStoreSource::class)
 			->disableOriginalConstructor()->onlyMethods(['search', 'sourceId'])->getMock();
 		$this->actionAuthorizer = $this->getMockBuilder(StoreActionAuthorizer::class)
-			->disableOriginalConstructor()->onlyMethods(['can'])->getMock();
+			->disableOriginalConstructor()->onlyMethods(['can', 'canPublish'])->getMock();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
@@ -179,6 +179,99 @@ class GenericStoreControllerTest extends TestCase {
 			manifest: ['store' => ['types' => ['openregister.configset', 'openregister.flows']]]
 		);
 	}//end federatedStore()
+
+	/**
+	 * A store manifest that declares who may publish what.
+	 *
+	 * @return StoreManifest
+	 */
+	private function publishingStore(): StoreManifest {
+		return StoreManifest::fromManifest(
+			appId: 'pipelinq',
+			manifest: ['store' => [
+				'schema'  => 'commercial-template',
+				'publish' => ['fields' => ['title', 'version'], 'groups' => ['pipelinq-publishers']],
+			]]
+		);
+	}//end publishingStore()
+
+	/**
+	 * Publish refuses an anonymous caller.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishRefusesAnAnonymousCaller(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->storeService->expects($this->never())->method('publish');
+
+		$response = $this->controller('pipelinq')->publish();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testPublishRefusesAnAnonymousCaller()
+
+	/**
+	 * Publish refuses a user the publish groups do not admit, and sends nothing.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishRefusesAUserTheGroupsDoNotAdmit(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->publishingStore());
+		$this->request->method('getParam')->willReturn(['slug' => 'woo-intake', 'title' => 'Woo-intake']);
+		$this->actionAuthorizer->method('canPublish')->willReturn(false);
+		$this->storeService->expects($this->never())->method('publish');
+
+		$response = $this->controller('pipelinq')->publish();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testPublishRefusesAUserTheGroupsDoNotAdmit()
+
+	/**
+	 * An admitted user's item is published with the declared fields.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishSendsTheItemWithTheDeclaredFields(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->publishingStore());
+		$this->request->method('getParam')->willReturn(['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.0.0']);
+		$this->actionAuthorizer->method('canPublish')->willReturn(true);
+		$this->storeService->expects($this->once())
+			->method('publish')
+			->with(
+				$this->callback(static fn ($descriptor): bool => $descriptor->publishFields === ['title', 'version'] && $descriptor->publishGroups === ['pipelinq-publishers']),
+				['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.0.0']
+			)
+			->willReturn(['outcome' => 'ok', 'slug' => 'woo-intake']);
+
+		$response = $this->controller('pipelinq')->publish();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['outcome' => 'ok', 'slug' => 'woo-intake'], $response->getData());
+	}//end testPublishSendsTheItemWithTheDeclaredFields()
+
+	/**
+	 * An app without a store block answers not_configured.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishWithoutAStoreIsNotConfigured(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn(StoreManifest::fromManifest(appId: 'pipelinq', manifest: []));
+		$this->storeService->expects($this->never())->method('publish');
+
+		$response = $this->controller('pipelinq')->publish();
+
+		$this->assertSame('not_configured', $response->getData()['outcome']);
+	}//end testPublishWithoutAStoreIsNotConfigured()
 
 	/**
 	 * A github store is searched against the GitHub source, not the registry.

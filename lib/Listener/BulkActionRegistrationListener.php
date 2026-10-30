@@ -30,6 +30,7 @@ use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\BulkAction\AssignAction;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
+use OCA\OpenRegister\BulkAction\RunActionAction;
 use OCA\OpenRegister\BulkAction\SetPropertiesAction;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCP\EventDispatcher\Event;
@@ -52,6 +53,7 @@ class BulkActionRegistrationListener implements IEventListener {
 	 * @param ApplyRuleAction $applyRule The rule replay.
 	 * @param ExportWholeSetAction $exportWholeSet The whole-set extract.
 	 * @param RestorePriorValuesAction $restore The inverse of a reversible job.
+	 * @param RunActionAction $runAction A declared object action on a large selection.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -60,6 +62,7 @@ class BulkActionRegistrationListener implements IEventListener {
 		private readonly ApplyRuleAction $applyRule,
 		private readonly ExportWholeSetAction $exportWholeSet,
 		private readonly RestorePriorValuesAction $restore,
+		private readonly RunActionAction $runAction,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -84,6 +87,7 @@ class BulkActionRegistrationListener implements IEventListener {
 			$this->applyRule,
 			$this->exportWholeSet,
 			$this->restore,
+			$this->runAction,
 		];
 
 		foreach ($actions as $action) {

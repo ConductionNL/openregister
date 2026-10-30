@@ -52,6 +52,9 @@ use Throwable;
 /**
  * Guards an app-shipped schema update against local changes.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One guard for every shipped definition kind: baseline read, merge,
+ * audit of each authorization change and the fail-closed fallback share one definition of what "shipped" means.
+ *
  * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
  */
 class ShippedConfigurationGuard {
@@ -154,11 +157,20 @@ class ShippedConfigurationGuard {
 				];
 			}
 
+			// While an administrator's re-import is in effect, the merge takes
+			// every authorization block from the file (REQ-LCA-003).
 			$result = $this->merge->merge(
 				baseline: $baseline['definition'],
 				live: $live,
 				incoming: $incoming,
 				decisions: $decisions
+			);
+			$this->recordReplaced(slug: $slug, app: $app, roots: $result['replacedLocal']);
+			$this->recordAppliedAuthorization(
+				slug: $slug,
+				app: $app,
+				applied: $result['applied'],
+				recorded: array_merge($result['replacedLocal'], $decisions)
 			);
 
 			if ($record === true) {
@@ -170,18 +182,7 @@ class ShippedConfigurationGuard {
 				);
 			}
 
-			if ($result['conflicts'] !== []) {
-				// INFO on the parts that were left alone, because this is the
-				// decision somebody re-reads the upgrade log to find. The
-				// upgrade itself completes either way.
-				$this->logger->info(
-					sprintf(
-						'[ShippedConfigurationGuard] %s: %d part(s) changed on both sides, kept local and reported',
-						$slug,
-						count($result['conflicts'])
-					)
-				);
-			}
+			$this->logKeptLocal(slug: $slug, conflicts: $result['conflicts']);
 
 			foreach ($decisions as $path) {
 				$this->recordDecision(slug: $slug, path: (string)$path, app: $app);
@@ -196,15 +197,17 @@ class ShippedConfigurationGuard {
 				'conflicts' => $result['conflicts'],
 			];
 		} catch (Throwable $e) {
-			// An upgrade must finish. A guard that cannot run means the import
-			// behaves as it did before the guard existed, which is a known
-			// state, not a broken one.
+			// An upgrade must finish, so the import still goes ahead. But a
+			// guard that cannot run must not hand the app's authorization over
+			// what an administrator set here: that is the one thing the guard
+			// exists to prevent, and failing towards the shipped policy is
+			// failing open. The instance's own authorization blocks are kept.
 			$this->logger->error(
-				sprintf('[ShippedConfigurationGuard] %s: guard skipped, importing unguarded: %s', $slug, $e->getMessage())
+				sprintf('[ShippedConfigurationGuard] %s: guard skipped, importing unguarded but keeping the instance authorization: %s', $slug, $e->getMessage())
 			);
 
 			return [
-				'definition' => $incoming,
+				'definition' => $this->keepingLiveAuthorization(live: $live, incoming: $incoming),
 				'baseline' => null,
 				'guarded' => false,
 				'applied' => [],
@@ -213,6 +216,110 @@ class ShippedConfigurationGuard {
 			];
 		}//end try
 	}//end guardSchemaUpdate()
+
+	/**
+	 * Log, at INFO, the parts that changed on both sides and were left alone.
+	 *
+	 * INFO, because this is the decision somebody re-reads the upgrade log to
+	 * find. The upgrade itself completes either way.
+	 *
+	 * @param string                           $slug      The schema slug.
+	 * @param array<int, array<string, mixed>> $conflicts The parts kept local.
+	 *
+	 * @return void
+	 */
+	private function logKeptLocal(string $slug, array $conflicts): void {
+		if ($conflicts === []) {
+			return;
+		}
+
+		$this->logger->info(
+			sprintf('[ShippedConfigurationGuard] %s: %d part(s) changed on both sides, kept local and reported', $slug, count($conflicts))
+		);
+	}//end logKeptLocal()
+
+	/**
+	 * The incoming definition with the instance's own authorization blocks put back.
+	 *
+	 * For an import the guard could not judge: the schema's `authorization` and
+	 * each existing property's `authorization` stay as the instance has them
+	 * (a block the instance does not have is not added); a property the
+	 * instance does not hold yet brings its shipped block.
+	 *
+	 * @param array<string, mixed> $live     What the instance runs.
+	 * @param array<string, mixed> $incoming What the app now ships.
+	 *
+	 * @return array<string, mixed> The definition to write.
+	 */
+	private function keepingLiveAuthorization(array $live, array $incoming): array {
+		$definition = $this->withAuthorizationOf(target: $incoming, live: $live);
+
+		$liveProperties = ($live['properties'] ?? null);
+		if (is_array($liveProperties) === false || is_array($definition['properties'] ?? null) === false) {
+			return $definition;
+		}
+
+		foreach ($definition['properties'] as $name => $property) {
+			if (is_array($property) === false || is_array($liveProperties[$name] ?? null) === false) {
+				continue;
+			}
+
+			$definition['properties'][$name] = $this->withAuthorizationOf(target: $property, live: $liveProperties[$name]);
+		}
+
+		return $definition;
+	}//end keepingLiveAuthorization()
+
+	/**
+	 * A definition part carrying the `authorization` block of the instance's own part, or none when the instance has none.
+	 *
+	 * @param array<string, mixed> $target The part from the incoming definition.
+	 * @param array<string, mixed> $live   The same part as the instance has it.
+	 *
+	 * @return array<string, mixed> The part with the instance's authorization.
+	 */
+	private function withAuthorizationOf(array $target, array $live): array {
+		if (array_key_exists('authorization', $live) === false) {
+			unset($target['authorization']);
+			return $target;
+		}
+
+		$target['authorization'] = $live['authorization'];
+
+		return $target;
+	}//end withAuthorizationOf()
+
+	/**
+	 * Record, on the audit trail, the authorization blocks an upgrade took from the app because only the app changed them.
+	 *
+	 * An explicit decision is recorded by recordReplaced(); this is the other
+	 * way a block changes under an instance, and who widened access is what
+	 * the trail has to be able to answer.
+	 *
+	 * @param string             $slug     The schema slug.
+	 * @param string             $app      The app that ships it.
+	 * @param array<int, string> $applied  The paths the merge took from upstream.
+	 * @param array<int, string> $recorded Roots already on the trail.
+	 *
+	 * @return void
+	 */
+	private function recordAppliedAuthorization(string $slug, string $app, array $applied, array $recorded): void {
+		$roots = [];
+		foreach ($applied as $path) {
+			$path = (string)$path;
+			$sep = preg_quote(DescriptorParts::SEPARATOR, '/');
+			$pattern = '/^(authorization|properties' . $sep . '[^' . $sep . ']+' . $sep . 'authorization)(?:' . $sep . '|$)/';
+			if (preg_match($pattern, $path, $matches) === 1) {
+				$roots[$matches[1]] = true;
+			}
+		}
+
+		foreach (array_keys($roots) as $root) {
+			if (in_array($root, $recorded, true) === false) {
+				$this->recordDecision(slug: $slug, path: $root, app: $app, decision: 'applied-shipped');
+			}
+		}
+	}//end recordAppliedAuthorization()
 
 	/**
 	 * Record what an app shipped for a schema it has just created.
@@ -492,24 +599,49 @@ class ShippedConfigurationGuard {
 	}//end recordReset()
 
 	/**
+	 * Record each authorization block an administrator's re-import replaced
+	 * over a local change: on the audit trail, and on the decision for the report.
+	 *
+	 * @param string             $slug  The schema slug.
+	 * @param string             $app   The app that ships it.
+	 * @param array<int, string> $roots The replaced block roots.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	private function recordReplaced(string $slug, string $app, array $roots): void {
+		$via = (string)$this->merge->decidedVia();
+		foreach ($roots as $root) {
+			$this->recordDecision(slug: $slug, path: (string)$root, app: $app, via: $via);
+		}
+
+		$this->merge->noteReplaced(slug: $slug, roots: $roots);
+	}//end recordReplaced()
+
+	/**
 	 * Record that a conflicting part was taken from upstream.
 	 *
 	 * @param string $slug The schema slug.
 	 * @param string $path The part.
 	 * @param string $app  The app.
+	 * @param string $via  What decided it, when not the acting user alone (an occ re-import).
+	 * @param string $decision `accept-shipped` for a conflict an administrator took, `applied-shipped` for a block only the app changed.
 	 *
 	 * @return void
 	 */
-	private function recordDecision(string $slug, string $path, string $app): void {
-		$this->record(
-			action: self::ACTION_DECIDED,
-			changed: [
-				'schema' => $slug,
-				'path' => $path,
-				'app' => $app,
-				'decision' => 'accept-shipped',
-			]
-		);
+	private function recordDecision(string $slug, string $path, string $app, string $via = '', string $decision = 'accept-shipped'): void {
+		$changed = [
+			'schema' => $slug,
+			'path' => $path,
+			'app' => $app,
+			'decision' => $decision,
+		];
+		if ($via !== '') {
+			$changed['via'] = $via;
+		}
+
+		$this->record(action: self::ACTION_DECIDED, changed: $changed);
 	}//end recordDecision()
 
 	/**

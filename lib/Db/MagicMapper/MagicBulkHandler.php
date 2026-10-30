@@ -139,10 +139,13 @@ class MagicBulkHandler {
 	 * @psalm-return list<non-empty-array<string, false|int|mixed|null|string>>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array {
 		$prepared = [];
 		$now = new DateTime();
+		$columnRoles = new MagicMetadataColumn();
 
 		foreach ($objects as $object) {
 			$preparedObject = [];
@@ -211,8 +214,10 @@ class MagicBulkHandler {
 			// Properties can be at top level OR in 'object' key (structured format).
 			$propertySource = $object['object'] ?? $object;
 			foreach ($propertySource as $propertyName => $value) {
-				// Skip metadata (already handled) and @self.
-				if ($propertyName === '@self' || str_starts_with($propertyName, '_') === true) {
+				// A declared property that would write a metadata column is skipped
+				// with the undeclared `_` keys and `@self`: the metadata columns were
+				// stamped above and a client value must not replace them.
+				if ($columnRoles->skippedOnWrite(key: (string)$propertyName, schemaProperties: ($schema->getProperties() ?? [])) === true) {
 					continue;
 				}
 
@@ -223,15 +228,10 @@ class MagicBulkHandler {
 				// 1. PostgreSQL rejects empty strings for JSON columns
 				// 2. Column types might differ from schema (e.g., table created with old schema)
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
-				if ($value === '') {
-					$value = null;
-				}
+				$value = match ($value) { '' => null, default => $value };
 
 				// Convert complex values for database storage.
-				$preparedObject[$columnName] = $value;
-				if (is_array($value) === true || is_object($value) === true) {
-					$preparedObject[$columnName] = json_encode($value);
-				}
+				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
 			}//end foreach
 
 			$prepared[] = $preparedObject;
@@ -239,6 +239,7 @@ class MagicBulkHandler {
 
 		return $prepared;
 	}//end prepareObjectsForDynamicTable()
+
 
 	/**
 	 * Map the six display-metadata columns onto a prepared row.
@@ -475,6 +476,11 @@ class MagicBulkHandler {
 
 		if ($preparedObjects === []) {
 			return [];
+		}
+
+		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
+		foreach ($preparedObjects as $preparedObject) {
+			(new MagicNumberColumn())->assertRowFits(row: $preparedObject, columnSizes: $numberColumnSizes);
 		}
 
 		// Determine optimal chunk size.

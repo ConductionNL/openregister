@@ -4,7 +4,7 @@
 TBD - created by archiving change migration-mapping-packs. Update Purpose after archive.
 ## Requirements
 ### Requirement: The system MUST validate migration pack definitions structurally before storing them
-A migration pack definition SHALL be a JSON document with a slug `id` (lowercase letters/digits/hyphens, unique per instance), a non-empty `name`, a `sourceFormat` from `csv|json|excel`, a strict-semver `version`, a non-empty `fieldMappings` array (each entry with non-empty `source` and `target` strings, optional boolean `required`, optional `transform`), an `idStrategy` (`{type: "generate"}` or `{type: "sourceField", field: "<non-empty>"}`), and optional `defaults` (object) and `skipRows` (positive integers). Transform blocks SHALL declare a `type` from `trim|date|bool-map|concat|lookup|const` and carry that type's required fields (`map` for bool-map/lookup, `fields` for concat, `value` for const). Structurally invalid definitions SHALL be rejected at create/update/import time with HTTP 422, never stored and never deferred to import time.
+A migration pack definition SHALL be a JSON document with a slug `id` (lowercase letters/digits/hyphens, unique per instance), a non-empty `name`, a `sourceFormat` from `csv|json|excel`, a strict-semver `version`, a non-empty `fieldMappings` array (each entry with non-empty `source` and `target` strings, optional boolean `required`, optional `transform`), an `idStrategy` (`{type: "generate"}` or `{type: "sourceField", field: "<non-empty>"}`), and optional `defaults` (object) and `skipRows` (positive integers). Transform blocks SHALL declare a `type` from `trim|date|bool-map|concat|lookup|const` and carry that type's required fields (`map` for bool-map/lookup, `fields` for concat, `value` for const). Structurally invalid definitions SHALL be rejected at create/update/import time with HTTP 422, never stored and never deferred to import time. Every finding the validator returns, and every row error the mapping engine returns (shown in the pack editor's save error and preview, and in an import's error file), SHALL be translated into the user's language through the app's translations; the property names and values inside a message stay as written.
 
 #### Scenario: Valid pack definition is accepted
 - **GIVEN** an admin submits a pack with a slug id, name, `sourceFormat: "csv"`, `version: "1.0.0"`, one field mapping with source and target, and `idStrategy: {type: "generate"}`
@@ -78,7 +78,7 @@ The system SHALL expose `/api/migration-packs` REST routes: `index`/`show`/`expo
 #### Scenario: Pack JSON export/import round-trips between instances
 - **GIVEN** a pack exported as `zgw-zaken-json.json` from one instance
 - **WHEN** an admin uploads that file to `POST /api/migration-packs/import` on another instance
-- **THEN** an identical pack is created there; re-importing an updated file with the same `id` updates the existing row instead of erroring
+- **THEN** an identical pack is created there (HTTP 201); re-importing an updated file with the same `id` updates the existing row instead of erroring and answers HTTP 200, so the page can say the stored pack was replaced instead of reporting it as newly imported
 
 #### Scenario: Anonymous callers are rejected everywhere
 - **WHEN** an unauthenticated request hits any `/api/migration-packs` route

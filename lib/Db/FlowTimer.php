@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -138,7 +139,7 @@ use OCP\AppFramework\Db\Entity;
  * @method string|null getCreatedBy()
  * @method void setCreatedBy(?string $createdBy)
  */
-class FlowTimer extends Entity implements JsonSerializable {
+class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
 
 	/**
 	 * Lifecycle states. Nothing else is persistable; there is NO overdue state.
@@ -212,7 +213,7 @@ class FlowTimer extends Entity implements JsonSerializable {
 	 *
 	 * @var array<int, string>
 	 */
-	public const SUBJECT_TYPES = ['task', 'object', 'run'];
+	public const SUBJECT_TYPES = ['task', 'object', 'run', 'case-item'];
 
 	/**
 	 * The three reserved enforcing outcomes; `transition:<action>` is the fourth shape.

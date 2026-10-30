@@ -172,7 +172,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$response = $controller->callback();
 
 		$this->assertInstanceOf(RedirectResponse::class, $response);
-		$this->assertStringEndsWith('?connected=ok', $response->getRedirectURL());
+		$this->assertStringEndsWith('?connected=ok#user-settings', $response->getRedirectURL());
 		$this->assertSame(1, $this->completions);
 	}
 
@@ -187,12 +187,12 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$response = $controller->callback();
 
 		$this->assertInstanceOf(RedirectResponse::class, $response);
-		$this->assertStringEndsWith('?connected=failed', $response->getRedirectURL());
+		$this->assertStringEndsWith('?connected=failed#user-settings', $response->getRedirectURL());
 		$this->assertStringNotContainsString('invalid_client', $response->getRedirectURL());
 		$this->assertStringNotContainsString('CLIENT_ID_HERE', $response->getRedirectURL());
 	}
 
-	public function testAnOffInstanceReturnUrlFallsBackToPersonalSettings(): void {
+	public function testAnOffInstanceReturnUrlFallsBackToTheAppPage(): void {
 		$controller = $this->makeController(
 			params: ['state' => 'STATE_VALUE_HERE', 'code' => 'AUTH_CODE_HERE'],
 			unverifiedClaims: ['cb' => self::OWN_CALLBACK],
@@ -202,7 +202,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$response = $controller->callback();
 
 		$this->assertInstanceOf(RedirectResponse::class, $response);
-		$this->assertStringStartsWith('https://home.example/settings/user/additional', $response->getRedirectURL());
+		$this->assertStringStartsWith('https://home.example/apps/openregister/', $response->getRedirectURL());
 	}
 
 	public function testTheClientMetadataIdentifiesItselfByItsOwnUrl(): void {
@@ -554,7 +554,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 					return 'https://home.example/apps/openregister/oauth2/client-metadata.json';
 				}
 
-				return 'https://home.example/settings/user/additional';
+				return 'https://home.example/apps/openregister/';
 			}
 		);
 		$urlGenerator->method('getAbsoluteURL')->willReturnCallback(

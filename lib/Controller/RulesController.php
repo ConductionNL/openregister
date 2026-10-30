@@ -130,9 +130,10 @@ class RulesController extends Controller {
 	 *
 	 * @param string $schema Schema id, uuid or slug.
 	 *
-	 * @return JSONResponse The inventory rows.
+	 * @return JSONResponse The inventory rows, narrowed by `scope[<property>]=<value>` when given.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function index(string $schema): JSONResponse {
@@ -142,11 +143,15 @@ class RulesController extends Controller {
 		}
 
 		$window = (int)($this->request->getParam('idleDays') ?? RuleInventoryService::DEFAULT_IDLE_DAYS);
+		$scope = $this->request->getParam('scope', []);
+		if (is_array($scope) === false) {
+			$scope = [];
+		}
 
 		return new JSONResponse(
 			[
 				'schema' => (string)($entity->getSlug() ?? ''),
-				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window),
+				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window, scope: $scope),
 			]
 		);
 

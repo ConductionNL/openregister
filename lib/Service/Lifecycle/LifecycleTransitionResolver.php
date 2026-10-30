@@ -112,4 +112,17 @@ class LifecycleTransitionResolver {
 
 		return is_array($from) === true && in_array($oldValue, $from, true) === true;
 	}//end moves()
+
+	/**
+	 * Whether the write of this object in flight sets declared state (a seed or example-set refresh).
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function writesDeclaredState(string $uuid): bool {
+		return $this->context->writesDeclaredState(uuid: $uuid);
+	}//end writesDeclaredState()
 }//end class

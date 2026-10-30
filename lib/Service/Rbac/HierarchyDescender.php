@@ -51,6 +51,11 @@ use Throwable;
 /**
  * Finds the hierarchical schemas, and reads one level of children at a time.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One class answers the
+ * declaration, the descent and the ascent of a hierarchy over the same memoised
+ * tables, and each question is a short method; splitting them would put the
+ * memo in two places, which is how a stale answer reaches an authorization verdict.
+ *
  * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
  */
 class HierarchyDescender {
@@ -195,50 +200,91 @@ class HierarchyDescender {
 	/**
 	 * The children of a set of parents, as child uuid => parent uuid.
 	 *
+	 * With a `$limit` the read itself is bounded: at most that many rows leave
+	 * the database, so a caller that stops at a node cap does not first fetch
+	 * a level of a hundred thousand rows to find out it is over it. A row
+	 * naming itself as its parent is then left out in SQL, so it does not use
+	 * up the limit.
+	 *
 	 * @param string $table The magic table.
 	 * @param string $parentColumn The column naming the parent.
 	 * @param string[] $parentUuids The parents to read children of.
+	 * @param int|null $limit The most rows to read, or null for the whole level.
 	 *
 	 * @return array<string, string> Child UUID => parent UUID.
 	 *
 	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
 	 */
-	public function childrenOf(string $table, string $parentColumn, array $parentUuids): array {
-		if (empty($parentUuids) === true) {
+	public function childrenOf(string $table, string $parentColumn, array $parentUuids, ?int $limit = null): array {
+		if (empty($parentUuids) === true || ($limit !== null && $limit < 1)) {
 			return [];
 		}
 
 		$children = [];
 		foreach (array_chunk($parentUuids, self::CHUNK) as $chunk) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('_uuid', $parentColumn)
-				->from($table)
-				->where(
-					$qb->expr()->in(
-						$parentColumn,
-						$qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)
-					)
-				);
-
-			$result = $qb->executeQuery();
-			foreach ($result->fetchAll() as $row) {
-				$childUuid = (string)($row['_uuid'] ?? '');
-				$parentUuid = (string)($row[$parentColumn] ?? '');
-				if ($childUuid === '' || $parentUuid === '' || $childUuid === $parentUuid) {
-					// A row naming ITSELF as its parent is the shortest cycle
-					// there is, and it is the one an import writes. Dropping it
-					// here means the expander never has to treat it specially.
-					continue;
-				}
-
-				$children[$childUuid] = $parentUuid;
+			$remaining = null;
+			if ($limit !== null) {
+				$remaining = ($limit - count($children));
 			}
 
-			$result->closeCursor();
-		}//end foreach
+			$children = array_replace(
+				$children,
+				$this->childrenInChunk(table: $table, parentColumn: $parentColumn, parents: $chunk, limit: $remaining)
+			);
+
+			if ($limit !== null && count($children) >= $limit) {
+				break;
+			}
+		}
 
 		return $children;
 	}//end childrenOf()
+
+	/**
+	 * The children of one chunk of parents, as child uuid => parent uuid.
+	 *
+	 * @param string $table The magic table.
+	 * @param string $parentColumn The column naming the parent.
+	 * @param string[] $parents The parents of this chunk.
+	 * @param int|null $limit The most rows to read, or null for all of them.
+	 *
+	 * @return array<string, string> Child UUID => parent UUID.
+	 */
+	private function childrenInChunk(string $table, string $parentColumn, array $parents, ?int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('_uuid', $parentColumn)
+			->from($table)
+			->where(
+				$qb->expr()->in(
+					$parentColumn,
+					$qb->createNamedParameter($parents, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			);
+
+		if ($limit !== null) {
+			$qb->andWhere($qb->expr()->neq('_uuid', $parentColumn));
+			$qb->setMaxResults($limit);
+		}
+
+		$children = [];
+		$result = $qb->executeQuery();
+		foreach ($result->fetchAll() as $row) {
+			$childUuid = (string)($row['_uuid'] ?? '');
+			$parentUuid = (string)($row[$parentColumn] ?? '');
+			if ($childUuid === '' || $parentUuid === '' || $childUuid === $parentUuid) {
+				// A row naming ITSELF as its parent is the shortest cycle
+				// there is, and it is the one an import writes. Dropping it
+				// here means the expander never has to treat it specially.
+				continue;
+			}
+
+			$children[$childUuid] = $parentUuid;
+		}
+
+		$result->closeCursor();
+
+		return $children;
+	}//end childrenInChunk()
 
 	/**
 	 * The ancestors of one object, nearest first.

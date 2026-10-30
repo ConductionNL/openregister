@@ -257,6 +257,89 @@ class ExtendingFormDeclarationTest extends TestCase {
 	}
 
 	/**
+	 * `hideOnCreate` is accepted, forwards no key and never reaches a property.
+	 *
+	 * `@conduction/nextcloud-vue` 2.79.0 reads it to leave a field off the
+	 * create form. Refusing it by name refused dossiq's whole case schema at
+	 * register import, so an upgraded instance kept its old case schema.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 *
+	 * @return void
+	 */
+	public function testTheHideOnCreateFormRoleIsAcceptedAndForwardsNothing(): void {
+		$declaration = $this->shippedForm();
+		$declaration['map']['hideOnCreate'] = 'hideOnCreate';
+
+		$this->assertSame(expected: [], actual: $this->declarations->validate(annotation: $declaration));
+		$this->assertNotContains(needle: 'hideOnCreate', haystack: $this->declarations->forwards(annotation: $declaration));
+		$this->assertSame(expected: 6, actual: count($this->declarations->forwards(annotation: $declaration)));
+
+		$property = $this->declarations->toProperty(
+			annotation: $declaration,
+			formValues: ['propertyType' => 'string', 'hideOnCreate' => true]
+		);
+		$this->assertSame(expected: ['type' => 'string'], actual: $property);
+		$this->assertTrue(condition: (new PropertyValidatorHandler())->validateProperty(property: $property, path: '/x'));
+	}
+
+	/**
+	 * Every role the shipped consumer reads is accepted.
+	 *
+	 * Taken from `@conduction/nextcloud-vue` 2.79.0
+	 * `src/utils/dynamicProperties.js`: the `DEFAULT_MAP` keys plus every role
+	 * `mapped()` is called with. A role the consumer reads that this layer
+	 * refuses breaks a working form at import, which is what this pins.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 *
+	 * @return void
+	 */
+	public function testEveryRoleTheShippedConsumerReadsIsAccepted(): void {
+		$roles = [
+			'title',
+			'description',
+			'definition',
+			'type',
+			'format',
+			'maxLength',
+			'enum',
+			'required',
+			'default',
+			'hideOnCreate',
+		];
+		$map = [];
+		foreach ($roles as $role) {
+			$map[$role] = $role . 'Field';
+		}
+
+		$errors = $this->declarations->validate(
+			annotation: ['definitions' => 'caseTypeFieldDefinition', 'map' => $map]
+		);
+
+		$this->assertSame(expected: [], actual: $errors);
+	}
+
+	/**
+	 * A role that is neither a key, an alias nor a form role is still refused.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 *
+	 * @return void
+	 */
+	public function testARoleNobodyDefinesIsStillRefusedBesideAFormRole(): void {
+		$errors = $this->declarations->validate(
+			annotation: [
+				'definitions' => 'caseTypeFieldDefinition',
+				'map' => ['hideOnCreate' => 'hideOnCreate', 'hideOnEdit' => 'hideOnEdit'],
+			]
+		);
+
+		$this->assertCount(expectedCount: 1, haystack: $errors);
+		$this->assertSame(expected: 'hideOnEdit', actual: $errors[0]['key']);
+	}
+
+	/**
 	 * Both places the annotation may sit are found.
 	 *
 	 * @return void

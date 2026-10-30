@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261009130000</version>
+    <version>2.1.35-unstable.20261028180000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -131,6 +131,8 @@ Vrij en open source onder de EUPL-licentie.
 
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\StateHistoryRebuildJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob</job>
@@ -181,6 +183,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowTimerWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\CasePlanTimerRearmJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
@@ -188,6 +191,13 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
+		<!--
+			Removes the drafts that outlived their schema's draft lifetime:
+			30 days, or what the configuration key draftLifetimeDays says
+			(decisions 216 and 228). Without this line the lifetime is
+			stored and never acted on.
+		-->
+		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
 	</background-jobs>
 
 	<repair-steps>
@@ -266,6 +276,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDestructionListRegister</step>
 			<!-- `merge-operation` is where MergeService writes the audit row for
 			     every merge, and where reverseMerge reads the preMergeSnapshot
 			     back from. Its descriptor shipped with no Repair step, so the
@@ -273,6 +284,7 @@ Vrij en open source onder de EUPL-licentie.
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
@@ -365,6 +377,11 @@ Vrij en open source onder de EUPL-licentie.
 			     re-syncs an already-materialised table on a read, so the sync
 			     has to be asked for, and an upgrade is when. Idempotent. -->
 			<step>OCA\OpenRegister\Repair\AddObjectStateColumns</step>
+			<!-- Number columns were DECIMAL(10,2) and rounded every value with
+			     more decimals. Widened here, once, table by table, rather than on
+			     each table's first request. Post-migration only: a fresh install
+			     creates its tables at the new size. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\WidenMagicNumberColumns</step>
 			<!-- The export verb (export-as-its-own-right). Exporting is now a
 			     right of its own, and an instance that granted read granted an
 			     export with it. This step writes that grant down so an
@@ -443,6 +460,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDestructionListRegister</step>
 			<!-- `merge-operation` is where MergeService writes the audit row for
 			     every merge, and where reverseMerge reads the preMergeSnapshot
 			     back from. Its descriptor shipped with no Repair step, so the
@@ -450,6 +468,7 @@ Vrij en open source onder de EUPL-licentie.
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
@@ -509,19 +528,26 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
+		<!-- Read-only: how many drafts the daily draft cleanup would remove per
+		     schema. For a look before the first run after an upgrade (decision 228). -->
+		<command>OCA\OpenRegister\Command\DraftsExpiredCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
 		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
 		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
 		<command>OCA\OpenRegister\Command\TablesSyncCommand</command>
 		<!-- Batched Context Chat backfill for opted-in, published objects. -->
 		<command>OCA\OpenRegister\Command\ContextChatReindexCommand</command>
+		<!-- Story example sets: one cast, a fragment per app (example-sets). The
+		     store fetches ObjectService lazily, so the DI graph stays light. -->
+		<command>OCA\OpenRegister\Command\ExampleSetInstallCommand</command>
+		<command>OCA\OpenRegister\Command\ExampleSetRemoveCommand</command>
+		<command>OCA\OpenRegister\Command\ExampleSetListCommand</command>
 	</commands>
 
 	<settings>
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
 		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
-		<personal>OCA\OpenRegister\Settings\OpenRegisterPersonal</personal>
 	</settings>
 
 	<!-- The notifier is registered in PHP:

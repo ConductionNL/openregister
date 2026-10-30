@@ -2875,7 +2875,14 @@ class Schema extends Entity implements JsonSerializable {
 		// `exportable` opts the schema into nextcloud-vue's native Export menu
 		// on an index page (or#4103). Off the allowlist it was dropped without
 		// a log line, so `allowExport: true` on every app page was a no-op.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable'];
+		// `staging` and `additionalProperties` are read by FormDestinationValidator
+		// (decision 179): a staging schema is no form destination, and a form
+		// field into an undeclared property is a finding unless the schema opts
+		// into extras. Off this list both were dropped on save, so neither could
+		// ever be declared.
+		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
+		// caller's own drafts out of the schema's lists by default.
+		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
@@ -3101,6 +3108,24 @@ class Schema extends Entity implements JsonSerializable {
 			return;
 		}
 
+		// `draftLifetimeDays` (decisions 216 and 228) is read by
+		// DraftStatusPolicy and acted on by DraftExpiryJob. Off this method it
+		// was an unknown key, and an unknown key is dropped on save without a
+		// word. Absent or null means the default of 30 days. A value that
+		// cannot be read is stored as `false` (drafts kept) before the throw
+		// reports it: dropping it would turn a typing error into "remove
+		// after 30 days".
+		if ($key === 'draftLifetimeDays') {
+			if ($value === null) {
+				return;
+			}
+
+			$validatedConfig[$key] = false;
+			$validatedConfig[$key] = $this->validateDraftLifetimeValue(value: $value);
+
+			return;
+		}
+
 		if ($key === 'linkRoles') {
 			$validatedConfig[$key] = $this->validateLinkRolesValue(value: $value);
 			return;
@@ -3154,6 +3179,38 @@ class Schema extends Entity implements JsonSerializable {
 			$this->droppedKeys[] = (string)$key;
 		}//end if
 	}//end validateConfigurationEntry()
+
+	/**
+	 * Validate the `draftLifetimeDays` configuration value.
+	 *
+	 * A whole number of days, one or more, or `false` to keep the schema's
+	 * drafts. Zero, a negative number, a fraction, `true` or text is refused:
+	 * zero in particular must never read as "remove every draft now", and a
+	 * schema that wants to keep its drafts says `false`.
+	 *
+	 * @param mixed $value The raw value, never null.
+	 *
+	 * @throws \InvalidArgumentException If the value is neither a whole number of days, one or more, nor `false`.
+	 *
+	 * @return int|false The days, or false when the schema keeps its drafts.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-lifetime-must-default-to-thirty-days-and-a-schema-must-be-able-to-change-it-or-opt-out
+	 */
+	private function validateDraftLifetimeValue(mixed $value): int|false {
+		if ($value === false) {
+			return false;
+		}
+
+		if (is_string($value) === true && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
+			$value = (int)$value;
+		}
+
+		if (is_int($value) === false || $value < 1) {
+			throw new InvalidArgumentException('draftLifetimeDays must be a whole number of days, 1 or more, or false to keep drafts');
+		}
+
+		return $value;
+	}//end validateDraftLifetimeValue()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most
@@ -3458,6 +3515,13 @@ class Schema extends Entity implements JsonSerializable {
 		// could never opt an object into a subscription — same
 		// or#460/#462-class trap as every entry above.
 		'x-openregister-registry',
+		// Who owns a decision on this schema's records (open, or the decider
+		// plus supervisors and administrators) and whether one reviewer's
+		// decisions are hidden from another (reviewer-owns-their-decisions).
+		// Read by ReviewPolicyResolver, refused at save by
+		// ReviewAnnotationValidator. Absent from this list it would be dropped,
+		// and a four-eyes review its author had just switched on would stay open.
+		'x-openregister-review',
 		// A property that shows a referenced record's own field, live. Read by
 		// LensResolver at render time; the value is never stored. Absent from
 		// this list, setConfiguration() would drop the block and every lens
@@ -3623,15 +3687,20 @@ class Schema extends Entity implements JsonSerializable {
 	 * Validate and normalise `partyKinds`: the kinds of party an object of
 	 * this schema accepts, and per kind the roles it may hold.
 	 *
-	 * Each entry is `{key, label, description?, roles?}`; a bare string reads
-	 * as `{key: s, label: s}`. Keys are unique, non-empty and at most 64
-	 * characters, the width of the link table's `party_kind` column. `roles`
-	 * is an optional list of role keys: naming it binds those roles to that
-	 * kind, leaving it out lets the kind hold any role the schema declares.
+	 * Each entry is `{key, label, description?, roles?, identityShapes?}`; a
+	 * bare string reads as `{key: s, label: s}`. Keys are unique, non-empty and
+	 * at most 64 characters, the width of the link table's `party_kind` column.
+	 * `roles` is an optional list of role keys: naming it binds those roles to
+	 * that kind, leaving it out lets the kind hold any role the schema
+	 * declares. `identityShapes` names the identity shapes a party of this
+	 * kind has in a shared party-kind vocabulary (`naturalPerson`,
+	 * `organization`), so a host can check a party against a vocabulary that
+	 * accepts shapes rather than this schema's kind keys.
 	 *
 	 * @param mixed $value The configured value.
 	 *
-	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The normalised entries.
+	 * @return array<int, array<string, mixed>> The normalised entries, each
+	 *   `{key, label, description?, roles?, identityShapes?}`.
 	 *
 	 * @throws InvalidArgumentException When the value is not a list of valid entries.
 	 *
@@ -3662,36 +3731,50 @@ class Schema extends Entity implements JsonSerializable {
 	}//end validatePartyKindsValue()
 
 	/**
-	 * One `partyKinds` entry as `{key, label, description?, roles?}`, or null when it has no usable key.
+	 * One `partyKinds` entry as `{key, label, description?, roles?, identityShapes?}`, or null when it has no usable key.
 	 *
 	 * @param mixed $entry A string or an array.
 	 *
-	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>}|null The entry.
+	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>, identityShapes?: array<int, string>}|null The entry.
 	 */
 	private static function normalisePartyKind(mixed $entry): ?array {
 		$normalised = self::normaliseLinkRole(entry: $entry);
-		if ($normalised === null) {
-			return null;
-		}
-
-		if (is_array($entry) === false || isset($entry['roles']) === false || is_array($entry['roles']) === false) {
+		if ($normalised === null || is_array($entry) === false) {
 			return $normalised;
 		}
 
-		$roles = [];
-		foreach ($entry['roles'] as $role) {
-			$role = trim((string)$role);
-			if ($role !== '' && in_array($role, $roles, true) === false) {
-				$roles[] = $role;
+		foreach (['roles', 'identityShapes'] as $listKey) {
+			$list = self::distinctStrings(value: ($entry[$listKey] ?? null));
+			if ($list !== []) {
+				$normalised[$listKey] = $list;
 			}
-		}
-
-		if ($roles !== []) {
-			$normalised['roles'] = $roles;
 		}
 
 		return $normalised;
 	}//end normalisePartyKind()
+
+	/**
+	 * The distinct, trimmed, non-empty strings of a list, in order; [] for anything else.
+	 *
+	 * @param mixed $value The configured list.
+	 *
+	 * @return array<int, string> The strings.
+	 */
+	private static function distinctStrings(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($value as $item) {
+			$item = trim((string)$item);
+			if ($item !== '' && in_array($item, $out, true) === false) {
+				$out[] = $item;
+			}
+		}
+
+		return $out;
+	}//end distinctStrings()
 
 	/**
 	 * The kinds of party an object of this schema accepts, [] when it declares none.

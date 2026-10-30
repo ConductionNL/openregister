@@ -162,19 +162,30 @@ final class PropertyVocabulary {
 	/**
 	 * Every modifier key, valid on any type.
 	 *
-	 * @return array<int, array{key: string, value: string, enforced: bool, description: string}> The modifier rows.
+	 * A modifier the save path checks against a closed list also carries that
+	 * list as `allowedValues`.
+	 *
+	 * @return array<int, array{key: string, value: string, enforced: bool, description: string,
+	 *   allowedValues?: array<int, string>}> The modifier rows.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function modifiers(): array {
 		$rows = [];
+		$closed = PropertyValidatorHandler::CLOSED_MODIFIER_VALUES;
 		foreach (PropertyValidatorHandler::MODIFIERS as $key => $descriptor) {
-			$rows[] = [
+			$row = [
 				'key' => (string)$key,
 				'value' => $descriptor['value'],
 				'enforced' => true,
 				'description' => $descriptor['description'],
 			];
+			if (array_key_exists((string)$key, $closed) === true) {
+				$row['allowedValues'] = $closed[(string)$key];
+			}
+
+			$rows[] = $row;
 		}
 
 		return $rows;

@@ -60,6 +60,9 @@ use OCP\IDBConnection;
  * inbox ask of the table (same reasoning as FlowRunMapper); two of them
  * (`watchersAsText`, `candidateMembershipSql`) are public so the
  * platform-dependent SQL is unit-testable without a database.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is that same vocabulary,
+ * each question with its own documented query; splitting the table's reads over
+ * two mappers would leave callers guessing which one asks what.
  *
  * @template-extends QBMapper<Task>
  *
@@ -225,6 +228,28 @@ class TaskMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end findByUuid()
+
+	/**
+	 * Every task carrying this external key.
+	 *
+	 * A caller that adds a task once per thing keys it, and asks this before
+	 * adding it again.
+	 *
+	 * @param string $key The external key.
+	 *
+	 * @return array<int, Task> The tasks, oldest first.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function findByKey(string $key): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('task_key', $qb->createNamedParameter($key)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByKey()
 
 	/**
 	 * Update a task ONLY while it is still open: the conditional write every
@@ -567,7 +592,49 @@ class TaskMapper extends QBMapper {
 		$this->applyVisibility(qb: $qb, criteria: $criteria);
 		$this->applyFilters(qb: $qb, criteria: $criteria);
 		$this->applyExternalExclusion(qb: $qb, criteria: $criteria);
+		$this->applyBlockedExclusion(qb: $qb, criteria: $criteria);
 	}//end applyInboxPredicates()
+
+	/**
+	 * A task whose blocker is still open is in nobody's inbox and in nobody's total.
+	 *
+	 * Derived in the datastore from the blocker's terminality, never from a
+	 * stored flag, so a blocker closed by any path (a verb, run termination,
+	 * the timer sweep) releases its dependants on the next read. The subquery
+	 * is uncorrelated; `uuid IS NOT NULL` keeps `NOT IN` from turning every
+	 * row unknown. A read anchored to an object or a run skips it, for the
+	 * reason {@see applyExternalExclusion()} gives: that is the case looking at
+	 * its own work, and it must show what waits and on what.
+	 *
+	 * The portal seam calls it without criteria: a resident's task list is the
+	 * only inbox an external task has, so a task the case holds back waits out
+	 * of sight there too, always.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param TaskInboxCriteria|null $criteria Carries the anchors and `includeBlocked`; null for the portal seam.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	private function applyBlockedExclusion(IQueryBuilder $qb, ?TaskInboxCriteria $criteria = null): void {
+		if ($criteria !== null && ($criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null)) {
+			return;
+		}
+
+		$open = $this->db->getQueryBuilder();
+		$open->select('blocker.uuid')
+			->from($this->getTableName(), 'blocker')
+			->where($open->expr()->eq('blocker.is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($open->expr()->isNotNull('blocker.uuid'));
+
+		$qb->andWhere(
+			$qb->expr()->orX(
+				$qb->expr()->isNull('blocked_by'),
+				$qb->expr()->notIn('blocked_by', $qb->createFunction($open->getSQL()))
+			)
+		);
+	}//end applyBlockedExclusion()
 
 	/**
 	 * An EXTERNAL task is in nobody's Nextcloud inbox and in nobody's total.
@@ -657,7 +724,7 @@ class TaskMapper extends QBMapper {
 	}//end countOpenExternalForParty()
 
 	/**
-	 * The portal seam's predicate: this party's, external, still open.
+	 * The portal seam's predicate: this party's, external, still open, and not held back by an open blocker.
 	 *
 	 * @param IQueryBuilder $qb The query under construction.
 	 * @param string $partyReference The stored party reference.
@@ -670,6 +737,7 @@ class TaskMapper extends QBMapper {
 		$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($partyReference)));
 		$qb->andWhere($qb->expr()->eq('performer_type', $qb->createNamedParameter(Task::PERFORMER_EXTERNAL)));
 		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+		$this->applyBlockedExclusion(qb: $qb);
 	}//end applyPartyPredicates()
 
 	/**
@@ -996,9 +1064,16 @@ class TaskMapper extends QBMapper {
 			$direction = 'DESC';
 		}
 
+		// Open work first: a finished task sorts after every open one.
+		$order = 'orderBy';
+		if ($criteria->openFirst === true) {
+			$qb->orderBy('is_terminal', 'ASC');
+			$order = 'addOrderBy';
+		}
+
 		switch ($criteria->sort) {
 			case TaskInboxCriteria::SORT_PRIORITY:
-				$qb->orderBy(
+				$qb->$order(
 					$qb->createFunction(
 						sprintf(
 							"CASE %s WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END",
@@ -1009,10 +1084,10 @@ class TaskMapper extends QBMapper {
 				);
 				break;
 			case TaskInboxCriteria::SORT_CREATED:
-				$qb->orderBy('created', $direction);
+				$qb->$order('created', $direction);
 				break;
 			default:
-				$qb->orderBy('due_at', $direction);
+				$qb->$order('due_at', $direction);
 				break;
 		}
 

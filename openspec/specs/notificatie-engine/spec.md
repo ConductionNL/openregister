@@ -255,7 +255,7 @@ Failed notification deliveries MUST be retried with configurable backoff strateg
 
 ### Requirement: Users MUST be able to manage their notification preferences
 
-Users MUST be able to turn specific schema-declared notifications on or off (and optionally narrow channels) via a personal settings interface, without affecting other users' preferences. Preferences MUST be stored as override-only values in Nextcloud per-user app config under the `openregister` app (NOT in a `NotificationPreference` or `NotificationSubscription` table). When a user has no override for a `(schema, notification-key)` pair, the schema-declared default applies. Independently of the per-`(schema, notification)` override, a user MAY configure a global delivery window (quiet hours) via `NotificationDeliveryWindowService`, exposed through `GET`/`PUT /api/notification-delivery-window`, stored the same override-only way (a distinct per-user app-config key, `notification_delivery_window`) so a user with no configured window keeps today's immediate-delivery behaviour.
+Users MUST be able to turn specific schema-declared notifications on or off (and optionally narrow channels) via the user settings dialog, without affecting other users' preferences. Preferences MUST be stored as override-only values in Nextcloud per-user app config under the `openregister` app (NOT in a `NotificationPreference` or `NotificationSubscription` table). When a user has no override for a `(schema, notification-key)` pair, the schema-declared default applies. Independently of the per-`(schema, notification)` override, a user MAY configure a global delivery window (quiet hours) via `NotificationDeliveryWindowService`, exposed through `GET`/`PUT /api/notification-delivery-window`, stored the same override-only way (a distinct per-user app-config key, `notification_delivery_window`) so a user with no configured window keeps today's immediate-delivery behaviour.
 
 #### Scenario: User disables a specific notification
 - GIVEN schema `meldingen` declares an `object_created` notification (default on) to group `behandelaars`
@@ -1409,6 +1409,34 @@ actions only: an action added with `addAction()` never reached the client.
 - **WHEN** the notifier prepares an object notification
 - **THEN** the link is OpenRegister's object view for that register, schema and uuid
 - @e2e exclude {notifier rendering; covered by tests/Unit/Notification/AnnotationNotifierLinkTest.php}
+
+### Requirement: The preference list names each rule once
+
+The effective notification preferences of a user SHALL list each rule of an owning app's schema slug once, read from
+the schema row with the highest version (then the highest id), whatever other rows share that app and slug.
+
+#### Scenario: An older schema row left behind
+
+- **GIVEN** dossiq's `workDigest` as version 1.0.0 (id 1515) and 1.0.1 (id 1532)
+- **THEN** `workDigestReady` is listed once, as 1.0.1 declares it
+
+### Requirement: A rule can declare a channel that is off until someone switches it on
+
+A notification rule MAY declare `optInChannels`, a list of per-recipient channels. Such a channel SHALL NOT be delivered to a recipient unless that recipient's effective preference (their own value, else their group's default) includes it. The effective channels SHALL default to the rule's `channels` (or `["nc-notification"]` when absent), and a preference layer SHALL be able to choose any channel in `channels` plus `optInChannels`, never another. The preferences list SHALL answer each entry's `availableChannels` (default channels, then opt-in ones) and `optInChannels`.
+
+#### Scenario: E-mail is off by default
+- GIVEN a rule with `channels: ["nc-notification"]` and `optInChannels: ["email"]`
+- WHEN it fires for jan and piet, neither of whom set a preference
+- THEN both get a Nextcloud notification and neither gets an e-mail
+
+#### Scenario: A person switches e-mail on
+- GIVEN jan set `channels: ["nc-notification", "email"]` for that rule
+- WHEN it fires for jan and piet
+- THEN jan gets a notification and an e-mail, piet only the notification
+
+#### Scenario: A broadcast channel cannot be opt-in
+- WHEN a rule declares `optInChannels: ["talk"]`
+- THEN the validator reports `notification-bad-opt-in-channel`
 
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.

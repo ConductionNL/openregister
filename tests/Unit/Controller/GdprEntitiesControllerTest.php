@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\GdprEntitiesController;
+use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -65,7 +67,8 @@ class GdprEntitiesControllerTest extends TestCase {
 			$this->logger,
 			$this->userSession,
 			$this->groupManager,
-			$this->organisationService
+			$this->organisationService,
+			$this->visibleAsIs()
 		);
 	}
 
@@ -935,7 +938,8 @@ class GdprEntitiesControllerTest extends TestCase {
 			$this->logger,
 			$userSession,
 			$groupManager,
-			$organisationService
+			$organisationService,
+			$this->visibleAsIs()
 		);
 	}
 
@@ -952,7 +956,8 @@ class GdprEntitiesControllerTest extends TestCase {
 			$this->logger,
 			$userSession,
 			$this->groupManager,
-			$this->organisationService
+			$this->organisationService,
+			$this->visibleAsIs()
 		);
 
 		$result = $controller->index();
@@ -1018,5 +1023,22 @@ class GdprEntitiesControllerTest extends TestCase {
 		$result = $controller->destroy(1);
 
 		$this->assertEquals(Http::STATUS_NOT_FOUND, $result->getStatus());
+	}
+
+	/**
+	 * A visibility filter that hides nothing: HiddenDecisionTest covers the mask itself.
+	 *
+	 * @return DecisionVisibility
+	 */
+	private function visibleAsIs(): DecisionVisibility {
+		$visibility = $this->createMock(DecisionVisibility::class);
+		$visibility->method('presentAll')->willReturnCallback(
+			static fn (array $relations, string $userId): array => array_map(
+				static fn (EntityRelation $relation): array => $relation->jsonSerialize(),
+				array_values($relations)
+			)
+		);
+
+		return $visibility;
 	}
 }

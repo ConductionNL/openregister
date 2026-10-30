@@ -18,6 +18,8 @@
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Service\File\ShareUrlBuilder;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -71,7 +73,7 @@ class FileMapperGetFileIdsForObjectsTest extends TestCase {
 	protected function setUp(): void {
 		$this->db = $this->createMock(originalClassName: IDBConnection::class);
 		$this->urlGenerator = $this->createMock(originalClassName: IURLGenerator::class);
-		$this->mapper = new FileMapper(db: $this->db, urlGenerator: $this->urlGenerator);
+		$this->mapper = new FileMapper(db: $this->db, shareUrls: new ShareUrlBuilder(urlGenerator: $this->urlGenerator, config: $this->createMock(IConfig::class)));
 
 	}//end setUp()
 

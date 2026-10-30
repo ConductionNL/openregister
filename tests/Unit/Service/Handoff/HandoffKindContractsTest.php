@@ -63,7 +63,7 @@ class HandoffKindContractsTest extends TestCase {
 			HandoffKindContracts::mandatoryFields(self::NS . 'Case')
 		);
 		$this->assertEqualsCanonicalizing(
-			['title', 'summary', 'channel', 'source', 'requester', 'priority'],
+			['title', 'summary', 'channel', 'source', 'requester', 'priority', 'caseType'],
 			HandoffKindContracts::allFields(self::NS . 'Case')
 		);
 

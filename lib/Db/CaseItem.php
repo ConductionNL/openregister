@@ -133,53 +133,49 @@ use OCP\AppFramework\Db\Entity;
 class CaseItem extends Entity implements JsonSerializable {
 
 	/**
-	 * The six CMMN plan-item states: the same six a task carries.
+	 * The six CMMN plan-item states: the task's states, declared once on
+	 * {@see Task} (one-engine-bpmn-and-cmmn).
 	 */
-	public const STATE_AVAILABLE = 'available';
+	public const STATE_AVAILABLE = Task::STATE_AVAILABLE;
 
-	public const STATE_ENABLED = 'enabled';
+	public const STATE_ENABLED = Task::STATE_ENABLED;
 
-	public const STATE_ACTIVE = 'active';
+	public const STATE_ACTIVE = Task::STATE_ACTIVE;
 
-	public const STATE_COMPLETED = 'completed';
+	public const STATE_COMPLETED = Task::STATE_COMPLETED;
 
-	public const STATE_TERMINATED = 'terminated';
+	public const STATE_TERMINATED = Task::STATE_TERMINATED;
 
-	public const STATE_DISABLED = 'disabled';
+	public const STATE_DISABLED = Task::STATE_DISABLED;
 
 	/**
 	 * Every persistable state.
 	 *
 	 * @var array<int, string>
 	 */
-	public const STATES = [
-		self::STATE_AVAILABLE,
-		self::STATE_ENABLED,
-		self::STATE_ACTIVE,
-		self::STATE_COMPLETED,
-		self::STATE_TERMINATED,
-		self::STATE_DISABLED,
-	];
+	public const STATES = Task::STATES;
 
 	/**
 	 * States out of which no plan item of any type ever moves.
 	 *
 	 * @var array<int, string>
 	 */
-	public const TERMINAL_STATES = [
-		self::STATE_COMPLETED,
-		self::STATE_TERMINATED,
-		self::STATE_DISABLED,
-	];
+	public const TERMINAL_STATES = Task::TERMINAL_STATES;
 
 	/**
-	 * The three plan-item types.
+	 * The plan-item types.
 	 */
 	public const TYPE_STAGE = 'stage';
 
 	public const TYPE_HUMAN_TASK = 'humanTask';
 
 	public const TYPE_MILESTONE = 'milestone';
+
+	/**
+	 * A work item realised by a flow run (CMMN ProcessTask): the case layer
+	 * starting a BPMN process.
+	 */
+	public const TYPE_PROCESS_TASK = 'processTask';
 
 	/**
 	 * Every plan-item type.
@@ -189,6 +185,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	public const TYPES = [
 		self::TYPE_STAGE,
 		self::TYPE_HUMAN_TASK,
+		self::TYPE_PROCESS_TASK,
 		self::TYPE_MILESTONE,
 	];
 
@@ -308,7 +305,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	protected ?int $parentItemId = null;
 
 	/**
-	 * stage | humanTask | milestone.
+	 * stage | humanTask | processTask | milestone.
 	 *
 	 * @var string|null
 	 */

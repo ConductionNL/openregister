@@ -1,3 +1,1 @@
-# Screens
-
-- OrArchivering https://identity.conduction.nl/screens/board?id=openregister/OrArchivering
+- No screen: the archive and freeze are object states set through the API; the file half (REQ-OAS-007) is a refusal on the files API and on the Files/WebDAV door, which the files tab shows as the API's error text.

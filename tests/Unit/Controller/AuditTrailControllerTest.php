@@ -64,7 +64,8 @@ class AuditTrailControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList)
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
 
@@ -584,7 +585,8 @@ class AuditTrailControllerTest extends TestCase {
 			$session,
 			$groupMgr,
 			$this->createMock(ReadableAuditTrailLister::class),
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList)
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
 
@@ -666,7 +668,7 @@ class AuditTrailControllerTest extends TestCase {
 		$controller->show(42);
 	}
 
-	// ── IDOR gate: per-object audit trail read (objects) is admin-only ──
+	// ── IDOR gate: a non-admin reads an object's history only when they may read the object ──
 
 	public function testObjectsReturns401WhenAnonymous(): void {
 		$controller = $this->makeControllerWithUser(null, false);
@@ -676,14 +678,16 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertEquals(401, $result->getStatus());
 	}
 
-	public function testObjectsReturns403WhenNonAdmin(): void {
+	public function testObjectsReturns404WhenNonAdminMayNotReadTheObject(): void {
+		// The reader service is a mock answering null (object not readable),
+		// which the controller must answer with the object GET's 404.
 		$bob = $this->createMock(IUser::class);
 		$bob->method('getUID')->willReturn('bob');
 		$controller = $this->makeControllerWithUser($bob, false);
 
 		$result = $controller->objects('reg', 'schema', 'obj-uuid');
 
-		$this->assertEquals(403, $result->getStatus());
+		$this->assertEquals(404, $result->getStatus());
 	}
 
 	public function testObjectsDoesNotInvokeServiceWhenForbidden(): void {

@@ -102,7 +102,8 @@ class EdgeCasesErrorHandlingTest extends TestCase {
 			$this->createMock(TenantLifecycleService::class),
 			$this->createMock(TenantUsageMapper::class),
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}
 

@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Http;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -39,16 +40,25 @@ class OrganisationControllerTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
+	/**
+	 * The usage service double.
+	 *
+	 * @var OrganisationUsageService&MockObject
+	 */
+	private OrganisationUsageService&MockObject $usageService;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
+		// The update tests edit as an administrator of the organisation; a member is refused (OrganisationUpdateRoleTest).
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->usageService = $this->createMock(originalClassName: OrganisationUsageService::class);
 
 		$this->controller = new OrganisationController(
 			'openregister',
@@ -59,7 +69,8 @@ class OrganisationControllerTest extends TestCase {
 			$this->createMock(TenantLifecycleService::class),
 			$this->createMock(TenantUsageMapper::class),
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->usageService
 		);
 	}
 
@@ -480,6 +491,42 @@ class OrganisationControllerTest extends TestCase {
 	// ──────────────────────────────────────────────
 	// show()
 	// ──────────────────────────────────────────────
+
+	/**
+	 * Show replaces the entity's unmeasured usage with the measured one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	public function testShowReturnsMeasuredUsage(): void {
+		$org = $this->createMock(originalClassName: Organisation::class);
+		$org->method('jsonSerialize')->willReturn(['uuid' => 'uuid-1', 'usage' => ['storage' => null, 'requests' => null, 'users' => 2]]);
+		$measured = ['storage' => 4096, 'bandwidth' => null, 'requests' => null, 'users' => 2, 'groups' => 0];
+		$this->usageService->expects($this->once())->method('measure')->with($org)->willReturn($measured);
+
+		$this->organisationService->method('hasAccessToOrganisation')->willReturn(true);
+		$this->organisationMapper->method('findByUuid')->willReturn($org);
+		$this->organisationMapper->method('findChildrenChain')->willReturn([]);
+
+		$data = $this->controller->show('uuid-1')->getData();
+
+		$this->assertSame(expected: $measured, actual: $data['organisation']['usage']);
+	}
+
+	/**
+	 * A refused organisation is not measured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	public function testShowDoesNotMeasureWhenNoAccess(): void {
+		$this->organisationService->method('hasAccessToOrganisation')->willReturn(false);
+		$this->usageService->expects($this->never())->method('measure');
+
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller->show('uuid-1')->getStatus());
+	}
 
 	public function testShowReturnsForbiddenWhenNoAccess(): void {
 		$this->organisationService->method('hasAccessToOrganisation')->willReturn(false);
@@ -2183,7 +2230,8 @@ class OrganisationControllerTest extends TestCase {
 			$lifecycle,
 			$this->createMock(TenantUsageMapper::class),
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}
 

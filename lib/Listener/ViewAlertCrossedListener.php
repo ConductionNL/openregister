@@ -40,6 +40,7 @@ use DateTime;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -84,7 +85,7 @@ class ViewAlertCrossedListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	public const USER_PREFIX = 'user:';
+	public const USER_PREFIX = ViewAlert::USER_PREFIX;
 
 	/**
 	 * Constructor.
@@ -95,6 +96,7 @@ class ViewAlertCrossedListener implements IEventListener {
 	 * @param IFactory $l10nFactory For each recipient's own language in an email.
 	 * @param IUserManager $userManager To read a recipient's language.
 	 * @param LoggerInterface $logger For recipients and channels nothing could deliver to.
+	 * @param ViewerReachResolver $viewers Re-checks at send time that a recipient may still read the view.
 	 */
 	public function __construct(
 		private readonly NotificationRecipientResolver $recipients,
@@ -103,6 +105,7 @@ class ViewAlertCrossedListener implements IEventListener {
 		private readonly IFactory $l10nFactory,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
+		private readonly ViewerReachResolver $viewers,
 	) {
 	}//end __construct()
 
@@ -130,7 +133,7 @@ class ViewAlertCrossedListener implements IEventListener {
 			'threshold' => $alert->threshold,
 		];
 
-		$uids = $this->resolve(viewId: $parameters['viewId'], alert: $alert);
+		$uids = $this->onlyThoseWhoMayRead(view: $view->jsonSerialize(), uids: $this->resolve(viewId: $parameters['viewId'], alert: $alert));
 		foreach ($alert->channels as $channel) {
 			if ($channel === self::CHANNEL_NOTIFICATION) {
 				$this->notifyAll(uids: $uids, parameters: $parameters);
@@ -151,6 +154,46 @@ class ViewAlertCrossedListener implements IEventListener {
 			);
 		}
 	}//end handle()
+
+	/**
+	 * Drop, and log, every recipient who may no longer read the view.
+	 *
+	 * 🔴 RECIPIENTS ARE JUDGED WHEN THE ALERT IS SAVED, AND REACH CHANGES AFTER.
+	 * An owner removes a share or un-publishes the view, and the recipient who
+	 * could read it at save time keeps receiving its name and count by
+	 * notification and email. So the question is asked again at the moment of
+	 * delivery, with the same rule the save used (the owner, an administrator,
+	 * or whoever the view's shares and `isPublic` reach). An unreadable
+	 * membership drops the recipient: not telling someone is the safe error.
+	 *
+	 * @param array<string, mixed> $view The serialised view that crossed.
+	 * @param array<int, string>   $uids The verified recipients.
+	 *
+	 * @return array<int, string> The recipients who still read it.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function onlyThoseWhoMayRead(array $view, array $uids): array {
+		$readers    = [];
+		$dropped    = [];
+		foreach ($uids as $uid) {
+			if ($this->viewers->recipientReads(view: $view, recipient: self::USER_PREFIX . $uid) === true) {
+				$readers[] = $uid;
+				continue;
+			}
+
+			$dropped[] = $uid;
+		}
+
+		if ($dropped !== []) {
+			$this->logger->warning(
+				'[ViewAlertCrossedListener] View {view} alert skipped recipients who may no longer read the view: {recipients}',
+				['view' => (string)($view['uuid'] ?? ''), 'recipients' => implode(', ', $dropped)]
+			);
+		}
+
+		return $readers;
+	}//end onlyThoseWhoMayRead()
 
 	/**
 	 * The verified uids an alert names, with every name that resolved to nobody logged.

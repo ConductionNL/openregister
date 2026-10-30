@@ -56,6 +56,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskPriority
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class TaskSubjectAccessGuardTest extends TestCase {
 

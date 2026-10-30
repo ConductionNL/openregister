@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
+use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * One `EXISTS (...)` clause per related-row filter, per engine.
@@ -120,7 +123,7 @@ final class RelatedRowExistsClause {
 	 *
 	 * @param RelatedRowFilter $filter          The parsed filter.
 	 * @param string           $engine          The database engine.
-	 * @param string           $table           The objects table.
+	 * @param string           $table           The related table as SQL names it, `*PREFIX*`-qualified.
 	 * @param string           $outerAlias      The alias of the outer object row.
 	 * @param string           $innerAlias      The alias to give the related row.
 	 * @param string           $accessPredicate SQL restricting the related rows to ones the caller may read.
@@ -132,6 +135,7 @@ final class RelatedRowExistsClause {
 	 * @throws InvalidArgumentException When the engine is unknown or no access predicate was given.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function render(
 		RelatedRowFilter $filter,
@@ -161,12 +165,7 @@ final class RelatedRowExistsClause {
 			$where[] = sprintf('%s."schema" = :%s_schema', $innerAlias, $parameterPrefix);
 		}
 
-		$where[] = sprintf(
-			'%s = %s.%s',
-			$this->fieldExpression(engine: $engine, storage: $storage, alias: $innerAlias, field: $filter->foreignKey),
-			$outerAlias,
-			$this->metadataColumn(storage: $storage, name: 'uuid')
-		);
+		$where[] = $this->joinCondition(filter: $filter, engine: $engine, storage: $storage, outerAlias: $outerAlias, innerAlias: $innerAlias);
 
 		// Soft-deleted related rows are not rows. Without this a case keeps
 		// matching on a property somebody removed, which reads as the removal
@@ -412,7 +411,7 @@ final class RelatedRowExistsClause {
 	 */
 	private function fieldExpression(string $engine, string $storage, string $alias, string $field): string {
 		if ($storage === self::STORAGE_COLUMNS) {
-			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $field));
+			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $this->columnName(property: $field)));
 		}
 
 		if ($storage === self::STORAGE_JSON) {
@@ -454,6 +453,77 @@ final class RelatedRowExistsClause {
 	}//end metadataColumn()
 
 	/**
+	 * How the related row joins the object.
+	 *
+	 * Inverse (`_related`): the related row's property holds the object's uuid.
+	 * Forward (`_referenced`): the object's property holds the related row's uuid.
+	 *
+	 * @param RelatedRowFilter $filter     The parsed filter.
+	 * @param string           $engine     The database engine.
+	 * @param string           $storage    JSON in the objects table or magic-table columns.
+	 * @param string           $outerAlias The alias of the object row.
+	 * @param string           $innerAlias The alias of the related row.
+	 *
+	 * @return string The join condition.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function joinCondition(
+		RelatedRowFilter $filter,
+		string $engine,
+		string $storage,
+		string $outerAlias,
+		string $innerAlias,
+	): string {
+		$uuid = $this->metadataColumn(storage: $storage, name: 'uuid');
+
+		if ($filter->direction === RelatedRowFilter::DIRECTION_FORWARD) {
+			return sprintf(
+				'%s.%s = %s',
+				$innerAlias,
+				$uuid,
+				$this->fieldExpression(engine: $engine, storage: $storage, alias: $outerAlias, field: $filter->foreignKey)
+			);
+		}
+
+		return sprintf(
+			'%s = %s.%s',
+			$this->fieldExpression(engine: $engine, storage: $storage, alias: $innerAlias, field: $filter->foreignKey),
+			$outerAlias,
+			$uuid
+		);
+	}//end joinCondition()
+
+	/**
+	 * The magic-table column a property is stored in.
+	 *
+	 * Applies the rule that names the columns (`MagicMapper::sanitizeColumnName`):
+	 * camelCase to snake_case, lower-cased, any character outside `[a-z0-9_]`
+	 * replaced by an underscore, runs of underscores collapsed, trailing
+	 * underscores removed (`propertyDefinition` is `property_definition`, a name
+	 * already in snake case is unchanged). The earlier one-line conversion
+	 * skipped the replacement and collapse steps, so a property those steps map
+	 * differently was filtered on a column that does not exist, or refused. The
+	 * `col_` prefix for a leading digit is NOT applied, because the rule that
+	 * creates the columns never applies it either (its guard compares
+	 * `preg_match()` to `false`); such a name is refused by quoteIdentifier().
+	 *
+	 * @param string $property The property name.
+	 *
+	 * @return string The column name.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function columnName(string $property): string {
+		$name = strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
+		$name = (string)preg_replace('/[^a-z0-9_]/', '_', $name);
+		$name = (string)preg_replace('/_+/', '_', $name);
+
+		// The 64-character cap the read path applies (MySQL's identifier limit).
+		return substr(rtrim($name, '_'), 0, 64);
+	}//end columnName()
+
+	/**
 	 * Quote a column name, refusing anything that is not one.
 	 *
 	 * A magic-table property becomes a bare identifier in the SQL, not a bound
@@ -469,7 +539,7 @@ final class RelatedRowExistsClause {
 	 * @throws InvalidArgumentException When the name is not a plain identifier.
 	 */
 	private function quoteIdentifier(string $name): string {
-		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name) !== 1) {
+		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $name) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a column name a related-row filter may reference.', $name)
 			);
@@ -516,4 +586,40 @@ final class RelatedRowExistsClause {
 			sprintf('No related-row SQL for engine \'%s\'.', $engine)
 		);
 	}//end jsonField()
+
+	/**
+	 * Which engine the SQL must be written for.
+	 *
+	 * Read off the LIVE CONNECTION rather than configured separately, because a
+	 * second source of truth for the engine is a second thing that can be wrong
+	 * about it, and being wrong would surface as a syntax error in production
+	 * and nowhere else.
+	 *
+	 * The detection matches `MagicRbacHandler::isPostgres()` deliberately,
+	 * including its fallback: when the platform cannot be read, both default to
+	 * MariaDB syntax. Two different guesses would put MariaDB JSON functions
+	 * and Postgres operators in the same statement.
+	 *
+	 * @param IDBConnection   $db     The connection, read for its platform.
+	 * @param LoggerInterface $logger The logger.
+	 *
+	 * @return string The engine.
+	 *
+	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	public function engineFor(IDBConnection $db, LoggerInterface $logger): string {
+		try {
+			$platform = $db->getDatabasePlatform();
+			if (stripos(get_debug_type($platform), 'PostgreSQL') !== false) {
+				return RelatedRowExistsClause::ENGINE_POSTGRES;
+			}
+		} catch (Throwable $e) {
+			$logger->warning(
+				message: '[RelatedRowExistsClause] Could not read the database platform; defaulting to MariaDB syntax',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
+			);
+		}
+
+		return RelatedRowExistsClause::ENGINE_MARIADB;
+	}//end engineFor()
 }//end class

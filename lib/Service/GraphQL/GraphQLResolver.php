@@ -24,6 +24,7 @@
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use GraphQL\Deferred;
 use GraphQL\Error\Error;
 use InvalidArgumentException;
@@ -795,6 +796,9 @@ class GraphQLResolver {
 	private function filterProperties(Schema $schema, array $data): array {
 		// Apply property-level RBAC first (drops fields the caller can't read).
 		$data = $this->propertyRbac->filterReadableProperties($schema, $data);
+
+		// Explicit-reveal values are shown only through the logged single-object reveal.
+		$data = ExplicitReveal::maskAll(schema: $schema, object: $data);
 
 		// Apply translation resolution: language-keyed JSONB property
 		// values collapse to a single string per the request-scoped

@@ -1,0 +1,2 @@
+- [x] 1.1 `runs` on a flows entry, checked and written (ExampleSetFlows)
+- [x] 1.2 tests (ExampleSetFlowsTest)

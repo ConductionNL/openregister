@@ -262,6 +262,12 @@ final class CalculationAnnotationValidator {
 			return;
 		}
 
+		// A literal is data, not an expression: a rate schedule or a list
+		// literal holds objects with several keys, which are not operators.
+		if ($op === 'lit') {
+			return;
+		}
+
 		$args = $expr[$op];
 		if ($op === 'prop') {
 			$this->walkProp(

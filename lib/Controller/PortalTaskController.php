@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Exception\PortalSubjectException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
@@ -290,6 +291,13 @@ class PortalTaskController extends Controller {
 			return new JSONResponse(['error' => 'No such task', 'code' => 'no-such-task'], Http::STATUS_NOT_FOUND);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => 'No such task', 'code' => 'no-such-task'], Http::STATUS_NOT_FOUND);
+		} catch (TaskCompleteViaAppException $elsewhere) {
+			// The task names the app action that completes it: say which, so
+			// the portal opens that action instead of this form.
+			return new JSONResponse(
+				['error' => $elsewhere->getMessage(), 'code' => 'complete-via-app', 'completeVia' => $elsewhere->completeVia()],
+				Http::STATUS_CONFLICT
+			);
 		} catch (TaskConflictException $conflict) {
 			return new JSONResponse(['error' => $conflict->getMessage(), 'code' => 'task-closed'], Http::STATUS_CONFLICT);
 		} catch (Throwable $failure) {

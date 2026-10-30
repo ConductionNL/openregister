@@ -37,6 +37,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -129,6 +130,7 @@ class TenantLifecycleService {
 	 * @param IUserManager $userManager Nextcloud user manager, to look up the org admin
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher
 	 * @param LoggerInterface $logger Logger
+	 * @param OrganisationLifecycleAuditor|null $auditor Writes each status change to the audit trail. Null only in legacy fixtures.
 	 */
 	public function __construct(
 		private readonly OrganisationMapper $organisationMapper,
@@ -136,6 +138,7 @@ class TenantLifecycleService {
 		private readonly IUserManager $userManager,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly ?OrganisationLifecycleAuditor $auditor = null,
 	) {
 	}//end __construct()
 
@@ -321,6 +324,7 @@ class TenantLifecycleService {
 		$organisation->setSuspendedAt(new DateTime());
 
 		$result = $this->organisationMapper->update($organisation);
+		$this->auditor?->recordStatus(organisation: $result, before: $currentStatus);
 
 		$this->logger->info(
 			'[TenantLifecycleService] Organisation suspended',
@@ -349,6 +353,7 @@ class TenantLifecycleService {
 		$organisation->setSuspendedAt(null);
 
 		$result = $this->organisationMapper->update($organisation);
+		$this->auditor?->recordStatus(organisation: $result, before: $currentStatus);
 
 		$this->logger->info(
 			'[TenantLifecycleService] Organisation reactivated',
@@ -377,6 +382,7 @@ class TenantLifecycleService {
 		$organisation->setDeprovisionedAt(new DateTime());
 
 		$result = $this->organisationMapper->update($organisation);
+		$this->auditor?->recordStatus(organisation: $result, before: $currentStatus);
 
 		$this->logger->info(
 			'[TenantLifecycleService] Organisation deprovisioning started',
@@ -411,6 +417,7 @@ class TenantLifecycleService {
 		$organisation->setRetainedAt(new DateTime());
 
 		$result = $this->organisationMapper->update($organisation);
+		$this->auditor?->recordStatus(organisation: $result, before: $currentStatus);
 
 		$this->logger->info(
 			'[TenantLifecycleService] Organisation retained, access ended and data kept',
@@ -438,6 +445,7 @@ class TenantLifecycleService {
 		$organisation->setStatus(self::STATUS_ARCHIVED);
 
 		$result = $this->organisationMapper->update($organisation);
+		$this->auditor?->recordStatus(organisation: $result, before: $currentStatus);
 
 		$this->logger->info(
 			'[TenantLifecycleService] Organisation archived',

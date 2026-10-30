@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use Exception;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -289,4 +291,89 @@ class PartyServiceTest extends TestCase {
 
 		$this->addToAssertionCount(1);
 	}//end testAGoodParentIsAllowed()
+
+	/**
+	 * A party service whose object layer records every lookup and holds `$held` in register 3, schema 7.
+	 *
+	 * @param array<int, array<string, mixed>> $calls Every lookup, as its arguments.
+	 * @param ObjectEntity|null $inPartyTable What the party table holds for the id.
+	 * @param ObjectEntity|null $elsewhere    What the instance-wide search finds.
+	 *
+	 * @return PartyService The service.
+	 */
+	private function scopedService(array &$calls, ?ObjectEntity $inPartyTable, ?ObjectEntity $elsewhere): PartyService {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willReturnCallback(
+			function (
+				int|string $id,
+				?array $_extend = [],
+				bool $files = false,
+				mixed $register = null,
+				mixed $schema = null
+			) use (
+				&$calls,
+				$inPartyTable,
+				$elsewhere
+			): ?ObjectEntity {
+				$calls[] = ['id' => (string)$id, 'register' => $register, 'schema' => $schema];
+				if ($schema === null) {
+					return $elsewhere;
+				}
+
+				if ($inPartyTable === null) {
+					throw new DoesNotExistException('Not in this table');
+				}
+
+				return $inPartyTable;
+			}
+		);
+
+		$registers = $this->getMockBuilder(RegisterMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['getAllRegisterIdsWithSchema'])
+			->getMock();
+		$registers->method('getAllRegisterIdsWithSchema')->willReturn([3]);
+
+		return new PartyService($objects, $this->schemas, $registers);
+	}//end scopedService()
+
+	/**
+	 * A party is read from the party table, without searching every table on the instance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
+	 */
+	public function testAPartyIsReadFromThePartyTable(): void {
+		$calls = [];
+		$party = $this->party(uuid: 'org-a', data: ['naam' => 'Gemeente Zuiddrecht']);
+
+		$found = $this->scopedService(calls: $calls, inPartyTable: $party, elsewhere: null)->find(partyUuid: 'org-a');
+
+		$this->assertSame($party, $found);
+		$this->assertSame([['id' => 'org-a', 'register' => 3, 'schema' => 7]], $calls);
+	}//end testAPartyIsReadFromThePartyTable()
+
+	/**
+	 * An id the party tables do not hold is still looked up across the instance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
+	 */
+	public function testAnIdOutsideThePartyTablesFallsBackToTheInstance(): void {
+		$calls = [];
+		$elsewhere = $this->party(uuid: 'org-b', data: ['naam' => 'Elders']);
+
+		$found = $this->scopedService(calls: $calls, inPartyTable: null, elsewhere: $elsewhere)->find(partyUuid: 'org-b');
+
+		$this->assertSame($elsewhere, $found);
+		$this->assertSame(
+			[
+				['id' => 'org-b', 'register' => 3, 'schema' => 7],
+				['id' => 'org-b', 'register' => null, 'schema' => null],
+			],
+			$calls
+		);
+	}//end testAnIdOutsideThePartyTablesFallsBackToTheInstance()
 }//end class

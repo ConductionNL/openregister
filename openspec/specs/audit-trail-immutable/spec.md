@@ -273,6 +273,90 @@ object, and the admin-only index remains the only surface that carries them.
 - **THEN** the row carries its action, actor and changes, and carries no `session`, `request` or `ipAddress`
 - @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
 
+### Requirement: The history of one object is readable by whoever may read that object
+
+The per-object history, `GET /api/objects/{register}/{schema}/{id}/audit-trails`
+and its older sibling `GET /api/objects/{register}/{schema}/{id}/logs` (the same
+answer, for the same caller, through the same redaction),
+SHALL be readable by a non-admin caller if and only if that caller may read the
+object itself (decision 14 Oct 2026). Readability SHALL be decided by the read
+path of the object GET, `ObjectService::find()` with RBAC and multitenancy on,
+so that a grant, a schema rule, a register rule, a draft, a deleted object and
+an organisation boundary mean here what they mean on the object. When that read
+is refused the history SHALL answer 404, the answer the object GET gives, so the
+route does not confirm that an object exists to somebody who may not see it.
+The doelbinding guard of the object GET SHALL apply to the history as well. An
+anonymous caller SHALL receive 401. An administrator SHALL read the history as
+before. The instance-wide and register-wide listings (`GET /api/audit-trails`,
+`GET /api/audit-trails/{id}`, `GET /api/audit-trails/statistics`,
+`GET /api/audit-trails/export`) SHALL stay admin-only.
+
+#### Scenario: a reader of the object gets its history
+
+- **GIVEN** a case handler who may read a case object, and audit entries on that object
+- **WHEN** they request the object's audit trail
+- **THEN** the response is 200 with the object's entries
+- **AND** the entries are read by the uuid of the object the read check resolved
+- @e2e exclude {asserted through the real controller in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php; a live run needs a non-admin seed user on the dev stack}
+
+#### Scenario: a caller who may not read the object gets 404
+
+- **GIVEN** a non-admin user for whom the object read is refused
+- **WHEN** they request the object's audit trail
+- **THEN** the response is 404 and no audit entry is read
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: an administrator reads the history as before
+
+- **GIVEN** an administrator
+- **WHEN** they request an object's audit trail
+- **THEN** the entries are returned unfiltered, with their session, request and IP address, and the reader path is not used
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: the instance-wide listings stay admin-only
+
+- **GIVEN** a non-admin user
+- **WHEN** they request the instance-wide audit trail, one entry by id, the statistics or the export
+- **THEN** the response is 403
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailControllerTest.php and by the @NoAdminRequired reflection check in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+### Requirement: An object's history withholds from its reader what the object withholds
+
+When a non-admin reads an object's history, every entry SHALL be stripped of
+`session`, `request` and `ipAddress`, and its `changed` payload SHALL NOT carry
+the old or new value of a property the caller may not see on the object. A
+property is withheld when the render path withholds it from this caller:
+`writeOnly` (top-level or a declared nested path), a property `authorization.read`
+rule the caller does not satisfy, or a field hidden by the object's lifecycle
+state. The `@self` copies of a withheld property (its keys in the relations
+mirror, and the name, description, summary or image field the schema copies
+from it) SHALL be withheld with it. A free-text search SHALL match the payload
+the reader is given, and a reader SHALL NOT filter or sort on `changed`,
+`session`, `request` or `ip_address`, so that neither can tell them whether a
+withheld property ever held a value.
+
+#### Scenario: a property hidden from the reader is absent from the history
+
+- **GIVEN** a schema whose `interneAantekening` property may be read only by the group `redactie`, and an update entry that changed `interneAantekening` and `titel`
+- **WHEN** a reader of the object outside `redactie` requests its history
+- **THEN** the entry's `changed` carries `titel` and does not carry `interneAantekening`
+- **AND** the relations mirror under `@self` carries no key of `interneAantekening`
+- @e2e exclude {asserted with the real PropertyRbacHandler in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: a write-only value never reaches the reader
+
+- **GIVEN** a schema with a `writeOnly` property `apiToken`, and an entry that changed it
+- **WHEN** a reader of the object requests its history
+- **THEN** the entry's `changed` does not carry `apiToken`
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: a search cannot find a withheld value
+
+- **GIVEN** an entry whose only match for a search term is the old value of a property hidden from the reader
+- **WHEN** the reader searches the object's history for that term
+- **THEN** the entry is not returned and the total is 0
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
 ### Requirement: An app counts and lists the audit actions it writes under its own prefix
 
 An app that writes its own audit rows, such as portaliq's proof records (`portaliq.login`, `portaliq.download`), SHALL be able to count them per action without loading the rows, and an administrator SHALL be able to list every action of one prefix at once. `AuditTrailMapper::countByActionPrefix($prefix)` MUST answer the lifetime row count per full action for the actions that start with the prefix, in one grouped query. The list filter `action=<prefix>.*` MUST answer every row whose action starts with the prefix. The prefix MUST match literally: `_` and `%` are not wildcards. An exact `action` filter MUST keep filtering exactly. Source: DECISIONS row 5 (portaliq audit trail move).

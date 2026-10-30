@@ -44,6 +44,10 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  */
 final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 
@@ -341,4 +345,124 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 
 		$this->assertStringContainsString("_organisation IN ('org-a')", $sql);
 	}//end testAnUnreadableFlagKeepsTheBoundary()
+
+	/**
+	 * A related-row subquery gets the SAME organisation scope the list applies to that table.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryIsConfinedToTheCallersOrganisation(): void {
+		$scope = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$decided = $method->invoke($this->handler($scope), [], new Schema(), 1);
+
+		$this->assertSame($scope, $decided);
+	}//end testARelatedRowSubqueryIsConfinedToTheCallersOrganisation()
+
+	/**
+	 * Where the list waives the boundary (an RBAC rule governs), the subquery waives it too, and a grant holder keeps it.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryWaivesTheBoundaryExactlyWhereTheListDoes(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$waived = $method->invoke($this->handler($scope, conditionalBypass: true), [], new Schema(), 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $waived['mode']);
+
+		$held = $method->invoke($this->handler($scope, conditionalBypass: true, holdsGrants: true), [], new Schema(), 1);
+		$this->assertSame($scope, $held);
+	}//end testARelatedRowSubqueryWaivesTheBoundaryExactlyWhereTheListDoes()
+	/**
+	 * 🔴 THE UNION BUILDER REFUSES `_related` AND `_referenced` INSTEAD OF DROPPING THEM.
+	 *
+	 * Underscore keys are skipped there, so a cross-table search carrying one
+	 * answered the unfiltered set. The single-table path refuses with the same
+	 * exception type.
+	 *
+	 * @return void
+	 */
+	public function testTheUnionBuilderRefusesRelatedRowFilters(): void {
+		$handler = $this->handler(['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
+
+		foreach (['_related', '_referenced'] as $key) {
+			try {
+				$handler->buildWhereConditionsSql(query: [$key => ['caseProperty' => ['case' => ['value' => 'x']]]], schema: new Schema());
+				$this->fail('Expected a refusal for ' . $key);
+			} catch (\OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException $e) {
+				$this->assertStringContainsString("'" . $key . "'", $e->getMessage());
+			}
+		}
+
+		// The control: without the keys the same builder answers.
+		$this->assertIsArray($handler->buildWhereConditionsSql(query: [], schema: new Schema()));
+	}//end testTheUnionBuilderRefusesRelatedRowFilters()
+
+	/**
+	 * `_multitenancy=false` waives the boundary for the related subquery as it does for the list.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryHonoursTheMultitenancyOptOut(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$off = $method->invoke($this->handler($scope), ['_multitenancy' => false], new Schema(), 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $off['mode']);
+
+		// A string 'false' from the query string is read as false too; an unreadable value keeps the boundary ON.
+		$string = $method->invoke($this->handler($scope), ['_multitenancy' => 'false'], new Schema(), 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $string['mode']);
+		$garbage = $method->invoke($this->handler($scope), ['_multitenancy' => ['x']], new Schema(), 1);
+		$this->assertSame($scope, $garbage);
+	}//end testARelatedRowSubqueryHonoursTheMultitenancyOptOut()
+
+	/**
+	 * `_rbac=false` does not widen the tenant edge: no RBAC rule can waive the boundary, so it stands.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryKeepsTheBoundaryWhenRbacIsOff(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		// Even a handler that WOULD waive the boundary for an RBAC caller must not do so with RBAC off.
+		$decided = $method->invoke($this->handler($scope, conditionalBypass: true), ['_rbac' => false], new Schema(), 1);
+
+		$this->assertSame($scope, $decided);
+	}//end testARelatedRowSubqueryKeepsTheBoundaryWhenRbacIsOff()
+
+	/**
+	 * An anonymous caller (no active organisation) gets the empty scope, which the subquery renders as no rows.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryGivesAnAnonymousCallerNoRows(): void {
+		$none   = ['mode' => MagicOrganizationHandler::SCOPE_NONE, 'uuids' => []];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$decided = $method->invoke($this->handler($none), [], new Schema(), 1);
+
+		$this->assertSame($none, $decided);
+	}//end testARelatedRowSubqueryGivesAnAnonymousCallerNoRows()
+
+	/**
+	 * A public schema drops the boundary unless the caller explicitly asked for multitenancy.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryOfAPublicSchemaDropsTheBoundaryUnlessExplicit(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+		$public = new Schema();
+		$public->setAuthorization(['read' => ['public']]);
+
+		$dropped = $method->invoke($this->handler($scope), [], $public, 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $dropped['mode']);
+
+		$explicit = $method->invoke($this->handler($scope), ['_multitenancy_explicit' => true], $public, 1);
+		$this->assertSame($scope, $explicit);
+	}//end testARelatedRowSubqueryOfAPublicSchemaDropsTheBoundaryUnlessExplicit()
 }//end class

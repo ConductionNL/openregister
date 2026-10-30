@@ -366,4 +366,55 @@ class ViewShareResolverTest extends TestCase {
 			$codes($this->resolver->validateShares(['vth'], $exists))
 		);
 	}//end testTheShapeOfAShareListIsChecked()
+
+	/**
+	 * A user named in a share reaches the view at that share's mode, and nobody else does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-1
+	 */
+	public function testAUserShareGrantsItsModeToThatUserOnly(): void {
+		$view = $this->view(['sharedWith' => [['user' => 'fatma', 'mode' => 'read'], ['user' => 'joris', 'mode' => 'write']]]);
+
+		$this->assertSame('read', $this->resolver->accessFor($view, 'fatma', []));
+		$this->assertSame('write', $this->resolver->accessFor($view, 'joris', []));
+		$this->assertNull($this->resolver->accessFor($view, 'bob', []));
+		$this->assertNull($this->resolver->accessFor($view, '', ['fatma']));
+		$this->assertSame('owner', $this->resolver->accessFor($view, 'alice', []));
+	}//end testAUserShareGrantsItsModeToThatUserOnly()
+
+	/**
+	 * The widest of a user share and a group share wins.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-1
+	 */
+	public function testTheWidestOfAUserAndAGroupShareWins(): void {
+		$view = $this->view(['sharedWith' => [['user' => 'fatma', 'mode' => 'read'], ['group' => 'vth', 'mode' => 'write']]]);
+
+		$this->assertSame('write', $this->resolver->accessFor($view, 'fatma', ['vth']));
+		$this->assertSame('read', $this->resolver->accessFor($view, 'fatma', []));
+	}//end testTheWidestOfAUserAndAGroupShareWins()
+
+	/**
+	 * A user share is validated: known user, one target, no duplicates.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
+	 */
+	public function testAUserShareIsValidated(): void {
+		$groups = static fn (string $gid): bool => ($gid === 'vth');
+		$users = static fn (string $uid): bool => ($uid === 'fatma');
+		$codes = static fn (array $findings): array => array_column($findings, 'code');
+
+		$this->assertSame([], $this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read'], ['group' => 'vth', 'mode' => 'write']], $groups, $users));
+		$this->assertSame(['share.unknown-user'], $codes($this->resolver->validateShares([['user' => 'nobody', 'mode' => 'read']], $groups, $users)));
+		$this->assertSame(['share.duplicate-user'], $codes($this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read'], ['user' => 'fatma', 'mode' => 'write']], $groups, $users)));
+		$this->assertSame(['share.user-and-group'], $codes($this->resolver->validateShares([['user' => 'fatma', 'group' => 'vth', 'mode' => 'read']], $groups, $users)));
+		$this->assertSame(['share.no-group'], $codes($this->resolver->validateShares([['mode' => 'read']], $groups, $users)));
+		$this->assertSame(['share.unknown-user'], $codes($this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read']], $groups)));
+	}//end testAUserShareIsValidated()
 }//end class

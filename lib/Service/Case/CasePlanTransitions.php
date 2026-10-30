@@ -97,6 +97,7 @@ class CasePlanTransitions {
 	private const TABLE = [
 		CaseItem::TYPE_STAGE => self::WORK_ITEM_EDGES,
 		CaseItem::TYPE_HUMAN_TASK => self::WORK_ITEM_EDGES,
+		CaseItem::TYPE_PROCESS_TASK => self::WORK_ITEM_EDGES,
 		CaseItem::TYPE_MILESTONE => self::MILESTONE_EDGES,
 	];
 

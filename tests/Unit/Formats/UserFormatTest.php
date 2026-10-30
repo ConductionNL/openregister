@@ -134,4 +134,23 @@ class UserFormatTest extends TestCase {
 		$this->assertTrue($this->formatKnowing('alice')->validate('  alice  '));
 
 	}//end testSurroundingWhitespaceIsTrimmed()
+
+	/**
+	 * An id the caller declared it writes first passes; any other unknown id is still refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	public function testAPlannedUserPassesAndNoOtherUnknownIdDoes(): void {
+		$users = $this->createMock(IUserManager::class);
+		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'alice');
+
+		$format = new UserFormat(userManager: $users, planned: static fn (string $uid): bool => $uid === 'daan.verbeek');
+
+		$this->assertTrue($format->validate('alice'));
+		$this->assertTrue($format->validate('daan.verbeek'));
+		$this->assertFalse($format->validate('bob'));
+
+	}//end testAPlannedUserPassesAndNoOtherUnknownIdDoes()
 }//end class

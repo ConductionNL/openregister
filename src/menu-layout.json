@@ -33,6 +33,7 @@
 		"Endpoints",
 		"Webhooks",
 		"Connections",
+		"MigrationPacks",
 		"Configurations"
 	]
 }

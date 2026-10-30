@@ -199,7 +199,7 @@ class ViewsController extends Controller {
 	}//end sharesFrom()
 
 	/**
-	 * The answer to a refused save: 422 naming the field of a malformed alert, 400 otherwise.
+	 * The answer to a refused save: the alert's own status naming its field, 400 otherwise.
 	 *
 	 * @param InvalidArgumentException $e The refusal.
 	 *
@@ -207,7 +207,7 @@ class ViewsController extends Controller {
 	 */
 	private function refusalFor(InvalidArgumentException $e): JSONResponse {
 		if ($e instanceof InvalidViewAlertException) {
-			return new JSONResponse(data: ['error' => $e->getMessage(), 'field' => $e->getField()], statusCode: 422);
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'field' => $e->getField()] + $e->getDetails(), statusCode: $e->getStatus());
 		}
 
 		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -216,9 +216,8 @@ class ViewsController extends Controller {
 	/**
 	 * Refuse an update that changes fields this caller does not own.
 	 *
-	 * Answers a response to RETURN, or null when the update may proceed. The
-	 * refusal NAMES the fields, because the message a member needs is which
-	 * field was refused rather than that something was.
+	 * Answers a response to RETURN, or null when the update may proceed. The refusal
+	 * NAMES the fields, because a member needs to know which field was refused.
 	 *
 	 * Only fields whose VALUE changes are judged: the edit screen sends the
 	 * whole view. The caller resolves the view with requireReachableView().
@@ -226,12 +225,16 @@ class ViewsController extends Controller {
 	 * @param View $view The stored view.
 	 * @param string $userId The caller.
 	 * @param array<string, mixed> $data The request body.
+	 * @param array<string, mixed>|null $savedAs The body as the save will write it, when that differs (PUT writes `isPublic` false when omitted).
 	 *
 	 * @return JSONResponse|null The refusal, or null when allowed.
 	 *
+	 * @throws InvalidViewAlertException When the alert names a recipient this caller may not add.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	private function refuseForbiddenViewFields(View $view, string $userId, array $data): ?JSONResponse {
+	private function refuseForbiddenViewFields(View $view, string $userId, array $data, ?array $savedAs=null): ?JSONResponse {
 		// Only keys that name a view property are judged, so a `_limit` or
 		// routing key on the body cannot refuse an update a member may make.
 		$fields = array_intersect_key(
@@ -258,6 +261,7 @@ class ViewsController extends Controller {
 		);
 
 		if ($refused === []) {
+			$this->viewers->assertMayNameRecipients(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: ($savedAs ?? $data));
 			return null;
 		}
 
@@ -508,6 +512,7 @@ class ViewsController extends Controller {
 				return $shareRefusal;
 			}
 
+			$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
 			$view = $this->viewService->create(
 				name: $data['name'],
 				description: $data['description'] ?? '',
@@ -587,7 +592,7 @@ class ViewsController extends Controller {
 			// an administrator are unaffected: `mayAdminister()` answers true
 			// for both and the guard returns null.
 			$stored = $this->requireReachableView(id: $id, userId: $userId);
-			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data);
+			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data, savedAs: ($data + ['isPublic' => false]));
 			if ($refusal !== null) {
 				return $refusal;
 			}
@@ -859,7 +864,9 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$this->viewService->delete(id: $id, owner: $userId);
+			// The service refuses everybody who neither owns the view nor administers the instance.
+			$reach = $this->viewers->reachOf(userId: $userId);
+			$this->viewService->delete(id: $id, reach: $reach);
 
 			return new JSONResponse(
 				data: [

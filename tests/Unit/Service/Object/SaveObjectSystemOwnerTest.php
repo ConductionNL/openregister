@@ -218,4 +218,23 @@ class SaveObjectSystemOwnerTest extends TestCase {
 
 		$this->assertSame('__system__', $entity->getOwner());
 	}//end testSessionlessWriteOverwritesEmptyStringOwner()
+
+	/**
+	 * An explicit owner from the service caller wins over the session and the system identity (decision 195).
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testAnExplicitOwnerWinsOverTheSession(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->organisationService->expects($this->never())->method('getSystemUserId');
+
+		$entity = new ObjectEntity();
+		$method = new ReflectionMethod(SaveObject::class, 'applyOwnerAttribution');
+		$method->setAccessible(true);
+		$method->invoke($this->handler, $entity, false, 'portal:subject-1');
+
+		$this->assertSame('portal:subject-1', $entity->getOwner());
+	}//end testAnExplicitOwnerWinsOverTheSession()
 }//end class

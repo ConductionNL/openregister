@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,7 +77,7 @@ use RuntimeException;
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-class ScheduledReportService {
+class ScheduledReportService implements ScheduledReportsInterface {
 
 	/**
 	 * Export formats a scheduled report may use — a deliberate subset of
@@ -353,7 +355,7 @@ class ScheduledReportService {
 	/**
 	 * Assert the caller owns the report or is an admin.
 	 *
-	 * @param ScheduledReport $report The report.
+	 * @param ScheduledReportInterface $report The report.
 	 * @param string $callerUid The calling user's uid.
 	 * @param bool $callerIsAdmin Whether the caller is an admin.
 	 *
@@ -363,7 +365,7 @@ class ScheduledReportService {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function assertOwnerOrAdmin(ScheduledReport $report, string $callerUid, bool $callerIsAdmin): void {
+	public function assertOwnerOrAdmin(ScheduledReportInterface $report, string $callerUid, bool $callerIsAdmin): void {
 		if ($callerIsAdmin === true) {
 			return;
 		}
@@ -552,14 +554,14 @@ class ScheduledReportService {
 	 * or when at least a full schedule period has elapsed since the last run.
 	 * Disabled reports are never due.
 	 *
-	 * @param ScheduledReport $report The report to check.
+	 * @param ScheduledReportInterface $report The report to check.
 	 * @param DateTimeInterface $now The reference time.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function isDue(ScheduledReport $report, DateTimeInterface $now): bool {
+	public function isDue(ScheduledReportInterface $report, DateTimeInterface $now): bool {
 		if ($report->getEnabled() !== true) {
 			return false;
 		}
@@ -591,14 +593,20 @@ class ScheduledReportService {
 	 * email leg fails outright, the run is marked `failed` since nothing was
 	 * delivered.
 	 *
-	 * @param ScheduledReport $report The report to run.
+	 * @param ScheduledReportInterface $report The report to run.
 	 *
 	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the report is not a stored ScheduledReport row.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function runOne(ScheduledReport $report): void {
+	public function runOne(ScheduledReportInterface $report): void {
+		if (($report instanceof ScheduledReport) === false) {
+			throw new InvalidArgumentException('Only a stored ScheduledReport row can run.');
+		}
+
 		$ownerUid = $report->getOwner();
 		$owner = null;
 		if ($ownerUid !== null) {
@@ -980,11 +988,11 @@ class ScheduledReportService {
 	 * out there either way, and a swallowed record is a gap in the area rather
 	 * than a lost delivery. The gap is logged.
 	 *
-	 * @param ScheduledReport $report   The report.
-	 * @param \OCP\IUser      $owner    The owner the run was made for.
-	 * @param string          $filename The delivery filename.
-	 * @param array           $export   The rendered export, with its row count.
-	 * @param mixed           $file     The produced node, or null when nothing was written.
+	 * @param ScheduledReport $report The report.
+	 * @param \OCP\IUser $owner The owner the run was made for.
+	 * @param string $filename The delivery filename.
+	 * @param array $export The rendered export, with its row count.
+	 * @param mixed $file The produced node, or null when nothing was written.
 	 *
 	 * @return void
 	 *
@@ -1013,7 +1021,8 @@ class ScheduledReportService {
 				registerName: $this->nullableString(value: $report->getRegisterId()),
 				schemaName: $this->nullableString(value: $report->getSchemaId()),
 				fileId: $fileId,
-				filePath: $filePath
+				filePath: $filePath,
+				retentionSeconds: $this->retentionFor(report: $report)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -1022,6 +1031,34 @@ class ScheduledReportService {
 			);
 		}
 	}//end recordRun()
+
+	/**
+	 * The retention a run of this report is produced under.
+	 *
+	 * A report that runs a profile copies the profile's retention, null
+	 * meaning the profile keeps its files. A report without a profile keeps
+	 * the recorder's default. Read once, at production: the run stores it, so
+	 * a later profile edit does not move this file's deadline.
+	 *
+	 * @param ScheduledReport $report The report.
+	 *
+	 * @return int|null Seconds, or null to keep the file.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
+	 */
+	private function retentionFor(ScheduledReport $report): ?int {
+		if ($report->getProfileId() === null || $this->profileService === null) {
+			return ExportRunRecorder::DEFAULT_RETENTION_SECONDS;
+		}
+
+		try {
+			return $this->profileService->find(id: (int)$report->getProfileId())->getRetentionSeconds();
+		} catch (\Throwable $e) {
+			// The profile ran a moment ago; if it cannot be read now, the safe
+			// direction is the default expiry, never keeping a copy forever.
+			return ExportRunRecorder::DEFAULT_RETENTION_SECONDS;
+		}
+	}//end retentionFor()
 
 	/**
 	 * An identifier as a string, or null when it is absent.

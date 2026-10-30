@@ -1102,7 +1102,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 	// canDelete — findByRelation exception handling
 	// =========================================================================
 
-	public function testCanDeleteHandlesFindByRelationException(): void {
+	/**
+	 * A failing broad lookup does not read as "nothing cites it": the RESTRICT delete is refused as unverifiable.
+	 */
+	public function testCanDeleteRefusesWhenFindByRelationFails(): void {
 		$schema1 = $this->createSchema(1, [
 			'parentRef' => ['$ref' => '2', 'onDelete' => 'RESTRICT'],
 		]);
@@ -1129,7 +1132,41 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$targetObj = $this->createObjectEntity('target-uuid', '2');
 		$result = $this->service->canDelete($targetObj);
 
-		$this->assertTrue($result->deletable);
+		$this->assertFalse($result->deletable);
+		$this->assertSame('unverifiable', $result->blockers[0]['reason'] ?? null);
+	}
+
+	/**
+	 * The targeted lookup that fails on a table that exists refuses the delete; a table that does not exist yet has
+	 * nothing in it to cite the object. Goes red when the catch answers an empty list again.
+	 */
+	public function testCanDeleteRefusesWhenTheTargetedLookupFailsOnAnExistingTable(): void {
+		$schema1 = $this->createSchema(1, [
+			'parentRef' => ['$ref' => '2', 'onDelete' => 'RESTRICT'],
+		]);
+		$schema2 = $this->createSchema(2);
+
+		$this->setRelationIndex(
+			[
+				'2' => [[
+					'sourceSchemaId' => '1',
+					'property' => 'parentRef',
+					'onDelete' => 'RESTRICT',
+					'isArray' => false,
+				]],
+			],
+			['1' => $schema1, '2' => $schema2],
+			['1' => $this->createRegister(5)]
+		);
+
+		$this->db->method('getQueryBuilder')->willThrowException(new \Exception('SQL error'));
+		$this->db->method('tableExists')->willReturnOnConsecutiveCalls(true, false);
+
+		$result = $this->service->canDelete($this->createObjectEntity('target-uuid', '2'));
+		$this->assertFalse($result->deletable);
+		$this->assertSame('unverifiable', $result->blockers[0]['reason'] ?? null);
+
+		$this->assertTrue($this->service->canDelete($this->createObjectEntity('target-uuid', '2'))->deletable, 'no table, no citer');
 	}
 
 	// =========================================================================

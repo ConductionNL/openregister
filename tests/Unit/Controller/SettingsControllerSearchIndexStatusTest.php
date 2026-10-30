@@ -84,10 +84,10 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 		$maintenance = $this->createMock(originalClassName: SearchIndexMaintenance::class);
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(true);
 		$maintenance->method('tablesInScope')->willReturn(['oc_openregister_table_1_2', 'oc_openregister_table_1_3']);
-		$maintenance->method('indexesFor')->willReturnMap(
+		$maintenance->method('indexNamesFor')->willReturn(
 			[
-				['oc_openregister_table_1_2', ['idx_a' => 'CREATE INDEX idx_a', 'idx_b' => 'CREATE INDEX idx_b']],
-				['oc_openregister_table_1_3', ['idx_c' => 'CREATE INDEX idx_c']],
+				'oc_openregister_table_1_2' => ['idx_a', 'idx_b'],
+				'oc_openregister_table_1_3' => ['idx_c'],
 			]
 		);
 		$maintenance->method('lastRun')->willReturn($lastRun);
@@ -121,6 +121,7 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 		$maintenance = $this->createMock(originalClassName: SearchIndexMaintenance::class);
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(false);
 		$maintenance->method('tablesInScope')->willReturn([]);
+		$maintenance->method('indexNamesFor')->willReturn([]);
 		$maintenance->method('lastRun')->willReturn([]);
 
 		$data = $this->controllerWith(maintenance: $maintenance)->getSearchIndexStatus()->getData();

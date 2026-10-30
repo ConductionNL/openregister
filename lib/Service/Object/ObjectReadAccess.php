@@ -122,6 +122,27 @@ class ObjectReadAccess {
 	}//end schemaOf()
 
 	/**
+	 * The schema with this id, under the caller's own RBAC, or null when it does not resolve.
+	 *
+	 * @param string|int|null $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	public function schemaById(string|int|null $schemaId): ?Schema {
+		if ($schemaId === null || $schemaId === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find($schemaId);
+		} catch (\Throwable $exception) {
+			return null;
+		}
+	}//end schemaById()
+
+	/**
 	 * The register an object belongs to, as an id, for the audit entry.
 	 *
 	 * @param ObjectEntity $object The object.

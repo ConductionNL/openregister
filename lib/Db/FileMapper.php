@@ -23,11 +23,11 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\File\ShareUrlBuilder;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCP\IURLGenerator;
 
 /**
  * Class FileMapper
@@ -85,24 +85,24 @@ use OCP\IURLGenerator;
 class FileMapper extends QBMapper {
 
 	/**
-	 * The URL generator for creating share links
+	 * Builds share and file links for the host the visitor used
 	 *
-	 * @var IURLGenerator
+	 * @var ShareUrlBuilder
 	 */
-	private readonly IURLGenerator $urlGenerator;
+	private readonly ShareUrlBuilder $shareUrls;
 
 	/**
 	 * Constructor
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param IURLGenerator $urlGenerator URL generator
+	 * @param ShareUrlBuilder $shareUrls Share and file link builder
 	 */
 	public function __construct(
 		IDBConnection $db,
-		IURLGenerator $urlGenerator,
+		ShareUrlBuilder $shareUrls,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
-		$this->urlGenerator = $urlGenerator;
+		$this->shareUrls = $shareUrls;
 	}//end __construct()
 
 	/**
@@ -775,10 +775,11 @@ class FileMapper extends QBMapper {
 	 * @return string
 	 *
 	 * @phpstan-return string
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateShareUrl(string $token): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		return $baseUrl . '/index.php/s/' . $token;
+		return $this->shareUrls->shareLink(token: $token);
 	}//end generateShareUrl()
 
 	/**
@@ -794,10 +795,11 @@ class FileMapper extends QBMapper {
 	 * @return string
 	 *
 	 * @phpstan-return string
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateAuthenticatedAccessUrl(int $fileId): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		return $baseUrl . '/index.php/core/preview?fileId=' . $fileId . '&x=1920&y=1080&a=1';
+		return $this->shareUrls->absolute(path: '/index.php/core/preview?fileId=' . $fileId . '&x=1920&y=1080&a=1');
 	}//end generateAuthenticatedAccessUrl()
 
 	/**
@@ -813,10 +815,11 @@ class FileMapper extends QBMapper {
 	 * @return string
 	 *
 	 * @phpstan-return string
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateAuthenticatedDownloadUrl(int $fileId): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		return $baseUrl . '/index.php/apps/openregister/api/files/' . $fileId . '/download';
+		return $this->shareUrls->absolute(path: '/index.php/apps/openregister/api/files/' . $fileId . '/download');
 	}//end generateAuthenticatedDownloadUrl()
 
 	/**
@@ -1072,6 +1075,35 @@ class FileMapper extends QBMapper {
 
 		return (int)($row['total_size'] ?? 0);
 	}//end getTotalFilesSize()
+
+	/**
+	 * The summed size of the given files or folders.
+	 *
+	 * A folder's size in the file cache is the size of everything under it. A
+	 * negative size means the entry was never scanned and is left out.
+	 *
+	 * @param list<int> $fileIds The file cache ids.
+	 *
+	 * @return int The total size in bytes, 0 for no ids.
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	public function sumSizesByFileIds(array $fileIds): int {
+		$total = 0;
+		foreach (array_chunk(array_values(array_unique($fileIds)), 1000) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->selectAlias($qb->createFunction('SUM(fc.size)'), 'total_size')
+				->from('filecache', 'fc')
+				->where($qb->expr()->in('fc.fileid', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)))
+				->andWhere($qb->expr()->gte('fc.size', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
+			$result = $qb->executeQuery();
+			$row = $result->fetch();
+			$result->closeCursor();
+			$total += (int)($row['total_size'] ?? 0);
+		}
+
+		return $total;
+	}//end sumSizesByFileIds()
 
 	/**
 	 * Find files in Nextcloud that are not tracked in the extraction system yet

@@ -117,18 +117,18 @@ class EffectiveAuthorization {
 					$register = $this->registerMapper->find($registerId);
 				}
 			} catch (\Throwable $e) {
-				return $authorization;
+				return $this->grantNothingWhenEmpty(authorization: $authorization);
 			}
 		}
 
 		if ($register === null) {
-			return $authorization;
+			return $this->grantNothingWhenEmpty(authorization: $authorization);
 		}
 
 		$config = $register->getConfiguration();
 		$roles = $config['roles'] ?? [];
 		if (empty($roles) === true) {
-			return $authorization;
+			return $this->grantNothingWhenEmpty(authorization: $authorization);
 		}
 
 		// Build role map.
@@ -158,7 +158,36 @@ class EffectiveAuthorization {
 			}
 		}
 
-		return $authorization;
+		return $this->grantNothingWhenEmpty(authorization: $authorization);
 	}//end expandRoles()
+
+	/**
+	 * A roles block that resolved to nothing grants nothing.
+	 *
+	 * The same rule as `PermissionHandler::grantNothingWhenEmpty()`, which is what
+	 * enforcement applies: a block that opted into authorization with `roles` and
+	 * whose roles cannot be expanded (no role definitions, or every name unknown)
+	 * is deny-all, not "no authorization configured". The OAS must describe the
+	 * schema the way it is enforced, so it reads the same four canonical verbs
+	 * with nobody in them instead of an empty block.
+	 *
+	 * @param array<string, mixed> $authorization The block after expansion.
+	 *
+	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function grantNothingWhenEmpty(array $authorization): array {
+		if ($authorization !== []) {
+			return $authorization;
+		}
+
+		return [
+			'read' => [],
+			'create' => [],
+			'update' => [],
+			'delete' => [],
+		];
+	}//end grantNothingWhenEmpty()
 
 }//end class

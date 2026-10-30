@@ -108,14 +108,85 @@ class DescriptorListCommandTest extends TestCase {
 		$this->assertStringContainsString('No installed app ships', $this->tester->getDisplay());
 	}
 
-	public function testImportRunsTheForcedReimportAndReportsIt(): void {
+	/**
+	 * The real re-import is reported in registers, schemas and replaced
+	 * authorization, and names the path it took. Never in demo objects.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testImportRunsTheRealReimportAndReportsWhatChanged(): void {
+		$this->descriptors->expects($this->never())->method('reimportMock');
 		$this->descriptors->expects($this->once())
 			->method('reimport')
-			->with('openregister', 'flows')
-			->willReturn(['outcome' => 'imported', 'reason' => null]);
+			->with('portaliq', 'portaliq')
+			->willReturn(
+				[
+					'outcome'   => 'imported',
+					'reason'    => null,
+					'path'      => 'app',
+					'via'       => 'OCA\\Portaliq\\Service\\SettingsService::loadConfiguration(force: true)',
+					'version'   => '0.97.0',
+					'fragments' => 0,
+					'counts'    => [
+						'registers'             => ['created' => 0, 'updated' => 1, 'unchanged' => 0],
+						'schemas'               => ['created' => 2, 'updated' => 40, 'unchanged' => 10],
+						'authorizationReplaced' => 1,
+					],
+					'replaced'  => [['schema' => 'portalAccount', 'path' => 'authorization']],
+				]
+			);
 
-		$this->assertSame(0, $this->tester->execute(['--import' => 'flows', '--app' => 'openregister']));
-		$this->assertStringContainsString('imported', $this->tester->getDisplay());
+		$this->assertSame(0, $this->tester->execute(['--import' => 'portaliq', '--app' => 'portaliq']));
+
+		$display = $this->tester->getDisplay();
+		$this->assertStringContainsString('register configuration v0.97.0 re-imported through', $display);
+		$this->assertStringContainsString('loadConfiguration(force: true)', $display);
+		$this->assertStringContainsString('registers: 1 updated, 0 created, 0 unchanged', $display);
+		$this->assertStringContainsString('schemas: 40 updated, 2 created, 10 unchanged', $display);
+		$this->assertStringContainsString('portalAccount: authorization', $display);
+		$this->assertStringNotContainsString('demo object', $display);
+	}
+
+	/**
+	 * When OpenRegister imported the files itself, the operator is told the app's post-import steps did not run.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testTheFallbackPathSaysTheAppsOwnStepsDidNotRun(): void {
+		$this->descriptors->method('reimport')->willReturn(
+			[
+				'outcome'   => 'imported',
+				'reason'    => null,
+				'path'      => 'openregister',
+				'via'       => 'OpenRegister (lib/Settings/fixtureapp_register.json + register.d)',
+				'version'   => '1.0.0',
+				'fragments' => 3,
+				'counts'    => [
+					'registers'             => ['created' => 0, 'updated' => 0, 'unchanged' => 1],
+					'schemas'               => ['created' => 0, 'updated' => 0, 'unchanged' => 4],
+					'authorizationReplaced' => 0,
+				],
+				'replaced'  => [],
+			]
+		);
+
+		$this->tester->execute(['--import' => 'flows', '--app' => 'fixtureapp']);
+
+		$this->assertStringContainsString('3 register.d fragment(s)', $this->tester->getDisplay());
+		$this->assertStringContainsString('post-import steps did not run', $this->tester->getDisplay());
+	}
+
+	/**
+	 * The help text says which option imports what.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testTheHelpSaysWhichIsTheRealConfigurationAndWhichTheSample(): void {
+		$definition = (new DescriptorListCommand($this->descriptors))->getDefinition();
+
+		$this->assertStringContainsString('REAL register configuration', $definition->getOption('import')->getDescription());
+		$this->assertStringContainsString('register.d', $definition->getOption('import')->getDescription());
+		$this->assertStringContainsString('SAMPLE', $definition->getOption('mock')->getDescription());
 	}
 
 	/**
@@ -127,7 +198,7 @@ class DescriptorListCommandTest extends TestCase {
 	 * survived a live run and a green unit suite.
 	 */
 	public function testTheImportPrintsHowManyDemoObjectsLanded(): void {
-		$this->descriptors->method('reimport')
+		$this->descriptors->method('reimportMock')
 			->willReturn(
 				[
 					'outcome' => 'imported',
@@ -136,7 +207,7 @@ class DescriptorListCommandTest extends TestCase {
 				]
 			);
 
-		$this->assertSame(0, $this->tester->execute(['--import' => 'flows', '--app' => 'openregister']));
+		$this->assertSame(0, $this->tester->execute(['--import' => 'flows', '--app' => 'openregister', '--mock' => true]));
 
 		$display = $this->tester->getDisplay();
 		$this->assertStringContainsString('30 of 30', $display);
@@ -149,7 +220,7 @@ class DescriptorListCommandTest extends TestCase {
 	 * difference.
 	 */
 	public function testAPartialSeedNamesBothNumbers(): void {
-		$this->descriptors->method('reimport')
+		$this->descriptors->method('reimportMock')
 			->willReturn(
 				[
 					'outcome' => 'imported',
@@ -158,7 +229,7 @@ class DescriptorListCommandTest extends TestCase {
 				]
 			);
 
-		$this->tester->execute(['--import' => 'flows', '--app' => 'openregister']);
+		$this->tester->execute(['--import' => 'flows', '--app' => 'openregister', '--mock' => true]);
 
 		$display = $this->tester->getDisplay();
 		$this->assertStringContainsString('29 of 30', $display);
@@ -171,7 +242,7 @@ class DescriptorListCommandTest extends TestCase {
 	 * object(s)" would make the common line noisier to no purpose.
 	 */
 	public function testADescriptorWithNoObjectsKeepsTheShortMessage(): void {
-		$this->descriptors->method('reimport')
+		$this->descriptors->method('reimportMock')
 			->willReturn(
 				[
 					'outcome' => 'imported',
@@ -180,7 +251,7 @@ class DescriptorListCommandTest extends TestCase {
 				]
 			);
 
-		$this->tester->execute(['--import' => 'flows', '--app' => 'openregister']);
+		$this->tester->execute(['--import' => 'flows', '--app' => 'openregister', '--mock' => true]);
 
 		$display = $this->tester->getDisplay();
 		$this->assertStringContainsString('imported', $display);

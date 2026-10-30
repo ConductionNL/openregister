@@ -285,6 +285,18 @@ class DeleteObject {
 			);
 			$result = true;
 
+			// A removed draft leaves one audit-trail entry: who, when, where,
+			// which object, and that it was a draft. Never its content
+			// (decision 226). Every other permanent delete is recorded by the
+			// workflow that asked for it.
+			if ($objectEntity->isDraft() === true) {
+				(new DraftRemovalRecord(auditTrail: $this->auditTrailMapper, logger: $this->logger))->write(
+					draft: $objectEntity,
+					register: $registerEntity,
+					schema: $schemaEntity
+				);
+			}
+
 			// Cache invalidation for permanent delete.
 			$registerIdForCache = null;
 			if (is_numeric($objectEntity->getRegister()) === true) {

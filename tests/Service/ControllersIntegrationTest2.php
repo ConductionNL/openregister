@@ -1825,7 +1825,8 @@ class ControllersIntegrationTest2 extends TestCase {
 			$this->logger,
 			\OC::$server->get(\OCP\IUserSession::class),
 			\OC::$server->get(\OCP\IGroupManager::class),
-			\OC::$server->get(OrganisationService::class)
+			\OC::$server->get(OrganisationService::class),
+			\OC::$server->get(\OCA\OpenRegister\Service\Decision\DecisionVisibility::class)
 		);
 	}//end buildGdprEntitiesController()
 
@@ -1860,7 +1861,9 @@ class ControllersIntegrationTest2 extends TestCase {
 			\OC::$server->get(TenantLifecycleService::class),
 			\OC::$server->get(TenantUsageMapper::class),
 			\OC::$server->get(IUserSession::class),
-			\OC::$server->get(IGroupManager::class)
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- this helper wires the real container services, as every argument above does.
+			\OC::$server->get(IGroupManager::class),
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}//end buildOrganisationController()
 

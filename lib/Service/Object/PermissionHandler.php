@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixPersonValues;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
@@ -153,6 +155,13 @@ class PermissionHandler {
 	private ?DepartmentMatrixPersonValues $personValues = null;
 
 	/**
+	 * The asker of app-contributed matrix rows, built on first use.
+	 *
+	 * @var MatrixRowsFromApps|null
+	 */
+	private ?MatrixRowsFromApps $matrixRowsFromApps = null;
+
+	/**
 	 * The five canonical action verbs the static rule chain knows.
 	 * Anything outside this set is treated as a custom verb and
 	 * routed through `CustomScopeEvaluatingEvent` so consuming apps
@@ -188,6 +197,10 @@ class PermissionHandler {
 		// other, which is two answers to "what kind of verb is this" and
 		// exactly the divergence the catalogue exists to end (row 13.40).
 		'assign',
+		// The file verbs, canonical on this path for the same reason.
+		'readFiles',
+		'addFiles',
+		'deleteFiles',
 	];
 
 	/**
@@ -229,6 +242,8 @@ class PermissionHandler {
 		'update',
 		'delete',
 		'destroy',
+		'addFiles',
+		'deleteFiles',
 	];
 
 	/**
@@ -441,6 +456,16 @@ class PermissionHandler {
 			return true;
 		}
 
+		// A draft answers to its owner only (decision 180). The read predicate
+		// of the list queries keeps it from everybody else, but a check that
+		// is handed the stored object (bulk save, bulk delete, the readable
+		// audit trail, a transition, a file) is a second door onto the same
+		// object and must say the same. Asked before the cache: an object
+		// that is not a draft costs one comparison.
+		if ($object !== null && $this->draftIsKeptFromCaller(object: $object, schema: $schema, userId: $userId) === true) {
+			return false;
+		}
+
 		// Build a per-request cache key. The object UUID (when present) is part
 		// of the key so conditional rules with `match` clauses are still
 		// re-evaluated per object — the cache only deduplicates repeated calls
@@ -491,6 +516,63 @@ class PermissionHandler {
 
 		return $verdict;
 	}//end hasPermission()
+
+	/**
+	 * Whether the object is a draft that its schema keeps from this caller, whatever the action.
+	 *
+	 * The one rule every explicit draft guard asks
+	 * (DraftStatusPolicy::keptFromCaller()): an administrator and a system
+	 * caller without a user (occ, cron, repair steps, a SystemOperationContext)
+	 * are not kept from a draft, the draft's owner is not, and everybody else is,
+	 * including an anonymous web caller. A schema that sets
+	 * `draftsVisible: true` shows its drafts to anyone who may read the
+	 * schema. This is NOT identical to the read predicate in one respect: the
+	 * list query (MagicRbacHandler) also admits the owning group's members and
+	 * the system user's rows outside its draft clause, while this rule knows the
+	 * draft's owner only. It is deliberately the stricter of the two for those
+	 * rows, so a group-owned draft that a list shows is still refused here.
+	 * Every verb is refused, not only `read`: somebody who cannot
+	 * read a draft cannot change, delete or read the history of it either.
+	 *
+	 * @param ObjectEntity $object The object the check is about.
+	 * @param Schema       $schema Its schema.
+	 * @param string|null  $userId The caller, null for the session user.
+	 *
+	 * @return bool True when the caller is refused every action on this object.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 */
+	private function draftIsKeptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId): bool {
+		if ($object->isDraft() === false) {
+			return false;
+		}
+
+		$subject = ($userId ?? $this->userSession->getUser()?->getUID());
+		$isAdmin = false;
+		if ($subject !== null) {
+			$user = $this->userManager->get($subject);
+			$isAdmin = ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true);
+		}
+
+		return (new DraftCallerRule())->keptFromCaller(
+			object: $object,
+			schema: $schema,
+			userId: $subject,
+			isAdmin: $isAdmin,
+			commandLine: $this->isCommandLine()
+		);
+	}//end draftIsKeptFromCaller()
+
+	/**
+	 * Whether PHP runs on the command line. A seam, so a test can read as a web request.
+	 *
+	 * @return bool True under the CLI SAPI.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	protected function isCommandLine(): bool {
+		return PHP_SAPI === 'cli';
+	}//end isCommandLine()
 
 	/**
 	 * Dispatch the per-action telemetry event.
@@ -670,7 +752,10 @@ class PermissionHandler {
 	 *
 	 * This is the uncached implementation of {@see hasPermission()} — extracted
 	 * so the public entry point can short-circuit on a per-request memoisation
-	 * cache without obscuring the evaluation order.
+	 * cache without obscuring the evaluation order. The order is: resolve the
+	 * rules (fail-closed), the deny pass, the private scope, the caller (anonymous
+	 * or unknown callers answer to `public`), the administrator bypass, derived
+	 * groups, custom verbs, and then the grants.
 	 *
 	 * @param Schema $schema Schema being checked.
 	 * @param string $action CRUD action.
@@ -679,9 +764,6 @@ class PermissionHandler {
 	 * @param ObjectEntity|null $object Object entity for conditional matching.
 	 *
 	 * @return bool True if the user has permission.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC permission checks require multiple conditional paths
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
@@ -692,312 +774,349 @@ class PermissionHandler {
 		?string $objectOwner,
 		?ObjectEntity $object,
 	): bool {
-		// Resolve object context for conditional authorization matching.
-		// $activeOrganisation is resolved by ConditionMatcher itself (via OrganisationService);
-		// no per-call lookup is needed here anymore.
-		$objectData = null;
-		$objectOrganisation = null;
-		if ($object !== null) {
-			$objectData = $object->getObject();
-			$objectOrganisation = $object->getOrganisation();
+		// $activeOrganisation is resolved by ConditionMatcher itself (via OrganisationService).
+		$check              = new PermissionCheck(schema: $schema, action: $action);
+		$check->userId      = $userId;
+		$check->objectOwner = $objectOwner;
+		$check->setObject(object: $object);
+
+		if ($this->resolveCheckAuthorization(check: $check) === false
+			|| $this->deniedByRule(check: $check) === true
+		) {
+			return false;
 		}
 
-		// Fail-closed: when the effective authorization cannot be resolved we DENY.
-		// Previously the resolver swallowed the error and returned null, which this
-		// method's `empty($authorization)` treatment read as "no rules configured"
-		// and granted every action to every caller (CWE-863).
-		//
-		// Wave-12 Fix 5: per-object `_authorization` (when present) overrides
-		// schema/register rules action-by-action — hence the `object:` argument;
-		// see resolveAuthorization(). Both rules apply: the per-object override
-		// selects WHICH rules are effective, the try/catch decides what happens
-		// when no rules can be resolved at all.
+		$verdict = ($this->scopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
+		if ($verdict !== null) {
+			return $verdict;
+		}
+
+		// Admin group always has all permissions.
+		if (in_array('admin', $check->userGroups) === true) {
+			return true;
+		}
+
+		$this->addDerivedGroups(check: $check);
+
+		return ($this->customVerbVerdict(check: $check) ?? $this->grantedByRules(check: $check));
+	}//end evaluatePermission()
+
+	/**
+	 * Resolve the effective authorization block onto the check; false when it cannot be resolved.
+	 *
+	 * Fail-closed: when the effective authorization cannot be resolved the action is
+	 * DENIED. Previously the resolver swallowed the error and returned null, which read
+	 * as "no rules configured" and granted every action to every caller (CWE-863).
+	 * Per-object `_authorization` (when present) overrides schema/register rules
+	 * action-by-action, hence the `object:` argument; see resolveAuthorization().
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool Whether the authorization was resolved
+	 */
+	private function resolveCheckAuthorization(PermissionCheck $check): bool {
 		try {
-			$authorization = $this->resolveAuthorization(schema: $schema, object: $object);
+			$check->authorization = $this->resolveAuthorization(schema: $check->schema, object: $check->object);
 		} catch (AuthorizationUnresolvableException $e) {
 			$this->logger->error(
 				message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-					'action' => $action,
-					'userId' => $userId,
+					'schemaId' => $check->schema->getId(),
+					'action' => $check->action,
+					'userId' => $check->userId,
 					'error' => $e->getMessage(),
 				]
 			);
 			return false;
 		}
 
-		// The DENY pass. Evaluated here — after the cascade has resolved and
-		// before the scope, the rules, the owner bypass and the custom-verb
-		// vote — because a deny is not a grant with a lower score. It removes
-		// the verb inside its scope and nothing puts it back, so it cannot sit
-		// anywhere that a later rule could return true past it.
-		//
-		// Administrators are the one exception, and they are exempt inside
-		// {@see denialFor()} rather than here: an access model that can deny
-		// its own administration away is recoverable only from the database.
-		//
-		// Costs nothing on an instance that declares no deny: the resolver
-		// answers null on an absent `deny` key without touching the session.
-		//
-		// STAGING. The deny does not ship enforcing (D15). In `staging`, which
-		// is the default, the resolution below still runs and the denial is
-		// recorded, and then this method carries on as though no deny existed.
-		// The switch is read in {@see enforcedDenialFor()} so this call site and
-		// the list query in MagicRbacHandler cannot drift apart on it.
+		return true;
+	}//end resolveCheckAuthorization()
+
+	/**
+	 * The DENY pass: whether an enforced explicit deny removes the verb.
+	 *
+	 * Evaluated after the cascade has resolved and before the scope, the rules, the
+	 * owner bypass and the custom-verb vote, because a deny is not a grant with a lower
+	 * score: it removes the verb inside its scope and nothing puts it back.
+	 * Administrators are exempt inside {@see denialFor()}: an access model that can deny
+	 * its own administration away is recoverable only from the database. It costs
+	 * nothing on an instance that declares no deny. In `staging` mode (the default,
+	 * D15) the denial is recorded and the chain carries on; the switch is read in
+	 * {@see enforcedDenialFor()} so this call site and the list query in
+	 * MagicRbacHandler cannot drift apart on it.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool Whether the action is denied
+	 */
+	private function deniedByRule(PermissionCheck $check): bool {
 		$denial = $this->enforcedDenialFor(
-			authorization: $authorization,
-			action: $action,
-			userId: $userId,
-			object: $object,
-			context: ['schemaId' => $schema->getId(), 'path' => 'object']
+			authorization: $check->authorization,
+			action: $check->action,
+			userId: $check->userId,
+			object: $check->object,
+			context: ['schemaId' => $check->schema->getId(), 'path' => 'object']
 		);
-		if ($denial !== null) {
-			$this->logger->info(
-				message: '[PermissionHandler] Action denied by an explicit deny rule',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-					'action' => $action,
-					'userId' => $userId,
-					'principal' => $denial['principal'],
-					'rule' => $denial['rule'],
-				]
-			);
+		if ($denial === null) {
 			return false;
 		}
 
-		// The `private` scope. Evaluated here — after the cascade has resolved
-		// and before ANY rule is consulted — because that is what the scope
-		// means: a private object does not answer to the schema's rules at all.
-		// Returns null for the ordinary case so nothing changes for an object
-		// that never declared it.
-		$privateVerdict = $this->privateScopeVerdict(
-			authorization: $authorization,
-			object: $object,
-			userId: $userId,
-			objectOwner: $objectOwner,
-			action: $action
+		$this->logger->info(
+			message: '[PermissionHandler] Action denied by an explicit deny rule',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $check->schema->getId(),
+				'action' => $check->action,
+				'userId' => $check->userId,
+				'principal' => $denial['principal'],
+				'rule' => $denial['rule'],
+			]
 		);
-		if ($privateVerdict !== null) {
-			return $privateVerdict;
-		}
 
-		// Get current user if not provided.
-		if ($userId === null) {
+		return true;
+	}//end deniedByRule()
+
+	/**
+	 * The `private` scope's verdict, or null for an object that does not declare it.
+	 *
+	 * Asked before any rule is consulted and before the caller is resolved from the
+	 * session, because a private object does not answer to the schema's rules at all.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool|null
+	 */
+	private function scopeVerdict(PermissionCheck $check): ?bool {
+		return $this->privateScopeVerdict(
+			authorization: $check->authorization,
+			object: $check->object,
+			userId: $check->userId,
+			objectOwner: $check->objectOwner,
+			action: $check->action
+		);
+	}//end scopeVerdict()
+
+	/**
+	 * Resolve the caller onto the check; the verdict for an anonymous or unknown caller.
+	 *
+	 * A caller without a session answers to the anonymous rules; a user id that names
+	 * no user is treated as `public`. Otherwise the user id and groups are set on the
+	 * check and null is returned so the chain continues.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool|null The verdict, or null to continue
+	 */
+	private function callerVerdict(PermissionCheck $check): ?bool {
+		if ($check->userId === null) {
 			$user = $this->userSession->getUser();
 			if ($user === null) {
-				// Fail-closed object writes for anonymous callers (#1955): a write
-				// action (create/update/delete) is denied for an anonymous principal
-				// unless the schema explicitly grants the `public` group that action.
-				// This scopes the new denial strictly to anonymous principals —
-				// authenticated users are unaffected (their default-open behaviour is
-				// a separate, broader policy decision). Declared public-submission
-				// schemas (public create/update rule) still allow anonymous writes.
-				if (in_array(needle: $action, haystack: self::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, strict: true) === true
-					&& $this->publicGroupExplicitlyGranted(authorization: $authorization, action: $action) === false
-				) {
-					return false;
-				}//end if
+				return $this->anonymousVerdict(check: $check);
+			}
 
-				// For unauthenticated requests, check if 'public' group has permission.
-				return $this->hasGroupPermission(
-					authorization: $authorization,
-					groupId: 'public',
-					action: $action,
-					userId: null,
-					userGroup: null,
-					objectOwner: $objectOwner,
-					objectData: $objectData,
-					objectOrganisation: $objectOrganisation
-				);
-			}//end if
+			$check->userId = $user->getUID();
+		}
 
-			$userId = $user->getUID();
-		}//end if
-
-		// Get user object from user ID.
-		$userObj = $this->userManager->get($userId);
+		$userObj = $this->userManager->get($check->userId);
 		if ($userObj === null) {
-			// User doesn't exist, treat as public.
-			return $this->hasGroupPermission(
-				authorization: $authorization,
-				groupId: 'public',
-				action: $action,
-				userId: null,
-				userGroup: null,
-				objectOwner: $objectOwner,
-				objectData: $objectData,
-				objectOrganisation: $objectOrganisation
-			);
+			return $this->publicGrantForStranger(check: $check);
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($userObj);
+		$check->userGroups = $this->groupManager->getUserGroupIds($userObj);
 
-		// Check if user is admin (admin group always has all permissions).
-		if (in_array('admin', $userGroups) === true) {
-			return true;
+		return null;
+	}//end callerVerdict()
+
+	/**
+	 * The verdict for a caller without a session.
+	 *
+	 * Fail-closed object writes for anonymous callers (#1955): create, update and
+	 * delete are denied unless the schema explicitly grants the `public` group that
+	 * action, so declared public-submission schemas still accept anonymous writes.
+	 * Authenticated users are unaffected. Otherwise the `public` group decides.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool
+	 */
+	private function anonymousVerdict(PermissionCheck $check): bool {
+		if (in_array(needle: $check->action, haystack: self::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, strict: true) === true
+			&& $this->publicGroupExplicitlyGranted(authorization: $check->authorization, action: $check->action) === false
+		) {
+			return false;
 		}
 
-		// ACCESS DERIVED AT SIGN-IN, folded in AFTER the administrator check so
-		// a derivation rule can never make somebody an administrator. These are
-		// ordinary group ids, matched by the ordinary rules, which is the whole
-		// point: nothing downstream has to know they were derived (task 8.1).
-		$derived = $this->derivedGroupsFor(userId: $userId, schema: $schema);
+		return $this->publicGrantForStranger(check: $check);
+	}//end anonymousVerdict()
+
+	/**
+	 * Whether the `public` group grants the action to a caller who is not a known user.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool
+	 */
+	private function publicGrantForStranger(PermissionCheck $check): bool {
+		return $this->hasGroupPermission(
+			authorization: $check->authorization,
+			groupId: 'public',
+			action: $check->action,
+			userId: null,
+			userGroup: null,
+			objectOwner: $check->objectOwner,
+			objectData: $check->objectData,
+			objectOrganisation: $check->objectOrganisation
+		);
+	}//end publicGrantForStranger()
+
+	/**
+	 * Fold the groups derived at sign-in into the caller's groups.
+	 *
+	 * Done after the administrator check, so a derivation rule can never make somebody
+	 * an administrator. They are ordinary group ids matched by the ordinary rules, so
+	 * nothing downstream has to know they were derived (task 8.1).
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return void
+	 */
+	private function addDerivedGroups(PermissionCheck $check): void {
+		$derived = $this->derivedGroupsFor(userId: $check->userId, schema: $check->schema);
 		if ($derived !== []) {
-			$userGroups = array_values(array_unique(array_merge($userGroups, $derived)));
+			$check->userGroups = array_values(array_unique(array_merge($check->userGroups, $derived)));
 		}
+	}//end addDerivedGroups()
 
-		// Custom action verbs (anything outside the canonical 5) are
-		// routed through a listener-driven dispatch so consuming apps
-		// can contribute verdicts for verbs they own (e.g. ZGW
-		// `besluit_nemen`). Listeners vote via
-		// `CustomScopeEvaluatingEvent::allow() / deny()`; the first
-		// verdict wins. When no listener votes, fall through to the
-		// standard rule chain — most schemas won't have rules for
-		// custom verbs, so this typically denies.
-		//
-		// This dispatch MUST precede the 'authenticated' pseudo-group grant
-		// below. That grant is default-open for a schema with no authorization
-		// block, so evaluating it first short-circuits `return true` before any
-		// listener is consulted — silently killing the veto for exactly the
-		// unconfigured-schema case (a schema that declares no rules for its
-		// custom verb) the mechanism exists to serve. Admin bypass still
-		// precedes this: admins remain un-vetoable, matching the canonical
-		// actions' admin short-circuit above.
-		$isCanonical = in_array(needle: $action, haystack: self::CANONICAL_ACTIONS, strict: true);
-		if ($isCanonical === false && $this->eventDispatcher !== null) {
-			$verdict = $this->dispatchCustomScopeEvaluation(
-				schema: $schema,
-				action: $action,
-				userId: $userId,
-				userGroups: $userGroups,
-				object: $object
-			);
-			if ($verdict !== null) {
-				return $verdict;
-			}
-
-			// DECLARED, AND NOBODY VOTED. The declaration is what makes a verb
-			// offerable in a role editor, so a declared verb with no listener is
-			// a verb an administrator can grant and nothing can ever decide.
-			// Falling through to the standard chain would let the schema's own
-			// rules answer for a verb the declaring app said it owns, which is
-			// the quiet version of the same mistake: the grant looks honoured
-			// and the app that defines the verb never saw the question.
-			//
-			// So it fails closed, and it names the app that owes the listener,
-			// because "permission denied" with no owner is a ticket nobody can
-			// route (design D-2).
-			$declaration = $this->permissionCatalogue()->declarationFor($action);
-			if ($declaration !== null && $declaration['canonical'] === false) {
-				$this->logger->warning(
-					message: '[PermissionHandler] A declared custom verb has no evaluator; refusing',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'action' => $action,
-						'declaredBy' => $declaration['app'],
-						'schemaId' => $schema->getId(),
-						'userId' => $userId,
-					]
-				);
-				return false;
-			}
-		}
-
-		// 'authenticated' pseudo-group: any logged-in user qualifies,
-		// independent of real group membership (so a user with NO groups still
-		// matches). Evaluated here — symmetric with the SQL-layer
-		// MagicRbacHandler, which already honours 'authenticated' — so a
-		// single-object create/read/update/delete check and a list query agree
-		// on schemas that grant an action to `authenticated`.
-		if ($this->hasGroupPermission(
-			authorization: $authorization,
-			groupId: 'authenticated',
-			action: $action,
-			userId: $userId,
-			objectOwner: $objectOwner,
-			objectData: $objectData,
-			objectOrganisation: $objectOrganisation
-		) === true
+	/**
+	 * The verdict for a custom action verb, or null to continue with the rules.
+	 *
+	 * Verbs outside the canonical five are routed through a listener-driven dispatch so
+	 * consuming apps can decide verbs they own (e.g. ZGW `besluit_nemen`); the first
+	 * vote wins. This MUST precede the `authenticated` grant, which is default-open for
+	 * a schema without an authorization block and would otherwise return true before
+	 * any listener is consulted. Administrators are decided before this and stay
+	 * un-vetoable.
+	 *
+	 * A declared verb that nobody voted on fails closed, naming the app that owes the
+	 * listener (design D-2): falling through would let the schema's own rules answer
+	 * for a verb the declaring app said it owns.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool|null The verdict, or null to continue
+	 */
+	private function customVerbVerdict(PermissionCheck $check): ?bool {
+		if (in_array(needle: $check->action, haystack: self::CANONICAL_ACTIONS, strict: true) === true
+			|| $this->eventDispatcher === null
 		) {
-			return true;
+			return null;
 		}
 
-		// User-level override (delegation) check — evaluated independently of
-		// group membership so a user with NO groups can still receive a
-		// delegated grant. Uses the sentinel group id '' which never matches a
-		// real group; only the user-override branch inside hasGroupPermission
-		// can grant here. Additive and fail-closed (see userOverrideMatches()).
-		if ($this->hasGroupPermission(
-			authorization: $authorization,
-			groupId: '',
-			action: $action,
-			userId: $userId,
-			objectOwner: $objectOwner,
-			objectData: $objectData,
-			objectOrganisation: $objectOrganisation
-		) === true
-		) {
-			return true;
+		$verdict = $this->dispatchCustomScopeEvaluation(
+			schema: $check->schema,
+			action: $check->action,
+			userId: $check->userId,
+			userGroups: $check->userGroups,
+			object: $check->object
+		);
+		if ($verdict !== null) {
+			return $verdict;
 		}
 
-		// Check schema permissions for each user group.
-		foreach ($userGroups as $groupId) {
-			if ($this->hasGroupPermission(
-				authorization: $authorization,
-				groupId: $groupId,
-				action: $action,
-				userId: $userId,
-				objectOwner: $objectOwner,
-				objectData: $objectData,
-				objectOrganisation: $objectOrganisation
-			) === true
-			) {
-				return true;
-			}
-		}//end foreach
-
-		// Logged-in users normally also inherit at least the same rights as
-		// 'public' users — unless the schema/register/tenant disabled public
-		// inheritance for authenticated users (inheritFromPublic = false). The
-		// flag only governs this authenticated-inherits-public step; anonymous
-		// users are handled earlier and are never affected.
-		if ($this->resolveInheritFromPublic(schema: $schema) === true
-			&& $this->hasGroupPermission(
-				authorization: $authorization,
-				groupId: 'public',
-				action: $action,
-				userId: $userId,
-				objectOwner: $objectOwner,
-				objectData: $objectData,
-				objectOrganisation: $objectOrganisation
-			) === true
-		) {
-			return true;
+		$declaration = $this->permissionCatalogue()->declarationFor($check->action);
+		if ($declaration === null || $declaration['canonical'] !== false) {
+			return null;
 		}
 
-		// THE REFUSAL NAMES THE RULE THAT PRODUCED IT. A denial log that carries
-		// only the verdict tells an administrator that somebody was refused and
-		// leaves them to guess which of four levels refused them; the rules for
-		// the verb are what they need to open. The deny path above logs its own
-		// rule, so what reaches here is the other refusal: the rules exist and
-		// none of them names this caller (task 3.3).
-		$this->logRefusal(
-			authorization: $authorization,
-			action: $action,
-			userId: $userId,
-			userGroups: $userGroups,
-			schema: $schema,
-			object: $object
+		return $this->refuseUnevaluatedVerb(check: $check, declaration: $declaration);
+	}//end customVerbVerdict()
+
+	/**
+	 * Refuse a declared custom verb nobody voted on, naming the app that owes the listener.
+	 *
+	 * @param PermissionCheck      $check       The check
+	 * @param array<string, mixed> $declaration The verb's declaration
+	 *
+	 * @return false
+	 */
+	private function refuseUnevaluatedVerb(PermissionCheck $check, array $declaration): bool {
+		$this->logger->warning(
+			message: '[PermissionHandler] A declared custom verb has no evaluator; refusing',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'action' => $check->action,
+				'declaredBy' => $declaration['app'],
+				'schemaId' => $check->schema->getId(),
+				'userId' => $check->userId,
+			]
 		);
 
 		return false;
-	}//end evaluatePermission()
+	}//end refuseUnevaluatedVerb()
+
+	/**
+	 * Whether a grant admits the caller; a refusal is logged with the rule behind it.
+	 *
+	 * The grants, in order: the `authenticated` pseudo-group (any logged-in user, also
+	 * one without groups, symmetric with MagicRbacHandler), a user-level override
+	 * through the sentinel group id '' (which only the user-override branch of
+	 * hasGroupPermission can match), each of the caller's groups, and `public` unless
+	 * inheritFromPublic is switched off for the schema, register or tenant.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return bool
+	 */
+	private function grantedByRules(PermissionCheck $check): bool {
+		foreach (['authenticated', '', ...$check->userGroups] as $groupId) {
+			if ($this->groupGrants(check: $check, groupId: $groupId) === true) {
+				return true;
+			}
+		}
+
+		if ($this->resolveInheritFromPublic(schema: $check->schema) === true
+			&& $this->groupGrants(check: $check, groupId: 'public') === true
+		) {
+			return true;
+		}
+
+		// The refusal names the rule that produced it (task 3.3).
+		$this->logRefusal(
+			authorization: $check->authorization,
+			action: $check->action,
+			userId: $check->userId,
+			userGroups: $check->userGroups,
+			schema: $check->schema,
+			object: $check->object
+		);
+
+		return false;
+	}//end grantedByRules()
+
+	/**
+	 * Whether one group grants the action to the signed-in caller.
+	 *
+	 * @param PermissionCheck $check   The check
+	 * @param string          $groupId The group id
+	 *
+	 * @return bool
+	 */
+	private function groupGrants(PermissionCheck $check, string $groupId): bool {
+		return $this->hasGroupPermission(
+			authorization: $check->authorization,
+			groupId: $groupId,
+			action: $check->action,
+			userId: $check->userId,
+			objectOwner: $check->objectOwner,
+			objectData: $check->objectData,
+			objectOrganisation: $check->objectOrganisation
+		);
+	}//end groupGrants()
 
 	/**
 	 * Record a refusal with the rule behind it.
@@ -1829,6 +1948,11 @@ class PermissionHandler {
 
 		$activeOrganisation = $this->getActiveOrganisationForContext();
 
+		// An administrator reads every draft, so is not kept from one here
+		// (the same check hasPermission() and the read predicate make).
+		$callerIsAdmin = ($currentUser !== null
+			&& in_array('admin', $this->groupManager->getUserGroupIds($currentUser), true) === true);
+
 		// Get objects for permission checking.
 		//
 		// This must be the CROSS-TABLE lookup. `MagicMapper::findAll()` needs a
@@ -1861,6 +1985,20 @@ class PermissionHandler {
 				if ($objectSchema !== null) {
 					try {
 						$schema = $this->schemaMapper->find($objectSchema);
+
+						// Another user's draft is kept from this caller as on every
+						// other path: it is left out like an object that does not
+						// exist, so the delete does not announce it.
+						$draftKept = (new DraftCallerRule())->keptFromCaller(
+							object: $object,
+							schema: $schema,
+							userId: $userId,
+							isAdmin: $callerIsAdmin,
+							commandLine: $this->isCommandLine()
+						);
+						if ($draftKept === true) {
+							continue;
+						}
 
 						// Property-level RBAC (per-property authorization + writeOnly
 						// stripping) lives in PropertyRbacHandler on the read path; this
@@ -2620,7 +2758,7 @@ class PermissionHandler {
 		// verdict identical BY CONSTRUCTION rather than by two implementations
 		// agreeing, which is the property rbac-scopes requires and the one a
 		// second enforcement path would quietly break.
-		$authorization = $this->compileDepartmentMatrix(authorization: $authorization);
+		$authorization = $this->compileDepartmentMatrix(authorization: $authorization, schema: $schema);
 
 		// THE END AND THE AREA ARE READ HERE, with the mcp strip, because this
 		// is the one step every path takes: the object read, the relation check
@@ -2704,19 +2842,25 @@ class PermissionHandler {
 	 * admitted: without it the caller falls back to whatever the schema said
 	 * before, and nobody is admitted by an error.
 	 *
+	 * A matrix that declares `rowsFrom` gets the rows its provider app adds
+	 * at check time beside its declared rows (MatrixRowsFromApps).
+	 *
 	 * @param array<string, mixed>|null $authorization The resolved block.
+	 * @param Schema                    $schema        The schema the block belongs to.
 	 *
 	 * @return array<string, mixed>|null The block, with the matrix's rules in it.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function compileDepartmentMatrix(?array $authorization): ?array {
+	private function compileDepartmentMatrix(?array $authorization, Schema $schema): ?array {
 		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
 		if (is_array($matrix) === false) {
 			return $authorization;
 		}
 
 		try {
+			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 			$compiler = new DepartmentMatrixCompiler();
 
 			$userId = $this->userSession->getUser()?->getUID();
@@ -2756,11 +2900,28 @@ class PermissionHandler {
 	}//end compileDepartmentMatrix()
 
 	/**
-	 * The reader of a matrix user's own values from a person schema, built once.
+	 * The asker of app-contributed matrix rows, built once.
 	 *
 	 * Built here rather than injected for the same reason as the resolvers
 	 * above: a new required constructor argument is a fatal at every existing
 	 * construction site.
+	 *
+	 * @return MatrixRowsFromApps The asker of app-contributed matrix rows.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function matrixRowsFromApps(): MatrixRowsFromApps {
+		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
+			dispatcher: $this->eventDispatcher,
+			validator: new DepartmentMatrixValidator(),
+			logger: $this->logger
+		);
+
+		return $this->matrixRowsFromApps;
+	}//end matrixRowsFromApps()
+
+	/**
+	 * The reader of a matrix user's own values from a person schema, built once.
 	 *
 	 * @return DepartmentMatrixPersonValues The reader.
 	 *
@@ -3540,7 +3701,7 @@ class PermissionHandler {
 					'schemaId' => $schema->getId(),
 				]
 			);
-			return $authorization;
+			return $this->grantNothingWhenEmpty(authorization: $authorization);
 		}
 
 		// Build the lookup map with role-hierarchy support. A role
@@ -3591,8 +3752,46 @@ class PermissionHandler {
 			}
 		}//end foreach
 
-		return $authorization;
+		return $this->grantNothingWhenEmpty(authorization: $authorization);
 	}//end expandRoles()
+
+	/**
+	 * A roles block that resolved to nothing grants nothing.
+	 *
+	 * 🔴 THE SAME DIRECTION AS {@see stripMcpScope()}, FOR THE SAME REASON. An
+	 * author who writes `roles` has opted the schema into authorization. When
+	 * none of those roles can be expanded (the register declares no role
+	 * definitions, or every name is unknown) the block used to come back as
+	 * `[]`, and `[]` is "no authorization configured", which is default-OPEN:
+	 * every signed in account could read, change and delete. Found live on
+	 * 2026-10-11, where a case schema declaring `roles` only, written so a
+	 * notification dispatcher could find who holds a role, left every case of
+	 * the register readable by a user in no group at all.
+	 *
+	 * Between a fail-safe and a fail-open reading of an ambiguous block the
+	 * block gets the fail-safe one: the canonical verbs are listed with nobody
+	 * in them. The block is non-empty, so an unlisted verb is refused as well,
+	 * and the administrator and owner bypasses still apply. A denial is loud
+	 * and fixed by declaring the roles; a grant is silent.
+	 *
+	 * @param array<string, mixed> $authorization The block after expansion.
+	 *
+	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function grantNothingWhenEmpty(array $authorization): array {
+		if ($authorization !== []) {
+			return $authorization;
+		}
+
+		return [
+			'read' => [],
+			'create' => [],
+			'update' => [],
+			'delete' => [],
+		];
+	}//end grantNothingWhenEmpty()
 
 	/**
 	 * Flatten a role hierarchy into a `name => actions` map.

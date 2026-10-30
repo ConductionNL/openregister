@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} ebaõnnestus",
         "0 = unlimited": "0 = piiramatu",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Voog käivitab rea samme, kui midagi juhtub — objekt muutub, ajakava rakendub või käivitad selle ise. See loend näitab iga rakenduse vooge.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "VAPID võtmepaar on seadistatud. Kasutajad saavad brauseriteavitused oma isiklikes sätetes sisse lülitada; need toimetatakse kohale ka siis, kui brauseri kaart on suletud.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "VAPID võtmepaar on seadistatud. Kasutajad saavad brauseriteavitused oma kasutajasätetes sisse lülitada; need toimetatakse kohale ka siis, kui brauseri kaart on suletud.",
         "A deactivation request is pending.": "Deaktiveerimistaotlus on ootel.",
         "AI Assistant": "AI-assistent",
         "AI Chat": "AI-vestlus",

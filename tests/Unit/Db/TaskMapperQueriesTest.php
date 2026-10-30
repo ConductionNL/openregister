@@ -268,8 +268,11 @@ class TaskMapperQueriesTest extends TestCase {
 		$this->calls = [];
 		$this->functions = [];
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_WATCHED));
-		$this->assertCount(1, $this->functions);
-		$this->assertStringContainsString('LIKE', $this->functions[0]);
+		// The blocked-task subquery is a function too; the watcher match is
+		// the one function besides it.
+		$watched = array_values(array_filter($this->functions, static fn (string $sql): bool => $sql !== 'SELECT subquery'));
+		$this->assertCount(1, $watched);
+		$this->assertStringContainsString('LIKE', $watched[0]);
 
 		$this->calls = [];
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL));
@@ -310,6 +313,28 @@ class TaskMapperQueriesTest extends TestCase {
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, sort: TaskInboxCriteria::SORT_CREATED));
 		$this->assertTrue($this->saw('orderBy', 'created'));
 	}//end testFindInboxFiltersAndSortsInTheDatastore()
+
+	/**
+	 * `openFirst` orders by terminality before the chosen sort, so finished
+	 * tasks come after every open one; without it the sort is the first key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	public function testFindInboxCanPutOpenTasksFirst(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith());
+
+		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, openFirst: true));
+		$this->assertTrue($this->saw('orderBy', 'is_terminal'));
+		$this->assertTrue($this->saw('addOrderBy', 'due_at'));
+		$this->assertFalse($this->saw('orderBy', 'due_at'));
+
+		$this->calls = [];
+		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true));
+		$this->assertFalse($this->saw('orderBy', 'is_terminal'));
+		$this->assertTrue($this->saw('orderBy', 'due_at'));
+	}//end testFindInboxCanPutOpenTasksFirst()
 
 	/**
 	 * A due WINDOW becomes two comparisons over the SAME effective deadline

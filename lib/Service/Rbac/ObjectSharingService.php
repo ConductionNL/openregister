@@ -136,6 +136,12 @@ class ObjectSharingService {
 	 * @param IManager $shareManager Core share manager.
 	 * @param LoggerInterface $logger Logger.
 	 * @param InheritedGrantLister $inheritedGrants Lists the grants an ancestor's share confers.
+	 * @param GrantManageGuard $grantManage Who may manage a record's grants: the owner, an administrator,
+	 *                                      or a holder of the special right `grant_manage`.
+	 * @param GrantChangeAuditor|null $auditor Writes an audit-trail entry for every grant and revoke. Null only in legacy fixtures.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named in the
+	 *                                                 class docblock, and the guard is the tenth.
 	 */
 	public function __construct(
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
@@ -147,6 +153,8 @@ class ObjectSharingService {
 		private readonly IManager $shareManager,
 		private readonly LoggerInterface $logger,
 		private readonly InheritedGrantLister $inheritedGrants,
+		private readonly GrantManageGuard $grantManage,
+		private readonly ?GrantChangeAuditor $auditor = null,
 	) {
 	}//end __construct()
 
@@ -210,7 +218,7 @@ class ObjectSharingService {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function listGrants(ObjectEntity $object): array {
-		$this->requireOwnerOrAdmin(object: $object);
+		$this->requireMayManageGrants(object: $object);
 
 		$folder = $this->resolveFolder(object: $object);
 		if ($folder === null) {
@@ -286,6 +294,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
 	 *
 	 * @return array<string, mixed> The created grant.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function grant(
 		ObjectEntity $object,
@@ -294,7 +304,7 @@ class ObjectSharingService {
 		int $permissions = 1,
 		array $verbs = [],
 	): array {
-		$this->requireOwnerOrAdmin(object: $object);
+		$admittedAs = $this->requireMayManageGrants(object: $object, grantType: $type, grantee: trim($shareWith));
 
 		if (isset(self::GRANTABLE_TYPES[$type]) === false) {
 			throw new InvalidArgumentException(
@@ -330,13 +340,19 @@ class ObjectSharingService {
 		// The caller may re-decide access within this same request.
 		$this->grantResolver->forget();
 
-		return [
+		$grant = [
 			'id' => $created->getFullId(),
 			'type' => $type,
 			'sharedWith' => $created->getSharedWith(),
 			'permissions' => $created->getPermissions(),
 			'verbs' => array_values($verbs),
 		];
+
+		// Who let this principal in, and when, is the question the trail has
+		// to be able to answer, whoever the caller was admitted as.
+		$this->auditor?->recordGrant(object: $object, grant: $grant, admittedAs: $admittedAs);
+
+		return $grant;
 	}//end grant()
 
 	/**
@@ -398,6 +414,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException On an unresolvable folder or a bad expiry.
 	 *
 	 * @return array<string, mixed> The created link, including its token.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function createLink(
 		ObjectEntity $object,
@@ -415,6 +433,19 @@ class ObjectSharingService {
 		$this->applyLinkOptions(share: $share, password: $password, expiration: $expiration);
 
 		$created = $this->shareManager->createShare($share);
+
+		// A public link is a grant like any other: the trail names it (never its token).
+		$this->auditor?->recordGrant(
+			object: $object,
+			grant: [
+				'id' => $created->getFullId(),
+				'type' => 'link',
+				'sharedWith' => null,
+				'permissions' => $created->getPermissions(),
+				'verbs' => [],
+			],
+			admittedAs: null
+		);
 
 		return [
 			'id' => $created->getFullId(),
@@ -448,6 +479,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException On a missing address or unresolvable folder.
 	 *
 	 * @return array<string, mixed> The created invitation.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function inviteByEmail(
 		ObjectEntity $object,
@@ -470,6 +503,18 @@ class ObjectSharingService {
 		$this->applyLinkOptions(share: $share, password: $password, expiration: $expiration);
 
 		$created = $this->shareManager->createShare($share);
+
+		$this->auditor?->recordGrant(
+			object: $object,
+			grant: [
+				'id' => $created->getFullId(),
+				'type' => 'email',
+				'sharedWith' => $created->getSharedWith(),
+				'permissions' => $created->getPermissions(),
+				'verbs' => [],
+			],
+			admittedAs: null
+		);
 
 		return [
 			'id' => $created->getFullId(),
@@ -571,9 +616,11 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException When the share is not on this object.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function revoke(ObjectEntity $object, string $shareId): void {
-		$this->requireOwnerOrAdmin(object: $object);
+		$admittedAs = $this->requireMayManageGrants(object: $object);
 
 		$folder = $this->resolveFolder(object: $object);
 		if ($folder === null) {
@@ -590,9 +637,34 @@ class ObjectSharingService {
 			throw new InvalidArgumentException('That grant does not belong to this object');
 		}
 
+		$revoked = [
+			'id' => $share->getFullId(),
+			'type' => $this->typeLabel(shareType: (int)$share->getShareType()),
+			'sharedWith' => $share->getSharedWith(),
+			'permissions' => $share->getPermissions(),
+		];
+
 		$this->shareManager->deleteShare($share);
 		$this->grantResolver->forget();
+
+		$this->auditor?->recordRevoke(object: $object, grant: $revoked, admittedAs: $admittedAs);
 	}//end revoke()
+
+	/**
+	 * The label of a core share type, as the grants name it.
+	 *
+	 * @param int $shareType The core share type.
+	 *
+	 * @return string The label (`user`, `group`, `link`, ...), or the number when it has none.
+	 */
+	private function typeLabel(int $shareType): string {
+		$label = array_search($shareType, self::LISTABLE_TYPES, true);
+		if ($label === false) {
+			return (string)$shareType;
+		}
+
+		return (string)$label;
+	}//end typeLabel()
 
 	/**
 	 * Resolve the object's NC folder, creating it if it has none.
@@ -649,6 +721,64 @@ class ObjectSharingService {
 			);
 		}
 	}//end requireOwnerOrAdmin()
+
+	/**
+	 * Require that the caller may manage the grants on the object.
+	 *
+	 * The owner, the owning group and an administrator, as before. Beside them a
+	 * holder of the organisation's `grant_manage` special right on this record
+	 * ({@see GrantManageGuard}). It is asked for the three grant methods only: the scope, a public
+	 * link and an e-mail invitation stay with the owner and administrators.
+	 *
+	 * A holder admitted by the special right alone may not grant to itself or to
+	 * a group it is in. Without that refusal the right would be a read by one
+	 * extra call.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string|null $grantType The principal type of a grant being added, or null.
+	 * @param string|null $grantee The principal of a grant being added, or null.
+	 *
+	 * @throws NotAuthorizedException When the caller may not.
+	 *
+	 * @return string How the caller was admitted (GrantManageGuard::AS_OWNER or ::AS_HOLDER).
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	private function requireMayManageGrants(
+		ObjectEntity $object,
+		?string $grantType = null,
+		?string $grantee = null,
+	): string {
+		$uid = $this->callerUid();
+		$groups = [];
+		if ($uid !== null) {
+			$groups = $this->groupManager->getUserGroupIds($this->userSession->getUser());
+		}
+
+		$admittedAs = $this->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		if ($admittedAs === null) {
+			throw new NotAuthorizedException(
+				message: 'Only the owner or an administrator may change sharing on this object'
+			);
+		}
+
+		$principal = [(string)$grantType => $grantee];
+		if ($this->grantManage->letsItselfIn(
+			admittedAs: $admittedAs,
+			userId: $uid,
+			userGroups: $groups,
+			user: ($principal['user'] ?? null),
+			group: ($principal['group'] ?? null),
+			remote: ($principal['remote'] ?? $principal['remote_group'] ?? null)
+		) === true
+		) {
+			throw new NotAuthorizedException(
+				message: 'The right to manage grants does not let its holder grant access to itself'
+			);
+		}
+
+		return $admittedAs;
+	}//end requireMayManageGrants()
 
 	/**
 	 * Strip core's re-share bit from a requested permission mask.

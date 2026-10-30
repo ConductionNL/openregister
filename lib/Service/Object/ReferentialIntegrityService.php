@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -59,6 +60,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.TooManyMethods) One integrity algorithm: relation index, graph walk, uuid and key lookups, actions.
  */
 class ReferentialIntegrityService {
 	/**
@@ -733,6 +735,19 @@ class ReferentialIntegrityService {
 				continue;
 			}
 
+			$referenceKey = $this->extractReferenceKey(property: $property);
+			if ($referenceKey !== null && $onDelete !== 'RESTRICT') {
+				// A reference by key (a code, not a uuid) only refuses. CASCADE,
+				// SET_NULL and SET_DEFAULT rewrite or delete by uuid, so on a key
+				// they would act on the wrong value; the relation is left out and
+				// the schema author told why, rather than half-applied.
+				$this->logger->warning(
+					message: '[ReferentialIntegrity] referenceKey is only honoured with onDelete RESTRICT; relation ignored',
+					context: ['schemaId' => $schemaId, 'property' => $propertyName, 'onDelete' => $onDelete]
+				);
+				continue;
+			}
+
 			$isArray = isset($property['type']) && $property['type'] === 'array';
 
 			if (isset($this->relationIndex[$targetSchemaId]) === false) {
@@ -744,6 +759,7 @@ class ReferentialIntegrityService {
 				'property' => $propertyName,
 				'onDelete' => $onDelete,
 				'isArray' => $isArray,
+				'referenceKey' => $referenceKey,
 			];
 		}//end foreach
 
@@ -788,8 +804,32 @@ class ReferentialIntegrityService {
 			return (string)$property['items']['$ref'];
 		}
 
+		// A reference that is not an object relation (a code citing a row by
+		// key) names its target with `referenceSchema`, so the `$ref` relation
+		// machinery (rendering, _extend, uuid validation) is not engaged.
+		if (isset($property['referenceSchema']) === true) {
+			return (string)$property['referenceSchema'];
+		}
+
+		if (isset($property['items']['referenceSchema']) === true) {
+			return (string)$property['items']['referenceSchema'];
+		}
+
 		return null;
 	}//end extractTargetRef()
+
+	/**
+	 * The target property a reference cites by, when it is not the uuid.
+	 *
+	 * @param array $property The property configuration array.
+	 *
+	 * @return string|null The target's key property, or null for a uuid reference.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function extractReferenceKey(array $property): ?string {
+		return (new ReferenceKey())->keyOf(property: $property);
+	}//end extractReferenceKey()
 
 	/**
 	 * Resolve a schema $ref string to a schema ID.
@@ -883,6 +923,14 @@ class ReferentialIntegrityService {
 		$dependents = $this->relationIndex[$schemaId];
 
 		foreach ($dependents as $dep) {
+			if (($dep['referenceKey'] ?? null) !== null) {
+				$blockers = array_merge(
+					$blockers,
+					$this->keyReferenceBlockers(object: $object, dep: $dep, chain: $chain)
+				);
+				continue;
+			}
+
 			// Find actual objects of the dependent schema that reference this object's UUID.
 			$referencingObjects = $this->findReferencingObjects(
 				sourceSchemaId: $dep['sourceSchemaId'],
@@ -890,6 +938,18 @@ class ReferentialIntegrityService {
 				targetUuid: $uuid,
 				isArray: $dep['isArray']
 			);
+			if ($referencingObjects === null) {
+				// Not known whether anything cites it: refuse rather than delete past a RESTRICT.
+				$blockers[] = [
+					'objectUuid' => '',
+					'schema' => $dep['sourceSchemaId'],
+					'property' => $dep['property'],
+					'action' => 'RESTRICT',
+					'reason' => 'unverifiable',
+					'chain' => array_merge($chain, ["{$uuid} → {$dep['property']} (not verifiable)"]),
+				];
+				continue;
+			}
 
 			foreach ($referencingObjects as $refObj) {
 				// Skip already soft-deleted objects.
@@ -1020,6 +1080,116 @@ class ReferentialIntegrityService {
 	}//end walkDeletionGraph()
 
 	/**
+	 * The RESTRICT blockers for a reference that cites this object by a key property.
+	 *
+	 * FAIL CLOSED. A citation that cannot be checked blocks the delete with
+	 * reason `unverifiable`: deleting a row that may still be cited is the one
+	 * outcome a RESTRICT rules out. Only a citing table that does not exist
+	 * yet answers "nothing cites it", because then nothing can.
+	 *
+	 * @param ObjectEntity $object The object being deleted.
+	 * @param array $dep The relation index entry (with `referenceKey`).
+	 * @param array $chain The chain so far.
+	 *
+	 * @return array<int, array<string, mixed>> The blockers, possibly none.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function keyReferenceBlockers(ObjectEntity $object, array $dep, array $chain): array {
+		$uuid = (string)$object->getUuid();
+		$value = (($object->getObject() ?? [])[$dep['referenceKey']] ?? null);
+		if (is_scalar($value) === false || trim((string)$value) === '') {
+			// Nothing to be cited by.
+			return [];
+		}
+
+		$referencing = $this->findReferencingByKey(
+			sourceSchemaId: $dep['sourceSchemaId'],
+			propertyName: $dep['property'],
+			value: trim((string)$value),
+			isArray: $dep['isArray']
+		);
+
+		$step = "{$uuid} → {$dep['property']}={$value} (RESTRICT by {$dep['referenceKey']})";
+		if ($referencing === null) {
+			return [
+				[
+					'objectUuid' => '',
+					'schema' => $dep['sourceSchemaId'],
+					'property' => $dep['property'],
+					'action' => 'RESTRICT',
+					'reason' => 'unverifiable',
+					'chain' => array_merge($chain, [$step]),
+				],
+			];
+		}
+
+		$blockers = [];
+		foreach ($referencing as $refObj) {
+			if ($refObj->getDeleted() !== null && empty($refObj->getDeleted()) === false) {
+				continue;
+			}
+
+			$blockers[] = [
+				'objectUuid' => $refObj->getUuid(),
+				'schema' => $dep['sourceSchemaId'],
+				'property' => $dep['property'],
+				'action' => 'RESTRICT',
+				'chain' => array_merge($chain, [$step]),
+			];
+		}
+
+		return $blockers;
+	}//end keyReferenceBlockers()
+
+	/**
+	 * Rows of a schema whose property holds a key value, or null when that cannot be read.
+	 *
+	 * @param string $sourceSchemaId The citing schema's id.
+	 * @param string $propertyName The citing property.
+	 * @param string $value The cited key value.
+	 * @param bool $isArray Whether the property is an array.
+	 *
+	 * @return ObjectEntity[]|null The citing rows, or null when unverifiable.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function findReferencingByKey(string $sourceSchemaId, string $propertyName, string $value, bool $isArray): ?array {
+		$this->ensureSchemaDetail();
+
+		$register = $this->schemaRegisterMap[$sourceSchemaId] ?? null;
+		$schema = $this->schemaCache[$sourceSchemaId] ?? null;
+		if ($register === null || $schema === null) {
+			// The broad uuid fallback cannot find a key, so this cannot be checked.
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] key reference cannot be checked: citing schema has no register',
+				context: ['schemaId' => $sourceSchemaId, 'property' => $propertyName]
+			);
+			return null;
+		}
+
+		try {
+			return $this->findReferencingInMagicTable(
+				register: $register,
+				schema: $schema,
+				propertyName: $propertyName,
+				targetUuid: $value,
+				isArray: $isArray
+			);
+		} catch (\Exception $e) {
+			if ($this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId()) === false) {
+				return [];
+			}
+
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] key reference could not be checked, so the delete is refused',
+				context: ['schemaId' => $sourceSchemaId, 'property' => $propertyName, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end findReferencingByKey()
+
+	/**
 	 * Find objects of a specific schema that reference a given UUID in a specific property.
 	 *
 	 * @param string $sourceSchemaId The schema ID of the dependent objects.
@@ -1027,7 +1197,11 @@ class ReferentialIntegrityService {
 	 * @param string $targetUuid The UUID being referenced.
 	 * @param bool $isArray Whether the property is an array type.
 	 *
-	 * @return ObjectEntity[] Matching objects.
+	 * A lookup that fails on a table that exists answers null, never an empty
+	 * list: "nothing cites it" would let a RESTRICT delete through and skip a
+	 * CASCADE, as the key lookup already refuses (findReferencingByKey()).
+	 *
+	 * @return ObjectEntity[]|null Matching objects, or null when the lookup could not be done.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1036,7 +1210,7 @@ class ReferentialIntegrityService {
 		string $propertyName,
 		string $targetUuid,
 		bool $isArray,
-	): array {
+	): ?array {
 		$candidates = [];
 
 		$this->ensureSchemaDetail();
@@ -1057,12 +1231,16 @@ class ReferentialIntegrityService {
 				// Direct match: no further filtering needed.
 				return $candidates;
 			} catch (\Exception $e) {
-				// Table doesn't exist or column missing — no referencing objects possible.
-				$this->logger->debug(
-					message: '[ReferentialIntegrity] Targeted magic table search failed',
-					context: ['schemaId' => $sourceSchemaId, 'error' => $e->getMessage()]
+				// No table yet: nothing can cite the object from there.
+				if ($this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId()) === false) {
+					return [];
+				}
+
+				$this->logger->warning(
+					message: '[ReferentialIntegrity] reference could not be checked, so the delete is refused',
+					context: ['schemaId' => $sourceSchemaId, 'property' => $propertyName, 'error' => $e->getMessage()]
 				);
-				return [];
+				return null;
 			}
 		}
 
@@ -1073,10 +1251,10 @@ class ReferentialIntegrityService {
 			);
 		} catch (\Exception $e) {
 			$this->logger->warning(
-				message: '[ReferentialIntegrity] findByRelation failed',
+				message: '[ReferentialIntegrity] findByRelation failed, so the delete is refused',
 				context: ['uuid' => $targetUuid, 'error' => $e->getMessage()]
 			);
-			return [];
+			return null;
 		}
 
 		$matches = [];
@@ -1161,16 +1339,28 @@ class ReferentialIntegrityService {
 		string $targetUuid,
 		bool $isArray,
 	): array {
-		$fullTableName = 'oc_openregister_table_' . $register->getId() . '_' . $schema->getId();
-
-		// Convert camelCase property name to snake_case column name and quote it.
-		$columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $propertyName));
-		$quotedCol = '"' . str_replace('"', '""', $columnName) . '"';
-
 		// Validate inputs before database access (also ensures Psalm sees param usage before \OC:: call).
 		if (empty($targetUuid) === true) {
 			return [];
 		}
+
+		$platform = $this->db->getDatabasePlatform();
+
+		// The table with the instance's prefix, and the column the way the table
+		// was built (the schema's column map, collision suffixes included).
+		// Nextcloud's QueryBuilder::getTableName() returns the prefixed table
+		// ALREADY quoted for the platform, so it is used as is: quoting it again
+		// doubled the quote characters, named a table that does not exist, and
+		// the lookup's catch turned that into "nothing references this row"
+		// (every CASCADE, RESTRICT and SET_NULL silently stopped). The column is
+		// quoted by the connection's own platform: a double-quoted identifier is a
+		// string literal to MySQL and MariaDB (no ANSI_QUOTES), so `"code" = ?`
+		// compared the text 'code' with the value, matched nothing and let the
+		// delete through. Null-safe via get_debug_type() (a mocked IDBConnection
+		// returns a bare platform double in unit tests).
+		$bareTable = $this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$quotedTable = $this->db->getQueryBuilder()->getTableName($bareTable);
+		$quotedCol = $platform->quoteIdentifier($this->columnOf(schema: $schema, propertyName: $propertyName));
 
 		// Build the array/scalar SQL variant selector before accessing the database.
 		// For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
@@ -1179,8 +1369,6 @@ class ReferentialIntegrityService {
 			$queryMode = 'array';
 		}
 
-		$platform = $this->db->getDatabasePlatform();
-		// Null-safe via get_debug_type() (a mocked IDBConnection returns null here in unit tests).
 		$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
 
 		$deletedCheck = '_deleted IS NULL';
@@ -1188,7 +1376,7 @@ class ReferentialIntegrityService {
 			$deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
 		}
 
-		$selectClause = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$fullTableName}";
+		$selectClause = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$quotedTable}";
 		$whereCondition = "{$deletedCheck} AND {$quotedCol} = ?";
 
 		if ($queryMode === 'array' && $isPostgres === true) {
@@ -1235,6 +1423,31 @@ class ReferentialIntegrityService {
 
 		return $results;
 	}//end findReferencingInMagicTable()
+
+	/**
+	 * The physical column of a schema property, as the schema's table was built.
+	 *
+	 * Asked of the mapper's own column map rather than derived here, so a
+	 * property whose column carries a collision suffix, or a name the local
+	 * camel-to-snake rule would spell differently, is found where it lives.
+	 *
+	 * @param Schema $schema       The citing schema.
+	 * @param string $propertyName The citing property.
+	 *
+	 * @return string The column name.
+	 *
+	 * @throws RuntimeException When the schema's table has no column for the property.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function columnOf(Schema $schema, string $propertyName): string {
+		$column = ($this->objectEntityMapper->buildTableColumnsFromSchema(schema: $schema)[$propertyName]['name'] ?? null);
+		if (is_string($column) === false || $column === '') {
+			throw new RuntimeException('The table of schema ' . $schema->getId() . ' has no column for property ' . $propertyName);
+		}
+
+		return $column;
+	}//end columnOf()
 
 	/**
 	 * Check whether a property is required by the given schema.

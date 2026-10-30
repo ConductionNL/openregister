@@ -69,6 +69,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @param array<int, string> $actions What the rule does when it fires.
 	 * @param mixed $condition The rule's condition, as the author declared it.
 	 * @param int|null $maxObjects The ceiling the rule declares for one run.
+	 * @param array{property: string, value: string}|null $scope The objects the rule is about, or null for all.
 	 *
 	 * @return void
 	 *
@@ -76,6 +77,8 @@ final class RuleDescriptor implements JsonSerializable {
 	 *   object, not a mode switch: it records whether the rule is on, every caller passes
 	 *   it by name, and the class branches on it nowhere. Splitting the constructor in two
 	 *   would produce two descriptors that differ only in one stored value.
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per field of the value
+	 *   object, each passed by name; a builder would add a second class for no behaviour.
 	 */
 	public function __construct(
 		private readonly string $kind,
@@ -87,6 +90,7 @@ final class RuleDescriptor implements JsonSerializable {
 		private readonly array $actions = [],
 		private readonly mixed $condition = null,
 		private readonly ?int $maxObjects = null,
+		private readonly ?array $scope = null,
 	) {
 	}//end __construct()
 
@@ -189,6 +193,17 @@ final class RuleDescriptor implements JsonSerializable {
 	}//end getMaxObjects()
 
 	/**
+	 * The objects the rule is about.
+	 *
+	 * @return array{property: string, value: string}|null The scope, or null when the rule applies to every object.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function getScope(): ?array {
+		return $this->scope;
+	}//end getScope()
+
+	/**
 	 * The entry as the inventory returns it, before the summary is merged on.
 	 *
 	 * @return array<string, mixed> The descriptor.
@@ -207,6 +222,7 @@ final class RuleDescriptor implements JsonSerializable {
 			'actions' => $this->actions,
 			'condition' => $this->condition,
 			'maxObjects' => $this->maxObjects,
+			'scope' => $this->scope,
 			'order' => (new RuleVocabulary())->orderOf(kind: $this->kind),
 		];
 	}//end jsonSerialize()

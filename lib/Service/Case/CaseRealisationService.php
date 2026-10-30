@@ -98,7 +98,18 @@ class CaseRealisationService {
 		}
 
 		$flow = trim((string)($item->getPlanSettings()['flows'][(string)$item->getItemKey()] ?? ''));
-		if ($item->getPlanItemType() === CaseItem::TYPE_STAGE && $flow !== '') {
+		$runnable = in_array($item->getPlanItemType(), [CaseItem::TYPE_STAGE, CaseItem::TYPE_PROCESS_TASK], true);
+		if ($runnable === true && $flow !== '') {
+			// `system:<app>` and the cascade's own `case-plan` are labels for the audit, not accounts. As the run's
+			// user either would become its `runAs`, and every scoped step would be refused ("not a user account"),
+			// so the run is queued without a caller. FlowRunAttribution then lets the `case` trigger answer from
+			// the identity the flow's schedule trigger declares (validated and delegation-checked at save time);
+			// a flow that declares none is refused as unattributed, loudly, rather than run as a label.
+			$user = null;
+			if ($this->isAccountActor(actor: $actor) === true) {
+				$user = $actor;
+			}
+
 			$run = $this->runs->queue(
 				flowId: $flow,
 				subject: [
@@ -108,7 +119,7 @@ class CaseRealisationService {
 				],
 				trigger: self::RUN_TRIGGER,
 				context: ['caseItem' => (string)$item->getUuid()],
-				user: $actor
+				user: $user
 			);
 			$item->setRealisationKind(CaseItem::REALISATION_RUN);
 			$item->setRealisationUuid($run->getUuid());
@@ -119,6 +130,27 @@ class CaseRealisationService {
 		$item->setRealisationKind(CaseItem::REALISATION_NONE);
 		$item->setRealisationUuid(null);
 	}//end realise()
+
+	/**
+	 * Whether an actor id names a Nextcloud account, as opposed to an audit label.
+	 *
+	 * Two kinds of label reach the plan engine: an in-process caller's `system:<app>` and the cascade's own
+	 * {@see CasePlanStateMachine::SYSTEM_ACTOR}. Neither is an account, so neither may become a run's user.
+	 *
+	 * @param string|null $actor The actor id.
+	 *
+	 * @return bool True when the id is an account uid.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	public function isAccountActor(?string $actor): bool {
+		$id = trim((string)$actor);
+		if ($id === '' || $id === CasePlanStateMachine::SYSTEM_ACTOR) {
+			return false;
+		}
+
+		return str_starts_with($id, CasePlanService::SYSTEM_ACTOR_PREFIX) === false;
+	}//end isAccountActor()
 
 	/**
 	 * How a realisation ended, if it has: the outcome that drives the item.

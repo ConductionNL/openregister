@@ -46,6 +46,10 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Controller\WebhooksController
  * @covers \OCA\OpenRegister\Service\WebhookService
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Service\MappingService
+ * @uses \OCA\OpenRegister\Twig\MappingRuntimeLoader
  */
 class WebhookMappingPreviewTest extends TestCase {
 

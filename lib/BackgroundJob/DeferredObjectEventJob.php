@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -91,6 +91,8 @@ class DeferredObjectEventJob extends QueuedJob {
 	 * @param mixed $argument `{uuid, registerId, schemaId, action}`.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
 	 */
 	protected function run($argument): void {
 		$uuid = (string)(((array)$argument)['uuid'] ?? '');
@@ -149,7 +151,7 @@ class DeferredObjectEventJob extends QueuedJob {
 				_multitenancy: false
 			);
 
-			$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $object));
+			(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $object);
 		} catch (Throwable $e) {
 			// The object may legitimately be gone by now — a create followed by
 			// a delete before the queue drained — so this is not an error. It is

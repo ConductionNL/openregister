@@ -380,6 +380,7 @@ Beyond CRUD operations, special rights grant additional capabilities:
 | **agent_use** | Use AI agents for processing and analysis | 'ai-user', 'developer', 'admin' |
 | **dashboard_view** | Access organisation dashboard and analytics | 'manager', 'admin', 'analyst' |
 | **llm_use** | Use Large Language Model features | 'ai-user', 'researcher', 'admin' |
+| **grant_manage** | List, add and remove the grants on records the holder does not own, and name their owning group. Enforced. An entry can be narrowed to a register and schemas. Only an administrator or the organisation's owner assigns it. | a service account's group |
 
 ### Permission Check Example
 

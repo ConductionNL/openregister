@@ -1,0 +1,386 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Public Space Mock Register",
+    "description": "Mock register of objects in public space (openbare ruimte): trees, street lights, play equipment, market pitches and road sections. Example data a case can link an object to; the Zuiddrecht example set imports it and fills it.",
+    "version": "1.0.1"
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Public space mock register for development and demos, so a case can link a real object with a status of its own"
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "public-space": {
+        "slug": "public-space",
+        "version": "1.0.1",
+        "title": "Openbare ruimte",
+        "description": "Objects in public space that the municipality manages and that cases are about: trees, street lights, play equipment, market pitches and road sections.",
+        "schemas": [
+          "tree",
+          "street-light",
+          "play-equipment",
+          "market-pitch",
+          "road-section"
+        ],
+        "folder": "Open Registers/Openbare ruimte"
+      }
+    },
+    "schemas": {
+      "tree": {
+        "slug": "tree",
+        "title": "Bomenregister",
+        "version": "1.0.1",
+        "summary": "A tree the municipality manages in public space.",
+        "description": "A tree the municipality manages in public space.",
+        "type": "object",
+        "required": [
+          "identification",
+          "name",
+          "status"
+        ],
+        "hardValidation": false,
+        "searchable": true,
+        "configuration": {
+          "objectNameField": "name",
+          "objectDescriptionField": "identification"
+        },
+        "properties": {
+          "identification": {
+            "type": "string",
+            "title": "Identification",
+            "description": "The tree number on its tag, such as BM-0412.",
+            "facetable": true
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name a reader knows the object by."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "The tree's condition as the last inspection found it.",
+            "enum": [
+              "Gezond",
+              "Aandacht nodig",
+              "Te kappen",
+              "Gekapt"
+            ],
+            "facetable": true
+          },
+          "species": {
+            "type": "string",
+            "title": "Species",
+            "description": "Common and botanical name.",
+            "facetable": true
+          },
+          "plantingYear": {
+            "type": "integer",
+            "title": "Planting year",
+            "description": "The year the tree was planted."
+          },
+          "heightClass": {
+            "type": "string",
+            "title": "Height class",
+            "description": "Height class in metres, such as 15-18 m.",
+            "facetable": true
+          },
+          "trunkDiameter": {
+            "type": "integer",
+            "title": "Trunk diameter",
+            "description": "Diameter at chest height, in centimetres."
+          },
+          "monumental": {
+            "type": "boolean",
+            "title": "Monumental",
+            "description": "Whether the tree is on the municipal list of monumental trees."
+          },
+          "location": {
+            "type": "object",
+            "format": "geo:point",
+            "title": "Location",
+            "description": "Where the object is, as a GeoJSON point in WGS84."
+          }
+        }
+      },
+      "street-light": {
+        "slug": "street-light",
+        "title": "Openbare verlichting",
+        "version": "1.0.1",
+        "summary": "A street light or light mast the municipality manages.",
+        "description": "A street light or light mast the municipality manages.",
+        "type": "object",
+        "required": [
+          "identification",
+          "name",
+          "status"
+        ],
+        "hardValidation": false,
+        "searchable": true,
+        "configuration": {
+          "objectNameField": "name",
+          "objectDescriptionField": "identification"
+        },
+        "properties": {
+          "identification": {
+            "type": "string",
+            "title": "Identification",
+            "description": "The mast number, such as LP-1408 or LM-0014.",
+            "facetable": true
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name a reader knows the object by."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Whether the light works, is broken or is still to be placed.",
+            "enum": [
+              "In orde",
+              "Defect",
+              "Gepland",
+              "Verwijderd"
+            ],
+            "facetable": true
+          },
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "description": "The address or spot the mast stands at."
+          },
+          "lampType": {
+            "type": "string",
+            "title": "Lamp type",
+            "description": "The kind of lamp, such as LED.",
+            "facetable": true
+          },
+          "mastHeight": {
+            "type": "number",
+            "title": "Mast height",
+            "description": "Height of the mast in metres."
+          },
+          "location": {
+            "type": "object",
+            "format": "geo:point",
+            "title": "Location",
+            "description": "Where the object is, as a GeoJSON point in WGS84."
+          }
+        }
+      },
+      "play-equipment": {
+        "slug": "play-equipment",
+        "title": "Buitenruimte",
+        "version": "1.0.1",
+        "summary": "A piece of play equipment on a public playground.",
+        "description": "A piece of play equipment on a public playground.",
+        "type": "object",
+        "required": [
+          "identification",
+          "name",
+          "status"
+        ],
+        "hardValidation": false,
+        "searchable": true,
+        "configuration": {
+          "objectNameField": "name",
+          "objectDescriptionField": "identification"
+        },
+        "properties": {
+          "identification": {
+            "type": "string",
+            "title": "Identification",
+            "description": "The equipment number, such as SP-0117.",
+            "facetable": true
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name a reader knows the object by."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Whether children can use it.",
+            "enum": [
+              "In orde",
+              "Defect",
+              "Buiten gebruik"
+            ],
+            "facetable": true
+          },
+          "playground": {
+            "type": "string",
+            "title": "Playground",
+            "description": "The playground it stands on.",
+            "facetable": true
+          },
+          "equipmentType": {
+            "type": "string",
+            "title": "Equipment type",
+            "description": "The kind of equipment, such as a spring rider.",
+            "facetable": true
+          },
+          "manufacturer": {
+            "type": "string",
+            "title": "Manufacturer",
+            "description": "Who made it."
+          },
+          "installationYear": {
+            "type": "integer",
+            "title": "Installation year",
+            "description": "The year it was placed."
+          },
+          "ageGroup": {
+            "type": "string",
+            "title": "Age group",
+            "description": "The ages it is meant for."
+          },
+          "safetySurface": {
+            "type": "string",
+            "title": "Safety surface",
+            "description": "The impact-absorbing surface under it."
+          },
+          "lastInspection": {
+            "type": "string",
+            "title": "Last inspection",
+            "description": "The date of the last safety inspection.",
+            "format": "date"
+          },
+          "location": {
+            "type": "object",
+            "format": "geo:point",
+            "title": "Location",
+            "description": "Where the object is, as a GeoJSON point in WGS84."
+          }
+        }
+      },
+      "market-pitch": {
+        "slug": "market-pitch",
+        "title": "Markt",
+        "version": "1.0.0",
+        "summary": "A pitch on a market or event square that the municipality lets.",
+        "description": "A pitch on a market or event square that the municipality lets.",
+        "type": "object",
+        "required": [
+          "identification",
+          "name",
+          "status"
+        ],
+        "hardValidation": false,
+        "searchable": true,
+        "configuration": {
+          "objectNameField": "name",
+          "objectDescriptionField": "identification"
+        },
+        "properties": {
+          "identification": {
+            "type": "string",
+            "title": "Identification",
+            "description": "The pitch number, such as ST-0007.",
+            "facetable": true
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name a reader knows the object by."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Whether the pitch is let.",
+            "enum": [
+              "Vergeven",
+              "Vrij",
+              "Ingetrokken"
+            ],
+            "facetable": true
+          },
+          "market": {
+            "type": "string",
+            "title": "Market",
+            "description": "The market or square the pitch is on.",
+            "facetable": true
+          },
+          "marketDay": {
+            "type": "string",
+            "title": "Market day",
+            "description": "The day the pitch is used.",
+            "facetable": true
+          },
+          "area": {
+            "type": "number",
+            "title": "Area",
+            "description": "Size of the pitch in square metres."
+          }
+        }
+      },
+      "road-section": {
+        "slug": "road-section",
+        "title": "Wegen en paden",
+        "version": "1.0.1",
+        "summary": "A road, cycle path or footpath section the municipality manages.",
+        "description": "A road, cycle path or footpath section the municipality manages.",
+        "type": "object",
+        "required": [
+          "identification",
+          "name",
+          "status"
+        ],
+        "hardValidation": false,
+        "searchable": true,
+        "configuration": {
+          "objectNameField": "name",
+          "objectDescriptionField": "identification"
+        },
+        "properties": {
+          "identification": {
+            "type": "string",
+            "title": "Identification",
+            "description": "The BGT identification of the section.",
+            "facetable": true
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name a reader knows the object by."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Where the section is in its life.",
+            "enum": [
+              "Gepland",
+              "In aanleg",
+              "In beheer"
+            ],
+            "facetable": true
+          },
+          "function": {
+            "type": "string",
+            "title": "Function",
+            "description": "What the section is for, such as a cycle path.",
+            "facetable": true
+          },
+          "surface": {
+            "type": "string",
+            "title": "Surface",
+            "description": "The paving, such as asphalt."
+          },
+          "location": {
+            "type": "object",
+            "format": "geo:point",
+            "title": "Location",
+            "description": "Where the object is, as a GeoJSON point in WGS84."
+          }
+        }
+      }
+    },
+    "objects": []
+  }
+}

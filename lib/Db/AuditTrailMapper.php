@@ -516,6 +516,11 @@ class AuditTrailMapper extends QBMapper {
 				continue;
 			}
 
+			if (is_array($value) === true) {
+				$this->applyListFilter(qb: $qb, field: $field, value: $value);
+				continue;
+			}
+
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($field));
 				continue;
@@ -621,6 +626,61 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * Apply a filter whose value is a list: `field[notIn]=a,b` leaves out the
+	 * rows whose column is one of the values (case-insensitive), and a plain
+	 * list (`field[]=a&field[]=b`) keeps only the rows whose column is one of
+	 * them. The exclusion runs in the query, so a page holds what is left.
+	 *
+	 * @param IQueryBuilder        $qb    The query being built.
+	 * @param string               $field The allowlisted column.
+	 * @param array<string, mixed> $value The operator map or the plain list.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the list names an operator other than `notIn`.
+	 *
+	 * @spec openspec/changes/audit-trail-not-in-filter/specs/audit-trail-immutable/spec.md#requirement-a-history-read-can-leave-out-actions-and-actors-in-the-query
+	 */
+	private function applyListFilter(IQueryBuilder $qb, string $field, array $value): void {
+		if (array_is_list($value) === true) {
+			$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($this->listValues(value: $value), IQueryBuilder::PARAM_STR_ARRAY)));
+			return;
+		}
+
+		$unknown = array_diff(array_keys($value), ['notIn']);
+		if ($unknown !== []) {
+			throw new InvalidArgumentException('Unsupported audit trail filter operator for ' . $field . ': ' . implode(', ', $unknown));
+		}
+
+		$excluded = array_map('strtolower', $this->listValues(value: $value['notIn']));
+		if ($excluded === []) {
+			return;
+		}
+
+		$qb->andWhere(
+			$qb->expr()->notIn($qb->func()->lower($field), $qb->createNamedParameter($excluded, IQueryBuilder::PARAM_STR_ARRAY))
+		);
+	}//end applyListFilter()
+
+	/**
+	 * The values a list filter names: an array of values, or one comma-separated string.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return list<string> The trimmed, non-empty values.
+	 */
+	private function listValues(mixed $value): array {
+		$values = $value;
+		if (is_array($value) === false) {
+			$values = explode(',', (string)$value);
+		}
+
+		$values = array_map(static fn ($one): string => trim((string)$one), $values);
+
+		return array_values(array_filter($values, static fn (string $one): bool => $one !== ''));
+	}//end listValues()
 
 	/**
 	 * Creates an audit trail for object changes

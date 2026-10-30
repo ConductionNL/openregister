@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -51,16 +52,20 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
+use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Support\QueryLimit;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
@@ -94,6 +99,42 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
 
 	/**
+	 * The metadata columns a row sets on its entity, in the order they are set, with how
+	 * each is stored: a scalar, a datetime, the deleted marker, a float, or JSON whose
+	 * fallback is an empty array (`json`) or null (`json-or-null`).
+	 *
+	 * @var array<string, string>
+	 */
+	private const ROW_METADATA_KINDS = [
+		'uuid'               => 'scalar',
+		'name'               => 'scalar',
+		'description'        => 'scalar',
+		'summary'            => 'scalar',
+		'image'              => 'scalar',
+		'slug'               => 'scalar',
+		'uri'                => 'scalar',
+		'owner'              => 'scalar',
+		'organisation'       => 'scalar',
+		'created'            => 'datetime',
+		'updated'            => 'datetime',
+		'last_user_activity' => 'datetime',
+		'deleted'            => 'deleted',
+		'relevance'          => 'float',
+		'relations'          => 'json',
+		'files'              => 'json',
+		'locked'             => 'json-or-null',
+		'groups'             => 'json',
+		'authorization'      => 'json',
+		'validation'         => 'json',
+		'geo'                => 'json',
+		'retention'          => 'json',
+		'version'            => 'scalar',
+		'folder'             => 'scalar',
+		'application'        => 'scalar',
+		'size'               => 'scalar',
+	];
+
+	/**
 	 * The working set: archived rows are left out. The default.
 	 *
 	 * @var string
@@ -114,6 +155,14 @@ class MagicSearchHandler {
 	 * @var string
 	 */
 	public const ARCHIVED_ANY = 'any';
+
+	/**
+	 * The deleted lens alone, for a consumer that checks whether this
+	 * OpenRegister offers `_deleted` (dossiq's Deleted cases page does).
+	 *
+	 * @var string
+	 */
+	public const DELETED_ONLY = DeletedLens::ONLY;
 
 	/**
 	 * Metadata columns every magic table carries.
@@ -144,10 +193,12 @@ class MagicSearchHandler {
 		'_size',
 		'_created',
 		'_updated',
+		'_last_user_activity',
 		'_expires',
 		'_deleted',
 		'_archived',
 		'_frozen',
+		'_status',
 		'_locked',
 		'_files',
 		'_relations',
@@ -203,6 +254,20 @@ class MagicSearchHandler {
 	private SearchTermSqlCompiler $termCompiler;
 
 	/**
+	 * Tells metadata columns from underscore-named property columns.
+	 *
+	 * @var MagicMetadataColumn
+	 */
+	private MagicMetadataColumn $columnRoles;
+
+	/**
+	 * Reads filters on a path inside an object property and writes their SQL.
+	 *
+	 * @var NestedPathFilter
+	 */
+	private NestedPathFilter $nestedPaths;
+
+	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -215,6 +280,13 @@ class MagicSearchHandler {
 	 *                                            related schema's own rows
 	 * @param LanguageService|null $languageService The request's languages, so a translatable property sorts by the
 	 *                                              value the response shows
+	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
+	 *                                                        be healed still lacks, so the lifecycle predicates
+	 *                                                        leave them out
+	 * @param ExplicitReveal|null $explicitReveal The request's reveal state; a filter or sort on an explicit-reveal
+	 *                                            property is refused unless the code is trusted
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -225,9 +297,13 @@ class MagicSearchHandler {
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageService $languageService = null,
+		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
+		private readonly ?ExplicitReveal $explicitReveal = null,
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
+		$this->columnRoles  = new MagicMetadataColumn();
+		$this->nestedPaths  = new NestedPathFilter();
 	}//end __construct()
 
 	/**
@@ -430,6 +506,8 @@ class MagicSearchHandler {
 	 * @param bool $_rbac Whether to apply RBAC filtering.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
 	 * @param int|null $registerId The register of the table being read, for shared master data.
+	 * @param string|null $tableName The bare magic table being read, so a `_status` column it could not be
+	 *                               given is left out of the draft predicate. Null keeps the predicate.
 	 *
 	 * @return void
 	 *
@@ -441,6 +519,7 @@ class MagicSearchHandler {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		?int $registerId = null,
+		?string $tableName = null,
 	): void {
 		// Mirror the list path: public schemas bypass multitenancy by default.
 		// No explicit multitenancy request exists on the single-object read path,
@@ -457,7 +536,8 @@ class MagicSearchHandler {
 			_rbac: $_rbac,
 			_multitenancy: $resolvedMultitenancy,
 			multitenancyExplicit: false,
-			registerId: $registerId
+			registerId: $registerId,
+			tableName: $tableName
 		);
 	}//end applyAccessControlToQuery()
 
@@ -483,12 +563,10 @@ class MagicSearchHandler {
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
 	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
+		// A filter or sort on a value that is only shown masked would read it without the reveal.
+		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+
 		// Extract options from query (prefixed with _).
-		// Coerce to bool: query-string params arrive as strings (e.g.
-		// "_includeDeleted=true" → "true"). applyBasicFilters() is bool-typed
-		// under strict_types, so passing the raw string raised a TypeError →
-		// HTTP 500 on any list call with _includeDeleted=true.
-		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$_rbac = $query['_rbac'] ?? true;
 		$_multitenancy = $query['_multitenancy'] ?? true;
 
@@ -506,8 +584,11 @@ class MagicSearchHandler {
 		// Apply basic filters (deleted, archived).
 		$this->applyBasicFilters(
 			qb: $queryBuilder,
-			includeDeleted: $includeDeleted,
-			archivedMode: $this->resolveArchivedMode(query: $query)
+			deletedMode: (new DeletedLens())->mode(query: $query),
+			archivedMode: $this->resolveArchivedMode(query: $query),
+			query: $query,
+			schema: $schema,
+			missingColumns: $this->missingMetadataColumns(tableName: $tableName)
 		);
 
 		// Apply multi-tenancy and RBAC access control filters.
@@ -517,7 +598,8 @@ class MagicSearchHandler {
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
 			multitenancyExplicit: $multitenancyExplicit,
-			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
+			tableName: $tableName
 		);
 
 		// Apply metadata, object-field and ID filters.
@@ -541,11 +623,64 @@ class MagicSearchHandler {
 			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
 		);
 
+		// Narrow by one element of an array property (`_element`).
+		$this->applyArrayElementFilters(qb: $queryBuilder, query: $query, schema: $schema);
+
 		return $queryBuilder;
 	}//end buildFilteredQuery()
 
 	/**
-	 * Narrow the query by `_related` blocks, or refuse it.
+	 * Narrow the query by `_element` blocks: an object matches when one element
+	 * of the named array property carries every field of a block.
+	 *
+	 * A block on a property the schema does not declare as an array, or one
+	 * the caller may not read, matches nothing and is reported as an ignored
+	 * filter, the way an unknown nested path is. An encrypted property refuses.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param array<mixed>  $query  The request query.
+	 * @param Schema        $schema The schema of the table.
+	 *
+	 * @return void
+	 *
+	 * @throws EncryptedFieldFilterException When the array property is encrypted.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+	 */
+	private function applyArrayElementFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
+		$elements   = new ArrayElementFilter();
+		$properties = ($schema->getProperties() ?? []);
+		$isPostgres = $this->isPostgresPlatform();
+		foreach ($elements->blocks(query: $query) as $block) {
+			$root = $block['root'];
+			if (($properties[$root]['x-openregister-encrypted'] ?? false) === true) {
+				throw new EncryptedFieldFilterException(property: $root);
+			}
+
+			$condition = null;
+			if (($properties[$root]['type'] ?? null) === 'array'
+				&& $this->relatedRows->mayReadProperty(schema: $schema, property: $root) === true
+			) {
+				$condition = $elements->condition(
+					column: 't.'.$this->sanitizeColumnName(name: $root),
+					fields: $block['fields'],
+					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
+					isPostgres: $isPostgres
+				);
+			}
+
+			if ($condition === null) {
+				$this->ignoredFilters[] = ArrayElementFilter::KEY.'['.$root.']';
+				$qb->andWhere('1 = 0');
+				continue;
+			}
+
+			$qb->andWhere($condition);
+		}//end foreach
+	}//end applyArrayElementFilters()
+
+	/**
+	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
 	 *
 	 * 🔴 A REFUSAL HERE IS DELIBERATE AND MUST NOT BECOME A LOG LINE. Every
 	 * other filter on this path that cannot be honoured is recorded in
@@ -564,9 +699,10 @@ class MagicSearchHandler {
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	private function applyRelatedRowFilters(IQueryBuilder $qb, array $query, ?int $registerId): void {
-		if (array_key_exists('_related', $query) === false) {
+		if (array_key_exists('_related', $query) === false && array_key_exists('_referenced', $query) === false) {
 			return;
 		}
 
@@ -580,8 +716,99 @@ class MagicSearchHandler {
 		$register = new Register();
 		$register->setId($registerId);
 
-		$this->relatedRows->apply(qb: $qb, query: $query, register: $register, outerAlias: 't');
+		$this->relatedRows->apply(
+			qb: $qb,
+			query: $query,
+			register: $register,
+			organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+				query: $query,
+				related: $related,
+				registerId: $relatedRegisterId
+			)
+		);
 	}//end applyRelatedRowFilters()
+
+	/**
+	 * Refuse a query carrying `_related`, `_referenced` or `_element` where it cannot be honoured.
+	 *
+	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
+	 * QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped by
+	 * the raw-SQL builder, so a cross-table UNION search or UNION facet carrying
+	 * one answered the UNFILTERED set to a deliberately narrow question, and its
+	 * counts disagreed with the single-schema facet for the same query.
+	 *
+	 * @param array<mixed> $query The request query.
+	 *
+	 * @return void
+	 *
+	 * @throws RelatedRowFilterNotSupportedException When the query carries either key.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	public function refuseRelatedRowFilters(array $query): void {
+		foreach (['_related', '_referenced', ArrayElementFilter::KEY] as $key) {
+			if (array_key_exists($key, $query) === true) {
+				throw new RelatedRowFilterNotSupportedException(
+					message: sprintf(
+						'\'%s\' filters are not supported on a query across several schemas; narrow the query to one schema. '
+						. 'Answering without the filter would return rows it was meant to exclude.',
+						$key
+					)
+				);
+			}
+		}
+	}//end refuseRelatedRowFilters()
+
+	/**
+	 * The organisation scope a related-row subquery must apply to the related table.
+	 *
+	 * The SAME decision the list path takes for a table (`multitenancyApplies()`,
+	 * the cascade widening, `resolveOrganizationScope()`), made for the RELATED
+	 * schema with the request's own flags, so the subquery cannot consult rows
+	 * the list of that table would not return. `SCOPE_ALL` when the boundary does
+	 * not apply (system context, admin bypass, an RBAC rule that waives it).
+	 *
+	 * @param array<mixed> $query      The request query, for `_rbac` and `_multitenancy`.
+	 * @param Schema       $related    The related schema.
+	 * @param int|null     $registerId The register the related table lives in.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The decided scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function organisationScopeForRelated(array $query, Schema $related, ?int $registerId): array {
+		$_rbac                = $this->flagFromQuery(value: ($query['_rbac'] ?? true));
+		$multitenancyExplicit = $this->isExplicitlyTrue(value: ($query['_multitenancy_explicit'] ?? false));
+		$resolved             = $this->resolveMultitenancyFlag(
+			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
+			multitenancyExplicit: $multitenancyExplicit,
+			schema: $related
+		);
+
+		$applies = $this->multitenancyApplies(
+			schema: $related,
+			_rbac: $_rbac,
+			_multitenancy: $resolved,
+			multitenancyExplicit: $multitenancyExplicit
+		);
+		if ($applies === false) {
+			return ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+		}
+
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $registerId,
+			schemaId: $related->getId()
+		);
+
+		if ($this->organisationlessRowsAdmitted(schema: $related, _rbac: $_rbac, multitenancyExplicit: $multitenancyExplicit) === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
+
+		return $scope;
+	}//end organisationScopeForRelated()
 
 	/**
 	 * Apply metadata, object-field and ID filters to the query.
@@ -743,21 +970,30 @@ class MagicSearchHandler {
 	 *                             the organisation boundary here exactly as it widens it on the
 	 *                             QueryBuilder path. A caller that names no register gets no
 	 *                             widening, which is narrower and therefore safe.
+	 * @param string|null $tableName The bare magic table the conditions are for, so a metadata column
+	 *                               the table could not be given is left out of the lifecycle
+	 *                               predicates. Null keeps every predicate.
 	 *
 	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
 	 *
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
+	 * @throws RelatedRowFilterNotSupportedException When the query carries `_related` or `_referenced`, which this raw-SQL builder cannot honour.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildWhereConditionsSql(
 		array $query,
 		Schema $schema,
 		?array $existingColumns = null,
 		?int $registerId = null,
+		?string $tableName = null,
 	): array {
-		$conditions = [];
+		$this->refuseRelatedRowFilters(query: $query);
+		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();
 		$connection = $qb->getConnection();
@@ -766,21 +1002,20 @@ class MagicSearchHandler {
 
 		// Extract options from query.
 		$search = $query['_search'] ?? null;
-		// Coerce to bool: query-string "true"/"false" must not be compared by
-		// identity against the boolean false (a non-empty string is never
-		// === false, which would silently flip the deleted filter).
-		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$_rbac = $query['_rbac'] ?? true;
 
 		$conditions = array_merge(
-			$conditions,
-			$this->lifecycleConditionsSql(query: $query, includeDeleted: $includeDeleted),
+			$this->lifecycleConditionsSql(
+				query: $query, schema: $schema,
+				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
+			),
 			$this->boundaryConditionsSql(
 				query: $query,
 				schema: $schema,
 				rbac: $_rbac,
 				connection: $connection,
-				registerId: $registerId
+				registerId: $registerId,
+				tableName: $tableName
 			)
 		);
 
@@ -883,31 +1118,132 @@ class MagicSearchHandler {
 	 * rows is the dangerous direction, and an archived record surfacing in a
 	 * working list is that failure with a record attached.
 	 *
-	 * @param array      $query          The query parameters.
-	 * @param boolean    $includeDeleted Whether deleted rows were asked for.
+	 * @param array       $query          The query parameters, for the deleted, archive and draft lenses.
+	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
+	 * @param string[]    $missingColumns Metadata columns this table could not be given.
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function lifecycleConditionsSql(array $query, bool $includeDeleted): array {
+	private function lifecycleConditionsSql(array $query, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
 
-		if ($includeDeleted === false) {
-			$conditions[] = '_deleted IS NULL';
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: '');
+		if ($deleted !== null) {
+			$conditions[] = $deleted;
 		}
 
 		$archivedMode = $this->resolveArchivedMode(query: $query);
-		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
-			$conditions[] = '_archived IS NULL';
+		$archived = $this->archivedConditionSql(mode: $archivedMode, columnPrefix: '', missingColumns: $missingColumns);
+		if ($archived !== null) {
+			$conditions[] = $archived;
 		}
 
-		if ($archivedMode === self::ARCHIVED_ONLY) {
-			$conditions[] = '_archived IS NOT NULL';
+		// Decision 201: drafts stay out of a list unless asked for, on this
+		// path as on applyBasicFilters(), with the caller's own kept in view.
+		$userId = $this->rbacHandler->getCurrentUserId();
+		$owner = null;
+		if ($userId !== null && $userId !== '') {
+			$owner = (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
+		}
+
+		$drafts = $this->draftConditionSql(query: $query, columnPrefix: '', owner: $owner, missingColumns: $missingColumns, schema: $schema);
+		if ($drafts !== null) {
+			$conditions[] = $drafts;
 		}
 
 		return $conditions;
 	}//end lifecycleConditionsSql()
+
+	/**
+	 * The metadata columns a table is known to lack after an attempt to heal it.
+	 *
+	 * Empty in the normal case: a table is healed on its first use, before it
+	 * is queried. Only a table the healer could not alter (no permission, or a
+	 * DDL deferred out of an open transaction) answers non-empty.
+	 *
+	 * @param string|null $tableName Bare magic table name, null when unknown.
+	 *
+	 * @return string[] Missing metadata column names.
+	 */
+	private function missingMetadataColumns(?string $tableName): array {
+		if ($this->metadataColumns === null || $tableName === null || $tableName === '') {
+			return [];
+		}
+
+		return $this->metadataColumns->missingFor(tableName: $tableName);
+	}//end missingMetadataColumns()
+
+	/**
+	 * The archive predicate, or null when it puts no condition on the list.
+	 *
+	 * A table without an `_archived` column holds no archived row, so the
+	 * working set is every row and the archived lens is empty. Saying so in SQL
+	 * is exact, not an approximation, and it keeps a table that could not be
+	 * healed answering instead of failing every request.
+	 *
+	 * @param string   $mode           One of the ARCHIVED_* constants.
+	 * @param string   $columnPrefix   The table alias with its dot, or empty.
+	 * @param string[] $missingColumns Metadata columns this table lacks.
+	 *
+	 * @return string|null The predicate, without a leading AND.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	private function archivedConditionSql(string $mode, string $columnPrefix, array $missingColumns): ?string {
+		if ($mode === self::ARCHIVED_ANY) {
+			return null;
+		}
+
+		if (in_array('_archived', $missingColumns, true) === true) {
+			if ($mode === self::ARCHIVED_ONLY) {
+				return '1=0';
+			}
+
+			return null;
+		}
+
+		if ($mode === self::ARCHIVED_ONLY) {
+			return $columnPrefix.'_archived IS NOT NULL';
+		}
+
+		return $columnPrefix.'_archived IS NULL';
+	}//end archivedConditionSql()
+
+	/**
+	 * The draft predicate (decision 201), or null when it puts no condition on the list.
+	 *
+	 * Without a `_status` column no row is a draft, so the default lens keeps
+	 * every row and the drafts-only lens is empty.
+	 *
+	 * @param array       $query          The search query.
+	 * @param string      $columnPrefix   The table alias with its dot, or empty.
+	 * @param string|null $owner          The caller, already quoted or bound; null for nobody.
+	 * @param string[]    $missingColumns Metadata columns this table lacks.
+	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
+	 *
+	 * @return string|null The predicate, without a leading AND.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
+	 */
+	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns, ?Schema $schema = null): ?string {
+		$lens = new DraftListLens();
+		$mode = $lens->modeFor(query: $query, schema: $schema);
+
+		if (in_array('_status', $missingColumns, true) === true) {
+			if ($mode === DraftListLens::ONLY) {
+				return '1=0';
+			}
+
+			return null;
+		}
+
+		return $lens->sql(mode: $mode, columnPrefix: $columnPrefix, owner: $owner);
+	}//end draftConditionSql()
 
 	/**
 	 * The organisation and RBAC predicates, as SQL fragments.
@@ -930,6 +1266,7 @@ class MagicSearchHandler {
 	 * @param mixed      $rbac       The raw `_rbac` flag as the caller wrote it.
 	 * @param mixed      $connection The connection, for value quoting.
 	 * @param integer|null $registerId The register whose table this is built for.
+	 * @param string|null  $tableName  The bare magic table, so a missing `_status` column is left out of the draft predicate.
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
@@ -940,7 +1277,8 @@ class MagicSearchHandler {
 		Schema $schema,
 		mixed $rbac,
 		mixed $connection,
-		?int $registerId
+		?int $registerId,
+		?string $tableName = null
 	): array {
 		$conditions = [];
 
@@ -975,7 +1313,7 @@ class MagicSearchHandler {
 		}
 
 		if ($rbac === true) {
-			$rbacCondition = $this->buildRbacConditionSql(schema: $schema);
+			$rbacCondition = $this->buildRbacConditionSql(schema: $schema, tableName: $tableName);
 			if ($rbacCondition !== null) {
 				$conditions[] = $rbacCondition;
 			}
@@ -1244,12 +1582,13 @@ class MagicSearchHandler {
 	/**
 	 * Build the RBAC SQL condition
 	 *
-	 * @param Schema $schema Schema for RBAC rules
+	 * @param Schema      $schema    Schema for RBAC rules
+	 * @param string|null $tableName The bare magic table, so a missing `_status` column is left out of the draft predicate
 	 *
 	 * @return string|null SQL condition or null if no RBAC filtering needed
 	 */
-	private function buildRbacConditionSql(Schema $schema): ?string {
-		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+	private function buildRbacConditionSql(Schema $schema, ?string $tableName = null): ?string {
+		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read', tableName: $tableName);
 
 		if ($rbacResult['bypass'] === false) {
 			// User doesn't have unconditional access.
@@ -1520,28 +1859,25 @@ class MagicSearchHandler {
 	}//end columnMatchSql()
 
 	/**
-	 * Apply a `like` filter with bound parameters.
+	 * Build a `like` condition with bound parameters.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param IQueryBuilder $qb Query builder that binds the parameters.
 	 * @param string $columnRef Qualified column reference.
 	 * @param mixed $value The value under the `like` key: one term or a list.
 	 *
-	 * @return void
+	 * @return string|null The SQL condition, or null when no term is left.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function applyLikeFilter(IQueryBuilder $qb, string $columnRef, mixed $value): void {
+	private function likeCondition(IQueryBuilder $qb, string $columnRef, mixed $value): ?string {
 		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
 		$placeholders = [];
 		foreach ($like->terms(value: $value) as $term) {
 			$placeholders[] = (string)$qb->createNamedParameter($like->pattern(term: $term));
 		}
 
-		$condition = $like->anyCondition(column: $columnRef, patternSqls: $placeholders);
-		if ($condition !== null) {
-			$qb->andWhere($condition);
-		}
-	}//end applyLikeFilter()
+		return $like->anyCondition(column: $columnRef, patternSqls: $placeholders);
+	}//end likeCondition()
 
 	/**
 	 * Build a `like` condition for the raw UNION path.
@@ -1581,9 +1917,13 @@ class MagicSearchHandler {
 	 * @param mixed $value The raw operator value as the request layer delivered it.
 	 *
 	 * @return bool True when the caller asked for IS NULL.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::isNullOperatorAsksForNull() is a pure function shared with the aggregation path.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
-		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+		return NullFilter::isNullOperatorAsksForNull(value: $value);
 	}//end isNullOperatorAsksForNull()
 
 	/**
@@ -1603,6 +1943,7 @@ class MagicSearchHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function buildObjectFilterConditionsSql(
 		array $query,
@@ -1613,6 +1954,41 @@ class MagicSearchHandler {
 		$conditions = [];
 		$reservedParams = $this->getReservedParams();
 		$properties = $schema->getProperties() ?? [];
+
+		[$query, $nestedFilters] = $this->nestedPaths->split(filters: $query, properties: $properties);
+		foreach ($nestedFilters as $filter) {
+			// A filter on a path inside an object property is an oracle on that
+			// property: one the caller may not read matches nothing.
+			if ($this->relatedRows->mayReadProperty(schema: $schema, property: $filter['root']) === false) {
+				$conditions[] = '1=0';
+				continue;
+			}
+
+			$expression = $this->nestedPaths->expression(
+				column: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
+				path: $filter['path'],
+				isPostgres: $isPostgres
+			);
+			if ($expression === null) {
+				$conditions[] = '1=0';
+				continue;
+			}
+
+			$quote = static fn (string $value): string => (string)$connection->quote($value);
+			array_push(
+				$conditions,
+				...NullFilter::conditionsFor(
+					criterion: $filter['value'],
+					column: $expression,
+					build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
+						expression: $expression,
+						value: $criterion,
+						bind: $quote,
+						isPostgres: $isPostgres
+					)
+				)
+			);
+		}
 
 		foreach ($query as $key => $value) {
 			// Skip reserved params, underscore-prefixed params, and @ metadata params.
@@ -1634,162 +2010,215 @@ class MagicSearchHandler {
 			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
 			$propertyType = $properties[$key]['type'] ?? 'string';
 
-			// `like` first, for every column type; see applyObjectFilters().
-			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-				$likeCondition = $this->likeConditionSql(column: $quotedCol, value: $value[LikeOperator::KEY], connection: $connection);
-				if ($likeCondition !== null) {
-					$conditions[] = $likeCondition;
-				}
-
-				unset($value[LikeOperator::KEY]);
-				if ($value === []) {
-					continue;
-				}
-			}
-
-			// Handle array-type properties (JSONB columns) with JSON containment operator.
-			if ($propertyType === 'array') {
-				$conditions[] = $this->buildArrayPropertyConditionSql(
-					columnName: $quotedCol,
-					value: $value,
-					connection: $connection
-				);
-				continue;
-			}
-
-			// Handle array filter values: comparison operators
-			// (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
-			if (is_array($value) === true) {
-				$comparisonOperators = self::COMPARISON_OPERATORS;
-				if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
-					if (isset($value['gte']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['gte'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} >= " . $connection->quote((string)$value['gte']);
-					}
-
-					if (isset($value['lte']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['lte'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} <= " . $connection->quote((string)$value['lte']);
-					}
-
-					if (isset($value['gt']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['gt'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} > " . $connection->quote((string)$value['gt']);
-					}
-
-					if (isset($value['lt']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['lt'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} < " . $connection->quote((string)$value['lt']);
-					}
-
-					if (isset($value['in']) === true) {
-						$inValues = [$value['in']];
-						if (is_array($value['in']) === true) {
-							$inValues = $value['in'];
-						}
-
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $inValues,
-							isPostgres: $isPostgres
-						);
-						$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $inValues);
-						$conditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
-					}
-
-					if (isset($value['notIn']) === true) {
-						$notInValues = [$value['notIn']];
-						if (is_array($value['notIn']) === true) {
-							$notInValues = $value['notIn'];
-						}
-
-						// An empty exclusion list excludes nothing — skip the
-						// clause rather than emit `NOT IN ()`.
-						if (count($notInValues) > 0) {
-							$colRef = $this->buildFilterColumnRef(
-								columnRef: $quotedCol,
-								propertyType: $propertyType,
-								value: $notInValues,
-								isPostgres: $isPostgres
-							);
-							$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $notInValues);
-							$conditions[] = "{$colRef} NOT IN (" . implode(', ', $quotedValues) . ')';
-						}
-					}
-
-					if (isset($value['ne']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['ne'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} <> " . $connection->quote((string)$value['ne']);
-					}
-
-					if (isset($value['isnull']) === true) {
-						// No column-ref cast: a null check is about the column's
-						// presence, not its type, and casting a NULL would only
-						// obscure it.
-						$predicate = 'IS NOT NULL';
-						if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-							$predicate = 'IS NULL';
-						}
-
-						$conditions[] = "{$quotedCol} {$predicate}";
-					}
-				} elseif (empty($value) === false) {
-					$colRef = $this->buildFilterColumnRef(
-						columnRef: $quotedCol,
+			array_push(
+				$conditions,
+				...NullFilter::conditionsFor(
+					criterion: $value,
+					column: $quotedCol,
+					build: fn (mixed $criterion): array => $this->objectFieldConditionsSql(
+						value: $criterion,
+						quotedCol: $quotedCol,
 						propertyType: $propertyType,
-						value: $value,
+						connection: $connection,
 						isPostgres: $isPostgres
-					);
-					$quotedValues = array_map(
-						fn ($v) => $connection->quote((string)$v),
-						$value
-					);
-					$conditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
-				}//end if
-
-				continue;
-			}//end if
-
-			// Simple equality filter. Cast numeric columns to text when filtered
-			// by a non-numeric (e.g. UUID) value so PostgreSQL does not abort the
-			// whole UNION query with SQLSTATE[22P02].
-			$colRef = $this->buildFilterColumnRef(
-				columnRef: $quotedCol,
-				propertyType: $propertyType,
-				value: $value,
-				isPostgres: $isPostgres
+					)
+				)
 			);
-			$conditions[] = "{$colRef} = " . $connection->quote((string)$value);
 		}//end foreach
 
 		return $conditions;
 	}//end buildObjectFilterConditionsSql()
+
+	/**
+	 * The SQL conditions one object-field filter contributes on the raw UNION path
+	 *
+	 * @param mixed $value The filter value, without its `orNull` modifier
+	 * @param string $quotedCol Quoted column identifier
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param object $connection Database connection for value quoting
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return string[] The field's conditions, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function objectFieldConditionsSql(
+		mixed $value,
+		string $quotedCol,
+		string $propertyType,
+		object $connection,
+		bool $isPostgres,
+	): array {
+		$fieldConditions = [];
+
+		// `like` first, for every column type; see applyObjectFilters().
+		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+			$likeCondition = $this->likeConditionSql(column: $quotedCol, value: $value[LikeOperator::KEY], connection: $connection);
+			if ($likeCondition !== null) {
+				$fieldConditions[] = $likeCondition;
+			}
+
+			unset($value[LikeOperator::KEY]);
+			if ($value === []) {
+				return $fieldConditions;
+			}
+		}
+
+		// Handle array-type properties (JSONB columns) with JSON containment operator.
+		if ($propertyType === 'array') {
+			$fieldConditions[] = $this->buildArrayPropertyConditionSql(
+				columnName: $quotedCol,
+				value: $value,
+				connection: $connection
+			);
+			return $fieldConditions;
+		}
+
+		// A PHP boolean compares in its string form (boolean-filter-values).
+		$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
+
+		// Handle array filter values: comparison operators
+		// (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
+		if (is_array($value) === true) {
+			$comparisonOperators = self::COMPARISON_OPERATORS;
+			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+				return array_merge(
+					$fieldConditions,
+					$this->objectOperatorConditionsSql(
+						value: $value,
+						quotedCol: $quotedCol,
+						propertyType: $propertyType,
+						connection: $connection,
+						isPostgres: $isPostgres
+					)
+				);
+			}
+
+			if (empty($value) === false) {
+				$colRef = $this->buildFilterColumnRef(
+					columnRef: $quotedCol,
+					propertyType: $propertyType,
+					value: $value,
+					isPostgres: $isPostgres
+				);
+				$quotedValues = array_map(
+					fn ($v) => $connection->quote((string)$v),
+					$value
+				);
+				$fieldConditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
+			}//end if
+
+			return $fieldConditions;
+		}//end if
+
+		// Simple equality filter. Cast numeric columns to text when filtered
+		// by a non-numeric (e.g. UUID) value so PostgreSQL does not abort the
+		// whole UNION query with SQLSTATE[22P02].
+		$colRef = $this->buildFilterColumnRef(
+			columnRef: $quotedCol,
+			propertyType: $propertyType,
+			value: $value,
+			isPostgres: $isPostgres
+		);
+		$fieldConditions[] = "{$colRef} = " . $connection->quote((string)$value);
+		return $fieldConditions;
+	}//end objectFieldConditionsSql()
+
+	/**
+	 * The conditions of one object field's operator bag on the raw UNION path
+	 *
+	 * @param array $value The operator bag, in its comparable form
+	 * @param string $quotedCol Quoted column identifier
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param object $connection Database connection for value quoting
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return string[] The conditions, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function objectOperatorConditionsSql(
+		array $value,
+		string $quotedCol,
+		string $propertyType,
+		object $connection,
+		bool $isPostgres,
+	): array {
+		$fieldConditions = [];
+		foreach (['gte' => '>=', 'lte' => '<=', 'gt' => '>', 'lt' => '<'] as $operator => $sqlOperator) {
+			if (isset($value[$operator]) === true) {
+				$colRef = $this->buildFilterColumnRef(
+					columnRef: $quotedCol,
+					propertyType: $propertyType,
+					value: $value[$operator],
+					isPostgres: $isPostgres
+				);
+				$fieldConditions[] = "{$colRef} {$sqlOperator} " . $connection->quote((string)$value[$operator]);
+			}
+		}
+
+		if (isset($value['in']) === true) {
+			$inValues = [$value['in']];
+			if (is_array($value['in']) === true) {
+				$inValues = $value['in'];
+			}
+
+			$colRef = $this->buildFilterColumnRef(
+				columnRef: $quotedCol,
+				propertyType: $propertyType,
+				value: $inValues,
+				isPostgres: $isPostgres
+			);
+			$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $inValues);
+			$fieldConditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
+		}
+
+		if (isset($value['notIn']) === true) {
+			$notInValues = [$value['notIn']];
+			if (is_array($value['notIn']) === true) {
+				$notInValues = $value['notIn'];
+			}
+
+			// An empty exclusion list excludes nothing — skip the
+			// clause rather than emit `NOT IN ()`.
+			if (count($notInValues) > 0) {
+				$colRef = $this->buildFilterColumnRef(
+					columnRef: $quotedCol,
+					propertyType: $propertyType,
+					value: $notInValues,
+					isPostgres: $isPostgres
+				);
+				$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $notInValues);
+				$fieldConditions[] = "{$colRef} NOT IN (" . implode(', ', $quotedValues) . ')';
+			}
+		}
+
+		if (isset($value['ne']) === true) {
+			$colRef = $this->buildFilterColumnRef(
+				columnRef: $quotedCol,
+				propertyType: $propertyType,
+				value: $value['ne'],
+				isPostgres: $isPostgres
+			);
+			$fieldConditions[] = "{$colRef} <> " . $connection->quote((string)$value['ne']);
+		}
+
+		if (isset($value['isnull']) === true) {
+			// No column-ref cast: a null check is about the column's
+			// presence, not its type, and casting a NULL would only
+			// obscure it.
+			$predicate = 'IS NOT NULL';
+			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+				$predicate = 'IS NULL';
+			}
+
+			$fieldConditions[] = "{$quotedCol} {$predicate}";
+		}
+
+		return $fieldConditions;
+	}//end objectOperatorConditionsSql()
 
 	/**
 	 * Build SQL condition for array-type (JSONB) property filtering
@@ -1904,8 +2333,28 @@ class MagicSearchHandler {
 	 *
 	 * @return string[] Array of SQL conditions
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
+		return NullFilter::conditionsFor(
+			criterion: $value,
+			column: $column,
+			build: fn (array $bag): array => $this->metadataBagConditionsSql(column: $column, value: $bag, connection: $connection)
+		);
+	}//end buildMetadataOperatorConditionsSql()
+
+	/**
+	 * The SQL conditions of one metadata operator bag (or bare IN list), to be ANDed
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag or bare list of values, without `orNull`
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] Array of SQL conditions
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function metadataBagConditionsSql(string $column, array $value, object $connection): array {
 		$likeConditions = [];
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
 			$likeCondition = $this->likeConditionSql(column: $column, value: $value[LikeOperator::KEY], connection: $connection);
@@ -1934,7 +2383,7 @@ class MagicSearchHandler {
 			$this->metadataListConditionsSql(column: $column, value: $value, connection: $connection),
 			$this->metadataNullConditionsSql(column: $column, value: $value)
 		);
-	}//end buildMetadataOperatorConditionsSql()
+	}//end metadataBagConditionsSql()
 
 	/**
 	 * Quote every value in a bag, accepting a bare scalar as a one-item list
@@ -2149,7 +2598,9 @@ class MagicSearchHandler {
 			'_recentLens',
 			'_count',
 			'_includeDeleted',
+			'_deleted',
 			'_archived',
+			DraftListLens::PARAMETER,
 			'_relations_contains',
 			'_multitenancy_explicit',
 			'_fuzzy',
@@ -2167,27 +2618,63 @@ class MagicSearchHandler {
 	 * Apply basic filters like deleted status
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param bool $includeDeleted Whether to include deleted objects
+	 * @param string $deletedMode Which deleted lens to apply, one of the DeletedLens constants
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
+	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
+	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
+	 * @param string[] $missingColumns Metadata columns this table could not be given
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE): void {
-		// Handle deleted filter.
-		if ($includeDeleted === false) {
-			$qb->andWhere($qb->expr()->isNull('t._deleted'));
+	private function applyBasicFilters(
+		IQueryBuilder $qb,
+		string $deletedMode = DeletedLens::EXCLUDE,
+		string $archivedMode = self::ARCHIVED_EXCLUDE,
+		array $query = [],
+		?Schema $schema = null,
+		array $missingColumns = [],
+	): void {
+		$deleted = (new DeletedLens())->condition(mode: $deletedMode, columnPrefix: 't.');
+		if ($deleted !== null) {
+			$qb->andWhere($qb->createFunction($deleted));
 		}
 
 		// Handle the archive filter. Exclusion is the DEFAULT rather than a
 		// filter the caller has to remember, so a caller who forgets the
 		// parameter gets the working set — the safe answer. Asking for both is
 		// the only way to see an archived row beside an open one.
-		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+		$archivedMissing = in_array('_archived', $missingColumns, true);
+		if ($archivedMode === self::ARCHIVED_EXCLUDE && $archivedMissing === false) {
 			$qb->andWhere($qb->expr()->isNull('t._archived'));
 		}
 
 		if ($archivedMode === self::ARCHIVED_ONLY) {
-			$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+			if ($archivedMissing === true) {
+				// No column, so no archived row: the archived lens is empty.
+				$qb->andWhere($qb->createFunction('1=0'));
+			} else {
+				$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+			}
+		}
+
+		// Decision 201: drafts stay out of a list unless asked for, whoever
+		// asks. The read RBAC keeps a draft to its owner, but an administrator
+		// and an app's service listing with RBAC off pass that by, and their
+		// work lists are the ones the decision is about. The caller's own
+		// drafts stay in view. Raw SQL through createFunction(), spelled once
+		// in DraftListLens for this path and lifecycleConditionsSql().
+		$userId = $this->rbacHandler->getCurrentUserId();
+		$owner = null;
+		if ($userId !== null && $userId !== '') {
+			$owner = (string)$qb->createNamedParameter($userId);
+		}
+
+		$drafts = $this->draftConditionSql(query: $query, columnPrefix: 't.', owner: $owner, missingColumns: $missingColumns, schema: $schema);
+		if ($drafts !== null) {
+			$qb->andWhere($qb->createFunction($drafts));
 		}
 
 	}//end applyBasicFilters()
@@ -2320,6 +2807,7 @@ class MagicSearchHandler {
 	 * @param bool $_multitenancy Whether multitenancy filtering is enabled
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
 	 * @param int|null $registerId The register of the table being read, for shared master data
+	 * @param string|null $tableName The bare magic table being read, so a missing `_status` column is left out of the draft predicate
 	 *
 	 * @return void
 	 *
@@ -2332,6 +2820,7 @@ class MagicSearchHandler {
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 		?int $registerId = null,
+		?string $tableName = null,
 	): void {
 		// Whether the organisation boundary applies is decided in ONE place
 		// (multitenancyApplies), because the string-SQL path renders the same
@@ -2373,7 +2862,8 @@ class MagicSearchHandler {
 			$this->rbacHandler->applyRbacFilters(
 				qb: $qb,
 				schema: $schema,
-				action: 'read'
+				action: 'read',
+				tableName: $tableName
 			);
 		}
 	}//end applyAccessControlFilters()
@@ -2458,46 +2948,60 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
+	 */
+	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
+		$conditions = NullFilter::conditionsFor(
+			criterion: $value,
+			column: $columnRef,
+			build: fn (array $bag): array => $this->metadataOperatorPredicates(qb: $qb, columnRef: $columnRef, value: $bag)
+		);
+		foreach ($conditions as $condition) {
+			$qb->andWhere($condition);
+		}
+	}//end applyMetadataOperators()
+
+	/**
+	 * The predicates of one metadata operator bag (or bare IN list), to be ANDed
+	 *
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
+	 * @param string $columnRef Fully qualified column reference
+	 * @param array $value Operator bag or bare list of values, without `orNull`
+	 *
+	 * @return list<string|\Stringable> The predicates
+	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
+	private function metadataOperatorPredicates(IQueryBuilder $qb, string $columnRef, array $value): array {
+		$predicates = [];
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
-			$this->applyLikeFilter(qb: $qb, columnRef: $columnRef, value: $value[LikeOperator::KEY]);
+			$likeCondition = $this->likeCondition(qb: $qb, columnRef: $columnRef, value: $value[LikeOperator::KEY]);
+			if ($likeCondition !== null) {
+				$predicates[] = $likeCondition;
+			}
+
 			unset($value[LikeOperator::KEY]);
 			if ($value === []) {
-				return;
+				return $predicates;
 			}
 		}
 
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
-			$qb->andWhere(
-				$qb->expr()->in($columnRef, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
-			);
+			$predicates[] = $qb->expr()->in($columnRef, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY));
 
-			return;
+			return $predicates;
 		}
 
 		// Multiple operators AND together, so {"gte":a,"lte":b} is a range.
-		if (isset($value['gte']) === true) {
-			$qb->andWhere($qb->expr()->gte($columnRef, $qb->createNamedParameter($value['gte'])));
-		}
-
-		if (isset($value['lte']) === true) {
-			$qb->andWhere($qb->expr()->lte($columnRef, $qb->createNamedParameter($value['lte'])));
-		}
-
-		if (isset($value['gt']) === true) {
-			$qb->andWhere($qb->expr()->gt($columnRef, $qb->createNamedParameter($value['gt'])));
-		}
-
-		if (isset($value['lt']) === true) {
-			$qb->andWhere($qb->expr()->lt($columnRef, $qb->createNamedParameter($value['lt'])));
-		}
-
-		if (isset($value['ne']) === true) {
-			$qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
+		$comparisons = ['gte' => 'gte', 'lte' => 'lte', 'gt' => 'gt', 'lt' => 'lt', 'ne' => 'neq'];
+		foreach ($comparisons as $operator => $method) {
+			if (isset($value[$operator]) === true) {
+				$predicates[] = $qb->expr()->$method($columnRef, $qb->createNamedParameter($value[$operator]));
+			}
 		}
 
 		if (isset($value['in']) === true) {
@@ -2506,9 +3010,7 @@ class MagicSearchHandler {
 				$inValues = [$inValues];
 			}
 
-			$qb->andWhere(
-				$qb->expr()->in($columnRef, $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY))
-			);
+			$predicates[] = $qb->expr()->in($columnRef, $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY));
 		}
 
 		if (isset($value['notIn']) === true) {
@@ -2519,23 +3021,24 @@ class MagicSearchHandler {
 
 			// An empty NOT IN () is a SQL syntax error and means "exclude nothing".
 			if (empty($notInValues) === false) {
-				$qb->andWhere(
-					$qb->expr()->notIn(
-						$columnRef,
-						$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
-					)
+				$predicates[] = $qb->expr()->notIn(
+					$columnRef,
+					$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
 				);
 			}
 		}
 
 		if (isset($value['isnull']) === true) {
+			$predicate = $qb->expr()->isNotNull($columnRef);
 			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-				$qb->andWhere($qb->expr()->isNull($columnRef));
-			} else {
-				$qb->andWhere($qb->expr()->isNotNull($columnRef));
+				$predicate = $qb->expr()->isNull($columnRef);
 			}
+
+			$predicates[] = $predicate;
 		}
-	}//end applyMetadataOperators()
+
+		return $predicates;
+	}//end metadataOperatorPredicates()
 
 	/**
 	 * Resolve a `@self` field name to its magic-table metadata column
@@ -2581,6 +3084,7 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void {
 		$properties = $schema->getProperties();
@@ -2601,6 +3105,9 @@ class MagicSearchHandler {
 
 		$isPostgres = $this->isPostgresPlatform();
 
+		[$filters, $nestedFilters] = $this->nestedPaths->split(filters: $filters, properties: $properties ?? []);
+		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres, schema: $schema);
+
 		foreach ($filters as $field => $value) {
 			// Check if this field exists as a column in the schema.
 			if (($properties[$field] ?? null) === null) {
@@ -2618,190 +3125,238 @@ class MagicSearchHandler {
 			$columnName = $this->sanitizeColumnName(name: $field);
 			$propertyType = $properties[$field]['type'] ?? 'string';
 
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-				continue;
-			}
-
-			// `like` matches the column's text, whatever the column type, so it is
-			// applied ahead of the type-specific branches and then taken out of the bag.
-			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-				$this->applyLikeFilter(qb: $qb, columnRef: "t.{$columnName}", value: $value[LikeOperator::KEY]);
-				unset($value[LikeOperator::KEY]);
-				if ($value === []) {
-					continue;
-				}
-			}
-
-			// Handle array type columns (JSON arrays in PostgreSQL).
-			if ($propertyType === 'array') {
-				$this->applyJsonArrayFilter(qb: $qb, columnName: $columnName, value: $value);
-				continue;
-			}
-
-			// Handle object type columns (JSON objects with 'value' key containing UUID).
-			if ($propertyType === 'object') {
-				$this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
-				continue;
-			}
-
-			if (is_array($value) === true) {
-				$comparisonOperators = self::COMPARISON_OPERATORS;
-				if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
-					// Cast numeric columns to text when filtered by non-numeric
-					// (e.g. UUID) values so PostgreSQL does not abort with 22P02.
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value,
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere(
-						$qb->expr()->in(
-							$columnRef,
-							$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-						)
-					);
-					continue;
-				}
-
-				if (isset($value['gte']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['gte'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->gte($columnRef, $qb->createNamedParameter($value['gte'])));
-				}
-
-				if (isset($value['lte']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['lte'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->lte($columnRef, $qb->createNamedParameter($value['lte'])));
-				}
-
-				if (isset($value['gt']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['gt'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->gt($columnRef, $qb->createNamedParameter($value['gt'])));
-				}
-
-				if (isset($value['lt']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['lt'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->lt($columnRef, $qb->createNamedParameter($value['lt'])));
-				}
-
-				if (isset($value['in']) === true) {
-					$inValues = [$value['in']];
-					if (is_array($value['in']) === true) {
-						$inValues = $value['in'];
-					}
-
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $inValues,
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere(
-						$qb->expr()->in(
-							$columnRef,
-							$qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
-						)
-					);
-				}
-
-				if (isset($value['notIn']) === true) {
-					$notInValues = [$value['notIn']];
-					if (is_array($value['notIn']) === true) {
-						$notInValues = $value['notIn'];
-					}
-
-					// An empty exclusion list excludes nothing, so skip the
-					// clause entirely — emitting `NOT IN ()` is a SQL error
-					// on some engines and a no-op-shaped clause on others.
-					if (count($notInValues) > 0) {
-						$columnRef = $this->buildFilterColumnRef(
-							columnRef: "t.{$columnName}",
-							propertyType: $propertyType,
-							value: $notInValues,
-							isPostgres: $isPostgres
-						);
-						$qb->andWhere(
-							$qb->expr()->notIn(
-								$columnRef,
-								$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
-							)
-						);
-					}
-				}//end if
-
-				if (isset($value['ne']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['ne'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
-				}
-
-				if (isset($value['isnull']) === true) {
-					// The bare column, not `buildFilterColumnRef`: a null check
-					// asks whether the column has a value at all, and a cast
-					// would only obscure that.
-					if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-						$qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-					} else {
-						$qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-					}
-				}
-
-				continue;
-			}//end if
-
-			// Cast numeric columns to text when filtered by a non-numeric
-			// (e.g. UUID) value so PostgreSQL does not abort the query with
-			// SQLSTATE[22P02]; numeric values keep the indexed numeric path.
-			$columnRef = $this->buildFilterColumnRef(
-				columnRef: "t.{$columnName}",
-				propertyType: $propertyType,
-				value: $value,
-				isPostgres: $isPostgres
+			$conditions = NullFilter::conditionsFor(
+				criterion: $value,
+				column: "t.{$columnName}",
+				build: fn (mixed $criterion): array => $this->objectFieldPredicates(
+					qb: $qb,
+					columnName: $columnName,
+					propertyType: $propertyType,
+					value: $criterion,
+					isPostgres: $isPostgres
+				)
 			);
-			$qb->andWhere($qb->expr()->eq($columnRef, $qb->createNamedParameter($value)));
+			foreach ($conditions as $condition) {
+				$qb->andWhere($condition);
+			}
 		}//end foreach
 	}//end applyObjectFilters()
 
 	/**
+	 * The predicates one object-field filter contributes on the QueryBuilder path
+	 *
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
+	 * @param string $columnName Sanitized column name
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param mixed $value The filter value, without its `orNull` modifier
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return list<string|\Stringable> The field's predicates, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function objectFieldPredicates(
+		IQueryBuilder $qb,
+		string $columnName,
+		string $propertyType,
+		mixed $value,
+		bool $isPostgres,
+	): array {
+		$predicates = [];
+
+		if ($value === 'IS NOT NULL') {
+			$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
+			return $predicates;
+		}
+
+		if ($value === 'IS NULL') {
+			$predicates[] = $qb->expr()->isNull("t.{$columnName}");
+			return $predicates;
+		}
+
+		// `like` matches the column's text, whatever the column type, so it is
+		// applied ahead of the type-specific branches and then taken out of the bag.
+		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+			$likeCondition = $this->likeCondition(qb: $qb, columnRef: "t.{$columnName}", value: $value[LikeOperator::KEY]);
+			if ($likeCondition !== null) {
+				$predicates[] = $likeCondition;
+			}
+
+			unset($value[LikeOperator::KEY]);
+			if ($value === []) {
+				return $predicates;
+			}
+		}
+
+		// Handle array type columns (JSON arrays in PostgreSQL).
+		if ($propertyType === 'array') {
+			$predicates[] = $this->jsonArrayCondition(qb: $qb, columnName: $columnName, value: $value);
+			return $predicates;
+		}
+
+		// Handle object type columns (JSON objects with 'value' key containing UUID).
+		if ($propertyType === 'object') {
+			$predicates[] = $this->jsonObjectCondition(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
+			return $predicates;
+		}
+
+		// A PHP boolean compares in its string form (boolean-filter-values).
+		$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
+
+		if (is_array($value) === true) {
+			$comparisonOperators = self::COMPARISON_OPERATORS;
+			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
+				// Cast numeric columns to text when filtered by non-numeric
+				// (e.g. UUID) values so PostgreSQL does not abort with 22P02.
+				$columnRef = $this->buildFilterColumnRef(
+					columnRef: "t.{$columnName}",
+					propertyType: $propertyType,
+					value: $value,
+					isPostgres: $isPostgres
+				);
+				$predicates[] = $qb->expr()->in(
+					$columnRef,
+					$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
+				);
+				return $predicates;
+			}
+
+			return array_merge(
+				$predicates,
+				$this->objectOperatorPredicates(
+					qb: $qb,
+					columnName: $columnName,
+					propertyType: $propertyType,
+					value: $value,
+					isPostgres: $isPostgres
+				)
+			);
+		}//end if
+
+		// Cast numeric columns to text when filtered by a non-numeric
+		// (e.g. UUID) value so PostgreSQL does not abort the query with
+		// SQLSTATE[22P02]; numeric values keep the indexed numeric path.
+		$columnRef = $this->buildFilterColumnRef(
+			columnRef: "t.{$columnName}",
+			propertyType: $propertyType,
+			value: $value,
+			isPostgres: $isPostgres
+		);
+		$predicates[] = $qb->expr()->eq($columnRef, $qb->createNamedParameter($value));
+		return $predicates;
+	}//end objectFieldPredicates()
+
+	/**
+	 * The predicates of one object field's operator bag on the QueryBuilder path
+	 *
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
+	 * @param string $columnName Sanitized column name
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param array $value The operator bag, in its comparable form
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return list<string|\Stringable> The predicates, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function objectOperatorPredicates(
+		IQueryBuilder $qb,
+		string $columnName,
+		string $propertyType,
+		array $value,
+		bool $isPostgres,
+	): array {
+		$predicates = [];
+		// Multiple operators AND together, so {"gte":a,"lte":b} is a range.
+		foreach (['gte', 'lte', 'gt', 'lt'] as $operator) {
+			if (isset($value[$operator]) === true) {
+				$columnRef = $this->buildFilterColumnRef(
+					columnRef: "t.{$columnName}",
+					propertyType: $propertyType,
+					value: $value[$operator],
+					isPostgres: $isPostgres
+				);
+				$predicates[] = $qb->expr()->$operator($columnRef, $qb->createNamedParameter($value[$operator]));
+			}
+		}
+
+		if (isset($value['in']) === true) {
+			$inValues = [$value['in']];
+			if (is_array($value['in']) === true) {
+				$inValues = $value['in'];
+			}
+
+			$columnRef = $this->buildFilterColumnRef(
+				columnRef: "t.{$columnName}",
+				propertyType: $propertyType,
+				value: $inValues,
+				isPostgres: $isPostgres
+			);
+			$predicates[] = $qb->expr()->in(
+				$columnRef,
+				$qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
+			);
+		}
+
+		if (isset($value['notIn']) === true) {
+			$notInValues = [$value['notIn']];
+			if (is_array($value['notIn']) === true) {
+				$notInValues = $value['notIn'];
+			}
+
+			// An empty exclusion list excludes nothing, so skip the
+			// clause entirely — emitting `NOT IN ()` is a SQL error
+			// on some engines and a no-op-shaped clause on others.
+			if (count($notInValues) > 0) {
+				$columnRef = $this->buildFilterColumnRef(
+					columnRef: "t.{$columnName}",
+					propertyType: $propertyType,
+					value: $notInValues,
+					isPostgres: $isPostgres
+				);
+				$predicates[] = $qb->expr()->notIn(
+					$columnRef,
+					$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
+				);
+			}
+		}//end if
+
+		if (isset($value['ne']) === true) {
+			$columnRef = $this->buildFilterColumnRef(
+				columnRef: "t.{$columnName}",
+				propertyType: $propertyType,
+				value: $value['ne'],
+				isPostgres: $isPostgres
+			);
+			$predicates[] = $qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne']));
+		}
+
+		if (isset($value['isnull']) === true) {
+			// The bare column, not `buildFilterColumnRef`: a null check
+			// asks whether the column has a value at all, and a cast
+			// would only obscure that.
+			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+				$predicates[] = $qb->expr()->isNull("t.{$columnName}");
+			} else {
+				$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
+			}
+		}
+
+		return $predicates;
+	}//end objectOperatorPredicates()
+
+	/**
 	 * Apply filter for JSON array columns using PostgreSQL jsonb operators
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
 	 * @param string $columnName Column name to filter
 	 * @param mixed $value Filter value (string or array of strings)
 	 *
-	 * @return void
+	 * @return string|ICompositeExpression The condition
 	 */
-	private function applyJsonArrayFilter(IQueryBuilder $qb, string $columnName, mixed $value): void {
+	private function jsonArrayCondition(IQueryBuilder $qb, string $columnName, mixed $value): string|ICompositeExpression {
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -2812,10 +3367,7 @@ class MagicSearchHandler {
 			// Single value: check if JSON array contains this value.
 			// Use COALESCE to handle NULL values and avoid type cast issues with QueryBuilder.
 			$jsonValue = json_encode([$values[0]]);
-			$qb->andWhere(
-				"COALESCE(t.{$columnName}, '[]')::jsonb @> " . $qb->createNamedParameter($jsonValue)
-			);
-			return;
+			return "COALESCE(t.{$columnName}, '[]')::jsonb @> " . $qb->createNamedParameter($jsonValue);
 		}
 
 		// Multiple values: check if JSON array contains ANY of the values (OR logic).
@@ -2828,8 +3380,69 @@ class MagicSearchHandler {
 			);
 		}
 
-		$qb->andWhere($orConditions);
-	}//end applyJsonArrayFilter()
+		return $orConditions;
+	}//end jsonArrayCondition()
+
+	/**
+	 * Filter on fields inside object properties (`dunning.currentStage=2`), on the QueryBuilder path.
+	 *
+	 * A path the JSON column cannot be read at (a segment that is not a plain
+	 * name) matches nothing and is reported as an ignored filter, the way an
+	 * unknown property is.
+	 *
+	 * @param IQueryBuilder                                                  $qb            Query builder to modify.
+	 * @param list<array{root: string, path: list<string>, value: mixed}> $nestedFilters The path filters from NestedPathFilter::split().
+	 * @param array<string,mixed>                                            $properties    The schema's properties.
+	 * @param bool                                                           $isPostgres    Whether the platform is PostgreSQL.
+	 * @param Schema                                                         $schema        The schema, for the property read rule.
+	 *
+	 * @return void
+	 *
+	 * @throws EncryptedFieldFilterException When the object property is encrypted.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
+	 */
+	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres, Schema $schema): void {
+		foreach ($nestedFilters as $filter) {
+			if (($properties[$filter['root']]['x-openregister-encrypted'] ?? false) === true) {
+				throw new EncryptedFieldFilterException(property: $filter['root']);
+			}
+
+			// A filter on a path inside an object property is an oracle on that
+			// property: one the caller may not read matches nothing.
+			if ($this->relatedRows->mayReadProperty(schema: $schema, property: $filter['root']) === false) {
+				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
+				$qb->andWhere('1 = 0');
+				continue;
+			}
+
+			$expression = $this->nestedPaths->expression(
+				column: 't.' . $this->sanitizeColumnName(name: $filter['root']),
+				path: $filter['path'],
+				isPostgres: $isPostgres
+			);
+			if ($expression === null) {
+				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
+				$qb->andWhere('1 = 0');
+				continue;
+			}
+
+			$conditions = NullFilter::conditionsFor(
+				criterion: $filter['value'],
+				column: $expression,
+				build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
+					expression: $expression,
+					value: $criterion,
+					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
+					isPostgres: $isPostgres
+				)
+			);
+			foreach ($conditions as $condition) {
+				$qb->andWhere($condition);
+			}
+		}
+	}//end applyNestedPathFilters()
 
 	/**
 	 * Apply filter for object columns (related objects)
@@ -2840,14 +3453,14 @@ class MagicSearchHandler {
 	 *
 	 * Uses text-based matching to work with both column types safely.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
 	 * @param string $columnName Column name to filter
 	 * @param mixed $value Filter value (UUID string or array of UUIDs)
 	 * @param bool $isPostgres Whether the backing database is PostgreSQL.
 	 *
-	 * @return void
+	 * @return string|ICompositeExpression The condition
 	 */
-	private function applyJsonObjectFilter(IQueryBuilder $qb, string $columnName, mixed $value, bool $isPostgres): void {
+	private function jsonObjectCondition(IQueryBuilder $qb, string $columnName, mixed $value, bool $isPostgres): string|ICompositeExpression {
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -2866,10 +3479,7 @@ class MagicSearchHandler {
 			// JSON format: column contains "value": "uuid" pattern.
 			$param = $qb->createNamedParameter($values[0]);
 			$jsonPattern = $qb->createNamedParameter('%"value": "' . $values[0] . '"%');
-			$qb->andWhere(
-				"({$colCast} = {$param} OR {$colCast} LIKE {$jsonPattern})"
-			);
-			return;
+			return "({$colCast} = {$param} OR {$colCast} LIKE {$jsonPattern})";
 		}
 
 		// Multiple values: check if value matches ANY of the values (OR logic).
@@ -2882,8 +3492,8 @@ class MagicSearchHandler {
 			);
 		}
 
-		$qb->andWhere($orConditions);
-	}//end applyJsonObjectFilter()
+		return $orConditions;
+	}//end jsonObjectCondition()
 
 	/**
 	 * Narrow a query to the objects one user has NOT seen since they last changed.
@@ -3526,8 +4136,9 @@ class MagicSearchHandler {
 			}
 
 			if (str_starts_with($field, '@self.') === true) {
-				// Metadata field sorting (e.g., @self.created → t._created).
-				$metadataField = '_' . str_replace('@self.', '', $field);
+				// Metadata field sorting (e.g., @self.created → t._created,
+				// @self.lastUserActivity → t._last_user_activity).
+				$metadataField = '_' . $this->sanitizeColumnName(name: str_replace('@self.', '', $field));
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
 			} elseif (in_array(
 				$field,
@@ -3902,9 +4513,7 @@ class MagicSearchHandler {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function convertRowToObjectEntity(
 		array $row,
@@ -3914,251 +4523,12 @@ class MagicSearchHandler {
 	): ?ObjectEntity {
 		try {
 			$objectEntity = new ObjectEntity();
+			$columns      = $this->splitRowColumns(row: $row, schema: $schema);
 
-			// Extract metadata (prefixed with _).
-			$metadataData = [];
-			$objectData = [];
-
-			// Build property type map and column-to-property mapping from schema.
-			// The column-to-property mapping allows us to restore original property names
-			// (e.g., 'e-mailadres') from their sanitized column names (e.g., 'e_mailadres').
-			// PERF-4: memoised per schema id so sanitizeColumnName runs once per
-			// schema rather than once per property per row.
-			$schemaMaps = $this->getSchemaColumnMaps(schema: $schema);
-			$propertyTypes = $schemaMaps['types'];
-			$propertyFormats = ($schemaMaps['formats'] ?? []);
-			$columnToPropertyMap = $schemaMaps['columns'];
-
-			foreach ($row as $column => $value) {
-				if (str_starts_with($column, '_') === true) {
-					// Metadata column - remove prefix and map to ObjectEntity.
-					$metadataField = substr($column, 1);
-					$metadataData[$metadataField] = $value;
-					continue;
-				}
-
-				// Map column name back to original property name using schema mapping.
-				// Falls back to camelCase conversion if not found in mapping.
-				$propertyName = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
-
-				// Convert value based on schema property type.
-				// Delegates to the shared SchemaTypeConverter so this handler and
-				// MagicStatisticsHandler agree on type semantics across read paths.
-				$propertyType = $propertyTypes[$propertyName] ?? 'string';
-				$value = $this->schemaTypeConverter->convertValue(
-					value: $value,
-					schemaType: $propertyType
-				);
-
-				// Then agree on FORMAT semantics too. A `date`/`date-time` property
-				// lives in a DATETIME column, so the driver returns 'Y-m-d H:i:s' —
-				// which fails the schema's own `date-time` format when the object is
-				// written straight back (every UI edit is a read-modify-write, so any
-				// object with a populated date-time 400'd). MagicStatisticsHandler
-				// already normalises here; this path did not, and this is the path
-				// findAll() actually uses.
-				$propertyFormat = ($propertyFormats[$propertyName] ?? null);
-				if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
-					if ($propertyFormat === 'date') {
-						$normalised = $this->dateTimeNormalizer->normalize($value);
-						$value = null;
-						if ($normalised !== null) {
-							$value = $normalised->format('Y-m-d');
-						}
-					} elseif ($propertyFormat === 'date-time') {
-						// The column is a DATETIME and carries no offset, so the value
-						// must be read back in the timezone the write path stored it
-						// in (UTC) rather than in the server's `date.timezone`
-						// (WOO-567).
-						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
-					}
-				}
-
-				$objectData[$propertyName] = $value;
-			}//end foreach
-
-			// Set metadata properties.
-			if (($metadataData['uuid'] ?? null) !== null) {
-				$objectEntity->setUuid($metadataData['uuid']);
-			}
-
-			if (($metadataData['name'] ?? null) !== null) {
-				$objectEntity->setName($metadataData['name']);
-			}
-
-			if (($metadataData['description'] ?? null) !== null) {
-				$objectEntity->setDescription($metadataData['description']);
-			}
-
-			if (($metadataData['summary'] ?? null) !== null) {
-				$objectEntity->setSummary($metadataData['summary']);
-			}
-
-			if (($metadataData['image'] ?? null) !== null) {
-				$objectEntity->setImage($metadataData['image']);
-			}
-
-			if (($metadataData['slug'] ?? null) !== null) {
-				$objectEntity->setSlug($metadataData['slug']);
-			}
-
-			if (($metadataData['uri'] ?? null) !== null) {
-				$objectEntity->setUri($metadataData['uri']);
-			}
-
-			if (($metadataData['owner'] ?? null) !== null) {
-				$objectEntity->setOwner($metadataData['owner']);
-			}
-
-			if (($metadataData['organisation'] ?? null) !== null) {
-				$objectEntity->setOrganisation($metadataData['organisation']);
-			}
-
-			if (($metadataData['created'] ?? null) !== null) {
-				$objectEntity->setCreated(new DateTime($metadataData['created']));
-			}
-
-			if (($metadataData['updated'] ?? null) !== null) {
-				$objectEntity->setUpdated(new DateTime($metadataData['updated']));
-			}
-
-			if (($metadataData['deleted'] ?? null) !== null) {
-				// Convert deleted timestamp to array format expected by setDeleted.
-				$deletedDateTime = new DateTime($metadataData['deleted']);
-				$objectEntity->setDeleted(
-					[
-						'deleted' => $deletedDateTime->format('c'),
-						'deletedBy' => $metadataData['deletedBy'] ?? null,
-					]
-				);
-			}
-
-			// Set relevance score if present (from fuzzy search).
-			// The _relevance column contains the similarity score as a percentage (0-100).
-			if (($metadataData['relevance'] ?? null) !== null) {
-				$objectEntity->setRelevance((float)$metadataData['relevance']);
-			}
-
-			// Set JSON metadata fields (stored as JSONB in magic tables).
-			if (($metadataData['relations'] ?? null) !== null) {
-				$relations = $metadataData['relations'];
-				if (is_string($metadataData['relations']) === true) {
-					$relations = json_decode($metadataData['relations'], true);
-				}
-
-				$objectEntity->setRelations([]);
-				if (is_array($relations) === true) {
-					$objectEntity->setRelations($relations);
-				}
-			}
-
-			if (($metadataData['files'] ?? null) !== null) {
-				$files = $metadataData['files'];
-				if (is_string($metadataData['files']) === true) {
-					$files = json_decode($metadataData['files'], true);
-				}
-
-				$objectEntity->setFiles([]);
-				if (is_array($files) === true) {
-					$objectEntity->setFiles($files);
-				}
-			}
-
-			if (($metadataData['locked'] ?? null) !== null) {
-				$locked = $metadataData['locked'];
-				if (is_string($metadataData['locked']) === true) {
-					$locked = json_decode($metadataData['locked'], true);
-				}
-
-				$objectEntity->setLocked(null);
-				if (is_array($locked) === true) {
-					$objectEntity->setLocked($locked);
-				}
-			}
-
-			if (($metadataData['groups'] ?? null) !== null) {
-				$groups = $metadataData['groups'];
-				if (is_string($metadataData['groups']) === true) {
-					$groups = json_decode($metadataData['groups'], true);
-				}
-
-				$objectEntity->setGroups([]);
-				if (is_array($groups) === true) {
-					$objectEntity->setGroups($groups);
-				}
-			}
-
-			if (($metadataData['authorization'] ?? null) !== null) {
-				$auth = $metadataData['authorization'];
-				if (is_string($metadataData['authorization']) === true) {
-					$auth = json_decode($metadataData['authorization'], true);
-				}
-
-				$objectEntity->setAuthorization([]);
-				if (is_array($auth) === true) {
-					$objectEntity->setAuthorization($auth);
-				}
-			}
-
-			if (($metadataData['validation'] ?? null) !== null) {
-				$validation = $metadataData['validation'];
-				if (is_string($metadataData['validation']) === true) {
-					$validation = json_decode($metadataData['validation'], true);
-				}
-
-				$objectEntity->setValidation([]);
-				if (is_array($validation) === true) {
-					$objectEntity->setValidation($validation);
-				}
-			}
-
-			if (($metadataData['geo'] ?? null) !== null) {
-				$geo = $metadataData['geo'];
-				if (is_string($metadataData['geo']) === true) {
-					$geo = json_decode($metadataData['geo'], true);
-				}
-
-				$objectEntity->setGeo([]);
-				if (is_array($geo) === true) {
-					$objectEntity->setGeo($geo);
-				}
-			}
-
-			if (($metadataData['retention'] ?? null) !== null) {
-				$retention = $metadataData['retention'];
-				if (is_string($metadataData['retention']) === true) {
-					$retention = json_decode($metadataData['retention'], true);
-				}
-
-				$objectEntity->setRetention([]);
-				if (is_array($retention) === true) {
-					$objectEntity->setRetention($retention);
-				}
-			}
-
-			// Set scalar metadata fields.
-			if (($metadataData['version'] ?? null) !== null) {
-				$objectEntity->setVersion($metadataData['version']);
-			}
-
-			if (($metadataData['folder'] ?? null) !== null) {
-				$objectEntity->setFolder($metadataData['folder']);
-			}
-
-			if (($metadataData['application'] ?? null) !== null) {
-				$objectEntity->setApplication($metadataData['application']);
-			}
-
-			if (($metadataData['size'] ?? null) !== null) {
-				$objectEntity->setSize($metadataData['size']);
-			}
-
-			// Set register and schema.
+			$this->applyRowMetadata(entity: $objectEntity, metadata: $columns['metadata']);
 			$objectEntity->setRegister((string)$register->getId());
 			$objectEntity->setSchema((string)$schema->getId());
-
-			// Set the object data.
-			$objectEntity->setObject($objectData);
+			$objectEntity->setObject($columns['object']);
 
 			return $objectEntity;
 		} catch (\Exception $e) {
@@ -4176,6 +4546,178 @@ class MagicSearchHandler {
 			return null;
 		}//end try
 	}//end convertRowToObjectEntity()
+
+	/**
+	 * Split a magic-table row into its metadata columns and its typed property values.
+	 *
+	 * A column maps back to its original property name through the schema (`e_mailadres`
+	 * is `e-mailadres`), or to its camelCase form when the schema does not declare it.
+	 *
+	 * @param array  $row    Database row data
+	 * @param Schema $schema Schema context
+	 *
+	 * @return array{metadata: array<string, mixed>, object: array<string, mixed>}
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function splitRowColumns(array $row, Schema $schema): array {
+		$schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);
+		$propertyFormats     = ($schemaMaps['formats'] ?? []);
+		$columnToPropertyMap = $schemaMaps['columns'];
+		$metadata            = [];
+		$object = [];
+
+		foreach ($row as $column => $value) {
+			$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
+			if ($metadataField !== null) {
+				$metadata[$metadataField] = $value;
+				continue;
+			}
+
+			$propertyName          = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
+			$object[$propertyName] = $this->convertRowValue(
+				value: $value,
+				property: [
+					'type'   => ($schemaMaps['types'][$propertyName] ?? 'string'),
+					'format' => ($propertyFormats[$propertyName] ?? null),
+				]
+			);
+		}
+
+		return ['metadata' => $metadata, 'object' => $object];
+	}//end splitRowColumns()
+
+	/**
+	 * A column value as its schema property type and format read it.
+	 *
+	 * A `date` or `date-time` property lives in a DATETIME column, so the driver returns
+	 * 'Y-m-d H:i:s'. That fails the schema's own format when the object is written back,
+	 * so the value is normalised here, as MagicStatisticsHandler does. A `date-time` column
+	 * carries no offset and is read back in UTC, the timezone the write path stored it in.
+	 *
+	 * @param mixed                                     $value    The column value
+	 * @param array{type: string, format: string|null} $property The schema property type and format
+	 *
+	 * @return mixed
+	 */
+	private function convertRowValue(mixed $value, array $property): mixed {
+		$format = $property['format'];
+		$value  = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $property['type']);
+		if ($value === null || is_string($value) === false || $format === null) {
+			return $value;
+		}
+
+		if ($format === 'date') {
+			$normalised = $this->dateTimeNormalizer->normalize($value);
+			if ($normalised === null) {
+				return null;
+			}
+
+			return $normalised->format('Y-m-d');
+		}
+
+		if ($format === 'date-time') {
+			return $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
+		}
+
+		return $value;
+	}//end convertRowValue()
+
+	/**
+	 * Set every metadata column the row holds a value for, in the order of {@see self::ROW_METADATA_KINDS}.
+	 *
+	 * @param ObjectEntity         $entity   The entity being hydrated
+	 * @param array<string, mixed> $metadata The row's metadata columns, keyed without their prefix
+	 *
+	 * @return void
+	 */
+	private function applyRowMetadata(ObjectEntity $entity, array $metadata): void {
+		foreach (self::ROW_METADATA_KINDS as $field => $kind) {
+			if (($metadata[$field] ?? null) === null) {
+				continue;
+			}
+
+			$setter = 'set'.str_replace('_', '', ucwords($field, '_'));
+			foreach ($this->rowMetadataValues(kind: $kind, value: $metadata[$field]) as $setterValue) {
+				$entity->$setter($setterValue);
+			}
+		}
+	}//end applyRowMetadata()
+
+	/**
+	 * The values one metadata column sets on the entity, in the order they are set.
+	 *
+	 * A JSON column sets its fallback first, then the decoded array when it is one.
+	 *
+	 * @param string $kind  The field's kind in {@see self::ROW_METADATA_KINDS}
+	 * @param mixed  $value The column value, not null
+	 *
+	 * @return list<mixed>
+	 */
+	private function rowMetadataValues(string $kind, mixed $value): array {
+		switch ($kind) {
+			case 'datetime':
+				return [new DateTime($value)];
+			case 'deleted':
+				return [$this->deletedMarker(raw: $value)];
+			case 'float':
+				return [(float)$value];
+			case 'json':
+				return $this->rowJsonValues(value: $value, fallback: []);
+			case 'json-or-null':
+				return $this->rowJsonValues(value: $value, fallback: null);
+			default:
+				return [$value];
+		}
+	}//end rowMetadataValues()
+
+	/**
+	 * The values a JSON metadata column sets: the fallback, then the decoded array when it is one.
+	 *
+	 * @param mixed      $value    The column value, a JSON string or already decoded
+	 * @param array|null $fallback The value set when the column holds no array
+	 *
+	 * @return list<array|null>
+	 */
+	private function rowJsonValues(mixed $value, ?array $fallback): array {
+		$decoded = $value;
+		if (is_string($value) === true) {
+			$decoded = json_decode($value, true);
+		}
+
+		if (is_array($decoded) === true) {
+			return [$fallback, $decoded];
+		}
+
+		return [$fallback];
+	}//end rowJsonValues()
+
+	/**
+	 * The `_deleted` column as the marker `ObjectEntity::setDeleted()` takes.
+	 *
+	 * The column is JSON (deletedAt, deletedBy, purgeDate, the window); a row
+	 * written before it was JSON holds a bare timestamp. Reading the JSON as a
+	 * timestamp threw, and the row was dropped from every list that asked for
+	 * deleted rows.
+	 *
+	 * @param mixed $raw The column value.
+	 *
+	 * @return array<string, mixed> The marker.
+	 *
+	 * @spec openspec/changes/object-deleted-lens/specs/object-lifecycle/spec.md
+	 */
+	private function deletedMarker(mixed $raw): array {
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		$decoded = json_decode((string)$raw, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return ['deleted' => (new DateTime((string)$raw))->format('c')];
+	}//end deletedMarker()
 
 	/**
 	 * Whether the active database platform is PostgreSQL.

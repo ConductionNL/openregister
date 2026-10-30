@@ -37,6 +37,9 @@ use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
@@ -47,6 +50,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
@@ -98,6 +103,11 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 			userTask: $mock(UserTaskNode::class),
 			portalTask: $mock(PortalTaskNode::class),
 			decisionTable: $mock(DecisionTableNode::class),
+			caseOpen: $mock(CaseOpenNode::class),
+			caseAdvance: $mock(CaseAdvanceNode::class),
+			actionInputs: $mock(ActionInputsNode::class),
+			transition: $mock(TransitionNode::class),
+			linkObject: $mock(LinkObjectNode::class),
 		);
 
 		return $listener;
@@ -122,9 +132,9 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(27, $registered, 'all twenty-seven built-ins are registered');
+		$this->assertCount(32, $registered, 'all thirty-two built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
-		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class] as $waiter) {
+		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class, CaseOpenNode::class, CaseAdvanceNode::class, ActionInputsNode::class, TransitionNode::class, LinkObjectNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");
 		}
 	}//end testEveryBuiltInReachesTheRegistryPortalTaskIncluded()

@@ -58,6 +58,7 @@ class SystemOperationContextBoundaryTest extends TestCase {
 		'lib/Service/ConfigurationService.php',
 		'lib/Service/Configuration/ImportHandler.php',
 		'lib/Repair/SeedVocabularyRegister.php',
+		'lib/Service/ExampleSet/ExampleSetStore.php',
 	];
 
 	/**

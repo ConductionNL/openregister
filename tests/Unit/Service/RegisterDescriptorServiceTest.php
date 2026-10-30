@@ -21,9 +21,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\CountedRegisterImport;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
+use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -41,6 +49,17 @@ class RegisterDescriptorServiceTest extends TestCase {
 
 	private $configurationService;
 
+	private $schemaMapper;
+
+	private $containers;
+
+	/**
+	 * The decision the re-import opens, shared with the guard.
+	 *
+	 * @var ShippedAuthorizationDecision
+	 */
+	private ShippedAuthorizationDecision $decision;
+
 	/**
 	 * Temporary app root holding the descriptor fixtures.
 	 *
@@ -55,16 +74,37 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->appManager           = $this->createMock(IAppManager::class);
 		$this->registerMapper       = $this->createMock(RegisterMapper::class);
 		$this->configurationService = $this->createMock(ConfigurationService::class);
+		$this->schemaMapper         = $this->createMock(SchemaMapper::class);
+		$this->containers           = $this->createMock(AppContainerLocator::class);
+		$this->decision             = new ShippedAuthorizationDecision();
 
 		$this->service = new RegisterDescriptorService(
 			$this->appManager,
 			$this->registerMapper,
 			$this->configurationService,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			new CountedRegisterImport(
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				decision: $this->decision
+			),
+			new AppRegisterImportRunner(
+				appManager: $this->appManager,
+				containers: $this->containers,
+				configurationService: $this->configurationService
+			)
 		);
 	}
 
 	protected function tearDown(): void {
+		foreach ((glob($this->appRoot . '/lib/Settings/register.d/*') ?: []) as $file) {
+			unlink($file);
+		}
+
+		if (is_dir($this->appRoot . '/lib/Settings/register.d') === true) {
+			rmdir($this->appRoot . '/lib/Settings/register.d');
+		}
+
 		foreach ((glob($this->appRoot . '/lib/Settings/*') ?: []) as $file) {
 			unlink($file);
 		}
@@ -289,7 +329,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 	 * is exactly the state an administrator presses this in.
 	 */
 	public function testReimportForcesPastTheVersionGate(): void {
-		$this->writeDescriptor(file: 'a_register.json', slug: 'flows', version: '1.3.0');
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '1.3.0');
 		$this->expectApp('fixtureapp');
 		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.3.0')]);
 
@@ -300,12 +340,31 @@ class RegisterDescriptorServiceTest extends TestCase {
 				$this->anything(),
 				$this->equalTo('1.3.0'),
 				$this->isTrue()
-			);
+			)
+			->willReturn(['registers' => ['flows']]);
 
 		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
 
 		$this->assertSame('imported', $result['outcome']);
 	}
+
+	/**
+	 * A register is behind when the descriptor of the asked kind ships a newer
+	 * version than the instance holds; same version, the other kind or a
+	 * register that is not there is not behind.
+	 *
+	 * @return void
+	 */
+	public function testARegisterIsBehindOnlyWhenItsDescriptorIsNewer(): void {
+		$this->writeDescriptor(file: 'a_mock_register.json', slug: 'flows', version: '1.0.1', type: 'mock');
+		$this->writeDescriptor(file: 'flows_register.json', slug: 'flows', version: '1.0.0');
+		$this->expectApp(appId: 'fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register(slug: 'flows', version: '1.0.0')]);
+
+		$this->assertTrue(condition: $this->service->isBehind(appId: 'fixtureapp', slug: 'flows', mock: true));
+		$this->assertFalse(condition: $this->service->isBehind(appId: 'fixtureapp', slug: 'flows', mock: false));
+		$this->assertFalse(condition: $this->service->isBehind(appId: 'fixtureapp', slug: 'other', mock: true));
+	}//end testARegisterIsBehindOnlyWhenItsDescriptorIsNewer()
 
 	/**
 	 * 🔴 A MOCK IMPORTS UNDER ITS OWN CONFIGURATION IDENTITY.
@@ -342,7 +401,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 			)
 			->willReturn(['objects' => [1, 2, 3], 'skipped' => []]);
 
-		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+		$result = $this->service->reimportMock(appId: 'fixtureapp', slug: 'flows');
 
 		$this->assertSame('imported', $result['outcome']);
 		$this->assertSame(3, $result['counts']['imported']);
@@ -372,7 +431,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->configurationService->method('importFromApp')
 			->willReturn(['objects' => [], 'skipped' => ['objects' => 30, 'seedObjects' => 0]]);
 
-		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+		$result = $this->service->reimportMock(appId: 'fixtureapp', slug: 'flows');
 
 		$this->assertSame('failed', $result['outcome']);
 		$this->assertStringContainsString('30', (string)$result['reason']);
@@ -381,21 +440,20 @@ class RegisterDescriptorServiceTest extends TestCase {
 	}
 
 	/**
-	 * A descriptor that declares NO objects — every real register descriptor —
-	 * must still report success. The rule above is about a descriptor that
-	 * promised data and delivered none, not about registers that never carried
-	 * any.
+	 * A real register re-import is not judged by demo objects: it declares
+	 * none, and it reports registers and schemas instead.
 	 */
-	public function testARegisterDescriptorWithNoObjectsStillSucceeds(): void {
-		$this->writeDescriptor(file: 'a_register.json', slug: 'flows', version: '1.3.0');
+	public function testARegisterReimportReportsRegistersAndSchemasNotObjects(): void {
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '1.3.0');
 		$this->expectApp('fixtureapp');
 		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.3.0')]);
-		$this->configurationService->method('importFromApp')->willReturn([]);
+		$this->configurationService->method('importFromApp')->willReturn(['registers' => ['flows']]);
 
 		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
 
 		$this->assertSame('imported', $result['outcome']);
-		$this->assertSame(0, $result['counts']['declared']);
+		$this->assertSame(['created' => 0, 'updated' => 0, 'unchanged' => 1], $result['counts']['registers']);
+		$this->assertArrayNotHasKey('declared', $result['counts']);
 	}
 
 	/**
@@ -403,7 +461,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 	 * defensible at boot, not for an action somebody just took.
 	 */
 	public function testAFailedImportIsReportedWithItsReason(): void {
-		$this->writeDescriptor(file: 'a_register.json', slug: 'flows', version: '1.3.0');
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '1.3.0');
 		$this->expectApp();
 		$this->registerMapper->method('findAll')->willReturn([]);
 		$this->configurationService->method('importFromApp')
@@ -421,9 +479,10 @@ class RegisterDescriptorServiceTest extends TestCase {
 	 * the exact defect the capability exists to end.
 	 */
 	public function testAnImportThatWritesNothingIsReportedFailedNotImported(): void {
-		$this->writeDescriptor(file: 'a_register.json', slug: 'flows', version: '1.3.0');
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '1.3.0');
 		$this->expectApp();
 		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->configurationService->method('importFromApp')->willReturn(['registers' => ['flows']]);
 
 		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
 
@@ -494,12 +553,262 @@ class RegisterDescriptorServiceTest extends TestCase {
 	}
 
 	public function testReimportingASlugTheAppDoesNotDeclareFails(): void {
-		$this->writeDescriptor(file: 'a_register.json', slug: 'flows', version: '1.3.0');
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '1.3.0');
 		$this->expectApp();
 
 		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'nothing-here');
 
 		$this->assertSame('failed', $result['outcome']);
 		$this->assertStringContainsString('nothing-here', (string)$result['reason']);
+	}
+
+	/**
+	 * A schema the mapper will return.
+	 *
+	 * @param int                  $id            The schema id.
+	 * @param array<string, mixed> $authorization Its authorization.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function schema(int $id, array $authorization): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setSlug('schema-' . $id);
+		$schema->setAuthorization($authorization);
+
+		return $schema;
+	}
+
+	/**
+	 * 🔴 FINDING 1: `--import` IMPORTED THE MOCK.
+	 *
+	 * portaliq ships `portaliq_mock_register.json` (0.27.0, demo objects) and
+	 * `portaliq_register.json` (0.97.0), both declaring `portaliq`. Glob order
+	 * put the mock first, so the "re-import" seeded 164 demo objects and set
+	 * the register to 0.27.0. The real configuration is the one imported now.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testTheRealConfigurationIsImportedNotTheMock(): void {
+		$this->writeDescriptor(file: 'fixtureapp_mock_register.json', slug: 'flows', version: '0.27.0', type: 'mock', objects: 3);
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '0.97.0', type: 'application');
+		$this->expectApp('fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '0.97.0')]);
+
+		$this->configurationService->expects($this->once())
+			->method('importFromApp')
+			->with(
+				$this->equalTo('fixtureapp'),
+				$this->callback(static fn (array $data): bool => ($data['info']['version'] ?? null) === '0.97.0'),
+				$this->equalTo('0.97.0'),
+				$this->isTrue()
+			)
+			->willReturn(['registers' => ['flows']]);
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame(AppRegisterImportRunner::PATH_OPENREGISTER, $result['path']);
+	}
+
+	/**
+	 * The register.d fragments are part of the real configuration, as on upgrade.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testRegisterDFragmentsAreImportedWithTheBase(): void {
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '1.3.0');
+		mkdir($this->appRoot . '/lib/Settings/register.d');
+		file_put_contents(
+			$this->appRoot . '/lib/Settings/register.d/10-extra.json',
+			json_encode(['components' => ['schemas' => ['extra' => ['slug' => 'extra', 'authorization' => ['read' => ['staff']]]]]])
+		);
+		$this->expectApp('fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.3.0')]);
+
+		$this->configurationService->expects($this->once())
+			->method('importFromApp')
+			->with(
+				$this->equalTo('fixtureapp'),
+				$this->callback(static fn (array $data): bool => isset($data['components']['schemas']['extra']) === true),
+				$this->stringStartsWith('1.3.0+frag.'),
+				$this->isTrue()
+			)
+			->willReturn(['registers' => ['flows']]);
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame(1, $result['fragments']);
+	}
+
+	/**
+	 * 🔴 THE APP'S OWN FORCED ENTRY POINT RUNS, UNDER THE ADMINISTRATOR'S DECISION.
+	 *
+	 * pipelinq re-grants its CRM groups after its import and portaliq its
+	 * page-editor groups, so the app's SettingsService is the real path. The
+	 * decision to take the file's authorization must be in effect while it runs.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testTheAppsOwnForcedEntryPointRunsUnderTheDecision(): void {
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '1.3.0');
+		$this->expectApp('fixtureapp');
+		$this->appManager->method('getAppInfo')->willReturn(['namespace' => 'FixtureApp']);
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.3.0')]);
+
+		$decision = $this->decision;
+		$settings = new class($decision) {
+			public array $calls = [];
+
+			public function __construct(private ShippedAuthorizationDecision $decision) {
+			}
+
+			public function loadConfiguration(): array {
+				$this->calls[] = 'unforced';
+				return ['success' => true];
+			}
+
+			public function loadSettings(bool $force = false): array {
+				$this->calls[] = ['force' => $force, 'decision' => $this->decision->via()];
+				$this->decision->noteReplaced(slug: 'portalAccount', roots: ['authorization']);
+				return ['success' => true];
+			}
+		};
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->with('OCA\\FixtureApp\\Service\\SettingsService')->willReturn(true);
+		$container->method('get')->willReturn($settings);
+		$this->containers->method('find')->willReturn($container);
+
+		$this->configurationService->expects($this->never())->method('importFromApp');
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame(AppRegisterImportRunner::PATH_APP, $result['path']);
+		$this->assertStringContainsString('loadSettings(force: true)', $result['via']);
+		$this->assertSame(
+			[['force' => true, 'decision' => 'occ openregister:descriptors:list --import']],
+			$settings->calls,
+			'the forced method ran once, under the decision; the unforced one never ran'
+		);
+		$this->assertSame(1, $result['counts']['authorizationReplaced']);
+		$this->assertNull($this->decision->via());
+	}
+
+	/**
+	 * The counts are read from the database before and after, not from the import's own report.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testTheCountsComeFromTheDatabase(): void {
+		$this->writeDescriptor(file: 'fixtureapp_register.json', slug: 'flows', version: '0.97.0');
+		$this->expectApp('fixtureapp');
+
+		$before = $this->register('flows', '0.96.0');
+		$before->setSchemas([1, 2]);
+		$after = $this->register('flows', '0.97.0');
+		$after->setSchemas([1, 2, 3]);
+		$this->registerMapper->method('findAll')->willReturnOnConsecutiveCalls([$before], [$after]);
+
+		$this->schemaMapper->method('findMultiple')->willReturnOnConsecutiveCalls(
+			[$this->schema(1, ['read' => ['authenticated']]), $this->schema(2, ['read' => ['admin']])],
+			[
+				$this->schema(1, ['read' => ['portaliq-medewerkers']]),
+				$this->schema(2, ['read' => ['admin']]),
+				$this->schema(3, ['read' => ['admin']]),
+			]
+		);
+		$this->configurationService->method('importFromApp')->willReturn(['registers' => ['flows']]);
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame(['created' => 0, 'updated' => 1, 'unchanged' => 0], $result['counts']['registers']);
+		$this->assertSame(['created' => 1, 'updated' => 1, 'unchanged' => 1], $result['counts']['schemas']);
+	}
+
+	/**
+	 * `--mock` imports only a descriptor marked as a mock, even where the real one sorts first.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testTheMockImportNeverPicksTheRealDescriptor(): void {
+		$this->writeDescriptor(file: 'a_register.json', slug: 'flows', version: '0.97.0');
+		$this->writeDescriptor(file: 'z_mock_register.json', slug: 'flows', version: '0.27.0', type: 'mock', objects: 2);
+		$this->expectApp('fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '0.27.0')]);
+
+		$this->configurationService->expects($this->once())
+			->method('importFromApp')
+			->with($this->equalTo('fixtureapp.mock'), $this->anything(), $this->equalTo('0.27.0'), $this->isTrue())
+			->willReturn(['objects' => [1, 2], 'skipped' => []]);
+
+		$result = $this->service->reimportMock(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame(2, $result['counts']['imported']);
+	}
+
+	/**
+	 * An app with no base document, as OpenRegister itself, re-imports the
+	 * non-mock descriptor that declares the slug, never its mock.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testAnAppWithoutABaseDocumentImportsTheDescriptorDeclaringTheSlug(): void {
+		$this->writeDescriptor(file: 'a_mock_register.json', slug: 'flows', version: '0.1.0', type: 'mock', objects: 2);
+		$this->writeDescriptor(file: 'flow_register.json', slug: 'flows', version: '1.3.0');
+		$this->expectApp('fixtureapp');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.3.0')]);
+
+		$this->configurationService->expects($this->once())
+			->method('importFromApp')
+			->with($this->equalTo('fixtureapp'), $this->anything(), $this->equalTo('1.3.0'), $this->isTrue())
+			->willReturn(['registers' => ['flows']]);
+
+		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame(RegisterDescriptorService::PATH_DESCRIPTOR, $result['path']);
+		$this->assertStringContainsString('flow_register.json', $result['via']);
+	}
+
+	/**
+	 * A core descriptor is re-imported under the configuration id its repair
+	 * step imports it under, never the shared `openregister` id: that would set
+	 * the version the force:false repair steps of other descriptors compare
+	 * against.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testACoreDescriptorIsReimportedUnderItsInstallTimeConfigurationId(): void {
+		$this->writeDescriptor(file: 'merge_operation_register.json', slug: 'merge-operation', version: '1.4.0');
+		$this->expectApp('openregister');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('merge-operation', '1.4.0')]);
+
+		$this->configurationService->expects($this->once())
+			->method('importFromApp')
+			->with($this->equalTo('openregister.merge-operation'), $this->anything(), $this->equalTo('1.4.0'), $this->isTrue())
+			->willReturn(['registers' => ['merge-operation'], 'importJobId' => 'job-7']);
+
+		$result = $this->service->reimport(appId: 'openregister', slug: 'merge-operation');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame('job-7', $result['importJobId'], 'the job the import ran under is reported');
+		$this->assertSame('openregister.merge-operation', $result['importAppId']);
+	}
+
+	/**
+	 * A descriptor whose repair step imports under the shared id keeps it, and
+	 * another app's file never takes a core descriptor's id.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testADescriptorWithoutADedicatedIdAndAnotherAppsFileKeepTheirOwnId(): void {
+		$this->assertSame('openregister', DescriptorConfigIds::forFile(appId: 'openregister', file: 'flow_register.json'));
+		$this->assertSame('openregister', DescriptorConfigIds::forFile(appId: 'openregister', file: 'brp_register.json'));
+		$this->assertSame('fixtureapp', DescriptorConfigIds::forFile(appId: 'fixtureapp', file: 'merge_operation_register.json'));
+		$this->assertSame('openregister.dsar-policy-packs', DescriptorConfigIds::forFile(appId: 'openregister', file: 'dsar_policy_pack_register.json'));
 	}
 }

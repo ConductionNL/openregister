@@ -36,6 +36,10 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  */
 final class MagicSearchHandlerIdsSqlTest extends TestCase {
 

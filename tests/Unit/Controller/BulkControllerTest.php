@@ -459,6 +459,45 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(1, $data['saved_count']);
 	}
 
+	/**
+	 * The mixed-schema route checks the manage rule of every schema its rows name.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 */
+	public function testSaveMixedSchemaRefusesARowSchemaTheCallerMayNotManage(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('regular-user');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(0);
+		$this->objectService->expects($this->never())->method('saveObjects');
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['@self' => ['schema' => 'document'], 'restricted' => false]],
+		]);
+
+		$result = $this->controller->save('1', '0');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$this->assertStringContainsString('document', $result->getData()['error']);
+	}
+
+	public function testSaveMixedSchemaRefusesARowSchemaThatCannotBeResolved(): void {
+		$this->stubAdminUser();
+		$this->schemaMapper->method('find')->willThrowException(new \Exception('no such schema'));
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(0);
+		$this->objectService->expects($this->never())->method('saveObjects');
+		$this->request->method('getParams')->willReturn(['objects' => [['@self' => ['schema' => 'ghost']]]]);
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $this->controller->save('1', '0')->getStatus());
+	}
+
 	public function testSaveWithStatisticsMissingSavedKey(): void {
 		$this->stubAdminUser();
 		$this->stubSchemaLookup(2);

@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} zlyhalo",
         "0 = unlimited": "0 = neobmedzené",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Tok spustí sériu krokov, keď sa niečo stane — objekt sa zmení, spustí sa plán, alebo ho spustíte sami. Tento zoznam zobrazuje toky všetkých aplikácií.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Je nakonfigurovaný pár kľúčov VAPID. Používatelia si môžu v osobných nastaveniach zapnúť oznámenia prehliadača, ktoré sa doručujú aj pri zatvorenej karte prehliadača.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Je nakonfigurovaný pár kľúčov VAPID. Používatelia si môžu v používateľských nastaveniach zapnúť oznámenia prehliadača, ktoré sa doručujú aj pri zatvorenej karte prehliadača.",
         "A deactivation request is pending.": "Žiadosť o deaktiváciu čaká na vybavenie.",
         "AI Assistant": "AI asistent",
         "AI Chat": "AI chat",

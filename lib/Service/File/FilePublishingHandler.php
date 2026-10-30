@@ -286,6 +286,11 @@ class FilePublishingHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
+		// A restricted file is never published: a public link is served without asking the restriction.
+		if ($this->container->get(FileRestrictionGuard::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
+			throw new Exception('A restricted file cannot be published');
+		}
+
 		// Use FileMapper to create the share directly in the database.
 		try {
 			$openRegisterUser = $this->fileService->getUser();
@@ -559,8 +564,8 @@ class FilePublishingHandler {
 			throw new Exception('PHP ZipArchive extension is not available');
 		}
 
-		// Get all files for the object.
-		$files = $this->fileService->getFiles($object);
+		// Get all files for the object, without the restricted ones the caller is not admitted to.
+		$files = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $this->fileService->getFiles($object));
 
 		if (empty($files) === true) {
 			throw new Exception('No files found for this object');

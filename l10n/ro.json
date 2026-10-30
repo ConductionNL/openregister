@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} eșuate",
         "0 = unlimited": "0 = nelimitat",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Un flux rulează o serie de pași atunci când se întâmplă ceva — un obiect se modifică, o programare se declanșează sau îl rulați chiar dvs. Această listă afișează fluxurile fiecărei aplicații.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "O pereche de chei VAPID este configurată. Utilizatorii pot activa notificările din browser în setările personale; acestea sunt livrate chiar și când fila browserului este închisă.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "O pereche de chei VAPID este configurată. Utilizatorii pot activa notificările din browser în setările de utilizator; acestea sunt livrate chiar și când fila browserului este închisă.",
         "A deactivation request is pending.": "O cerere de dezactivare este în așteptare.",
         "AI Assistant": "Asistent AI",
         "AI Chat": "Conversație AI",

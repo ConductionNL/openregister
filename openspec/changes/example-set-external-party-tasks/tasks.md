@@ -1,0 +1,3 @@
+- [x] T01 ExampleSetTasks accepts `performerType` and `uploadRules`; an external task's assignee is a `party:` reference, not a set account
+- [x] T02 `uploadRules` land in `metadata.upload`; an external task is written as the fragment's app
+- [x] T03 PHPUnit: an external task is written with its party and upload rules; the faulty forms are refused

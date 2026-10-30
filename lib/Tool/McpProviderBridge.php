@@ -69,9 +69,14 @@ class McpProviderBridge implements ToolInterface {
 	 * doing that resorted to splitting camelCase and singularising English.
 	 * Carrying them costs three keys and removes the guessing entirely.
 	 *
+	 * `annotations` is the free-form map a curated `#[McpTool]` declares
+	 * (REQ-ATTR-007), such as hermiq's `citizenIntake` mark. Carried whole and
+	 * never read here; the LLM never sees it, because the chat path builds its
+	 * function payload from name, description and parameters only.
+	 *
 	 * @var array<int, string>
 	 */
-	private const PASSTHROUGH_KEYS = ['scope', 'reach', 'app', 'subject', 'action'];
+	private const PASSTHROUGH_KEYS = ['scope', 'reach', 'app', 'subject', 'action', 'annotations'];
 
 	/**
 	 * Optional agent context attached by the registry.

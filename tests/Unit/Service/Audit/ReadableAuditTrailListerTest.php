@@ -35,13 +35,28 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
+use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
+use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ReadableAuditTrailListerTest extends TestCase {
 
@@ -110,7 +125,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 *
 	 * @return ReadableAuditTrailLister The lister.
 	 */
-	private function lister(array $entries, array $objects, array $permissions): ReadableAuditTrailLister {
+	private function lister(array $entries, array $objects, array $permissions, ?ReadEventVisibility $readEvents=null): ReadableAuditTrailLister {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
 		$auditMapper->method('findAll')->willReturnCallback(
 			function (?int $limit = null, ?int $offset = null) use ($entries): array {
@@ -152,9 +167,35 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			schemaMapper: $schemaMapper,
-			permissionHandler: $permissionHandler
+			permissionHandler: $permissionHandler,
+			readEvents: ($readEvents ?? $this->readsShown())
 		);
 	}//end lister()
+
+	/**
+	 * A caller outside the groups named for read entries gets the feed without them.
+	 *
+	 * @return void
+	 */
+	public function testReadEntriesAreLeftOutForACallerWhoMayNotSeeThem(): void {
+		$hidden = $this->createMock(ReadEventVisibility::class);
+		$hidden->method('maySeeReadEvents')->willReturn(false);
+		$hidden->method('isReadAction')->willReturnCallback(static fn ($action): bool => $action === 'read');
+
+		$lister = $this->lister(
+			entries: [
+				$this->entry(objectUuid: self::READABLE, action: 'read'),
+				$this->entry(objectUuid: self::READABLE),
+			],
+			objects: [$this->object(uuid: self::READABLE)],
+			permissions: [self::READABLE => true],
+			readEvents: $hidden
+		);
+
+		$page = $lister->page(userId: 'alice', limit: 20);
+
+		$this->assertSame(['update'], array_column($page['results'], 'action'), 'a read entry reached a caller who may not see reads');
+	}//end testReadEntriesAreLeftOutForACallerWhoMayNotSeeThem()
 
 	/**
 	 * THE assertion of this suite: the entry on an object the caller may not
@@ -185,6 +226,89 @@ class ReadableAuditTrailListerTest extends TestCase {
 	}//end testAnUnreadableObjectsEntryIsAbsent()
 
 	/**
+	 * A lister over the REAL permission handler, for one caller and one draft owned by somebody else.
+	 *
+	 * @param string $caller The signed-in user.
+	 *
+	 * @return array<int, string> The uuids of the entries the caller gets back.
+	 */
+	private function draftEntriesFor(string $caller): array {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($caller);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn(['staff']);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('not available'));
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueBool')->willReturnCallback(
+			static fn (string $app, string $key, bool $default=false): bool => $default
+		);
+
+		// The schema lets every signed-in user read: only the draft rule can refuse.
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setAuthorization(['read' => ['authenticated']]);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturn($schema);
+
+		$draft = $this->object(uuid: 'obj-draft');
+		$draft->setStatus('draft');
+		$draft->setOwner('alice');
+
+		$objectMapper = $this->createMock(MagicMapper::class);
+		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$draft]);
+		$auditMapper = $this->createMock(AuditTrailMapper::class);
+		$auditMapper->method('findAll')->willReturnCallback(
+			fn (?int $limit = null, ?int $offset = null): array => (($offset !== null && $offset > 0) ? [] : [$this->entry(objectUuid: 'obj-draft', action: 'create')])
+		);
+
+		$lister = new ReadableAuditTrailLister(
+			auditTrailMapper: $auditMapper,
+			objectMapper: $objectMapper,
+			schemaMapper: $schemaMapper,
+			permissionHandler: new PermissionHandler(
+				userSession: $session,
+				userManager: $userManager,
+				groupManager: $groupManager,
+				schemaMapper: $schemaMapper,
+				objectEntityMapper: $objectMapper,
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				appConfig: $appConfig,
+				logger: $this->createMock(LoggerInterface::class),
+				container: $container,
+			),
+			readEvents: $this->readsShown()
+		);
+
+		return array_column($lister->page(userId: $caller, limit: 20)['results'], 'objectUuid');
+	}//end draftEntriesFor()
+
+	/**
+	 * What a user typed into a draft is not in the readable trail of anybody else (the draft rule of hasPermission()).
+	 *
+	 * Goes red without the draft rule: the schema lets bob read, and the entry
+	 * holds the draft's values in its `changed` column.
+	 *
+	 * @return void
+	 */
+	public function testSomebodyElsesDraftHasNoEntriesInTheTrail(): void {
+		$this->assertSame([], $this->draftEntriesFor(caller: 'bob'), "bob got the audit entries of alice's draft.");
+	}//end testSomebodyElsesDraftHasNoEntriesInTheTrail()
+
+	/**
+	 * The owner still reads the entries of their own draft.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerStillGetsTheEntriesOfTheirDraft(): void {
+		$this->assertSame(['obj-draft'], $this->draftEntriesFor(caller: 'alice'));
+	}//end testTheOwnerStillGetsTheEntriesOfTheirDraft()
+
+	/**
 	 * An anonymous caller gets nothing, and the mapper is never asked.
 	 *
 	 * @return void
@@ -197,7 +321,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $this->createMock(MagicMapper::class),
 			schemaMapper: $this->createMock(SchemaMapper::class),
-			permissionHandler: $this->createMock(PermissionHandler::class)
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			readEvents: $this->readsShown()
 		);
 
 		$page = $lister->page(userId: null, limit: 20);
@@ -254,7 +379,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			schemaMapper: $schemaMapper,
-			permissionHandler: $permissionHandler
+			permissionHandler: $permissionHandler,
+			readEvents: $this->readsShown()
 		);
 
 		$page = $lister->page(userId: 'alice', limit: 20);
@@ -292,7 +418,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			schemaMapper: $schemaMapper,
-			permissionHandler: $permissionHandler
+			permissionHandler: $permissionHandler,
+			readEvents: $this->readsShown()
 		);
 
 		$page = $lister->page(userId: 'alice', limit: 20);
@@ -354,7 +481,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			schemaMapper: $this->createMock(SchemaMapper::class),
-			permissionHandler: $this->createMock(PermissionHandler::class)
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			readEvents: $this->readsShown()
 		);
 
 		$page = $lister->page(userId: 'alice', limit: 20);
@@ -413,4 +541,16 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$this->assertCount(1, $page['results']);
 		$this->assertNull($page['nextCursor'], 'A trail shorter than one batch reported more pages.');
 	}//end testAnExhaustedTrailReportsNoNextCursor()
+
+	/**
+	 * A read-event rule that shows reads, for the cases that are not about it.
+	 *
+	 * @return ReadEventVisibility
+	 */
+	private function readsShown(): ReadEventVisibility {
+		$visibility = $this->createMock(ReadEventVisibility::class);
+		$visibility->method('maySeeReadEvents')->willReturn(true);
+		$visibility->method('isReadAction')->willReturnCallback(static fn ($action): bool => $action === 'read');
+		return $visibility;
+	}//end readsShown()
 }//end class

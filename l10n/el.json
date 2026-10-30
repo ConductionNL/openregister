@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} απέτυχαν",
         "0 = unlimited": "0 = απεριόριστο",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Μια ροή εκτελεί μια σειρά βημάτων όταν συμβεί κάτι — ένα αντικείμενο αλλάζει, ένα χρονοδιάγραμμα ενεργοποιείται ή την εκτελείτε εσείς οι ίδιοι. Αυτή η λίστα εμφανίζει τις ροές κάθε εφαρμογής.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Έχει ρυθμιστεί ένα ζεύγος κλειδιών VAPID. Οι χρήστες μπορούν να ενεργοποιήσουν τις ειδοποιήσεις του προγράμματος περιήγησης από τις ρυθμίσεις χρήστη τους· παραδίδονται ακόμη και όταν η καρτέλα του προγράμματος περιήγησης είναι κλειστή.",
         "A deactivation request is pending.": "Εκκρεμεί ένα αίτημα απενεργοποίησης.",
         "AI Assistant": "Βοηθός AI",
         "AI Chat": "Συνομιλία AI",

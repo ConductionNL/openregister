@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\MigrationPack;
 
 use DateTime;
+use OCP\IL10N;
 
 /**
  * Maps one source row (CSV row / Excel row / decoded JSON object) onto a set
@@ -48,6 +49,21 @@ use DateTime;
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MappingEngine {
+	/**
+	 * Constructor.
+	 *
+	 * The row errors this engine returns are shown to the person running the
+	 * import or the editor's preview, so each message goes through the app's
+	 * translations; the values inside them stay as found.
+	 *
+	 * @param IL10N $l10n The app's translations.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+	) {
+
+	}//end __construct()
+
 	/**
 	 * Apply a pack definition to one source row.
 	 *
@@ -82,7 +98,7 @@ class MappingEngine {
 					'source' => $source,
 					'target' => $target,
 					'transform' => $transformId,
-					'message' => sprintf('Required source field "%s" is missing or empty', $source),
+					'message' => $this->l10n->t('Required source field "%s" is missing or empty', [$source]),
 				];
 				continue;
 			}
@@ -232,7 +248,7 @@ class MappingEngine {
 			case 'const':
 				return ['value' => ($transform['value'] ?? null), 'error' => null];
 			default:
-				return ['value' => null, 'error' => 'Unknown transform type "' . (string)($transform['type'] ?? '') . '"'];
+				return ['value' => null, 'error' => $this->l10n->t('Unknown transform type "%s"', [(string)($transform['type'] ?? '')])];
 		}//end switch
 	}//end applyTransform()
 
@@ -260,7 +276,7 @@ class MappingEngine {
 				if ($date === false) {
 					return [
 						'value' => null,
-						'error' => sprintf('Could not parse date "%s" with format "%s"', $stringValue, $sourceFormat),
+						'error' => $this->l10n->t('Could not parse date "%1$s" with format "%2$s"', [$stringValue, $sourceFormat]),
 					];
 				}
 			}
@@ -269,7 +285,7 @@ class MappingEngine {
 				$date = new DateTime($stringValue);
 			}
 		} catch (\Throwable $e) {
-			return ['value' => null, 'error' => sprintf('Could not parse date "%s": %s', $stringValue, $e->getMessage())];
+			return ['value' => null, 'error' => $this->l10n->t('Could not parse date "%1$s": %2$s', [$stringValue, $e->getMessage()])];
 		}
 
 		return ['value' => $date->format($targetFormat), 'error' => null];
@@ -313,7 +329,7 @@ class MappingEngine {
 		// through unmapped into the target schema property.
 		return [
 			'value' => null,
-			'error' => sprintf('Value "%s" has no mapping and no default is configured', $key),
+			'error' => $this->l10n->t('Value "%s" has no mapping and no default is configured', [$key]),
 		];
 	}//end applyMapTransform()
 

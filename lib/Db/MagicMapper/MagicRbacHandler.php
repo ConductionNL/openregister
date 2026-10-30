@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
@@ -129,6 +130,10 @@ class MagicRbacHandler {
 	 *                                      bundled together; nullable so adding them is not a fatal at existing
 	 *                                      construction sites.
 	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
+	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not be healed still lacks.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection; the optional
+	 * collaborators are nullable so existing construction sites keep working.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -140,6 +145,7 @@ class MagicRbacHandler {
 		private readonly LoggerInterface $logger,
 		private readonly ?RbacResolvers $resolvers = null,
 		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
+		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
 	}//end __construct()
 
@@ -325,6 +331,9 @@ class MagicRbacHandler {
 	 * @param string $uuidColumn The `_uuid` column as this emitter references it.
 	 * @param string|null $userId The caller, for grant resolution.
 	 * @param string $action The action being filtered; a grant only counts when it carries that permission.
+	 * @param Schema|null $schema The schema, so its drafts can be kept to their owners (decision 180).
+	 * @param string $columnPrefix Table alias with its dot for the `_status` column, empty when unaliased.
+	 * @param string|null $tableName The bare magic table; a `_status` column it lacks is left out of the draft predicate.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
 	 *
@@ -336,15 +345,49 @@ class MagicRbacHandler {
 		string $uuidColumn,
 		?string $userId,
 		string $action,
+		?Schema $schema = null,
+		string $columnPrefix = '',
+		?string $tableName = null,
 	): string {
-		return $this->objectScope()->notPrivateOrGrantedSql(
+		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
 			authColumn: $columnName,
 			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
 			isPostgres: $this->isPostgres(),
 			uuidColumn: $uuidColumn,
 			quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action)
 		);
+
+		// Decision 180: a draft answers to its owner only, like a private
+		// object, unless the schema lets others see drafts. Added HERE, the one
+		// predicate both list emitters use, so the owner admits beside it keep
+		// the owner's own drafts in view on every path.
+		// A table that could not be given its `_status` column cannot hold a
+		// draft, and naming the column would fail the query for everyone but an
+		// administrator (REQ-MTH-002: such a table degrades quietly).
+		$drafts = new DraftStatusPolicy();
+		if ($schema !== null && $drafts->draftsVisibleToOthers(schema: $schema) === false && $this->statusColumnMissing(tableName: $tableName) === false) {
+			$reachable = '(' . $reachable . ' AND ' . $drafts->notADraftSql(columnPrefix: $columnPrefix) . ')';
+		}
+
+		return $reachable;
 	}//end reachableRowSqlFor()
+
+	/**
+	 * Whether a table is known to lack its `_status` column after an attempt to heal it.
+	 *
+	 * @param string|null $tableName Bare magic table name, null when unknown.
+	 *
+	 * @return bool True when the draft predicate must be left out for this table.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	private function statusColumnMissing(?string $tableName): bool {
+		if ($this->metadataColumns === null || $tableName === null || $tableName === '') {
+			return false;
+		}
+
+		return in_array('_status', $this->metadataColumns->missingFor(tableName: $tableName), true);
+	}//end statusColumnMissing()
 
 	/**
 	 * The deny term for one list query, or `false` when nothing is visible.
@@ -488,6 +531,8 @@ class MagicRbacHandler {
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param Schema $schema Schema with authorization configuration
 	 * @param string $action CRUD action to check (default: 'read')
+	 * @param string|null $tableName The bare magic table being read, so a `_status` column it could not be
+	 *                               given is left out of the draft predicate. Null keeps the predicate.
 	 *
 	 * @return void
 	 *
@@ -501,6 +546,7 @@ class MagicRbacHandler {
 		IQueryBuilder $qb,
 		Schema $schema,
 		string $action = 'read',
+		?string $tableName = null,
 	): void {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
@@ -576,7 +622,10 @@ class MagicRbacHandler {
 				columnName: 't._authorization',
 				uuidColumn: 't._uuid',
 				userId: $userId,
-				action: $action
+				action: $action,
+				schema: $schema,
+				columnPrefix: 't.',
+				tableName: $tableName
 			)
 		);
 
@@ -1614,6 +1663,7 @@ class MagicRbacHandler {
 	 * @param Schema $schema The schema of the rows the subquery reads.
 	 * @param string $alias  The alias those rows carry in the subquery.
 	 * @param string $action The CRUD action being filtered.
+	 * @param string|null $tableName The bare magic table of the aliased rows; a `_status` column it lacks is left out of the draft predicate.
 	 *
 	 * @return string A predicate, always non-empty, safe to AND into a WHERE.
 	 *
@@ -1621,8 +1671,8 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read'): string {
-		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $alias) !== 1) {
+	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
+		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $alias) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a table alias an access predicate may be built for.', $alias)
 			);
@@ -1631,7 +1681,8 @@ class MagicRbacHandler {
 		$result = $this->buildRbacConditionsSql(
 			schema: $schema,
 			action: $action,
-			columnPrefix: $alias . '.'
+			columnPrefix: $alias . '.',
+			tableName: $tableName
 		);
 
 		if (($result['bypass'] ?? false) === true) {
@@ -1659,6 +1710,7 @@ class MagicRbacHandler {
 	 *
 	 * @param Schema $schema The schema of the table being read.
 	 * @param string $action The action the rows are filtered for (default: 'read').
+	 * @param string|null $tableName The bare magic table being read; a `_status` column it lacks is left out of the draft predicate.
 	 *
 	 * @return string|null Null when no row restriction applies (an admin); otherwise
 	 *                     a non-empty predicate safe to AND into a WHERE, `1 = 0`
@@ -1667,8 +1719,8 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function buildRbacRowPredicateSql(Schema $schema, string $action = 'read'): ?string {
-		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action);
+	public function buildRbacRowPredicateSql(Schema $schema, string $action = 'read', ?string $tableName = null): ?string {
+		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action, tableName: $tableName);
 		if (($result['bypass'] ?? false) === true) {
 			return null;
 		}
@@ -1693,6 +1745,7 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param string|null $tableName The bare magic table; a `_status` column it lacks is left out of the draft predicate.
 	 *
 	 * @return array{bypass: bool, conditions: string[]} Result with:
 	 *                                                   - 'bypass' => true means no filtering needed (user has full access)
@@ -1700,7 +1753,7 @@ class MagicRbacHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Mirrors applyRbacFilters dispatch; carries the system-owner carve-out (openregister#1617).
 	 */
-	public function buildRbacConditionsSql(Schema $schema, string $action = 'read', string $columnPrefix = ''): array {
+	public function buildRbacConditionsSql(Schema $schema, string $action = 'read', string $columnPrefix = '', ?string $tableName = null): array {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
 
@@ -1746,7 +1799,9 @@ class MagicRbacHandler {
 			action: $action,
 			userId: $userId,
 			userGroups: $userGroups,
-			columnPrefix: $columnPrefix
+			columnPrefix: $columnPrefix,
+			schema: $schema,
+			tableName: $tableName
 		);
 		if ($terms === null) {
 			return ['bypass' => false, 'conditions' => []];
@@ -1820,6 +1875,8 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param Schema|null $schema The schema, so its drafts can be kept to their owners (decision 180).
+	 * @param string|null $tableName The bare magic table; a `_status` column it lacks is left out of the draft predicate.
 	 *
 	 * @return array{denyTerm: string|null, notPrivate: string, ownerAdmits: string[]}|null The term pieces, or null
 	 *                                                                                       when the deny term
@@ -1830,7 +1887,9 @@ class MagicRbacHandler {
 		string $action,
 		?string $userId,
 		array $userGroups,
-		string $columnPrefix = ''
+		string $columnPrefix = '',
+		?Schema $schema = null,
+		?string $tableName = null
 	): ?array {
 		$denyTerm = $this->denyFilterSqlFor(
 			authorization: $authorization,
@@ -1849,7 +1908,10 @@ class MagicRbacHandler {
 			columnName: $columnPrefix . '_authorization',
 			uuidColumn: $columnPrefix . '_uuid',
 			userId: $userId,
-			action: $action
+			action: $action,
+			schema: $schema,
+			columnPrefix: $columnPrefix,
+			tableName: $tableName
 		);
 
 		$ownerAdmits = $this->ownerAdmitConditionsSql(

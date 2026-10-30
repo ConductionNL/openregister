@@ -35,7 +35,7 @@ use DateTime;
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) A criteria value object:
  * one parameter per filter the spec names, all optional. A builder or an
  * array would hide exactly the shape this class exists to make explicit.
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag) isAdmin and sortDescending
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) isAdmin, sortDescending and openFirst
  * are filter VALUES carried into the WHERE/ORDER BY, not behaviour switches.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
@@ -112,8 +112,15 @@ final class TaskInboxCriteria {
 	 * @param string|null $kind When set, only tasks carrying this kind. Last
 	 *                          in the list on purpose: every caller names its
 	 *                          arguments, and appending cannot shift one.
+	 * @param bool $includeBlocked When true, tasks whose blocker is still open
+	 *                             are listed too. An object or run anchor
+	 *                             lists them regardless: the case shows what
+	 *                             waits and on what.
+	 * @param bool $openFirst When true, open tasks sort before finished ones,
+	 *                        and the chosen sort orders within each.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function __construct(
 		public readonly string $uid,
@@ -131,6 +138,8 @@ final class TaskInboxCriteria {
 		public readonly string $sort = self::SORT_DUE,
 		public readonly bool $sortDescending = false,
 		public readonly ?string $kind = null,
+		public readonly bool $includeBlocked = false,
+		public readonly bool $openFirst = false,
 	) {
 
 	}//end __construct()

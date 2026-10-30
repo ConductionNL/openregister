@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -49,7 +50,15 @@ use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
- * Decides each item by its inline decision table.
+ * Decides each item by its decision table, inline or stored and named by tableRef.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Every branch is a save-time refusal the
+ *   step owes its author (mappings, defaults, paths, inline or stored table); splitting them
+ *   across classes would scatter one contract.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The flow-node interfaces account for four of
+ *   the thirteen; the rest are the evaluator, validator, store and flow item helpers it runs.
+ *
+ * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
  */
 class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
@@ -67,12 +76,14 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 * @param DecisionTableValidator $validator Refuses a table the evaluator could not execute.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
+	 * @param DecisionTableStore|null $store Reads a stored table named by tableRef.
 	 */
 	public function __construct(
 		private readonly DecisionTableEvaluator $engine,
 		private readonly DecisionTableValidator $validator,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
+		private readonly ?DecisionTableStore $store = null,
 	) {
 
 	}//end __construct()
@@ -144,7 +155,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
 	 */
 	public function configKeys(): array {
-		return ['table', 'inputMapping', 'outputMapping', 'defaultOutputs', 'resultKey'];
+		return ['table', 'tableRef', 'inputMapping', 'outputMapping', 'defaultOutputs', 'resultKey'];
 	}//end configKeys()
 
 	/**
@@ -164,8 +175,16 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				'key' => 'table',
 				'label' => $this->l10n->t('Decision table'),
 				'type' => 'textarea',
-				'help' => $this->l10n->t('The table as JSON: hit policy, inputs, outputs and rules. Saving refuses a table the engine cannot run.'),
-				'required' => true,
+				'help' => $this->l10n->t(
+					'The table as JSON: hit policy, inputs, outputs and rules. Saving refuses a table the engine cannot run. Leave empty to use a stored table.'
+				),
+			],
+			[
+				'key' => 'tableRef',
+				'label' => $this->l10n->t('Stored decision table'),
+				'type' => 'select',
+				'optionsFrom' => '/apps/openregister/api/objects/'.DecisionTableStore::REGISTER.'/'.DecisionTableStore::SCHEMA,
+				'help' => $this->l10n->t('A table from the decision-tables register. Use this or an inline table, not both.'),
 			],
 			[
 				'key' => 'inputMapping',
@@ -211,19 +230,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	public function validateConfig(array $config): void {
-		$table = ($config['table'] ?? null);
-		if (is_array($table) === false || $table === []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('A decision-table step needs a table.')
-			);
-		}
-
-		$problems = $this->validator->validate(table: $table);
-		if ($problems !== []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('The decision table cannot be run: %s.', [implode('; ', $problems)])
-			);
-		}
+		$table = $this->resolveTable(config: $config);
 
 		$inputNames = $this->columnNames(columns: (array)($table['inputs'] ?? []));
 		$outputNames = $this->columnNames(columns: (array)($table['outputs'] ?? []));
@@ -272,7 +279,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 		// the same belt-and-braces ObjectReadNode wears.
 		$this->validateConfig(config: $config);
 
-		$table = (array)$config['table'];
+		$table = $this->resolveTable(config: $config);
 		$inputMapping = (array)($config['inputMapping'] ?? []);
 		$outputMapping = (array)($config['outputMapping'] ?? []);
 		$resultKey = trim((string)($config['resultKey'] ?? ''));
@@ -314,6 +321,70 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 
 		return $out;
 	}//end execute()
+
+	/**
+	 * The table a step runs: inline, or stored and named by `tableRef`.
+	 *
+	 * Exactly one of the two. Both would leave a reader guessing which one
+	 * decided; neither is a step that cannot decide anything.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return array<string, mixed> An executable table.
+	 *
+	 * @throws UnexpectedValueException When the configuration names no executable table.
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+	 */
+	private function resolveTable(array $config): array {
+		$table     = ($config['table'] ?? null);
+		$reference = trim((string)($config['tableRef'] ?? ''));
+		$hasInline = (is_array($table) === true && $table !== []);
+
+		if ($hasInline === true && $reference !== '') {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A decision-table step takes an inline table or a stored table, not both.')
+			);
+		}
+
+		if ($reference !== '') {
+			return $this->storedTable(reference: $reference);
+		}
+
+		if ($hasInline === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A decision-table step needs a table.')
+			);
+		}
+
+		$problems = $this->validator->validate(table: $table);
+		if ($problems !== []) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The decision table cannot be run: %s.', [implode('; ', $problems)])
+			);
+		}
+
+		return $table;
+	}//end resolveTable()
+
+	/**
+	 * Read a stored table, which the store has already validated.
+	 *
+	 * @param string $reference The table's key or id.
+	 *
+	 * @return array<string, mixed> The table.
+	 *
+	 * @throws UnexpectedValueException When the store is absent or the reference names no executable table.
+	 */
+	private function storedTable(string $reference): array {
+		if ($this->store === null) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('Stored decision tables are not available here, so "%s" cannot be used.', [$reference])
+			);
+		}
+
+		return $this->store->find(reference: $reference);
+	}//end storedTable()
 
 	/**
 	 * Decide one item: build the inputs, run the evaluator, apply the

@@ -23,6 +23,9 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
+use InvalidArgumentException;
+use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
+use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -251,6 +254,11 @@ class FileSettingsHandler {
 				'entityRecognitionEnabled' => $fileData['entityRecognitionEnabled'] ?? false,
 				'entityRecognitionMethod' => $fileData['entityRecognitionMethod'] ?? 'auto',
 				// Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
+				// Who owns a redaction decision on a file that belongs to no
+				// schema (reviewer-owns-their-decisions); null is open. A save
+				// that does not carry the key keeps the stored declaration (the
+				// admin form never sends it); an explicit null clears it.
+				ReviewPolicy::SETTINGS_KEY => $this->reviewDefault(fileData: $fileData),
 			];
 
 			$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
@@ -268,6 +276,42 @@ class FileSettingsHandler {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
 	}//end updateFileSettingsOnly()
+
+	/**
+	 * The instance review default from a settings save, refused when unsound.
+	 *
+	 * A save without the key keeps the stored declaration; an explicit null clears it.
+	 *
+	 * @param array<string, mixed> $fileData The settings being saved.
+	 *
+	 * @return array<string, mixed>|null The declaration to store, or null when there is none.
+	 *
+	 * @throws InvalidArgumentException When the declaration names an ownership nobody can honour.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 */
+	private function reviewDefault(array $fileData): ?array {
+		if (array_key_exists(ReviewPolicy::SETTINGS_KEY, $fileData) === false) {
+			$stored = ($this->getFileSettingsOnly()[ReviewPolicy::SETTINGS_KEY] ?? null);
+			if (is_array($stored) === true) {
+				return $stored;
+			}
+
+			return null;
+		}
+
+		$declaration = $fileData[ReviewPolicy::SETTINGS_KEY];
+		if ($declaration === null) {
+			return null;
+		}
+
+		$errors = (new ReviewAnnotationValidator())->validate(configuration: [ReviewPolicy::ANNOTATION => $declaration]);
+		if ($errors !== []) {
+			throw new InvalidArgumentException(implode(' ', array_column($errors, 'message')));
+		}
+
+		return ReviewPolicy::fromDeclaration(declaration: $declaration)->toArray();
+	}//end reviewDefault()
 
 	/**
 	 * The stored OpenAnonymiser password, for the outgoing request only.

@@ -72,6 +72,16 @@ class FlowRunAttribution {
 	private const TRIGGER_SCHEDULE = 'schedule';
 
 	/**
+	 * The trigger kind of a run a case plan queues for a stage or process task.
+	 *
+	 * Queued without a caller whenever the plan was realised by a system or cascade actor, so it answers from
+	 * the same declared identity a schedule does.
+	 *
+	 * @var string
+	 */
+	private const TRIGGER_CASE = 'case';
+
+	/**
 	 * The node type a schedule trigger uses.
 	 *
 	 * @var string
@@ -179,7 +189,8 @@ class FlowRunAttribution {
 	/**
 	 * The identity declared by the trigger that started this run.
 	 *
-	 * Only a SCHEDULE trigger declares one. Every other entry point already
+	 * Only a SCHEDULE trigger node declares one, for a schedule run and for a `case` run (a plan item realised
+	 * by a system actor, which has no caller either). Every other entry point already
 	 * carries its identity in the caller argument: a manual run has the session
 	 * user, an object event has the user whose action raised it, and a sub-flow
 	 * is dispatched with its parent run's acting identity. A schedule has no
@@ -201,7 +212,7 @@ class FlowRunAttribution {
 	private function declaredByTrigger(?object $flow, string $trigger): array {
 		$none = ['user' => null, 'declaredBy' => null];
 
-		if ($flow === null || $trigger !== self::TRIGGER_SCHEDULE) {
+		if ($flow === null || in_array($trigger, [self::TRIGGER_SCHEDULE, self::TRIGGER_CASE], true) === false) {
 			return $none;
 		}
 

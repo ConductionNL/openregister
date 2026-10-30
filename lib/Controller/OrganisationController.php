@@ -35,6 +35,10 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationUsageService;
+use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -115,6 +119,13 @@ class OrganisationController extends Controller {
 	private IGroupManager $groupManager;
 
 	/**
+	 * Records a change of who holds the special right `grant_manage`.
+	 *
+	 * @var GrantChangeAuditor|null
+	 */
+	private ?GrantChangeAuditor $grantAuditor;
+
+	/**
 	 * OrganisationController constructor
 	 *
 	 * @param string $appName Application name
@@ -126,6 +137,11 @@ class OrganisationController extends Controller {
 	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
 	 * @param IUserSession $userSession User session for authorization checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param OrganisationUsageService $usageService Measures an organisation's usage
+	 * @param GrantChangeAuditor|null $grantAuditor Records a change of who holds the special right `grant_manage`. Null only in legacy fixtures.
+	 * @param OrganisationLifecycleAuditor|null $lifecycleAuditor Records an edit of an organisation's details. Null only in legacy fixtures.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -139,8 +155,12 @@ class OrganisationController extends Controller {
 		TenantUsageMapper $tenantUsageMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
+		private readonly OrganisationUsageService $usageService,
+		?GrantChangeAuditor $grantAuditor = null,
+		private readonly ?OrganisationLifecycleAuditor $lifecycleAuditor = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->grantAuditor = $grantAuditor;
 		$this->organisationService = $organisationService;
 		$this->organisationMapper = $organisationMapper;
 		$this->logger = $logger;
@@ -261,7 +281,7 @@ class OrganisationController extends Controller {
 	 *     active: bool|null, parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}|null}, array<never, never>>
 	 *
@@ -331,7 +351,7 @@ class OrganisationController extends Controller {
 	 *     active: bool|null, parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}|null}, array<never, never>>
 	 *
@@ -393,7 +413,7 @@ class OrganisationController extends Controller {
 	 *     parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}}, array<never, never>>
 	 *
@@ -634,7 +654,7 @@ class OrganisationController extends Controller {
 	 *     parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: int|null, bandwidth: null, requests: int|null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}}, array<never, never>>
 	 *
@@ -658,9 +678,14 @@ class OrganisationController extends Controller {
 			$children = $this->organisationMapper->findChildrenChain($uuid);
 			$organisation->setChildren($children);
 
+			// The measured usage replaces the entity's, which cannot measure
+			// storage or requests.
+			$data = $organisation->jsonSerialize();
+			$data['usage'] = $this->usageService->measure(organisation: $organisation);
+
 			return new JSONResponse(
 				data: [
-					'organisation' => $organisation->jsonSerialize(),
+					'organisation' => $data,
 				],
 				statusCode: Http::STATUS_OK
 			);
@@ -687,6 +712,10 @@ class OrganisationController extends Controller {
 	/**
 	 * Update organisation details
 	 *
+	 * Members read their organisation; only a Nextcloud administrator or the
+	 * organisation's own administrator (its owner) may change it. The role is
+	 * checked before anything is read from the request or written.
+	 *
 	 * @param string $uuid Organisation UUID.
 	 *
 	 * @NoAdminRequired
@@ -709,10 +738,21 @@ class OrganisationController extends Controller {
 				);
 			}
 
+			if ($this->organisationService->isOrganisationAdmin($uuid) === false) {
+				return new JSONResponse(
+					data: [
+						'error' => 'Only an administrator or an administrator of this organisation may change it. Members can read it.',
+					],
+					statusCode: Http::STATUS_FORBIDDEN
+				);
+			}
+
 			$organisation = $this->organisationMapper->findByUuid($uuid);
 			$data = $this->extractRequestData();
+			$grantManageBefore = $this->grantManageOf(organisation: $organisation);
 
 			// Apply field updates using extracted helper methods.
+			$detailsBefore = $this->auditedDetailsOf(organisation: $organisation);
 			$this->handleNameAndSlugUpdate(organisation: $organisation, data: $data);
 			$this->handleDescriptionUpdate(organisation: $organisation, data: $data);
 			$this->handleSlugUpdate(organisation: $organisation, data: $data);
@@ -730,11 +770,64 @@ class OrganisationController extends Controller {
 				return $parentUpdateResponse;
 			}
 
-			return $this->saveAndReturnOrganisation(organisation: $organisation);
+			$response = $this->saveAndReturnOrganisation(organisation: $organisation);
+			$this->lifecycleAuditor?->recordUpdate(
+				organisation: $organisation,
+				before: $detailsBefore,
+				after: $this->auditedDetailsOf(organisation: $organisation)
+			);
+
+			// Who holds the right to decide who reads a record is the one change
+			// here that must be on the trail, whoever made it.
+			$grantManageAfter = $this->grantManageOf(organisation: $organisation);
+			if ($grantManageAfter !== $grantManageBefore) {
+				$this->grantAuditor?->recordSpecialRight(
+					organisationUuid: $uuid,
+					before: $grantManageBefore,
+					after: $grantManageAfter
+				);
+			}
+
+			return $response;
 		} catch (Exception $e) {
 			return $this->handleUpdateError(uuid: $uuid, exception: $e);
 		}//end try
 	}//end update()
+
+	/**
+	 * The details of an organisation an edit is audited for.
+	 *
+	 * @param object $organisation Organisation entity.
+	 *
+	 * @return array<string, string|null> The name, description and slug.
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	private function auditedDetailsOf(object $organisation): array {
+		return [
+			'name'        => $organisation->getName(),
+			'description' => $organisation->getDescription(),
+			'slug'        => $organisation->getSlug(),
+		];
+	}//end auditedDetailsOf()
+
+	/**
+	 * The groups that hold the special right `grant_manage` on an organisation's records.
+	 *
+	 * @param object $organisation Organisation entity.
+	 *
+	 * @return array<int|string, mixed> The stored list, empty when there is none.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	private function grantManageOf(object $organisation): array {
+		$list = ($organisation->getAuthorization()[OrganisationSpecialRights::GRANT_MANAGE] ?? []);
+		if (is_array($list) === false) {
+			return [];
+		}
+
+		return $list;
+	}//end grantManageOf()
 
 	/**
 	 * Patch organisation details (alias for update)
@@ -772,7 +865,7 @@ class OrganisationController extends Controller {
 	 *     children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}>,
 	 *     limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>},
@@ -1054,6 +1147,9 @@ class OrganisationController extends Controller {
 			'storageQuota' => 'setStorageQuota',
 			'bandwidthQuota' => 'setBandwidthQuota',
 			'requestQuota' => 'setRequestQuota',
+			'userQuota' => 'setUserQuota',
+			'objectQuota' => 'setObjectQuota',
+			'objectQuotaSchema' => 'setObjectQuotaSchema',
 		];
 
 		foreach ($simpleFields as $field => $setter) {

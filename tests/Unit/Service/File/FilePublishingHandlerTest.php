@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
+use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
@@ -56,6 +57,8 @@ class FilePublishingHandlerTest extends TestCase {
 	/** @var IServerContainer&MockObject */
 	private IServerContainer $container;
 
+	private FileRestrictionGuard&MockObject $restrictions;
+
 	/**
 	 * The party indicator guard the handler resolves before it publishes.
 	 * Permissive by default; one test makes it refuse.
@@ -77,7 +80,13 @@ class FilePublishingHandlerTest extends TestCase {
 		// close the cycle FileService is already set through a setter to avoid.
 		$this->partyIndicators = $this->createMock(PartyIndicatorGuard::class);
 		$this->container = $this->createMock(IServerContainer::class);
-		$this->container->method('get')->willReturn($this->partyIndicators);
+		$this->restrictions = $this->createMock(FileRestrictionGuard::class);
+		$this->restrictions->method('readableNodes')->willReturnArgument(0);
+		$services = [FileRestrictionGuard::class => $this->restrictions];
+		$partyIndicators = $this->partyIndicators;
+		$this->container->method('get')->willReturnCallback(
+			static fn (string $id): object => ($services[$id] ?? $partyIndicators)
+		);
 
 		$this->handler = new FilePublishingHandler(
 			$this->objectEntityMapper,
@@ -184,6 +193,20 @@ class FilePublishingHandlerTest extends TestCase {
 		$this->expectExceptionCode(403);
 		$this->expectExceptionMessage('Geheimhouding');
 
+		$this->handler->publishFile($object, 42);
+	}
+
+	#[Test]
+	public function testARestrictedFileIsNeverPublished(): void {
+		$object = $this->createObjectEntity(1);
+		$mockFile = $this->createMock(File::class);
+		$mockFile->method('getId')->willReturn(42);
+		$this->fileService->method('getFile')->willReturn($mockFile);
+		$this->restrictions->method('isRestricted')->with(42)->willReturn(true);
+		$this->fileMapper->expects($this->never())->method('publishFile');
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('A restricted file cannot be published');
 		$this->handler->publishFile($object, 42);
 	}
 

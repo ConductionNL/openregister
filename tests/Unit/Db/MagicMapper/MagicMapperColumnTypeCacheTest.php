@@ -146,6 +146,31 @@ class MagicMapperColumnTypeCacheTest extends TestCase {
 	}//end rows()
 
 	/**
+	 * The lookup compares table_name as stored, so the catalog index applies.
+	 *
+	 * @return void
+	 */
+	public function testTheLookupDoesNotWrapTheTableNameColumn(): void {
+		$mapper = $this->makeMapper(rows: $this->rows());
+		$this->call($mapper, 'columnExistsInTable', 'openregister_table_1_2', 'title');
+
+		$this->assertStringNotContainsString(needle: 'LOWER(table_name)', haystack: $this->lastSql);
+		$this->assertMatchesRegularExpression(pattern: '/WHERE\s+table_name\s*=\s*\?/', string: $this->lastSql);
+	}//end testTheLookupDoesNotWrapTheTableNameColumn()
+
+	/**
+	 * No information_schema lookup in the mappers wraps table_name in LOWER().
+	 *
+	 * @return void
+	 */
+	public function testNoMapperLookupWrapsTheTableNameColumn(): void {
+		foreach (['MagicMapper.php', 'MagicMapper/MagicFacetHandler.php', 'MagicMapper/MagicBulkHandler.php'] as $file) {
+			$source = (string)file_get_contents(filename: __DIR__.'/../../../../lib/Db/'.$file);
+			$this->assertStringNotContainsString(needle: 'LOWER(table_name)', haystack: $source, message: $file);
+		}
+	}//end testNoMapperLookupWrapsTheTableNameColumn()
+
+	/**
 	 * Call a private mapper method.
 	 *
 	 * @param MagicMapper $mapper The mapper.

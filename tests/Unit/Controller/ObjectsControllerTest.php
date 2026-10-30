@@ -993,6 +993,8 @@ class ObjectsControllerTest extends TestCase {
 	// --- logs() tests ---
 
 	public function testLogsReturns404WhenObjectNotFound(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
 
@@ -1009,6 +1011,8 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testLogsThrowsWhenFindFails(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setSchema')->willReturnSelf();
@@ -1265,12 +1269,20 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('getRegister')->willReturn(1);
 		$this->objectService->method('getSchema')->willReturn(2);
 		// clearCreatedSubObjects is void — no willReturn needed
-		$this->objectService->method('saveObject')
-			->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Invalid data'));
+		$exception = new \OCA\OpenRegister\Exception\ValidationException('Invalid data');
+		$this->objectService->method('saveObject')->willThrowException($exception);
+		$shaped = new JSONResponse(
+			['status' => 'error', 'message' => 'Validation failed', 'errors' => [['property' => 'title', 'message' => 'Invalid data', 'errors' => []]]],
+			400
+		);
+		$this->objectService->expects($this->once())->method('handleValidationException')->with($exception)->willReturn($shaped);
 
 		$result = $this->controller->create('1', '2', $this->objectService);
 
+		// Decision 179: create refuses in the per-property shape update uses, not a bare string.
+		$this->assertSame($shaped, $result);
 		$this->assertSame(400, $result->getStatus());
+		$this->assertSame('title', $result->getData()['errors'][0]['property']);
 	}
 
 	public function testCreateReturns422OnHookStoppedException(): void {
@@ -2084,6 +2096,8 @@ class ObjectsControllerTest extends TestCase {
 	 * Test logs() returns 404 when register does not match (with message key check).
 	 */
 	public function testLogsReturns404WhenRegisterDoesNotMatchWithMessage(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('99'); // different register
@@ -2110,6 +2124,8 @@ class ObjectsControllerTest extends TestCase {
 	 * Test logs() returns 404 when schema does not match (with message content).
 	 */
 	public function testLogsReturns404WhenSchemaDoesNotMatchWithMessage(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -2436,6 +2452,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsReturnsPaginatedLogsOnSuccess(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -2853,10 +2871,14 @@ class ObjectsControllerTest extends TestCase {
 				'Custom validation failed',
 				['name' => 'Name is required']
 			));
+		$this->objectService->expects($this->once())->method('handleValidationException')
+			->willReturn(new JSONResponse(['status' => 'error', 'message' => 'Validation failed', 'errors' => [['name' => 'Name is required']]], 400));
 
 		$result = $this->controller->create('1', '2', $this->objectService);
 
 		$this->assertSame(400, $result->getStatus());
+		$this->assertIsArray($result->getData());
+		$this->assertSame('Validation failed', $result->getData()['message']);
 	}
 
 	// =========================================================================
@@ -3449,6 +3471,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsThrowsWhenRegisterNotFound(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setRegister')
@@ -3459,6 +3483,8 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testLogsThrowsWhenSchemaNotFound(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setRegister')->willReturnSelf();
@@ -4615,6 +4641,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaBySlug(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
@@ -4654,6 +4682,8 @@ class ObjectsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testLogsReturns200WhenSchemaMatchesAsString(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -4676,6 +4706,8 @@ class ObjectsControllerTest extends TestCase {
 	}//end testLogsReturns200WhenSchemaMatchesAsString()
 
 	public function testLogsReturns404WhenSchemaDoesNotMatch(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -4699,6 +4731,8 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testLogsReturns404WhenRegisterDoesNotMatch(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('99'); // different register
@@ -4724,6 +4758,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsObject(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		$schemaObj = new \stdClass();
 		$schemaObj->id = '2';
@@ -4759,6 +4795,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsObjectById(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		$schemaObj = new \stdClass();
 		$schemaObj->id = '2';
@@ -4793,6 +4831,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsArrayById(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
@@ -4824,6 +4864,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsWithPaginationParams(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -5366,6 +5408,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsReturns404OnDbException(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setSchema')->willReturnSelf();
@@ -5385,6 +5429,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsWithLegacyParams(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -5879,6 +5925,56 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame('export_too_large', $result->getData()['error']);
 		$this->assertSame(6000, $result->getData()['rowCount']);
 		$this->assertSame(5000, $result->getData()['maxRows']);
+	}
+
+	/**
+	 * Without an office server a PDF export answers 501 with a clear message.
+	 */
+	public function testExportPdfWithoutOfficeServerReturns501(): void {
+		$this->grantExport();
+		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$registerEntity->method('getSlug')->willReturn('my-register');
+
+		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$schemaEntity->method('getSlug')->willReturn('my-schema');
+
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+		$this->request->method('getParams')->willReturn(['format' => 'pdf']);
+		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+			if ($key === 'format') {
+				return 'pdf';
+			}
+			return $default;
+		});
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->exportService->method('exportToPdf')->willThrowException(
+			new \OCA\OpenRegister\Exception\OfficeServerRequiredException()
+		);
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+		$this->assertSame(501, $result->getStatus());
+		$this->assertSame('office_server_required', $result->getData()['error']);
+		$this->assertStringContainsString('Collabora or Euro-Office', $result->getData()['message']);
 	}
 
 	// =========================================================================

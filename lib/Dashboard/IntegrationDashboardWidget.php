@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Dashboard;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\Dashboard\IIconWidget;
 use OCP\Dashboard\IWidget;
@@ -109,7 +109,7 @@ class IntegrationDashboardWidget implements IWidget, IIconWidget {
 	 */
 	public function getIconUrl(): string {
 		return $this->urlGenerator->getAbsoluteURL(
-			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg')
+			$this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app-dark.svg')
 		);
 	}//end getIconUrl()
 
@@ -138,6 +138,6 @@ class IntegrationDashboardWidget implements IWidget, IIconWidget {
 	 *   exists in the NC AppFramework.
 	 */
 	public function load(): void {
-		ScriptManifestLoader::addEntryScripts(Application::APP_ID, 'userDashboard', 'openregister-user-dashboard');
+		ScriptManifestLoader::addEntryScripts(AppIdentity::APP_ID, 'userDashboard', 'openregister-user-dashboard');
 	}//end load()
 }//end class

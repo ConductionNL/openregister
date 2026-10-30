@@ -326,6 +326,7 @@ class CalendarLinkService {
 			$key = $link->getCalendarUri() . '|' . $link->getEventUid();
 			$payload = $link->jsonSerialize();
 			$payload['source'] = 'link-table';
+			$payload['attendees'] = $this->attendeesOf(link: $link);
 			$merged[$key] = $payload;
 		}
 
@@ -358,6 +359,45 @@ class CalendarLinkService {
 
 		return array_values($merged);
 	}//end getLinkedEvents()
+
+	/**
+	 * The people invited to a linked event, read from the event itself: each
+	 * with the name it carries, its address and how far they answered
+	 * (`needs-action`, `accepted`, `declined`, `tentative`). Empty when the
+	 * event cannot be read.
+	 *
+	 * @param CalendarLink $link The link row.
+	 *
+	 * @return array<int, array{name: string, email: string, partstat: string}>
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function attendeesOf(CalendarLink $link): array {
+		try {
+			$object = $this->calDavBackend->getCalendarObject((int)$link->getCalendarId(), (string)$link->getEventUri());
+			if (is_array($object) === false || (string)($object['calendardata'] ?? '') === '') {
+				return [];
+			}
+
+			$vevent = (Reader::read((string)$object['calendardata'])->select('VEVENT')[0] ?? null);
+			if ($vevent === null) {
+				return [];
+			}
+
+			$attendees = [];
+			foreach ($vevent->select('ATTENDEE') as $attendee) {
+				$attendees[] = [
+					'name' => (string)($attendee['CN'] ?? ''),
+					'email' => str_ireplace('mailto:', '', (string)$attendee),
+					'partstat' => strtolower((string)($attendee['PARTSTAT'] ?? 'needs-action')),
+				];
+			}
+
+			return $attendees;
+		} catch (Throwable $e) {
+			return [];
+		}
+	}//end attendeesOf()
 
 	/**
 	 * Merge a single X-OR-* scan event into the dedupe map.

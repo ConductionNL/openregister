@@ -395,6 +395,44 @@ test.describe('object archive state over HTTP', () => {
 		expect(await write.text()).toMatch(/frozen/i)
 	})
 
+	// REQ-OAS-007 (task W.4): the freeze reaches the object's files. The
+	// refusal is 409 with the marker, a read of the files still answers, and
+	// an unfreeze lifts the refusal.
+	test('a frozen object refuses a file upload with the reason, and accepts it after an unfreeze', async () => {
+		const filesUrl = `${API}/objects/${registerId}/${schemaId}/${frozenUuid}/files`
+		const upload = { data: { name: `bijlage-${RUN}.txt`, content: 'levering' } }
+
+		const refused = await admin.post(filesUrl, upload)
+		expect(refused.status(), 'an upload to a frozen object answers 409').toBe(
+			409,
+		)
+		const body = await refused.json()
+		expect(body.state).toBe('frozen')
+		expect(body.reason).toBe('bezwaar')
+		expect(body.by, 'the refusal names who froze it').toBeTruthy()
+		expect(body.error).toMatch(/frozen/i)
+
+		const listed = await admin.get(filesUrl)
+		expect(
+			listed.ok(),
+			"reading a frozen object's files stays allowed",
+		).toBeTruthy()
+
+		const unfrozen = await admin.delete(
+			`${API}/objects/${registerId}/${schemaId}/${frozenUuid}/freeze`,
+		)
+		expect(
+			unfrozen.ok(),
+			`unfreeze failed: ${await unfrozen.text()}`,
+		).toBeTruthy()
+
+		const accepted = await admin.post(filesUrl, upload)
+		expect(
+			accepted.ok(),
+			`after an unfreeze the upload goes through: ${await accepted.text()}`,
+		).toBeTruthy()
+	})
+
 	test('an immutable property accepts its first value and refuses the next', async () => {
 		const first = await admin.put(
 			`${API}/objects/${registerId}/${besluitSchemaId}/${besluitUuid}`,

@@ -82,16 +82,26 @@ return [
 
         // Object-scoped integration sub-resource dispatch —
         // pluggable-integration-registry task 4.2 / tasks.md#task-19.
-        // A declared action bound to a manual flow: one click, several changes,
-        // and a hint about where the handler goes next. The action's own right
-        // authorises it; the flow adds no second permission model (ADR-023).
+        // A declared action run with {inputs}: a transition, a bound flow or inline
+        // steps, and a hint about where the handler goes next. The action's own
+        // right authorises it; the body adds no second permission model (ADR-023).
+        // The actions the caller may run on this object: declared ones and the
+        // lifecycle's transitions in one list, each with availability and reason.
+        ['name' => 'objectActions#index', 'url' => '/api/objects/{register}/{schema}/{id}/actions', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // The runs of actions on this object, `action.run` and the older `action.macro`, newest first.
+        ['name' => 'objectActions#history', 'url' => '/api/objects/{register}/{schema}/{id}/actions/history', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
-        // The same macro on a selection: one run per object, reported per object.
+        // The same action on a selection: one run per object, reported per object.
         // Its own prefix, because `/api/objects/{register}/{schema}/...` with four
         // segments would be read as an object id by the routes above.
         ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'action' => '[^/]+']],
+        // The actions offered on a selection (the `bulk` surface).
+        ['name' => 'objectActions#selection', 'url' => '/api/object-actions/{register}/{schema}', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
@@ -124,6 +134,12 @@ return [
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#setOwnerGroup', 'url' => '/api/objects/{register}/{schema}/{id}/ownership/group', 'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#reassign',      'url' => '/api/ownership/reassign',                               'verb' => 'POST'],
+
+        // A draft's owner makes it definitive (decision 216). An explicit action:
+        // a PUT or PATCH that sets `@self.status` to `active` stays refused, so
+        // nothing leaves draft by accident. A plain Controller, so a refusal
+        // keeps its status (OCSMiddleware would turn a 403 into a 200).
+        ['name' => 'objectDraft#activate', 'url' => '/api/objects/{register}/{schema}/{id}/activate', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
@@ -839,6 +855,8 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        // Try a flow against an object without effect (flow-dry-run): the `flow.update` right.
+        ['name' => 'flowDryRun#dryRun', 'url' => '/api/flows/{id}/dry-run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // BPMN 2.0 interchange. Export is read-guarded and import is
         // flow.create-guarded, both inside the controller; the auth posture is
         // declared there with #[NoAdminRequired] and no CSRF exemption, because
@@ -1193,6 +1211,11 @@ return [
         ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        // Decision 179 (ADR-117): a form submits into its destination object.
+        ['name' => 'forms#validate', 'url' => '/api/forms/validate', 'verb' => 'POST'],
+        ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
+        ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
+        ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
@@ -1238,6 +1261,7 @@ return [
         ['name' => 'objectRelations#removeReferences', 'url' => '/api/objects/{register}/{schema}/{id}/relation-references/{anchor}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'anchor' => '[^/]+']],
         ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#tree',        'url' => '/api/objects/{register}/{schema}/{id}/tree',                       'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
             // Whether a row exists in other registers, and nothing about the
@@ -1256,6 +1280,12 @@ return [
             // caller that an object exists when they may not read it.
         ['name' => 'objects#presenceBeat',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceDepart', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+            // A closing tab can only send a beacon, which is always a POST. The
+            // client marks it `?_method=DELETE`; Nextcloud does not read that
+            // marker, so without this route every beacon answered 405 and the
+            // closed tab lingered for a whole window. The method refuses a POST
+            // that does not carry the marker.
+        ['name' => 'objects#presenceDepartByBeacon', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceList',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
             // Move an object to another register and schema, keeping its uuid
             // and everything keyed on it (identity-survives-a-move). NOT a
@@ -1509,6 +1539,13 @@ return [
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 		['name' => 'files#office', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/office', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#officePage', 'url' => '/office/{register}/{schema}/{id}/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		// An object's folder for the files browser, subfolders included, through
+		// the object's rule instead of WebDAV (object-folder-in-files-browser).
+		['name' => 'objectFolder#index',   'url' => '/api/objects/{register}/{schema}/{id}/folder',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#create',  'url' => '/api/objects/{register}/{schema}/{id}/folder',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#upload',  'url' => '/api/objects/{register}/{schema}/{id}/folder/upload',   'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#rename',  'url' => '/api/objects/{register}/{schema}/{id}/folder/{nodeId}', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'nodeId' => '\d+']],
+		['name' => 'objectFolder#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/folder/{nodeId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'nodeId' => '\d+']],
 
         // Tasks: user-scoped listing (all CalDAV VTODOs for current user).
         ['name' => 'tasks#allUserTasks', 'url' => '/api/tasks', 'verb' => 'GET'],
@@ -1824,6 +1861,13 @@ return [
 		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		// Record templates (records-saved-templates D-4): named values for a new record, shared like a view.
+		['name' => 'recordTemplates#index', 'url' => '/api/record-templates', 'verb' => 'GET'],
+		['name' => 'recordTemplates#show', 'url' => '/api/record-templates/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#create', 'url' => '/api/record-templates', 'verb' => 'POST'],
+		['name' => 'recordTemplates#update', 'url' => '/api/record-templates/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#patch', 'url' => '/api/record-templates/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#destroy', 'url' => '/api/record-templates/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 		// Read-only presentation data — drag-to-move goes through the existing
 		// guarded object PATCH/PUT (/api/objects/{register}/{schema}/{id}), never
 		// a bespoke endpoint here (REQ-VIEW-KANBAN-03).
@@ -1998,12 +2042,14 @@ return [
 		// Migration mapping packs (migration-mapping-packs): declarative
 		// source-format-to-schema import mappings. Reads (index/show/export)
 		// are available to any authenticated user so the import flow can
-		// browse packs; create/update/destroy/import are admin-gated. The
+		// browse packs; create/update/destroy/import and the preview dry run
+		// are admin-gated and CSRF-protected. The
 		// `packId` request param on registers#import (below) resolves a
 		// pack by its `packSlug` and runs each row through it before save.
 		['name' => 'migrationPacks#index', 'url' => '/api/migration-packs', 'verb' => 'GET'],
 		['name' => 'migrationPacks#create', 'url' => '/api/migration-packs', 'verb' => 'POST'],
 		['name' => 'migrationPacks#import', 'url' => '/api/migration-packs/import', 'verb' => 'POST'],
+		['name' => 'migrationPacks#preview', 'url' => '/api/migration-packs/preview', 'verb' => 'POST'],
 		['name' => 'migrationPacks#show', 'url' => '/api/migration-packs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'migrationPacks#update', 'url' => '/api/migration-packs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'migrationPacks#destroy', 'url' => '/api/migration-packs/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
@@ -2072,6 +2118,7 @@ return [
 		['name' => 'selectielijst#import', 'url' => '/api/archival/selectielijst/import', 'verb' => 'POST'],
 		['name' => 'selectielijst#versions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
 		['name' => 'selectielijst#diff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
+		['name' => 'selectielijstReference#resolve', 'url' => '/api/archival/selectielijst/resolve', 'verb' => 'GET'],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
@@ -2110,6 +2157,9 @@ return [
 		// organisation-scoped like `active`. Same ordering rule: it MUST stay above
 		// the `{uuid}` route or `show('completed')` answers it with a 404.
 		['name' => 'flowRun#completedForSubject', 'url' => '/api/flow-runs/completed', 'verb' => 'GET'],
+		// Per flow: newest run and runs since a moment (flow-run-summary). Same
+		// ordering rule: above `{uuid}`, or `show('summary')` answers with a 404.
+		['name' => 'flowRun#summary', 'url' => '/api/flow-runs/summary', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
@@ -2150,6 +2200,7 @@ return [
 		['name' => 'task#index', 'url' => '/api/flow-tasks', 'verb' => 'GET'],
 		['name' => 'task#create', 'url' => '/api/flow-tasks', 'verb' => 'POST'],
 		['name' => 'task#show', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#edit', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#audit', 'url' => '/api/flow-tasks/{uuid}/audit', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#offer', 'url' => '/api/flow-tasks/{uuid}/offer', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#claim', 'url' => '/api/flow-tasks/{uuid}/claim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],

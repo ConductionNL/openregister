@@ -166,5 +166,8 @@ class PropertyVocabularyControllerTest extends TestCase {
 		$this->assertSame([], $body['declarations']);
 		$this->assertSame(0, $body['counts']['declarations']);
 		$this->assertSame($this->vocabulary->keys(), $body['vocabularyKeys']);
+		$this->assertSame(ExtendingFormDeclaration::FORM_ROLES, $body['formRoles']);
+		$this->assertArrayHasKey('hideOnCreate', $body['formRoles']);
+		$this->assertSame(ExtendingFormDeclaration::SOURCE_ALIASES, $body['sourceAliases']);
 	}
 }//end class

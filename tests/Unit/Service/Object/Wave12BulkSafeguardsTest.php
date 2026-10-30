@@ -41,6 +41,9 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  */
 class Wave12BulkSafeguardsTest extends TestCase {
 
@@ -325,6 +328,170 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$this->assertSame(1, $result['statistics']['invalid']);
 		$this->assertStringContainsString('appendOnly', $result['invalid'][0]['error']);
 	}//end testBulkUpdateRowAgainstAppendOnlySchemaIsRejected()
+
+	// === draft ownership ===
+
+	/**
+	 * Bulk save of the uuid of somebody else's draft (schema without draftsVisible) is rejected as a denied permission.
+	 */
+	public function testBulkSaveOverSomebodyElsesDraftIsRejected(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		// The permission handler would allow it: the hole is that it has no draft rule.
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'overwritten']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertSame(1, $result['statistics']['invalid']);
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+	}//end testBulkSaveOverSomebodyElsesDraftIsRejected()
+
+	/**
+	 * An administrator is not kept from another user's draft by the bulk save, as on the read path.
+	 */
+	public function testAnAdministratorMayBulkSaveOverSomebodyElsesDraft(): void {
+		$this->mockUser('root', isAdmin: true);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'admin edit']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
+	}//end testAnAdministratorMayBulkSaveOverSomebodyElsesDraft()
+
+	/**
+	 * On an appendOnly schema the draft rule answers first: a non-owner is not told by the appendOnly message that the uuid exists.
+	 */
+	public function testAppendOnlyDoesNotRevealSomebodyElsesDraft(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1, null, appendOnly: true);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'probe']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+		$this->assertStringNotContainsString('appendOnly', $result['invalid'][0]['error']);
+	}//end testAppendOnlyDoesNotRevealSomebodyElsesDraft()
+
+	/**
+	 * The owner's own bulk save of their draft still goes through.
+	 */
+	public function testBulkSaveOverYourOwnDraftPasses(): void {
+		$this->mockUser('alice', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'mine']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
+	}//end testBulkSaveOverYourOwnDraftPasses()
+
+	/**
+	 * A decoy `@self.uuid` next to the victim draft's `id` is refused: the writer takes `id`, so the guard may not take the decoy.
+	 */
+	public function testDecoyUuidNextToVictimIdIsRefused(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(2);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [
+				['id' => '22222222-2222-2222-2222-222222222222', '@self' => ['uuid' => '99999999-9999-9999-9999-999999999999'], 'title' => 'overwritten'],
+				['@self' => ['id' => '22222222-2222-2222-2222-222222222222', 'uuid' => '99999999-9999-9999-9999-999999999999'], 'title' => 'overwritten too'],
+			],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertSame(2, $result['statistics']['invalid']);
+		$this->assertStringContainsString('more than one identity', $result['invalid'][0]['error']);
+	}//end testDecoyUuidNextToVictimIdIsRefused()
+
+	/**
+	 * The same identity in `id` and `@self` is one identity: the owner's own draft still passes, somebody else's is refused.
+	 */
+	public function testAgreeingIdentitiesAreOneIdentity(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['id' => '22222222-2222-2222-2222-222222222222', '@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'x']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+	}//end testAgreeingIdentitiesAreOneIdentity()
+
+	/**
+	 * Store a draft of the given owner as the existing row of uuid 2222….
+	 */
+	private function storeDraft(string $owner): void {
+		$draft = new \OCA\OpenRegister\Db\ObjectEntity();
+		$draft->setUuid('22222222-2222-2222-2222-222222222222');
+		$draft->setStatus('draft');
+		$draft->setOwner($owner);
+		$this->objectMapper->method('find')->willReturn($draft);
+		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturn(['22222222-2222-2222-2222-222222222222' => $draft]);
+	}//end storeDraft()
 
 	public function testBulkCreateAgainstAppendOnlySchemaIsAllowed(): void {
 		// appendOnly blocks UPDATE only; INSERT must still succeed.

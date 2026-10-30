@@ -18,6 +18,12 @@
     "test:clean": "./run-tests.sh --clean",
     "test:verbose": "./run-tests.sh --verbose"
   },
+  "overrides": {
+    "handlebars": "4.7.10",
+    "ip-address": "10.7.5",
+    "lodash": "4.18.1",
+    "qs@^6.11.1": "6.16.1"
+  },
   "devDependencies": {
     "newman": "^6.1.0"
   }
