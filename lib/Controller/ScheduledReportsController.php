@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\ScheduledReportRunNowJob;
-use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -52,7 +52,7 @@ class ScheduledReportsController extends Controller {
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ScheduledReportService $service Business logic.
+	 * @param ScheduledReportsInterface $service Business logic.
 	 * @param IJobList $jobList Background job list (for run-now).
 	 * @param IUserSession $userSession Current-user session.
 	 * @param IGroupManager $groupManager Group manager (admin check).
@@ -61,7 +61,7 @@ class ScheduledReportsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ScheduledReportService $service,
+		private readonly ScheduledReportsInterface $service,
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,

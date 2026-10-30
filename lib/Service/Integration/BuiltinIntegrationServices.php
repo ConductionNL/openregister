@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category AppInfo
- * @package  OCA\OpenRegister\AppInfo
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\AppInfo;
+namespace OCA\OpenRegister\Service\Integration;
 
 use Psr\Container\ContainerInterface;
 
@@ -44,6 +44,13 @@ final class BuiltinIntegrationServices {
 	 * Argument marker: pass the app id.
 	 */
 	public const APP_NAME = '@appName';
+
+	/**
+	 * The id of the app these services belong to, handed to a constructor that asks for APP_NAME.
+	 *
+	 * @var string
+	 */
+	private const OWN_APP_ID = 'openregister';
 
 	/**
 	 * Named constructor arguments per service class.
@@ -425,7 +432,7 @@ final class BuiltinIntegrationServices {
 	private static function resolve(ContainerInterface $container, string $source): mixed {
 		return match ($source) {
 			self::CONTAINER => $container,
-			self::APP_NAME  => Application::APP_ID,
+			self::APP_NAME  => self::OWN_APP_ID,
 			default         => $container->get($source),
 		};
 	}//end resolve()

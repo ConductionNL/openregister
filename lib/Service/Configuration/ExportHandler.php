@@ -99,6 +99,24 @@ class ExportHandler {
 	 */
 	private array $schemasMap = [];
 
+	/**
+	 * The component sections every export starts with, in output order.
+	 *
+	 * @var array<string, array>
+	 */
+	private const EMPTY_COMPONENTS = [
+		'registers' => [],
+		'schemas' => [],
+		'endpoints' => [],
+		'sources' => [],
+		'mappings' => [],
+		'jobs' => [],
+		'synchronizations' => [],
+		'rules' => [],
+		'workflows' => [],
+		'objects' => [],
+	];
+
 
 	/**
 	 * Mapping mapper instance for handling mapping operations.
@@ -151,9 +169,6 @@ class ExportHandler {
 	 * @throws \OCP\DB\Exception If database operations fail.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Toggle to include/exclude objects in export
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Export requires many conditional data transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration export has multiple input type conditions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Export logic requires comprehensive data handling
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-frontend-schema-parameter-for-non-aggregated-facets
 	 */
@@ -166,208 +181,261 @@ class ExportHandler {
 		$this->registersMap = [];
 		$this->schemasMap = [];
 
-		// Initialize OpenAPI specification with default values.
+		$configuration = $this->configurationToExport(input: $input);
 		$openApiSpec = [
 			'openapi' => '3.0.0',
-			'components' => [
-				'registers' => [],
-				'schemas' => [],
-				'endpoints' => [],
-				'sources' => [],
-				'mappings' => [],
-				'jobs' => [],
-				'synchronizations' => [],
-				'rules' => [],
-				'workflows' => [],
-				'objects' => [],
-			],
-		];
+			'components' => self::EMPTY_COMPONENTS,
+		] + $this->exportHeader(input: $input);
 
-		// Determine if input is an array, Configuration, or Register object.
-		if ($input instanceof Configuration) {
-			$configuration = $input;
-
-			// Get all registers associated with this configuration.
+		$registers = [$input];
+		if ($configuration !== null) {
 			$registers = $configuration->getRegisters();
+		}
 
-			// Set the info from the configuration.
-			$openApiSpec['info'] = [
-				'title' => $input->getTitle(),
-				'description' => $input->getDescription(),
-				'version' => $input->getVersion(),
-			];
-
-			// Add OpenRegister-specific metadata as an extension following OpenAPI spec.
-			// Https://swagger.io/docs/specification/v3_0/openapi-extensions/.
-			// Standard OAS properties (title, description, version) are in the info section above.
-			// Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers,.
-			// Schemas, objects, views, agents, sources, applications) are excluded as they are.
-			// Instance-specific or automatically managed during import.
-			$openApiSpec['x-openregister'] = [
-				'type' => $input->getType(),
-				'app' => $input->getApp(),
-				'sourceType' => $input->getSourceType(),
-				'sourceUrl' => $input->getSourceUrl(),
-				'openregister' => $input->getOpenregister(),
-				'github' => [
-					'repo' => $input->getGithubRepo(),
-					'branch' => $input->getGithubBranch(),
-					'path' => $input->getGithubPath(),
-				],
-			];
-		} elseif ($input instanceof Register) {
-			// Pass the register as an array to the exportConfig function.
-			$registers = [$input];
-			// Set the info from the register.
-			$openApiSpec['info'] = [
-				'title' => $input->getTitle(),
-				'description' => $input->getDescription(),
-				'version' => $input->getVersion(),
-			];
-
-			// Add minimal x-openregister metadata for register export.
-			$openApiSpec['x-openregister'] = [
-				'type' => 'register',
-			];
-		}//end if
-
-		if (($input instanceof Configuration) === false && ($input instanceof Register) === false) {
-			// Get all registers associated with this configuration.
-			$configuration = $this->configurationMapper->find($input['id']);
-
-			// Get all registers associated with this configuration.
-			$registers = $configuration->getRegisters();
-
-			// Set the info from the configuration.
-			$openApiSpec['info'] = [
-				'title' => $input['title'] ?? 'Default Title',
-				'description' => $input['description'] ?? 'Default Description',
-				'version' => $input['version'] ?? '1.0.0',
-			];
-
-			// Add x-openregister metadata if available in input.
-			if (($input['x-openregister'] ?? null) !== null) {
-				$openApiSpec['x-openregister'] = $input['x-openregister'];
-			}
-
-			if (($input['x-openregister'] ?? null) === null) {
-				// Create basic metadata from input.
-				$openApiSpec['x-openregister'] = [
-					'title' => $input['title'] ?? null,
-					'description' => $input['description'] ?? null,
-					'type' => $input['type'] ?? null,
-					'app' => $input['app'] ?? null,
-					'version' => $input['version'] ?? '1.0.0',
-				];
-			}
-		}//end if
-
-		// Export each register and its schemas.
 		foreach ($registers ?? [] as $register) {
-			if ($register instanceof Register === false && is_int($register) === true) {
-				$register = $this->registerMapper->find($register);
-			}
-
-			// Store register in map by ID for reference.
+			$register = $this->registerToExport(register: $register);
 			$this->registersMap[$register->getId()] = $register;
+			$openApiSpec = $this->withRegisterAndSchemas(openApiSpec: $openApiSpec, register: $register);
 
-			// Set the base register.
-			$openApiSpec['components']['registers'][$register->getSlug()] = $this->exportRegister(register: $register);
-			// Drop the schemas from the register (we need to slugify those).
-			$openApiSpec['components']['registers'][$register->getSlug()]['schemas'] = [];
-
-			// Get and export schemas associated with this register.
-			$schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
-			$schemaIdsAndSlugsMap = $this->schemaMapper->getIdToSlugMap();
-			$regIdSlugMap = $this->registerMapper->getIdToSlugMap();
-
-			foreach ($schemas as $schema) {
-				// Store schema in map by ID for reference.
-				$this->schemasMap[$schema->getId()] = $schema;
-
-				$openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema(
-					schema: $schema,
-					schemaIdsAndSlugsMap: $schemaIdsAndSlugsMap,
-					regIdSlugMap: $regIdSlugMap
-				);
-				$openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
-			}
-
-			// Optionally include objects in the register.
 			if ($includeObjects === true) {
-				$objects = $this->objectEntityMapper->findAll(
-					filters: ['register' => $register->getId()]
-				);
-
-				foreach ($objects as $object) {
-					// Use maps to get slugs.
-					$object = $object->jsonSerialize();
-					$registerId = (int)$object['@self']['register'];
-					$schemaId = (int)$object['@self']['schema'];
-					if (isset($this->registersMap[$registerId]) === true) {
-						$object['@self']['register'] = $this->registersMap[$registerId]->getSlug();
-					}
-
-					if (isset($this->schemasMap[$schemaId]) === true) {
-						$object['@self']['schema'] = $this->schemasMap[$schemaId]->getSlug();
-					}
-
+				foreach ($this->exportRegisterObjects(register: $register) as $object) {
 					$openApiSpec['components']['objects'][] = $object;
 				}
-			}//end if
+			}
 
-			// Get the OpenConnector service if provided.
+			// Merge the OpenAPI specification over the OpenConnector configuration.
 			if ($openConnectorService !== null) {
-				$openConnectorConfig = $openConnectorService->exportRegister($register->getId());
-
-				// Merge the OpenAPI specification over the OpenConnector configuration.
 				$openApiSpec = array_replace_recursive(
-					$openConnectorConfig,
+					$openConnectorService->exportRegister($register->getId()),
 					$openApiSpec
 				);
 			}
 		}//end foreach
 
-		// Export mappings associated with this configuration.
-		if (isset($configuration) === true) {
-			$mappingIds = $configuration->getMappings() ?? [];
-			foreach ($mappingIds as $mappingId) {
-				try {
-					$mapping = $this->mappingMapper->find($mappingId);
-					$mappingArray = $mapping->jsonSerialize();
-
-					// Remove instance-specific properties.
-					unset(
-						$mappingArray['id'],
-						$mappingArray['uuid'],
-						$mappingArray['organisation'],
-						$mappingArray['configurations'],
-						$mappingArray['created'],
-						$mappingArray['updated']
-					);
-
-					$openApiSpec['components']['mappings'][$mapping->getSlug()] = $mappingArray;
-				} catch (Exception $e) {
-					$this->logger->warning(
-						message: '[ExportHandler] Failed to export mapping',
-						context: [
-							'mappingId' => $mappingId,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-		}//end if
+		if ($configuration !== null) {
+			foreach ($this->exportMappings(configuration: $configuration) as $slug => $mapping) {
+				$openApiSpec['components']['mappings'][$slug] = $mapping;
+			}
+		}
 
 		// Declare the RBAC groups this configuration depends on, in the OAS-native
 		// slot. Without this the export is LOSSY: OasService emits the same scope
 		// map for API consumers, but the configuration document never carried it,
 		// so exporting a register and re-importing it silently dropped every group
 		// declaration and left the importer nothing to provision.
-		$openApiSpec = $this->attachDeclaredScopes(openApiSpec: $openApiSpec);
+		return $this->attachDeclaredScopes(openApiSpec: $openApiSpec);
+	}//end exportConfig()
+
+	/**
+	 * A configuration's register entry as an entity: an id is looked up, anything else is used as it is.
+	 *
+	 * @param mixed $register A Register or a register id.
+	 *
+	 * @return mixed The register.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function registerToExport(mixed $register): mixed {
+		if ($register instanceof Register === false && is_int($register) === true) {
+			return $this->registerMapper->find($register);
+		}
+
+		return $register;
+	}//end registerToExport()
+
+	/**
+	 * The configuration an export reads its registers and mappings from.
+	 *
+	 * @param array|Configuration|Register $input The export input; an array names the configuration by `id`.
+	 *
+	 * @return Configuration|null The configuration, or null for a register export.
+	 *
+	 * @throws \OCP\DB\Exception If the configuration lookup fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function configurationToExport(array|Configuration|Register $input): ?Configuration {
+		if ($input instanceof Configuration) {
+			return $input;
+		}
+
+		if ($input instanceof Register) {
+			return null;
+		}
+
+		return $this->configurationMapper->find($input['id']);
+	}//end configurationToExport()
+
+	/**
+	 * The `info` and `x-openregister` blocks of an export.
+	 *
+	 * Standard OAS properties (title, description, version) go in `info`.
+	 * OpenRegister metadata goes in the `x-openregister` extension
+	 * (https://swagger.io/docs/specification/v3_0/openapi-extensions/);
+	 * instance-specific or automatically managed properties (autoUpdate,
+	 * notificationGroups, owner, organisation, registers, schemas, objects,
+	 * views, agents, sources, applications) are left out.
+	 *
+	 * @param array|Configuration|Register $input The export input.
+	 *
+	 * @return array{info: array<string, mixed>, x-openregister: mixed}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function exportHeader(array|Configuration|Register $input): array {
+		if ($input instanceof Configuration) {
+			return [
+				'info' => [
+					'title' => $input->getTitle(),
+					'description' => $input->getDescription(),
+					'version' => $input->getVersion(),
+				],
+				'x-openregister' => [
+					'type' => $input->getType(),
+					'app' => $input->getApp(),
+					'sourceType' => $input->getSourceType(),
+					'sourceUrl' => $input->getSourceUrl(),
+					'openregister' => $input->getOpenregister(),
+					'github' => [
+						'repo' => $input->getGithubRepo(),
+						'branch' => $input->getGithubBranch(),
+						'path' => $input->getGithubPath(),
+					],
+				],
+			];
+		}
+
+		if ($input instanceof Register) {
+			return [
+				'info' => [
+					'title' => $input->getTitle(),
+					'description' => $input->getDescription(),
+					'version' => $input->getVersion(),
+				],
+				'x-openregister' => ['type' => 'register'],
+			];
+		}
+
+		return [
+			'info' => [
+				'title' => $input['title'] ?? 'Default Title',
+				'description' => $input['description'] ?? 'Default Description',
+				'version' => $input['version'] ?? '1.0.0',
+			],
+			'x-openregister' => $input['x-openregister'] ?? [
+				'title' => $input['title'] ?? null,
+				'description' => $input['description'] ?? null,
+				'type' => $input['type'] ?? null,
+				'app' => $input['app'] ?? null,
+				'version' => $input['version'] ?? '1.0.0',
+			],
+		];
+	}//end exportHeader()
+
+	/**
+	 * Add a register and its schemas to the export, with schema references as slugs.
+	 *
+	 * @param array<string, mixed> $openApiSpec The export document so far.
+	 * @param Register             $register    The register to add.
+	 *
+	 * @return array<string, mixed> The document with the register and its schemas.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function withRegisterAndSchemas(array $openApiSpec, Register $register): array {
+		$registerSlug = $register->getSlug();
+		$openApiSpec['components']['registers'][$registerSlug] = $this->exportRegister(register: $register);
+		// The register lists its schemas by slug, filled below.
+		$openApiSpec['components']['registers'][$registerSlug]['schemas'] = [];
+
+		$schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+		$slugs = new ExportSlugMaps(
+			schemaSlugs: $this->schemaMapper->getIdToSlugMap(),
+			registerSlugs: $this->registerMapper->getIdToSlugMap()
+		);
+
+		foreach ($schemas as $schema) {
+			$this->schemasMap[$schema->getId()] = $schema;
+
+			$openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema(
+				schema: $schema,
+				slugs: $slugs
+			);
+			$openApiSpec['components']['registers'][$registerSlug]['schemas'][] = $schema->getSlug();
+		}
 
 		return $openApiSpec;
-	}//end exportConfig()
+	}//end withRegisterAndSchemas()
+
+	/**
+	 * A register's objects, with their register and schema named by slug where known.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function exportRegisterObjects(Register $register): array {
+		$objects = [];
+		foreach ($this->objectEntityMapper->findAll(filters: ['register' => $register->getId()]) as $object) {
+			$object = $object->jsonSerialize();
+			$registerId = (int)$object['@self']['register'];
+			$schemaId = (int)$object['@self']['schema'];
+			if (isset($this->registersMap[$registerId]) === true) {
+				$object['@self']['register'] = $this->registersMap[$registerId]->getSlug();
+			}
+
+			if (isset($this->schemasMap[$schemaId]) === true) {
+				$object['@self']['schema'] = $this->schemasMap[$schemaId]->getSlug();
+			}
+
+			$objects[] = $object;
+		}
+
+		return $objects;
+	}//end exportRegisterObjects()
+
+	/**
+	 * A configuration's mappings by slug, without instance-specific properties.
+	 *
+	 * A mapping that cannot be loaded is logged and left out.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function exportMappings(Configuration $configuration): array {
+		$mappings = [];
+		foreach ($configuration->getMappings() ?? [] as $mappingId) {
+			try {
+				$mapping = $this->mappingMapper->find($mappingId);
+				$mappingArray = $mapping->jsonSerialize();
+				unset(
+					$mappingArray['id'],
+					$mappingArray['uuid'],
+					$mappingArray['organisation'],
+					$mappingArray['configurations'],
+					$mappingArray['created'],
+					$mappingArray['updated']
+				);
+
+				$mappings[$mapping->getSlug()] = $mappingArray;
+			} catch (Exception $e) {
+				$this->logger->warning(
+					message: '[ExportHandler] Failed to export mapping',
+					context: [
+						'mappingId' => $mappingId,
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end foreach
+
+		return $mappings;
+	}//end exportMappings()
 
 	/**
 	 * Attach the declared-group scope map to an exported configuration document.
@@ -466,9 +534,8 @@ class ExportHandler {
 	 * It handles both the new objectConfiguration structure (with register and schema IDs)
 	 * and the legacy register property structure for backward compatibility.
 	 *
-	 * @param Schema $schema The schema to export.
-	 * @param array $schemaIdsAndSlugsMap Map of schema IDs to slugs.
-	 * @param array $regIdSlugMap Map of register IDs to slugs.
+	 * @param Schema         $schema The schema to export.
+	 * @param ExportSlugMaps $slugs  The schema and register slugs by id.
 	 *
 	 * @return ((mixed|string[])[]|bool|int|null|string)[]
 	 *
@@ -485,11 +552,9 @@ class ExportHandler {
 	 *     configuration: array|null|string, allOf: array|null,
 	 *     oneOf: array|null, anyOf: array|null}
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Schema export requires many conditional transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Property handling requires many type and structure checks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema property transformation involves detailed logic
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $regIdSlugMap): array {
+	private function exportSchema(Schema $schema, ExportSlugMaps $slugs): array {
 		// Use jsonSerialize to get the JSON representation of the schema.
 		$schemaArray = $schema->jsonSerialize();
 
@@ -497,156 +562,70 @@ class ExportHandler {
 		// Organisation is instance-specific and should not be exported.
 		unset($schemaArray['id'], $schemaArray['uuid'], $schemaArray['organisation']);
 
-		foreach ($schemaArray['properties'] as &$property) {
-			// Ensure property is always an array.
-			if (is_object($property) === true) {
-				$property = (array)$property;
-			}
-
-			if (($property['$ref'] ?? null) !== null) {
-				$schemaId = $this->getLastNumericSegment(url: $property['$ref']);
-				if (($schemaIdsAndSlugsMap[$schemaId] ?? null) !== null) {
-					$property['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
-				}
-			}
-
-			if (($property['items']['$ref'] ?? null) !== null) {
-				// Ensure items is an array for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				$schemaId = $this->getLastNumericSegment(url: $property['items']['$ref']);
-				if (($schemaIdsAndSlugsMap[$schemaId] ?? null) !== null) {
-					$property['items']['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
-				}
-			}
-
-			// Handle register ID in objectConfiguration (new structure).
-			if (($property['objectConfiguration']['register'] ?? null) !== null) {
-				// Ensure objectConfiguration is an array for consistent access.
-				if (is_object($property['objectConfiguration']) === true) {
-					$property['objectConfiguration'] = (array)$property['objectConfiguration'];
-				}
-
-				$registerId = $property['objectConfiguration']['register'];
-				if (is_numeric($registerId) === true) {
-					$registerIdStr = (string)$registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['objectConfiguration']['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}
-
-			// Handle schema ID in objectConfiguration (new structure).
-			if (($property['objectConfiguration']['schema'] ?? null) !== null) {
-				// Ensure objectConfiguration is an array for consistent access.
-				if (is_object($property['objectConfiguration']) === true) {
-					$property['objectConfiguration'] = (array)$property['objectConfiguration'];
-				}
-
-				$schemaId = $property['objectConfiguration']['schema'];
-				if (is_numeric($schemaId) === true) {
-					$schemaIdStr = (string)$schemaId;
-					if (($schemaIdsAndSlugsMap[$schemaIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $schemaIdsAndSlugsMap
-						 */
-
-						$property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
-					}
-				}
-			}
-
-			// Handle register ID in array items objectConfiguration (new structure).
-			if (($property['items']['objectConfiguration']['register'] ?? null) !== null) {
-				// Ensure items and objectConfiguration are arrays for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				if (is_object($property['items']['objectConfiguration']) === true) {
-					$property['items']['objectConfiguration'] = (array)$property['items']['objectConfiguration'];
-				}
-
-				$registerId = $property['items']['objectConfiguration']['register'];
-				if (is_numeric($registerId) === true) {
-					$registerIdStr = (string)$registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['items']['objectConfiguration']['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}//end if
-
-			// Handle schema ID in array items objectConfiguration (new structure).
-			if (($property['items']['objectConfiguration']['schema'] ?? null) !== null) {
-				// Ensure items and objectConfiguration are arrays for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				if (is_object($property['items']['objectConfiguration']) === true) {
-					$property['items']['objectConfiguration'] = (array)$property['items']['objectConfiguration'];
-				}
-
-				$schemaId = $property['items']['objectConfiguration']['schema'];
-				if (is_numeric($schemaId) === true) {
-					$schemaIdStr = (string)$schemaId;
-					if (($schemaIdsAndSlugsMap[$schemaIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $schemaIdsAndSlugsMap
-						 */
-
-						$property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
-					}
-				}
-			}//end if
-
-			// Legacy support: Handle old register property structure.
-			if (($property['register'] ?? null) !== null) {
-				if (is_string($property['register']) === true) {
-					$registerId = $this->getLastNumericSegment(url: $property['register']);
-					$registerIdStr = $registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}
-
-			if (($property['items']['register'] ?? null) !== null) {
-				// Ensure items is an array for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				if (is_string($property['items']['register']) === true) {
-					$registerId = $this->getLastNumericSegment(url: $property['items']['register']);
-					$registerIdStr = $registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['items']['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}
-		}//end foreach
+		foreach ($schemaArray['properties'] as $name => $property) {
+			$schemaArray['properties'][$name] = $this->exportProperty(property: $property, slugs: $slugs);
+		}
 
 		return $schemaArray;
 	}//end exportSchema()
+
+	/**
+	 * One schema property with its references, and those of its `items`, written as slugs.
+	 *
+	 * @param mixed          $property The property definition.
+	 * @param ExportSlugMaps $slugs    The schema and register slugs by id.
+	 *
+	 * @return mixed The property with slugs for every known id.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function exportProperty(mixed $property, ExportSlugMaps $slugs): mixed {
+		if (is_object($property) === true) {
+			$property = (array)$property;
+		}
+
+		$property = $this->withReferenceSlugs(node: $property, slugs: $slugs);
+		if (is_array($property) === true && isset($property['items']) === true) {
+			$property['items'] = $this->withReferenceSlugs(node: $property['items'], slugs: $slugs);
+		}
+
+		return $property;
+	}//end exportProperty()
+
+	/**
+	 * A property or `items` node with its schema and register ids written as slugs.
+	 *
+	 * Rewrites the `$ref` (an id or a URL ending in one), the
+	 * `objectConfiguration` register and schema ids, and the legacy `register`
+	 * URL. A reference to an unknown id is left as it is.
+	 *
+	 * @param mixed          $node  The property or `items` node.
+	 * @param ExportSlugMaps $slugs The schema and register slugs by id.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function withReferenceSlugs(mixed $node, ExportSlugMaps $slugs): mixed {
+		if (($node['$ref'] ?? null) !== null) {
+			$node['$ref'] = $slugs->schemaSlug(schemaId: $this->getLastNumericSegment(url: $node['$ref'])) ?? $node['$ref'];
+		}
+
+		if (($node['objectConfiguration']['register'] ?? null) !== null) {
+			$node['objectConfiguration']['register'] = $slugs->registerSlugOrValue(registerId: $node['objectConfiguration']['register']);
+		}
+
+		if (($node['objectConfiguration']['schema'] ?? null) !== null) {
+			$node['objectConfiguration']['schema'] = $slugs->schemaSlugOrValue(schemaId: $node['objectConfiguration']['schema']);
+		}
+
+		// Legacy structure: the register as a URL.
+		if (is_string($node['register'] ?? null) === true) {
+			$node['register'] = $slugs->registerSlug(registerId: $this->getLastNumericSegment(url: $node['register'])) ?? $node['register'];
+		}
+
+		return $node;
+	}//end withReferenceSlugs()
 
 	/**
 	 * Get the last segment of a URL if it is numeric.

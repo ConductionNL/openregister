@@ -40,7 +40,7 @@ class PartyLinkWriterTest extends TestCase {
 	 */
 	private function writer(?string $signedIn, bool $rbacSeesIt=true): PartyLinkWriter {
 		$party = new ObjectEntity();
-		$party->setUuid(uuid: 'party-a');
+		$party->setUuid('party-a');
 
 		$parties = $this->createMock(originalClassName: PartyService::class);
 		$scoped  = null;

@@ -68,7 +68,7 @@ use Throwable;
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn
  *
- * @psalm-suppress UnusedClass - Instantiated by Application::registerMcpToolProviders()
+ * @psalm-suppress UnusedClass - Instantiated by McpProviderDiscovery::register()
  */
 class AttributeToolProvider implements IMcpToolProvider {
 	/**
