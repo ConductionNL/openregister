@@ -594,7 +594,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The task as it now stands, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

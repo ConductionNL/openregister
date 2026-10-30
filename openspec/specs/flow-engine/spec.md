@@ -1073,3 +1073,51 @@ with a reason naming it, rather than continuing under any fallback.
 - **THEN** the schedule is disabled
 - **AND** the owner of the flow definition is notified
 - **AND** the schedule does not remain enabled while silently firing nothing
+
+### Requirement: A flow can be tried against an object without effect
+
+`POST /api/flows/{id}/dry-run` SHALL walk the flow's graph through the engine against the named object and answer the
+steps reached, in order, each with `nodeId`, `type`, `label`, `status`, `itemsIn`, `itemsOut` and a `preview`, plus the
+end `status`. It SHALL perform only steps that declare `IFlowSideEffectFree`; every other step SHALL be described and
+not performed. It SHALL write no run, object, audit trail entry or message and SHALL deliver nothing. It SHALL be
+refused without a session (401), without the `flow.update` right (403), for a flow the caller cannot see (404) and for
+an object the caller cannot read (404).
+
+#### Scenario: Branch and message
+
+- **GIVEN** a flow that switches on `json.amount > 1000` to a send-email step, else to a set-fields step
+- **WHEN** it is tried against an object with amount 5000
+- **THEN** the steps are the switch and the send-email, the email's preview names its recipients and subject
+- **AND** no mail is sent and no run is stored
+
+### Requirement: A node can say what it would do
+
+A node MAY implement `IFlowNodePreview::preview(items, config, context)` and SHALL answer an array with any of
+`summary` (one sentence), `changes` (`[{field, value}]`) and `messages` (`[{channel, to, subject}]`), computing it
+without side effects. object-write SHALL preview its operation and fields; send-email, send-notification and
+send-talk-message SHALL preview their composed recipients and text.
+
+#### Scenario: Object write
+
+- **GIVEN** an object-write step setting `status` to `closed`
+- **THEN** its preview has the change `{field: status, value: closed}` and the object is not written
+
+### Requirement: The rule inventory can be asked for the rules of one scope
+
+A rule declaration MAY carry `scope: { property, value }`. The inventory SHALL return each descriptor's scope, and
+SHALL accept `scope[<property>]=<value>`, returning the rules with exactly that scope and the rules without a scope.
+
+#### Scenario: Two kinds of object in one schema
+
+- **GIVEN** a schema with a calculation without a scope, a state field block scoped to `caseType` `a` and a flow whose
+  object trigger node is scoped to `caseType` `b`
+- **WHEN** the inventory is asked with `scope[caseType]=a`
+- **THEN** it lists the calculation and the state field block, and not the flow
+- @e2e exclude {API filter, covered by unit tests}
+
+#### Scenario: No filter
+
+- **GIVEN** the same schema
+- **WHEN** the inventory is asked without a scope
+- **THEN** it lists all three rules, each with its scope or `null`
+- @e2e exclude {API filter, covered by unit tests}

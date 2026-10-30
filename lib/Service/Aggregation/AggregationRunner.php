@@ -2119,7 +2119,7 @@ class AggregationRunner {
 	 * @return array<int, array<string, mixed>> Filtered rows.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function applyFilter(array $rows, array $filter): array {
 		$result = [];
@@ -2150,7 +2150,7 @@ class AggregationRunner {
 	 * @return bool True when the value matches.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function criterionMatches(mixed $value, mixed $criterion): bool {
 		// `IS NULL` / `IS NOT NULL` / `{isnull: bool}`, the list endpoint's
@@ -2209,7 +2209,7 @@ class AggregationRunner {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function checkOn(mixed $value, string $op, mixed $onValue): bool {
 		if ($op === NullFilter::ISNULL_OPERATOR) {
@@ -2280,7 +2280,7 @@ class AggregationRunner {
 	 *
 	 * @return string ` IS NULL` or ` IS NOT NULL`.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function nullPredicate(bool $wantsNull): string {
 		if ($wantsNull === true) {
@@ -2439,7 +2439,7 @@ class AggregationRunner {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 * @spec openspec/specs/aggregation-api/spec.md
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function tryNativeAggregation(
 		Register $register,

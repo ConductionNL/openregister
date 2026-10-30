@@ -132,7 +132,7 @@ class PartyService {
 	 *
 	 * @return array<int, array{register: int, schema: int}> The tables.
 	 *
-	 * @spec openspec/changes/party-lookup-reads-the-party-tables/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
 	 */
 	private function partyTables(): array {
 		if ($this->partyTables !== null) {
