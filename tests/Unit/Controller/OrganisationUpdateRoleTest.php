@@ -44,7 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * @spec openspec/changes/organisation-update-needs-admin/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 class OrganisationUpdateRoleTest extends TestCase {
 

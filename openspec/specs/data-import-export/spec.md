@@ -1212,6 +1212,128 @@ working unchanged.
 - **THEN** the response MUST be `409`
 - **AND** no object MUST be deleted
 
+### Requirement: A stored seed object follows a higher shipped version @e2e exclude backend import path run by repair steps and occ, no UI: covered by PHPUnit
+
+A seed object is an object listed in a configuration with a `@self.slug`. The
+import SHALL find it by register, schema and slug. When the stored object
+exists and the shipped `@self.version` is higher, the import SHALL update the
+stored object to the shipped values. At the same or a lower version it SHALL
+leave the object alone and count it as unchanged. Objects the configuration does
+not list SHALL NOT be read or written.
+
+The update SHALL store the shipped version on the object, so the next import
+reads the seed as current. Any other update SHALL bump the patch version. A
+version carried in `@self.version` SHALL count only for a save that runs
+without RBAC (the import, an administrator, a system caller): a caller judged
+by RBAC SHALL NOT set an object's version, so the seed channel cannot be
+steered from the object API.
+
+The import SHALL compare the shipped version with the version it LAST SHIPPED
+for that seed, which it remembers apart from the object (per app id, never on
+the object), not with the object's own version: every later save of the object
+bumps its patch, so an edited seed would otherwise read as already current and
+a changed shipped seed would never arrive. A seed stored before the import
+remembered anything is compared with its stored version once, and remembered
+at the version the file then ships.
+
+#### Scenario: An upgraded instance receives the shipped case type
+
+- **GIVEN** an instance holding the seed `woo-verzoek` at version `1`, without a handling team
+- **WHEN** the app's configuration ships it at `1.4.7` with `handling.defaultGroup: behandelaars`
+- **THEN** the stored object is updated to the shipped values
+- **AND** its `@self.version` is `1.4.7`
+
+#### Scenario: A seed edited on the instance still receives the next shipped version
+
+- **GIVEN** a seed shipped at `1.4.7`, then saved once on the instance (its own version is now `1.4.8`)
+- **WHEN** the configuration ships it at `1.4.8`
+- **THEN** the stored object is updated to the shipped values, and `1.4.8` is remembered as the shipped version
+
+#### Scenario: A seed at the shipped version is left alone
+
+- **GIVEN** an instance holding the seed at the shipped version
+- **WHEN** the configuration is imported
+- **THEN** the object is not saved and is counted under `unchanged.objects`
+
+### Requirement: A failed seed object is retried, named, and not forgotten @e2e exclude backend import path run by repair steps and occ, no UI: covered by PHPUnit
+
+A listed object whose save fails SHALL be tried once more after every other
+listed object of the import has been written. An object that fails again SHALL
+be named in the result's `failed.objects` with its slug, register, schema, the
+reason, and whether a save listener refused it.
+
+When a save listener refused a listed object, the import SHALL NOT store its
+content hash, so the next run imports again instead of fast-skipping. A failure
+caused by the file itself SHALL NOT withhold the hash.
+
+#### Scenario: A seed listed before the row it depends on
+
+- **GIVEN** a case type listed before the flow it names, and a listener that refuses the case type while that flow is missing
+- **WHEN** the configuration is imported
+- **THEN** the flow is written, the case type is retried and saved
+- **AND** `failed.objects` is empty and the content hash is stored
+
+#### Scenario: A listener keeps refusing
+
+- **WHEN** a listener refuses a listed object on both attempts
+- **THEN** `failed.objects` names it with `refusedByListener: true`
+- **AND** the content hash is stored empty, so the next run imports again
+
+#### Scenario: The file itself is invalid
+
+- **WHEN** a listed object fails schema validation on both attempts
+- **THEN** `failed.objects` names it with `refusedByListener: false`
+- **AND** the content hash is stored
+
+### Requirement: An export of selected ids holds only those objects
+@e2e exclude REST API export parameter; proven by tests/Unit/Service/ExportServiceSelectedIdsTest.php
+
+The export endpoint SHALL accept `_ids`, as a list or as a comma-separated
+string, and SHALL export only the objects with those ids, within what the
+caller may read under RBAC and multitenancy. Without `_ids` the export SHALL be
+unchanged.
+
+#### Scenario: Two selected case types
+- **GIVEN** a schema with 52 objects
+- **WHEN** a caller requests `export?format=json&_ids[]=a&_ids[]=b`
+- **THEN** the search behind the export SHALL be narrowed to the ids `a` and `b`
+
+#### Scenario: A comma-separated selection
+- **GIVEN** the same schema
+- **WHEN** a caller requests `export?format=csv&_ids=a,b`
+- **THEN** the search SHALL be narrowed to the ids `a` and `b`
+
+### Requirement: A seed object follows its shipped content, not only its version
+
+The import SHALL remember, per seed object, the hash of the content it last shipped (`@self` excluded, key order ignored). When a re-import ships a seed whose version is not newer:
+- if the shipped content differs from the remembered hash, the import SHALL write the shipped seed over the stored object;
+- if it equals the remembered hash, the import SHALL keep every value the stored object holds, and SHALL add only the shipped fields it lacks;
+- with no remembered hash, the import SHALL add only the shipped fields the stored object lacks (null or absent), and SHALL keep every value it holds.
+
+A change to the rules an import writes by SHALL invalidate the app-level fast-skip once.
+
+#### Scenario: a status type gains its phase
+- **GIVEN** a stored status type without `phase`, and no remembered hash
+- **WHEN** the app ships the same version with `phase: Ontvangst`
+- **THEN** the stored status type gets `phase: Ontvangst` and keeps its other values
+
+#### Scenario: changed content without a version bump
+- **GIVEN** a remembered hash of the content shipped before
+- **WHEN** the app ships different content at the same version
+- **THEN** the seed is written
+
+#### Scenario: unchanged content
+- **GIVEN** a remembered hash equal to the shipped content
+- **WHEN** the app imports again
+- **THEN** the stored object, edits included, is left alone
+
+The import SHALL remember a seed's content hash only after the seed is written, so a refused write is tried again on the next import.
+
+#### Scenario: a refused write is tried again
+- **GIVEN** a seed whose fill-in write the store refuses
+- **WHEN** the app imports again
+- **THEN** the import tries the fill-in again, because no hash was remembered for it
+
 ## Current Implementation Status
 - **Implemented:**
   - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import with ReactPHP optimization

@@ -71,7 +71,7 @@ class DocumentExtractorTest extends TestCase {
 
 	private const CORE_TYPE = 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties';
 
-	/** A valid 1x1 PNG: PhpWord, which WordExtractor uses, refuses a picture part that is not a real image. */
+	/** A valid 1x1 PNG for the picture part. */
 	private const PNG_1PX = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNg+M8AAAICAQB7CYF4AAAAAElFTkSuQmCC';
 
 	/** @var LoggerInterface&MockObject */
@@ -1026,13 +1026,13 @@ class DocumentExtractorTest extends TestCase {
 	}
 
 	/**
-	 * When WordExtractor throws (PhpWord missing), the structure still comes back with its own flat text.
+	 * When WordExtractor throws, the structure still comes back with its own flat text.
 	 *
 	 * @return void
 	 */
 	public function testAMissingFlatTextLibraryDoesNotBlockTheStructure(): void {
 		$wordExtractor = $this->createMock(WordExtractor::class);
-		$wordExtractor->method('extract')->willThrowException(new Exception('PhpWord library (phpoffice/phpword) is not installed.'));
+		$wordExtractor->method('extract')->willThrowException(new Exception('Word extraction failed.'));
 		$this->logger->expects($this->once())
 			->method('warning')
 			->with($this->stringContains('[DocumentExtractor] Flat text unavailable'), $this->callback(static fn (array $context): bool => $context['exception'] === Exception::class));

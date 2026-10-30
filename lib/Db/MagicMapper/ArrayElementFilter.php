@@ -41,7 +41,7 @@ use InvalidArgumentException;
  * The SQL is one EXISTS per block over the array's elements:
  * `json_array_elements` on PostgreSQL, `JSON_TABLE` on MariaDB/MySQL.
  *
- * @spec openspec/changes/array-element-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
  */
 class ArrayElementFilter {
 
@@ -64,7 +64,7 @@ class ArrayElementFilter {
 	 *
 	 * @throws InvalidArgumentException When `_element` is not a map of property to block.
 	 *
-	 * @spec openspec/changes/array-element-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
 	 */
 	public function blocks(array $query): array {
 		if (array_key_exists(self::KEY, $query) === false) {
@@ -100,7 +100,7 @@ class ArrayElementFilter {
 	 *
 	 * @return string|null The condition.
 	 *
-	 * @spec openspec/changes/array-element-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
 	 */
 	public function condition(string $column, array $fields, callable $bind, bool $isPostgres): ?string {
 		$paths      = new NestedPathFilter();

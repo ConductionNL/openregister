@@ -52,7 +52,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * request path and the AddObjectStateColumns repair step use. No maintenance
  * mode is needed.
  *
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
  */
 class ReconcileMagicTablesCommand extends Command {
 	/**
@@ -74,7 +74,7 @@ class ReconcileMagicTablesCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:tables:reconcile')
@@ -107,7 +107,7 @@ class ReconcileMagicTablesCommand extends Command {
 	 *
 	 * @return int 0 on success (including "nothing to do"); 1 when a repair failed.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$apply = (bool)$input->getOption('apply');
@@ -287,7 +287,7 @@ class ReconcileMagicTablesCommand extends Command {
 	 *
 	 * @return array{tables: int, columns: int, repaired: int, failed: int} The counts for the summary.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	private function reconcileMetadataColumns(OutputInterface $output, bool $apply, mixed $registerFilter): array {
 		$counts = ['tables' => 0, 'columns' => 0, 'repaired' => 0, 'failed' => 0];

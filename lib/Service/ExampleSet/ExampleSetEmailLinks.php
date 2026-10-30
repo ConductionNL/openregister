@@ -134,7 +134,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
 	 */
 	private function detailRefusal(array $data): string {
 		if (isset($data['direction']) === true && in_array($data['direction'], ['inbound', 'outbound'], true) === false) {

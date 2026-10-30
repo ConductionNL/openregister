@@ -11,7 +11,7 @@
  * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  *
- * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use ReflectionMethod;
  * A caller with update on the object but not on a protected property cannot write that property through the bulk
  * path, explicitly or by leaving it out.
  *
- * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
  */
 class BulkSavePropertyAuthorizationTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

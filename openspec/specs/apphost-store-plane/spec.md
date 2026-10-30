@@ -511,3 +511,48 @@ without having made the decision.
 - **GIVEN** a descriptor whose `publishGroups` names only a group this server does not have
 - **WHEN** `canPublish()` is asked for a non-administrator
 - **THEN** it MUST answer false and an ERROR MUST be logged naming the group
+
+### Requirement: A store can name this instance as its registry
+
+A store whose `registry_url` is `local` SHALL be read from the configured register on this instance, through the object service, without an HTTP request. A register or schema that cannot be read SHALL answer `store_unreachable`.
+
+#### Scenario: a local catalogue
+
+- GIVEN pipelinq's `registry_url` is `local` and its register holds nine `commercial-template` objects
+- WHEN the store page searches
+- THEN the nine items are returned as cards
+- AND no HTTP request is made
+
+#### Scenario: the schema is missing
+
+- GIVEN `registry_url` is `local` and the register has no `commercial-template` schema
+- WHEN the store page searches
+- THEN the outcome is `store_unreachable` and there are no cards
+
+### Requirement: A store page can publish through one route
+
+`POST /api/store/publish` SHALL publish `item` to the app's configured registry. It SHALL use the app's declared `publish.fields` and `publish.groups`. An anonymous caller SHALL get 401. A user `canPublish()` does not admit SHALL get 403, and nothing SHALL be sent.
+
+#### Scenario: a member of the publish group publishes
+
+- GIVEN pipelinq declares `publish: {fields: [title, kind, version, components], groups: [pipelinq-publishers]}`
+- AND Pieter is in `pipelinq-publishers`
+- WHEN Pieter publishes `{slug: woo-intake, title: Woo-intake, kind: pipeline, version: 1.0.0}`
+- THEN the registry receives the slug and the declared fields only
+- AND the answer is `{outcome: ok, slug: woo-intake}`
+
+#### Scenario: someone outside the group
+
+- GIVEN a user who is in no publish group and not an administrator
+- WHEN they publish
+- THEN the answer is 403 and the registry receives nothing
+
+### Requirement: Publishing to a local registry writes in-process
+
+When `registry_url` is `local`, publish SHALL write the filtered body into the configured register through the object service. It SHALL update the object carrying the same slug, or create one, and it SHALL make no HTTP request.
+
+#### Scenario: a new version of an item already in the local registry
+
+- GIVEN the local registry holds `woo-intake` at version 1.0.0
+- WHEN `woo-intake` is published at version 1.1.0
+- THEN that same object now reads version 1.1.0
