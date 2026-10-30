@@ -28,8 +28,10 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\PropertyDoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -133,7 +135,7 @@ class UserService {
 	 * @param OrganisationService $organisationService The organisation service
 	 * @param IEventDispatcher $eventDispatcher The event dispatcher service
 	 * @param IAvatarManager $avatarManager The avatar manager service
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper The audit trail mapper
 	 * @param ISecureRandom $secureRandom Secure random generator
 	 * @param IDBConnection $db Database connection for direct queries
 	 * @param IFactory $l10nFactory L10N factory for language detection
@@ -150,7 +152,7 @@ class UserService {
 		private readonly OrganisationService $organisationService,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IAvatarManager $avatarManager,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly ISecureRandom $secureRandom,
 		private readonly IDBConnection $db,
 		private readonly IFactory $l10nFactory,

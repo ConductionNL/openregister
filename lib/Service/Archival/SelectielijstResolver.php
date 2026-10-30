@@ -38,10 +38,12 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\LoggerInterface;
 
@@ -63,16 +65,16 @@ class SelectielijstResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper            $objectMapper    Reads the stored rows.
-	 * @param SchemaMapper           $schemaMapper    Resolves the schema.
-	 * @param RegisterMapper         $registerMapper  Resolves the register.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>            $objectMapper    Reads the stored rows.
+	 * @param SchemaMapperInterface<Schema>           $schemaMapper    Resolves the schema.
+	 * @param RegisterMapperInterface<Register, Schema>         $registerMapper  Resolves the register.
 	 * @param ObjectRetentionHandler $settingsHandler Names the register, the schema and the version in use.
 	 * @param LoggerInterface        $logger          Reports a lookup that found nothing applicable.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ObjectRetentionHandler $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {

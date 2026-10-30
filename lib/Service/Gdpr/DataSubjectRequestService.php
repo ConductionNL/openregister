@@ -53,8 +53,10 @@ namespace OCA\OpenRegister\Service\Gdpr;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -97,7 +99,7 @@ class DataSubjectRequestService {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db GdprEntity + entity_relations join.
-	 * @param MagicMapper $objectMapper Object loader (RBAC/tenant scoped reads).
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object loader (RBAC/tenant scoped reads).
 	 * @param ObjectService $objectService Audited write path (saveObject → audit trail).
 	 * @param RetentionService $retentionService Legal-hold + immutability guard.
 	 * @param DsarService $dsarService Reused only for the configured DSAR activity uuid.
@@ -108,7 +110,7 @@ class DataSubjectRequestService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly ObjectService $objectService,
 		private readonly RetentionService $retentionService,
 		private readonly DsarService $dsarService,

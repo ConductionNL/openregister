@@ -20,9 +20,12 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -46,9 +49,9 @@ class MigrationHandler {
 	/**
 	 * Constructor for MigrationHandler.
 	 *
-	 * @param MagicMapper $objectMapper Mapper for object entities.
-	 * @param SchemaMapper $schemaMapper Mapper for schema entities.
-	 * @param RegisterMapper $registerMapper Mapper for register entities.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Mapper for object entities.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema entities.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for register entities.
 	 * @param SaveObject $saveHandler Handler for saving objects.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
@@ -57,9 +60,9 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SaveObject $saveHandler,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly DataManipulationHandler $dataManipHandler,

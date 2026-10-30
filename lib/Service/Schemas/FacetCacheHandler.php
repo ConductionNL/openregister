@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 use DateInterval;
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -150,9 +150,9 @@ class FacetCacheHandler {
 	 *
 	 * Used to load schemas when computing facet configurations.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface<Schema> Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Cache factory for distributed/local cache access
@@ -179,7 +179,7 @@ class FacetCacheHandler {
 	 * for facet caching operations.
 	 *
 	 * @param IDBConnection $db Database connection for persistent facet cache
-	 * @param SchemaMapper $schemaMapper Schema mapper for loading schemas
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for loading schemas
 	 * @param ICacheFactory $cacheFactory Cache factory for distributed cache access
 	 * @param LoggerInterface $logger Logger for performance monitoring and debugging
 	 *
@@ -187,7 +187,7 @@ class FacetCacheHandler {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		ICacheFactory $cacheFactory,
 		LoggerInterface $logger,
 	) {

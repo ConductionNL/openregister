@@ -31,8 +31,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -50,11 +51,11 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 	/**
 	 * Wire the mappers used by the command.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup mapper.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup mapper.
 	 * @param TranslationMapper $translationMapper Translation sidecar mapper.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly TranslationMapper $translationMapper,
 	) {
 		parent::__construct();

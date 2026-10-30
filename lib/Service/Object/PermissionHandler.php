@@ -31,17 +31,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -293,8 +293,8 @@ class PermissionHandler {
 	 * @param IUserSession $userSession User session for getting current user.
 	 * @param IUserManager $userManager User manager for getting user objects.
 	 * @param IGroupManager $groupManager Group manager for checking user groups.
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity operations.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema operations.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entity operations.
 	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011).
 	 * @param IAppConfig $appConfig App config for the inheritFromPublic tenant default and
 	 *                              the `enforce_default_closed` opt-in flag (Wave-12 Fix
@@ -321,8 +321,8 @@ class PermissionHandler {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
@@ -2930,7 +2930,7 @@ class PermissionHandler {
 	private function personValues(): DepartmentMatrixPersonValues {
 		$this->personValues ??= new DepartmentMatrixPersonValues(
 			schemas: $this->schemaMapper,
-			registers: $this->container->get(RegisterMapper::class),
+			registers: $this->container->get(RegisterMapperInterface::class),
 			objects: $this->objectEntityMapper,
 			logger: $this->logger
 		);
@@ -3421,7 +3421,7 @@ class PermissionHandler {
 
 		$registerIds = [];
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			$registerIds = $registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -3526,7 +3526,7 @@ class PermissionHandler {
 	 */
 	private function getRegisterForSchema(Schema $schema): ?Register {
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			$registerId = $registerMapper->getFirstRegisterWithSchema($schema->getId());
 			if ($registerId === null) {
 				return null;
@@ -3584,7 +3584,7 @@ class PermissionHandler {
 		}
 
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			// Multitenancy/RBAC scoping DISABLED: this loads the register purely to
 			// read its authorization + configuration policy for a security decision.
 			// Org-scoping this lookup would make a legitimate register unresolvable

@@ -60,16 +60,17 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
@@ -178,9 +179,9 @@ class SaveObjects {
 	/**
 	 * Constructor for SaveObjects handler
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations
-	 * @param RegisterMapper $registerMapper Mapper for register operations
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entity database operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema operations
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for register operations
 	 * @param SaveObject $saveHandler Handler for individual object operations
 	 * @param IUserSession $userSession User session for getting current user
 	 * @param OrganisationService $organisationService Service for organisation operations
@@ -192,7 +193,7 @@ class SaveObjects {
 	 * @param ValidateObject|null $validateHandler Validation handler for per-object schema validation;
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
-	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity>|null $auditTrailMapper Audit trail mapper for logging bulk changes
 	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
 	 * @param PropertyRbacHandler|null $propertyRbac Applies property authorization per row, as SaveObject does.
 	 *                                               Null only in legacy fixtures.
@@ -200,9 +201,9 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SaveObject $saveHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationService $organisationService,
@@ -211,7 +212,7 @@ class SaveObjects {
 		private readonly ?PermissionHandler $permissionHandler = null,
 		private readonly ?ValidateObject $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
-		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		private readonly ?AuditTrailMapperInterface $auditTrailMapper = null,
 		private readonly ?DecisionTableBulkGuard $decisionTables = null,
 		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {

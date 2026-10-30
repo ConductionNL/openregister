@@ -36,11 +36,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -95,16 +96,16 @@ class RetentionRowScanner {
 	 * Constructor.
 	 *
 	 * @param IDBConnection   $db             Database connection for the row scans.
-	 * @param RegisterMapper  $registerMapper Register repository, used to enumerate pairs.
-	 * @param SchemaMapper    $schemaMapper   Schema repository, used to enumerate pairs.
-	 * @param MagicMapper     $objectMapper   Magic-table resolver and row hydrator.
+	 * @param RegisterMapperInterface<Register, Schema>  $registerMapper Register repository, used to enumerate pairs.
+	 * @param SchemaMapperInterface<Schema>    $schemaMapper   Schema repository, used to enumerate pairs.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $objectMapper   Magic-table resolver and row hydrator.
 	 * @param LoggerInterface $logger         Logger for skipped sources and truncated runs.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

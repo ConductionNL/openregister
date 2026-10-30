@@ -40,9 +40,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -101,14 +103,14 @@ class HierarchyDescender {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database.
-	 * @param SchemaMapper $schemaMapper Reads the schemas.
-	 * @param RegisterMapper $registerMapper Reads the registers a schema belongs to.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Reads the schemas.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Reads the registers a schema belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -160,7 +162,7 @@ class HierarchyDescender {
 				// carrying the parent column says the same thing the list was
 				// being asked to say, and says it from the storage rather than
 				// from bookkeeping beside it.
-				$table = MagicMapper::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
+				$table = MagicMapperInterface::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
 				if ($this->tableHasColumn(table: $table, column: $parentColumn) === false) {
 					// Only worth saying when the register DOES claim the
 					// schema: a table that is simply not there is the ordinary
@@ -355,7 +357,7 @@ class HierarchyDescender {
 	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
 	 */
 	private function hierarchyFor(int $registerId, int $schemaId): ?array {
-		$table = (MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId);
+		$table = (MagicMapperInterface::TABLE_PREFIX . $registerId . '_' . $schemaId);
 
 		foreach ($this->hierarchicalTables() as $candidate) {
 			if ($candidate['schemaId'] === $schemaId && $candidate['table'] === $table) {

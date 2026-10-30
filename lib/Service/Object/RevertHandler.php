@@ -22,8 +22,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -32,6 +31,8 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -52,9 +53,9 @@ class RevertHandler {
 	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Container
@@ -73,9 +74,9 @@ class RevertHandler {
 	/**
 	 * Object entity mapper
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>
 	 */
-	private MagicMapper $objectEntityMapper;
+	private MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Permission handler for RBAC enforcement
@@ -94,18 +95,18 @@ class RevertHandler {
 	/**
 	 * RevertHandler constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper.
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity mapper.
 	 * @param PermissionHandler $permissionHandler Permission handler for RBAC.
 	 * @param ValidateObject $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		PermissionHandler $permissionHandler,
 		ValidateObject $validateHandler,
 	) {

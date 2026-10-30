@@ -42,6 +42,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Relation\LinkExposure
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 final class LinkExposureWiringTest extends TestCase {
 

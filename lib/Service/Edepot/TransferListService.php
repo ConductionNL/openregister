@@ -29,9 +29,12 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
@@ -67,16 +70,16 @@ class TransferListService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper The object mapper.
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object mapper.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper The audit trail mapper.
 	 * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param INotificationManager $notificationManager The notification manager.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly TransferRecordService $transferRecordService,
 		private readonly IAppConfig $appConfig,
 		private readonly INotificationManager $notificationManager,

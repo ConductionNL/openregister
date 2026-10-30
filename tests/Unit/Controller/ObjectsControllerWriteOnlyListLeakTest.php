@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -292,7 +293,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([$this->sourceEntity()]);
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
-		$this->registerService(MagicMapper::class, fn () => $magicMapper);
+		$this->registerService(MagicMapperInterface::class, fn () => $magicMapper);
 
 		// The REAL RenderObject — the whole point of this test. Mocking it here is what
 		// let #460 hide behind a green suite.

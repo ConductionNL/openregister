@@ -39,8 +39,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -63,16 +65,16 @@ class GroupReconciler {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Live register lookup.
-	 * @param SchemaMapper $schemaMapper Live schema lookup.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Live register lookup.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Live schema lookup.
 	 * @param IAppConfig $appConfig Stores each app's declared group list.
 	 * @param RbacGroupCollector $collector Declared-group extraction.
 	 * @param GroupProvisioner $provisioner Create-only group provisioning.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly RbacGroupCollector $collector,
 		private readonly GroupProvisioner $provisioner,

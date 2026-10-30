@@ -30,9 +30,10 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 
 use OCA\OpenRegister\BulkAction\RunActionAction;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use InvalidArgumentException;
 use Throwable;
@@ -48,12 +49,12 @@ class ObjectActionBulk {
 	 * Constructor.
 	 *
 	 * @param BulkJobService   $jobs      Creates and previews the job.
-	 * @param RegisterMapper   $registers Resolves the register the caller named.
+	 * @param RegisterMapperInterface<Register, Schema>   $registers Resolves the register the caller named.
 	 * @param ObjectActionGate $gate      The person starting it.
 	 */
 	public function __construct(
 		private readonly BulkJobService $jobs,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly ObjectActionGate $gate,
 	) {
 	}//end __construct()

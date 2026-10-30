@@ -30,12 +30,10 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -50,9 +48,13 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
@@ -153,9 +155,9 @@ class ObjectsController extends Controller {
 	 * @param IAppConfig $config The app configuration object
 	 * @param IAppManager $appManager The app manager
 	 * @param ContainerInterface $container The DI container
-	 * @param RegisterMapper $registerMapper The register mapper
-	 * @param SchemaMapper $schemaMapper The schema mapper
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper The register mapper
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper The audit trail mapper
 	 * @param ObjectService $objectService The object service
 	 * @param IUserSession $userSession The user session
 	 * @param IGroupManager $groupManager The group manager
@@ -187,9 +189,9 @@ class ObjectsController extends Controller {
 		private readonly IAppConfig $config,
 		private readonly IAppManager $appManager,
 		private readonly ContainerInterface $container,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
@@ -259,7 +261,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+			$magicMapper = $this->container->get(MagicMapperInterface::class);
 			$context = $magicMapper->findAcrossAllSources(
 				identifier: $id,
 				includeDeleted: true,
@@ -947,7 +949,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
-		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(MagicMapperInterface::class);
 		$registerMapper = $this->registerMapper;
 		$schemaMapper = $this->schemaMapper;
 
@@ -1606,7 +1608,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function indexFromMagicTable(array $listing, ObjectService $objectService): JSONResponse {
-		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(MagicMapperInterface::class);
 		$registerEntity = $listing['resolved']['registerEntity'];
 		$schemaEntity = $listing['resolved']['schemaEntity'];
 
@@ -2285,7 +2287,7 @@ class ObjectsController extends Controller {
 			);
 
 			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
-				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+				$magicMapper = $this->container->get(MagicMapperInterface::class);
 
 				$countQuery = $query;
 				unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
@@ -2828,7 +2830,7 @@ class ObjectsController extends Controller {
 						|| in_array($schemaSlug, $magicMappingSchemas, true) === true)
 					) {
 						// Use MagicMapper for magic-mapped schemas.
-						$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+						$magicMapper = $this->container->get(MagicMapperInterface::class);
 
 						// Build search query with resolved numeric IDs.
 						$query = $objectService->buildSearchQuery(

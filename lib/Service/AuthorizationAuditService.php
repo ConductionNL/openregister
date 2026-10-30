@@ -25,7 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -49,12 +51,12 @@ class AuthorizationAuditService {
 	 * Constructor.
 	 *
 	 * @param IUserSession $userSession User session for current user context.
-	 * @param RegisterMapper $registerMapper Register mapper for cascade count.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for cascade count.
 	 * @param LoggerInterface $logger Logger for structured audit entries.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

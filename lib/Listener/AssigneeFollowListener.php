@@ -38,9 +38,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
@@ -61,7 +62,7 @@ final class AssigneeFollowListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema and its roles.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves the object's schema and its roles.
 	 * @param SemanticRoleHandler $roles Reads `x-openregister-role` from the schema.
 	 * @param PermissionHandler $permissions The one RBAC evaluator, for the read check.
 	 * @param IUserManager $userManager Tells a uid from a group id or a party reference.
@@ -69,7 +70,7 @@ final class AssigneeFollowListener implements IEventListener {
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SemanticRoleHandler $roles,
 		private readonly PermissionHandler $permissions,
 		private readonly IUserManager $userManager,

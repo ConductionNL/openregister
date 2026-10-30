@@ -27,8 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schema;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCP\IRequest;
 
 /**
@@ -51,14 +54,14 @@ class SchemaObjectReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup (resolve population register).
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup (resolve population register).
 	 * @param IRequest $request Request (reads an explicit `registerId` override).
-	 * @param MagicMapper|null $objects Reads the stored values a conversion preview is measured over.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>|null $objects Reads the stored values a conversion preview is measured over.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IRequest $request,
-		private readonly ?MagicMapper $objects = null,
+		private readonly ?MagicMapperInterface $objects = null,
 	) {
 	}//end __construct()
 

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
@@ -246,7 +247,7 @@ class ConditionMatcherMemberOfTest extends TestCase {
 	private function containerGiving(MagicMapper $objects): ContainerInterface {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+			static fn (string $id): mixed => ($id === MagicMapperInterface::class) ? $objects : null
 		);
 		return $container;
 	}//end containerGiving()

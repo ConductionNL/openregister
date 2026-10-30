@@ -279,7 +279,7 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep {
 	 */
 	private function resolveSchemaMapper(): mixed {
 		try {
-			$mapper = $this->container->get('OCA\\OpenRegister\\Db\\SchemaMapper');
+			$mapper = $this->container->get('OCA\\OpenRegister\\Kernel\\Contracts\\SchemaMapperInterface');
 			if (method_exists($mapper, 'find') === true) {
 				return $mapper;
 			}

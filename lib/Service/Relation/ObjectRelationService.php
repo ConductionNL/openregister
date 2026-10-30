@@ -42,7 +42,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -56,7 +57,7 @@ class ObjectRelationService {
 	 * Constructor.
 	 *
 	 * @param ObjectRelationMapper $mapper The relation row mapper.
-	 * @param SchemaMapper $schemaMapper Mapper for schemas.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schemas.
 	 * @param RelationTypeResolver $relationTypes Resolves what a relation is called.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IUserSession|null $userSession Who is writing the row.
@@ -65,7 +66,7 @@ class ObjectRelationService {
 	 */
 	public function __construct(
 		private readonly ObjectRelationMapper $mapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RelationTypeResolver $relationTypes,
 		private readonly LoggerInterface $logger,
 		private readonly ?IUserSession $userSession = null,

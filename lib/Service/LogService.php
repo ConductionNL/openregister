@@ -24,10 +24,14 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use SimpleXMLElement;
 
 /**
@@ -55,36 +59,36 @@ class LogService {
 	 *
 	 * Handles database operations for audit trail entries.
 	 *
-	 * @var AuditTrailMapper Audit trail mapper instance
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity> Audit trail mapper instance
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Unified object mapper for magic tables
 	 *
 	 * Used to find objects across all magic tables.
 	 *
-	 * @var MagicMapper Unified object mapper instance
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema> Unified object mapper instance
 	 */
-	private readonly MagicMapper $unifiedObjectMapper;
+	private readonly MagicMapperInterface $unifiedObjectMapper;
 
 	/**
 	 * Register mapper
 	 *
 	 * Reserved for future use in log filtering and validation.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface<Register, Schema> Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
 	 *
 	 * Reserved for future use in log filtering and validation.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface<Schema> Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Constructor for LogService
@@ -92,18 +96,18 @@ class LogService {
 	 * Initializes the LogService with required mapper dependencies for handling
 	 * audit trail logs and related entities.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Mapper for audit trail database operations.
-	 * @param MagicMapper $unifiedObjectMapper Mapper for unified object database operations.
-	 * @param RegisterMapper $registerMapper Mapper for register database operations.
-	 * @param SchemaMapper $schemaMapper Mapper for schema database operations.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Mapper for audit trail database operations.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $unifiedObjectMapper Mapper for unified object database operations.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for register database operations.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema database operations.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		AuditTrailMapper $auditTrailMapper,
-		MagicMapper $unifiedObjectMapper,
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
+		MagicMapperInterface $unifiedObjectMapper,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->unifiedObjectMapper = $unifiedObjectMapper;

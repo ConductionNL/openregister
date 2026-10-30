@@ -22,6 +22,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -73,13 +76,13 @@ class BlobMigrationJobTest extends TestCase {
 		$this->registerService(IAppConfig::class, function () {
 			return $this->appConfig;
 		});
-		$this->registerService(RegisterMapper::class, function () {
+		$this->registerService(RegisterMapperInterface::class, function () {
 			return $this->registerMapper;
 		});
-		$this->registerService(SchemaMapper::class, function () {
+		$this->registerService(SchemaMapperInterface::class, function () {
 			return $this->schemaMapper;
 		});
-		$this->registerService(MagicMapper::class, function () {
+		$this->registerService(MagicMapperInterface::class, function () {
 			return $this->magicMapper;
 		});
 

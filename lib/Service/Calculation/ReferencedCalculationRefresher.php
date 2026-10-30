@@ -36,12 +36,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Container\ContainerInterface;
@@ -85,17 +85,17 @@ class ReferencedCalculationRefresher {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper     $registers The registers.
-	 * @param SchemaMapper       $schemas   The schemas.
-	 * @param MagicMapper        $rows      Finds the referring objects.
+	 * @param RegisterMapperInterface<Register, Schema>     $registers The registers.
+	 * @param SchemaMapperInterface<Schema>       $schemas   The schemas.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>        $rows      Finds the referring objects.
 	 * @param ContainerInterface $container Hands out the object service on first use.
 	 * @param LoggerInterface    $logger    The logger.
 	 * @param SchemaTypeConverter $types    Restores the stored form of `type: string` values the read decoded.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
-		private readonly MagicMapper $rows,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly MagicMapperInterface $rows,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),

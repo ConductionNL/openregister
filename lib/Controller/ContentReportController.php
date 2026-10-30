@@ -24,7 +24,10 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -52,7 +55,7 @@ class ContentReportController extends Controller {
 	 * @param IRequest            $request     Active request.
 	 * @param ContentReportMapper $reports     The reports and their copies.
 	 * @param ContentReportService $service    Files a report and resolves reviewer access.
-	 * @param MagicMapper         $objects     Resolves the content being reported.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>         $objects     Resolves the content being reported.
 	 * @param IUserSession        $userSession Current user session.
 	 */
 	public function __construct(
@@ -60,7 +63,7 @@ class ContentReportController extends Controller {
 		IRequest $request,
 		private readonly ContentReportMapper $reports,
 		private readonly ContentReportService $service,
-		private readonly MagicMapper $objects,
+		private readonly MagicMapperInterface $objects,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -77,6 +80,10 @@ class ContentReportController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Guarded by the object lookup: MagicMapper::find() runs with its
+	 *   default RBAC and multitenancy filters, so an object the caller may not read answers
+	 *   404 before anything is filed.
 	 *
 	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
 	 */

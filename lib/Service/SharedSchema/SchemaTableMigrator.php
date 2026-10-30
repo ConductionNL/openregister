@@ -26,9 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\SharedSchema;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -79,7 +80,7 @@ class SchemaTableMigrator {
 	 *
 	 * @param IDBConnection   $db          Database connection for the row move.
 	 * @param IConfig         $config      System config, read for `dbtableprefix`.
-	 * @param MagicMapper     $magicMapper Magic-table DDL and introspection.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $magicMapper Magic-table DDL and introspection.
 	 * @param LoggerInterface $logger      Audit trail for every mutation.
 	 *
 	 * @return void
@@ -87,7 +88,7 @@ class SchemaTableMigrator {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IConfig $config,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

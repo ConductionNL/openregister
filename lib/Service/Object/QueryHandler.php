@@ -22,7 +22,10 @@ namespace OCA\OpenRegister\Service\Object;
 
 use ArrayObject;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Search\HistoryNarrowing;
 use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
@@ -82,7 +85,7 @@ class QueryHandler {
 	/**
 	 * Constructor for QueryHandler.
 	 *
-	 * @param MagicMapper $objectMapper Unified mapper for objects.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Unified mapper for objects.
 	 * @param GetObject $getHandler Get handler.
 	 * @param RenderObject $renderHandler Render handler.
 	 * @param SearchQueryHandler $searchQueryHandler Search handler.
@@ -101,7 +104,7 @@ class QueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly GetObject $getHandler,
 		private readonly RenderObject $renderHandler,
 		private readonly SearchQueryHandler $searchQueryHandler,
@@ -293,7 +296,7 @@ class QueryHandler {
 		// Check if any result object has a schema with property-level authorization.
 		// If yes, we need to render to filter unauthorized properties.
 		if ($hasComplexRendering === false && is_array($result) === true && empty($result) === false) {
-			$schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+			$schemaMapper = $this->container->get(SchemaMapperInterface::class);
 			$checkedSchemas = [];
 			foreach ($result as $object) {
 				$schemaId = $object->getSchema();

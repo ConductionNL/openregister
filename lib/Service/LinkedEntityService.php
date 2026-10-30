@@ -24,14 +24,14 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use Psr\Log\LoggerInterface;
@@ -66,9 +66,9 @@ class LinkedEntityService {
 	 * a known linked-type is the type id itself — historically the
 	 * removed map was a verbatim identity for every entry.
 	 *
-	 * @param MagicMapper $magicMapper Magic mapper for object operations
-	 * @param SchemaMapper $schemaMapper Schema mapper
-	 * @param RegisterMapper $registerMapper Register mapper
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic mapper for object operations
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper
 	 * @param OrganisationMapper $organisationMapper Organisation mapper
 	 * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
 	 *                                                 type-id source, post `cleanup-linked-entity-type-map`)
@@ -77,9 +77,9 @@ class LinkedEntityService {
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep-link registry service for cross-app deep links
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly OrganisationMapper $organisationMapper,
 		private readonly IntegrationRegistry $integrationRegistry,
 		private readonly LoggerInterface $logger,

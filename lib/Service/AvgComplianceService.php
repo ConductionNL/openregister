@@ -32,10 +32,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -75,8 +76,8 @@ class AvgComplianceService {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db DB for the GdprEntity join.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
-	 * @param RegisterMapper $registerMapper Register lookup (annotation
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup (annotation
 	 *                                       fallback).
 	 * @param LoggerInterface $logger Logger.
 	 * @param ProcessingLogMapper|null $logMapper Read-log mapper (fallback-gap count).
@@ -84,8 +85,8 @@ class AvgComplianceService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?ProcessingLogMapper $logMapper = null,
 		private readonly ?VerwerkingsactiviteitMapper $vrwMapper = null,

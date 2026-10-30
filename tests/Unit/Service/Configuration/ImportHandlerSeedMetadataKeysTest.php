@@ -55,6 +55,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Configuration
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 

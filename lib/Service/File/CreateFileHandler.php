@@ -21,10 +21,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -78,7 +78,7 @@ class CreateFileHandler {
 	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
 	 * @param FileValidationHandler $fileValidHandler File validation handler.
 	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity mapper.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 */
 	public function __construct(
@@ -86,7 +86,7 @@ class CreateFileHandler {
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
 		private readonly FileOwnershipHandler $fileOwnershipHandler,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

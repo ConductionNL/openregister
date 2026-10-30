@@ -27,9 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -102,9 +102,9 @@ class BlobMigrationJob extends TimedJob {
 		$logger = $this->container->get(LoggerInterface::class);
 		$db = $this->container->get(IDBConnection::class);
 		$appConfig = $this->container->get(IAppConfig::class);
-		$registerMapper = $this->container->get(RegisterMapper::class);
-		$schemaMapper = $this->container->get(SchemaMapper::class);
-		$magicMapper = $this->container->get(MagicMapper::class);
+		$registerMapper = $this->container->get(RegisterMapperInterface::class);
+		$schemaMapper = $this->container->get(SchemaMapperInterface::class);
+		$magicMapper = $this->container->get(MagicMapperInterface::class);
 
 		$logger->info(
 			message: '[BlobMigrationJob] Starting blob-to-magic migration batch',

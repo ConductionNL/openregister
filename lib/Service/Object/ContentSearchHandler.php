@@ -25,8 +25,10 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -101,7 +103,8 @@ class ContentSearchHandler {
 	 *
 	 * @param ChunkMapper $chunkMapper Chunk store mapper (keyword search over body text).
 	 * @param FileMapper $fileMapper File mapper, used to resolve a file chunk's owning object.
-	 * @param MagicMapper $objectMapper Unified object mapper, used to resolve chunk hits to ObjectEntity rows.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Unified object mapper, used to resolve chunk hits to ObjectEntity
+	 *        rows.
 	 * @param LoggerInterface $logger Logger for DEBUG-level unresolvable-chunk diagnostics.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
@@ -109,7 +112,7 @@ class ContentSearchHandler {
 	public function __construct(
 		private readonly ChunkMapper $chunkMapper,
 		private readonly FileMapper $fileMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

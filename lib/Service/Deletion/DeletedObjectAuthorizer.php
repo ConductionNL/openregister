@@ -30,8 +30,8 @@ namespace OCA\OpenRegister\Service\Deletion;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -50,7 +50,7 @@ class DeletedObjectAuthorizer {
 	/**
 	 * Wire the RBAC and schema collaborators.
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper.
 	 * @param IUserSession $userSession The user session.
 	 * @param IGroupManager $groupManager The group manager for admin checks.
 	 * @param PermissionHandler $permissionHandler Handler for per-schema RBAC checks.
@@ -58,7 +58,7 @@ class DeletedObjectAuthorizer {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionHandler $permissionHandler,

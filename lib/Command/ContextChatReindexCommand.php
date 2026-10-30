@@ -27,8 +27,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\ContextChat\ContentProvider;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -76,8 +78,8 @@ class ContextChatReindexCommand extends Command {
 	 * safe; only `get()`ing it is not, and that now happens at execute() time.
 	 *
 	 * @param ContainerInterface $container Container, for the lazy ContentProvider resolve.
-	 * @param RegisterMapper $registerMapper Register lookup mapper, for the `--register` option.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper, for the `--schema` option.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register lookup mapper, for the `--register` option.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper, for the `--schema` option.
 	 *
 	 * @return void
 	 *
@@ -85,8 +87,8 @@ class ContextChatReindexCommand extends Command {
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 		parent::__construct();
 	}//end __construct()

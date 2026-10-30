@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -447,7 +448,7 @@ class MemberOfResolverTest extends TestCase {
 	private function containerGiving(MagicMapper $objects): ContainerInterface {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+			static fn (string $id): mixed => ($id === MagicMapperInterface::class) ? $objects : null
 		);
 		return $container;
 	}//end containerGiving()
@@ -482,7 +483,7 @@ class MemberOfResolverTest extends TestCase {
 		foreach ((new \ReflectionClass(MemberOfResolver::class))->getConstructor()->getParameters() as $parameter) {
 			$type = $parameter->getType();
 			$this->assertFalse(
-				$type instanceof \ReflectionNamedType && is_a($type->getName(), MagicMapper::class, true),
+				$type instanceof \ReflectionNamedType && is_a($type->getName(), MagicMapperInterface::class, true),
 				'MemberOfResolver must resolve MagicMapper lazily: ' . $parameter->getName()
 			);
 		}

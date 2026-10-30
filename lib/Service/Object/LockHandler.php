@@ -29,13 +29,14 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -61,22 +62,22 @@ class LockHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param MagicMapper $magicMapper Magic mapper for magic table operations
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging actions
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic mapper for magic table operations
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for logging actions
 	 * @param LoggerInterface $logger PSR-3 logger
 	 * @param IUserSession $userSession User session for authorization checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param SchemaMapper $schemaMapper Schema mapper for resolving manage rules
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for resolving manage rules
 	 * @param AdvisoryLockStore $advisory Pre-creation locks, for identifiers that do not resolve to a stored object
 	 * @param RunLockRegistry|null $runLocks Bookkeeping for run-held locks, so the terminal listener and the sweep can find them without reading objects
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AdvisoryLockStore $advisory,
 		private readonly ?RunLockRegistry $runLocks = null,
 	) {

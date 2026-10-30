@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters;
 use OCA\OpenRegister\Service\ObjectService;
@@ -104,7 +105,7 @@ class ExampleSetRegistersTest extends TestCase {
 		});
 		$recorder = $this->createMock(AppImportJobRecorder::class);
 		$recorder->expects($this->once())->method('forget')->with('openregister.vocabulary', 'job-mine');
-		$registers = $this->registersOver([AuditTrailMapper::class => $audit, ObjectService::class => $objects, AppImportJobRecorder::class => $recorder]);
+		$registers = $this->registersOver([AuditTrailMapperInterface::class => $audit, ObjectService::class => $objects, AppImportJobRecorder::class => $recorder]);
 
 		$this->assertFalse($registers->removeImport(appId: 'openregister.vocabulary', jobId: 'job-mine'), 'a refused object leaves the job in place');
 		$refuse = false;

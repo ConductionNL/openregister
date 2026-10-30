@@ -30,9 +30,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use Throwable;
 
@@ -47,13 +47,13 @@ class DraftDiscard {
 	 * Constructor.
 	 *
 	 * @param ObjectService  $objects   Reads and deletes objects.
-	 * @param RegisterMapper $registers Resolves the destination register.
-	 * @param SchemaMapper   $schemas   Resolves the destination schema.
+	 * @param RegisterMapperInterface<Register, Schema> $registers Resolves the destination register.
+	 * @param SchemaMapperInterface<Schema>   $schemas   Resolves the destination schema.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 	) {
 
 	}//end __construct()

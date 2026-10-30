@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -82,8 +84,8 @@ final class RbacRegistrar {
 			static function ($c) {
 				return new HierarchyDescender(
 					db: $c->get(\OCP\IDBConnection::class),
-					schemaMapper: $c->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-					registerMapper: $c->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+					schemaMapper: $c->get(SchemaMapperInterface::class),
+					registerMapper: $c->get(RegisterMapperInterface::class),
 					logger: $c->get(\Psr\Log\LoggerInterface::class),
 				);
 			}

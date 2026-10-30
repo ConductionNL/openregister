@@ -36,7 +36,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportGate;
@@ -77,7 +78,7 @@ class ObjectRelationsController extends Controller {
 	 * @param ObjectReadAccess $access Resolves an object under the caller's own RBAC.
 	 * @param ObjectTreeService $trees The bounded walk along a schema's parent property.
 	 * @param PurposeGuard $purposeGuard The doelbinding guard the object read runs, asked before a tree or a graph is answered.
-	 * @param RegisterMapper $registerMapper Resolves an object's register for that guard.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Resolves an object's register for that guard.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named above.
 	 *
@@ -93,7 +94,7 @@ class ObjectRelationsController extends Controller {
 		private readonly ObjectReadAccess $access,
 		private readonly ObjectTreeService $trees,
 		private readonly PurposeGuard $purposeGuard,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

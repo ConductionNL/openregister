@@ -55,12 +55,12 @@ use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
@@ -96,23 +96,23 @@ class ArchivalRetentionTask extends TimedJob {
 	/**
 	 * Register repository used to enumerate active registers.
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface<Register, Schema>
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema repository used to enumerate annotated schemas.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Magic-table resolver used to map registers/schemas to physical tables.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>
 	 */
-	private readonly MagicMapper $magicMapper;
+	private readonly MagicMapperInterface $magicMapper;
 
 	/**
 	 * Object service used to perform the sweep deletes.
@@ -158,9 +158,9 @@ class ArchivalRetentionTask extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for TimedJob scheduling.
 	 * @param IDBConnection $db Database connection for native SQL row scan.
-	 * @param RegisterMapper $registerMapper Register repository.
-	 * @param SchemaMapper $schemaMapper Schema repository.
-	 * @param MagicMapper $magicMapper Magic-table resolver.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register repository.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema repository.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Magic-table resolver.
 	 * @param ObjectService $objectService Service used to perform the sweep deletes.
 	 * @param RetentionService $retentionService Answers whether a row is under an active legal hold.
 	 * @param ContainerInterface $container App container the notification collaborators come from.
@@ -169,9 +169,9 @@ class ArchivalRetentionTask extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		IDBConnection $db,
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
-		MagicMapper $magicMapper,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		MagicMapperInterface $magicMapper,
 		ObjectService $objectService,
 		RetentionService $retentionService,
 		ContainerInterface $container,
@@ -334,7 +334,7 @@ class ArchivalRetentionTask extends TimedJob {
 			return;
 		}
 
-		$tableName = MagicMapper::TABLE_PREFIX . ((string)$register->getId()) . '_' . ((string)$schema->getId());
+		$tableName = MagicMapperInterface::TABLE_PREFIX . ((string)$register->getId()) . '_' . ((string)$schema->getId());
 
 		$scanned = 0;
 		$expired = 0;

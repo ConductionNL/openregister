@@ -39,7 +39,7 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -68,7 +68,7 @@ class PrincipalReachService {
 	 * Wire the authorities the listing reads.
 	 *
 	 * @param PermissionHandler     $permissions  The canonical RBAC verdict and its provenance.
-	 * @param SchemaMapper          $schemaMapper The schemas the cascade is asked about.
+	 * @param SchemaMapperInterface<Schema>          $schemaMapper The schemas the cascade is asked about.
 	 * @param DerivedGrantStore     $derived      Grants derived from sign-in claims.
 	 * @param DelegationGrantMapper $delegations  Delegations held by this principal.
 	 * @param IGroupManager         $groupManager Group membership.
@@ -79,7 +79,7 @@ class PrincipalReachService {
 	 */
 	public function __construct(
 		private readonly PermissionHandler $permissions,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DerivedGrantStore $derived,
 		private readonly DelegationGrantMapper $delegations,
 		private readonly IGroupManager $groupManager,

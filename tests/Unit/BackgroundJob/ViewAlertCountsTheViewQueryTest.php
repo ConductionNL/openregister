@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
@@ -121,7 +122,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 
 			$this->assertInstanceOf(ReflectionNamedType::class, $type);
-			if ($type->getName() === MagicMapper::class) {
+			if ($type->getName() === MagicMapperInterface::class) {
 				$args[] = $this->mapper;
 				continue;
 			}

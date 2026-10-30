@@ -42,6 +42,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 #[CoversClass(MagicMapper::class)]
+#[UsesClass(\OCA\OpenRegister\Db\StoredEntity::class)]
 #[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler::class)]
 #[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler::class)]
 #[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler::class)]

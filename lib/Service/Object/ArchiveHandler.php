@@ -27,12 +27,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -61,8 +62,8 @@ class ArchiveHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $magicMapper Object lookup and persistence.
-	 * @param AuditTrailMapper $auditTrailMapper Audit entries for each transition.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Object lookup and persistence.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit entries for each transition.
 	 * @param PermissionHandler $permissionHandler The `update` gate.
 	 * @param IUserSession $userSession The acting user.
 	 * @param LoggerInterface $logger PSR-3 logger.
@@ -70,8 +71,8 @@ class ArchiveHandler {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

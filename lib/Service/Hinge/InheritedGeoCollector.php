@@ -27,9 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -59,7 +60,7 @@ class InheritedGeoCollector {
 	/**
 	 * Wire the object lookup the collector reads referenced records through.
 	 *
-	 * @param MagicMapper     $magicMapper Object storage.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $magicMapper Object storage.
 	 * @param LoggerInterface $logger      PSR logger for unreadable references.
 	 *
 	 * @return void
@@ -67,7 +68,7 @@ class InheritedGeoCollector {
 	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

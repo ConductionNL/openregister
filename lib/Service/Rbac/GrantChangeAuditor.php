@@ -38,8 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -74,12 +75,12 @@ class GrantChangeAuditor {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $mapper The trail, which owns the chain.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $mapper The trail, which owns the chain.
 	 * @param SettingsChangeAuditor $settings Writes the change of an organisation's special right list.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $mapper,
+		private readonly AuditTrailMapperInterface $mapper,
 		private readonly SettingsChangeAuditor $settings,
 		private readonly LoggerInterface $logger,
 	) {

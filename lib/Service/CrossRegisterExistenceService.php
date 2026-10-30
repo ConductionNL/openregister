@@ -47,7 +47,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -97,12 +98,12 @@ class CrossRegisterExistenceService {
 	 * Constructor.
 	 *
 	 * @param ObjectService   $objects The object service, used with RBAC ON.
-	 * @param SchemaMapper    $schemas The schema store, for what a field may be.
+	 * @param SchemaMapperInterface<Schema>    $schemas The schema store, for what a field may be.
 	 * @param LoggerInterface $logger  The logger.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

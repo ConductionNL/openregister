@@ -66,6 +66,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
  * @uses \OCA\OpenRegister\Service\AuditRetentionResolver
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class IntegrityAndFileAuditExpiryTest extends TestCase {
 

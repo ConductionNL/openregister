@@ -36,6 +36,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 

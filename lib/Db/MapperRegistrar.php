@@ -32,6 +32,7 @@ use Psr\Container\ContainerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A registrar names every service it wires.
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Factory closures list every constructor argument.
+ * @SuppressWarnings(PHPMD.StaticAccess)          DbContractBindings is a static registrar, like this class.
  */
 final class MapperRegistrar {
 
@@ -133,5 +134,7 @@ final class MapperRegistrar {
 				);
 			}
 		);
+
+		DbContractBindings::register(context: $context);
 	}//end register()
 }//end class

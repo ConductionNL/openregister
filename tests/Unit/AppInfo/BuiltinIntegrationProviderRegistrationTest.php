@@ -50,8 +50,8 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		],
 		'OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider' => [
 			'OCA\OpenRegister\Service\TaskService',
-			'OCA\OpenRegister\Db\RegisterMapper',
-			'OCA\OpenRegister\Db\SchemaMapper',
+			'OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface',
+			'OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 			'OCP\IL10N',
 		],
@@ -61,7 +61,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider' => [
-			'OCA\OpenRegister\Db\AuditTrailMapper',
+			'OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface',
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\XwikiProvider' => [
@@ -193,7 +193,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IUserSession',
 			'OCP\IL10N',
 			'Psr\Log\LoggerInterface',
-			'OCA\OpenRegister\Db\SchemaMapper',
+			'OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\PollsProvider' => [
 			'OCA\OpenRegister\Db\PollLinkMapper',
@@ -319,7 +319,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\Schema\SchemaRevalidationService' => [
 			'OCA\OpenRegister\Db\SchemaRunMapper',
 			'OCA\OpenRegister\Db\SchemaRunEntryMapper',
-			'OCA\OpenRegister\Db\SchemaMapper',
+			'OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 			'OCA\OpenRegister\Service\Object\ValidateObject',
 			'Psr\Log\LoggerInterface',
@@ -328,7 +328,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner',
 			'OCA\OpenRegister\Db\SchemaRunMapper',
 			'OCA\OpenRegister\Db\SchemaRunEntryMapper',
-			'OCA\OpenRegister\Db\SchemaMapper',
+			'OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 			'Psr\Log\LoggerInterface',
 		],

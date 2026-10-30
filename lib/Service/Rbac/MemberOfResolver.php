@@ -36,10 +36,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -87,15 +89,15 @@ class MemberOfResolver {
 	 * parameter here closes that loop and `occ app:enable` dies in infinite recursion. It is
 	 * fetched from the container on first read instead (the CacheHandler / issue #1564 pattern).
 	 *
-	 * @param SchemaMapper      $schemas   Loads the membership schema.
-	 * @param RegisterMapper    $registers Finds the register that holds it.
+	 * @param SchemaMapperInterface<Schema>      $schemas   Loads the membership schema.
+	 * @param RegisterMapperInterface<Register, Schema>    $registers Finds the register that holds it.
 	 * @param ContainerInterface $container Resolves MagicMapper on first read, not at construction.
 	 * @param OperatorEvaluator $operators Evaluates the operand's `where` filters.
 	 * @param LoggerInterface   $logger    Logs a set that could not be read.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
-		private readonly RegisterMapper $registers,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly RegisterMapperInterface $registers,
 		private readonly ContainerInterface $container,
 		private readonly OperatorEvaluator $operators,
 		private readonly LoggerInterface $logger,
@@ -269,7 +271,7 @@ class MemberOfResolver {
 
 			$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
 
-			$rows = $this->container->get(MagicMapper::class)->searchObjects(
+			$rows = $this->container->get(MagicMapperInterface::class)->searchObjects(
 				query: [
 					'@self'        => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
 					$spec['match'] => $userId,

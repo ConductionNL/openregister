@@ -169,7 +169,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 	private function resolveObject(string $objectId) {
 		foreach ([
 			'\OCA\OpenRegister\Db\ObjectEntityMapper',
-			'\OCA\OpenRegister\Db\MagicMapper',
+			'\OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface',
 			'\OCA\OpenRegister\Db\AbstractObjectMapper',
 		] as $candidate
 		) {

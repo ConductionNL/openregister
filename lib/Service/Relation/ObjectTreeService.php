@@ -32,12 +32,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
@@ -105,9 +105,9 @@ class ObjectTreeService {
 	 *
 	 * @param HierarchyDescender     $descender      Reads one level of children from a magic table.
 	 * @param HierarchyGrantExpander $hierarchies    Reads a schema's hierarchy declaration.
-	 * @param MagicMapper            $objectMapper   Loads objects and filters them by read access.
-	 * @param RegisterMapper         $registerMapper Resolves the root's register.
-	 * @param SchemaMapper           $schemaMapper   Resolves the root's schema.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>            $objectMapper   Loads objects and filters them by read access.
+	 * @param RegisterMapperInterface<Register, Schema>         $registerMapper Resolves the root's register.
+	 * @param SchemaMapperInterface<Schema>           $schemaMapper   Resolves the root's schema.
 	 * @param RelationGraphService   $graphs         Holds the instance's node cap.
 	 * @param RenderObject           $renderer       Strips what the caller may not read from the properties a node carries.
 	 * @param LoggerInterface        $logger         The logger.
@@ -115,9 +115,9 @@ class ObjectTreeService {
 	public function __construct(
 		private readonly HierarchyDescender $descender,
 		private readonly HierarchyGrantExpander $hierarchies,
-		private readonly MagicMapper $objectMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RelationGraphService $graphs,
 		private readonly RenderObject $renderer,
 		private readonly LoggerInterface $logger,
@@ -295,7 +295,7 @@ class ObjectTreeService {
 	 * @return array{nodes: array<int, array<string, mixed>>, truncatedBy: string|null} The nodes.
 	 */
 	private function descendants(string $rootUuid, array $walk): array {
-		$table = MagicMapper::TABLE_PREFIX . (int)$walk['register']->getId() . '_' . (int)$walk['schema']->getId();
+		$table = MagicMapperInterface::TABLE_PREFIX . (int)$walk['register']->getId() . '_' . (int)$walk['schema']->getId();
 		$column = $this->descender->columnFor(property: $walk['property']);
 		$cap = $this->graphs->maximumNodes();
 

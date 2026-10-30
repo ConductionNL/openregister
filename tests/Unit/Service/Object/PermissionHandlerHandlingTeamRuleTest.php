@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -148,7 +149,7 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $class) use ($registerMapper) {
-				if ($class === RegisterMapper::class) {
+				if ($class === RegisterMapperInterface::class) {
 					return $registerMapper;
 				}
 

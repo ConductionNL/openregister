@@ -29,7 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\IRequest;
 use Throwable;
 
@@ -43,14 +44,14 @@ class VocabularyDeclarationResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Reads the schema a coded property is declared on.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Reads the schema a coded property is declared on.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Builds a declaration off a schema property.
 	 * @param IRequest $request Current request (the unsaved path reads its knobs off the query).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 		private readonly IRequest $request,
 	) {

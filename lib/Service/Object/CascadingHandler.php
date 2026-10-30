@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -44,7 +44,7 @@ class CascadingHandler {
 	 * Constructor for CascadingHandler.
 	 *
 	 * @param SaveObject $saveHandler Handler for saving objects.
-	 * @param SchemaMapper $schemaMapper Mapper for schema entities.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schema entities.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 *
@@ -52,7 +52,7 @@ class CascadingHandler {
 	 */
 	public function __construct(
 		private readonly SaveObject $saveHandler,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly LoggerInterface $logger,
 	) {

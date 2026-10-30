@@ -46,9 +46,9 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -85,14 +85,14 @@ class DraftExpiry {
 	 * Constructor.
 	 *
 	 * @param ObjectService   $objects   Lists and deletes objects.
-	 * @param RegisterMapper  $registers Lists the registers.
-	 * @param SchemaMapper    $schemas   Loads each register's schemas.
+	 * @param RegisterMapperInterface<Register, Schema>  $registers Lists the registers.
+	 * @param SchemaMapperInterface<Schema>    $schemas   Loads each register's schemas.
 	 * @param LoggerInterface $logger    Records what a sweep could not do.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
 

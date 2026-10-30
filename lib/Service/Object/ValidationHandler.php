@@ -19,11 +19,14 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,20 +58,20 @@ class ValidationHandler {
 	 * Constructor for ValidationHandler.
 	 *
 	 * @param ValidateObject $validateHandler Handler for object validation.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
-	 * @param RegisterMapper $registerMapper Mapper for registers.
-	 * @param SchemaMapper $schemaMapper Mapper for schemas.
-	 * @param MagicMapper $magicMapper Mapper for magic tables.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Mapper for object entities.
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Mapper for registers.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Mapper for schemas.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Mapper for magic tables.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ValidateObject $validateHandler,
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

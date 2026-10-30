@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
@@ -110,7 +111,7 @@ class CacheHandlerCoverageTest extends TestCase {
 		// Set up container callback that uses containerServices map.
 		// Tests can add services to $this->containerServices before calling createHandler.
 		$this->containerServices = [];
-		$this->containerServices[MagicMapper::class] = $this->objectMapper;
+		$this->containerServices[MagicMapperInterface::class] = $this->objectMapper;
 
 		$servicesRef = &$this->containerServices;
 		$this->container->method('get')

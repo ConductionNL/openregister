@@ -44,11 +44,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -61,14 +64,14 @@ class RunLockRegistry {
 	 * Constructor.
 	 *
 	 * @param RunObjectLockMapper $registry The run-lock rows.
-	 * @param MagicMapper $magicMapper Resolves and mutates the objects themselves.
-	 * @param AuditTrailMapper $auditTrailMapper Records the releases.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $magicMapper Resolves and mutates the objects themselves.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Records the releases.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly RunObjectLockMapper $registry,
-		private readonly MagicMapper $magicMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 

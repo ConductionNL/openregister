@@ -28,9 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -50,16 +53,16 @@ class LegalHoldService {
 	/**
 	 * Object entity mapper.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>
 	 */
-	private MagicMapper $objectMapper;
+	private MagicMapperInterface $objectMapper;
 
 	/**
 	 * Audit trail mapper for logging hold operations.
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface<AuditTrail, ObjectEntity>
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * User session for identifying who placed the hold.
@@ -85,16 +88,16 @@ class LegalHoldService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object entity data mapper.
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper Object entity data mapper.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Audit trail mapper for logging.
 	 * @param IUserSession $userSession User session service.
 	 * @param IJobList $jobList Background job list for bulk operations.
 	 * @param LoggerInterface $logger Logger for error and info messages.
 	 * @param RetentionRowScanner|null $scanner Walks every table a retention decision can live in, for the list of held records.
 	 */
 	public function __construct(
-		MagicMapper $objectMapper,
-		AuditTrailMapper $auditTrailMapper,
+		MagicMapperInterface $objectMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		IUserSession $userSession,
 		IJobList $jobList,
 		LoggerInterface $logger,

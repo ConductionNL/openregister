@@ -38,8 +38,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -67,12 +69,12 @@ class LifecycleFinalStateResolver {
 	 * pure shape check with no collaborators; the parameter exists so a test
 	 * can substitute one.
 	 *
-	 * @param MagicMapper                $objects     Loads the referenced row.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>                $objects     Loads the referenced row.
 	 * @param LoggerInterface            $logger      Where an unresolvable reference is reported.
 	 * @param LifecycleDeclarationForms  $declaration Tells the two forms of `final` apart.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objects,
+		private readonly MagicMapperInterface $objects,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleDeclarationForms $declaration = new LifecycleDeclarationForms(),
 	) {

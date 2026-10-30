@@ -40,11 +40,11 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\BackgroundJob\AggregationThresholdJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Aggregation\ThresholdEvaluationService;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCP\EventDispatcher\Event;
@@ -70,14 +70,14 @@ class AggregationThresholdListener implements IEventListener {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup mapper.
 	 * @param ThresholdEvaluationService $evaluator Shared threshold evaluation logic.
 	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ThresholdEvaluationService $evaluator,
 		private readonly ListenerDeferralService $deferral,
 	) {

@@ -25,11 +25,12 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,16 +60,16 @@ class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * Schema mapper for schema operations
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface<Schema>
 	 */
-	private SchemaMapper $schemaMapper;
+	private SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Object entity mapper for object queries
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface<ObjectEntity, Register, Schema>
 	 */
-	private MagicMapper $objectEntityMapper;
+	private MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Logger for debugging and monitoring
@@ -80,13 +81,13 @@ class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * SchemaService constructor
 	 *
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for schema operations.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectEntityMapper Object entity mapper for object queries.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		MagicMapper $objectEntityMapper,
+		SchemaMapperInterface $schemaMapper,
+		MagicMapperInterface $objectEntityMapper,
 		LoggerInterface $logger,
 	) {
 		$this->schemaMapper = $schemaMapper;

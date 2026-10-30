@@ -7,6 +7,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -47,10 +49,10 @@ class DeepLinkRegistryServiceTest extends TestCase {
 
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(function (string $class) {
-			if ($class === RegisterMapper::class) {
+			if ($class === RegisterMapperInterface::class) {
 				return $this->registerMapper;
 			}
-			if ($class === SchemaMapper::class) {
+			if ($class === SchemaMapperInterface::class) {
 				return $this->schemaMapper;
 			}
 			return null;

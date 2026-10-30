@@ -38,9 +38,9 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use Psr\Log\LoggerInterface;
 
@@ -135,16 +135,16 @@ class TmloService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for fetching registers
-	 * @param SchemaMapper $schemaMapper Schema mapper for fetching schemas
+	 * @param RegisterMapperInterface<Register, Schema> $registerMapper Register mapper for fetching registers
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for fetching schemas
 	 * @param LoggerInterface $logger Logger interface
 	 * @param MdtoXmlGenerator $mdtoGenerator The one implementation of the MDTO format
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly MdtoXmlGenerator $mdtoGenerator,
 	) {

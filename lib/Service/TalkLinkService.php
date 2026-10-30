@@ -40,9 +40,10 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use OCP\IUserSession;
@@ -81,7 +82,7 @@ class TalkLinkService {
 	 * @param IUserSession $userSession Active session.
 	 * @param IL10N $l10n Translation service.
 	 * @param LoggerInterface $logger Logger.
-	 * @param SchemaMapper $schemaMapper Resolves the schema an object belongs to (external-participant opt-in check).
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Resolves the schema an object belongs to (external-participant opt-in check).
 	 */
 	public function __construct(
 		private readonly TalkLinkMapper $talkLinkMapper,
@@ -90,7 +91,7 @@ class TalkLinkService {
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

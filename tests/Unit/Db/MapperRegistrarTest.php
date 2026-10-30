@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\DbContractBindings;
 use OCA\OpenRegister\Db\MapperRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
@@ -63,4 +64,21 @@ class MapperRegistrarTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
 		}
 	}//end testEveryFactoryBuildsItsService()
+
+	/**
+	 * register() also aliases the Db contracts to their mappers.
+	 *
+	 * @return void
+	 */
+	public function testRegistersTheDbContractAliases(): void {
+		$context = new RecordingRegistrationContext();
+		MapperRegistrar::register(context: $context);
+
+		$aliases = [];
+		foreach ($context->aliases as $alias) {
+			$aliases[$alias['alias']] = $alias['target'];
+		}
+
+		$this->assertSame(expected: DbContractBindings::BINDINGS, actual: $aliases);
+	}//end testRegistersTheDbContractAliases()
 }//end class

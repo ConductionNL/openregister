@@ -30,11 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
@@ -57,7 +58,7 @@ class SchemaMigrationController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema lookup.
 	 * @param SchemaChangelogMapper $changelogMapper Changelog read.
 	 * @param SchemaRunMapper $runMapper Run read.
 	 * @param SchemaRunEntryMapper $runEntryMapper Run entry read.
@@ -72,7 +73,7 @@ class SchemaMigrationController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SchemaChangelogMapper $changelogMapper,
 		private readonly SchemaRunMapper $runMapper,
 		private readonly SchemaRunEntryMapper $runEntryMapper,

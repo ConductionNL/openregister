@@ -31,6 +31,8 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
@@ -135,8 +137,10 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ *
+ * @implements SchemaMapperInterface<Schema>
  */
-class SchemaMapper extends QBMapper {
+class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -3528,7 +3532,7 @@ class SchemaMapper extends QBMapper {
 	 * This method searches through all schemas to find ones that have properties
 	 * with $ref pointing to the target schema, indicating a relationship.
 	 *
-	 * @param Schema|int|string $schema The target schema to find references to
+	 * @param SchemaInterface|int|string $schema The target schema to find references to
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the target schema does not exist
 	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
@@ -3540,9 +3544,9 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function getRelated(Schema|int|string $schema): array {
+	public function getRelated(SchemaInterface|int|string $schema): array {
 		// If we received a Schema entity, get its ID, otherwise find the schema.
-		if ($schema instanceof Schema === false) {
+		if ($schema instanceof SchemaInterface === false) {
 			// Find the target schema to get all its identifiers.
 			// Metadata read: bypasses multitenancy, like the controller's own
 			// outgoing half and every other schema catalog lookup.
@@ -3552,7 +3556,7 @@ class SchemaMapper extends QBMapper {
 			$targetSchemaSlug = $targetSchema->getSlug();
 		}
 
-		if ($schema instanceof Schema === true) {
+		if ($schema instanceof SchemaInterface === true) {
 			$targetSchemaId = (string)$schema->getId();
 			$targetSchemaUuid = $schema->getUuid();
 			$targetSchemaSlug = $schema->getSlug();
@@ -3997,14 +4001,16 @@ class SchemaMapper extends QBMapper {
 	 * Returns metadata about each property indicating whether it's native (defined in this schema)
 	 * or inherited (from a parent schema via allOf). For inherited properties, shows the source schema.
 	 *
-	 * @param Schema $schema The schema to analyze
+	 * @param SchemaInterface $schema The schema to analyze
 	 *
 	 * @return array<string, array<string, string|null>> Property metadata keyed by property name
 	 *
 	 * @psalm-return array<string,
 	 *     array{source: 'native'|'inherited', inheritedFrom: string|null}>
 	 */
-	public function getPropertySourceMetadata(Schema $schema): array {
+	public function getPropertySourceMetadata(SchemaInterface $schema): array {
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$metadata = [];
 		$nativeProperties = [];
 

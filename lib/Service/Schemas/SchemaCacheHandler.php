@@ -30,7 +30,7 @@ use DateInterval;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -149,9 +149,9 @@ class SchemaCacheHandler {
 	 *
 	 * Used to load schemas from database when cache misses occur.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface<Schema> Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Logger for performance monitoring
@@ -169,14 +169,14 @@ class SchemaCacheHandler {
 	 * for schema caching operations.
 	 *
 	 * @param IDBConnection $db Database connection for persistent cache
-	 * @param SchemaMapper $schemaMapper Schema mapper for loading schemas on cache miss
+	 * @param SchemaMapperInterface<Schema> $schemaMapper Schema mapper for loading schemas on cache miss
 	 * @param LoggerInterface $logger Logger for performance monitoring and debugging
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		LoggerInterface $logger,
 	) {
 		// Store dependencies for use in handler methods.

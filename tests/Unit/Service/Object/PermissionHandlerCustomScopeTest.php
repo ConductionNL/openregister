@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -89,7 +90,7 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('getFirstRegisterWithSchema')->willReturn(null);
 		$this->container->method('get')
-			->with(RegisterMapper::class)
+			->with(RegisterMapperInterface::class)
 			->willReturn($registerMapper);
 
 		$appConfig = $this->createMock(IAppConfig::class);

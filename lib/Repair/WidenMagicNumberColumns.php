@@ -23,7 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -43,13 +46,13 @@ class WidenMagicNumberColumns implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $magicMapper Magic-table discovery and widening.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema>     $magicMapper Magic-table discovery and widening.
 	 * @param LoggerInterface $logger      Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

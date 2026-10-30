@@ -30,12 +30,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationCache;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -88,8 +88,8 @@ class AggregationCacheInvalidationListener implements IEventListener {
 		// ("pipelinq", "leadProduct"). Evicting by id bumped a counter nothing
 		// reads, so a write never evicted and counts stayed stale for the TTL.
 		$this->cache->evictForSchema(
-			registerSlug: $this->slugOf(reference: (string)$object->getRegister(), mapperClass: RegisterMapper::class),
-			schemaSlug: $this->slugOf(reference: (string)$object->getSchema(), mapperClass: SchemaMapper::class)
+			registerSlug: $this->slugOf(reference: (string)$object->getRegister(), mapperClass: RegisterMapperInterface::class),
+			schemaSlug: $this->slugOf(reference: (string)$object->getSchema(), mapperClass: SchemaMapperInterface::class)
 		);
 	}//end handle()
 
@@ -100,7 +100,7 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 * lookup fails the reference is returned unchanged.
 	 *
 	 * @param string $reference The id or slug stored on the object.
-	 * @param string $mapperClass RegisterMapper::class or SchemaMapper::class.
+	 * @param string $mapperClass RegisterMapperInterface::class or SchemaMapperInterface::class.
 	 *
 	 * @return string The slug.
 	 *

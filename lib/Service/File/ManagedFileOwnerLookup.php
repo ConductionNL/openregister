@@ -22,8 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\Node;
 
@@ -37,10 +39,10 @@ class ManagedFileOwnerLookup {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objects Finds an object by the name of its folder.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objects Finds an object by the name of its folder.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objects,
+		private readonly MagicMapperInterface $objects,
 	) {
 	}//end __construct()
 

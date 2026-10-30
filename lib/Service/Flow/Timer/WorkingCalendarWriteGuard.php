@@ -36,7 +36,8 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -57,11 +58,11 @@ class WorkingCalendarWriteGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemas Resolves the schema an object belongs to.
+	 * @param SchemaMapperInterface<Schema> $schemas Resolves the schema an object belongs to.
 	 * @param FlowTimerMapper $timers Counts the timers that name a calendar.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly FlowTimerMapper $timers,
 	) {
 

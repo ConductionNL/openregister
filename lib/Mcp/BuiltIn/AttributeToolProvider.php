@@ -53,7 +53,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AuditTrailMapperInterface;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
@@ -85,13 +87,13 @@ class AttributeToolProvider implements IMcpToolProvider {
 	 *
 	 * @param string $appId The owning app id; `getAppId()` and every id prefix.
 	 * @param array $entries Resolved attributed-tool entries (see above).
-	 * @param AuditTrailMapper $auditTrailMapper Immutable hash-chained audit-trail writer.
+	 * @param AuditTrailMapperInterface<AuditTrail, ObjectEntity> $auditTrailMapper Immutable hash-chained audit-trail writer.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
 		private readonly string $appId,
 		private readonly array $entries,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

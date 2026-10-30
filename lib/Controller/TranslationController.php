@@ -29,12 +29,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Kernel\Contracts\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaMapperInterface;
 use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Controller;
@@ -56,18 +57,18 @@ class TranslationController extends Controller {
 	 * @param IRequest $request The current request.
 	 * @param TranslationStatusService $statusService The translation status service.
 	 * @param TranslationMapper $translationMapper The translation mapper.
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param SchemaMapperInterface<Schema> $schemaMapper The schema mapper.
 	 * @param BulkTranslationService $bulkService The bulk translation service.
-	 * @param MagicMapper $objectMapper The object mapper.
+	 * @param MagicMapperInterface<ObjectEntity, Register, Schema> $objectMapper The object mapper.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly TranslationStatusService $statusService,
 		private readonly TranslationMapper $translationMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly BulkTranslationService $bulkService,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
