@@ -105,6 +105,9 @@ class ReferencedCalculationRefresher {
 	/**
 	 * Re-save the objects in the updated object's register whose materialised calculations read a changed field of it.
 	 *
+	 * Runs inline: the write path defers this through ReferencedCalculationJob
+	 * (ADR-078) and calls it only when the deferral kill switch is set.
+	 *
 	 * @param ObjectEntity      $updated The object as saved.
 	 * @param ObjectEntity|null $old     The object before the save, null when unknown (every field counts as changed).
 	 *
@@ -113,33 +116,101 @@ class ReferencedCalculationRefresher {
 	 * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
 	 */
 	public function refresh(ObjectEntity $updated, ?ObjectEntity $old): int {
-		$uuid = (string) $updated->getUuid();
-		if ($uuid === '' || self::$depth >= self::MAX_DEPTH) {
-			return 0;
+		return $this->refreshChanged(updated: $updated, changed: $this->changedReadFields(updated: $updated, old: $old), depth: self::$depth);
+	}//end refresh()
+
+	/**
+	 * The fields of the updated object that changed and that a materialised `@ref` in its register reads.
+	 *
+	 * Reads schemas and the register only (cached per request); it never
+	 * reads referrers or writes, so the write path can call it inline to
+	 * decide whether a refresh has to be queued at all.
+	 *
+	 * @param ObjectEntity      $updated The object as saved.
+	 * @param ObjectEntity|null $old     The object before the save, null when unknown (every field counts as changed).
+	 *
+	 * @return array<int, string> The changed fields some dependent reads; empty when nothing needs a refresh.
+	 *
+	 * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 */
+	public function changedReadFields(ObjectEntity $updated, ?ObjectEntity $old): array {
+		if ((string) $updated->getUuid() === '' || self::$depth >= self::MAX_DEPTH) {
+			return [];
 		}
 
-		try {
-			$target   = $this->schemas->find(id: (string) $updated->getSchema(), _rbac: false, _multitenancy: false);
-			$register = $this->registers->find(id: (string) $updated->getRegister(), _rbac: false, _multitenancy: false);
-		} catch (Throwable) {
-			return 0;
+		$found = $this->registerAndSchemaOf(updated: $updated);
+		if ($found === null) {
+			return [];
 		}
+
+		[$register, $target] = $found;
 
 		// The guard: nothing is read or written unless a materialised `@ref`
 		// in this register reads a field of this schema that changed.
-		$read    = $this->readFields(dependents: $this->dependentsOf(register: $register, target: $target));
-		$changed = array_values(array_intersect($read, $this->changedFields(new: ($updated->getObject() ?? []), old: $old?->getObject())));
-		if ($changed === []) {
+		$read = $this->readFields(dependents: $this->dependentsOf(register: $register, target: $target));
+		return array_values(array_intersect($read, $this->changedFields(new: ($updated->getObject() ?? []), old: $old?->getObject())));
+	}//end changedReadFields()
+
+	/**
+	 * The cascade depth of the refresh running now; 0 outside a refresh.
+	 *
+	 * @return integer
+	 */
+	public function depth(): int {
+		return self::$depth;
+	}//end depth()
+
+	/**
+	 * The updated object's register and schema, null when either cannot be found.
+	 *
+	 * @param ObjectEntity $updated The object as saved.
+	 *
+	 * @return array{0: Register, 1: Schema}|null
+	 */
+	private function registerAndSchemaOf(ObjectEntity $updated): ?array {
+		try {
+			return [
+				$this->registers->find(id: (string) $updated->getRegister(), _rbac: false, _multitenancy: false),
+				$this->schemas->find(id: (string) $updated->getSchema(), _rbac: false, _multitenancy: false),
+			];
+		} catch (Throwable) {
+			return null;
+		}
+	}//end registerAndSchemaOf()
+
+	/**
+	 * Re-save the referrers that read one of the given changed fields of the updated object.
+	 *
+	 * The re-saves dispatch ObjectUpdatedEvent again; the depth is held while
+	 * they run, so a refresh queued from one of them carries depth + 1 and the
+	 * cascade stops at MAX_DEPTH across background jobs as well.
+	 *
+	 * @param ObjectEntity       $updated The object as saved.
+	 * @param array<int, string> $changed The changed fields some dependent reads.
+	 * @param int                $depth   The cascade depth this refresh runs at.
+	 *
+	 * @return integer The number of objects re-saved.
+	 *
+	 * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 */
+	public function refreshChanged(ObjectEntity $updated, array $changed, int $depth): int {
+		// The callers hand over an object with a uuid and a non-empty field list
+		// (changedReadFields(), ReferencedCalculationJob); only the bound is checked here.
+		$found = $this->registerAndSchemaOf(updated: $updated);
+		if ($depth >= self::MAX_DEPTH || $found === null) {
 			return 0;
 		}
 
-		self::$depth++;
+		[$register, $target] = $found;
+
+		$outer       = self::$depth;
+		self::$depth = ($depth + 1);
 		try {
-			return $this->refreshIn(register: $register, target: $target, uuid: $uuid, changed: $changed);
+			return $this->refreshIn(register: $register, target: $target, uuid: (string) $updated->getUuid(), changed: array_values($changed));
 		} finally {
-			self::$depth--;
+			self::$depth = $outer;
 		}
-	}//end refresh()
+	}//end refreshChanged()
 
 	/**
 	 * Every field of the target schema some dependent reads.
@@ -357,13 +428,8 @@ class ReferencedCalculationRefresher {
 			return array_map('strval', array_keys($new));
 		}
 
-		$changed = [];
-		foreach (array_unique([...array_keys($new), ...array_keys($old)]) as $key) {
-			if (json_encode($new[$key] ?? null) !== json_encode($old[$key] ?? null)) {
-				$changed[] = (string) $key;
-			}
-		}
+		$differs = static fn (int|string $key): bool => json_encode($new[$key] ?? null) !== json_encode($old[$key] ?? null);
 
-		return $changed;
+		return array_values(array_map('strval', array_filter(array_unique([...array_keys($new), ...array_keys($old)]), $differs)));
 	}//end changedFields()
 }//end class
