@@ -4398,7 +4398,7 @@ class ImportHandler {
 		$configuration = new Configuration();
 		$configuration->setTitle($info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}");
 		$configuration->setDescription(
-			($info['description'] ?? $xOpenregister['description'] ?? $data['description']) ?? "Configuration imported by application {$appId}"
+			$info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}"
 		);
 		$configuration->setType($xOpenregister['type'] ?? $data['type'] ?? 'app');
 		$configuration->setApp($appId);
