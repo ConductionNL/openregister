@@ -232,7 +232,7 @@ class ViewsController extends Controller {
 	 * @throws InvalidViewAlertException When the alert names a recipient this caller may not add.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	private function refuseForbiddenViewFields(View $view, string $userId, array $data, ?array $savedAs=null): ?JSONResponse {
 		// Only keys that name a view property are judged, so a `_limit` or

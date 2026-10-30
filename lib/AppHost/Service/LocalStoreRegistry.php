@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/store-local-registry/specs/apphost-store-plane/spec.md
+ * @spec openspec/specs/apphost-store-plane/spec.md
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class LocalStoreRegistry {
 	 *
 	 * @return array{outcome: string, results: array<int, mixed>}
 	 *
-	 * @spec openspec/changes/store-local-registry/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
 	public function read(string $register, string $schema, array $params, int $limit): array {
 		$limit = (int)($params['_limit'] ?? $limit);
@@ -121,7 +121,7 @@ class LocalStoreRegistry {
 	 *
 	 * @return array{outcome: string, slug: string}
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
 	public function write(string $register, string $schema, array $body): array {
 		$slug = (string) ($body['slug'] ?? '');

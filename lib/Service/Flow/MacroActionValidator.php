@@ -100,7 +100,7 @@ class MacroActionValidator {
 	 *
 	 * @return string|null The refusal, or null when the declaration fits.
 	 *
-	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	private function declaredRefusalFor(MacroActionBinding $binding, array $configuration): ?string {
 		$declared = ($configuration['x-openregister-flows'] ?? []);
@@ -137,7 +137,7 @@ class MacroActionValidator {
 	 *
 	 * @return bool True when it does.
 	 *
-	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	private function declaresByName(MacroActionBinding $binding, array $configuration): bool {
 		$declared = ($configuration['x-openregister-flows'] ?? []);

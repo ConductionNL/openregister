@@ -41,7 +41,7 @@ use ReflectionMethod;
  * `getBaseUrl()` and `getAbsoluteURL()` answer with the request's scheme and
  * host; without one the request host falls back to `localhost`.
  *
- * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
  */
 class ShareUrlBuilderTest extends TestCase {
 

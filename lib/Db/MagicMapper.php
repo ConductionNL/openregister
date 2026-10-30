@@ -8009,7 +8009,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @throws RuntimeException When a table could not be read: a sum over the tables that could be read would
 	 *                           be too low and look measured, so the whole measurement fails (and is logged).
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	public function findFolderIdsByOrganisation(string $organisationUuid): array {
 		$organisationCol = 't.' . self::METADATA_PREFIX . 'organisation';
@@ -8079,7 +8079,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @throws RuntimeException When a table could not be read.
 	 *
-	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	public function countObjectsByOrganisation(string $organisationUuid, array $schemaIds=[]): int {
 		$organisationCol = 't.'.self::METADATA_PREFIX.'organisation';
@@ -10182,7 +10182,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return ObjectEntity|null The ObjectEntity or null if conversion fails
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function rowToObjectEntity(array $row): ?ObjectEntity {
 		// Check if we have the minimum required fields.

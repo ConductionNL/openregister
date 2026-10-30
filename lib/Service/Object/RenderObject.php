@@ -1896,7 +1896,7 @@ class RenderObject {
 	 *
 	 * @return array<int, array<string, mixed>> The readable records.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 */
 	private function withoutRestrictedFiles(array $fileRecords): array {
 		if ($this->container === null || $fileRecords === []) {
