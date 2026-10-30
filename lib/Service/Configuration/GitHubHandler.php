@@ -26,6 +26,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\Http\Client\IClient;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -48,7 +49,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class GitHubHandler {
+class GitHubHandler implements GitHubClientInterface {
 	/**
 	 * GitHub API base URL
 	 */

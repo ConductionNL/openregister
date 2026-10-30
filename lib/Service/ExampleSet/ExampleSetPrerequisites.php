@@ -157,7 +157,8 @@ class ExampleSetPrerequisites {
 	}//end ensureRegisters()
 
 	/**
-	 * Create every OpenRegister organisation the cast declares and the instance lacks, and record it.
+	 * Create every OpenRegister organisation the cast declares and the instance lacks, and record it; one the set
+	 * made earlier gains the quota it declares where it has none.
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $record The record; gains the organisations this set created.
@@ -167,9 +168,9 @@ class ExampleSetPrerequisites {
 	private function ensureOrganisations(array $plan, array &$record): array {
 		$refusals = [];
 		foreach ((array) ($plan['organisations'] ?? []) as $declared) {
-			$made = $this->instance->ensure(declared: $declared);
+			$made = $this->instance->ensure(declared: $declared, made: (array) ($record['organisations'] ?? []));
 			if ($made['error'] !== '') {
-				$refusals[] = 'OpenRegister organisation "'.$declared['slug'].'" could not be created: '.$made['error'];
+				$refusals[] = 'OpenRegister organisation "'.$declared['slug'].'" could not be created or completed: '.$made['error'];
 				continue;
 			}
 
