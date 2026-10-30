@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
@@ -75,6 +76,15 @@ class ObjectFileAccess {
 	 * @var array<int, string>
 	 */
 	public const FILE_VERBS = [self::READ_FILES, self::ADD_FILES, self::DELETE_FILES];
+
+	/**
+	 * The matrix key that opts a schema into file verbs whose rows come from
+	 * a `rowsFrom` provider, so a provider that fails cannot take the regime
+	 * away with its rows.
+	 *
+	 * @var string
+	 */
+	public const MATRIX_FILE_VERBS = 'fileVerbs';
 
 	/**
 	 * Constructor.
@@ -278,7 +288,20 @@ class ObjectFileAccess {
 	}//end mayUseFiles()
 
 	/**
-	 * Whether the object's effective block names a file verb; null when it cannot be read.
+	 * Whether the object's schema has opted into file verbs; null when it cannot be read.
+	 *
+	 * 🔴 DECIDED FROM THE DECLARED BLOCK AS WELL AS THE COMPILED ONE. A matrix
+	 * row past its `until`, and provider rows that did not arrive (the listener
+	 * threw or answered nothing), compile to nothing. Read from the compiled
+	 * block alone, a schema whose only file-verb rows were such rows would fall
+	 * out of the file regime and back to the object rule, opening its files to
+	 * every object reader the moment a grant expired. An expired or failed
+	 * source compiles to no grant, never to no regime.
+	 *
+	 * Opted in when the compiled or the declared block names a file verb, when
+	 * a declared matrix row names one in its actions (expired or not), or when
+	 * the matrix declares `fileVerbs: true` (file verbs that come from a
+	 * `rowsFrom` provider).
 	 *
 	 * @param Schema       $schema The object's schema.
 	 * @param ObjectEntity $object The object.
@@ -288,13 +311,68 @@ class ObjectFileAccess {
 	private function namesFileVerbs(Schema $schema, ObjectEntity $object): ?bool {
 		try {
 			$authorization = $this->permissionHandler->resolveAuthorization(schema: $schema, object: $object);
+			$declared      = $this->permissionHandler->resolveDeclaredAuthorization(schema: $schema, object: $object);
 		} catch (Throwable $e) {
 			return null;
 		}
 
-		return is_array($authorization) === true
-			&& array_intersect(self::FILE_VERBS, array_keys($authorization)) !== [];
+		return self::blockNamesFileVerbs(block: $authorization) === true
+			|| self::blockNamesFileVerbs(block: $declared) === true
+			|| self::matrixNamesFileVerbs(block: $declared) === true;
 	}//end namesFileVerbs()
+
+	/**
+	 * Whether an authorization block names a file verb as one of its actions.
+	 *
+	 * @param mixed $block The block.
+	 *
+	 * @return bool
+	 */
+	private static function blockNamesFileVerbs(mixed $block): bool {
+		return is_array($block) === true
+			&& array_intersect(self::FILE_VERBS, array_keys($block)) !== [];
+	}//end blockNamesFileVerbs()
+
+	/**
+	 * Whether a block's declared matrix opts into file verbs: an explicit
+	 * `fileVerbs: true`, or any declared row (expired or not) naming one.
+	 *
+	 * @param mixed $block The declared block.
+	 *
+	 * @return bool
+	 */
+	private static function matrixNamesFileVerbs(mixed $block): bool {
+		if (is_array($block) === false) {
+			return false;
+		}
+
+		$matrix = ($block[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return false;
+		}
+
+		if (($matrix[self::MATRIX_FILE_VERBS] ?? false) === true) {
+			return true;
+		}
+
+		$rows = ($matrix['rows'] ?? []);
+		if (is_array($rows) === false) {
+			return false;
+		}
+
+		foreach ($rows as $row) {
+			$actions = [];
+			if (is_array($row) === true) {
+				$actions = ($row['actions'] ?? []);
+			}
+
+			if (is_array($actions) === true && array_intersect(self::FILE_VERBS, $actions) !== []) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end matrixNamesFileVerbs()
 
 	/**
 	 * The object's schema, or null when it cannot be found.

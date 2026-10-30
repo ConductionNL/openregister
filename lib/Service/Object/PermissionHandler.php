@@ -2781,6 +2781,31 @@ class PermissionHandler {
 	}//end resolveAuthorization()
 
 	/**
+	 * The authorization block as DECLARED in the cascade (schema or register,
+	 * then the object's own block), before the department matrix is compiled,
+	 * expiries applied or a token narrows it.
+	 *
+	 * For a question about which rules a schema has opted into, not about what
+	 * they grant now: a matrix row past its `until`, or provider rows that did
+	 * not arrive, compile to nothing, and a regime decided from the compiled
+	 * block would fall away with them.
+	 *
+	 * @param Schema            $schema The schema.
+	 * @param ObjectEntity|null $object The object, whose own block layers on top.
+	 *
+	 * @return array<string, mixed>|null The declared block, or null when none is configured.
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
+	 *
+	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+	 */
+	public function resolveDeclaredAuthorization(Schema $schema, ?ObjectEntity $object = null): ?array {
+		return self::stripMcpScope(
+			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
+		);
+	}//end resolveDeclaredAuthorization()
+
+	/**
 	 * Intersect the resolved block with the grant of the token in force.
 	 *
 	 * Applied HERE, at the end of the one step every path takes, for the same
