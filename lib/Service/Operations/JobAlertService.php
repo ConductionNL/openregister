@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use Throwable;
  * the fourth, fifth and sixth failure each re-cross the threshold and each
  * raise an alert, which is the noise the threshold existed to prevent.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+ * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
 class JobAlertService {
 
@@ -127,7 +127,7 @@ class JobAlertService {
 	 *
 	 * @return array{threshold: int, periodMinutes: int} The settings in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function settings(): array {
 		$threshold = (int)$this->config->getAppValue(
@@ -156,7 +156,7 @@ class JobAlertService {
 	 *
 	 * @return array{threshold: int, periodMinutes: int} The settings now in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function administer(?int $threshold, ?int $periodMinutes): array {
 		if ($threshold !== null) {
@@ -182,7 +182,7 @@ class JobAlertService {
 	 *
 	 * @return array<string, mixed>|null The alert raised, or null when nothing breached.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function observeFailure(string $jobClass): ?array {
 		$breach = $this->breach(jobClass: $jobClass);
@@ -214,7 +214,7 @@ class JobAlertService {
 	 *
 	 * @return array<int, array<string, mixed>> The breaches, one per job.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function alerts(array $jobClasses): array {
 		$alerts = [];

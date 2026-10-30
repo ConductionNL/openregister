@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ class AdminGate {
 	 *
 	 * @return bool True when the signed-in caller is an admin.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function isAdmin(): bool {
 		if ($this->userSession === null || $this->groupManager === null) {
@@ -86,7 +86,7 @@ class AdminGate {
 	 *
 	 * @return JSONResponse A 403 naming the requirement.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function refusal(string $doing): JSONResponse {
 		return new JSONResponse(

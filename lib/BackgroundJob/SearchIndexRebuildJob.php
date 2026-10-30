@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use RuntimeException;
  * row records a failure: a refused rebuild that reported `completed` would be
  * a console saying the index was rebuilt when it was not.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
  */
 class SearchIndexRebuildJob extends RecordedQueuedJob {
 
@@ -71,7 +71,7 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 	 *
 	 * @throws RuntimeException When the platform refuses the rebuild.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$registerId = null;

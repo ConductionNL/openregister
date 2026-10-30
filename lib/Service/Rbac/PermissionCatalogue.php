@@ -43,7 +43,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ use OCP\EventDispatcher\IEventDispatcher;
  *         fires on about forty untouched files in this repo for the same
  *         reason, which is why `composer phpmd` is red on `development` too.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class PermissionCatalogue {
 
@@ -200,7 +200,7 @@ class PermissionCatalogue {
 	 * @return array<string, array{verb: string, app: string, description: string, levels: array<int, string>, canonical: bool}>
 	 *         The catalogue.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function all(): array {
 		if ($this->resolved !== null) {
@@ -248,7 +248,7 @@ class PermissionCatalogue {
 	 *
 	 * @return array<string, string> Verb to reason.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function rejectedDeclarations(): array {
 		// Building the catalogue is what fills this, so build it first.
@@ -262,7 +262,7 @@ class PermissionCatalogue {
 	 *
 	 * @return array<int, string> Every grantable verb.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function verbs(): array {
 		return array_keys($this->all());
@@ -275,7 +275,7 @@ class PermissionCatalogue {
 	 *
 	 * @return bool True when the catalogue names it.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function isGrantable(string $verb): bool {
 		return isset($this->all()[$verb]);
@@ -289,7 +289,7 @@ class PermissionCatalogue {
 	 * @return array{verb: string, app: string, description: string, levels: array<int, string>, canonical: bool}|null
 	 *         The entry, or null.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declarationFor(string $verb): ?array {
 		return ($this->all()[$verb] ?? null);
@@ -306,7 +306,7 @@ class PermissionCatalogue {
 	 *
 	 * @return array<int, string> The unknown verbs, in the order they appear.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function unknownVerbsIn(?array $authorization): array {
 		if (is_array($authorization) === false || $authorization === []) {
@@ -346,7 +346,7 @@ class PermissionCatalogue {
 	 *
 	 * @return array<string, array<int, string>> Role name to its unknown verbs.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function unknownActionsInRoles(mixed $roleDefinitions): array {
 		if (is_array($roleDefinitions) === false) {
@@ -395,7 +395,7 @@ class PermissionCatalogue {
 	 *
 	 * @throws AuthorizationBlockException When a verb is not in the catalogue.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function assertGrantable(?array $authorization, mixed $roleDefinitions, string $subject): void {
 		$findings = [];

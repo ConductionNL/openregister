@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The per-object access set and its history.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class ObjectPermissionsController extends Controller {
 
@@ -111,7 +111,7 @@ class ObjectPermissionsController extends Controller {
 	 *
 	 * @return JSONResponse The access set.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -172,7 +172,7 @@ class ObjectPermissionsController extends Controller {
 	 *         parameter to the method argument that shares it. Renaming the
 	 *         argument renames the endpoint's contract.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

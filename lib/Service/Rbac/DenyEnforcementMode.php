@@ -54,7 +54,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads the deny enforcement mode, and records what a staged deny would refuse.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class DenyEnforcementMode {
 
@@ -141,7 +141,7 @@ class DenyEnforcementMode {
 	 *
 	 * @return string One of {@see MODES}.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function current(): string {
 		try {
@@ -167,7 +167,7 @@ class DenyEnforcementMode {
 	 *
 	 * @return bool True only in `enforcing`.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function enforces(): bool {
 		return $this->current() === self::MODE_ENFORCING;
@@ -180,7 +180,7 @@ class DenyEnforcementMode {
 	 *
 	 * @return bool True in `staging` and `enforcing`.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function resolves(): bool {
 		return $this->current() !== self::MODE_OFF;
@@ -201,7 +201,7 @@ class DenyEnforcementMode {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function record(array $denial, string $action, ?string $userId, array $context = []): void {
 		$this->logger->warning(

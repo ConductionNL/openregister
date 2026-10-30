@@ -73,7 +73,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -93,7 +93,7 @@ use Throwable;
 /**
  * Removes non-flow rows the mis-scoped flow migration copied into the flow table.
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  */
@@ -147,7 +147,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Remove non-flow rows copied into the flow table by the mis-scoped flow migration';
@@ -163,7 +163,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
 		$removed = 0;

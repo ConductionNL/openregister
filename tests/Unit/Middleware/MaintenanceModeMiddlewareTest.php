@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	/**
 	 * While the mode holds, an ordinary read is refused with the message.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
@@ -77,7 +77,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	 * The console stays reachable, which is what makes leaving the mode
 	 * possible at all.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
@@ -90,7 +90,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	/**
 	 * With the mode off, nothing is refused.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
@@ -103,7 +103,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	/**
 	 * The refusal reaches the reader as a 503 naming the message.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
@@ -123,7 +123,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	 * Any other exception passes through untouched: a middleware that
 	 * swallowed them would turn every failure into a maintenance notice.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */

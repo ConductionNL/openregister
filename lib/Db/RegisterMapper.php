@@ -671,7 +671,7 @@ class RegisterMapper extends QBMapper {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateAuthorizationDeny(Register $register): void {
 		$authorization = $register->getAuthorization();

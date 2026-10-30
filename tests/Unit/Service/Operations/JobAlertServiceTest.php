@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -205,7 +205,7 @@ final class JobAlertServiceTest extends TestCase {
 	 * Three failures in the hour do not breach a threshold of three: the spec
 	 * says MORE than the administered number.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -222,7 +222,7 @@ final class JobAlertServiceTest extends TestCase {
 	 * Four failures within the hour raise one alert, naming the job and the
 	 * FIRST of those failures.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -245,7 +245,7 @@ final class JobAlertServiceTest extends TestCase {
 	/**
 	 * The period is the administered one, counted back from the clock.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -272,7 +272,7 @@ final class JobAlertServiceTest extends TestCase {
 	 * A fifth failure inside the same breach stays quiet: one alert per
 	 * breach, not one per failure over the line.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -296,7 +296,7 @@ final class JobAlertServiceTest extends TestCase {
 	/**
 	 * A later breach, whose first failure is a different one, alerts again.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -326,7 +326,7 @@ final class JobAlertServiceTest extends TestCase {
 	 * The threshold and the period are administered, and what is administered
 	 * is what the count is judged against.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */

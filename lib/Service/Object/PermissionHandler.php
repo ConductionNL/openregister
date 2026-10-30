@@ -352,7 +352,7 @@ class PermissionHandler {
 	 *
 	 * @return DenyResolver The one reader of the deny grammar.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyResolver(): DenyResolver {
 		return ($this->denyResolver ?? new DenyResolver());
@@ -1139,7 +1139,7 @@ class PermissionHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function logRefusal(
 		?array $authorization,
@@ -1202,7 +1202,7 @@ class PermissionHandler {
 	 *         The denial that decides it, or null when none reaches this caller
 	 *         or the instance is not enforcing yet.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function enforcedDenialFor(
 		?array $authorization,
@@ -1270,7 +1270,7 @@ class PermissionHandler {
 	 *
 	 * @return array<int, string> The verbs, in catalogue order.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function permittedActionsFor(
 		Schema $schema,
@@ -1334,7 +1334,7 @@ class PermissionHandler {
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function provenanceFor(
 		Schema $schema,
@@ -1406,7 +1406,7 @@ class PermissionHandler {
 	 *
 	 * @return PermissionCatalogue The set that can be granted here.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function permissionCatalogue(): PermissionCatalogue {
 		return ($this->permissionCatalogue ?? new PermissionCatalogue(eventDispatcher: $this->eventDispatcher));
@@ -1421,7 +1421,7 @@ class PermissionHandler {
 	 *
 	 * @return DenyEnforcementMode The one reader of `openregister.deny_enforcement`.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyEnforcementMode(): DenyEnforcementMode {
 		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
@@ -1468,7 +1468,7 @@ class PermissionHandler {
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
 	 *         The denial that decided it, or null when no deny reaches this caller.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denialFor(
 		?array $authorization,
@@ -1541,7 +1541,7 @@ class PermissionHandler {
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function firstMatchingConditionalDenial(
 		DenyResolver $resolver,

@@ -91,7 +91,7 @@ class BulkJobMapper extends QBMapper {
 	 *
 	 * @return array<string, int> State to count, for the states in use.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function countByState(): array {
 		$qb = $this->db->getQueryBuilder();
