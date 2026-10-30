@@ -6,7 +6,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "TTTTTTTTTT",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "string-created": {
         "created": "TTTTTTTTTT",
@@ -15,7 +15,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "string-empty": {
         "created": "FFFFFFFFFF",
@@ -24,7 +24,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "TTTTTTTTTT"
+        "(empty)": "TTTTTTTTTT"
     },
     "int": {
         "created": "FFFFFFFFFF",
@@ -33,7 +33,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "null": {
         "created": "FFFFFFFFFF",
@@ -42,7 +42,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "empty-array": {
         "created": "FFFFFFFFFF",
@@ -51,7 +51,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "TTTTTTTTTT"
+        "(empty)": "TTTTTTTTTT"
     },
     "event": {
         "created": "FFFFFFFFFF",
@@ -60,7 +60,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "TTTTTTTTTT",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "event-empty": {
         "created": "TTTTTTTTTT",
@@ -69,7 +69,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "event-non-string": {
         "created": "FFFFFFFFFF",
@@ -78,7 +78,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "type-created": {
         "created": "TTTTTTTTTT",
@@ -87,7 +87,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "type-updated": {
         "created": "FFFFFFFFFF",
@@ -96,7 +96,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "type-transition": {
         "created": "FFFFFFFFFF",
@@ -105,7 +105,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "type-deleted": {
         "created": "FFFFFFFFFF",
@@ -114,7 +114,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "TTTTTTTTTT",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "transition-action": {
         "created": "FFFFFFFFFF",
@@ -123,7 +123,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "transition-action-list": {
         "created": "FFFFFFFFFF",
@@ -132,7 +132,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "transition-action-int": {
         "created": "FFFFFFFFFF",
@@ -141,7 +141,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "transition-action-null": {
         "created": "FFFFFFFFFF",
@@ -150,7 +150,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "created-filter-equals": {
         "created": "FFTFFFFFFF",
@@ -159,7 +159,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "created-filter-in": {
         "created": "FFTTFFFFFF",
@@ -168,7 +168,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "created-filter-notin": {
         "created": "FFTFFFFFFF",
@@ -177,7 +177,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "created-filter-bad-values": {
         "created": "FFFFFFFFFF",
@@ -186,7 +186,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "created-filter-no-field": {
         "created": "FFFFFFFFFF",
@@ -195,7 +195,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "created-filter-string": {
         "created": "FFFFFFFFFF",
@@ -204,7 +204,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "created-filter-null": {
         "created": "TTTTTTTTTT",
@@ -213,7 +213,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "updated-changed": {
         "created": "FFFFFFFFFF",
@@ -222,7 +222,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "updated-equals": {
         "created": "FFFFFFFFFF",
@@ -231,7 +231,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "updated-equals-from": {
         "created": "FFFFFFFFFF",
@@ -240,7 +240,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "updated-unknown-op": {
         "created": "FFFFFFFFFF",
@@ -249,7 +249,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "updated-condition-string": {
         "created": "FFFFFFFFFF",
@@ -258,7 +258,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "updated-condition-no-field": {
         "created": "FFFFFFFFFF",
@@ -267,7 +267,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "calc-no-field": {
         "created": "FFFFFFFFFF",
@@ -276,7 +276,7 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "calc-field-only": {
         "created": "FFFFFFFFFF",
@@ -285,7 +285,7 @@
         "calculatedChange": "FFFFFTTTFT",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "calc-condition": {
         "created": "FFFFFFFFFF",
@@ -294,7 +294,7 @@
         "calculatedChange": "FFFFFTFTFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "calc-previously": {
         "created": "FFFFFFFFFF",
@@ -303,7 +303,7 @@
         "calculatedChange": "FFFFFTFFFT",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "calc-both": {
         "created": "FFFFFFFFFF",
@@ -312,7 +312,7 @@
         "calculatedChange": "FFFFFTFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "calc-eq-ne": {
         "created": "FFFFFFFFFF",
@@ -321,7 +321,7 @@
         "calculatedChange": "FFFFFFFFFT",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "calc-condition-string": {
         "created": "FFFFFFFFFF",
@@ -330,7 +330,7 @@
         "calculatedChange": "FFFFFTTTFT",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     },
     "mixed-everything": {
         "created": "FFFTFFFFFF",
@@ -339,6 +339,6 @@
         "calculatedChange": "FFFFFFFFFF",
         "deleted": "FFFFFFFFFF",
         "booking.confirmed": "FFFFFFFFFF",
-        "": "FFFFFFFFFF"
+        "(empty)": "FFFFFFFFFF"
     }
 }
