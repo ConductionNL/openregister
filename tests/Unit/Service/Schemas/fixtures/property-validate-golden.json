@@ -1,0 +1,329 @@
+{
+    "all three flags valid": {
+        "result": true
+    },
+    "array format": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid string format '[\"email\"]' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-format",
+                "key": "[\"email\"]",
+                "path": "/field",
+                "message": "Invalid string format '[\"email\"]' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user"
+            }
+        ]
+    },
+    "array items invalid": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid type 'bogus' at '/field/items'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-type",
+                "key": "bogus",
+                "path": "/field/items",
+                "message": "Invalid type 'bogus' at '/field/items'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+            }
+        ]
+    },
+    "array items ref skipped": {
+        "result": true
+    },
+    "array items valid": {
+        "result": true
+    },
+    "array items without type": {
+        "result": true
+    },
+    "array no items": {
+        "result": true
+    },
+    "bounds on string ignored": {
+        "result": true
+    },
+    "empty format": {
+        "result": true
+    },
+    "enum empty": {
+        "threw": "Exception",
+        "message": "'enum' at '/field' must be a non-empty array"
+    },
+    "enum scalar": {
+        "threw": "Exception",
+        "message": "'enum' at '/field' must be a non-empty array"
+    },
+    "enum valid": {
+        "result": true
+    },
+    "file bad mime": {
+        "threw": "Exception",
+        "message": "'allowedTypes[0]' at '/field' contains invalid MIME type format: 'png'"
+    },
+    "file too big": {
+        "threw": "Exception",
+        "message": "'maxSize' at '/field' exceeds maximum allowed size (100MB)"
+    },
+    "file valid": {
+        "result": true
+    },
+    "first failure wins": {
+        "threw": "Exception",
+        "message": "'minimum' at '/field' must be numeric"
+    },
+    "flag order": {
+        "threw": "Exception",
+        "message": "'enum' at '/field' must be a non-empty array"
+    },
+    "flag order without enum": {
+        "threw": "Exception",
+        "message": "'visible' at '/field' must be a boolean"
+    },
+    "format on integer": {
+        "result": true
+    },
+    "hideOnCollection string": {
+        "threw": "Exception",
+        "message": "'hideOnCollection' at '/field' must be a boolean"
+    },
+    "hideOnForm string": {
+        "threw": "Exception",
+        "message": "'hideOnForm' at '/field' must be a boolean"
+    },
+    "inputControl not string": {
+        "threw": "Exception",
+        "message": "Invalid inputControl [\"select\"] at '/field'. Must be one of: text, select, multiselect, range, date-range, boolean"
+    },
+    "known format": {
+        "result": true
+    },
+    "localised key": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Unknown property key(s) 'title_nl' at '/field'. Read /api/schemas/property-vocabulary for the keys this layer accepts.",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-key",
+                "key": "title_nl",
+                "path": "/field",
+                "message": "Unknown property key 'title_nl' at '/field'. It is not in the property vocabulary."
+            }
+        ]
+    },
+    "matchType unknown": {
+        "threw": "Exception",
+        "message": "Invalid matchType \"fuzzyish\" at '/field'. Must be one of: exact, prefix, range, fuzzy, fulltext"
+    },
+    "matchType valid": {
+        "result": true
+    },
+    "maximum not numeric": {
+        "threw": "Exception",
+        "message": "'maximum' at '/field' must be numeric"
+    },
+    "minimum above maximum": {
+        "threw": "Exception",
+        "message": "'minimum' cannot be greater than 'maximum' at '/field'"
+    },
+    "minimum equals maximum": {
+        "result": true
+    },
+    "minimum not numeric": {
+        "threw": "Exception",
+        "message": "'minimum' at '/field' must be numeric"
+    },
+    "no type deep": {
+        "result": true
+    },
+    "no type empty path": {
+        "threw": "Exception",
+        "message": "Property at '' must have a 'type' field"
+    },
+    "no type top level": {
+        "threw": "Exception",
+        "message": "Property at '/field' must have a 'type' field"
+    },
+    "no type with ref": {
+        "result": true
+    },
+    "numeric string type": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid type 'string ' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-type",
+                "key": "string ",
+                "path": "/field",
+                "message": "Invalid type 'string ' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+            }
+        ]
+    },
+    "numeric strings bounds": {
+        "result": true
+    },
+    "object nested invalid": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid string format 'bad' at '/field/properties/a'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-format",
+                "key": "bad",
+                "path": "/field/properties/a",
+                "message": "Invalid string format 'bad' at '/field/properties/a'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user"
+            }
+        ]
+    },
+    "object nested no type": {
+        "result": true
+    },
+    "object nested scalar": {
+        "threw": "Exception",
+        "message": "Property 'a' at '/field/properties' must be an object"
+    },
+    "object nested valid": {
+        "result": true
+    },
+    "onDelete cascade": {
+        "result": true
+    },
+    "onDelete on items ref": {
+        "result": true
+    },
+    "onDelete on items referenceSchema": {
+        "result": true
+    },
+    "onDelete on referenceSchema": {
+        "result": true
+    },
+    "onDelete referenceKey cascade": {
+        "threw": "Exception",
+        "message": "'referenceKey' at '/field' is only valid with onDelete RESTRICT"
+    },
+    "onDelete referenceKey restrict": {
+        "result": true
+    },
+    "onDelete referenceKey uuid": {
+        "result": true
+    },
+    "onDelete unknown": {
+        "threw": "Exception",
+        "message": "Invalid onDelete value 'EXPLODE' at '/field'. Must be one of: CASCADE, RESTRICT, SET_NULL, SET_DEFAULT, NO_ACTION"
+    },
+    "onDelete without relation": {
+        "threw": "Exception",
+        "message": "'onDelete' at '/field' is only valid on relation properties with '$ref' or 'referenceSchema'"
+    },
+    "oneOf invalid member": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid type 'nope' at '/field/oneOf/a'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-type",
+                "key": "nope",
+                "path": "/field/oneOf/a",
+                "message": "Invalid type 'nope' at '/field/oneOf/a'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+            }
+        ]
+    },
+    "oneOf scalar member": {
+        "threw": "Exception",
+        "message": "Property 'a' at '/field/oneOf' must be an object"
+    },
+    "oneOf valid": {
+        "result": true
+    },
+    "plain string": {
+        "result": true
+    },
+    "properties on string ignored": {
+        "result": true
+    },
+    "repeating group declared": {
+        "result": true
+    },
+    "sourceLanguage bad tag": {
+        "threw": "Exception",
+        "message": "'sourceLanguage' at '/field' is not a valid BCP-47 language tag: 'Dutch'"
+    },
+    "sourceLanguage empty": {
+        "threw": "Exception",
+        "message": "'sourceLanguage' at '/field' must be a non-empty string"
+    },
+    "sourceLanguage null without translatable": {
+        "threw": "Exception",
+        "message": "'sourceLanguage' at '/field' requires translatable: true"
+    },
+    "sourceLanguage number": {
+        "threw": "Exception",
+        "message": "'sourceLanguage' at '/field' must be a non-empty string"
+    },
+    "sourceLanguage valid": {
+        "result": true
+    },
+    "sourceLanguage without translatable": {
+        "threw": "Exception",
+        "message": "'sourceLanguage' at '/field' requires translatable: true"
+    },
+    "union type": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid type '[\"string\",\"null\"]' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-type",
+                "key": "[\"string\",\"null\"]",
+                "path": "/field",
+                "message": "Invalid type '[\"string\",\"null\"]' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+            }
+        ]
+    },
+    "unknown format": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid string format 'colour' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-format",
+                "key": "colour",
+                "path": "/field",
+                "message": "Invalid string format 'colour' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user"
+            }
+        ]
+    },
+    "unknown key": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Unknown property key(s) 'colour, shade' at '/field'. Read /api/schemas/property-vocabulary for the keys this layer accepts.",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-key",
+                "key": "colour",
+                "path": "/field",
+                "message": "Unknown property key 'colour' at '/field'. It is not in the property vocabulary."
+            },
+            {
+                "code": "property-vocabulary-unknown-key",
+                "key": "shade",
+                "path": "/field",
+                "message": "Unknown property key 'shade' at '/field'. It is not in the property vocabulary."
+            }
+        ]
+    },
+    "unknown type": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
+        "message": "Invalid type 'text' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "errors": [
+            {
+                "code": "property-vocabulary-unknown-type",
+                "key": "text",
+                "path": "/field",
+                "message": "Invalid type 'text' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+            }
+        ]
+    },
+    "visible bool": {
+        "result": true
+    },
+    "visible string": {
+        "threw": "Exception",
+        "message": "'visible' at '/field' must be a boolean"
+    },
+    "x key and numeric key": {
+        "result": true
+    }
+}

@@ -1535,7 +1535,10 @@ export default {
 			const missingSchemaProperties = []
 			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
 				if (!Object.hasOwn(objectData, key)) {
-					missingSchemaProperties.push([key, defaultValueFor(schemaProperty)])
+					missingSchemaProperties.push([
+						key,
+						defaultValueFor(schemaProperty),
+					])
 				}
 			}
 

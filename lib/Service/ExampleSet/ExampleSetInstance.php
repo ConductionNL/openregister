@@ -127,15 +127,24 @@ class ExampleSetInstance {
 	 * Create an organisation with this slug unless one exists.
 	 *
 	 * @param array<string, mixed> $declared The declared organisation; a new one gets its quota and members.
+	 * @param array<int, string>   $made     Uuids of the organisations this set created; such an existing one
+	 *                                       gains the declared quota where it has none.
 	 *
 	 * @return array{uuid: string, created: bool, error: string}
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
+	 * @spec openspec/changes/example-set-organisation-gains-its-quota/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
 	 */
-	public function ensure(array $declared): array {
+	public function ensure(array $declared, array $made=[]): array {
 		try {
 			$found = $this->mapper()->findBySlug(slug: $declared['slug']);
-			return ['uuid' => (string) $found->getUuid(), 'created' => false, 'error' => ''];
+			$uuid  = (string) $found->getUuid();
+			$error = '';
+			if (in_array($uuid, $made, true) === true) {
+				$error = $this->fillQuota(organisation: $found, quota: (array) ($declared['quota'] ?? []));
+			}
+
+			return ['uuid' => $uuid, 'created' => false, 'error' => $error];
 		} catch (DoesNotExistException) {
 			// Not there: created below.
 		} catch (Throwable $e) {
@@ -175,6 +184,46 @@ class ExampleSetInstance {
 
 		return ['uuid' => (string) $saved->getUuid(), 'created' => true, 'error' => ''];
 	}//end ensure()
+
+	/**
+	 * Give an organisation the declared quota where it has none; a quota it holds is never changed.
+	 *
+	 * @param Organisation         $organisation The organisation as stored.
+	 * @param array<string, mixed> $quota        The declared quota.
+	 *
+	 * @return string The error, or '' when nothing was missing or it was written.
+	 *
+	 * @spec openspec/changes/example-set-organisation-gains-its-quota/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
+	 */
+	private function fillQuota(Organisation $organisation, array $quota): string {
+		$fields  = [
+			'storage'       => ['getStorageQuota', 'setStorageQuota'],
+			'requests'      => ['getRequestQuota', 'setRequestQuota'],
+			'bandwidth'     => ['getBandwidthQuota', 'setBandwidthQuota'],
+			'users'         => ['getUserQuota', 'setUserQuota'],
+			'objects'       => ['getObjectQuota', 'setObjectQuota'],
+			'objectsSchema' => ['getObjectQuotaSchema', 'setObjectQuotaSchema'],
+		];
+		$changed = false;
+		foreach ($fields as $key => [$getter, $setter]) {
+			if (isset($quota[$key]) === true && $organisation->$getter() === null) {
+				$organisation->$setter($quota[$key]);
+				$changed = true;
+			}
+		}
+
+		if ($changed === false) {
+			return '';
+		}
+
+		try {
+			$this->mapper()->update(entity: $organisation);
+		} catch (Throwable $e) {
+			return 'its quota could not be written: '.$e->getMessage();
+		}
+
+		return '';
+	}//end fillQuota()
 
 	/**
 	 * Delete an organisation by uuid unless somebody else belongs to it.

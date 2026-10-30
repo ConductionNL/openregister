@@ -18,10 +18,16 @@ jest.mock('../../store/store.js', () => ({
 	dashboardStore: {},
 	organisationStore: {},
 }))
-jest.mock('@codemirror/lang-json', () => ({ json: jest.fn(), jsonParseLinter: jest.fn() }))
+jest.mock('@codemirror/lang-json', () => ({
+	json: jest.fn(),
+	jsonParseLinter: jest.fn(),
+}))
 jest.mock('@nextcloud/dialogs', () => ({ showWarning: jest.fn() }))
 jest.mock('@nextcloud/vue', () => ({}))
-jest.mock('@nextcloud/l10n', () => ({ translate: (app, s) => s, translatePlural: (app, s) => s }))
+jest.mock('@nextcloud/l10n', () => ({
+	translate: (app, s) => s,
+	translatePlural: (app, s) => s,
+}))
 jest.mock('vue-codemirror6', () => ({}))
 jest.mock('vue-material-design-icons/Alert.vue', () => ({}))
 jest.mock('vue-material-design-icons/AlertCircle.vue', () => ({}))
@@ -138,7 +144,10 @@ describe('ViewObject.initializeData', () => {
 	})
 
 	it('copies an existing record and fetches its files under a new type', () => {
-		objectStore.objectItem = { title: 'x', '@self': { id: 'o-1', register: { id: 2 }, schema: 5 } }
+		objectStore.objectItem = {
+			title: 'x',
+			'@self': { id: 'o-1', register: { id: 2 }, schema: 5 },
+		}
 		const ctx = context({ id: 5 })
 
 		ctx.initializeData()
@@ -151,7 +160,10 @@ describe('ViewObject.initializeData', () => {
 
 	it('does not register a type it already knows, and falls back to the root id', () => {
 		objectStore.objectTypes = ['2-5']
-		objectStore.objectItem = { id: 'root', '@self': { register: 2, schema: { id: 5 } } }
+		objectStore.objectItem = {
+			id: 'root',
+			'@self': { register: 2, schema: { id: 5 } },
+		}
 		const ctx = context({ id: 5 })
 
 		ctx.initializeData()

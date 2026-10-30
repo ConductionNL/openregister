@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -82,7 +83,7 @@ use Throwable;
  *   logger, per ADR-011 reuse — introducing a facade purely to hide the
  *   dependency count would add indirection without reducing coupling.
  */
-class MergeService {
+class MergeService implements ObjectMergerInterface {
 
 	/**
 	 * Slug of the OR-owned merge-operation register schema.

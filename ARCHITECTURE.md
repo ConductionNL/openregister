@@ -60,6 +60,17 @@ Every component depends on **Objects** and **Schemas and registers**: they are t
 
 Decoupling between components is in progress. The aim is that each component reaches the data model through a small interface of its own.
 
+### Contracts
+
+Two directories hold interfaces and value types, and both are leaves of the dependency graph: a contract may name another contract, an entity in `lib/Db/`, an event or an exception, and no other OpenRegister class.
+
+- `lib/Contract/` is the published contract that other apps consume (ADR-084). Hydra gate 67 requires it to be byte-identical to `hydra-gates/contracts/`, so a file goes here only when it is published there too.
+- `lib/Kernel/Contracts/` holds the interfaces that one OpenRegister component offers another. Other apps do not use them.
+
+`tests/Unit/Architecture/ContractIsALeafTest.php` enforces both rules.
+
+A class that other components call implements its contract, and those callers type-hint the contract instead of the class. The concrete class stays resolvable by its own name, because other apps inject it that way.
+
 ## How a request flows
 
 1. The browser calls a route from `appinfo/routes.php`.

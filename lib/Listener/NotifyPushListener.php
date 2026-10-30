@@ -21,7 +21,7 @@
  *    Returns user IDs that can read the object (empty array = all users / broadcast).
  *  - IQueue is resolved lazily from the container (OCA\NotifyPush\Queue\IQueue).
  *    If notify_push is not installed the container throws — soft-fail at most once.
- *  - Registration site: registerEventListeners() in Application.php, next to
+ *  - Registration site: ListenerRegistrar::register(), next to
  *    the GraphQLSubscriptionListener registrations.
  *  - IAppConfig key `openregister.push_available` is set to '1' on the first
  *    successful IQueue::push() call (consumed by OpenRegisterAdmin::getPushStatus()).

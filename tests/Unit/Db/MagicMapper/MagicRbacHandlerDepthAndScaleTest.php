@@ -67,6 +67,7 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
