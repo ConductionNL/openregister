@@ -47,6 +47,7 @@ use Twig\Loader\ArrayLoader;
  * The write guard for the archived and frozen states.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register

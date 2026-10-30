@@ -47,10 +47,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\QueuedNotification;
 use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Service\Notification\NotificationDeliveryWindowService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -69,7 +69,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 	 * @param ITimeFactory $time Nextcloud time factory.
 	 * @param QueuedNotificationMapper $queuedMapper Durable queue mapper.
 	 * @param SchemaMapper $schemaMapper Schema lookup mapper (rule digest config).
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher (flush entry point).
+	 * @param ObjectNotificationDispatcherInterface $dispatcher Notification dispatcher (flush entry point).
 	 * @param NotificationDeliveryWindowService $windowService Delivery-window resolver + evaluator.
 	 * @param DigestScheduleEvaluator $digestEvaluator Live digest-schedule evaluator.
 	 * @param LoggerInterface $logger PSR logger.
@@ -78,7 +78,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 		ITimeFactory $time,
 		private readonly QueuedNotificationMapper $queuedMapper,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly ObjectNotificationDispatcherInterface $dispatcher,
 		private readonly NotificationDeliveryWindowService $windowService,
 		private readonly DigestScheduleEvaluator $digestEvaluator,
 		private readonly LoggerInterface $logger,

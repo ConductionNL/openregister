@@ -45,6 +45,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Controller\WebhooksController
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Service\WebhookService
  * @uses \OCA\OpenRegister\Db\Mapping
  * @uses \OCA\OpenRegister\Db\Webhook

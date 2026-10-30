@@ -36,12 +36,12 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
 use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
@@ -96,7 +96,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 * @param TaskInboxService $inbox The row the adapter is built from.
 	 * @param ScheduledFilterEvaluator $filters The operator-object filter evaluator.
 	 * @param NotificationDedupeStateMapper $dedupe Per-(rule, task) fire state.
-	 * @param AnnotationNotificationDispatcher $dispatcher The one dispatcher.
+	 * @param ObjectNotificationDispatcherInterface $dispatcher The one dispatcher.
 	 * @param IAppConfig $appConfig Last-fire timestamps per rule.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
@@ -107,7 +107,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 		private readonly TaskInboxService $inbox,
 		private readonly ScheduledFilterEvaluator $filters,
 		private readonly NotificationDedupeStateMapper $dedupe,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly ObjectNotificationDispatcherInterface $dispatcher,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

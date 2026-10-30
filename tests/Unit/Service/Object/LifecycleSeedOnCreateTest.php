@@ -44,6 +44,7 @@ use ReflectionClass;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  */
 class LifecycleSeedOnCreateTest extends TestCase {
 	private const PARENT = '00000000-0000-0000-0000-000000000000';

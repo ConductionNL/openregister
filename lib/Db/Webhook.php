@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\WebhookInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -73,7 +74,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Webhook extends Entity implements JsonSerializable {
+class Webhook extends Entity implements JsonSerializable, WebhookInterface {
 
 	/**
 	 * UUID

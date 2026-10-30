@@ -21,8 +21,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\WebhookInterface;
 
 /**
  * Kernel contracts take the entity interfaces, so lib/Kernel names nothing in
@@ -74,4 +76,48 @@ final class StoredEntity {
 
 		throw new InvalidArgumentException('Only a stored Register row is accepted here.');
 	}//end register()
+
+	/**
+	 * The stored ObjectEntity row behind a ObjectRowInterface, or null for null.
+	 *
+	 * @param ObjectRowInterface|null $object The object a contract received.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @psalm-return ($object is null ? null : ObjectEntity)
+	 * @phpstan-return ($object is null ? null : ObjectEntity)
+	 *
+	 * @throws InvalidArgumentException When the object is not a stored ObjectEntity row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function object(?ObjectRowInterface $object): ?ObjectEntity {
+		if ($object === null || $object instanceof ObjectEntity) {
+			return $object;
+		}
+
+		throw new InvalidArgumentException('Only a stored ObjectEntity row is accepted here.');
+	}//end object()
+
+	/**
+	 * The stored Webhook row behind a WebhookInterface, or null for null.
+	 *
+	 * @param WebhookInterface|null $webhook The webhook a contract received.
+	 *
+	 * @return Webhook|null
+	 *
+	 * @psalm-return ($webhook is null ? null : Webhook)
+	 * @phpstan-return ($webhook is null ? null : Webhook)
+	 *
+	 * @throws InvalidArgumentException When the webhook is not a stored Webhook row.
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	public static function webhook(?WebhookInterface $webhook): ?Webhook {
+		if ($webhook === null || $webhook instanceof Webhook) {
+			return $webhook;
+		}
+
+		throw new InvalidArgumentException('Only a stored Webhook row is accepted here.');
+	}//end webhook()
 }//end class

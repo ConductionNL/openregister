@@ -32,12 +32,15 @@ use DateTime;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Kernel\Contracts\WebhookInterface;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -61,7 +64,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Webhook delivery requires mapping, formatting, and logging dependencies
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class WebhookService {
+class WebhookService implements WebhookDeliveryInterface {
 
 	/**
 	 * Webhook mapper
@@ -712,7 +715,7 @@ class WebhookService {
 	/**
 	 * Deliver webhook to target URL
 	 *
-	 * @param Webhook $webhook Webhook configuration
+	 * @param WebhookInterface $webhook Webhook configuration
 	 * @param string $eventName Event name
 	 * @param array $payload Payload data
 	 * @param int $attempt Current attempt number (for retries)
@@ -728,15 +731,19 @@ class WebhookService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
 	 * Fallback for connection errors without response
 	 *
+	 * @throws \InvalidArgumentException When an entity is not a stored row.
+	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function deliverWebhook(
-		Webhook $webhook,
+		WebhookInterface $webhook,
 		string $eventName,
 		array $payload,
 		int $attempt = 1,
 		?int $timeoutCapSeconds = null,
 	): bool {
+		$webhook = StoredEntity::webhook(webhook: $webhook);
+
 		if ($webhook->getEnabled() === false) {
 			$this->logger->debug(
 				message: '[WebhookService] Webhook is disabled, skipping delivery',
@@ -1024,15 +1031,19 @@ class WebhookService {
 	 * shaped it: a delivery whose mapping is missing or fails falls back to the
 	 * standard payload, and the preview must not show that fallback as mapped.
 	 *
-	 * @param Webhook $webhook   The webhook, saved or as the dialog holds it.
+	 * @param WebhookInterface $webhook   The webhook, saved or as the dialog holds it.
 	 * @param string  $eventName The event class the payload is for.
 	 * @param array   $payload   The event payload.
 	 *
 	 * @return array{payload: array, mapped: bool}
 	 *
+	 * @throws \InvalidArgumentException When an entity is not a stored row.
+	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function previewPayload(Webhook $webhook, string $eventName, array $payload): array {
+	public function previewPayload(WebhookInterface $webhook, string $eventName, array $payload): array {
+		$webhook = StoredEntity::webhook(webhook: $webhook);
+
 		$mapped = false;
 		$mappingId = $webhook->getMapping();
 		if ($mappingId !== null) {
