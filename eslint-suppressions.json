@@ -1854,10 +1854,5 @@
     "no-console": {
       "count": 4
     }
-  },
-  "tests/Unit/Service/fixtures/object-service-delete-objects-golden.json": {
-    "json/no-empty-keys": {
-      "count": 1
-    }
   }
 }

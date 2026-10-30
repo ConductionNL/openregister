@@ -36,7 +36,7 @@ use ReflectionClass;
  * filter, the delete handler, the cache handler, the session and the logger
  * are scripted. Every call they receive and the returned buckets are compared
  * with fixtures/object-service-delete-objects-golden.json.
- * Set UPDATE_GOLDEN=1 to rewrite the fixture.
+ * An empty key is keyed `(empty)`. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  */
 class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/object-service-delete-objects-golden.json';
@@ -124,7 +124,7 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 			$after[$property] = $this->describe((new ReflectionClass(ObjectService::class))->getProperty($property)->getValue($service));
 		}
 
-		$actual = json_decode(json_encode($actual + ['calls' => $this->calls, 'after' => $after], JSON_PARTIAL_OUTPUT_ON_ERROR), true);
+		$actual = $this->keyEmpty(value: json_decode(json_encode($actual + ['calls' => $this->calls, 'after' => $after], JSON_PARTIAL_OUTPUT_ON_ERROR), true));
 
 		$golden = [];
 		if (is_file(self::FIXTURE) === true) {
@@ -142,6 +142,26 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 		$this->assertArrayHasKey($name, $golden, 'No golden recording for this case.');
 		$this->assertSame($golden[$name], $actual);
 	}//end testDeleteObjectsMatchesGolden()
+
+	/**
+	 * Key every empty key as `(empty)`, so the fixture holds no empty JSON keys.
+	 *
+	 * @param mixed $value A decoded recording.
+	 *
+	 * @return mixed
+	 */
+	private function keyEmpty(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$keyed = [];
+		foreach ($value as $key => $item) {
+			$keyed[($key === '') ? '(empty)' : $key] = $this->keyEmpty(value: $item);
+		}
+
+		return $keyed;
+	}//end keyEmpty()
 
 	/**
 	 * @param array<string, mixed> $case

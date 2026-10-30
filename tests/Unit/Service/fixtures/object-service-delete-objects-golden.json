@@ -2990,7 +2990,7 @@
                 null
             ],
             "skipped_reasons": {
-                "": {
+                "(empty)": {
                     "error": "SCHEMA_UNRESOLVED",
                     "message": "The schema of this object could not be resolved, so its archival status could not be established."
                 }
