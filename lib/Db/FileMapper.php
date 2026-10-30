@@ -1086,7 +1086,7 @@ class FileMapper extends QBMapper {
 	 *
 	 * @return int The total size in bytes, 0 for no ids.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	public function sumSizesByFileIds(array $fileIds): int {
 		$total = 0;

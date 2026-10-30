@@ -8009,7 +8009,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @throws RuntimeException When a table could not be read: a sum over the tables that could be read would
 	 *                           be too low and look measured, so the whole measurement fails (and is logged).
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	public function findFolderIdsByOrganisation(string $organisationUuid): array {
 		$organisationCol = 't.' . self::METADATA_PREFIX . 'organisation';

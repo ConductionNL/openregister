@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+ * @spec openspec/specs/organisation-usage-measured/spec.md
  */
 
 declare(strict_types=1);

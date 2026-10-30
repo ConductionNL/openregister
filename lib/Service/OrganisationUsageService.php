@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+ * @spec openspec/specs/organisation-usage-measured/spec.md
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ class OrganisationUsageService {
 	 *
 	 * @return array{storage: int|null, bandwidth: null, requests: int|null, objects: int|null, users: int, groups: int}
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	public function measure(Organisation $organisation): array {
@@ -97,7 +97,7 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The bytes, or null when they could not be read.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureStorage(Organisation $organisation): ?int {
 		$uuid = $organisation->getUuid();
@@ -161,7 +161,7 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The count, or null when nothing counts them.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureRequests(Organisation $organisation): ?int {
 		$uuid = $organisation->getUuid();
@@ -180,7 +180,7 @@ class OrganisationUsageService {
 	 *
 	 * @return bool True when APCu can be read.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	protected function apcuAvailable(): bool {
 		return function_exists('apcu_enabled') === true && apcu_enabled() === true;
@@ -193,7 +193,7 @@ class OrganisationUsageService {
 	 *
 	 * @return int|null The value, or null when the key is not set.
 	 *
-	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	protected function apcuFetchInt(string $key): ?int {
 		$success = false;
