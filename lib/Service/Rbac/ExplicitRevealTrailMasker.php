@@ -78,7 +78,16 @@ class ExplicitRevealTrailMasker {
 				continue;
 			}
 
-			$schema = $this->schemaOf(id: $row['schema'] ?? null);
+			$schemaId = ($row['schema'] ?? null);
+			$schema   = $this->schemaOf(id: $schemaId);
+			if ($schema === null && is_scalar($schemaId) === true && (string)$schemaId !== '') {
+				// The entry names a schema that can no longer be read (deleted, bad id):
+				// which of its values were explicit-reveal is unknown, so mask them all.
+				$row['changed']  = self::maskEveryChange(changed: $row['changed']);
+				$entries[$key] = $row;
+				continue;
+			}
+
 			if (ExplicitReveal::explicitProperties(schema: $schema) === []) {
 				continue;
 			}
@@ -89,6 +98,34 @@ class ExplicitRevealTrailMasker {
 
 		return $entries;
 	}//end mask()
+
+	/**
+	 * Mask every value of a change set: `{prop: {old, new}}` or `{prop: value}`.
+	 *
+	 * @param array<string, mixed> $changed The change set.
+	 *
+	 * @return array<string, mixed> The change set, masked.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private static function maskEveryChange(array $changed): array {
+		foreach ($changed as $name => $change) {
+			if (is_array($change) === false) {
+				$changed[$name] = ExplicitReveal::mask(value: $change);
+				continue;
+			}
+
+			foreach (['old', 'new'] as $side) {
+				if (isset($change[$side]) === true) {
+					$change[$side] = ExplicitReveal::mask(value: $change[$side]);
+				}
+			}
+
+			$changed[$name] = $change;
+		}
+
+		return $changed;
+	}//end maskEveryChange()
 
 	/**
 	 * The schema with this id, read once.
