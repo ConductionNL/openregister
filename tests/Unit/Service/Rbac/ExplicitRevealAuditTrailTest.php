@@ -243,4 +243,59 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$this->assertStringContainsString(needle: 'obj-1', haystack: $encoded);
 		$this->assertStringNotContainsString(needle: self::BSN, haystack: $encoded);
 	}//end testTheReadableTrailShowsItMasked()
+
+	/**
+	 * An administrator controller over this log service and audit mapper.
+	 *
+	 * @param LogService       $logService The log service.
+	 * @param AuditTrailMapper $trails     The audit mapper.
+	 * @param IRequest|null    $request    The request.
+	 *
+	 * @return AuditTrailController The controller.
+	 */
+	private function adminController(LogService $logService, AuditTrailMapper $trails, ?IRequest $request = null): AuditTrailController {
+		$user = $this->createMock(originalClassName: IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(originalClassName: IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groups = $this->createMock(originalClassName: IGroupManager::class);
+		$groups->method('isAdmin')->willReturn(true);
+
+		return new AuditTrailController(
+			'openregister',
+			($request ?? $this->createMock(originalClassName: IRequest::class)),
+			$logService,
+			$trails,
+			$this->createMock(originalClassName: AuditHashService::class),
+			$session,
+			$groups,
+			$this->createMock(originalClassName: ReadableAuditTrailLister::class),
+			$this->createMock(originalClassName: AuditTrailPageService::class),
+			$this->createMock(originalClassName: ObjectHistoryForReaders::class)
+		);
+	}//end adminController()
+
+	/**
+	 * The administrator's history of one object shows it masked.
+	 *
+	 * @return void
+	 */
+	public function testTheAdminObjectHistoryShowsItMasked(): void {
+		$real = $this->logService(trails: $this->createMock(originalClassName: AuditTrailMapper::class));
+		$logService = $this->createMock(originalClassName: LogService::class);
+		$logService->method('getLogs')->willReturn([$this->entry()]);
+		$logService->method('count')->willReturn(1);
+		$logService->method('maskExplicitReveal')->willReturnCallback(
+			static fn (array $entries): array => $real->maskExplicitReveal(entries: $entries)
+		);
+		$request = $this->createMock(originalClassName: IRequest::class);
+		$request->method('getParams')->willReturn([]);
+
+		$trails   = $this->createMock(originalClassName: AuditTrailMapper::class);
+		$response = $this->adminController(logService: $logService, trails: $trails, request: $request)
+			->objects(register: 'brp', schema: 'person', id: 'obj-1');
+
+		$this->assertSame(expected: 200, actual: $response->getStatus());
+		$this->assertStringNotContainsString(needle: self::BSN, haystack: (string)json_encode(value: $response->getData()));
+	}//end testTheAdminObjectHistoryShowsItMasked()
 }//end class

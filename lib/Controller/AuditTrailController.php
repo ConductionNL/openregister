@@ -639,10 +639,11 @@ class AuditTrailController extends Controller {
 				config: $params
 			);
 
-			// Return paginated results. An administrator always sees read entries.
+			// Return paginated results. An administrator always sees read entries,
+			// and explicit-reveal values masked, like every other reader.
 			return new JSONResponse(
 				data: [
-					'results' => $logs,
+					'results' => $this->logService->maskExplicitReveal(entries: $logs),
 					'total' => $total,
 					'page' => $params['page'],
 					'pages' => ceil($total / $params['limit']),
