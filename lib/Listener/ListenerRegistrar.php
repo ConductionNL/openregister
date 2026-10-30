@@ -484,6 +484,10 @@ final class ListenerRegistrar {
 		// on the objects that point at an updated object when that field changed.
 		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ReferencedCalculationListener::class);
 
+		// A changed date that other records' destruction date reads through a
+		// relation queues their recalculation, off the save.
+		$context->registerEventListener(ObjectUpdatedEvent::class, RelatedRetentionRecalculationListener::class);
+
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
 		// a task template on demand and blocks any lifecycle transition it

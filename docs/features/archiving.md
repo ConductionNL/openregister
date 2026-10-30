@@ -66,6 +66,23 @@ The `archiefactiedatum` is calculated using configurable `afleidingswijzen` (der
 | `vaste_datum` | Fixed absolute date |
 | Custom Twig expression | Evaluated at runtime |
 
+### The destruction date follows its source date
+
+The destruction date (`archiefactiedatum`) is recalculated on every save in which its source date changed. The source depends on the schema's derivation method:
+
+| Method | Source that is watched |
+|--------|------------------------|
+| `ander_datumkenmerk` | `sourceDateProperty` on the record |
+| `eigenschap` | `bronEigenschap` on the record |
+| `afgehandeld`, `termijn` | `closureField` on the record |
+| Relation methods (`gerelateerde_zaak`, `hoofdzaak`, `zaakobject`, `ingangsdatum_besluit`, `vervaldatum_besluit`) | `sourceRelation` on the record, and `sourceRelationProperty` on the related record |
+
+- A source date that appears after the record was created sets the destruction date. A record that has no nomination yet gets the schema's `defaultNominatie` at the same moment.
+- A corrected source date moves the destruction date.
+- A cleared source date clears the destruction date, and the audit trail records `archival.destruction_date_removed` with the old date. This applies to the methods without a fallback (`ander_datumkenmerk` and the relation methods); `afgehandeld`, `termijn` and `eigenschap` fall back to the creation date as before.
+
+When a record's date that other records read through a relation changes, those records follow in a background job (`RelatedRetentionRecalculationJob`). For example, a contact person schema with `sourceRelation: client` and `sourceRelationProperty: relationshipEndedAt` gets a new destruction date for every contact of a client whose end date was set, corrected or cleared. The client's own save is not slowed down, and repeated saves of one client queue the job once.
+
 ## Destruction Workflow
 
 ### Automated Destruction Scheduling
