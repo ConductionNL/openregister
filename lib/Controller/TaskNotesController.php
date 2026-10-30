@@ -67,9 +67,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
-use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -103,7 +103,7 @@ class TaskNotesController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskService $tasks Resolves a task by uuid.
+	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param NoteService $notes The same note storage the object leaf uses.
 	 * @param IUserSession $userSession Names the acting identity.
@@ -113,7 +113,7 @@ class TaskNotesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskService $tasks,
+		private readonly TaskManagerInterface $tasks,
 		private readonly TaskAuthorizationService $authorization,
 		private readonly NoteService $notes,
 		private readonly IUserSession $userSession,

@@ -365,7 +365,7 @@ class McpToolsService {
 	 *
 	 * Idempotent: if a provider with the same `getAppId()` is already
 	 * registered, the call is a no-op. This handles the dual-path case
-	 * where (a) OR's factory in `Application::registerMcpToolProviders`
+	 * where (a) OR's factory in `McpProviderDiscovery::register`
 	 * discovers the provider by walking `IAppManager::getInstalledApps()`
 	 * AND (b) the consumer app's own `Application::boot()` also calls
 	 * `addProvider()` to be self-sufficient when OR's discovery path

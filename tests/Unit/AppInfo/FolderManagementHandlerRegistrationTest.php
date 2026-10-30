@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * The FolderManagementHandler registration hands the handler its folder recorder.
  *
- * `Application` builds FolderManagementHandler by hand (it breaks a circular
+ * `ServiceRegistrar` builds FolderManagementHandler by hand (it breaks a circular
  * dependency with FileService), so autowiring does not cover it: a constructor
  * argument the closure forgets is an ArgumentCountError on the first file
  * operation of every request, which no handler unit test can see. This runs the
@@ -22,14 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
-use ReflectionClass;
-use ReflectionMethod;
 use ReflectionProperty;
 
 /**
@@ -51,9 +49,7 @@ class FolderManagementHandlerRegistrationTest extends TestCase {
 			}
 		);
 
-		// Application::__construct() boots the app container, which a unit test has not got.
-		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-		(new ReflectionMethod(Application::class, 'registerCacheAndFileHandlers'))->invoke($app, $context);
+		ServiceRegistrar::register(context: $context);
 
 		$this->assertArrayHasKey(FolderManagementHandler::class, $factories);
 

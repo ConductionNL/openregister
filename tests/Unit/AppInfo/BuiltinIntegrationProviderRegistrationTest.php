@@ -3,7 +3,7 @@
 /**
  * Every built-in integration provider factory builds its service from the right container entries.
  *
- * `Application::registerBuiltinIntegrationProviders()` builds these services by
+ * `IntegrationRegistrar::registerBuiltinIntegrationProviders()` builds these services by
  * hand, so autowiring does not cover them. This runs each registered factory
  * against a container double and pins which container entries it reads, in
  * which order, and which class it returns.
@@ -21,11 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
-use ReflectionClass;
 use ReflectionMethod;
 
 /**
@@ -349,9 +348,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			}
 		);
 
-		// Application::__construct() boots the app container, which a unit test has not got.
-		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-		(new ReflectionMethod(Application::class, 'registerBuiltinIntegrationProviders'))->invoke($app, $context);
+		(new ReflectionMethod(IntegrationRegistrar::class, 'registerBuiltinIntegrationProviders'))->invoke(null, $context);
 
 		return $factories;
 	}//end registeredFactories()

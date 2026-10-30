@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  *
  * Every case records each collaborator call (method and arguments) and the
  * outcome, and compares the recording with fixtures/import-from-json-golden.json.
- * Timings and generated UUIDs are masked. Set UPDATE_GOLDEN=1 to rewrite the fixture.
+ * Timings and generated UUIDs are masked, and an empty key is keyed `(empty)`. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  */
 class ImportServiceImportFromJsonGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/import-from-json-golden.json';
@@ -156,7 +156,7 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 			$outcome = ['threw' => get_class($e), 'message' => $e->getMessage(), 'code' => $e->getCode()];
 		}
 
-		$actual = json_decode(json_encode(['calls' => $this->calls] + $outcome), true);
+		$actual = $this->keyEmpty(value: json_decode(json_encode(['calls' => $this->calls] + $outcome), true));
 
 		$golden = [];
 		if (is_file(self::FIXTURE) === true) {
@@ -174,6 +174,26 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		$this->assertArrayHasKey($name, $golden, 'No golden recording for this case.');
 		$this->assertSame($golden[$name], $actual);
 	}//end testImportFromJsonMatchesGolden()
+
+	/**
+	 * Key every empty key as `(empty)`, so the fixture holds no empty JSON keys.
+	 *
+	 * @param mixed $value A decoded recording.
+	 *
+	 * @return mixed
+	 */
+	private function keyEmpty(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$keyed = [];
+		foreach ($value as $key => $item) {
+			$keyed[($key === '') ? '(empty)' : $key] = $this->keyEmpty(value: $item);
+		}
+
+		return $keyed;
+	}//end keyEmpty()
 
 	/**
 	 * @param array<string, mixed> $case

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,7 +76,7 @@ use RuntimeException;
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-class ScheduledReportService {
+class ScheduledReportService implements ScheduledReportsInterface {
 
 	/**
 	 * Export formats a scheduled report may use — a deliberate subset of
@@ -980,11 +981,11 @@ class ScheduledReportService {
 	 * out there either way, and a swallowed record is a gap in the area rather
 	 * than a lost delivery. The gap is logged.
 	 *
-	 * @param ScheduledReport $report   The report.
-	 * @param \OCP\IUser      $owner    The owner the run was made for.
-	 * @param string          $filename The delivery filename.
-	 * @param array           $export   The rendered export, with its row count.
-	 * @param mixed           $file     The produced node, or null when nothing was written.
+	 * @param ScheduledReport $report The report.
+	 * @param \OCP\IUser $owner The owner the run was made for.
+	 * @param string $filename The delivery filename.
+	 * @param array $export The rendered export, with its row count.
+	 * @param mixed $file The produced node, or null when nothing was written.
 	 *
 	 * @return void
 	 *

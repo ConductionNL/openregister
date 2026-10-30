@@ -28,7 +28,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
@@ -84,9 +84,9 @@ class ConfigurationController extends Controller {
 	/**
 	 * GitHub handler instance.
 	 *
-	 * @var GitHubHandler The GitHub handler instance.
+	 * @var GitHubClientInterface The GitHub handler instance.
 	 */
-	private GitHubHandler $githubHandler;
+	private GitHubClientInterface $githubHandler;
 
 	/**
 	 * GitLab handler instance.
@@ -117,7 +117,7 @@ class ConfigurationController extends Controller {
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper
 	 * @param ConfigurationService $configurationService Configuration service
 	 * @param NotificationService $notificationService Notification service
-	 * @param GitHubHandler $githubHandler GitHub handler
+	 * @param GitHubClientInterface $githubHandler GitHub handler
 	 * @param GitLabHandler $gitlabHandler GitLab handler
 	 * @param IAppManager $appManager App manager
 	 * @param LoggerInterface $logger Logger
@@ -130,7 +130,7 @@ class ConfigurationController extends Controller {
 		ConfigurationMapper $configurationMapper,
 		ConfigurationService $configurationService,
 		NotificationService $notificationService,
-		GitHubHandler $githubHandler,
+		GitHubClientInterface $githubHandler,
 		GitLabHandler $gitlabHandler,
 		IAppManager $appManager,
 		LoggerInterface $logger,

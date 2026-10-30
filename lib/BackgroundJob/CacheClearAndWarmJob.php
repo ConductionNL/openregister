@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCP\AppFramework\Utility\ITimeFactory;
 
@@ -43,14 +43,14 @@ class CacheClearAndWarmJob extends RecordedQueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory   $time     Time factory for the parent job class.
+	 * @param ITimeFactory $time Time factory for the parent job class.
 	 * @param JobRunRecorder $recorder The wrapper that writes the run row.
-	 * @param CacheHandler   $cache    The caches being cleared and warmed.
+	 * @param ObjectNameCacheInterface $cache The caches being cleared and warmed.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		JobRunRecorder $recorder,
-		private readonly CacheHandler $cache,
+		private readonly ObjectNameCacheInterface $cache,
 	) {
 		parent::__construct(time: $time, recorder: $recorder);
 
