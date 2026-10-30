@@ -1041,6 +1041,16 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import {
+	codedStoreOptions,
+	emptyCodedConfig,
+	emptyFacetConfig,
+	emptyPropertyDefinition,
+	formatSelect,
+	itemsTypeSelect,
+	propertyTypeSelect,
+	semanticRoleOptions,
+} from './schemaPropertyForm.js'
 
 export default {
 	name: 'EditSchemaProperty',
@@ -1060,36 +1070,10 @@ export default {
 	data() {
 		return {
 			propertyTitle: '',
-			// Code list, hierarchy and lifecycle. Held apart from `properties`
-			// because the annotation is only written when a scheme is named:
-			// an empty x-openregister-concepts block on every property would
-			// read as "bound to nothing" rather than as "not a code list".
-			codedConfig: {
-				scheme: '',
-				store: 'uri',
-				branch: '',
-				maxDepth: '',
-				leafOnly: false,
-				allowDeprecated: false,
-				contextProperty: '',
-				scoreProperty: '',
-			},
-
-			codedStoreOptions: [
-				{ value: 'uri', label: 'The concept URI' },
-				{ value: 'notation', label: 'The notation' },
-			],
-
+			codedConfig: emptyCodedConfig(),
+			codedStoreOptions: codedStoreOptions(),
 			semanticRole: '',
-
-			semanticRoleOptions: [
-				{ value: '', label: 'Nothing in particular' },
-				{ value: 'title', label: 'The title' },
-				{ value: 'status', label: 'The status' },
-				{ value: 'assignee', label: 'The assignee' },
-				{ value: 'term', label: 'The term' },
-			],
-
+			semanticRoleOptions: semanticRoleOptions(),
 			helpTextNl: '',
 			helpTextEn: '',
 			conceptTree: [],
@@ -1097,13 +1081,7 @@ export default {
 			treeLoaded: false,
 			treeError: '',
 			facetableEnabled: true,
-			facetConfig: {
-				aggregated: true,
-				title: '',
-				description: '',
-				order: '',
-			},
-
+			facetConfig: emptyFacetConfig(),
 			facetType: '',
 			facetInterval: 'month',
 			facetFormat: '',
@@ -1120,151 +1098,10 @@ export default {
 			calculationDependencies: [],
 			operatorCatalogue: [],
 			operatorsLoading: false,
-			properties: {
-				description: '',
-				title: '',
-				type: 'string',
-				format: '',
-				pattern: '',
-				default: '',
-				behavior: '',
-				required: false,
-				deprecated: false,
-				visible: true,
-				hideOnCollection: false,
-				facetable: true,
-				order: 0,
-				minLength: 0,
-				maxLength: 0,
-				example: '',
-				immutable: false,
-				minimum: 0,
-				maximum: 0,
-				multipleOf: 0,
-				exclusiveMin: false,
-				exclusiveMax: false,
-				minItems: 0,
-				maxItems: 0,
-				cascadeDelete: false,
-				inversedBy: '',
-				$ref: '',
-				register: '',
-				writeBack: false,
-				removeAfterWriteBack: false,
-				items: {
-					cascadeDelete: false,
-					$ref: '',
-					type: '',
-					inversedBy: '',
-					register: '',
-					writeBack: false,
-					removeAfterWriteBack: false,
-					objectConfiguration: {
-						handling: 'nested-object',
-						schema: '',
-						queryParams: '', // Extra query parameters for items.$ref
-					},
-				},
-
-				objectConfiguration: {
-					handling: 'nested-object',
-					schema: '',
-					queryParams: '', // Extra query parameters for $ref
-				},
-
-				fileConfiguration: {
-					handling: 'ignore',
-					allowedMimeTypes: [],
-					location: '', // Initialize with empty string
-					maxSize: 0, // Initialize with 0
-				},
-
-				oneOf: [],
-			},
-
-			typeOptions: {
-				inputLabel: 'Type*',
-				multiple: false,
-				options: [
-					'string',
-					'number',
-					'integer',
-					'object',
-					'array',
-					'boolean',
-					'dictionary',
-					'file',
-					'oneOf',
-					'NcFile',
-					'NcMail',
-					'NcContact',
-					'NcNote',
-					'NcTodo',
-					'NcCalendarEvent',
-					'NcTalk',
-					'NcDeck',
-				],
-			},
-
-			itemsTypeOptions: {
-				inputLabel: 'Sub type',
-				multiple: false,
-				options: [
-					'string',
-					'number',
-					'integer',
-					'object',
-					'boolean',
-					'dictionary',
-					'file',
-					'NcFile',
-					'NcMail',
-					'NcContact',
-					'NcNote',
-					'NcTodo',
-					'NcCalendarEvent',
-					'NcTalk',
-					'NcDeck',
-				],
-			},
-
-			formatOptions: {
-				inputLabel: 'Format',
-				multiple: false,
-				options: [
-					'text',
-					'markdown',
-					'html',
-					'date-time',
-					'date',
-					'time',
-					'duration',
-					'email',
-					'idn-email',
-					'hostname',
-					'idn-hostname',
-					'ipv4',
-					'ipv6',
-					'uri',
-					'uri-reference',
-					'iri',
-					'iri-reference',
-					'uuid',
-					'uri-template',
-					'json-pointer',
-					'relative-json-pointer',
-					'regex',
-					'url',
-					'color',
-					'color-hex',
-					'color-hex-alpha',
-					'color-rgb',
-					'color-rgba',
-					'color-hsl',
-					'color-hsla',
-				],
-			},
-
+			properties: emptyPropertyDefinition(),
+			typeOptions: propertyTypeSelect(),
+			itemsTypeOptions: itemsTypeSelect(),
+			formatOptions: formatSelect(),
 			loading: false,
 			success: null,
 			error: false,

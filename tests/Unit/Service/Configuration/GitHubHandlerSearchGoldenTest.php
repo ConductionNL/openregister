@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  * `fixtures/github-search-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\GitHubHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
  */
 class GitHubHandlerSearchGoldenTest extends TestCase {
 
@@ -106,8 +106,6 @@ class GitHubHandlerSearchGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::searchConfigurations
 	 *
 	 * @dataProvider cases
 	 */

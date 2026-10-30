@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -523,7 +523,7 @@ class ActivityService {
 		string $affectedUser,
 	): void {
 		$event = $this->activityManager->generateEvent();
-		$event->setApp(Application::APP_ID)
+		$event->setApp(AppIdentity::APP_ID)
 			->setType($type)
 			->setAuthor($author)
 			->setTimestamp(time())
