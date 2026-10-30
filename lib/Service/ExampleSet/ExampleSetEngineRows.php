@@ -188,6 +188,8 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
 	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$part    = $this->part();
