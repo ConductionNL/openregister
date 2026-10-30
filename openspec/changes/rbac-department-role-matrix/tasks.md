@@ -26,13 +26,9 @@
 
 ## 3. Admin surface
 
-- [ ] 3.1 Rights tab on the schema page: grid editor and per-user preview.
-      **Not built in this PR.** It is a Vue surface, and the declaration it
-      edits is a JSON block an administrator can already write; shipping the
-      grid without being able to lint, build or drive it (this phase's clone
-      has no `node_modules`) would be a surface nobody has seen render. The
-      compiler and its refusal are what the consuming apps are blocked on, and
-      they are here.
+- [ ] 3.1 `src/views/schema/SchemaRightsTab.vue`, opened by a "Rights" tab button in `src/views/schema/SchemaDetails.vue` beside "Rules". The grid has one row per value of the matrix's `field` (the property's `enum` when declared, else the values already in the matrix plus an "Add value" row), one column per role group, and a checkbox per action (`read`, `list`, `update`, `handle`, `delete`). Saving writes only `authorization.matrix` through `schemaStore.saveSchema()`; the save-time validation from 1.1 answers any refusal next to the cell.
+- [ ] 3.2 Preview route `scopes#matrixPreview`, `GET /api/schemas/{id}/authorization/matrix/preview?user={uid}`, in `lib/Controller/ScopesController.php`, admin only (`IGroupManager::isAdmin()`). It returns the scopes from a new public `PermissionHandler::previewDepartmentMatrix(Schema $schema, IUser $user)` in `lib/Service/Object/PermissionHandler.php`, which runs the existing private `compileDepartmentMatrix()` for that user and reads no objects. The tab shows it under an `NcSelect` user picker with an `inputLabel`.
+- [ ] 3.3 Red first: `tests/Unit/Controller/ScopesControllerMatrixPreviewTest.php` (403 for a non-administrator; for user A one scope per action group with A's resolved values), `src/views/schema/SchemaRightsTab.spec.js` (a save sends only the `matrix` key), and a grid and preview step added to `tests/e2e/ci/rbac-department-role-matrix.spec.ts`.
 
 ## 4. Tests
 

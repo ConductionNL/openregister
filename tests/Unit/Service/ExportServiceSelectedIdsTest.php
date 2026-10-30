@@ -14,7 +14,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/export-honours-selected-ids/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
+ * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
  */
 
 declare(strict_types=1);

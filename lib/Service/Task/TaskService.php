@@ -427,7 +427,7 @@ class TaskService implements TaskManagerInterface {
 	 *
 	 * @throws TaskValidationException When a field is unknown or invalid.
 	 *
-	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
 	public function edit(string $uuid, array $changes, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'edit', uuid: $uuid, actor: $actor);
@@ -1070,7 +1070,7 @@ class TaskService implements TaskManagerInterface {
 	 *
 	 * @return array<int, Task> The tasks; empty for a blank key.
 	 *
-	 * @spec openspec/changes/task-find-by-key/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function findByKey(string $key): array {
 		$key = trim($key);

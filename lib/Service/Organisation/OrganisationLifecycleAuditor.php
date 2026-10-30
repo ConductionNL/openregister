@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/organisation-lifecycle-audit/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
 /**
  * Turns a change of an organisation into an audit-trail entry.
  *
- * @spec openspec/changes/organisation-lifecycle-audit/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 class OrganisationLifecycleAuditor {
 
@@ -84,7 +84,7 @@ class OrganisationLifecycleAuditor {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/organisation-lifecycle-audit/specs/tenant-lifecycle/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function recordStatus(Organisation $organisation, string $before): void {
 		$after = (string) ($organisation->getStatus() ?? '');
@@ -108,7 +108,7 @@ class OrganisationLifecycleAuditor {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/organisation-lifecycle-audit/specs/tenant-lifecycle/spec.md
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function recordUpdate(Organisation $organisation, array $before, array $after): void {
 		$changed = [];

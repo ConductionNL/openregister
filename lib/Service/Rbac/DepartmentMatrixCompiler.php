@@ -127,7 +127,7 @@ class DepartmentMatrixCompiler {
 	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function compile(array $matrix, array $ownValues, ?DateTimeInterface $now = null): array {
 		$field = trim((string)($matrix['field'] ?? ''));

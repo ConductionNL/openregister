@@ -148,7 +148,7 @@ final class ExtendingFormDeclaration {
 	 * @return array<int, array{code: string, key: string, path: string, message: string}> The refusals, empty when valid.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per rule, each naming its own refusal.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      One branch per rule, each naming its own refusal.
@@ -303,7 +303,7 @@ final class ExtendingFormDeclaration {
 	 * @return array<string, mixed> The property definition.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function toProperty(mixed $annotation, array $formValues): array {
 		$property = [];

@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ class MatrixRowsRequestedEvent extends Event {
 	 *
 	 * @return Schema The schema.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getSchema(): Schema {
 		return $this->schema;
@@ -78,7 +78,7 @@ class MatrixRowsRequestedEvent extends Event {
 	 *
 	 * @return string The provider id.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getProvider(): string {
 		return $this->provider;
@@ -91,7 +91,7 @@ class MatrixRowsRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function addRows(array $rows): void {
 		foreach ($rows as $row) {
@@ -106,7 +106,7 @@ class MatrixRowsRequestedEvent extends Event {
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getRows(): array {
 		return $this->rows;
