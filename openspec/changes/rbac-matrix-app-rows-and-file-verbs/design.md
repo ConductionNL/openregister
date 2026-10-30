@@ -44,7 +44,7 @@ When the effective authorization block (after the matrix is compiled) names `rea
 
 A refused read still answers 404 and a refused change 403 (decision 4 of `object-files-follow-object-access`). The admin rule, the owner rule and system operations are unchanged.
 
-When the block names none of the three, every row reads "Today". A schema opts in by naming one. The opt-in is read from the declared block, not the compiled one: a declared matrix row naming a file verb opts in even after its `until` has passed, and a matrix whose file verbs come from a `rowsFrom` provider opts in with `fileVerbs: true`. An expired row or a failing provider then compiles to no grant, never back to the object rule.
+When the block names none of the three, every row reads "Today". A schema opts in by naming one. The opt-in is read from the declared block, not the compiled one: a declared matrix row naming a file verb opts in even after its `until` has passed, and a matrix that names a `rowsFrom` provider is in the regime unless it declares `fileVerbs: false` (any other `fileVerbs` value opts in; the validator refuses a non-boolean). An expired row or a failing provider then compiles to no grant, never back to the object rule.
 
 ## D-5. `{groups: true}` user source
 
