@@ -1,0 +1,3 @@
+# Screens
+
+- dossiq/DqZaaktypeVelden: fields hidden, required or read only by role and case state (row 11.25) (dossiq adopts this) https://identity.conduction.nl/screens/board?id=dossiq/DqZaaktypeVelden
