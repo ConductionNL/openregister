@@ -349,16 +349,17 @@ class ExportHandler {
 		$openApiSpec['components']['registers'][$registerSlug]['schemas'] = [];
 
 		$schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
-		$schemaIdsAndSlugsMap = $this->schemaMapper->getIdToSlugMap();
-		$regIdSlugMap = $this->registerMapper->getIdToSlugMap();
+		$slugs = new ExportSlugMaps(
+			schemaSlugs: $this->schemaMapper->getIdToSlugMap(),
+			registerSlugs: $this->registerMapper->getIdToSlugMap()
+		);
 
 		foreach ($schemas as $schema) {
 			$this->schemasMap[$schema->getId()] = $schema;
 
 			$openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema(
 				schema: $schema,
-				schemaIdsAndSlugsMap: $schemaIdsAndSlugsMap,
-				regIdSlugMap: $regIdSlugMap
+				slugs: $slugs
 			);
 			$openApiSpec['components']['registers'][$registerSlug]['schemas'][] = $schema->getSlug();
 		}
@@ -533,9 +534,8 @@ class ExportHandler {
 	 * It handles both the new objectConfiguration structure (with register and schema IDs)
 	 * and the legacy register property structure for backward compatibility.
 	 *
-	 * @param Schema $schema The schema to export.
-	 * @param array $schemaIdsAndSlugsMap Map of schema IDs to slugs.
-	 * @param array $regIdSlugMap Map of register IDs to slugs.
+	 * @param Schema         $schema The schema to export.
+	 * @param ExportSlugMaps $slugs  The schema and register slugs by id.
 	 *
 	 * @return ((mixed|string[])[]|bool|int|null|string)[]
 	 *
@@ -552,11 +552,9 @@ class ExportHandler {
 	 *     configuration: array|null|string, allOf: array|null,
 	 *     oneOf: array|null, anyOf: array|null}
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Schema export requires many conditional transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Property handling requires many type and structure checks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema property transformation involves detailed logic
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $regIdSlugMap): array {
+	private function exportSchema(Schema $schema, ExportSlugMaps $slugs): array {
 		// Use jsonSerialize to get the JSON representation of the schema.
 		$schemaArray = $schema->jsonSerialize();
 
@@ -564,156 +562,79 @@ class ExportHandler {
 		// Organisation is instance-specific and should not be exported.
 		unset($schemaArray['id'], $schemaArray['uuid'], $schemaArray['organisation']);
 
-		foreach ($schemaArray['properties'] as &$property) {
-			// Ensure property is always an array.
-			if (is_object($property) === true) {
-				$property = (array)$property;
-			}
-
-			if (($property['$ref'] ?? null) !== null) {
-				$schemaId = $this->getLastNumericSegment(url: $property['$ref']);
-				if (($schemaIdsAndSlugsMap[$schemaId] ?? null) !== null) {
-					$property['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
-				}
-			}
-
-			if (($property['items']['$ref'] ?? null) !== null) {
-				// Ensure items is an array for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				$schemaId = $this->getLastNumericSegment(url: $property['items']['$ref']);
-				if (($schemaIdsAndSlugsMap[$schemaId] ?? null) !== null) {
-					$property['items']['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
-				}
-			}
-
-			// Handle register ID in objectConfiguration (new structure).
-			if (($property['objectConfiguration']['register'] ?? null) !== null) {
-				// Ensure objectConfiguration is an array for consistent access.
-				if (is_object($property['objectConfiguration']) === true) {
-					$property['objectConfiguration'] = (array)$property['objectConfiguration'];
-				}
-
-				$registerId = $property['objectConfiguration']['register'];
-				if (is_numeric($registerId) === true) {
-					$registerIdStr = (string)$registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['objectConfiguration']['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}
-
-			// Handle schema ID in objectConfiguration (new structure).
-			if (($property['objectConfiguration']['schema'] ?? null) !== null) {
-				// Ensure objectConfiguration is an array for consistent access.
-				if (is_object($property['objectConfiguration']) === true) {
-					$property['objectConfiguration'] = (array)$property['objectConfiguration'];
-				}
-
-				$schemaId = $property['objectConfiguration']['schema'];
-				if (is_numeric($schemaId) === true) {
-					$schemaIdStr = (string)$schemaId;
-					if (($schemaIdsAndSlugsMap[$schemaIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $schemaIdsAndSlugsMap
-						 */
-
-						$property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
-					}
-				}
-			}
-
-			// Handle register ID in array items objectConfiguration (new structure).
-			if (($property['items']['objectConfiguration']['register'] ?? null) !== null) {
-				// Ensure items and objectConfiguration are arrays for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				if (is_object($property['items']['objectConfiguration']) === true) {
-					$property['items']['objectConfiguration'] = (array)$property['items']['objectConfiguration'];
-				}
-
-				$registerId = $property['items']['objectConfiguration']['register'];
-				if (is_numeric($registerId) === true) {
-					$registerIdStr = (string)$registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['items']['objectConfiguration']['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}//end if
-
-			// Handle schema ID in array items objectConfiguration (new structure).
-			if (($property['items']['objectConfiguration']['schema'] ?? null) !== null) {
-				// Ensure items and objectConfiguration are arrays for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				if (is_object($property['items']['objectConfiguration']) === true) {
-					$property['items']['objectConfiguration'] = (array)$property['items']['objectConfiguration'];
-				}
-
-				$schemaId = $property['items']['objectConfiguration']['schema'];
-				if (is_numeric($schemaId) === true) {
-					$schemaIdStr = (string)$schemaId;
-					if (($schemaIdsAndSlugsMap[$schemaIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $schemaIdsAndSlugsMap
-						 */
-
-						$property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
-					}
-				}
-			}//end if
-
-			// Legacy support: Handle old register property structure.
-			if (($property['register'] ?? null) !== null) {
-				if (is_string($property['register']) === true) {
-					$registerId = $this->getLastNumericSegment(url: $property['register']);
-					$registerIdStr = $registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}
-
-			if (($property['items']['register'] ?? null) !== null) {
-				// Ensure items is an array for consistent access.
-				if (is_object($property['items']) === true) {
-					$property['items'] = (array)$property['items'];
-				}
-
-				if (is_string($property['items']['register']) === true) {
-					$registerId = $this->getLastNumericSegment(url: $property['items']['register']);
-					$registerIdStr = $registerId;
-					if (($regIdSlugMap[$registerIdStr] ?? null) !== null) {
-						/*
-						 * @var array<int|string, string> $regIdSlugMap
-						 */
-
-						$property['items']['register'] = $regIdSlugMap[$registerIdStr];
-					}
-				}
-			}
-		}//end foreach
+		foreach ($schemaArray['properties'] as $name => $property) {
+			$schemaArray['properties'][$name] = $this->exportProperty(property: $property, slugs: $slugs);
+		}
 
 		return $schemaArray;
 	}//end exportSchema()
+
+	/**
+	 * One schema property with its references, and those of its `items`, written as slugs.
+	 *
+	 * @param mixed          $property The property definition.
+	 * @param ExportSlugMaps $slugs    The schema and register slugs by id.
+	 *
+	 * @return mixed The property with slugs for every known id.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function exportProperty(mixed $property, ExportSlugMaps $slugs): mixed {
+		if (is_object($property) === true) {
+			$property = (array)$property;
+		}
+
+		$property = $this->withReferenceSlugs(node: $property, slugs: $slugs);
+		if (is_array($property) === true && isset($property['items']) === true) {
+			$property['items'] = $this->withReferenceSlugs(node: $property['items'], slugs: $slugs);
+		}
+
+		return $property;
+	}//end exportProperty()
+
+	/**
+	 * A property or `items` node with its schema and register ids written as slugs.
+	 *
+	 * Rewrites the `$ref` (an id or a URL ending in one), the
+	 * `objectConfiguration` register and schema ids, and the legacy `register`
+	 * URL. A reference to an unknown id is left as it is. A node or
+	 * `objectConfiguration` decoded as an object is read as an array.
+	 *
+	 * @param mixed          $node  The property or `items` node.
+	 * @param ExportSlugMaps $slugs The schema and register slugs by id.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function withReferenceSlugs(mixed $node, ExportSlugMaps $slugs): mixed {
+		if (is_object($node) === true) {
+			$node = (array)$node;
+		}
+
+		if (is_object($node['objectConfiguration'] ?? null) === true) {
+			$node['objectConfiguration'] = (array)$node['objectConfiguration'];
+		}
+
+		if (($node['$ref'] ?? null) !== null) {
+			$node['$ref'] = $slugs->schemaSlug(schemaId: $this->getLastNumericSegment(url: $node['$ref'])) ?? $node['$ref'];
+		}
+
+		if (($node['objectConfiguration']['register'] ?? null) !== null) {
+			$node['objectConfiguration']['register'] = $slugs->registerSlugOrValue(registerId: $node['objectConfiguration']['register']);
+		}
+
+		if (($node['objectConfiguration']['schema'] ?? null) !== null) {
+			$node['objectConfiguration']['schema'] = $slugs->schemaSlugOrValue(schemaId: $node['objectConfiguration']['schema']);
+		}
+
+		// Legacy structure: the register as a URL.
+		if (is_string($node['register'] ?? null) === true) {
+			$node['register'] = $slugs->registerSlug(registerId: $this->getLastNumericSegment(url: $node['register'])) ?? $node['register'];
+		}
+
+		return $node;
+	}//end withReferenceSlugs()
 
 	/**
 	 * Get the last segment of a URL if it is numeric.

@@ -1749,360 +1749,25 @@ class ObjectService implements ObjectServiceInterface
         $result    = null;
 
         try {
-            $this->discardPendingSchemaRef();
-            // Bound the folder-access revalidation cache to this single save call
-            // (not the whole FileService/request lifetime), so a cascade save that
-            // moves or trashes a folder mid-request can't be waved through on a
-            // stale "accessible" verdict from an earlier write.
-            $this->fileService->resetFolderAccessRevalidationCache();
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('start');
-
-            // Set register/schema context.
-            $this->setContextFromParameters(
-                register: $register,
-                schema: $schema
-            );
-
-            // Extract UUID and convert ObjectEntity to array if needed.
-            [$object, $uuid] = $this->extractUuidAndNormalizeObject(
+            $result = $this->saveWithinScope(
                 object: $object,
-                uuid: $uuid
+                options: [
+                    'extend'         => $extend,
+                    'register'       => $register,
+                    'schema'         => $schema,
+                    'uuid'           => $uuid,
+                    '_rbac'          => $_rbac,
+                    '_multitenancy'  => $_multitenancy,
+                    'silent'         => $silent,
+                    '_validation'    => $_validation,
+                    'uploadedFiles'  => $uploadedFiles,
+                    'currentUser'    => $currentUser,
+                    'failIfExists'   => $failIfExists,
+                    '_unowned'       => $_unowned,
+                    '_dedupOverride' => $_dedupOverride,
+                    '_owner'         => $_owner,
+                ]
             );
-
-            // Check permissions for CREATE or UPDATE operation.
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
-
-            $this->checkSavePermissions(
-                uuid: $uuid,
-                _rbac: $_rbac,
-                object: $object
-            );
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
-
-            // A type backed by a saved view lists the view's rows; nothing is
-            // written to it (modelling-query-backed-type). 405, like append-only.
-            $viewWrite = 'update';
-            if ($uuid === null) {
-                $viewWrite = 'create';
-            }
-
-            $this->rejectIfViewBacked(operation: $viewWrite);
-
-            // Reject updates to transferred objects (archiefstatus = overgebracht).
-            if ($uuid !== null) {
-                $this->rejectIfTransferred(uuid: $uuid);
-            }
-
-            // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
-            //
-            // Carrying a uuid is not the same as updating. A caller may choose
-            // the identifier of a new object (an `id` in the body becomes the
-            // uuid above), and xAPI requires exactly that: a statement is stored
-            // under its own id. Treating every uuid as an update refused every
-            // such insert. So the question is whether the object EXISTS.
-            if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-                if ($this->appendOnlyTargetExists(uuid: $uuid) === true) {
-                    $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-                    throw new AppendOnlyException(
-                        schemaIdentifier: $schemaSlug,
-                        operation: 'update'
-                    );
-                }
-
-                // Not there now does not mean not there at write time. Make the
-                // write insert-only all the way down, so a concurrent insert of
-                // the same uuid loses at the `_uuid` unique constraint with a
-                // 409 (MagicMapper) instead of being applied as an update.
-                $failIfExists = true;
-            }
-
-            // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
-            $uuidWasNull = ($uuid === null);
-
-            // Handle cascading relations while preserving context.
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions');
-
-            [$object, $uuid] = $this->handleCascadingWithContextPreservation(
-                object: $object,
-                uuid: $uuid
-            );
-
-            // If UUID was null and is now set, mark it as auto-generated in object data.
-            // This allows SaveObject to distinguish between user-provided UUIDs (UPDATE)
-            // and auto-generated UUIDs (CREATE).
-            if ($uuidWasNull === true && $uuid !== null) {
-                // Store flag in @self to indicate this is a CREATE operation.
-                if (isset($object['@self']) === false || is_array($object['@self']) === false) {
-                    $object['@self'] = [];
-                }
-
-                $object['@self']['_autoGeneratedUuid'] = true;
-                $this->logger->debug(
-                    message: '[ObjectService] UUID auto-generated by CascadingHandler, marking as CREATE operation',
-                    context: [
-                        'file'     => __FILE__,
-                        'line'     => __LINE__,
-                        'uuid'     => $uuid,
-                        'register' => $this->currentRegister?->getId(),
-                        'schema'   => $this->currentSchema?->getId(),
-                    ]
-                );
-            }
-
-            // BUG-OBJ-4: applyAlwaysDefaults() and validateObjectIfRequired()
-            // both dereference $this->currentSchema (non-nullable param /
-            // ->getHardValidation()). If the schema could not be resolved from
-            // the request we would otherwise emit a raw TypeError 500 here.
-            // Throw a structured ValidationException instead, which the
-            // controllers translate into a clean 400 via handleValidationException().
-            if ($this->currentSchema === null) {
-                throw new ValidationException(
-                    message: 'Schema could not be resolved for this object; provide a valid register/schema.'
-                );
-            }
-
-            // Apply "always" defaults BEFORE validation.
-            // This ensures computed/derived properties (e.g., dienstType from type) are set
-            // before validation runs, allowing them to override invalid incoming values.
-            $object = $this->saveHandler->applyAlwaysDefaults(
-                schema: $this->currentSchema,
-                data: $object
-            );
-
-            // Evaluate expression defaults, CREATE only, before validation.
-            // A property that is both required and derived can never be created
-            // if its value arrives after the validator has looked. The refusal
-            // names the property, because "validation failed" about a value the
-            // caller never sent is the least actionable message there is.
-            if ($uuidWasNull === true) {
-                $object = $this->saveHandler->applyExpressionDefaults(
-                    schema: $this->currentSchema,
-                    data: $object
-                );
-            }
-
-            // Normalize date values BEFORE validation.
-            // Accepts datetime input (e.g. "2024-01-15T10:30:00+02:00") for date fields
-            // and casts it to date-only (e.g. "2024-01-15") so Opis validation passes.
-            $object = $this->normalizeDateValues(object: $object);
-
-            // Auto-seed a graph-lifecycle field from the parent on CREATE only,
-            // BEFORE validation, so a required `$ref` lifecycle field passes on a
-            // seeded create. $uuidWasNull is the create signal (updates always
-            // carry a UUID); the seed itself is empty-field-only and fail-soft, so
-            // it never overwrites a client-supplied value. See the object-lifecycle
-            // spec: fk-graph-lifecycle-transitions.
-            if ($uuidWasNull === true) {
-                $object = $this->saveHandler->seedLifecycleFieldOnCreate(
-                    schema: $this->currentSchema,
-                    data: $object
-                );
-            }
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
-
-            // A reader was shown an explicit-reveal value as its mask; an
-            // update that sends the mask back keeps the stored value. Before
-            // the validator, which would refuse the mask's shape.
-            if ($uuidWasNull === false) {
-                $object = $this->restoreMaskedReveals(object: $object, uuid: $uuid);
-            }
-
-            // The declared bounds hold on every write, hard validation or not.
-            // Ordered before the validator so a caller who sent four rows into
-            // a group of three reads that sentence rather than a JSON-pointer
-            // complaint about the same array.
-            $this->enforceDeclaredShapes(object: $object);
-
-            // Validate if hard validation is enabled.
-            $updateUuid = $uuid;
-            if ($uuidWasNull === true) {
-                $updateUuid = null;
-            }
-
-            $this->validateObjectIfRequired(object: $object, uuid: $updateUuid);
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
-
-            // Wave-12 Fix 1: enforce JSON-Schema `readOnly: true` on UPDATE.
-            // Skipped on CREATE (no prior value to violate). Loads the existing
-            // object exactly once so the check is data-driven, not metadata-only.
-            $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
-
-            // A lens is resolved at read and never stored, so a value sent for
-            // one is refused on CREATE as well as UPDATE. Writing through a
-            // lens is writing to somebody else's record by accident (D-2).
-            $this->enforceLensesAreReadOnly(object: $object);
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
-
-            // Ensure folder exists for the object.
-            $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
-
-            // Clear request-scoped caches before starting a new top-level save operation.
-            // This ensures cascade operations benefit from caching while avoiding stale data.
-            $this->saveHandler->clearAllCaches();
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
-
-            // Delegate to SaveObject handler for actual save operation.
-            $savedObject = $this->saveHandler->saveObject(
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                data: $object,
-                uuid: $uuid,
-                folderId: $folderId,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                persist: true,
-                silent: $silent,
-                _validation: $_validation,
-                uploadedFiles: $uploadedFiles,
-                currentUser: $currentUser,
-                failIfExists: $failIfExists,
-                _unowned: $_unowned,
-                _dedupOverride: $_dedupOverride,
-                _owner: $_owner
-            );
-
-            // Invalidate contact matching cache for objects with email properties.
-            // BUG-OBJ-9: invalidate against the SAVED object's data (final UUID +
-            // applied defaults), not the pre-save input array, so an email value
-            // injected by a default/computed property is also invalidated.
-            try {
-                // Through the injected app container, never `\OC::$server`: outside a
-                // booted Nextcloud the global container autowires this app's
-                // services from scratch and recurses through a MagicMapper ->
-                // SettingsService -> ValidationOperationsHandler -> ValidateObject
-                // cycle until memory runs out (19 GB on 2026-09-08).
-                $contactMatchingService = $this->container->get(
-                    \OCA\OpenRegister\Service\ContactMatchingService::class
-                );
-                $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
-            } catch (\Throwable $e) {
-                // BUG-OBJ-9 / BUG-OBJ-14: contact-match cache invalidation is a
-                // non-essential post-save side-effect and must NEVER fail the save.
-                // Catch \Throwable (the invalidation path can raise a runtime Error,
-                // e.g. an unavailable SystemTag subsystem, not just a container
-                // exception) but log it with object context so the miss stays
-                // visible instead of being silently swallowed.
-                $this->logger->warning(
-                    message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'exception' => $e->getMessage(),
-                        'uuid'      => $savedObject->getUuid(),
-                        'register'  => $this->currentRegister?->getId(),
-                        'schema'    => $this->currentSchema?->getId(),
-                    ]
-                );
-            }//end try
-
-            // Invalidate Smart Picker / reference-provider preview caches for the
-            // saved object, so an edit is reflected the next time the object is
-            // resolved as a reference (mail-smart-picker spec: "Cache invalidation
-            // on object update"). Every canonical URL shape OpenRegister itself
-            // recognises comes from ObjectPreviewFormatter::buildCanonicalUrls() —
-            // the SAME pattern list matchReference()/getCachePrefix() use — so
-            // this can never invalidate a different set of shapes than the ones
-            // the providers actually match against (design.md D4). Best-effort:
-            // never fails the save.
-            try {
-                // Same rule as the contact-match block above: the injected app
-                // container, never `\OC::$server`.
-                $container = $this->container;
-                $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
-                $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
-                $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
-
-                $invalidationRegisterId = (int)$this->currentRegister?->getId();
-                $invalidationSchemaId = (int)$this->currentSchema?->getId();
-                $invalidationUuid = (string)$savedObject->getUuid();
-
-                $invalidatedPrefixes = [];
-                foreach (
-                    $formatter->buildCanonicalUrls(
-                        registerId: $invalidationRegisterId,
-                        schemaId: $invalidationSchemaId,
-                        uuid: $invalidationUuid
-                    ) as $canonicalUrl
-                ) {
-                    $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
-                    if (isset($invalidatedPrefixes[$prefix]) === false) {
-                        $referenceManager->invalidateCache(cachePrefix: $prefix);
-                        $invalidatedPrefixes[$prefix] = true;
-                    }
-                }
-
-                // Flat data shape deep link URL templates resolve placeholders
-                // against — same shape ObjectPreviewFormatter::buildReference()
-                // and ObjectSearchResultFormatter::format() build for the same
-                // purpose: the object's own fields plus the identity triple.
-                $deepLinkObjectData = array_merge(
-                    $savedObject->getObject(),
-                    [
-                        'uuid' => $invalidationUuid,
-                        'register' => $invalidationRegisterId,
-                        'schema' => $invalidationSchemaId,
-                    ]
-                );
-
-                $deepLinkUrl = $deepLinkRegistry->resolveUrl(
-                    registerId: $invalidationRegisterId,
-                    schemaId: $invalidationSchemaId,
-                    objectData: $deepLinkObjectData
-                );
-                if ($deepLinkUrl !== null) {
-                    $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
-                }
-            } catch (\Throwable $e) {
-                // Smart Picker cache invalidation is a non-essential post-save
-                // side-effect and must NEVER fail the save. Catch \Throwable (the
-                // reference manager or an unavailable formatter service can raise
-                // a runtime Error, not just a container exception) but log it with
-                // object context so the miss stays visible instead of being
-                // silently swallowed.
-                $this->logger->warning(
-                    message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'exception' => $e->getMessage(),
-                        'uuid'      => $savedObject->getUuid(),
-                        'register'  => $this->currentRegister?->getId(),
-                        'schema'    => $this->currentSchema?->getId(),
-                    ]
-                );
-            }//end try
-
-            // Lazy folder creation: intentionally do NOT create a file-storage
-            // folder here. An object only needs a folder once a file is attached;
-            // the folder is created on demand on the first upload
-            // (CreateFileHandler → getObjectFolder, which creates-if-missing). This
-            // avoids cluttering the Files tree with an empty folder per object and
-            // avoids binding system/seed-created objects to a folder a later editor
-            // can't access (the folder_access_denied case).
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('persist+events');
-
-            // Render and return the saved object.
-            $renderedObject = $this->renderHandler->renderEntity(
-                entity: $savedObject,
-                _extend: $extend ?? [],
-                registers: null,
-                schemas: null,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
-            \OCA\OpenRegister\Service\WritePhaseProbe::flush();
-
-            // Assigned rather than returned: the boundary below may apply an
-            // automatic transition whose entity is the one the caller must see.
-            $result = $renderedObject;
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
 
@@ -2122,6 +1787,366 @@ class ObjectService implements ObjectServiceInterface
 
         return $this->autoTransitions->preferAutomatic(saved: $result, applied: $automatic);
     }//end saveObject()
+
+    /**
+     * Run one save inside the scope saveObject() opened: check, prepare, persist, invalidate, render.
+     *
+     * @param array|ObjectEntity $object  The object data or entity to save.
+     * @param array              $options The saveObject() arguments other than the object, by name.
+     *
+     * @return ObjectEntity The saved and rendered object
+     *
+     * @throws Exception If there is an error during save
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) WritePhaseProbe marks are static timing probes
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function saveWithinScope(array | ObjectEntity $object, array $options): ObjectEntity
+    {
+        $this->discardPendingSchemaRef();
+        // Bound the folder-access revalidation cache to this single save call
+        // (not the whole FileService/request lifetime), so a cascade save that
+        // moves or trashes a folder mid-request can't be waved through on a
+        // stale "accessible" verdict from an earlier write.
+        $this->fileService->resetFolderAccessRevalidationCache();
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('start');
+
+        $this->setContextFromParameters(register: $options['register'], schema: $options['schema']);
+        [$object, $uuid] = $this->extractUuidAndNormalizeObject(object: $object, uuid: $options['uuid']);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
+        $this->checkSavePermissions(uuid: $uuid, _rbac: $options['_rbac'], object: $object);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
+
+        $options['failIfExists'] = $this->guardWriteTarget(uuid: $uuid, failIfExists: $options['failIfExists']);
+
+        // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
+        $uuidWasNull = ($uuid === null);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions');
+        [$object, $uuid] = $this->handleCascadingWithContextPreservation(object: $object, uuid: $uuid);
+        if ($uuidWasNull === true && $uuid !== null) {
+            $object = $this->markAutoGeneratedUuid(object: $object, uuid: $uuid);
+        }
+
+        $object = $this->prepareObjectForSave(object: $object, write: ['uuid' => $uuid, 'isCreate' => $uuidWasNull]);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
+        $options['folderId'] = $this->ensureObjectFolder(uuid: $uuid, currentUser: $options['currentUser']);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
+
+        // Clear request-scoped caches before starting a new top-level save operation.
+        // This ensures cascade operations benefit from caching while avoiding stale data.
+        $this->saveHandler->clearAllCaches();
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
+
+        $savedObject = $this->persistObject(object: $object, options: ['uuid' => $uuid] + $options);
+        $this->invalidateContactMatchCache(savedObject: $savedObject);
+        $this->invalidateReferenceCaches(savedObject: $savedObject);
+
+        // Lazy folder creation: no file-storage folder is created here. The
+        // folder is created on demand on the first upload, which keeps empty
+        // folders out of the Files tree and system-created objects out of
+        // folders a later editor cannot access.
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('persist+events');
+
+        $renderedObject = $this->renderHandler->renderEntity(
+            entity: $savedObject,
+            _extend: $options['extend'] ?? [],
+            registers: null,
+            schemas: null,
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy']
+        );
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
+        \OCA\OpenRegister\Service\WritePhaseProbe::flush();
+
+        return $renderedObject;
+    }//end saveWithinScope()
+
+    /**
+     * Refuse a write the target does not take, and say whether the write must insert only.
+     *
+     * A type backed by a saved view lists the view's rows and takes no write
+     * (405, like append-only). A transferred object (archiefstatus overgebracht)
+     * is read-only. On an append-only schema an existing object refuses the
+     * update; a uuid that does not exist yet is an insert with a caller-chosen
+     * id (xAPI stores a statement under its own id), made insert-only all the
+     * way down so a concurrent insert of the same uuid loses at the `_uuid`
+     * unique constraint with a 409 instead of being applied as an update.
+     *
+     * @param string|null $uuid         The uuid being written, or null for a create.
+     * @param bool        $failIfExists Whether the caller asked for an insert-only write.
+     *
+     * @return bool Whether the write must insert only.
+     *
+     * @throws Exception When the target refuses the write.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function guardWriteTarget(?string $uuid, bool $failIfExists): bool
+    {
+        $viewWrite = 'update';
+        if ($uuid === null) {
+            $viewWrite = 'create';
+        }
+
+        $this->rejectIfViewBacked(operation: $viewWrite);
+        if ($uuid === null) {
+            return $failIfExists;
+        }
+
+        $this->rejectIfTransferred(uuid: $uuid);
+        if ($this->currentSchema === null || $this->currentSchema->isAppendOnly() === false) {
+            return $failIfExists;
+        }
+
+        if ($this->appendOnlyTargetExists(uuid: $uuid) === true) {
+            throw new AppendOnlyException(
+                schemaIdentifier: ($this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId()),
+                operation: 'update'
+            );
+        }
+
+        return true;
+    }//end guardWriteTarget()
+
+    /**
+     * Mark a uuid the cascading handler generated, so SaveObject treats the write as a CREATE.
+     *
+     * SaveObject tells a user-provided uuid (UPDATE) from an auto-generated one
+     * (CREATE) by this flag in @self.
+     *
+     * @param array  $object The object data.
+     * @param string $uuid   The generated uuid.
+     *
+     * @return array The object data with the flag in @self.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function markAutoGeneratedUuid(array $object, string $uuid): array
+    {
+        if (isset($object['@self']) === false || is_array($object['@self']) === false) {
+            $object['@self'] = [];
+        }
+
+        $object['@self']['_autoGeneratedUuid'] = true;
+        $this->logger->debug(
+            message: '[ObjectService] UUID auto-generated by CascadingHandler, marking as CREATE operation',
+            context: [
+                'file'     => __FILE__,
+                'line'     => __LINE__,
+                'uuid'     => $uuid,
+                'register' => $this->currentRegister?->getId(),
+                'schema'   => $this->currentSchema?->getId(),
+            ]
+        );
+        return $object;
+    }//end markAutoGeneratedUuid()
+
+    /**
+     * Apply defaults and run every check that comes before the write.
+     *
+     * Defaults come before validation, so a computed or derived property can
+     * override an invalid incoming value, and a property that is both required
+     * and derived can be created. Expression defaults and the lifecycle seed
+     * apply on CREATE only. Dates are normalised (a datetime for a date field is
+     * cast to the date) so validation passes. An update that sends back the mask
+     * of an explicit-reveal value keeps the stored value. The declared bounds
+     * hold on every write, before the validator, so the caller reads that
+     * sentence rather than a JSON-pointer complaint. After validation, readOnly
+     * holds on UPDATE and a lens takes no value on any write.
+     *
+     * @param array $object The object data.
+     * @param array $write  The uuid and whether the write is a create.
+     *
+     * @return array The object data ready to save.
+     *
+     * @throws ValidationException When the schema is not resolved or a check fails.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function prepareObjectForSave(array $object, array $write): array
+    {
+        // A schema that could not be resolved from the request is a structured
+        // 400 here, not a raw TypeError 500 in the steps below.
+        if ($this->currentSchema === null) {
+            throw new ValidationException(
+                message: 'Schema could not be resolved for this object; provide a valid register/schema.'
+            );
+        }
+
+        $object = $this->saveHandler->applyAlwaysDefaults(schema: $this->currentSchema, data: $object);
+        if ($write['isCreate'] === true) {
+            $object = $this->saveHandler->applyExpressionDefaults(schema: $this->currentSchema, data: $object);
+        }
+
+        $object = $this->normalizeDateValues(object: $object);
+        if ($write['isCreate'] === true) {
+            $object = $this->saveHandler->seedLifecycleFieldOnCreate(schema: $this->currentSchema, data: $object);
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
+        if ($write['isCreate'] === false) {
+            $object = $this->restoreMaskedReveals(object: $object, uuid: $write['uuid']);
+        }
+
+        $this->enforceDeclaredShapes(object: $object);
+
+        $updateUuid = $write['uuid'];
+        if ($write['isCreate'] === true) {
+            $updateUuid = null;
+        }
+
+        $this->validateObjectIfRequired(object: $object, uuid: $updateUuid);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
+
+        $this->enforceReadOnlyOnUpdate(object: $object, uuid: $write['uuid']);
+        $this->enforceLensesAreReadOnly(object: $object);
+        return $object;
+    }//end prepareObjectForSave()
+
+    /**
+     * Hand the prepared object to the SaveObject handler.
+     *
+     * @param array $object  The prepared object data.
+     * @param array $options The save options with the uuid and the folder id.
+     *
+     * @return ObjectEntity The saved object.
+     *
+     * @throws Exception If the handler cannot save the object.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function persistObject(array $object, array $options): ObjectEntity
+    {
+        return $this->saveHandler->saveObject(
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            data: $object,
+            uuid: $options['uuid'],
+            folderId: $options['folderId'],
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy'],
+            persist: true,
+            silent: $options['silent'],
+            _validation: $options['_validation'],
+            uploadedFiles: $options['uploadedFiles'],
+            currentUser: $options['currentUser'],
+            failIfExists: $options['failIfExists'],
+            _unowned: $options['_unowned'],
+            _dedupOverride: $options['_dedupOverride'],
+            _owner: $options['_owner']
+        );
+    }//end persistObject()
+
+    /**
+     * Invalidate the contact matching cache against the SAVED object's data.
+     *
+     * The saved data carries the final uuid and applied defaults, so an email
+     * value injected by a default is invalidated too. Resolved through the
+     * injected app container, never `\OC::$server`: outside a booted Nextcloud
+     * the global container autowires this app's services from scratch and
+     * recurses until memory runs out. A non-essential side effect: a failure
+     * (also a runtime Error) is logged with the object's context and never
+     * fails the save.
+     *
+     * @param ObjectEntity $savedObject The saved object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function invalidateContactMatchCache(ObjectEntity $savedObject): void
+    {
+        try {
+            $contactMatchingService = $this->container->get(
+                \OCA\OpenRegister\Service\ContactMatchingService::class
+            );
+            $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e->getMessage(),
+                    'uuid'      => $savedObject->getUuid(),
+                    'register'  => $this->currentRegister?->getId(),
+                    'schema'    => $this->currentSchema?->getId(),
+                ]
+            );
+        }//end try
+    }//end invalidateContactMatchCache()
+
+    /**
+     * Invalidate the Smart Picker and reference-provider preview caches of the saved object.
+     *
+     * Every canonical URL shape comes from ObjectPreviewFormatter::buildCanonicalUrls(),
+     * the same pattern list the providers match against, and each cache prefix
+     * is invalidated once; the object's deep link is invalidated too. The
+     * deep link data is the object's own fields plus the identity triple, as
+     * the preview and search formatters build it. A non-essential side effect:
+     * a failure is logged with the object's context and never fails the save.
+     *
+     * @param ObjectEntity $savedObject The saved object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function invalidateReferenceCaches(ObjectEntity $savedObject): void
+    {
+        try {
+            $referenceManager = $this->container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
+            $formatter        = $this->container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
+            $deepLinkRegistry = $this->container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+
+            $invalidationRegisterId = (int) $this->currentRegister?->getId();
+            $invalidationSchemaId   = (int) $this->currentSchema?->getId();
+            $invalidationUuid       = (string) $savedObject->getUuid();
+
+            $invalidatedPrefixes = [];
+            $canonicalUrls       = $formatter->buildCanonicalUrls(
+                registerId: $invalidationRegisterId,
+                schemaId: $invalidationSchemaId,
+                uuid: $invalidationUuid
+            );
+            foreach ($canonicalUrls as $canonicalUrl) {
+                $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
+                if (isset($invalidatedPrefixes[$prefix]) === false) {
+                    $referenceManager->invalidateCache(cachePrefix: $prefix);
+                    $invalidatedPrefixes[$prefix] = true;
+                }
+            }
+
+            $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                registerId: $invalidationRegisterId,
+                schemaId: $invalidationSchemaId,
+                objectData: array_merge(
+                    $savedObject->getObject(),
+                    ['uuid' => $invalidationUuid, 'register' => $invalidationRegisterId, 'schema' => $invalidationSchemaId]
+                )
+            );
+            if ($deepLinkUrl !== null) {
+                $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e->getMessage(),
+                    'uuid'      => $savedObject->getUuid(),
+                    'register'  => $this->currentRegister?->getId(),
+                    'schema'    => $this->currentSchema?->getId(),
+                ]
+            );
+        }//end try
+    }//end invalidateReferenceCaches()
 
     /**
      * Set register and schema context from parameters.

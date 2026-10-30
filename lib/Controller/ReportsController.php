@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -118,6 +119,8 @@ class ReportsController extends Controller {
 				data: ['error' => $e->getMessage()],
 				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
 			);
+		} catch (OfficeServerRequiredException $e) {
+			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[ReportsController] Render failed',
