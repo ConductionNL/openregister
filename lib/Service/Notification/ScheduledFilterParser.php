@@ -68,26 +68,10 @@ final class ScheduledFilterParser {
 		$clauses = [];
 
 		foreach ($filter as $key => $spec) {
-			$key = (string) $key;
+			$key      = (string) $key;
+			$position = new ScheduledFilterPosition(ruleKey: $ruleKey, path: $key, depth: 1, key: $key);
 
-			if (ScheduledFilterGrammar::isCombinator($key) === true) {
-				$parsed = $this->parseCombinator(
-					combinator: $key,
-					spec: $spec,
-					ruleKey: $ruleKey,
-					path: $key,
-					depth: 1
-				);
-
-				$errors = array_merge($errors, $parsed['errors']);
-				if ($parsed['node'] !== null) {
-					$clauses[] = $parsed['node'];
-				}
-
-				continue;
-			}
-
-			$parsed = $this->parseFieldEntry(field: $key, spec: $spec, ruleKey: $ruleKey, path: $key);
+			$parsed   = $this->parseTopLevelEntry(spec: $spec, position: $position);
 
 			$errors = array_merge($errors, $parsed['errors']);
 			if ($parsed['node'] !== null) {
@@ -108,215 +92,252 @@ final class ScheduledFilterParser {
 	}//end parse()
 
 	/**
-	 * Parse one `field => spec` entry into a leaf node.
+	 * Parse one top-level entry: a combinator or a field.
 	 *
-	 * @param string $field   Field name on the object.
-	 * @param mixed  $spec    Scalar, bare list, or operator object.
-	 * @param string $ruleKey Notification rule name.
-	 * @param string $path    Dotted path for error reporting.
+	 * @param mixed                   $spec     The entry's value.
+	 * @param ScheduledFilterPosition $position The entry, keyed by its field or combinator.
 	 *
 	 * @return array{node: ?array<string, mixed>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function parseFieldEntry(string $field, $spec, string $ruleKey, string $path): array {
+	private function parseTopLevelEntry($spec, ScheduledFilterPosition $position): array {
+		if (ScheduledFilterGrammar::isCombinator($position->key) === true) {
+			return $this->parseCombinator(spec: $spec, position: $position);
+		}
+
+		return $this->parseFieldEntry(spec: $spec, position: $position);
+
+	}//end parseTopLevelEntry()
+
+	/**
+	 * Parse one top-level `field => spec` entry into a leaf node.
+	 *
+	 * @param mixed                   $spec     Scalar, bare list, or operator object.
+	 * @param ScheduledFilterPosition $position The entry, keyed by its field.
+	 *
+	 * @return array{node: ?array<string, mixed>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function parseFieldEntry($spec, ScheduledFilterPosition $position): array {
 		// Scalar shortcut — strict equality, the historical default.
 		if (is_array($spec) === false) {
-			return $this->accept(node: ['type' => 'leaf', 'field' => $field, 'operator' => 'equals', 'operand' => $spec]);
+			return $this->accept(node: ['type' => 'leaf', 'field' => $position->key, 'operator' => 'equals', 'operand' => $spec]);
+		}
+
+		// Operator object.
+		if (array_is_list($spec) === false) {
+			return $this->parseOperatorObject(spec: $spec, position: $position);
 		}
 
 		// Bare list — membership over the list.
-		if (array_is_list($spec) === true) {
-			if ($spec === []) {
-				return $this->reject(
-				error: $this->error(
-							code: 'notification-scheduled-empty-list',
-							ruleKey: $ruleKey,
-							field: $path,
-							value: $spec,
-							message: sprintf(
-								'Notification "%s" trigger.filter.%s is an empty list; a membership test over no values can never match.',
-								$ruleKey,
-								$path
-							)
-						));
-			}
+		if ($spec === []) {
+			return $this->reject(
+				error: $position->error(
+					code: 'notification-scheduled-empty-list',
+					issue: [
+						'field'   => $position->path,
+						'value'   => $spec,
+						'message' => $position->message(diagnosis: ' is an empty list; a membership test over no values can never match.'),
+					]
+				)
+			);
+		}
 
-			return $this->accept(node: ['type' => 'leaf', 'field' => $field, 'operator' => 'in', 'operand' => $spec]);
-		}//end if
-
-		// Operator object.
-		return $this->parseOperatorObject(field: $field, spec: $spec, ruleKey: $ruleKey, path: $path);
+		return $this->accept(node: ['type' => 'leaf', 'field' => $position->key, 'operator' => 'in', 'operand' => $spec]);
 
 	}//end parseFieldEntry()
 
 	/**
 	 * Parse an operator object into a leaf node.
 	 *
-	 * @param string               $field   Field name on the object.
-	 * @param array<string, mixed> $spec    The operator object.
-	 * @param string               $ruleKey Notification rule name.
-	 * @param string               $path    Dotted path for error reporting.
+	 * @param array<string, mixed>    $spec     The operator object.
+	 * @param ScheduledFilterPosition $position The entry, keyed by the field it tests.
 	 *
 	 * @return array{node: ?array<string, mixed>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function parseOperatorObject(string $field, array $spec, string $ruleKey, string $path): array {
-		if (array_key_exists('operator', $spec) === false) {
-			// `op` is the spelling openconnector reached for. Name the expected
-			// key rather than reporting a generic shape error, because the
-			// author's intent is unambiguous and the fix is one word.
-			if (array_key_exists('op', $spec) === true) {
-				return [
-					'node'   => null,
-					'errors' => [
-						$this->error(
-							code: 'notification-scheduled-bad-filter-operator-key',
-							ruleKey: $ruleKey,
-							field: sprintf('trigger.filter.%s', $path),
-							value: $spec['op'],
-							message: sprintf(
-								'Notification "%s" trigger.filter.%s names the operator under "op"; the expected key is "operator" (got "op": %s).',
-								$ruleKey,
-								$path,
-								var_export($spec['op'], true)
-							)
-						),
-					],
-				];
-			}
-
-			return $this->reject(
-				error: $this->error(
-						code: 'notification-scheduled-bad-filter-shape',
-						ruleKey: $ruleKey,
-						field: sprintf('trigger.filter.%s', $path),
-						value: $spec,
-						message: sprintf(
-							'Notification "%s" trigger.filter.%s is a map without an "operator" key; it is neither a scalar, a list, nor an operator object.',
-							$ruleKey,
-							$path
-						)
-					));
-		}//end if
-
-		$operator = (string) $spec['operator'];
-
-		if (ScheduledFilterGrammar::isOperator($operator) === false) {
-			return [
-				'node'   => null,
-				'errors' => [
-					$this->error(
-						code: 'notification-scheduled-bad-filter-operator',
-						ruleKey: $ruleKey,
-						field: sprintf('trigger.filter.%s.operator', $path),
-						value: $operator,
-						message: sprintf(
-							'Notification "%s" trigger.filter.%s.operator must be one of [%s]; got "%s".',
-							$ruleKey,
-							$path,
-							implode(', ', ScheduledFilterGrammar::OPERATORS),
-							$operator
-						)
-					),
-				],
-			];
+	private function parseOperatorObject(array $spec, ScheduledFilterPosition $position): array {
+		$errors = $this->operatorErrors(spec: $spec, position: $position);
+		if (empty($errors) === true) {
+			$errors = $this->validateOperand(spec: $spec, position: $position);
 		}
-
-		$operandKey = ScheduledFilterGrammar::operandKey($operator);
-
-		if (array_key_exists($operandKey, $spec) === false) {
-			return $this->reject(
-				error: $this->error(
-						code: 'notification-scheduled-bad-filter-missing-value',
-						ruleKey: $ruleKey,
-						field: sprintf('trigger.filter.%s.%s', $path, $operandKey),
-						value: null,
-						message: sprintf(
-							'Notification "%s" trigger.filter.%s uses operator "%s" and therefore requires a "%s" key.',
-							$ruleKey,
-							$path,
-							$operator,
-							$operandKey
-						)
-					));
-		}
-
-		$operand = $spec[$operandKey];
-		$errors  = $this->validateOperand(
-			operator: $operator,
-			operand: $operand,
-			ruleKey: $ruleKey,
-			path: $path,
-			operandKey: $operandKey
-		);
 
 		if (empty($errors) === false) {
 			return ['node' => null, 'errors' => $errors];
 		}
 
-		return $this->accept(node: ['type' => 'leaf', 'field' => $field, 'operator' => $operator, 'operand' => $operand]);
+		$operator = (string) $spec['operator'];
+		return $this->accept(
+			node: [
+				'type'     => 'leaf',
+				'field'    => $position->key,
+				'operator' => $operator,
+				'operand'  => $spec[ScheduledFilterGrammar::operandKey($operator)],
+			]
+		);
 
 	}//end parseOperatorObject()
 
 	/**
+	 * Check an operator object names a known operator and carries its operand key.
+	 *
+	 * @param array<string, mixed>    $spec     The operator object.
+	 * @param ScheduledFilterPosition $position The entry.
+	 *
+	 * @return array<int, array<string, mixed>> Errors, empty when the operator and its key are present.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function operatorErrors(array $spec, ScheduledFilterPosition $position): array {
+		if (array_key_exists('operator', $spec) === false) {
+			return [$this->missingOperatorError(spec: $spec, position: $position)];
+		}
+
+		$operator = (string) $spec['operator'];
+		if (ScheduledFilterGrammar::isOperator($operator) === false) {
+			return [
+				$position->error(
+					code: 'notification-scheduled-bad-filter-operator',
+					issue: [
+						'field'   => $position->field(suffix: '.operator'),
+						'value'   => $operator,
+						'message' => $position->message(
+							diagnosis: sprintf(
+								'.operator must be one of [%s]; got "%s".',
+								implode(', ', ScheduledFilterGrammar::OPERATORS),
+								$operator
+							)
+						),
+					]
+				),
+			];
+		}
+
+		$operandKey = ScheduledFilterGrammar::operandKey($operator);
+		if (array_key_exists($operandKey, $spec) === true) {
+			return [];
+		}
+
+		return [
+			$position->error(
+				code: 'notification-scheduled-bad-filter-missing-value',
+				issue: [
+					'field'   => $position->field(suffix: '.'.$operandKey),
+					'value'   => null,
+					'message' => $position->message(
+						diagnosis: sprintf(' uses operator "%s" and therefore requires a "%s" key.', $operator, $operandKey)
+					),
+				]
+			),
+		];
+
+	}//end operatorErrors()
+
+	/**
+	 * The error for an operator object without an `operator` key.
+	 *
+	 * `op` is the spelling openconnector reached for. It gets its own error
+	 * naming the expected key, because the author's intent is unambiguous and
+	 * the fix is one word.
+	 *
+	 * @param array<string, mixed>    $spec     The operator object.
+	 * @param ScheduledFilterPosition $position The entry.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function missingOperatorError(array $spec, ScheduledFilterPosition $position): array {
+		if (array_key_exists('op', $spec) === true) {
+			return $position->error(
+				code: 'notification-scheduled-bad-filter-operator-key',
+				issue: [
+					'field'   => $position->field(),
+					'value'   => $spec['op'],
+					'message' => $position->message(
+						diagnosis: sprintf(
+							' names the operator under "op"; the expected key is "operator" (got "op": %s).',
+							var_export($spec['op'], true)
+						)
+					),
+				]
+			);
+		}
+
+		return $position->error(
+			code: 'notification-scheduled-bad-filter-shape',
+			issue: [
+				'field'   => $position->field(),
+				'value'   => $spec,
+				'message' => $position->message(
+					diagnosis: ' is a map without an "operator" key; it is neither a scalar, a list, nor an operator object.'
+				),
+			]
+		);
+
+	}//end missingOperatorError()
+
+	/**
 	 * Check that an operand suits its operator.
 	 *
-	 * @param string $operator   The operator name.
-	 * @param mixed  $operand    The operand as written.
-	 * @param string $ruleKey    Notification rule name.
-	 * @param string $path       Dotted path for error reporting.
-	 * @param string $operandKey Either `value` or `values`.
+	 * @param array<string, mixed>    $spec     The operator object, with a known operator and its operand key.
+	 * @param ScheduledFilterPosition $position The entry.
 	 *
 	 * @return array<int, array<string, mixed>> Errors, empty when the operand suits.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateOperand(string $operator, $operand, string $ruleKey, string $path, string $operandKey): array {
+	private function validateOperand(array $spec, ScheduledFilterPosition $position): array {
+		$operator = (string) $spec['operator'];
+
 		if (in_array($operator, ScheduledFilterGrammar::MEMBERSHIP_OPERATORS, true) === true) {
-			return $this->validateMembershipOperand(operator: $operator, operand: $operand, ruleKey: $ruleKey, path: $path);
+			return $this->validateMembershipOperand(spec: $spec, position: $position);
 		}
 
 		if (in_array($operator, ScheduledFilterGrammar::DURATION_OPERATORS, true) === true) {
-			return $this->validateDurationOperand(operator: $operator, operand: $operand, ruleKey: $ruleKey, path: $path);
+			return $this->validateDurationOperand(spec: $spec, position: $position);
 		}
 
 		if (in_array($operator, ScheduledFilterGrammar::INSTANT_OPERATORS, true) === true) {
-			return $this->validateInstantOperand(operator: $operator, operand: $operand, ruleKey: $ruleKey, path: $path);
+			return $this->validateInstantOperand(spec: $spec, position: $position);
 		}
 
-		return $this->validateScalarOperand(
-			operator: $operator,
-			operand: $operand,
-			ruleKey: $ruleKey,
-			path: $path,
-			operandKey: $operandKey
-		);
+		return $this->validateScalarOperand(spec: $spec, position: $position);
 
 	}//end validateOperand()
 
 	/**
 	 * Check a membership operand is a non-empty list.
 	 *
-	 * @param string $operator The operator name.
-	 * @param mixed  $operand  The operand as written.
-	 * @param string $ruleKey  Notification rule name.
-	 * @param string $path     Dotted path for error reporting.
+	 * @param array<string, mixed>    $spec     The operator object.
+	 * @param ScheduledFilterPosition $position The entry.
 	 *
 	 * @return array<int, array<string, mixed>> Errors, empty when the operand suits.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateMembershipOperand(string $operator, $operand, string $ruleKey, string $path): array {
+	private function validateMembershipOperand(array $spec, ScheduledFilterPosition $position): array {
+		$operand = $spec['values'];
 		if (is_array($operand) === true && array_is_list($operand) === true && $operand !== []) {
 			return [];
 		}
 
 		return [
-			$this->error(
+			$position->error(
 				code: 'notification-scheduled-bad-filter-values',
-				ruleKey: $ruleKey,
-				field: sprintf('trigger.filter.%s.values', $path),
-				value: $operand,
-				message: sprintf(
-					'Notification "%s" trigger.filter.%s uses operator "%s" and therefore requires "values" to be a non-empty list.',
-					$ruleKey,
-					$path,
-					$operator
-				)
+				issue: [
+					'field'   => $position->field(suffix: '.values'),
+					'value'   => $operand,
+					'message' => $position->message(
+						diagnosis: sprintf(
+							' uses operator "%s" and therefore requires "values" to be a non-empty list.',
+							(string) $spec['operator']
+						)
+					),
+				]
 			),
 		];
 
@@ -325,31 +346,33 @@ final class ScheduledFilterParser {
 	/**
 	 * Check a duration operand parses as an ISO-8601 duration.
 	 *
-	 * @param string $operator The operator name.
-	 * @param mixed  $operand  The operand as written.
-	 * @param string $ruleKey  Notification rule name.
-	 * @param string $path     Dotted path for error reporting.
+	 * @param array<string, mixed>    $spec     The operator object.
+	 * @param ScheduledFilterPosition $position The entry.
 	 *
 	 * @return array<int, array<string, mixed>> Errors, empty when the operand suits.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateDurationOperand(string $operator, $operand, string $ruleKey, string $path): array {
+	private function validateDurationOperand(array $spec, ScheduledFilterPosition $position): array {
+		$operand = $spec['value'];
 		if (is_string($operand) === true && $this->parseDuration(duration: (string) $operand) !== null) {
 			return [];
 		}
 
 		return [
-			$this->error(
+			$position->error(
 				code: 'notification-scheduled-bad-filter-duration',
-				ruleKey: $ruleKey,
-				field: sprintf('trigger.filter.%s.value', $path),
-				value: $operand,
-				message: sprintf(
-					'Notification "%s" trigger.filter.%s uses operator "%s" and therefore requires an ISO-8601 duration (e.g. "P7D", "PT24H"); got %s.',
-					$ruleKey,
-					$path,
-					$operator,
-					var_export($operand, true)
-				)
+				issue: [
+					'field'   => $position->field(suffix: '.value'),
+					'value'   => $operand,
+					'message' => $position->message(
+						diagnosis: sprintf(
+							' uses operator "%s" and therefore requires an ISO-8601 duration (e.g. "P7D", "PT24H"); got %s.',
+							(string) $spec['operator'],
+							var_export($operand, true)
+						)
+					),
+				]
 			),
 		];
 
@@ -358,32 +381,34 @@ final class ScheduledFilterParser {
 	/**
 	 * Check an instant operand resolves.
 	 *
-	 * @param string $operator The operator name.
-	 * @param mixed  $operand  The operand as written.
-	 * @param string $ruleKey  Notification rule name.
-	 * @param string $path     Dotted path for error reporting.
+	 * @param array<string, mixed>    $spec     The operator object.
+	 * @param ScheduledFilterPosition $position The entry.
 	 *
 	 * @return array<int, array<string, mixed>> Errors, empty when the operand suits.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateInstantOperand(string $operator, $operand, string $ruleKey, string $path): array {
+	private function validateInstantOperand(array $spec, ScheduledFilterPosition $position): array {
+		$operand = $spec['value'];
 		if (is_string($operand) === true && $this->isResolvableInstant(value: (string) $operand) === true) {
 			return [];
 		}
 
 		return [
-			$this->error(
+			$position->error(
 				code: 'notification-scheduled-bad-filter-instant',
-				ruleKey: $ruleKey,
-				field: sprintf('trigger.filter.%s.value', $path),
-				value: $operand,
-				message: sprintf(
-					'Notification "%s" trigger.filter.%s uses operator "%s" and therefore requires "now", an ISO-8601 '
-					. 'date/date-time, or a signed ISO-8601 duration ("P7D" future, "-P7D" past); got %s.',
-					$ruleKey,
-					$path,
-					$operator,
-					var_export($operand, true)
-				)
+				issue: [
+					'field'   => $position->field(suffix: '.value'),
+					'value'   => $operand,
+					'message' => $position->message(
+						diagnosis: sprintf(
+							' uses operator "%s" and therefore requires "now", an ISO-8601 '
+							.'date/date-time, or a signed ISO-8601 duration ("P7D" future, "-P7D" past); got %s.',
+							(string) $spec['operator'],
+							var_export($operand, true)
+						)
+					),
+				]
 			),
 		];
 
@@ -392,31 +417,31 @@ final class ScheduledFilterParser {
 	/**
 	 * Check a scalar operand is not an array.
 	 *
-	 * @param string $operator   The operator name.
-	 * @param mixed  $operand    The operand as written.
-	 * @param string $ruleKey    Notification rule name.
-	 * @param string $path       Dotted path for error reporting.
-	 * @param string $operandKey Either `value` or `values`.
+	 * @param array<string, mixed>    $spec     The operator object.
+	 * @param ScheduledFilterPosition $position The entry.
 	 *
 	 * @return array<int, array<string, mixed>> Errors, empty when the operand suits.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function validateScalarOperand(string $operator, $operand, string $ruleKey, string $path, string $operandKey): array {
+	private function validateScalarOperand(array $spec, ScheduledFilterPosition $position): array {
+		$operator   = (string) $spec['operator'];
+		$operandKey = ScheduledFilterGrammar::operandKey($operator);
+		$operand    = $spec[$operandKey];
 		if (is_array($operand) === false) {
 			return [];
 		}
 
 		return [
-			$this->error(
+			$position->error(
 				code: 'notification-scheduled-bad-filter-value',
-				ruleKey: $ruleKey,
-				field: sprintf('trigger.filter.%s.%s', $path, $operandKey),
-				value: $operand,
-				message: sprintf(
-					'Notification "%s" trigger.filter.%s uses operator "%s" and therefore requires a scalar "value"; got an array.',
-					$ruleKey,
-					$path,
-					$operator
-				)
+				issue: [
+					'field'   => $position->field(suffix: '.'.$operandKey),
+					'value'   => $operand,
+					'message' => $position->message(
+						diagnosis: sprintf(' uses operator "%s" and therefore requires a scalar "value"; got an array.', $operator)
+					),
+				]
 			),
 		];
 
@@ -425,44 +450,38 @@ final class ScheduledFilterParser {
 	/**
 	 * Parse a combinator entry into a nested node.
 	 *
-	 * @param string $combinator Either `all` or `any`.
-	 * @param mixed  $spec       The clause list.
-	 * @param string $ruleKey    Notification rule name.
-	 * @param string $path       Dotted path for error reporting.
-	 * @param int    $depth      Current nesting depth.
+	 * @param mixed                   $spec     The clause list.
+	 * @param ScheduledFilterPosition $position The entry, keyed by its combinator (`all` or `any`).
 	 *
 	 * @return array{node: ?array<string, mixed>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function parseCombinator(string $combinator, $spec, string $ruleKey, string $path, int $depth): array {
-		if ($depth > ScheduledFilterGrammar::MAX_DEPTH) {
+	private function parseCombinator($spec, ScheduledFilterPosition $position): array {
+		if ($position->depth > ScheduledFilterGrammar::MAX_DEPTH) {
 			return $this->reject(
-				error: $this->error(
+				error: $position->error(
 					code: 'notification-scheduled-filter-too-deep',
-					ruleKey: $ruleKey,
-					field: sprintf('trigger.filter.%s', $path),
-					value: $depth,
-					message: sprintf(
-						'Notification "%s" trigger.filter.%s nests combinators deeper than %d levels.',
-						$ruleKey,
-						$path,
-						ScheduledFilterGrammar::MAX_DEPTH
-					)
+					issue: [
+						'field'   => $position->field(),
+						'value'   => $position->depth,
+						'message' => $position->message(
+							diagnosis: sprintf(' nests combinators deeper than %d levels.', ScheduledFilterGrammar::MAX_DEPTH)
+						),
+					]
 				)
 			);
 		}
 
 		if (is_array($spec) === false || array_is_list($spec) === false) {
 			return $this->reject(
-				error: $this->error(
+				error: $position->error(
 					code: 'notification-scheduled-bad-combinator',
-					ruleKey: $ruleKey,
-					field: sprintf('trigger.filter.%s', $path),
-					value: $spec,
-					message: sprintf(
-						'Notification "%s" trigger.filter.%s must be a list of clauses.',
-						$ruleKey,
-						$path
-					)
+					issue: [
+						'field'   => $position->field(),
+						'value'   => $spec,
+						'message' => $position->message(diagnosis: ' must be a list of clauses.'),
+					]
 				)
 			);
 		}
@@ -471,22 +490,17 @@ final class ScheduledFilterParser {
 		$clauses = [];
 
 		foreach ($spec as $index => $clause) {
-			$parsed = $this->parseClause(
-				clause: $clause,
-				ruleKey: $ruleKey,
-				path: sprintf('%s[%d]', $path, (int) $index),
-				depth: $depth
-			);
+			$parsed = $this->parseClause(clause: $clause, position: $position->clause(index: (int) $index));
 
 			$errors  = array_merge($errors, $parsed['errors']);
 			$clauses = array_merge($clauses, $parsed['nodes']);
-		}//end foreach
+		}
 
 		if (empty($errors) === false) {
 			return ['node' => null, 'errors' => $errors];
 		}
 
-		return $this->accept(node: ['type' => $combinator, 'clauses' => $clauses]);
+		return $this->accept(node: ['type' => $position->key, 'clauses' => $clauses]);
 
 	}//end parseCombinator()
 
@@ -495,28 +509,25 @@ final class ScheduledFilterParser {
 	 *
 	 * A clause is either a nested combinator or a `{field, operator, …}` object.
 	 *
-	 * @param mixed  $clause  The clause as written.
-	 * @param string $ruleKey Notification rule name.
-	 * @param string $path    Dotted path for error reporting.
-	 * @param int    $depth   Depth of the enclosing combinator.
+	 * @param mixed                   $clause   The clause as written.
+	 * @param ScheduledFilterPosition $position The clause, at the depth of its combinator.
 	 *
 	 * @return array{nodes: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function parseClause($clause, string $ruleKey, string $path, int $depth): array {
+	private function parseClause($clause, ScheduledFilterPosition $position): array {
 		if (is_array($clause) === false) {
 			return [
 				'nodes'  => [],
 				'errors' => [
-					$this->error(
+					$position->error(
 						code: 'notification-scheduled-bad-clause',
-						ruleKey: $ruleKey,
-						field: sprintf('trigger.filter.%s', $path),
-						value: $clause,
-						message: sprintf(
-							'Notification "%s" trigger.filter.%s must be a clause object.',
-							$ruleKey,
-							$path
-						)
+						issue: [
+							'field'   => $position->field(),
+							'value'   => $clause,
+							'message' => $position->message(diagnosis: ' must be a clause object.'),
+						]
 					),
 				],
 			];
@@ -525,52 +536,26 @@ final class ScheduledFilterParser {
 		// A clause may itself be a nested combinator.
 		$nestedKeys = array_intersect(array_keys($clause), ScheduledFilterGrammar::COMBINATORS);
 		if (empty($nestedKeys) === false) {
-			$errors = [];
-			$nodes  = [];
-
-			foreach ($nestedKeys as $nestedKey) {
-				$parsed = $this->parseCombinator(
-					combinator: (string) $nestedKey,
-					spec: $clause[$nestedKey],
-					ruleKey: $ruleKey,
-					path: sprintf('%s.%s', $path, (string) $nestedKey),
-					depth: ($depth + 1)
-				);
-
-				$errors = array_merge($errors, $parsed['errors']);
-				if ($parsed['node'] !== null) {
-					$nodes[] = $parsed['node'];
-				}
-			}
-
-			return ['nodes' => $nodes, 'errors' => $errors];
-		}//end if
+			return $this->parseNestedCombinators(clause: $clause, position: $position);
+		}
 
 		if (array_key_exists('field', $clause) === false || is_string($clause['field']) === false) {
 			return [
 				'nodes'  => [],
 				'errors' => [
-					$this->error(
+					$position->error(
 						code: 'notification-scheduled-bad-clause-field',
-						ruleKey: $ruleKey,
-						field: sprintf('trigger.filter.%s.field', $path),
-						value: ($clause['field'] ?? null),
-						message: sprintf(
-							'Notification "%s" trigger.filter.%s requires a string "field".',
-							$ruleKey,
-							$path
-						)
+						issue: [
+							'field'   => $position->field(suffix: '.field'),
+							'value'   => ($clause['field'] ?? null),
+							'message' => $position->message(diagnosis: ' requires a string "field".'),
+						]
 					),
 				],
 			];
 		}
 
-		$parsed = $this->parseOperatorObject(
-			field: (string) $clause['field'],
-			spec: $clause,
-			ruleKey: $ruleKey,
-			path: $path
-		);
+		$parsed = $this->parseOperatorObject(spec: $clause, position: $position->testing(field: (string) $clause['field']));
 
 		$nodes = [];
 		if ($parsed['node'] !== null) {
@@ -580,6 +565,36 @@ final class ScheduledFilterParser {
 		return ['nodes' => $nodes, 'errors' => $parsed['errors']];
 
 	}//end parseClause()
+
+	/**
+	 * Parse every combinator a clause names, one level deeper.
+	 *
+	 * @param array<string, mixed>    $clause   The clause, holding `all` and/or `any`.
+	 * @param ScheduledFilterPosition $position The clause.
+	 *
+	 * @return array{nodes: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function parseNestedCombinators(array $clause, ScheduledFilterPosition $position): array {
+		$errors = [];
+		$nodes  = [];
+
+		foreach (array_intersect(array_keys($clause), ScheduledFilterGrammar::COMBINATORS) as $nestedKey) {
+			$parsed = $this->parseCombinator(
+				spec: $clause[$nestedKey],
+				position: $position->nested(combinator: (string) $nestedKey)
+			);
+
+			$errors = array_merge($errors, $parsed['errors']);
+			if ($parsed['node'] !== null) {
+				$nodes[] = $parsed['node'];
+			}
+		}
+
+		return ['nodes' => $nodes, 'errors' => $errors];
+
+	}//end parseNestedCombinators()
 
 	/**
 	 * Report whether a reference instant can be resolved.
@@ -659,27 +674,5 @@ final class ScheduledFilterParser {
 		return ['node' => null, 'errors' => [$error]];
 
 	}//end reject()
-
-	/**
-	 * Build one structured error in the shape the validator already reports.
-	 *
-	 * @param string $code    Machine-readable error code.
-	 * @param string $ruleKey Notification rule name.
-	 * @param string $field   Dotted path to the offending key.
-	 * @param mixed  $value   The offending value.
-	 * @param string $message Human-readable diagnosis.
-	 *
-	 * @return array<string, mixed> The error entry.
-	 */
-	private function error(string $code, string $ruleKey, string $field, $value, string $message): array {
-		return [
-			'code'    => $code,
-			'ruleKey' => $ruleKey,
-			'field'   => $field,
-			'value'   => $value,
-			'message' => $message,
-		];
-
-	}//end error()
 
 }//end class
