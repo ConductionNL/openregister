@@ -43,6 +43,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods)            Each part of a fragment has its own check and write step.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)    One collaborator per part of a fragment, each small and separately tested.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)    The constructor takes one collaborator per part of a fragment.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)      The install flow for every part of a fragment lives in one class.
  *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
@@ -339,6 +340,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One pass per object: held, kept, refused,
 	 *                                               not made or written, each answered in place.
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The same pass; splitting it would scatter the per-object outcome.
 	 */
 	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];

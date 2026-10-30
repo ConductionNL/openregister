@@ -26,6 +26,9 @@ use OCP\IUser;
 
 /**
  * Imports objects into a register and schema from a file, and undoes an import by its job id. Implemented by ImportService.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) The contract mirrors ImportService's existing named-argument signatures.
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    The flags (rbac, multitenancy, publish, dryRun, ...) are ImportService's public options.
  */
 interface ObjectImporterInterface {
 

@@ -55,6 +55,8 @@ use DateTimeImmutable;
 /**
  * Fills placeholders in declared values.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One resolver per placeholder kind, each a small branch.
+ *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
  */
 class ExampleSetValues {
