@@ -84,4 +84,23 @@ class ExampleSetGroupSubAdminsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 0, actual: $this->accounts->userCreates);
 		$this->assertSame(expected: [], actual: $this->accounts->subAdmins);
 	}//end testAnUnknownSubAdminRefusesTheSet()
+
+	/**
+	 * Sub-admins (and members) on a group that exists and the set did not create refuse the set.
+	 *
+	 * @return void
+	 */
+	public function testASubAdminOnAGroupTheSetDidNotCreateRefusesTheSet(): void {
+		$this->handlers(subAdmins: ['sanne']);
+		$this->accounts->groups['cases-handlers'] = ['someone'];
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertContains(
+			needle: 'group "cases-handlers": it exists and this set did not create it, so the set may not add members or sub-admins to it',
+			haystack: $report['refusals']
+		);
+		$this->assertSame(expected: [], actual: $this->accounts->subAdmins);
+		$this->assertSame(expected: ['someone'], actual: $this->accounts->groups['cases-handlers']);
+	}//end testASubAdminOnAGroupTheSetDidNotCreateRefusesTheSet()
 }//end class

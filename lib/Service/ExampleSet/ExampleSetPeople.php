@@ -466,8 +466,45 @@ class ExampleSetPeople {
 			}
 		}
 
-		return array_merge($refusals, $this->memberRefusals(plan: $plan));
+		return array_merge($refusals, $this->memberRefusals(plan: $plan), $this->foreignGroupRefusals(plan: $plan, record: $record));
 	}//end refusals()
+
+	/**
+	 * Refuse members and sub-admins on a group that exists and that this set did not create.
+	 *
+	 * A set grants rights only inside the groups it made: adding its cast to,
+	 * or making them sub-admin of, a group somebody else runs would widen that
+	 * group behind its owner's back.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $record The set's record.
+	 *
+	 * @return array<int, string>
+	 */
+	private function foreignGroupRefusals(array $plan, array $record): array {
+		$own     = array_map('strval', (array) ($record['groups'] ?? []));
+		$granted = [];
+		foreach ($this->declaredMemberships(plan: $plan) as [$gid]) {
+			$granted[$gid]['members'] = true;
+		}
+
+		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid]) {
+			$granted[$gid]['sub-admins'] = true;
+		}
+
+		$refusals = [];
+		foreach ($granted as $gid => $kinds) {
+			$gid = (string) $gid;
+			if (in_array($gid, $own, true) === true || $this->accounts->groupExists(gid: $gid) === false) {
+				continue;
+			}
+
+			$refusals[] = 'group "'.$gid.'": it exists and this set did not create it, so the set may not add '
+				.implode(' or ', array_keys($kinds)).' to it';
+		}
+
+		return $refusals;
+	}//end foreignGroupRefusals()
 
 	/**
 	 * What one cast person refuses: a BSN that fails the eleven test, a group that is not in the cast.

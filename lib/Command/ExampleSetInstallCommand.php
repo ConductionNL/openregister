@@ -100,7 +100,8 @@ class ExampleSetInstallCommand extends Command {
 				shortcut: null,
 				mode: InputOption::VALUE_NONE,
 				description: 'Rewrite every object the set declares and already holds to its current values '
-					.'(dates against today, cast, lookups); objects the set did not write are left alone'
+					.'(dates against today, cast, lookups); objects the set did not write are left alone, '
+					.'and accounts, groups, memberships and sub-admins are not touched'
 			)
 			->addOption(
 				name: 'daily',
