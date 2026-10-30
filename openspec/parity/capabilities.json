@@ -3392,7 +3392,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/search/SearchIndex.vue:593 CnIndexPage with sortKey/sortOrder, @sort -> handleSort :337; column chooser src/sidebars/search/SearchSideBar.vue:1043 setSearchVisibleColumns; page src/manifest.json:141 id tables",
-    "spec": "openspec/specs/zoeken-filteren"
+    "spec": "openspec/specs/zoeken-filteren",
+    "requirement": "openspec/changes/records-api-and-table-stated :: The records table sorts by a column and shows the columns the user picks (REQ-RAT-002)"
    },
    "reachedOn": "/tables",
    "provider": "openregister",
@@ -4214,7 +4215,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:1402 index, :3250 create, :3587 update, :4200 destroy; routes appinfo/routes.php:1164-1180 (/api/objects/{register}/{schema}[/{id}]), per-schema table generated from type",
-    "spec": "openspec/specs/objects-crud"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "openspec/changes/records-api-and-table-stated :: Every schema is served as a REST collection (REQ-RAT-001)"
    },
    "reachedOn": "/objects (ObjectsIndex) + API /api/objects/{register}/{schema}",
    "provider": "openregister",
@@ -4313,7 +4315,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "GraphiQL explorer lib/Controller/GraphQLController.php:155 route appinfo/routes.php:1991 lets you run queries; REST docs open in external read-only Redoc (src/components/cards/RegisterSchemaCard.vue:910). No REST try-it, no generated code samples",
-    "change": "api-explorer-in-the-app"
+    "change": "api-explorer-in-the-app",
+    "requirement": "REQ-APIX-001 The API can be tried from inside the app"
    },
    "reachedOn": "/api/graphql/explorer (not linked from any src page); /registers -> external Redoc",
    "provider": "openregister",
@@ -4347,7 +4350,12 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:92 operators gte/lte/gt/lt/in/notIn/ne/isnull, applied per property at :2347 applyObjectFilters (gte+lte = between). No per-field substring 'contains'/like operator on text properties; only array-contains and global _search",
-    "change": "search-quality-operators-and-facets"
+    "change": "search-quality-operators-and-facets",
+    "requirement": [
+     "openspec/specs/zoeken-filteren :: Field-level filtering with comparison operators",
+     "openspec/specs/zoeken-filteren :: A like filter matches a substring ignoring case",
+     "A property declares its match type and its input control (REQ-SQF-003)"
+    ]
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?field[gte]=...",
    "provider": "openregister",
@@ -4415,7 +4423,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:793 and :2943 read _fields/fields and pass to render; routes appinfo/routes.php:1164,1176",
-    "spec": "openspec/specs/objects-crud"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "Field selection narrows the SQL projection"
    },
    "reachedOn": "API only: GET /api/objects/...?_fields=a,b",
    "provider": "openregister",
@@ -4448,7 +4457,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:2941 _extend -> lib/Service/Object/RenderObject.php:3277 extendObject embeds referenced objects; routes appinfo/routes.php:1164,1176",
-    "spec": "openspec/specs/objects-crud"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": [
+     "openspec/specs/referential-integrity :: Requirement 11: API _extend parameter MUST support lazy and eager reference resolution",
+     "List/search relation resolution is batched, not per-row"
+    ]
    },
    "reachedOn": "API only: GET /api/objects/...?_extend=prop",
    "provider": "openregister",
@@ -4614,7 +4627,11 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Nextcloud app passwords give an outside system its own credential with the user's full rights. OR's scoped path is dead: AuthorizationService.php:257 authorizeJwt / :506 authorizeApiKey have no caller in lib/, so TokenGrantSource::bindFromConsumer (only called at :376) never runs; Consumers CRUD route appinfo/routes.php:13",
-    "change": "scoped-api-tokens"
+    "change": "scoped-api-tokens",
+    "requirement": [
+     "A token or Consumer may carry a grant narrower than its user",
+     "A token carries a required end date and is warned before it lapses (REQ-SAT-003)"
+    ]
    },
    "reachedOn": "Nextcloud personal security settings (app passwords); API /api/consumers",
    "provider": "nextcloud",
@@ -4809,7 +4826,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Middleware/LanguageMiddleware.php:101 (Accept-Language/_lang, Content-Language header :161) registered lib/AppInfo/Application.php:657; translations resolved at lib/Service/Object/RenderObject.php:658",
-    "spec": "openspec/specs/i18n-api-language-negotiation"
+    "spec": "openspec/specs/i18n-api-language-negotiation",
+    "requirement": [
+     "The system MUST accept `?_lang=` and `?language=` query parameters",
+     "Resolution precedence MUST be query → header → register-default → 'nl'"
+    ]
    },
    "reachedOn": "API only: any object GET with Accept-Language",
    "provider": "openregister",
@@ -4979,7 +5000,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Search/ObjectsProvider.php:326 search, registered lib/AppInfo/Application.php:1313",
-    "spec": "openspec/specs/unified-search-provider"
+    "spec": "openspec/specs/unified-search-provider",
+    "requirement": "OpenRegister MUST be the single fleet-wide unified search provider for register objects"
    },
    "reachedOn": "Nextcloud unified search",
    "provider": "openregister",
@@ -5191,7 +5213,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:2105 applyAccessControlFilters in every search query; related-row subquery requires access predicate lib/Service/Query/RelatedRowExistsClause.php",
-    "spec": "openspec/specs/zoeken-filteren"
+    "spec": "openspec/specs/zoeken-filteren",
+    "requirement": "Access control in search results (RBAC and multi-tenancy)"
    },
    "reachedOn": "/tables, /objects, unified search",
    "provider": "openregister",
@@ -5256,7 +5279,12 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "search logged at lib/Service/Object/SearchQueryHandler.php:946; stats incl. non_empty_searches lib/Db/SearchTrailMapper.php:299; routes appinfo/routes.php:1422-1433; UI src/views/logs/SearchTrailIndex.vue:153-211 flags 0-result searches",
-    "spec": "openspec/specs/search-trail-recording"
+    "spec": "openspec/specs/search-trail-recording",
+    "requirement": [
+     "A configurable recording mode admin setting controls which searches are recorded",
+     "openspec/specs/zoeken-filteren :: Saved searches and search trails",
+     "openspec/specs/zoeken-filteren :: Search-trail analytics dashboard"
+    ]
    },
    "reachedOn": "/search-trails",
    "provider": "openregister",
@@ -7591,7 +7619,11 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/McpServerController.php:129 handle (NoAdminRequired, session user) route appinfo/routes.php:1987; objects CRUD tools lib/Mcp/BuiltIn/ObjectsToolProvider.php:151 via ObjectService (RBAC on), registered lib/AppInfo/Application.php:3840",
-    "spec": "openspec/specs/ai-mcp"
+    "spec": "openspec/specs/ai-mcp",
+    "requirement": [
+     "REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools through the existing ABI",
+     "REQ-DERIVED-005 — Writes go through ObjectService with RBAC intact"
+    ]
    },
    "reachedOn": "API only: POST /api/mcp (MCP Streamable HTTP)",
    "provider": "openregister",
