@@ -1,7 +1,7 @@
 # gdpr-data-subject-rights Specification
 
 ## Purpose
-TBD - created by archiving change gdpr-data-subject-rights. Update Purpose after archive.
+How the instance handles a data subject's request under the GDPR. A request is an object with a status lifecycle and a legal deadline, served by an RBAC and tenant scoped service whose fulfilment is audited. Erasure honours legal holds, is previewed with counts and runs only from an approved preview through the recorded destruction, and a data subject can take a machine readable export of their own data.
 
 ## Requirements
 

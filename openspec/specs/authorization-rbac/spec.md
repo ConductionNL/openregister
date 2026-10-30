@@ -1,7 +1,7 @@
 # authorization-rbac Specification
 
 ## Purpose
-TBD - created by archiving change restore-register-schema-rbac-enforcement. Update Purpose after archive.
+Who may do what on registers, schemas and objects, decided on the server. Mutations check the role-based permission, resolution fails closed, no Solr-era bypass remains on the read path, and the annotation vocabulary holds only keys the engine enforces. It also lists everything one principal can reach and revokes it in one act, puts an end date on grants to outside principals, and makes export a permission verb of its own.
 
 ## Requirements
 

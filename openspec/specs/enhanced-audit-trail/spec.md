@@ -1,7 +1,7 @@
 # enhanced-audit-trail Specification
 
 ## Purpose
-TBD - created by archiving change add-hotpath-db-indexes. Update Purpose after archive.
+What the audit trail records and how it stays fast to query. Audit queries, the soft-delete predicate and schema table lookups are index-backed. The trail is written to a configured file sink, a token write names the token, its owner and its consumer, reported content keeps a copy, security-relevant setting changes are announced, a correction is its own act with a reason, edits merge only under an administered window, file metadata is corrected in one form, and a read made on a person's behalf names its cause.
 
 ## Requirements
 
