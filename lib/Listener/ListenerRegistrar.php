@@ -588,6 +588,10 @@ final class ListenerRegistrar {
 		// window is the operation that is always safe.
 		$context->registerEventListener(ObjectDeletingEvent::class, ConceptDeleteGuardListener::class);
 
+		// A frozen object refuses its delete the way it refuses a write, on
+		// every path that dispatches the deleting event.
+		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
+
 		// Named uniqueness constraints — a `refuse` constraint stops the write
 		// naming the combination and the conflicting object; a `report` one
 		// lets it through and records the breach on the object's validation
