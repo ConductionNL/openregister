@@ -232,10 +232,12 @@ class ReplyThreadResolver {
 			// sensitively would drop the thread for that client alone, which
 			// is the kind of bug nobody reproduces.
 			if (strcasecmp((string)$name, $header) === 0) {
-				$raw = (string)$value;
 				if (is_array($value) === true) {
 					$raw = implode(' ', $value);
+					break;
 				}
+
+				$raw = (string)$value;
 				break;
 			}
 		}

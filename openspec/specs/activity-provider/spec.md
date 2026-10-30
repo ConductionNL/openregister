@@ -404,7 +404,7 @@ register clause when the notification carries no register name, so it reads
 **Not yet implemented.** The following existing infrastructure supports this feature:
 
 - All 9 entity events (`ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, `RegisterCreatedEvent`, `RegisterUpdatedEvent`, `RegisterDeletedEvent`, `SchemaCreatedEvent`, `SchemaUpdatedEvent`, `SchemaDeletedEvent`) are already dispatched by the existing services.
-- `Application::register()` already has a `registerEventListeners()` method where the new listener registrations will be added.
+- `Application::register()` calls `ListenerRegistrar::register()`, where the new listener registrations will be added.
 - `IUserSession` is already available throughout the service layer for author resolution.
 - The Pipelinq app (`pipelinq/lib/Activity/`) provides a working reference implementation of the same pattern within the Conduction codebase.
 

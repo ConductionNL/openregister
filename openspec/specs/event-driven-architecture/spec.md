@@ -78,23 +78,23 @@ Pre-mutation event classes (`ObjectCreatingEvent`, `ObjectUpdatingEvent`, `Objec
 - **AND** the old object state from `$event->getOldObject()` MUST be preserved
 
 ### Requirement: Event listeners MUST be registered in Application.php via registerEventListener
-All event listener bindings MUST be declared in `Application::registerEventListeners()` using `IRegistrationContext::registerEventListener()`. This ensures Nextcloud's lazy-loading mechanism defers listener instantiation until the event is actually dispatched.
+All event listener bindings MUST be declared in `ListenerRegistrar::register()` using `IRegistrationContext::registerEventListener()`. This ensures Nextcloud's lazy-loading mechanism defers listener instantiation until the event is actually dispatched.
 
 #### Scenario: SolrEventListener registers for object and schema lifecycle events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `SolrEventListener::class` MUST be registered for `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, `SchemaCreatedEvent`, `SchemaUpdatedEvent`, and `SchemaDeletedEvent`
 - **AND** these registrations MUST use `$context->registerEventListener(EventClass::class, ListenerClass::class)` to enable lazy instantiation
 
 #### Scenario: HookListener registers for both pre and post mutation events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `HookListener::class` MUST be registered for all six object lifecycle events: `ObjectCreatingEvent`, `ObjectUpdatingEvent`, `ObjectDeletingEvent`, `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`
 - **AND** the HookListener MUST delegate execution to `HookExecutor` which loads hooks from the schema's `getHooks()` configuration
 
 #### Scenario: WebhookEventListener registers for object creation events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `WebhookEventListener::class` MUST be registered for `ObjectCreatedEvent`
 - **AND** it MUST dispatch events to `WebhookService::dispatchEvent()` with the extracted payload
 
@@ -879,7 +879,7 @@ locale map unchanged.
   - 39+ typed event classes in `lib/Event/` covering all entity types with Created/Updated/Deleted patterns, plus specialized events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent with StoppableEventInterface; ObjectLockedEvent, ObjectUnlockedEvent, ObjectRevertedEvent; ToolRegistrationEvent, DeepLinkRegistrationEvent, UserProfileUpdatedEvent)
   - 8 event listeners in `lib/Listener/`: WebhookEventListener, HookListener, ObjectChangeListener, ObjectCleanupListener, FileChangeListener, GraphQLSubscriptionListener, CommentsEntityListener, ToolRegistrationListener
   - 3 event listeners in `lib/EventListener/`: SolrEventListener, AbstractNodeFolderEventListener, AbstractNodesFolderEventListener
-  - Full event registration in `Application::registerEventListeners()` with lazy loading via `IRegistrationContext`
+  - Full event registration in `ListenerRegistrar::register()` with lazy loading via `IRegistrationContext`
   - `CloudEventFormatter` (`lib/Service/Webhook/CloudEventFormatter.php`) producing CloudEvents v1.0 payloads with UUID v4 IDs
   - `WebhookService` with three payload strategies (Mapping, CloudEvents, Standard), HMAC signing, filter matching with dot-notation
   - `Webhook` entity with events, filters, retry policy (exponential/linear/fixed), max retries, timeout, HMAC secret, mapping reference, and delivery statistics
@@ -922,7 +922,7 @@ locale map unchanged.
 
 **Status**: Implemented
 
-**Existing Implementation**: The event-driven architecture is built on 39+ custom typed event classes in `lib/Event/` covering Object, Register, Schema, Source, Configuration, View, Agent, Application, Conversation, and Organisation lifecycle operations. Eleven listeners handle these events across two namespaces (`lib/Listener/` and `lib/EventListener/`) for webhooks, Solr indexing, schema hook execution, text extraction, GraphQL subscriptions, note/task cleanup, file change detection, and tool registration. All event listener bindings are declared in `Application::registerEventListeners()` using Nextcloud's lazy-loading `IRegistrationContext`. Pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) implement `StoppableEventInterface` to allow hooks to reject or modify operations before persistence. Post-mutation events carry the full entity state for downstream consumption.
+**Existing Implementation**: The event-driven architecture is built on 39+ custom typed event classes in `lib/Event/` covering Object, Register, Schema, Source, Configuration, View, Agent, Application, Conversation, and Organisation lifecycle operations. Eleven listeners handle these events across two namespaces (`lib/Listener/` and `lib/EventListener/`) for webhooks, Solr indexing, schema hook execution, text extraction, GraphQL subscriptions, note/task cleanup, file change detection, and tool registration. All event listener bindings are declared in `ListenerRegistrar::register()` using Nextcloud's lazy-loading `IRegistrationContext`. Pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) implement `StoppableEventInterface` to allow hooks to reject or modify operations before persistence. Post-mutation events carry the full entity state for downstream consumption.
 
 **Nextcloud Core Integration**: All custom events extend `OCP\EventDispatcher\Event` and are dispatched via `IEventDispatcher::dispatchTyped()`. Listeners implement `OCP\EventDispatcher\IEventListener`. This makes every OpenRegister event natively consumable by any other Nextcloud app by simply registering a listener in their `Application::register()`. The typed event approach ensures compile-time type safety and IDE discoverability. Webhook delivery uses Nextcloud's `IJobList` with `QueuedJob` (WebhookDeliveryJob) and `TimedJob` (WebhookRetryJob) for async processing. The pre-mutation pattern (Creating/Updating/Deleting events with StoppableEventInterface) follows PSR-14 and integrates cleanly with Nextcloud's event propagation model.
 

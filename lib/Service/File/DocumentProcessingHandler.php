@@ -26,20 +26,18 @@ use OCA\OpenRegister\Db\AnonymisationLog;
 use OCA\OpenRegister\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
-use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\IL10N;
 use OCP\IUserSession;
-use PhpOffice\PhpWord\IOFactory;
 use Psr\Log\LoggerInterface;
-use Smalot\PdfParser\Parser as PdfParser;
 use Throwable;
 use ZipArchive;
 
@@ -58,8 +56,8 @@ use ZipArchive;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Orchestrates the Word/PDF/text replacement pipelines plus SAPP + PhpWord integration.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   File / PDF / PhpWord / sanitiser collaborators are required by design.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Orchestrates the Word/PDF/text replacement pipelines.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   File / PDF / DOCX / sanitiser collaborators are required by design.
  */
 class DocumentProcessingHandler {
 
@@ -797,7 +795,7 @@ class DocumentProcessingHandler {
 	 * Anonymise a sanitisable Office document (DOCX / ODT).
 	 *
 	 * Runs the document sanitiser to produce a cleaned derivative, then runs
-	 * the existing PhpWord entity walker over the cleaned bytes. The walker's
+	 * the DOCX word replacement over the cleaned bytes. The replacement's
 	 * output is written to the original file's parent folder under $outputName.
 	 * The sanitisation audit report is retained on {@see getLastSanitizationReport}.
 	 *
@@ -839,7 +837,7 @@ class DocumentProcessingHandler {
 		$fileExtension = strtolower(pathinfo($node->getName(), PATHINFO_EXTENSION));
 
 		// ODT and other non-DOCX office text route through the text replacer;
-		// DOCX runs the PhpWord walker. Both read the sanitised temp file.
+		// DOCX runs the DOCX word replacement. Both read the sanitised temp file.
 		if ($fileExtension === 'docx') {
 			return $this->replaceWordsInWordDocument(
 				node: $node,
@@ -936,15 +934,15 @@ class DocumentProcessingHandler {
 	/**
 	 * Replace words in a Word document.
 	 *
-	 * This method uses PHPWord to load a Word document, recursively process all elements
-	 * (including headers, footers, tables, lists), apply text replacements, and save
-	 * the result as a new file in the same parent folder.
+	 * Copies the DOCX to a temporary file, lets {@see DocxTextReplacer} edit
+	 * its text parts (body, headers, footers, notes, comments) in place, and
+	 * saves the result as a new file in the same parent folder.
 	 *
 	 * @param Node $node The file node to process.
 	 * @param array $replacements Array of replacement mappings (search => replace).
 	 * @param string $outputName Name for the output file.
 	 * @param string|null $sanitizedSourcePath Optional pre-sanitised source file path; when
-	 *                                         provided, the walker reads these cleaned bytes
+	 *                                         provided, these cleaned bytes are edited
 	 *                                         instead of the original node content.
 	 *
 	 * @return File The new file node with replaced content.
@@ -955,11 +953,6 @@ class DocumentProcessingHandler {
 	 * @psalm-param    array<string, string> $replacements
 	 * @phpstan-return File
 	 * @psalm-return   File
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)          IOFactory::load is standard PhpWord pattern
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Document processing requires many conditional transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Document processing requires many conditional branches
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex document processing requires extensive code
 	 */
 	private function replaceWordsInWordDocument(
 		Node $node,
@@ -972,169 +965,22 @@ class DocumentProcessingHandler {
 			throw new Exception('Failed to create temporary file');
 		}
 
-		if ($sanitizedSourcePath !== null) {
-			// Walker reads the sanitised derivative, not the original bytes.
-			if (copy($sanitizedSourcePath, $tempFile) === false) {
-				unlink($tempFile);
+		try {
+			if ($sanitizedSourcePath === null) {
+				$this->copyNodeTo(node: $node, target: $tempFile);
+			} elseif (copy($sanitizedSourcePath, $tempFile) === false) {
 				throw new Exception('Failed to copy sanitised source for processing');
 			}
-		}//end if
 
-		if ($sanitizedSourcePath === null) {
-			// Get the file content as a stream and save to a temp file.
-			$stream = $node->fopen('r');
-			$tempStream = fopen($tempFile, 'w');
-			if ($tempStream === false) {
-				unlink($tempFile);
-				throw new Exception('Failed to open temporary file for writing');
-			}
+			(new DocxTextReplacer())->replaceInFile(path: $tempFile, replacements: $replacements);
 
-			stream_copy_to_stream($stream, $tempStream);
-			fclose($tempStream);
-			fclose($stream);
-		}//end if
-
-		try {
-			// Snapshot the process-static PhpWord style names BEFORE loading
-			// this document. PhpWord\Style is a process-static collection that
-			// the Word2007 reader APPENDS to on every IOFactory::load() (it is
-			// never reset), so in a long-lived PHP-FPM worker it accumulates
-			// styles from previously-processed documents. We diff against this
-			// snapshot below so the Numbering workaround only touches THIS
-			// document's styles and never mutates a prior document's — which
-			// would otherwise be a cross-request state bleed.
-			$preLoadStyleNames = array_keys(\PhpOffice\PhpWord\Style::getStyles());
-
-			// Load the document.
-			$phpWord = IOFactory::load($tempFile);
-
-			// Helper: Replace text in all elements recursively.
-			$replaceInElements = function (array $elements, array $replacements) use (&$replaceInElements): void {
-				foreach ($elements as $element) {
-					// Replace in text runs.
-					if (method_exists($element, 'getText') === true && method_exists($element, 'setText') === true) {
-						$text = $element->getText();
-						foreach ($replacements as $original => $replacement) {
-							$text = str_ireplace($original, $replacement, $text);
-						}
-
-						$element->setText($text);
-					}
-
-					// Replace in tables.
-					if (method_exists($element, 'getRows') === true) {
-						foreach ($element->getRows() as $row) {
-							foreach ($row->getCells() as $cell) {
-								$replaceInElements($cell->getElements(), $replacements);
-							}
-						}
-					}
-
-					// Replace in lists.
-					if (method_exists($element, 'getItems') === true) {
-						foreach ($element->getItems() as $item) {
-							$replaceInElements($item->getElements(), $replacements);
-						}
-					}
-
-					// Replace in nested elements.
-					if (method_exists($element, 'getElements') === true) {
-						$replaceInElements($element->getElements(), $replacements);
-					}
-				}//end foreach
-			};
-
-			// Replace in headers.
-			foreach ($phpWord->getSections() as $section) {
-				foreach ($section->getHeaders() as $header) {
-					$replaceInElements($header->getElements(), $replacements);
-				}
-			}
-
-			// Replace in main content.
-			foreach ($phpWord->getSections() as $section) {
-				$replaceInElements($section->getElements(), $replacements);
-			}
-
-			// Replace in footers.
-			foreach ($phpWord->getSections() as $section) {
-				foreach ($section->getFooters() as $footer) {
-					$replaceInElements($footer->getElements(), $replacements);
-				}
-			}
-
-			// PhpWord roundtrip-safety workaround for the Word2007 Numbering
-			// bug. Chain of events upstream:
-			// 1. Shared\XMLReader::getAttribute() at line 187 normalises
-			// every empty-string attribute value to null:
-			// return ($return == '') ? null : $return;
-			// 2. Reader\Word2007\Numbering at line 53 stores that null
-			// verbatim into $abstract['type'] (the readLevel() helper
-			// filters nulls; the abstract-level reader does not).
-			// 3. Style::addNumberingStyle dispatches the array through
-			// AbstractStyle::setStyleByArray, which calls setType($value)
-			// on each entry.
-			// 4. Style\Numbering::setType has a strict `string` typehint
-			// since PhpWord 1.x; null → TypeError.
-			// 5. Writer\Word2007\Part\Numbering lines 68–70 unconditionally
-			// emits <w:multiLevelType> via writeAttribute('w:val',
-			// $style->getType()). When getType() is null PHP coerces
-			// to "", so the writer poisons its own output:
-			// <w:multiLevelType w:val=""/>. Re-loading that file then
-			// triggers (1)–(4) and the read crashes.
-			//
-			// The fix here works at the OpenRegister boundary: before
-			// calling the writer we walk THIS document's Numbering styles
-			// (scoped via the pre-load snapshot so we never mutate a prior
-			// document's styles still resident in the static collection) and
-			// ensure each $type is one of the valid enum values
-			// ('singleLevel'|'multilevel'|'hybridMultilevel'). We only coerce
-			// the null/'' case (the TypeError trigger); a legitimately-typed
-			// 'multilevel' style — e.g. from a LibreOffice-native list — is
-			// left untouched so its rendering semantics are preserved. Word
-			// emits hybridMultilevel for almost every list it produces, so
-			// that's the safest default for the unspecified case — Word
-			// readers (including PhpWord's own re-read) treat the result
-			// identically to an unspecified type. Upstream fix tracked
-			// separately: the writer should gate the <w:multiLevelType> emit
-			// the same way it already gates other properties (lines 116–124
-			// of Writer/Word2007/Part/Numbering.php).
-			$thisDocStyleNames = array_diff(
-				array_keys(\PhpOffice\PhpWord\Style::getStyles()),
-				$preLoadStyleNames
-			);
-			foreach (\PhpOffice\PhpWord\Style::getStyles() as $styleName => $style) {
-				if (in_array($styleName, $thisDocStyleNames, true) === false) {
-					// Belongs to a previously-processed document — leave it alone.
-					continue;
-				}
-
-				if ($style instanceof \PhpOffice\PhpWord\Style\Numbering === false) {
-					continue;
-				}
-
-				$currentType = $style->getType();
-				if ($currentType === null || $currentType === '') {
-					$style->setType('hybridMultilevel');
-				}
-			}
-
-			// Save the modified document to a new temp file.
-			$outputTempFile = tempnam(sys_get_temp_dir(), 'openregister_word_output_');
-			IOFactory::createWriter($phpWord, 'Word2007')->save($outputTempFile);
-
-			// Get the parent folder and create the new file.
 			$parentFolder = $node->getParent();
 			if ($parentFolder->nodeExists($outputName) === true) {
 				$parentFolder->get($outputName)->delete();
 			}
 
-			$outputStream = fopen($outputTempFile, 'r');
-			$newFile = $parentFolder->newFile(path: $outputName, content: $outputStream);
-			// Do NOT call fclose($outputStream) here; Nextcloud handles the stream lifecycle internally.
-			// Clean up temp files.
-			unlink($tempFile);
-			unlink($outputTempFile);
+			// Nextcloud closes the stream once the file is written.
+			$newFile = $parentFolder->newFile(path: $outputName, content: fopen($tempFile, 'r'));
 
 			$this->logger->debug(
 				message: '[DocumentProcessingHandler] Words replaced in Word document',
@@ -1148,12 +994,7 @@ class DocumentProcessingHandler {
 			);
 
 			return $newFile;
-		} catch (Exception $e) {
-			// Clean up temp file if it exists.
-			if (file_exists($tempFile) === true) {
-				unlink($tempFile);
-			}
-
+		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[DocumentProcessingHandler] Failed to replace words in Word document: ' . $e->getMessage(),
 				context: [
@@ -1163,8 +1004,34 @@ class DocumentProcessingHandler {
 				]
 			);
 			throw new Exception('Failed to replace words in Word document: ' . $e->getMessage(), 0, $e);
+		} finally {
+			if (file_exists($tempFile) === true) {
+				unlink($tempFile);
+			}
 		}//end try
 	}//end replaceWordsInWordDocument()
+
+	/**
+	 * Copy a file node's bytes into a local file.
+	 *
+	 * @param Node   $node   The source file node.
+	 * @param string $target The local file to fill.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the source cannot be read or the target written.
+	 */
+	private function copyNodeTo(Node $node, string $target): void {
+		$stream = $node->fopen('r');
+		$tempStream = fopen($target, 'w');
+		if ($stream === false || $tempStream === false) {
+			throw new Exception('Failed to open the document for processing');
+		}
+
+		stream_copy_to_stream($stream, $tempStream);
+		fclose($tempStream);
+		fclose($stream);
+	}//end copyNodeTo()
 
 	/**
 	 * Replace words in a text-based document.
@@ -1227,8 +1094,8 @@ class DocumentProcessingHandler {
 	 * Replace words in a PDF document via the SAPP byte-level pipeline.
 	 *
 	 * Routes to {@see PdfTextReplacer} (text replacement with font switch
-	 * + Helvetica fallback) and {@see PdfMetadataSanitizer} (/Info and
-	 * XMP stripping). The output is re-extracted post-replacement; residual
+	 * + Helvetica fallback, then /Info and XMP stripping via
+	 * {@see PdfTextReplacer::sanitizeMetadata()}). The output is re-extracted post-replacement; residual
 	 * substitution-map keys are always logged as a PII-free warning, and the
 	 * `$strict` flag then decides the outcome: lenient (default, ad-hoc
 	 * replace) writes the partial PDF for docx parity, strict (entity
@@ -1298,9 +1165,7 @@ class DocumentProcessingHandler {
 		// to the `ocr-document-scanning` capability rather than producing
 		// an empty no-op output via the byte-replace path.
 		try {
-			$parser = new PdfParser();
-			$parsedPdf = $parser->parseContent($content);
-			$extracted = $parsedPdf->getText();
+			$extracted = (new PdfExtractor(logger: $this->logger))->extractText(pdfBytes: $content);
 		} catch (\Throwable $e) {
 			// The smalot parser rejects encrypted/secured PDFs with a message
 			// rather than a typed exception; map that to the caller-correctable 422.
@@ -1331,7 +1196,6 @@ class DocumentProcessingHandler {
 		}
 
 		$replacer = new PdfTextReplacer(logger: $this->logger);
-		$sanitizer = new PdfMetadataSanitizer(logger: $this->logger);
 
 		// Run text replacement first; metadata sanitisation operates on
 		// the result so /Info / XMP changes survive the rebuild.
@@ -1379,31 +1243,7 @@ class DocumentProcessingHandler {
 		}
 
 		try {
-			// Fail CLOSED: if SAPP cannot reparse the replaced bytes (returns
-			// false rather than throwing) we must NOT fall through and write
-			// the un-sanitised `$replacedBytes` — that still carries the
-			// original `/Info` dict + XMP stream (document PII), defeating the
-			// sanitiser. Treat a false/empty result as a hard pipeline error.
-			$doc = \ddn\sapp\PDFDoc::from_string(buffer: $replacedBytes);
-			if ($doc === false) {
-				throw new PdfAnonymisationException(
-					reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-					message: 'SAPP failed to reparse replaced PDF for metadata sanitisation',
-					diagnostic: ['stage' => 'sanitize.reparse']
-				);
-			}
-
-			$sanitizer->sanitize(doc: $doc);
-			$serialised = $doc->to_pdf_file_s(rebuild: true);
-			if ($serialised === false || $serialised === '') {
-				throw new PdfAnonymisationException(
-					reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-					message: 'SAPP serialise after metadata sanitisation returned empty',
-					diagnostic: ['stage' => 'sanitize.serialise']
-				);
-			}
-
-			$replacedBytes = $serialised;
+			$replacedBytes = $replacer->sanitizeMetadata(pdfBytes: $replacedBytes);
 		} catch (PdfAnonymisationException $e) {
 			// Sanitiser-raised (or the fail-closed guards above) — surface to the caller.
 			throw $e;
