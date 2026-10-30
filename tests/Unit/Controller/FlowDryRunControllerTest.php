@@ -41,7 +41,7 @@ class FlowDryRunControllerTest extends TestCase {
 	}
 
 	private function controller(): FlowDryRunController {
-		return new FlowDryRunController(appName: 'openregister', request: $this->request, access: $this->access, service: $this->service);
+		return new FlowDryRunController(appName: 'openregister', request: $this->request, access: $this->access, service: $this->service, logger: new \Psr\Log\NullLogger());
 	}
 
 	private function signedIn(bool $mayUpdate): void {
@@ -90,5 +90,15 @@ class FlowDryRunControllerTest extends TestCase {
 
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 		self::assertSame($steps, $response->getData());
+	}
+
+	public function testAnyOtherFailureIsAGeneric500WithoutTheMessage(): void {
+		$this->signedIn(mayUpdate: true);
+		$this->service->method('dryRun')->willThrowException(new \Exception('SQLSTATE[42P01]: relation oc_secret does not exist'));
+
+		$response = $this->controller()->dryRun('f1');
+
+		self::assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		self::assertSame(['error' => 'The dry run could not be completed.'], $response->getData());
 	}
 }
