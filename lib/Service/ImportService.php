@@ -616,6 +616,111 @@ class ImportService implements ObjectImporterInterface {
 			);
 		}
 
+		$decoded = $this->decodeJsonImportFile(filePath: $filePath);
+
+		// A null register could not be resolved by slug: a register bundle
+		// auto-creates it with its schemas (REQ-IMP-AC-01/03), anything else
+		// fails clearly, naming the missing slug (REQ-IMP-AC-02).
+		if ($register === null) {
+			[$register, $schema] = $this->registerFromBundle(
+				decoded: $decoded,
+				target: ['schema' => $schema, 'registerSlug' => $registerSlug]
+			);
+		}
+
+		if ($schema === null) {
+			throw new InvalidArgumentException('JSON import requires a specific schema');
+		}
+
+		return $this->runJsonImportJob(
+			objects: $this->jsonImportObjects(decoded: $decoded),
+			job: [
+				'register' => $register,
+				'schema' => $schema,
+				'_rbac' => $_rbac,
+				'_multitenancy' => $_multitenancy,
+				'currentUser' => $currentUser,
+				'pack' => $pack,
+				'dryRun' => $dryRun,
+				'startTime' => $startTime,
+			]
+		);
+	}//end importFromJson()
+
+	/**
+	 * Run a JSON import as one import job, tagging its audit rows with the job id.
+	 *
+	 * @param array<mixed>         $objects The objects to import
+	 * @param array<string, mixed> $job     The register, schema, RBAC, multitenancy, user, pack, dryRun and startTime
+	 *
+	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
+	 */
+	private function runJsonImportJob(array $objects, array $job): array {
+		$importJobId = Uuid::v4()->toRfc4122();
+
+		try {
+			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+
+			return [
+				'JSON' => $this->importJsonObjects(objects: $objects, job: $job),
+				'importJobId' => $importJobId,
+			];
+		} finally {
+			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
+		}
+	}//end runJsonImportJob()
+
+	/**
+	 * Resolve every JSON import row, then validate (dry run) or save them.
+	 *
+	 * @param array<mixed>         $objects The objects to import
+	 * @param array<string, mixed> $job     The register, schema, RBAC, multitenancy, user, pack, dryRun and startTime
+	 *
+	 * @return array<string, mixed> The summary
+	 */
+	private function importJsonObjects(array $objects, array $job): array {
+		$schema = $job['schema'];
+
+		// Phase 1: resolve every row to an (uuid, body) pair.
+		$resolution = $this->resolveJsonImportRows(
+			objects: $objects,
+			run: ['pack' => $job['pack'], 'propertyKeys' => array_flip(array_keys($schema->getProperties()))]
+		);
+
+		// Phase 2: a dry run validates every resolved row and saves nothing.
+		$summary = $resolution['summary'];
+		if ($job['dryRun'] === true) {
+			$summary = $this->buildDryRunSummary(
+				summary: $summary,
+				objects: array_column($resolution['rows'], 'body'),
+				schema: $schema,
+				startTime: $job['startTime']
+			);
+		}
+
+		if ($job['dryRun'] === false) {
+			$summary = $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $summary] + $job);
+		}
+
+		$summary['schema'] = [
+			'id' => $schema->getId(),
+			'title' => $schema->getTitle(),
+			'slug' => $schema->getSlug(),
+		];
+
+		return $summary;
+	}//end importJsonObjects()
+
+	/**
+	 * Read and decode a JSON import file.
+	 *
+	 * @param string $filePath Path to the JSON file
+	 *
+	 * @return array<mixed> The decoded document
+	 *
+	 * @throws InvalidArgumentException When the file does not hold a JSON array or object
+	 */
+	private function decodeJsonImportFile(string $filePath): array {
 		$raw = file_get_contents($filePath);
 		$decoded = null;
 		if ($raw !== false) {
@@ -626,237 +731,273 @@ class ImportService implements ObjectImporterInterface {
 			throw new InvalidArgumentException('JSON import expects an array of objects');
 		}
 
-		// Register-bundle auto-create-or-fail-clearly (REQ-IMP-AC-01/02/03).
-		// The caller passes $register=null when the target register could not
-		// be resolved by slug. Detect whether the payload is a register-bundle
-		// envelope (an object — not a list — carrying `components.registers`
-		// with the register definition, the same shape the existing
-		// configuration/register-import path understands) versus a plain
-		// object list: a bundle auto-creates its register + schemas; anything
-		// else fails clearly, naming the missing slug.
-		if ($register === null) {
-			$isBundle = array_is_list($decoded) === false
-				&& isset($decoded['components']['registers']) === true
-				&& is_array($decoded['components']['registers']) === true
-				&& count($decoded['components']['registers']) > 0;
+		return $decoded;
+	}//end decodeJsonImportFile()
 
-			if ($isBundle === false) {
-				throw new RegisterNotFoundException(
-					registerSlugOrId: $registerSlug ?? 'unknown',
-					code: 404,
-					remedies: 'Create the register first, or supply a full register bundle '
-						. '(a register definition together with its schemas) to auto-create it.'
-				);
-			}
+	/**
+	 * Resolve the register (and schema) of a JSON import from a register bundle.
+	 *
+	 * A bundle is an object (not a list) carrying a non-empty `components.registers`,
+	 * the shape the configuration import understands.
+	 *
+	 * @param array<mixed>         $decoded The decoded document
+	 * @param array<string, mixed> $target  The schema hint and the register slug the caller asked for
+	 *
+	 * @return array{0: Register, 1: ?Schema} The register and the schema
+	 *
+	 * @throws RegisterNotFoundException When the document is not a register bundle
+	 */
+	private function registerFromBundle(array $decoded, array $target): array {
+		$isBundle = array_is_list($decoded) === false
+			&& isset($decoded['components']['registers']) === true
+			&& is_array($decoded['components']['registers']) === true
+			&& count($decoded['components']['registers']) > 0;
 
-			[$register, $schema] = $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $schema);
-		}//end if
-
-		if ($schema === null) {
-			throw new InvalidArgumentException('JSON import requires a specific schema');
+		if ($isBundle === false) {
+			throw new RegisterNotFoundException(
+				registerSlugOrId: $target['registerSlug'] ?? 'unknown',
+				code: 404,
+				remedies: 'Create the register first, or supply a full register bundle '
+					. '(a register definition together with its schemas) to auto-create it.'
+			);
 		}
 
-		// Accept a bare array, a `{ "results": [...] }` envelope (the shape
-		// some object-list endpoints return), or — for a register-bundle
-		// import — the bundle's own `components.objects` list.
-		$objects = $decoded;
+		return $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $target['schema']);
+	}//end registerFromBundle()
+
+	/**
+	 * The object list of a JSON import document.
+	 *
+	 * Accepts a bare list, a `{ "results": [...] }` envelope, or a register
+	 * bundle's own `components.objects` list.
+	 *
+	 * @param array<mixed> $decoded The decoded document
+	 *
+	 * @return array<mixed> The objects to import
+	 */
+	private function jsonImportObjects(array $decoded): array {
 		if (isset($decoded['components']['objects']) === true && is_array($decoded['components']['objects']) === true) {
-			$objects = $decoded['components']['objects'];
-		} elseif (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
-			$objects = $decoded['results'];
+			return $decoded['components']['objects'];
 		}
 
-		// ExportService::exportToJson() emits ObjectEntity::jsonSerialize() —
-		// schema properties at the top level PLUS an `@self` block and
-		// entity-level fields (uuid/version/slug/dates) that are NOT schema
-		// properties. Persist each object through the single-object saveObject()
-		// path — the same one the REST create/update uses — which reliably
-		// upserts by uuid for this register/schema. (The bulk saveObjects()
-		// path silently skips these objects for dedicated-table schemas.) The
-		// body is reduced to the schema's own properties, with empty strings
-		// coerced to null.
-		$propertyKeys = array_flip(array_keys($schema->getProperties()));
+		if (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
+			return $decoded['results'];
+		}
 
-		$importJobId = Uuid::v4()->toRfc4122();
+		return $decoded;
+	}//end jsonImportObjects()
 
-		try {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+	/**
+	 * Resolve every JSON import row to an upsert uuid and a body, and start the summary.
+	 *
+	 * With a pack each object is mapped through it; a row with mapping errors is
+	 * reported and excluded, never partially mapped or saved. Without a pack the
+	 * body is the object reduced to the schema's own properties.
+	 *
+	 * @param array<mixed>         $objects The objects to import
+	 * @param array<string, mixed> $run     The pack (or null) and the schema property keys as a set
+	 *
+	 * @return array{rows: list<array<string, mixed>>, summary: array<string, mixed>} The rows and the summary so far
+	 */
+	private function resolveJsonImportRows(array $objects, array $run): array {
+		$summary = [
+			'found' => count($objects),
+			'created' => [],
+			'updated' => [],
+			'unchanged' => [],
+			'errors' => [],
+			// Non-fatal findings, such as a dropped undeclared property.
+			'warnings' => [],
+		];
 
-			$summary = [
-				'found' => count($objects),
-				'created' => [],
-				'updated' => [],
-				'unchanged' => [],
-				'errors' => [],
-				// Non-fatal findings the caller still needs to see. A dropped
-				// undeclared property is the first of these: the row imports
-				// fine and is quietly missing a field.
-				'warnings' => [],
-			];
-
-			// Phase 1: resolve every row to an (uuid, body) pair. When a pack is
-			// given, each source object is mapped through it first (source
-			// resolved via JSON-Pointer-style paths against the raw decoded
-			// object) — a row with mapping errors (missing required source, or
-			// an unresolved lookup/reference — the literal-leak guard) is
-			// reported and excluded, never partially mapped or saved.
-			$resolved = [];
-			foreach ($objects as $rowIndex => $raw) {
-				if (is_array($raw) === false) {
-					continue;
-				}
-
-				// Keys are list indexes for a JSON array export; cast guards
-				// against a decoded object-with-string-keys envelope.
-				$rowNumber = ((int)$rowIndex + 1);
-				if ($pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $rowNumber) === true) {
-					continue;
-				}
-
-				if ($pack !== null) {
-					$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $rowNumber);
-					if (empty($mapped['errors']) === false) {
-						foreach ($mapped['errors'] as $mappingError) {
-							$summary['errors'][] = $this->formatMappingError(error: $mappingError);
-						}
-
-						continue;
-					}
-
-					$body = $mapped['data'];
-					$uuid = $body['id'] ?? null;
-					unset($body['id']);
-					if ($uuid !== null) {
-						$uuid = (string)$uuid;
-					}
-				} else {
-					// Upsert key: prefer @self.id, then a top-level id/uuid.
-					$uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
-					if ($uuid !== null) {
-						$uuid = (string)$uuid;
-					}
-
-					// Body = schema properties only; empty strings → null.
-					$body = array_intersect_key($raw, $propertyKeys);
-
-					// Report what that intersection just threw away. An import
-					// drops undeclared keys BEFORE the save, so the warning at
-					// the DB write boundary never sees them — an imported field
-					// the schema does not declare would vanish with nothing
-					// anywhere saying so. `@`/`_`/`id` are envelope and metadata,
-					// never user data, so they are not losses.
-					$importDropped = [];
-					foreach (array_keys($raw) as $rawKey) {
-						$rawName = (string)$rawKey;
-						if (array_key_exists($rawName, $propertyKeys) === true) {
-							continue;
-						}
-
-						if ($rawName === '' || $rawName === 'id' || $rawName === 'uuid'
-							|| $rawName[0] === '@' || $rawName[0] === '_'
-						) {
-							continue;
-						}
-
-						$importDropped[] = $rawName;
-					}
-
-					if ($importDropped !== []) {
-						$droppedPlural = 'ies';
-						if (count($importDropped) === 1) {
-							$droppedPlural = 'y';
-						}
-
-						$summary['warnings'][] = sprintf(
-							'Row %d: dropped %d propert%s the schema does not declare: %s.',
-							$rowNumber,
-							count($importDropped),
-							$droppedPlural,
-							implode(', ', $importDropped)
-						);
-					}
-
-					foreach ($body as $key => $value) {
-						if ($value === '') {
-							$body[$key] = null;
-						}
-					}
-				}//end if
-
-				$resolved[] = [
-					'uuid' => $uuid,
-					'body' => $body,
-					'name' => ($raw['name'] ?? $uuid),
-				];
-			}//end foreach
-
-			// Phase 2a: dry-run — validate every resolved row, save NOTHING.
-			if ($dryRun === true) {
-				$summary = $this->buildDryRunSummary(
-					summary: $summary,
-					objects: array_column($resolved, 'body'),
-					schema: $schema,
-					startTime: $startTime
-				);
-
-				$summary['schema'] = [
-					'id' => $schema->getId(),
-					'title' => $schema->getTitle(),
-					'slug' => $schema->getSlug(),
-				];
-
-				return [
-					'JSON' => $summary,
-					'importJobId' => $importJobId,
-				];
+		$rows = [];
+		foreach ($objects as $rowIndex => $raw) {
+			if (is_array($raw) === false) {
+				continue;
 			}
 
-			// Phase 2b: persist each resolved row through the same single-object
-			// saveObject() path the REST create/update uses (unchanged from the
-			// non-pack behaviour — the bulk saveObjects() path silently skips
-			// dedicated-table schemas, see the class-level note above).
-			foreach ($resolved as $row) {
-				try {
-					$saved = $this->objectService->saveObject(
-						object: $row['body'],
-						register: $register,
-						schema: $schema,
-						uuid: $row['uuid'],
-						_rbac: $_rbac,
-						_multitenancy: $_multitenancy,
-						currentUser: $currentUser
-					);
+			// Keys are list indexes for a JSON array export; the cast guards an object-with-string-keys envelope.
+			$run['rowNumber'] = ((int)$rowIndex + 1);
+			$resolved = $this->resolveJsonImportRow(raw: $raw, run: $run);
+			array_push($summary['errors'], ...$resolved['errors']);
+			if ($resolved['warning'] !== null) {
+				$summary['warnings'][] = $resolved['warning'];
+			}
 
-					if ($row['uuid'] !== null) {
-						$summary['updated'][] = $saved->getUuid();
-					} else {
-						$summary['created'][] = $saved->getUuid();
-					}
-				} catch (\Throwable $e) {
-					$summary['errors'][] = [
-						'object' => $row['name'],
-						'error' => $e->getMessage(),
-						'type' => get_class($e),
-					];
-				}//end try
-			}//end foreach
+			if ($resolved['row'] !== null) {
+				$rows[] = $resolved['row'];
+			}
+		}//end foreach
 
-			$summary['schema'] = [
-				'id' => $schema->getId(),
-				'title' => $schema->getTitle(),
-				'slug' => $schema->getSlug(),
-			];
+		return ['rows' => $rows, 'summary' => $summary];
+	}//end resolveJsonImportRows()
 
-			$finalResult = [
-				'JSON' => $summary,
-				'importJobId' => $importJobId,
-			];
+	/**
+	 * Resolve one JSON import row.
+	 *
+	 * @param array<string, mixed> $raw The source object
+	 * @param array<string, mixed> $run The pack, the schema property keys and the row number
+	 *
+	 * @return array{row: array<string, mixed>|null, errors: list<array<string, mixed>>, warning: string|null}
+	 *     The resolved row (null when skipped or refused), its errors and its warning
+	 */
+	private function resolveJsonImportRow(array $raw, array $run): array {
+		$pack = $run['pack'];
+		if ($pack === null) {
+			return $this->resolvePlainJsonImportRow(raw: $raw, run: $run);
+		}
 
-			return $finalResult;
-		} finally {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
-		}//end try
-	}//end importFromJson()
+		$outcome = ['row' => null, 'errors' => [], 'warning' => null];
+		if ($this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $run['rowNumber']) === true) {
+			return $outcome;
+		}
+
+		$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $run['rowNumber']);
+		if (empty($mapped['errors']) === false) {
+			$outcome['errors'] = array_values(
+				array_map(fn (array $error): array => $this->formatMappingError(error: $error), $mapped['errors'])
+			);
+			return $outcome;
+		}
+
+		$body = $mapped['data'];
+		$uuid = $body['id'] ?? null;
+		unset($body['id']);
+		if ($uuid !== null) {
+			$uuid = (string)$uuid;
+		}
+
+		$outcome['row'] = ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)];
+		return $outcome;
+	}//end resolveJsonImportRow()
+
+	/**
+	 * Resolve one JSON import row without a pack.
+	 *
+	 * The upsert key is `@self.id`, then a top-level `id` or `uuid`. The body is
+	 * the object reduced to the schema's properties, with empty strings as null.
+	 *
+	 * @param array<string, mixed> $raw The source object
+	 * @param array<string, mixed> $run The schema property keys and the row number
+	 *
+	 * @return array{row: array<string, mixed>, errors: list<never>, warning: string|null}
+	 *     The resolved row and the dropped-property warning, if any
+	 */
+	private function resolvePlainJsonImportRow(array $raw, array $run): array {
+		$uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
+		if ($uuid !== null) {
+			$uuid = (string)$uuid;
+		}
+
+		$body = array_intersect_key($raw, $run['propertyKeys']);
+		foreach ($body as $key => $value) {
+			if ($value === '') {
+				$body[$key] = null;
+			}
+		}
+
+		return [
+			'row' => ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)],
+			'errors' => [],
+			'warning' => $this->droppedPropertiesWarning(raw: $raw, run: $run),
+		];
+	}//end resolvePlainJsonImportRow()
+
+	/**
+	 * The warning for properties a row carries that the schema does not declare.
+	 *
+	 * An import drops undeclared keys before the save, so the warning at the
+	 * database write never sees them. `@`/`_` keys, `id` and `uuid` are envelope
+	 * and metadata, never user data, so they are not reported.
+	 *
+	 * @param array<string, mixed> $raw The source object
+	 * @param array<string, mixed> $run The schema property keys and the row number
+	 *
+	 * @return string|null The warning, or null when nothing was dropped
+	 */
+	private function droppedPropertiesWarning(array $raw, array $run): ?string {
+		$dropped = [];
+		foreach (array_keys($raw) as $rawKey) {
+			$rawName = (string)$rawKey;
+			if (array_key_exists($rawName, $run['propertyKeys']) === false && $this->isUserDataKey(key: $rawName) === true) {
+				$dropped[] = $rawName;
+			}
+		}
+
+		if ($dropped === []) {
+			return null;
+		}
+
+		$plural = 'ies';
+		if (count($dropped) === 1) {
+			$plural = 'y';
+		}
+
+		return sprintf(
+			'Row %d: dropped %d propert%s the schema does not declare: %s.',
+			$run['rowNumber'],
+			count($dropped),
+			$plural,
+			implode(', ', $dropped)
+		);
+	}//end droppedPropertiesWarning()
+
+	/**
+	 * Whether an object key holds user data rather than envelope or metadata.
+	 *
+	 * `@`/`_` keys, `id` and `uuid` are envelope and metadata.
+	 *
+	 * @param string $key The object key
+	 *
+	 * @return bool True for a user data key
+	 */
+	private function isUserDataKey(string $key): bool {
+		return $key !== '' && $key !== 'id' && $key !== 'uuid' && $key[0] !== '@' && $key[0] !== '_';
+	}//end isUserDataKey()
+
+	/**
+	 * Save every resolved JSON import row and record the outcome in the summary.
+	 *
+	 * Rows go through the single-object saveObject() path the REST create/update
+	 * uses, which upserts by uuid; the bulk path silently skips dedicated-table
+	 * schemas. A failing row is reported and the import goes on.
+	 *
+	 * @param list<array<string, mixed>> $rows   The resolved rows
+	 * @param array<string, mixed>       $target The summary, register, schema, RBAC, multitenancy and user
+	 *
+	 * @return array<string, mixed> The summary with created, updated and errors filled in
+	 */
+	private function saveJsonImportRows(array $rows, array $target): array {
+		$summary = $target['summary'];
+		foreach ($rows as $row) {
+			try {
+				$saved = $this->objectService->saveObject(
+					object: $row['body'],
+					register: $target['register'],
+					schema: $target['schema'],
+					uuid: $row['uuid'],
+					_rbac: $target['_rbac'],
+					_multitenancy: $target['_multitenancy'],
+					currentUser: $target['currentUser']
+				);
+
+				$outcome = 'created';
+				if ($row['uuid'] !== null) {
+					$outcome = 'updated';
+				}
+
+				$summary[$outcome][] = $saved->getUuid();
+			} catch (\Throwable $e) {
+				$summary['errors'][] = [
+					'object' => $row['name'],
+					'error' => $e->getMessage(),
+					'type' => get_class($e),
+				];
+			}//end try
+		}//end foreach
+
+		return $summary;
+	}//end saveJsonImportRows()
 
 	/**
 	 * Resolve or auto-create a register (and its schemas) from a register-bundle
