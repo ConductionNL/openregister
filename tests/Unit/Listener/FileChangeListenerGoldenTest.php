@@ -97,8 +97,11 @@ class FileChangeListenerGoldenTest extends TestCase {
 	}//end cases()
 
 	/**
-	 * @param array<string, string>|string $settings
-	 * @param list<array{0: string, 1?: string, 2?: string, 3?: int}> $events
+	 * @param array<string, string>|string                            $settings Settings the service returns, or 'throw'
+	 * @param string                                                  $add      Job list behaviour, 'ok' or 'throw'
+	 * @param list<array{0: string, 1?: string, 2?: string, 3?: int}> $events   Events to handle, in order
+	 *
+	 * @return void
 	 */
 	#[DataProvider('cases')]
 	public function testHandleMatchesGolden(array|string $settings, string $add, array $events): void {
@@ -175,7 +178,9 @@ class FileChangeListenerGoldenTest extends TestCase {
 	}//end testHandleMatchesGolden()
 
 	/**
-	 * @param array{0: string, 1?: string, 2?: string, 3?: int} $spec
+	 * @param array{0: string, 1?: string, 2?: string, 3?: int} $spec Event kind, path, name and id
+	 *
+	 * @return Event
 	 */
 	private function event(array $spec): Event {
 		if ($spec[0] === 'other') {
