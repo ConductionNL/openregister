@@ -82,9 +82,6 @@ class VectorSearchHandler {
 	 *
 	 * @throws \Exception If search fails
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Filter handling requires multiple conditions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive semantic search with error handling
-	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
 	 */
 	public function semanticSearch(
@@ -104,7 +101,6 @@ class VectorSearchHandler {
 			]
 		);
 
-		$results = [];
 		try {
 			// Primary path: index-backed SQL KNN on PostgreSQL/pgvector.
 			$knnResults = $this->knnSearch(
@@ -114,19 +110,7 @@ class VectorSearchHandler {
 			);
 
 			if ($knnResults !== null && $knnResults !== []) {
-				$searchTime = round((microtime(true) - $startTime) * 1000, 2);
-
-				$this->logger->info(
-					message: '[VectorSearchHandler] Semantic search completed (pgvector KNN path)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'results_count' => count($knnResults),
-						'top_similarity' => $knnResults[0]['similarity'] ?? 0,
-						'search_time_ms' => $searchTime,
-					]
-				);
-
+				$this->logSemanticSearchCompleted(path: 'pgvector KNN path', run: ['results' => $knnResults, 'startTime' => $startTime]);
 				return $knnResults;
 			}
 
@@ -145,86 +129,9 @@ class VectorSearchHandler {
 				return [];
 			}
 
-			// Calculate cosine similarity for each vector.
-			$results = [];
-			foreach ($vectors as $vector) {
-				try {
-					// PostgreSQL returns BLOB columns as stream resources
-					// (live-verified on PG16); normalise to a string first —
-					// unserialize() on a resource is a TypeError, which the
-					// per-row catch below would not have caught.
-					$blob = $vector['embedding'];
-					if (is_resource($blob) === true) {
-						$blob = stream_get_contents($blob);
-					}
+			$results = array_slice($this->rankVectors(queryEmbedding: $queryEmbedding, vectors: $vectors), 0, $limit);
 
-					if (is_string($blob) === false) {
-						continue;
-					}
-
-					// SEC-SVC-9: embeddings are plain float arrays; never
-					// allow object instantiation during unserialize to
-					// avoid PHP object-injection from a tampered blob.
-					$storedEmbedding = unserialize($blob, ['allowed_classes' => false]);
-
-					if (is_array($storedEmbedding) === false) {
-						continue;
-					}
-
-					$similarity = $this->cosineSimilarity(
-						vector1: $queryEmbedding,
-						vector2: $storedEmbedding
-					);
-
-					// Parse metadata.
-					$metadata = [];
-					if (empty($vector['metadata']) === false) {
-						$metadata = json_decode($vector['metadata'], true) ?? [];
-					}
-
-					$results[] = [
-						'vector_id' => $vector['id'],
-						'entity_type' => $vector['entity_type'],
-						'entity_id' => $vector['entity_id'],
-						'similarity' => $similarity,
-						'chunk_index' => $vector['chunk_index'],
-						'total_chunks' => $vector['total_chunks'],
-						'chunk_text' => $vector['chunk_text'],
-						'metadata' => $metadata,
-						'model' => $vector['embedding_model'],
-						'dimensions' => $vector['embedding_dimensions'],
-					];
-				} catch (Exception $e) {
-					$this->logger->warning(
-						message: '[VectorSearchHandler] Failed to process vector',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'vector_id' => $vector['id'],
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-
-			// Sort by similarity descending.
-			usort($results, fn ($a, $b) => $b['similarity'] <=> $a['similarity']);
-
-			// Return top N results.
-			$results = array_slice($results, 0, $limit);
-
-			$searchTime = round((microtime(true) - $startTime) * 1000, 2);
-
-			$this->logger->info(
-				message: '[VectorSearchHandler] Semantic search completed (PHP fallback path)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'results_count' => count($results),
-					'top_similarity' => $results[0]['similarity'] ?? 0,
-					'search_time_ms' => $searchTime,
-				]
-			);
+			$this->logSemanticSearchCompleted(path: 'PHP fallback path', run: ['results' => $results, 'startTime' => $startTime]);
 
 			return $results;
 		} catch (Exception $e) {
@@ -242,6 +149,131 @@ class VectorSearchHandler {
 			throw new Exception('Semantic search failed: ' . $e->getMessage());
 		}//end try
 	}//end semanticSearch()
+
+	/**
+	 * Log a completed semantic search.
+	 *
+	 * @param string                                                     $path Which search path answered.
+	 * @param array{results: array<int, array<string, mixed>>, startTime: float} $run  The results and the start time.
+	 *
+	 * @return void
+	 */
+	private function logSemanticSearchCompleted(string $path, array $run): void {
+		$this->logger->info(
+			message: "[VectorSearchHandler] Semantic search completed ($path)",
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'results_count' => count($run['results']),
+				'top_similarity' => $run['results'][0]['similarity'] ?? 0,
+				'search_time_ms' => round((microtime(true) - $run['startTime']) * 1000, 2),
+			]
+		);
+	}//end logSemanticSearchCompleted()
+
+	/**
+	 * Score stored vector rows against the query, most similar first.
+	 *
+	 * @param array                            $queryEmbedding Query embedding vector.
+	 * @param array<int, array<string, mixed>> $vectors        Stored vector rows.
+	 *
+	 * @return array<int, array<string, mixed>> One result per usable row.
+	 */
+	private function rankVectors(array $queryEmbedding, array $vectors): array {
+		$results = [];
+		foreach ($vectors as $vector) {
+			$result = $this->scoreVectorRow(queryEmbedding: $queryEmbedding, vector: $vector);
+			if ($result !== null) {
+				$results[] = $result;
+			}
+		}
+
+		usort($results, fn ($a, $b) => $b['similarity'] <=> $a['similarity']);
+
+		return $results;
+	}//end rankVectors()
+
+	/**
+	 * Score one stored vector row against the query.
+	 *
+	 * @param array                $queryEmbedding Query embedding vector.
+	 * @param array<string, mixed> $vector         Stored vector row.
+	 *
+	 * @return array<string, mixed>|null The result, or null when the row holds no usable embedding.
+	 */
+	private function scoreVectorRow(array $queryEmbedding, array $vector): ?array {
+		try {
+			$storedEmbedding = $this->storedEmbedding(vector: $vector);
+			if ($storedEmbedding === null) {
+				return null;
+			}
+
+			$similarity = $this->cosineSimilarity(
+				vector1: $queryEmbedding,
+				vector2: $storedEmbedding
+			);
+
+			$metadata = [];
+			if (empty($vector['metadata']) === false) {
+				$metadata = json_decode($vector['metadata'], true) ?? [];
+			}
+
+			return [
+				'vector_id' => $vector['id'],
+				'entity_type' => $vector['entity_type'],
+				'entity_id' => $vector['entity_id'],
+				'similarity' => $similarity,
+				'chunk_index' => $vector['chunk_index'],
+				'total_chunks' => $vector['total_chunks'],
+				'chunk_text' => $vector['chunk_text'],
+				'metadata' => $metadata,
+				'model' => $vector['embedding_model'],
+				'dimensions' => $vector['embedding_dimensions'],
+			];
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[VectorSearchHandler] Failed to process vector',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'vector_id' => $vector['id'],
+					'error' => $e->getMessage(),
+				]
+			);
+			return null;
+		}//end try
+	}//end scoreVectorRow()
+
+	/**
+	 * The embedding stored in a vector row, or null when it holds none.
+	 *
+	 * PostgreSQL returns BLOB columns as stream resources (live-verified on
+	 * PG16); they are read to a string first, because unserialize() on a
+	 * resource is a TypeError. Objects are never instantiated (SEC-SVC-9):
+	 * embeddings are plain float arrays, and a tampered blob must not inject
+	 * PHP objects.
+	 *
+	 * @param array<string, mixed> $vector Stored vector row.
+	 *
+	 * @return array|null The embedding, or null.
+	 */
+	private function storedEmbedding(array $vector): ?array {
+		$blob = $vector['embedding'];
+		if (is_resource($blob) === true) {
+			$blob = stream_get_contents($blob);
+		}
+
+		if (is_string($blob) === false) {
+			return null;
+		}
+
+		$storedEmbedding = unserialize($blob, ['allowed_classes' => false]);
+		if (is_array($storedEmbedding) === false) {
+			return null;
+		}
+
+		return $storedEmbedding;
+	}//end storedEmbedding()
 
 	/**
 	 * Index-backed SQL KNN search on PostgreSQL via pgvector.
