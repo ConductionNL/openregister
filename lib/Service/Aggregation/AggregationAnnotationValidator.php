@@ -117,27 +117,14 @@ final class AggregationAnnotationValidator {
 			return [];
 		}
 
-		return $this->validateAggregations(
-			aggregations: $schema['x-openregister-aggregations'],
-			propKeys: $this->declaredPropertyNames(schema: $schema)
-		);
-	}//end validate()
-
-	/**
-	 * The property names a schema declares; none when `properties` is not a map.
-	 *
-	 * @param array<string, mixed> $schema Full schema definition.
-	 *
-	 * @return array<int, mixed>
-	 */
-	private function declaredPropertyNames(array $schema): array {
 		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === false) {
-			return [];
+		$propKeys = [];
+		if (is_array($properties) === true) {
+			$propKeys = array_keys($properties);
 		}
 
-		return array_keys($properties);
-	}//end declaredPropertyNames()
+		return $this->validateAggregations(aggregations: $schema['x-openregister-aggregations'], propKeys: $propKeys);
+	}//end validate()
 
 	/**
 	 * Validate every entry of the annotation, in declaration order.
