@@ -294,7 +294,7 @@ class ContactService {
 		// No CardDAV coordinates: still emit a fallback avatar URL when
 		// there is a uid, so the chip can render an initials placeholder.
 		if ($this->hasCardCoordinates(addressbookId: $addressbookId, contactUri: $contactUri) === false) {
-			$defaults['avatarUrl'] = $this->contactPhotoRoute($contactUid);
+			$defaults['avatarUrl'] = $this->contactPhotoRoute(contactUid: $contactUid);
 			return $defaults;
 		}
 
@@ -323,9 +323,9 @@ class ContactService {
 		}
 
 		return [
-			'phone' => $this->firstPhone($vcard),
-			'org' => $this->primaryOrganisation($vcard),
-			'avatarUrl' => $this->photoUrl($vcard) ?? $this->contactPhotoRoute($contactUid),
+			'phone' => $this->firstPhone(vcard: $vcard),
+			'org' => $this->primaryOrganisation(vcard: $vcard),
+			'avatarUrl' => $this->photoUrl(vcard: $vcard) ?? $this->contactPhotoRoute(contactUid: $contactUid),
 		];
 	}//end fieldsFromCard()
 
@@ -448,7 +448,7 @@ class ContactService {
 		}
 
 		$photo = $vcard->PHOTO;
-		$rawValue = $this->photoRawValue($photo);
+		$rawValue = $this->photoRawValue(photo: $photo);
 		if ($rawValue === '') {
 			return null;
 		}
@@ -457,7 +457,7 @@ class ContactService {
 			return $rawValue;
 		}
 
-		return 'data:' . $this->photoMediaType($photo) . ';base64,' . $rawValue;
+		return 'data:' . $this->photoMediaType(photo: $photo) . ';base64,' . $rawValue;
 	}//end photoUrl()
 
 	/**
