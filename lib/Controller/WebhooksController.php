@@ -31,10 +31,10 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -77,9 +77,9 @@ class WebhooksController extends Controller {
 	/**
 	 * Webhook service
 	 *
-	 * @var WebhookDeliveryInterface
+	 * @var WebhookService
 	 */
-	private WebhookDeliveryInterface $webhookService;
+	private WebhookService $webhookService;
 
 	/**
 	 * Webhook log mapper
@@ -116,7 +116,7 @@ class WebhooksController extends Controller {
 	 * @param IRequest $request HTTP request
 	 * @param WebhookMapper $webhookMapper Webhook mapper
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-	 * @param WebhookDeliveryInterface $webhookService Webhook service
+	 * @param WebhookService $webhookService Webhook service
 	 * @param LoggerInterface $logger Logger
 	 * @param IUserSession|null $userSession User session (for write-endpoint admin gate)
 	 * @param IGroupManager|null $groupManager Group manager (for admin check)
@@ -126,7 +126,7 @@ class WebhooksController extends Controller {
 		IRequest $request,
 		WebhookMapper $webhookMapper,
 		WebhookLogMapper $webhookLogMapper,
-		WebhookDeliveryInterface $webhookService,
+		WebhookService $webhookService,
 		LoggerInterface $logger,
 		?IUserSession $userSession = null,
 		?IGroupManager $groupManager = null,

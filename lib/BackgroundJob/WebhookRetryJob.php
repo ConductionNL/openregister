@@ -27,9 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -71,9 +71,9 @@ class WebhookRetryJob extends TimedJob {
 	/**
 	 * Webhook service
 	 *
-	 * @var WebhookDeliveryInterface
+	 * @var WebhookService
 	 */
-	private WebhookDeliveryInterface $webhookService;
+	private WebhookService $webhookService;
 
 	/**
 	 * Logger
@@ -88,7 +88,7 @@ class WebhookRetryJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory
 	 * @param WebhookMapper $webhookMapper Webhook mapper
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-	 * @param WebhookDeliveryInterface $webhookService Webhook service
+	 * @param WebhookService $webhookService Webhook service
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
@@ -97,7 +97,7 @@ class WebhookRetryJob extends TimedJob {
 		ITimeFactory $time,
 		WebhookMapper $webhookMapper,
 		WebhookLogMapper $webhookLogMapper,
-		WebhookDeliveryInterface $webhookService,
+		WebhookService $webhookService,
 		LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

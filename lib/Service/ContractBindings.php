@@ -37,7 +37,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -81,7 +80,6 @@ final class ContractBindings {
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		TaskManagerInterface::class => TaskService::class,
-		WebhookDeliveryInterface::class => WebhookService::class,
 	];
 
 	/**

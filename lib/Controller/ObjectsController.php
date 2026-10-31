@@ -54,7 +54,6 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
-use OCA\OpenRegister\Kernel\Contracts\WebhookDeliveryInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
@@ -72,6 +71,7 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
+use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\App\IAppManager;
@@ -162,7 +162,7 @@ class ObjectsController extends Controller {
 	 * @param IGroupManager $groupManager The group manager
 	 * @param ObjectExporterInterface $exportService The export service
 	 * @param ObjectImporterInterface $importService The import service
-	 * @param WebhookDeliveryInterface $webhookService The webhook service (optional)
+	 * @param WebhookService $webhookService The webhook service (optional)
 	 * @param LoggerInterface $logger The logger (optional)
 	 * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser Optional geo wire-format adapter (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
@@ -196,7 +196,7 @@ class ObjectsController extends Controller {
 		private readonly IGroupManager $groupManager,
 		ObjectExporterInterface $exportService,
 		ObjectImporterInterface $importService,
-		private readonly ?WebhookDeliveryInterface $webhookService = null,
+		private readonly ?WebhookService $webhookService = null,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser = null,
 		private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier = null,
