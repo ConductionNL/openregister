@@ -31,6 +31,7 @@ use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Document;
+use Sabre\VObject\Parameter;
 use Sabre\VObject\Property;
 use Sabre\VObject\Reader;
 
@@ -394,14 +395,7 @@ class ContactService {
 	 * @return string|null
 	 */
 	private function firstPhone(Document $vcard): ?string {
-		// TEL may be absent, a single value or an iterable of typed entries.
-		$tel = $vcard->TEL;
-		$entries = [$tel];
-		if (is_iterable($tel) === true) {
-			$entries = $tel;
-		}
-
-		foreach ($entries as $entry) {
+		foreach ($vcard->select('TEL') as $entry) {
 			$value = (string) $entry;
 			if ($value !== '') {
 				return $value;
@@ -468,11 +462,7 @@ class ContactService {
 	 * @return string
 	 */
 	private function photoRawValue(Property $photo): string {
-		$rawValue = '';
-		if (method_exists($photo, 'getRawMimeDirValue') === true) {
-			$rawValue = (string) $photo->getRawMimeDirValue();
-		}
-
+		$rawValue = (string) $photo->getRawMimeDirValue();
 		if ($rawValue === '') {
 			$rawValue = (string) $photo;
 		}
@@ -488,11 +478,12 @@ class ContactService {
 	 * @return string
 	 */
 	private function photoMediaType(Property $photo): string {
-		if (isset($photo['TYPE']) === false || (string) $photo['TYPE'] === '') {
+		$type = $photo['TYPE'];
+		if ($type instanceof Parameter === false || (string) $type->getValue() === '') {
 			return 'image/jpeg';
 		}
 
-		return 'image/' . strtolower((string) $photo['TYPE']);
+		return 'image/' . strtolower((string) $type->getValue());
 	}//end photoMediaType()
 
 	/**
