@@ -22,12 +22,15 @@ The accounts of an example set: the cast's people with an account, and the
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+ * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
+
+use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * The accounts, groups and memberships of an example set.
@@ -35,7 +38,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  * @SuppressWarnings(PHPMD.TooManyMethods)            One rule per kind of refusal keeps each one readable.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Every account rule of a set in one place: cast, service accounts, groups.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+ * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
  */
 class ExampleSetPeople {
 	/**
@@ -46,14 +49,16 @@ class ExampleSetPeople {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetAccounts $accounts Nextcloud accounts and groups.
-	 * @param ExampleSetRecord   $record   What an install made.
+	 * @param ExampleSetAccounts      $accounts Nextcloud accounts and groups.
+	 * @param ExampleSetRecord        $record   What an install made.
+	 * @param ExampleSetProfiles|null $profiles Writes function, role, absence and status; null leaves them out.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetAccounts $accounts,
 		private readonly ExampleSetRecord $record,
+		private readonly ?ExampleSetProfiles $profiles=null,
 	) {
 	}//end __construct()
 
@@ -68,7 +73,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function install(array $plan, array $adopt, string $password, array $report, array &$record): array {
 		$set    = (string) $plan['set'];
@@ -80,13 +85,16 @@ class ExampleSetPeople {
 			}
 
 			$report = $this->installUser(set: $set, person: $person, adopt: $adopt, password: $password, report: $report, record: $record);
+			$report = $this->installProfile(plan: $plan, person: $person, report: $report, record: $record);
 		}
 
 		foreach ($this->serviceAccounts(plan: $plan) as $account) {
 			$report = $this->installServiceUser(set: $set, account: $account, adopt: $adopt, report: $report, record: $record);
 		}
 
-		return $this->installMemberships(plan: $plan, report: $report, record: $record);
+		$report = $this->installMemberships(plan: $plan, report: $report, record: $record);
+
+		return $this->installSubAdmins(plan: $plan, report: $report, record: $record);
 	}//end install()
 
 	/**
@@ -102,6 +110,7 @@ class ExampleSetPeople {
 		foreach ($this->declaredGroups(plan: $plan) as $gid => $displayName) {
 			$report['groups'][$gid] = 'kept';
 			if ($this->accounts->groupExists(gid: $gid) === true) {
+				$report['groups'][$gid] = $this->nameUnnamedGroup(set: (string) $plan['set'], gid: $gid, displayName: $displayName, record: $record);
 				continue;
 			}
 
@@ -117,6 +126,31 @@ class ExampleSetPeople {
 
 		return $report;
 	}//end installGroups()
+
+	/**
+	 * Give an existing group that shows only its id the declared display name, and record the name it had.
+	 *
+	 * @param string               $set         The set id.
+	 * @param string               $gid         The group id.
+	 * @param string               $displayName The declared display name.
+	 * @param array<string, mixed> $record      The record; gains the old name.
+	 *
+	 * @return string `named` or `kept`.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 */
+	private function nameUnnamedGroup(string $set, string $gid, string $displayName, array &$record): string {
+		$current = $this->accounts->groupName(gid: $gid);
+		$unnamed = ($current === '' || $current === $gid);
+		if ($displayName === '' || $unnamed === false || $this->accounts->setGroupName(gid: $gid, displayName: $displayName) === false) {
+			return 'kept';
+		}
+
+		$record['groupNames'][$gid] = ($record['groupNames'][$gid] ?? ['old' => $current, 'new' => $displayName]);
+		$this->record->write(set: $set, record: $record);
+
+		return 'named';
+	}//end nameUnnamedGroup()
 
 	/**
 	 * Add every declared membership the instance lacks, and record it.
@@ -148,6 +182,83 @@ class ExampleSetPeople {
 
 		return $report;
 	}//end installMemberships()
+
+	/**
+	 * Make every declared group sub-admin one the instance lacks, and record it.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $report The report so far.
+	 * @param array<string, mixed> $record The record.
+	 *
+	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 */
+	private function installSubAdmins(array $plan, array $report, array &$record): array {
+		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid, $uid]) {
+			$name = $gid.' / '.$uid;
+			$report['subAdmins'][$name] = 'kept';
+			if ($this->accounts->isSubAdmin(gid: $gid, uid: $uid) === true) {
+				continue;
+			}
+
+			if ($this->accounts->addSubAdmin(gid: $gid, uid: $uid) === false) {
+				$report['dropped'][] = 'sub-admin '.$name.': the group or the account is not there';
+				continue;
+			}
+
+			$report['subAdmins'][$name] = 'created';
+			$record['subAdmins'][]      = [$gid, $uid];
+			$this->record->write(set: (string) $plan['set'], record: $record);
+		}
+
+		return $report;
+	}//end installSubAdmins()
+
+	/**
+	 * Every group sub-admin the set declares, as gid and uid pairs: `subAdmins` (cast keys) on a cast or fragment group.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 */
+	private function declaredSubAdmins(array $plan): array {
+		$pairs = [];
+		foreach ($this->groupsWithSubAdmins(plan: $plan) as [$gid, $keys]) {
+			foreach ($keys as $key) {
+				$uid = (string) ($plan['cast']['people'][$key]['uid'] ?? '');
+				if ($uid !== '') {
+					$pairs[] = [$gid, $uid];
+				}
+			}
+		}
+
+		return array_values(array_unique($pairs, SORT_REGULAR));
+	}//end declaredSubAdmins()
+
+	/**
+	 * The cast and fragment groups with their declared sub-admin cast keys.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return array<int, array{0: string, 1: array<int, string>}>
+	 */
+	private function groupsWithSubAdmins(array $plan): array {
+		$groups = [];
+		foreach ($plan['cast']['groups'] as $key => $group) {
+			$groups[] = [(string) ($group['gid'] ?? $key), array_map('strval', (array) ($group['subAdmins'] ?? []))];
+		}
+
+		foreach ($plan['fragments'] as $fragment) {
+			foreach ($fragment['groups'] as $group) {
+				$groups[] = [(string) ($group['group'] ?? ''), array_map('strval', (array) ($group['subAdmins'] ?? []))];
+			}
+		}
+
+		return array_values(array_filter($groups, static fn (array $group): bool => $group[0] !== '' && $group[1] !== []));
+	}//end groupsWithSubAdmins()
 
 	/**
 	 * One cast account: kept, adopted or created.
@@ -203,6 +314,58 @@ class ExampleSetPeople {
 	}//end installUser()
 
 	/**
+	 * Write the function, role, absence and status of an account the set created, at every install.
+	 *
+	 * An account the set adopted is someone else's: it only gains the function and role it lacks, and a value it
+	 * holds stays. An account the set found but did not adopt is left alone.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $person The cast person.
+	 * @param array<string, mixed> $report The report; a part that could not be written goes under `dropped`.
+	 * @param array<string, mixed> $record The record.
+	 *
+	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+	 */
+	private function installProfile(array $plan, array $person, array $report, array $record): array {
+		$uid  = (string) $person['uid'];
+		$held = ($record['users'][$uid] ?? null);
+		if ($this->profiles === null || in_array($held, ['created', 'adopted'], true) === false) {
+			return $report;
+		}
+
+		$today   = new DateTimeImmutable('today', new DateTimeZone((string) ($plan['timezone'] ?? 'UTC')));
+		$profile = $this->profiles->fromPerson(person: $person, today: $today);
+		$reasons = $this->writeProfile(uid: $uid, profile: $profile, adopted: $held === 'adopted');
+
+		foreach ($reasons as $reason) {
+			$report['dropped'][] = $reason;
+		}
+
+		return $report;
+	}//end installProfile()
+
+	/**
+	 * Write a created account's whole profile, or fill in what an adopted account lacks.
+	 *
+	 * @param string               $uid     The account.
+	 * @param array<string, mixed> $profile The profile, as ExampleSetProfiles::fromPerson() gives it.
+	 * @param bool                 $adopted Whether the set adopted the account rather than created it.
+	 *
+	 * @return array<int, string> Why a part was not written.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Created or adopted is the account's own fact in the record.
+	 */
+	private function writeProfile(string $uid, array $profile, bool $adopted): array {
+		if ($adopted === true) {
+			return $this->profiles->fillMissing(uid: $uid, profile: $profile);
+		}
+
+		return $this->profiles->apply(uid: $uid, profile: $profile);
+	}//end writeProfile()
+
+	/**
 	 * One service account: kept, adopted or created with a password nobody ever sees.
 	 *
 	 * Nextcloud has no account without a password, so the account gets a long
@@ -236,6 +399,14 @@ class ExampleSetPeople {
 			email: '',
 			password: $this->accounts->newPassword().$this->accounts->newPassword()
 		);
+		if ($error === ExampleSetAccounts::ALREADY_EXISTS && isset($record['users'][$uid]) === false) {
+			// Another writer made the declared account in between: the set adopts it, so remove leaves it.
+			$record['users'][$uid] = 'adopted';
+			$report['users'][$uid] = 'adopted';
+			$this->record->write(set: $set, record: $record);
+			return $report;
+		}
+
 		if ($error !== '') {
 			$report['dropped'][] = 'service account '.$uid.': '.$error;
 			return $report;
@@ -258,7 +429,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
+	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function refusals(array $plan, array $record, array $adopt): array {
 		$refusals = [];
@@ -284,6 +455,14 @@ class ExampleSetPeople {
 			if (strtolower($gid) === self::ADMIN_GROUP) {
 				$refusals[] = 'group "'.$gid.'": an example set never adds anyone to Nextcloud\'s administrators.'
 					.' Give the person an app admin group in a fragment instead.';
+			}
+		}
+
+		foreach ($this->groupsWithSubAdmins(plan: $plan) as [$gid, $keys]) {
+			foreach ($keys as $key) {
+				if (($plan['cast']['people'][$key]['uid'] ?? '') === '') {
+					$refusals[] = 'group "'.$gid.'": sub-admin "'.$key.'" is not a cast person with an account';
+				}
 			}
 		}
 
@@ -432,7 +611,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function missing(array $record): array {
 		$missing = [];
@@ -454,6 +633,12 @@ class ExampleSetPeople {
 			}
 		}
 
+		foreach (($record['subAdmins'] ?? []) as [$gid, $uid]) {
+			if ($this->accounts->isSubAdmin(gid: $gid, uid: $uid) === false) {
+				$missing[] = 'sub-admin '.$gid.' / '.$uid;
+			}
+		}
+
 		return $missing;
 	}//end missing()
 
@@ -464,7 +649,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-declare-service-accounts-req-exs-014
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-service-accounts-req-exs-014
 	 */
 	public function serviceAccounts(array $plan): array {
 		$accounts = [];
@@ -487,7 +672,7 @@ class ExampleSetPeople {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function declaredUids(array $plan): array {
 		$uids = [];
@@ -509,7 +694,7 @@ class ExampleSetPeople {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public static function passesElevenTest(string $bsn): bool {
 		if (preg_match('/^\d{9}$/', $bsn) !== 1) {

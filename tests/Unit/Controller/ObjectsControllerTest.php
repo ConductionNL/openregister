@@ -561,30 +561,6 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(500, $result->getStatus());
 	}
 
-	public function testGetObjectVectorizationCountSuccess(): void {
-		$this->request->method('getParam')->willReturn(null);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(42);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(42, $data['count']);
-	}
-
-	public function testGetObjectVectorizationCountError(): void {
-		$this->request->method('getParam')->willReturn(null);
-
-		$this->objectService->method('getVectorizationCount')
-			->willThrowException(new DBException('Count error'));
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(500, $result->getStatus());
-	}
-
 	public function testValidateReturns400WhenParamsMissing(): void {
 		$this->request->method('getParam')->willReturn(null);
 
@@ -3449,24 +3425,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getObjectVectorizationCount() — with views parameter
-	// =========================================================================
-
-	public function testGetObjectVectorizationCountWithViews(): void {
-		$this->request->method('getParam')->willReturnMap([
-			['views', null, '["view1"]'],
-		]);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(99);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame(99, $data['count']);
-	}
-
-	// =========================================================================
 	// logs() — register/schema not found paths
 	// =========================================================================
 
@@ -4896,25 +4854,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getObjectVectorizationCount() — with schemas as JSON string
-	// =========================================================================
-
-	public function testGetObjectVectorizationCountWithSchemasJsonString(): void {
-		$this->request->method('getParam')->willReturnMap([
-			['schemas', null, '[1,2,3]'],
-		]);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(55);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(55, $data['count']);
-	}
-
-	// =========================================================================
 	// index() — with _empty=true preserves empty values
 	// =========================================================================
 
@@ -5810,7 +5749,7 @@ class ObjectsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb(): void {
 		$this->grantExport(allowed: false);
@@ -5833,7 +5772,7 @@ class ObjectsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function testExportRefusedWhenTheRightServiceIsUnavailable(): void {
 		$this->primeExportEntities();
@@ -5925,6 +5864,56 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame('export_too_large', $result->getData()['error']);
 		$this->assertSame(6000, $result->getData()['rowCount']);
 		$this->assertSame(5000, $result->getData()['maxRows']);
+	}
+
+	/**
+	 * Without an office server a PDF export answers 501 with a clear message.
+	 */
+	public function testExportPdfWithoutOfficeServerReturns501(): void {
+		$this->grantExport();
+		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$registerEntity->method('getSlug')->willReturn('my-register');
+
+		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$schemaEntity->method('getSlug')->willReturn('my-schema');
+
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+		$this->request->method('getParams')->willReturn(['format' => 'pdf']);
+		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+			if ($key === 'format') {
+				return 'pdf';
+			}
+			return $default;
+		});
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->exportService->method('exportToPdf')->willThrowException(
+			new \OCA\OpenRegister\Exception\OfficeServerRequiredException()
+		);
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+		$this->assertSame(501, $result->getStatus());
+		$this->assertSame('office_server_required', $result->getData()['error']);
+		$this->assertStringContainsString('Collabora or Euro-Office', $result->getData()['message']);
 	}
 
 	// =========================================================================

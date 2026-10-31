@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -100,7 +100,7 @@ final class JobRunRecorderTest extends TestCase {
 	 * A run that ends leaves a row saying when it started, when it ended and
 	 * that it completed.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 *
 	 * @return void
 	 */
@@ -127,7 +127,7 @@ final class JobRunRecorderTest extends TestCase {
 	 * change what the cron worker sees, and a recorder must observe an
 	 * execution without altering it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 *
 	 * @return void
 	 */
@@ -157,7 +157,7 @@ final class JobRunRecorderTest extends TestCase {
 	/**
 	 * A failure is offered to the alert threshold; a completed run is not.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -193,7 +193,7 @@ final class JobRunRecorderTest extends TestCase {
 	 * rows, and the second one, the job's own, carries no actor. A reader then
 	 * sees an unexplained run beside the explained one.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -218,7 +218,7 @@ final class JobRunRecorderTest extends TestCase {
 	 * The row is open BEFORE the work runs, so "what is running now" is a
 	 * question the log can answer.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -238,7 +238,7 @@ final class JobRunRecorderTest extends TestCase {
 	/**
 	 * A separate act is one completed row naming the actor and what it touched.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */

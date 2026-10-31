@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One gathering: discovery, the cast rule and every entry's shape.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
 class ExampleSetCatalogue {
 	/**
@@ -78,7 +78,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @return array<string, array<int, string>> App ids by set id, both sorted.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
 	 */
 	public function sets(): array {
 		$sets = [];
@@ -122,7 +122,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When the set cannot be gathered; the message names why and where.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	public function gather(string $set): array {
 		if (preg_match(self::SET_ID, $set) !== 1) {
@@ -134,7 +134,11 @@ class ExampleSetCatalogue {
 		foreach ($enabled as $app) {
 			$folder = $this->folderOf(app: $app);
 			if ($folder !== null && is_file($folder.'/'.$set.'.json') === true) {
-				$fragments[$app] = $this->read(app: $app, file: $folder.'/'.$set.'.json');
+				$fragments[$app] = $this->withParts(
+					app: $app,
+					fragment: $this->read(app: $app, file: $folder.'/'.$set.'.json'),
+					folder: $folder.'/'.$set.'.d'
+				);
 			}
 		}
 
@@ -162,7 +166,11 @@ class ExampleSetCatalogue {
 			'timezone'  => (string) ($castFile['timezone'] ?? 'UTC'),
 			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file'], set: $set),
 			'requires'  => $this->requiredRegisters(declared: (array) ($castFile['requires'] ?? []), file: $castFile['@file']),
-			'organisations' => $this->organisationEntities(declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []), file: $castFile['@file']),
+			'organisations' => $this->organisationEntities(
+				declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []),
+				file: $castFile['@file'],
+				people: (array) ($castFile['cast']['people'] ?? [])
+			),
 			'fragments' => [],
 			'skipped'   => $ordered['skipped'],
 		];
@@ -196,6 +204,59 @@ class ExampleSetCatalogue {
 			}
 		}
 	}//end refuseSharedAccountKeys()
+
+	/**
+	 * A fragment with the parts in its `<set>.d/` folder appended, in file-name order.
+	 *
+	 * A part adds lists to its app's fragment (`objects`, `changes`, `appConfig` and the
+	 * other parts a fragment declares as lists), so two seed areas can live in two files.
+	 * A part may not set anything else: the fragment's own settings stay in its main file.
+	 * Relative file paths in a part resolve from the main file's folder.
+	 *
+	 * @param string               $app      The app id.
+	 * @param array<string, mixed> $fragment The main fragment, as read.
+	 * @param string               $folder   The parts folder.
+	 *
+	 * @return array<string, mixed> The fragment with every part's lists appended.
+	 *
+	 * @throws ExampleSetException When a part does not parse or sets a value that is not a list.
+	 */
+	private function withParts(string $app, array $fragment, string $folder): array {
+		$files = glob($folder.'/*.json');
+		if ($files === false || $files === []) {
+			return $fragment;
+		}
+
+		sort($files);
+		foreach ($files as $file) {
+			$part  = $this->read(app: $app, file: $file);
+			$named = $app.'/'.self::FOLDER.'/'.basename($folder).'/'.basename($file);
+			foreach ($part as $key => $value) {
+				if (self::isPartNote(key: (string) $key) === true) {
+					continue;
+				}
+
+				if (is_array($value) === false || array_is_list($value) === false) {
+					throw new ExampleSetException($named.': a part may only add lists; "'.$key.'" belongs in the main file.');
+				}
+
+				$fragment[$key] = array_merge((array) ($fragment[$key] ?? []), $value);
+			}
+		}
+
+		return $fragment;
+	}//end withParts()
+
+	/**
+	 * Whether a part's key is a note rather than content: `set`, `$comment`, or what read() adds (`@file`, `@dir`).
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return bool True for a note.
+	 */
+	private static function isPartNote(string $key): bool {
+		return $key === 'set' || str_starts_with($key, '@') === true || str_starts_with($key, '$') === true;
+	}//end isPartNote()
 
 	/**
 	 * Read and parse one fragment file.
@@ -273,7 +334,9 @@ class ExampleSetCatalogue {
 	 *               changes: array<int, array<string, mixed>>, groups: array<int, array<string, mixed>>,
 	 *               serviceAccounts: array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>,
 	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>,
-	 *               userPreferences: array<int, array{user: string, key: string, value: string}>}
+	 *               userPreferences: array<int, array{user: string, key: string, value: string}>,
+	 *               tasks: array<int, array{key: string, data: array<string, mixed>}>,
+	 *               views: array<int, array{key: string, data: array<string, mixed>}>}
 	 *
 	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
@@ -291,8 +354,81 @@ class ExampleSetCatalogue {
 			'serviceAccounts' => $this->serviceAccounts(file: $file, declared: (array) ($fragment['serviceAccounts'] ?? [])),
 			'appConfig'       => $this->appConfig(app: $app, file: $file, declared: (array) ($fragment['appConfig'] ?? [])),
 			'userPreferences' => $this->userPreferences(app: $app, file: $file, declared: (array) ($fragment['userPreferences'] ?? [])),
+			'tasks'           => $this->keyedRows(file: $file, declared: (array) ($fragment['tasks'] ?? []), noun: 'task'),
+			'views'           => $this->keyedRows(file: $file, declared: (array) ($fragment['views'] ?? []), noun: 'view'),
+			'watchers'        => $this->keyedRows(file: $file, declared: (array) ($fragment['watchers'] ?? []), noun: 'watcher'),
+			'parties'         => $this->keyedRows(file: $file, declared: (array) ($fragment['parties'] ?? []), noun: 'party'),
+			'notes'           => $this->keyedRows(file: $file, declared: (array) ($fragment['notes'] ?? []), noun: 'note'),
+			'readStates'      => $this->keyedRows(file: $file, declared: (array) ($fragment['readStates'] ?? []), noun: 'read state'),
+			'flows'           => $this->keyedRows(file: $file, declared: (array) ($fragment['flows'] ?? []), noun: 'flow'),
+			'exportRuns'      => $this->keyedRows(file: $file, declared: (array) ($fragment['exportRuns'] ?? []), noun: 'export'),
+			'deckCards'       => $this->keyedRows(file: $file, declared: (array) ($fragment['deckCards'] ?? []), noun: 'deck card'),
+			'appointments'    => $this->keyedRows(file: $file, declared: (array) ($fragment['appointments'] ?? []), noun: 'appointment'),
+			'casePlans'       => $this->keyedRows(file: $file, declared: (array) ($fragment['casePlans'] ?? []), noun: 'case plan'),
+			'collectivesPages' => $this->keyedRows(file: $file, declared: (array) ($fragment['collectivesPages'] ?? []), noun: 'collectives page'),
+			'talkConversations' => $this->keyedRows(file: $file, declared: (array) ($fragment['talkConversations'] ?? []), noun: 'talk conversation'),
+			'auditEntries'    => $this->keyedRows(file: $file, declared: (array) ($fragment['auditEntries'] ?? []), noun: 'audit entry'),
+			'timelineEntries' => $this->keyedRows(file: $file, declared: (array) ($fragment['timelineEntries'] ?? []), noun: 'timeline entry'),
+			'emailLinks'      => $this->keyedRows(file: $file, declared: (array) ($fragment['emailLinks'] ?? []), noun: 'email link'),
+			'archival'        => $this->archival(app: $app, file: $file, declared: (array) ($fragment['archival'] ?? [])),
 		];
 	}//end fragment()
+
+	/**
+	 * The tasks or views of a fragment: a key each, unique in the fragment, and the row's fields.
+	 *
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared entries.
+	 * @param string            $noun     `task` or `view`, for messages.
+	 *
+	 * @return array<int, array{key: string, data: array<string, mixed>}>
+	 *
+	 * @throws ExampleSetException When an entry lacks a key or fields, or a key is used twice.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function keyedRows(string $file, array $declared, string $noun): array {
+		$entries = [];
+		$seen    = [];
+		foreach ($declared as $index => $entry) {
+			$entry = (array) $entry;
+			$key   = ($entry['key'] ?? null);
+			if (is_string($key) === false || $key === '' || is_array($entry['data'] ?? null) === false) {
+				throw new ExampleSetException($file.': '.$noun.' '.$index.' needs a key and its fields (data).');
+			}
+
+			if (isset($seen[$key]) === true) {
+				throw new ExampleSetException($file.': '.$noun.' key "'.$key.'" is used twice.');
+			}
+
+			$seen[$key] = true;
+			$entries[]  = ['key' => $key, 'data' => $entry['data']];
+		}
+
+		return $entries;
+	}//end keyedRows()
+
+	/**
+	 * The archival setting rows of a fragment: only OpenRegister's own fragment may write OpenRegister's setting.
+	 *
+	 * @param string            $app      The app that ships the fragment.
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared rows.
+	 *
+	 * @return array<int, array{key: string, data: array<string, mixed>}>
+	 *
+	 * @throws ExampleSetException When another app declares the part, or a row lacks a key or fields.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-openregisters-fragment-may-name-the-destruction-list-register-and-schema
+	 */
+	private function archival(string $app, string $file, array $declared): array {
+		if ($declared !== [] && $app !== ExampleSetOrder::CAST_APP) {
+			throw new ExampleSetException($file.': archival is OpenRegister\'s own setting; only OpenRegister\'s fragment may write it.');
+		}
+
+		return $this->keyedRows(file: $file, declared: $declared, noun: 'archival setting');
+	}//end archival()
 
 	/**
 	 * The service accounts of a fragment: a key and an account id each.
@@ -332,9 +468,10 @@ class ExampleSetCatalogue {
 	 * @param string            $file     The fragment file, for messages.
 	 * @param array<int, mixed> $declared The declared entries.
 	 *
-	 * @return array<int, array{key: string, value: mixed, generate: bool}>
+	 * @return array<int, array{key: string, value: mixed, generate: bool, type: string}>
 	 *
-	 * @throws ExampleSetException When an entry names another app, lacks a key, or has no value to write.
+	 * @throws ExampleSetException When an entry names another app, lacks a key, has no value to write, or a type it
+	 *                             cannot write or whose value does not fit.
 	 */
 	private function appConfig(string $app, string $file, array $declared): array {
 		$entries = [];
@@ -349,11 +486,75 @@ class ExampleSetCatalogue {
 				throw new ExampleSetException($file.': app config '.$index.' needs a key and a value, or generate: true.');
 			}
 
-			$entries[] = ['key' => $entry['key'], 'value' => ($entry['value'] ?? ''), 'generate' => $generate];
+			$entries[] = [
+				'key'      => $entry['key'],
+				'value'    => ($entry['value'] ?? ''),
+				'generate' => $generate,
+				'type'     => $this->appConfigType(file: $file, index: (int) $index, entry: $entry, generate: $generate),
+				'atLeast'  => $this->appConfigFloor(file: $file, index: (int) $index, entry: $entry, generate: $generate),
+			];
 		}
 
 		return $entries;
 	}//end appConfig()
+
+	/**
+	 * Whether an app config entry is a floor (`atLeast`): a running counter the set raises to its value but never
+	 * lowers, which the app may move on after the install.
+	 *
+	 * @param string               $file     The fragment file, for messages.
+	 * @param int                  $index    The entry's position, for messages.
+	 * @param array<string, mixed> $entry    The declared entry.
+	 * @param bool                 $generate Whether the set generates the value.
+	 *
+	 * @return bool
+	 *
+	 * @throws ExampleSetException When a floor is not a written integer.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the value is generated is the entry's own fact.
+	 *
+	 * @spec openspec/changes/example-set-app-config-at-least/specs/example-sets/spec.md#requirement-an-integer-app-config-entry-may-be-a-floor
+	 */
+	private function appConfigFloor(string $file, int $index, array $entry, bool $generate): bool {
+		if (($entry['atLeast'] ?? false) !== true) {
+			return false;
+		}
+
+		if ($generate === true || (string) ($entry['type'] ?? 'string') !== 'int') {
+			throw new ExampleSetException($file.': app config '.$index.' ("'.(string) $entry['key'].'") is atLeast; only a written int can be a floor.');
+		}
+
+		return true;
+	}//end appConfigFloor()
+
+	/**
+	 * The type an app config entry is written with: `string`, or `int` for a key its app reads as an integer.
+	 *
+	 * @param string               $file     The fragment file, for messages.
+	 * @param int                  $index    The entry's position, for messages.
+	 * @param array<string, mixed> $entry    The declared entry.
+	 * @param bool                 $generate Whether the set generates the value.
+	 *
+	 * @return string
+	 *
+	 * @throws ExampleSetException When the type is not one a set writes, or an integer's value is no integer.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the value is generated is the entry's own fact.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 */
+	private function appConfigType(string $file, int $index, array $entry, bool $generate): string {
+		$type = (string) ($entry['type'] ?? 'string');
+		if (in_array($type, ['string', 'int'], true) === false) {
+			throw new ExampleSetException($file.': app config '.$index.' has type "'.$type.'"; a set writes string or int.');
+		}
+
+		if ($type === 'int' && $generate === false && preg_match('/^(-?\d+|\{\{[^{}]+\}\})$/', (string) ($entry['value'] ?? '')) !== 1) {
+			throw new ExampleSetException($file.': app config '.$index.' ("'.(string) $entry['key'].'") is an integer; its value is not.');
+		}
+
+		return $type;
+	}//end appConfigType()
 
 	/**
 	 * The per-user preferences of a fragment, each for the fragment's own app.
@@ -366,7 +567,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When an entry names another app, or lacks a user, a key or a value.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	private function userPreferences(string $app, string $file, array $declared): array {
 		$entries = [];
@@ -402,7 +603,7 @@ class ExampleSetCatalogue {
 	 *
 	 * @throws ExampleSetException When an entry names no register.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function requiredRegisters(array $declared, string $file): array {
 		$registers = [];
@@ -426,16 +627,26 @@ class ExampleSetCatalogue {
 	}//end requiredRegisters()
 
 	/**
-	 * The OpenRegister organisations the cast needs, each with a key, a name and a slug.
+	 * The OpenRegister organisations the cast declares, each with its quota and its members' accounts.
 	 *
-	 * @param array<int, mixed> $declared The declared organisations.
-	 * @param string            $file     The cast file, for messages.
+	 * @param array<int, mixed>  $declared The declared organisations.
+	 * @param string             $file     The cast file, for messages.
+	 * @param array<int, mixed>  $people   The cast's people, to turn member keys into accounts.
 	 *
-	 * @return array<int, array{key: string, name: string, slug: string, description: string}>
+	 * @return array<int, array{key: string, name: string, slug: string, description: string, quota: array<string, int>, members: array<int, string>}>
 	 *
-	 * @throws ExampleSetException When one lacks a key, a name or a slug.
+	 * @throws ExampleSetException When an organisation lacks a key, name or slug, names a quota that is not a whole number,
+	 *                             or a member the cast does not hold.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
-	private function organisationEntities(array $declared, string $file): array {
+	private function organisationEntities(array $declared, string $file, array $people=[]): array {
+		$accounts = [];
+		foreach ($people as $person) {
+			$person = (array) $person;
+			$accounts[(string) ($person['key'] ?? '')] = (string) ($person['uid'] ?? '');
+		}
+
 		$organisations = [];
 		foreach ($declared as $index => $organisation) {
 			$organisation = (array) $organisation;
@@ -448,11 +659,79 @@ class ExampleSetCatalogue {
 				'name'        => (string) $organisation['name'],
 				'slug'        => (string) $organisation['slug'],
 				'description' => (string) ($organisation['description'] ?? ''),
+				'type'        => (string) ($organisation['type'] ?? ''),
+				'contactEmail' => (string) ($organisation['contactEmail'] ?? ''),
+				'quota'       => $this->organisationQuota(declared: ($organisation['quota'] ?? []), file: $file, slug: (string) $organisation['slug']),
+				'members'     => $this->organisationMembers(
+					declared: ($organisation['members'] ?? []),
+					accounts: $accounts,
+					file: $file,
+					slug: (string) $organisation['slug']
+				),
 			];
 		}
 
 		return $organisations;
 	}//end organisationEntities()
+
+	/**
+	 * An organisation's declared quota: storage (bytes), requests, bandwidth,
+	 * users and objects, each a whole number, and objectsSchema, the slug of the
+	 * schema the object quota counts.
+	 *
+	 * @param mixed  $declared The declared quota.
+	 * @param string $file     The cast file, for messages.
+	 * @param string $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<string, int|string>
+	 *
+	 * @throws ExampleSetException When a key is unknown or a value is not a whole number.
+	 */
+	private function organisationQuota(mixed $declared, string $file, string $slug): array {
+		$quota = [];
+		foreach ((array) $declared as $key => $value) {
+			if ($key === 'objectsSchema' && is_string($value) === true && $value !== '') {
+				$quota[$key] = $value;
+				continue;
+			}
+
+			if (in_array($key, ['storage', 'requests', 'bandwidth', 'users', 'objects'], true) === false || is_int($value) === false || $value < 0) {
+				throw new ExampleSetException(
+					$file.': OpenRegister organisation "'.$slug.'": quota "'.$key.'" must be storage, requests, bandwidth, users or objects'
+					.' with a whole number, or objectsSchema with a schema slug.'
+				);
+			}
+
+			$quota[$key] = $value;
+		}
+
+		return $quota;
+	}//end organisationQuota()
+
+	/**
+	 * The accounts of an organisation's declared members, which are cast people's keys.
+	 *
+	 * @param mixed                 $declared The declared member keys.
+	 * @param array<string, string> $accounts Each cast person's account, by key.
+	 * @param string                $file     The cast file, for messages.
+	 * @param string                $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @throws ExampleSetException When a member is not a cast person with an account.
+	 */
+	private function organisationMembers(mixed $declared, array $accounts, string $file, string $slug): array {
+		$members = [];
+		foreach ((array) $declared as $key) {
+			if (($accounts[(string) $key] ?? '') === '') {
+				throw new ExampleSetException($file.': OpenRegister organisation "'.$slug.'": member "'.$key.'" is not a cast person with an account.');
+			}
+
+			$members[] = $accounts[(string) $key];
+		}
+
+		return $members;
+	}//end organisationMembers()
 
 	/**
 	 * The objects or changes of a fragment, each checked for its parts and a key of its own.

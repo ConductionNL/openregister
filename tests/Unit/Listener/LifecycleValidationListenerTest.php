@@ -64,7 +64,7 @@ class LifecycleValidationListenerTest extends TestCase {
 	 *
 	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
@@ -248,6 +248,48 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame('lifecycle-invalid-transition', $event->getErrors()['code']);
 	}//end testIllegalTransitionIsRejected()
+
+	/**
+	 * A trusted write of declared state (an example-set refresh) may set the
+	 * declared status without a transition, but only as the system: the same
+	 * mark outside the system scope is judged like any other edit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function testADeclaredStateWriteAsTheSystemSkipsTheTransitionCheck(): void {
+		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
+		$actions  = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
+		$listener = new LifecycleValidationListener(
+			schemaMapper: $this->schemaMapper,
+			guardRegistry: $this->guardRegistry,
+			userSession: $this->userSession,
+			permissionHandler: $this->permissionHandler,
+			logger: $this->logger,
+			conditionEvaluator: $this->createMock(LifecycleConditionEvaluator::class),
+			transitionResolver: new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions),
+			conditionTracer: new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect()),
+			ruleRuns: $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
+		);
+
+		$outside = $this->event('lifecycle', 'geparafeerd', 'concept');
+		$outside->getNewObject()->setUuid('voorstel-1');
+		$actions->enterDeclaredState(uuid: 'voorstel-1');
+		$listener->handle($outside);
+		$this->assertTrue($outside->isPropagationStopped(), 'the mark alone is not enough');
+
+		$inside = $this->event('lifecycle', 'geparafeerd', 'concept');
+		$inside->getNewObject()->setUuid('voorstel-1');
+		\OCA\OpenRegister\Service\SystemOperationContext::run(static fn () => $listener->handle($inside));
+		$this->assertFalse($inside->isPropagationStopped());
+
+		$actions->leaveDeclaredState(uuid: 'voorstel-1');
+		$after = $this->event('lifecycle', 'geparafeerd', 'concept');
+		$after->getNewObject()->setUuid('voorstel-1');
+		\OCA\OpenRegister\Service\SystemOperationContext::run(static fn () => $listener->handle($after));
+		$this->assertTrue($after->isPropagationStopped(), 'released, the system is judged like anybody');
+	}//end testADeclaredStateWriteAsTheSystemSkipsTheTransitionCheck()
 
 	public function testGuardDeniedIsRejected(): void {
 		$lifecycle = self::VOORSTEL_LIFECYCLE;

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Query;
 
+use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -164,6 +166,8 @@ class RelatedRowAccess {
 	 * @throws InvalidArgumentException When a named field is not a property of the schema, or is withheld from the caller.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	public function assertReadable(RelatedRowFilter $filter, Schema $schema): void {
 		$fields = array_column($filter->conditions, 'field');
@@ -172,8 +176,17 @@ class RelatedRowAccess {
 		}
 
 		$properties = $schema->getProperties();
+		$explicit = ExplicitReveal::explicitProperties(schema: $schema);
 		foreach ($fields as $field) {
 			$field = (string)$field;
+			// A value shown only through the logged reveal cannot be matched on
+			// through a related row either: that would read it without the reveal.
+			if (in_array($field, $explicit, true) === true) {
+				throw new ExplicitRevealQueryException(
+					message: sprintf('\'%s\' is shown only on request, so a related-row filter cannot match on it.', $field)
+				);
+			}
+
 			if (array_key_exists($field, $properties) === false
 				|| $this->guard->mayRead(schema: $schema, property: $field) === false
 			) {

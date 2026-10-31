@@ -603,6 +603,13 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 
+const FILE_TYPE_LABELS = {
+	json: 'JSON Configuration',
+	xlsx: 'Excel Spreadsheet',
+	xls: 'Excel Spreadsheet',
+	csv: 'CSV Data',
+}
+
 export default {
 	name: 'ImportRegister',
 	components: {
@@ -818,17 +825,9 @@ export default {
 		 */
 		getFileType(filename) {
 			const extension = this.getFileExtension(filename)
-			switch (extension) {
-				case 'json':
-					return 'JSON Configuration'
-				case 'xlsx':
-				case 'xls':
-					return 'Excel Spreadsheet'
-				case 'csv':
-					return 'CSV Data'
-				default:
-					return 'Unknown'
-			}
+			return Object.hasOwn(FILE_TYPE_LABELS, extension)
+				? FILE_TYPE_LABELS[extension]
+				: 'Unknown'
 		},
 
 		/**

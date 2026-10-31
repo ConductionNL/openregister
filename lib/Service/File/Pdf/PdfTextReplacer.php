@@ -36,8 +36,8 @@ namespace OCA\OpenRegister\Service\File\Pdf;
 
 use ddn\sapp\PDFDoc;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
 use Psr\Log\LoggerInterface;
-use Smalot\PdfParser\Parser as PdfParser;
 use Throwable;
 
 /**
@@ -83,6 +83,13 @@ class PdfTextReplacer {
 	private readonly PdfStructureInspector $structureInspector;
 
 	/**
+	 * Text extractor used to re-read the output for residual entity text.
+	 *
+	 * @var PdfExtractor
+	 */
+	private readonly PdfExtractor $pdfExtractor;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger for diagnostic surfaces (PII-free).
@@ -97,6 +104,7 @@ class PdfTextReplacer {
 		?PdfStructureInspector $structureInspector = null,
 	) {
 		$this->structureInspector = $structureInspector ?? new PdfStructureInspector();
+		$this->pdfExtractor = new PdfExtractor(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -318,9 +326,7 @@ class PdfTextReplacer {
 	 */
 	public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats = [], bool $strict = false): array {
 		try {
-			$parser = new PdfParser();
-			$parsedPdf = $parser->parseContent($outputBytes);
-			$extracted = $parsedPdf->getText();
+			$extracted = $this->pdfExtractor->extractText(pdfBytes: $outputBytes);
 		} catch (Throwable $e) {
 			// The post-extraction is diagnostic only (parity with docx, which
 			// has no validation gate at all). When smalot can't re-parse the
@@ -626,4 +632,42 @@ class PdfTextReplacer {
 			streamsModified: 0
 		);
 	}//end measureNoOpStructurePreservation()
+
+	/**
+	 * Strip the /Info dictionary and XMP metadata from PDF bytes.
+	 *
+	 * Fails closed: when the PDF library cannot reparse or reserialise the
+	 * bytes, the unsanitised input (which still carries the original
+	 * document metadata) is never returned.
+	 *
+	 * @param string $pdfBytes PDF bytes, typically the output of {@see replaceInPdf()}.
+	 *
+	 * @return string The re-serialised PDF without document metadata.
+	 *
+	 * @throws PdfAnonymisationException When the bytes cannot be reparsed or the serialised result is empty.
+	 *
+	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 */
+	public function sanitizeMetadata(string $pdfBytes): string {
+		$doc = PDFDoc::from_string(buffer: $pdfBytes);
+		if ($doc === false) {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'SAPP failed to reparse replaced PDF for metadata sanitisation',
+				diagnostic: ['stage' => 'sanitize.reparse']
+			);
+		}
+
+		(new PdfMetadataSanitizer(logger: $this->logger))->sanitize(doc: $doc);
+		$serialised = $doc->to_pdf_file_s(rebuild: true);
+		if ($serialised === false || $serialised === '') {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'SAPP serialise after metadata sanitisation returned empty',
+				diagnostic: ['stage' => 'sanitize.serialise']
+			);
+		}
+
+		return $serialised;
+	}//end sanitizeMetadata()
 }//end class

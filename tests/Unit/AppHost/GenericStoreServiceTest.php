@@ -31,13 +31,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -162,6 +165,209 @@ class GenericStoreServiceTest extends TestCase {
 		$this->clientService->method('newClient')->willReturn($client);
 
 	}//end stubResponse()
+
+	/**
+	 * A registry set to `local` is read from this instance's own register,
+	 * without any HTTP request.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testLocalRegistryReadsThisInstanceWithoutANetworkCall(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+		$this->clientService->expects($this->never())->method('newClient');
+
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->expects($this->once())
+			->method('searchObjectsBySlug')
+			->with('pipelinq', 'application-template', ['kind' => 'pipeline'], true, false)
+			->willReturn([
+				new class {
+					/**
+					 * The object as an array.
+					 *
+					 * @return array<string, string>
+					 */
+					public function jsonSerialize(): array {
+						return ['slug' => 'b2b-sales-pipeline', 'title' => 'B2B sales pipeline', 'kind' => 'pipeline', 'version' => '1.3.0'];
+					}
+				},
+			]);
+
+		$result = $this->localService(objects: $objects)->search(descriptor: $this->descriptor(appId: 'pipelinq'), kind: 'pipeline');
+
+		$this->assertSame(GenericStoreService::OUTCOME_OK, $result['outcome']);
+		$this->assertSame('b2b-sales-pipeline', $result['cards'][0]['slug']);
+		$this->assertSame('1.3.0', $result['cards'][0]['version']);
+
+	}//end testLocalRegistryReadsThisInstanceWithoutANetworkCall()
+
+	/**
+	 * A local registry resolves one item by its slug, and only that slug.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testLocalRegistryResolvesBySlug(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willReturn([
+			['slug' => 'other', 'title' => 'Other'],
+			['slug' => 'b2b-sales-pipeline', 'title' => 'B2B sales pipeline'],
+		]);
+
+		$item = $this->localService(objects: $objects)->resolve(descriptor: $this->descriptor(appId: 'pipelinq'), slug: 'b2b-sales-pipeline');
+
+		$this->assertSame('B2B sales pipeline', $item['title'] ?? null);
+
+	}//end testLocalRegistryResolvesBySlug()
+
+	/**
+	 * A local registry whose register or schema is missing answers as
+	 * unreachable, never as an empty store.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testLocalRegistryWithoutTheSchemaIsUnreachable(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willThrowException(new RuntimeException('schema not found'));
+
+		$result = $this->localService(objects: $objects)->search(descriptor: $this->descriptor(appId: 'pipelinq'));
+
+		$this->assertSame(GenericStoreService::OUTCOME_UNREACHABLE, $result['outcome']);
+		$this->assertSame([], $result['cards']);
+
+	}//end testLocalRegistryWithoutTheSchemaIsUnreachable()
+
+	/**
+	 * A descriptor that may publish its title and version.
+	 *
+	 * @return StoreDescriptor
+	 */
+	private function localPublishingDescriptor(): StoreDescriptor {
+		return new StoreDescriptor(
+			appId: 'pipelinq',
+			schema: 'commercial-template',
+			defaultRegister: 'pipelinq',
+			publishFields: ['title', 'version'],
+			publishGroups: ['pipelinq-publishers']
+		);
+
+	}//end localPublishingDescriptor()
+
+	/**
+	 * Publishing to a local registry creates the object in-process, with only
+	 * the declared fields, and makes no HTTP request.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishToALocalRegistryCreatesTheObjectWithoutANetworkCall(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+		$this->clientService->expects($this->never())->method('newClient');
+
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willReturn([]);
+		$objects->expects($this->once())
+			->method('saveObject')
+			->with(
+				['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.0.0'],
+				[],
+				'pipelinq',
+				'commercial-template',
+				null
+			);
+
+		$result = $this->localService(objects: $objects)->publish(
+			descriptor: $this->localPublishingDescriptor(),
+			payload: ['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.0.0', 'owner' => 'not declared']
+		);
+
+		$this->assertSame(['outcome' => GenericStoreService::OUTCOME_OK, 'slug' => 'woo-intake'], $result);
+
+	}//end testPublishToALocalRegistryCreatesTheObjectWithoutANetworkCall()
+
+	/**
+	 * Publishing a slug the local registry already holds updates that object.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testPublishToALocalRegistryUpdatesTheObjectWithTheSameSlug(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willReturn([
+			['id' => '0f3c2a8e-4b1d-4c55-9a7e-2d6b9e1f0a11', 'slug' => 'woo-intake', 'version' => '1.0.0'],
+		]);
+		$objects->expects($this->once())
+			->method('saveObject')
+			->with(
+				['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.1.0'],
+				[],
+				'pipelinq',
+				'commercial-template',
+				'0f3c2a8e-4b1d-4c55-9a7e-2d6b9e1f0a11'
+			);
+
+		$result = $this->localService(objects: $objects)->publish(
+			descriptor: $this->localPublishingDescriptor(),
+			payload: ['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.1.0']
+		);
+
+		$this->assertSame(GenericStoreService::OUTCOME_OK, $result['outcome']);
+
+	}//end testPublishToALocalRegistryUpdatesTheObjectWithTheSameSlug()
+
+	/**
+	 * A local write that fails answers unreachable, never ok.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 *
+	 * @return void
+	 */
+	public function testAFailedLocalPublishIsUnreachable(): void {
+		$this->configure(url: 'local', register: 'pipelinq');
+
+		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects->method('searchObjectsBySlug')->willReturn([]);
+		$objects->method('saveObject')->willThrowException(new RuntimeException('validation failed'));
+
+		$result = $this->localService(objects: $objects)->publish(
+			descriptor: $this->localPublishingDescriptor(),
+			payload: ['slug' => 'woo-intake', 'title' => 'Woo-intake']
+		);
+
+		$this->assertSame(['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''], $result);
+
+	}//end testAFailedLocalPublishIsUnreachable()
+
+	/**
+	 * Build the service with a container that hands out the given object service.
+	 *
+	 * @param ObjectServiceInterface $objects The object service the local registry reads.
+	 *
+	 * @return GenericStoreService
+	 */
+	private function localService(ObjectServiceInterface $objects): GenericStoreService {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($objects);
+
+		return new GenericStoreService(
+			clientService: $this->clientService,
+			appConfig: $this->appConfig,
+			logger: $this->logger,
+			localRegistry: new LocalStoreRegistry(container: $container, logger: $this->logger)
+		);
+
+	}//end localService()
 
 	/**
 	 * No registry configured means no network call at all — the ADR-080

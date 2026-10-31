@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Resolves the coded declaration a vocabulary-options read is about.
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 class VocabularyDeclarationResolver {
 
@@ -71,7 +71,7 @@ class VocabularyDeclarationResolver {
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
 		if ($schemaRef !== '' && $property !== '') {
@@ -106,7 +106,7 @@ class VocabularyDeclarationResolver {
 	 *
 	 * @return array<string,mixed> The declaration.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function declarationFromQuery(string $scheme): array {
 		$declaration = ['scheme' => $scheme];

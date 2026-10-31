@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -101,7 +101,7 @@ class ProxySettings {
 	 *
 	 * @return string|null The proxy URL, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function proxy(): ?string {
 		$own = $this->readAppValue(key: self::PROXY_KEY);
@@ -128,7 +128,7 @@ class ProxySettings {
 	 *
 	 * @return array<int, string> The host patterns.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function exceptions(): array {
 		$raw = $this->readAppValue(key: self::NO_PROXY_KEY);
@@ -169,7 +169,7 @@ class ProxySettings {
 	 *
 	 * @return array<string, mixed> The options, or an empty array when no proxy is set.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function requestOptions(): array {
 		$proxy = $this->proxy();
@@ -197,7 +197,7 @@ class ProxySettings {
 	 *
 	 * @return bool True when outbound calls go through a proxy.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function isConfigured(): bool {
 		return ($this->proxy() !== null);
@@ -209,7 +209,7 @@ class ProxySettings {
 	 *
 	 * @return array<string, mixed> The description.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function describe(): array {
 		$proxy = $this->proxy();
@@ -232,7 +232,7 @@ class ProxySettings {
 	 *
 	 * @return string The URL, without credentials.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public static function withoutCredentials(string $url): string {
 		// No user-information delimiter means nothing to strip, so the value can

@@ -32,6 +32,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
@@ -75,6 +76,7 @@ class AuditTrailController extends Controller {
 	 * @param ReadableAuditTrailLister $readableLister Lists the trail within one caller's read scope.
 	 * @param AuditTrailPageService $auditPage The audit page's keyset list and export.
 	 * @param ObjectHistoryForReaders $historyForReaders One object's history for a non-admin reader of it.
+	 * @param ExplicitRevealTrailMasker|null $revealMasker Masks explicit-reveal values in the admin lists.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten: the two framework arguments plus one
 	 *     service per audit surface this controller routes (log, mapper, hash chain, session,
@@ -91,6 +93,7 @@ class AuditTrailController extends Controller {
 		private readonly ReadableAuditTrailLister $readableLister,
 		private readonly AuditTrailPageService $auditPage,
 		private readonly ObjectHistoryForReaders $historyForReaders,
+		private readonly ?ExplicitRevealTrailMasker $revealMasker = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -330,6 +333,10 @@ class AuditTrailController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
+		if ($this->revealMasker !== null && is_array($page['results'] ?? null) === true) {
+			$page['results'] = $this->revealMasker->mask(entries: $page['results']);
+		}
+
 		return new JSONResponse(data: $page);
 	}//end cursorPage()
 
@@ -365,8 +372,12 @@ class AuditTrailController extends Controller {
 		// Extract common parameters.
 		$params = $this->extractRequestParameters();
 
-		// Get logs from service.
+		// Get logs from service. An explicit-reveal value reads masked for an
+		// administrator too (property-explicit-reveal).
 		$logs = $this->logService->getAllLogs($params);
+		if ($this->revealMasker !== null) {
+			$logs = $this->revealMasker->mask(entries: $logs);
+		}
 
 		// Get total count for pagination.
 		$total = $this->logService->countAllLogs($params['filters']);
@@ -626,7 +637,7 @@ class AuditTrailController extends Controller {
 				config: $params
 			);
 
-			// Return paginated results.
+			// Return paginated results. An administrator always sees read entries.
 			return new JSONResponse(
 				data: [
 					'results' => $logs,
@@ -635,6 +646,7 @@ class AuditTrailController extends Controller {
 					'pages' => ceil($total / $params['limit']),
 					'limit' => $params['limit'],
 					'offset' => $params['offset'],
+					'readEventsVisible' => true,
 				]
 			);
 		} catch (\InvalidArgumentException $e) {

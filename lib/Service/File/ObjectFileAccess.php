@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -46,6 +47,34 @@ use Throwable;
  * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
  */
 class ObjectFileAccess {
+
+	/**
+	 * The file verb for reading an object's files.
+	 *
+	 * @var string
+	 */
+	public const READ_FILES = 'readFiles';
+
+	/**
+	 * The file verb for adding a file or changing one.
+	 *
+	 * @var string
+	 */
+	public const ADD_FILES = 'addFiles';
+
+	/**
+	 * The file verb for deleting a file.
+	 *
+	 * @var string
+	 */
+	public const DELETE_FILES = 'deleteFiles';
+
+	/**
+	 * The file verbs; a block naming any of them opts its schema in.
+	 *
+	 * @var array<int, string>
+	 */
+	public const FILE_VERBS = [self::READ_FILES, self::ADD_FILES, self::DELETE_FILES];
 
 	/**
 	 * Constructor.
@@ -93,6 +122,10 @@ class ObjectFileAccess {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
+		if ($this->mayUseFiles(object: $object, verb: self::READ_FILES) === false) {
+			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
+		}
+
 		return $object;
 	}//end readable()
 
@@ -102,6 +135,7 @@ class ObjectFileAccess {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
+	 * @param string $verb     The file verb the change needs when the schema names file verbs: addFiles or deleteFiles.
 	 *
 	 * @return ObjectEntity The changeable object.
 	 *
@@ -110,10 +144,10 @@ class ObjectFileAccess {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 */
-	public function changeable(string $register, string $schema, string $id): ObjectEntity {
+	public function changeable(string $register, string $schema, string $id, string $verb = self::ADD_FILES): ObjectEntity {
 		$object = $this->readable(register: $register, schema: $schema, id: $id);
 
-		if ($this->mayUpdate(object: $object) === false) {
+		if ($this->mayChangeFiles(object: $object, verb: $verb) === false) {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_CHANGEABLE);
 		}
 
@@ -153,7 +187,8 @@ class ObjectFileAccess {
 			return false;
 		}
 
-		return $readable instanceof ObjectEntity;
+		return $readable instanceof ObjectEntity
+			&& $this->mayUseFiles(object: $readable, verb: self::READ_FILES) === true;
 	}//end mayRead()
 
 	/**
@@ -186,4 +221,122 @@ class ObjectFileAccess {
 			return false;
 		}
 	}//end mayUpdate()
+
+	/**
+	 * Whether the caller may change an object's files with this verb.
+	 *
+	 * A schema that names file verbs asks the verb; one that names none asks
+	 * `update` on the object, as before file verbs existed.
+	 *
+	 * @param ObjectEntity $object The object, already known to be readable.
+	 * @param string       $verb   addFiles or deleteFiles.
+	 *
+	 * @return bool True when the caller may make the change.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function mayChangeFiles(ObjectEntity $object, string $verb = self::ADD_FILES): bool {
+		$schema = $this->schemaOf(object: $object);
+		if ($schema === null) {
+			return false;
+		}
+
+		$names = $this->namesFileVerbs(schema: $schema, object: $object);
+		if ($names === null) {
+			return false;
+		}
+
+		if ($names === true) {
+			return $this->allows(schema: $schema, object: $object, action: $verb);
+		}
+
+		return $this->mayUpdate(object: $object);
+	}//end mayChangeFiles()
+
+	/**
+	 * Whether a file verb lets the caller through, when the schema names file verbs.
+	 *
+	 * True when the schema names none (the object rule alone decides then).
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $verb   The file verb.
+	 *
+	 * @return bool
+	 */
+	private function mayUseFiles(ObjectEntity $object, string $verb): bool {
+		$schema = $this->schemaOf(object: $object);
+		if ($schema === null) {
+			return false;
+		}
+
+		$names = $this->namesFileVerbs(schema: $schema, object: $object);
+		if ($names === false) {
+			return true;
+		}
+
+		return $names === true && $this->allows(schema: $schema, object: $object, action: $verb);
+	}//end mayUseFiles()
+
+	/**
+	 * Whether the object's effective block names a file verb; null when it cannot be read.
+	 *
+	 * @param Schema       $schema The object's schema.
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return bool|null
+	 */
+	private function namesFileVerbs(Schema $schema, ObjectEntity $object): ?bool {
+		try {
+			$authorization = $this->permissionHandler->resolveAuthorization(schema: $schema, object: $object);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		return is_array($authorization) === true
+			&& array_intersect(self::FILE_VERBS, array_keys($authorization)) !== [];
+	}//end namesFileVerbs()
+
+	/**
+	 * The object's schema, or null when it cannot be found.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return Schema|null
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		$schemaId = $object->getSchema();
+		if ($schemaId === null || $schemaId === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end schemaOf()
+
+	/**
+	 * Whether the permission handler grants an action on the object.
+	 *
+	 * @param Schema       $schema The schema.
+	 * @param ObjectEntity $object The object.
+	 * @param string       $action The action.
+	 *
+	 * @return bool
+	 */
+	private function allows(Schema $schema, ObjectEntity $object, string $action): bool {
+		try {
+			return $this->permissionHandler->hasPermission(
+				schema: $schema,
+				action: $action,
+				userId: null,
+				objectOwner: $object->getOwner(),
+				_rbac: true,
+				object: $object
+			);
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end allows()
 }//end class

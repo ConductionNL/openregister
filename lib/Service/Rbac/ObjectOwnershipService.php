@@ -64,6 +64,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -748,13 +749,21 @@ class ObjectOwnershipService {
 	}//end requireMayNameOwnerGroup()
 
 	/**
-	 * Require that the caller administers the instance.
+	 * Require that the caller administers the instance, or that a trusted system operation runs.
 	 *
 	 * @throws NotAuthorizedException When they do not.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
 	 */
 	private function requireAdmin(): void {
+		// A trusted system operation (an install, a repair, an example set's
+		// seeding) has no session user and acts for the application itself.
+		if (SystemOperationContext::isActive() === true) {
+			return;
+		}
+
 		if (in_array(needle: self::ADMIN_GROUP, haystack: $this->callerGroups(), strict: true) === false) {
 			throw new NotAuthorizedException(
 				message: 'Only an administrator may assign a record to somebody else'

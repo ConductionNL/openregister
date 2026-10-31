@@ -515,7 +515,7 @@ class SecurityService {
 	 *
 	 * @return array<string, int> The attempt ceilings, window and lockout, in seconds.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function describeAuthRateLimit(): array {
 		return $this->authCeiling();

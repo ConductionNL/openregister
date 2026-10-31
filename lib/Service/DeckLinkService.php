@@ -240,6 +240,8 @@ class DeckLinkService {
 						$row['dueDate'] = $widened['dueDate'] ?? $row['dueDate'];
 						$row['labels'] = $widened['labels'];
 						$row['assignees'] = $widened['assignees'];
+						$row['boardTitle'] = $widened['boardTitle'];
+						$row['stackTitle'] = $widened['stackTitle'];
 					}
 				} catch (Throwable $e) {
 					// Stale link — keep cached row as-is.
@@ -566,7 +568,7 @@ class DeckLinkService {
 	 *
 	 * @param object $card Deck Card entity.
 	 *
-	 * @return array{dueDate:?string,dueDateRaw:?DateTime,labels:array,assignees:array}
+	 * @return array{dueDate:?string,dueDateRaw:?DateTime,labels:array,assignees:array,boardTitle:string,stackTitle:string}
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
@@ -612,8 +614,33 @@ class DeckLinkService {
 			'dueDateRaw' => $dueDateRaw,
 			'labels' => $labels,
 			'assignees' => $assignees,
+			'boardTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedBoard'),
+			'stackTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedStack'),
 		];
 	}//end extractCardFields()
+
+	/**
+	 * The title of the board or list Deck's card lookup put on the card, or ''.
+	 *
+	 * @param object $card   The card as Deck's card service returned it.
+	 * @param string $getter `getRelatedBoard` or `getRelatedStack`.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/deck-integration/spec.md
+	 */
+	private function relatedTitle(object $card, string $getter): string {
+		try {
+			$related = $card->{$getter}();
+			if (is_object($related) === true) {
+				return (string)$related->getTitle();
+			}
+		} catch (Throwable $e) {
+			// Leave the title empty.
+		}
+
+		return '';
+	}//end relatedTitle()
 
 	/**
 	 * Map a Deck Label entity to the leaf-row shape.

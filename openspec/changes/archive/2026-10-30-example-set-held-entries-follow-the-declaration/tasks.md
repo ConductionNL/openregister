@@ -1,0 +1,5 @@
+- [x] 1.1 ExampleSetChanges::follow(), called for a held change from installChanges()
+- [x] 1.2 followPreference() for a held user preference on a refresh
+- [x] 1.3 tests (ExampleSetHeldEntriesTest)
+- [x] 1.4 a field the declaration of a held change gained is written and recorded (gainedRows)
+- [x] 1.5 a held field still holding what the change wrote is compared regardless of key order or JSON text, so a changed declaration is written on a refresh (sameAs)

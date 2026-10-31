@@ -92,7 +92,7 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 	 * private __construct exists so an outcome cannot be built without
 	 * saying which of the four it is.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
 		$patch = $this->patchFor(parameters: $parameters);

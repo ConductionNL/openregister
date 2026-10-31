@@ -75,6 +75,33 @@ class FlowMapper extends QBMapper {
 	}//end findByUuid()
 
 	/**
+	 * The stored flow a schema declares under this name (`x-openregister-flows`).
+	 *
+	 * Declared flows are stored by the identity the import keys on: their name
+	 * and the declaring schema's slug. A newly minted uuid is per installation,
+	 * so a shipped declaration can only be found again by that pair.
+	 *
+	 * @param string $name       The declared flow's name.
+	 * @param string $schemaSlug The declaring schema's slug.
+	 *
+	 * @return Flow|null The flow, or null when none is stored.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	public function findDeclared(string $name, string $schemaSlug): ?Flow {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('name', $qb->createNamedParameter($name)))
+			->andWhere($qb->expr()->eq('trigger_schema', $qb->createNamedParameter($schemaSlug)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(1);
+
+		$found = $this->findEntities(query: $qb);
+		return ($found[0] ?? null);
+	}//end findDeclared()
+
+	/**
 	 * List flows, newest first.
 	 *
 	 * `$app` is the per-app scoping key. Passing null returns every app's flows,

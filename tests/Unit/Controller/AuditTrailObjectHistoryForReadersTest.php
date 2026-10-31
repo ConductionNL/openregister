@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
+use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\LogService;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\BackgroundJob\IJobList;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -99,12 +101,22 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		]);
 	}
 
+	/**
+	 * The groups `audit.readEventsVisibleTo` names, as JSON.
+	 */
+	private string $readEventGroups = '[]';
+
 	private function controllerFor(string $uid, bool $isAdmin, array $groups = []): AuditTrailController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
 		$this->groupManager->method('getUserGroupIds')->willReturn($groups);
+		$this->groupManager->method('isInGroup')->willReturnCallback(static fn (string $user, string $group): bool => in_array($group, $groups, true));
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = ''): string => $key === ReadEventVisibility::CONFIG_KEY ? $this->readEventGroups : $default
+		);
 
 		$properties = new PropertyRbacHandler(
 			$this->userSession,
@@ -133,7 +145,8 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 				$this->auditTrailMapper,
 				new HistoryEntryRedactor($properties),
 				$this->registerMapper,
-				$this->purposeGuard
+				$this->purposeGuard,
+				new ReadEventVisibility($appConfig, $this->groupManager, $this->userSession)
 			)
 		);
 	}
@@ -300,6 +313,55 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->assertSame('PURPOSE_REFUSED', $result->getData()['error']);
 	}
 
+	/**
+	 * A read entry and a change on the object, newest first.
+	 *
+	 * @return array<int, AuditTrail>
+	 */
+	private function readAndUpdate(): array {
+		$read = new AuditTrail();
+		$read->setUuid('r1');
+		$read->setObjectUuid(self::OBJECT_UUID);
+		$read->setAction('read');
+		$read->setUser('fatma');
+		$read->setChanged([]);
+
+		return [$read, $this->updateEntry()];
+	}
+
+	public function testAReaderOutsideTheNamedGroupsDoesNotSeeWhoReadTheObject(): void {
+		$this->readableObject();
+		$this->readEventGroups = '["dossiq-sensitive"]';
+		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+
+		$data = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
+
+		$this->assertSame(['update'], array_column($data['results'], 'action'), 'a read entry reaches a reader outside the named groups');
+		$this->assertSame(1, $data['total'], 'the total counts a read entry the reader is not given');
+		$this->assertFalse($data['readEventsVisible']);
+	}
+
+	public function testNoGroupNamedMeansNoNonAdminSeesReads(): void {
+		$this->readableObject();
+		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+
+		$data = $this->controllerFor('behandelaar', false, ['behandelaars', 'dossiq-sensitive'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
+
+		$this->assertSame(['update'], array_column($data['results'], 'action'));
+		$this->assertFalse($data['readEventsVisible']);
+	}
+
+	public function testAMemberOfANamedGroupSeesWhoReadTheObject(): void {
+		$this->readableObject();
+		$this->readEventGroups = '["dossiq-sensitive"]';
+		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+
+		$data = $this->controllerFor('pieter', false, ['dossiq-sensitive'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
+
+		$this->assertSame(['read', 'update'], array_column($data['results'], 'action'));
+		$this->assertTrue($data['readEventsVisible']);
+	}
+
 	public function testAnAdministratorReadsTheHistoryAsBefore(): void {
 		$entry = $this->updateEntry();
 		$this->logService->expects($this->once())->method('getLogs')->willReturn([$entry]);
@@ -310,6 +372,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 		$this->assertSame([$entry], $result->getData()['results'], 'the admin path returns the entries unfiltered');
+		$this->assertTrue($result->getData()['readEventsVisible'], 'an administrator always sees read entries');
 	}
 
 	public function testAnAnonymousCallerGets401(): void {

@@ -107,7 +107,7 @@ class FlowTriggerMapper {
 	 *
 	 * @return array<int, array{flow_uuid: string, event: string, register: string, enabled: bool}> The rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findBySchema(string $schemaSlug): array {
 		$qb = $this->db->getQueryBuilder();

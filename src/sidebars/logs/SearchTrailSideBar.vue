@@ -480,6 +480,14 @@ import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
 import eventBus from '../../eventBus.js'
 
+const ACTIVITY_PERIOD_FORMATS = {
+	hourly: (date) => date.toLocaleString(),
+	daily: (date) => date.toLocaleDateString(),
+	weekly: (date) => `Week of ${date.toLocaleDateString()}`,
+	monthly: (date) =>
+		date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' }),
+}
+
 export default {
 	name: 'SearchTrailSideBar',
 	components: {
@@ -1088,24 +1096,11 @@ export default {
 		 * @return {string} Formatted period
 		 */
 		formatActivityPeriod(period) {
-			// Format based on the selected period type
 			const periodType = this.selectedActivityPeriod.value
-
-			switch (periodType) {
-				case 'hourly':
-					return new Date(period).toLocaleString()
-				case 'daily':
-					return new Date(period).toLocaleDateString()
-				case 'weekly':
-					return `Week of ${new Date(period).toLocaleDateString()}`
-				case 'monthly':
-					return new Date(period).toLocaleDateString(undefined, {
-						year: 'numeric',
-						month: 'long',
-					})
-				default:
-					return period
+			if (!Object.hasOwn(ACTIVITY_PERIOD_FORMATS, periodType)) {
+				return period
 			}
+			return ACTIVITY_PERIOD_FORMATS[periodType](new Date(period))
 		},
 
 		/**

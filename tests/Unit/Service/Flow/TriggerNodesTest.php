@@ -211,9 +211,32 @@ class TriggerNodesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheObjectTriggerNamesItsVocabulary(): void {
-		$this->assertSame(['event', 'register', 'schema'], $this->object->configKeys());
+		$this->assertSame(['event', 'register', 'schema', 'scope'], $this->object->configKeys());
 
 	}//end testTheObjectTriggerNamesItsVocabulary()
+
+	/**
+	 * A trigger may say which objects of its schema it is about; a scope
+	 * without a property or with a non-scalar value is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testAnObjectTriggerScopeNamesOnePropertyAndValue(): void {
+		$config = ['event' => 'object.updated', 'register' => 'zaken', 'schema' => 'case'];
+		$this->object->validateConfig(array_merge($config, ['scope' => ['property' => 'caseType', 'value' => 'a']]));
+
+		foreach ([['value' => 'a'], ['property' => '', 'value' => 'a'], ['property' => 'caseType', 'value' => ['a']], 'a'] as $scope) {
+			try {
+				$this->object->validateConfig(array_merge($config, ['scope' => $scope]));
+				$this->fail('a malformed scope was accepted: ' . json_encode($scope));
+			} catch (InvalidArgumentException $e) {
+				$this->assertStringContainsString('scope', $e->getMessage());
+			}
+		}
+
+	}//end testAnObjectTriggerScopeNamesOnePropertyAndValue()
 
 	/**
 	 * A five-field cron expression is accepted; anything else is refused.

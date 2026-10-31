@@ -33,7 +33,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class ExportRefusedException extends Exception {
 	/**
@@ -62,7 +62,7 @@ class ExportRefusedException extends Exception {
 	 *
 	 * @return string The rule id.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function getRule(): string {
 		return $this->rule;
@@ -73,7 +73,7 @@ class ExportRefusedException extends Exception {
 	 *
 	 * @return int The status code.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function getStatusCode(): int {
 		return $this->statusCode;
@@ -88,7 +88,7 @@ class ExportRefusedException extends Exception {
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function toResponseBody(): array {
 		return array_merge(

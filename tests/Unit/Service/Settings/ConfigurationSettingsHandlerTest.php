@@ -259,28 +259,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertTrue($result['retention']['auditTrailsEnabled']);
 		$this->assertTrue($result['retention']['searchTrailsEnabled']);
 
-		// Solr defaults.
-		$this->assertArrayHasKey('solr', $result);
-		$this->assertFalse($result['solr']['enabled']);
-		$this->assertSame('solr', $result['solr']['host']);
-		$this->assertSame(8983, $result['solr']['port']);
-		$this->assertSame('/solr', $result['solr']['path']);
-		$this->assertSame('openregister', $result['solr']['core']);
-		$this->assertSame('_default', $result['solr']['configSet']);
-		$this->assertSame('http', $result['solr']['scheme']);
-		$this->assertSame('solr', $result['solr']['username']);
-		$this->assertSame('SolrRocks', $result['solr']['password']);
-		$this->assertSame(30, $result['solr']['timeout']);
-		$this->assertTrue($result['solr']['autoCommit']);
-		$this->assertSame(1000, $result['solr']['commitWithin']);
-		$this->assertTrue($result['solr']['enableLogging']);
-		$this->assertSame('zookeeper:2181', $result['solr']['zookeeperHosts']);
-		$this->assertSame('', $result['solr']['zookeeperUsername']);
-		$this->assertSame('', $result['solr']['zookeeperPassword']);
-		$this->assertSame('openregister', $result['solr']['collection']);
-		$this->assertTrue($result['solr']['useCloud']);
-		$this->assertNull($result['solr']['objectCollection']);
-		$this->assertNull($result['solr']['fileCollection']);
+		$this->assertArrayNotHasKey('solr', $result);
 
 		// Groups, tenants, users.
 		$this->assertArrayHasKey('availableGroups', $result);
@@ -390,36 +369,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	/**
-	 * Test getSettings with stored Solr config
-	 *
-	 * @return void
-	 */
-	public function testGetSettingsWithStoredSolrConfig(): void {
-		$solrConfig = json_encode([
-			'enabled' => true,
-			'host' => 'solr-server',
-			'port' => 8984,
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($appName, $key, $default) use ($solrConfig) {
-				if ($key === 'solr') {
-					return $solrConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getSettings();
-
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('solr-server', $result['solr']['host']);
-		$this->assertSame(8984, $result['solr']['port']);
-		// Defaults for unset keys.
-		$this->assertSame('/solr', $result['solr']['path']);
-		$this->assertSame('openregister', $result['solr']['core']);
-	}
-
-	/**
 	 * Test getSettings with all configs stored simultaneously
 	 *
 	 * @return void
@@ -429,7 +378,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			'rbac' => json_encode(['enabled' => false]),
 			'multitenancy' => json_encode(['enabled' => false]),
 			'retention' => json_encode(['objectArchiveRetention' => 999]),
-			'solr' => json_encode(['enabled' => true, 'host' => 'custom-solr']),
 		];
 
 		$this->appConfig->method('getValueString')
@@ -442,8 +390,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertFalse($result['rbac']['enabled']);
 		$this->assertFalse($result['multitenancy']['enabled']);
 		$this->assertSame(999, $result['retention']['objectArchiveRetention']);
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('custom-solr', $result['solr']['host']);
 	}
 
 	/**
@@ -703,46 +649,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	/**
-	 * Test updateSettings stores Solr config
-	 *
-	 * @return void
-	 */
-	public function testUpdateSettingsStoresSolrConfig(): void {
-		$storedValues = [];
-		$this->appConfig->method('setValueString')
-			->willReturnCallback(function ($app, $key, $value) use (&$storedValues) {
-				$storedValues[$key] = $value;
-				return true;
-			});
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use (&$storedValues) {
-				return $storedValues[$key] ?? '';
-			});
-
-		$data = [
-			'solr' => [
-				'enabled' => true,
-				'host' => 'my-solr',
-				'port' => '9999',
-				'timeout' => '60',
-				'commitWithin' => '2000',
-			],
-		];
-
-		$result = $this->handler->updateSettings($data);
-
-		$this->assertArrayHasKey('version', $result);
-		$this->assertArrayHasKey('solr', $result);
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('my-solr', $result['solr']['host']);
-		// Port should be cast to int.
-		$this->assertSame(9999, $result['solr']['port']);
-		$this->assertSame(60, $result['solr']['timeout']);
-		$this->assertSame(2000, $result['solr']['commitWithin']);
-	}
-
-	/**
 	 * Test updateSettings with empty data (no sections) returns getSettings
 	 *
 	 * @return void
@@ -779,7 +685,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 			'rbac' => ['enabled' => false],
 			'multitenancy' => ['enabled' => false],
 			'retention' => ['auditTrailsEnabled' => false],
-			'solr' => ['enabled' => true],
 		];
 
 		$result = $this->handler->updateSettings($data);
@@ -787,7 +692,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertFalse($result['rbac']['enabled']);
 		$this->assertFalse($result['multitenancy']['enabled']);
 		$this->assertFalse($result['retention']['auditTrailsEnabled']);
-		$this->assertTrue($result['solr']['enabled']);
 	}
 
 	/**
@@ -1434,7 +1338,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		// Vector config.
 		$this->assertArrayHasKey('vectorConfig', $result);
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -1476,7 +1380,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertSame('ollama', $result['chatProvider']);
 		$this->assertSame('sk-test', $result['openaiConfig']['apiKey']);
 		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('_vector_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -1525,7 +1429,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -1550,7 +1454,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -1575,36 +1479,11 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_custom_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
-	 * Test getLLMSettingsOnly fills missing solrField in vectorConfig
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyFillsMissingSolrFieldOnly(): void {
-		$storedConfig = json_encode([
-			'enabled' => true,
-			'vectorConfig' => ['backend' => 'solr'],
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use ($storedConfig) {
-				if ($key === 'llm') {
-					return $storedConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getLLMSettingsOnly();
-
-		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
-	}
-
-	/**
-	 * Test getLLMSettingsOnly removes deprecated solrCollection
+	 * Test getLLMSettingsOnly removes the retired Solr vector keys
 	 *
 	 * @return void
 	 */
@@ -1629,6 +1508,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertArrayNotHasKey('solrCollection', $result['vectorConfig']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	/**
@@ -2056,52 +1936,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Solr config with partial stored data
-	// =========================================================================
-
-	/**
-	 * Test getSettings Solr config uses defaults for missing keys
-	 *
-	 * @return void
-	 */
-	public function testGetSettingsSolrPartialConfigUsesDefaults(): void {
-		$solrConfig = json_encode([
-			'enabled' => true,
-		]);
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($appName, $key, $default) use ($solrConfig) {
-				if ($key === 'solr') {
-					return $solrConfig;
-				}
-				return '';
-			});
-
-		$result = $this->handler->getSettings();
-
-		$this->assertTrue($result['solr']['enabled']);
-		$this->assertSame('solr', $result['solr']['host']);
-		$this->assertSame(8983, $result['solr']['port']);
-		$this->assertSame('/solr', $result['solr']['path']);
-		$this->assertSame('openregister', $result['solr']['core']);
-		$this->assertSame('_default', $result['solr']['configSet']);
-		$this->assertSame('http', $result['solr']['scheme']);
-		$this->assertSame('solr', $result['solr']['username']);
-		$this->assertSame('SolrRocks', $result['solr']['password']);
-		$this->assertSame(30, $result['solr']['timeout']);
-		$this->assertTrue($result['solr']['autoCommit']);
-		$this->assertSame(1000, $result['solr']['commitWithin']);
-		$this->assertTrue($result['solr']['enableLogging']);
-		$this->assertSame('zookeeper:2181', $result['solr']['zookeeperHosts']);
-		$this->assertSame('', $result['solr']['zookeeperUsername']);
-		$this->assertSame('', $result['solr']['zookeeperPassword']);
-		$this->assertSame('openregister', $result['solr']['collection']);
-		$this->assertTrue($result['solr']['useCloud']);
-		$this->assertNull($result['solr']['objectCollection']);
-		$this->assertNull($result['solr']['fileCollection']);
-	}
-
-	// =========================================================================
 	// updateSettings retention defaults
 	// =========================================================================
 
@@ -2131,42 +1965,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertSame(63072000000, $result['retention']['objectDeleteRetention']);
 		$this->assertTrue($result['retention']['auditTrailsEnabled']);
 		$this->assertTrue($result['retention']['searchTrailsEnabled']);
-	}
-
-	// =========================================================================
-	// updateSettings solr port/timeout/commitWithin casting
-	// =========================================================================
-
-	/**
-	 * Test updateSettings Solr config casts numeric string values
-	 *
-	 * @return void
-	 */
-	public function testUpdateSettingsSolrCastsNumericValues(): void {
-		$storedValues = [];
-		$this->appConfig->method('setValueString')
-			->willReturnCallback(function ($app, $key, $value) use (&$storedValues) {
-				$storedValues[$key] = $value;
-				return true;
-			});
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use (&$storedValues) {
-				return $storedValues[$key] ?? '';
-			});
-
-		$this->handler->updateSettings([
-			'solr' => [
-				'port' => '1234',
-				'timeout' => '45',
-				'commitWithin' => '3000',
-			],
-		]);
-
-		$decoded = json_decode($storedValues['solr'], true);
-		$this->assertSame(1234, $decoded['port']);
-		$this->assertSame(45, $decoded['timeout']);
-		$this->assertSame(3000, $decoded['commitWithin']);
 	}
 
 	// =========================================================================
@@ -2245,40 +2043,6 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// updateSettings with Solr objectCollection/fileCollection
-	// =========================================================================
-
-	/**
-	 * Test updateSettings Solr with objectCollection and fileCollection
-	 *
-	 * @return void
-	 */
-	public function testUpdateSettingsSolrWithCollectionFields(): void {
-		$storedValues = [];
-		$this->appConfig->method('setValueString')
-			->willReturnCallback(function ($app, $key, $value) use (&$storedValues) {
-				$storedValues[$key] = $value;
-				return true;
-			});
-
-		$this->appConfig->method('getValueString')
-			->willReturnCallback(function ($app, $key, $default) use (&$storedValues) {
-				return $storedValues[$key] ?? '';
-			});
-
-		$result = $this->handler->updateSettings([
-			'solr' => [
-				'enabled' => true,
-				'objectCollection' => 'obj_col',
-				'fileCollection' => 'file_col',
-			],
-		]);
-
-		$this->assertSame('obj_col', $result['solr']['objectCollection']);
-		$this->assertSame('file_col', $result['solr']['fileCollection']);
-	}
-
-	// =========================================================================
 	// updateLLMSettingsOnly with empty existing and full new
 	// =========================================================================
 
@@ -2335,7 +2099,7 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 		$this->assertSame('llama', $result['fireworksConfig']['chatModel']);
 		$this->assertSame('https://fw.ai/v1', $result['fireworksConfig']['baseUrl']);
 		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('_vec_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	// =========================================================================

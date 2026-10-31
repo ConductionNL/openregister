@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\ExportProfile;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfileValidator {
 
@@ -57,7 +57,7 @@ class ExportProfileValidator {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) A partial update validates
 	 *     the same rules over fewer keys, which is one rule set, not two.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function validate(array $data, bool $partial): void {
 		if ($partial === false) {

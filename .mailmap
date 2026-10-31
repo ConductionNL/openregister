@@ -1,0 +1,37 @@
+# Maps the identities one person or bot used over time onto a single name and
+# address, so `git shortlog`, `git blame` and history-based tools count each
+# contributor once. Only identities that are clearly the same person are merged.
+# Format: https://git-scm.com/docs/gitmailmap
+Ruben van der Linde <ruben@conduction.nl> <rubenvdlinde@gmail.com>
+Ruben van der Linde <ruben@conduction.nl> <rubenvdlinde@noreply.codeberg.org>
+Ruben van der Linde <ruben@conduction.nl> <rubenvdlinde@conduction.nl>
+Ruben van der Linde <ruben@conduction.nl> <juan.claude@conduction.nl>
+Ruben van der Linde <ruben@conduction.nl> Ruben van der Linde <info@conduction.nl>
+Robert Zondervan <robert@conduction.nl> <rjzondervan@gmail.com>
+Robert Zondervan <robert@conduction.nl> <rjzondervan@noreply.codeberg.org>
+Wilco Louwerse <wilco@conduction.nl> <wilco@conduction.nl>
+Wilco Louwerse <wilco@conduction.nl> <wilco@louwerse.com>
+Wilco Louwerse <wilco@conduction.nl> <wilcolouwerse@noreply.codeberg.org>
+Remko Huisman <remko@conduction.nl> <remko@conduction.nl>
+Remko Huisman <remko@conduction.nl> <43807324+remko48@users.noreply.github.com>
+Remko Huisman <remko@conduction.nl> <remko48@noreply.codeberg.org>
+Thijn Douwma <thijn@conduction.nl> <thijn@conduction.nl>
+Thijn Douwma <thijn@conduction.nl> <Thijn@conduction.nl>
+Thijn Douwma <thijn@conduction.nl> <sudothijn@noreply.codeberg.org>
+Thijn Douwma <thijn@conduction.nl> <Ralkey@outlook.com>
+Thijn Douwma <thijn@conduction.nl> <thijn.douwma@outlook.com>
+Barry Brands <barry@conduction.nl> <barry@conduction.nl>
+Barry Brands <barry@conduction.nl> <barrybrands02@hotmail.com>
+Barry Brands <barry@conduction.nl> <57346398+bbrands02@users.noreply.github.com>
+Barry Brands <barry@conduction.nl> <bbrands@noreply.codeberg.org>
+Mark Westerweel <markwesterweel@conduction.nl> <66728126+MWest2020@users.noreply.github.com>
+Mark Westerweel <markwesterweel@conduction.nl> <mwesterweel@hotmail.com>
+Alex Rekachynskyi <phone.070718@gmail.com> <87539434+CBibop12@users.noreply.github.com>
+Al Gorithm (Hydra Builder) <builder@hydra.conduction.nl> <builder@hydra.conduction.nl>
+Al Gorithm (Hydra Builder) <builder@hydra.conduction.nl> <builder@conduction.nl>
+Al Gorithm (Hydra Builder) <builder@hydra.conduction.nl> <hydra-builder@conduction.nl>
+Al Gorithm (Hydra Builder) <builder@hydra.conduction.nl> <al@conduction.nl>
+Al Gorithm (Hydra Builder) <builder@hydra.conduction.nl> <al.gorithm@conduction.nl>
+Al Gorithm (Hydra Builder) <builder@hydra.conduction.nl> Al Gorithm (Hydra Builder) <info@conduction.nl>
+github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> <github-actions[bot]@users.noreply.github.com>
+github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> <action@github.com>

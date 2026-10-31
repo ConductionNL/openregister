@@ -1,0 +1,3 @@
+- [x] 1.1 ExampleSetCasePlans part, wired in EngineKinds, Catalogue and Record
+- [x] 1.2 tests (ExampleSetCasePlansTest)
+- [x] 1.3 case plans are refreshed: a refresh puts the items back in their declared states

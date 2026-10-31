@@ -40,7 +40,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -90,7 +90,7 @@ class AuthorizationDenyValidator {
 	 *
 	 * @return string[] One sentence per contradiction; empty when the block is storable.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function findings(?array $authorization, string $subject): array {
 		if (is_array($authorization) === false || $authorization === []) {
@@ -117,7 +117,7 @@ class AuthorizationDenyValidator {
 	 *
 	 * @throws AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function assertStorable(?array $authorization, string $subject): void {
 		$findings = $this->findings(authorization: $authorization, subject: $subject);

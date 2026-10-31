@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
  * @category Service
  * @package  OCA\OpenRegister\Service\Gdpr\Erasure
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class SubjectPartyCounter {
 	/**
@@ -57,7 +57,7 @@ class SubjectPartyCounter {
 	 *
 	 * @return array<int, string> The needles, deduplicated.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function needles(string $subjectId, array $matched): array {
 		$needles = [];
@@ -87,7 +87,7 @@ class SubjectPartyCounter {
 	 *
 	 * @return int The number of party records naming the subject.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function count(array $payload, array $needles): int {
 		if ($needles === []) {

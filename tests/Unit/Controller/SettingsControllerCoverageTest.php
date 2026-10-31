@@ -6,7 +6,6 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -28,7 +27,6 @@ class SettingsControllerCoverageTest extends TestCase {
 	private ContainerInterface&MockObject $container;
 	private IAppManager&MockObject $appManager;
 	private MockObject $settingsService;
-	private VectorizationService&MockObject $vectorizationService;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -39,12 +37,9 @@ class SettingsControllerCoverageTest extends TestCase {
 		$this->db = $this->createMock(IDBConnection::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->appManager = $this->createMock(IAppManager::class);
-		// Use getMockBuilder so we can control method signatures and avoid type mismatch
-		// The controller calls updateSearchBackendConfig($string) but SettingsService declares (array $data)
 		$this->settingsService = $this->getMockBuilder(SettingsService::class)
 			->disableOriginalConstructor()
 			->getMock();
-		$this->vectorizationService = $this->createMock(VectorizationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(
@@ -61,7 +56,6 @@ class SettingsControllerCoverageTest extends TestCase {
 			$this->container,
 			$this->appManager,
 			$this->settingsService,
-			$this->vectorizationService,
 			$this->logger,
 			$l10n
 		);
@@ -100,72 +94,6 @@ class SettingsControllerCoverageTest extends TestCase {
 		$result = $this->controller->getConfigurationService();
 
 		$this->assertSame($configSvc, $result);
-	}
-
-	// =========================================================================
-	// updateSearchBackend — exercises the code path up to the service call
-	// =========================================================================
-
-	public function testUpdateSearchBackendSuccess(): void {
-		$this->request->method('getParams')
-			->willReturn(['backend' => 'elasticsearch']);
-		// The mock will accept any args since getMockBuilder doesn't enforce strict types
-		$this->settingsService->method('updateSearchBackendConfig')
-			->willReturn(['active' => 'elasticsearch']);
-
-		// This may throw TypeError due to type mismatch (string vs array) — if so, we verify the path
-		try {
-			$result = $this->controller->updateSearchBackend();
-			// If mock accepts the call, verify the response
-			$this->assertEquals(200, $result->getStatus());
-			$data = $result->getData();
-			$this->assertEquals('elasticsearch', $data['active']);
-			$this->assertStringContainsString('Backend updated', $data['message']);
-			$this->assertTrue($data['reload_required']);
-		} catch (\TypeError $e) {
-			// The TypeError proves the code reached the service call — the path is exercised
-			$this->assertStringContainsString('updateSearchBackendConfig', $e->getMessage());
-		}
-	}
-
-	public function testUpdateSearchBackendUsingActiveKey(): void {
-		$this->request->method('getParams')
-			->willReturn(['active' => 'solr']);
-		$this->settingsService->method('updateSearchBackendConfig')
-			->willReturn(['active' => 'solr']);
-
-		try {
-			$result = $this->controller->updateSearchBackend();
-			$this->assertEquals(200, $result->getStatus());
-		} catch (\TypeError $e) {
-			$this->assertStringContainsString('updateSearchBackendConfig', $e->getMessage());
-		}
-	}
-
-	public function testUpdateSearchBackendMissingBackend(): void {
-		$this->request->method('getParams')
-			->willReturn([]);
-
-		$result = $this->controller->updateSearchBackend();
-
-		$this->assertEquals(400, $result->getStatus());
-		$data = $result->getData();
-		$this->assertEquals('Backend parameter is required', $data['error']);
-	}
-
-	public function testUpdateSearchBackendException(): void {
-		$this->request->method('getParams')
-			->willReturn(['backend' => 'solr']);
-		$this->settingsService->method('updateSearchBackendConfig')
-			->willThrowException(new \Exception('Config error'));
-
-		try {
-			$result = $this->controller->updateSearchBackend();
-			$this->assertEquals(500, $result->getStatus());
-		} catch (\TypeError $e) {
-			// Type mismatch path — still exercises the code
-			$this->assertStringContainsString('updateSearchBackendConfig', $e->getMessage());
-		}
 	}
 
 	// =========================================================================
@@ -250,29 +178,13 @@ class SettingsControllerCoverageTest extends TestCase {
 	}
 
 	// =========================================================================
-	// hybridSearch — result is non-array
-	// =========================================================================
-
-	public function testHybridSearchWithNonArrayResult(): void {
-		$this->vectorizationService->method('hybridSearch')
-			->willReturn([]);
-
-		$result = $this->controller->hybridSearch('test query');
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertEquals('test query', $data['query']);
-	}
-
-	// =========================================================================
 	// getSearchIndexStatus — the /api/settings/search-index inventory endpoint
 	// =========================================================================
 
 	public function testGetSearchIndexStatusReturnsInventory(): void {
 		$maintenance = $this->createMock(\OCA\OpenRegister\Service\Search\SearchIndexMaintenance::class);
 		$maintenance->method('tablesInScope')->willReturn(['oc_openregister_table_1']);
-		$maintenance->method('indexesFor')->willReturn(['idx_a' => [], 'idx_b' => []]);
+		$maintenance->method('indexNamesFor')->willReturn(['oc_openregister_table_1' => ['idx_a', 'idx_b']]);
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(true);
 		$maintenance->method('lastRun')->willReturn([]);
 		$this->container->method('get')

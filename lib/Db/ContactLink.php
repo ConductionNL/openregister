@@ -302,7 +302,7 @@ class ContactLink extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True for a party link.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function isPartyLink(): bool {
 		return $this->partyUuid !== null && $this->partyUuid !== '';
@@ -315,7 +315,7 @@ class ContactLink extends Entity implements JsonSerializable {
 	 *
 	 * @return string The uid, `party:<uuid>`.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public static function partyUid(string $partyUuid): string {
 		return self::PARTY_UID_PREFIX . $partyUuid;

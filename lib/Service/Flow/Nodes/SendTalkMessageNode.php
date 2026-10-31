@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -46,7 +47,7 @@ use UnexpectedValueException;
 /**
  * The "Send a Talk message" step.
  */
-class SendTalkMessageNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class SendTalkMessageNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
 
 	/**
 	 * The step type this node answers to.
@@ -115,6 +116,26 @@ class SendTalkMessageNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 	}//end isAvailableForScope()
+
+	/**
+	 * The messages this step would send, composed and not sent (flow dry-run).
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array `summary` and `messages` (`[{channel, to, subject, body}]`).
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 */
+	public function preview(array $items, array $config, array $context): array {
+		$messages = $this->messaging->previewMessages(channel: 'talk', config: $config, items: $items, context: $context);
+
+		return [
+			'summary' => sprintf('%s would send %d message(s)', $this->getDisplayName(), count($messages)),
+			'messages' => $messages,
+		];
+	}//end preview()
 
 	/**
 	 * The config vocabulary of a send-talk-message step.

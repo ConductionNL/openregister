@@ -25,7 +25,6 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
-use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -115,7 +114,7 @@ use RuntimeException;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     NC AppFramework controller groups all settings
- *   endpoints (general/rbac/multitenancy/retention/solr/llm/file/object/cache) in one class per
+ *   endpoints (general/rbac/multitenancy/retention/llm/file/object/cache) in one class per
  *   the thin-controller architecture; splitting would require multiple route groups and controllers
  *   for a natural single responsibility surface.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is distributed across 15 thin
@@ -123,7 +122,7 @@ use RuntimeException;
  *   purely from method count, not from deep conditional logic in any single method.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller requires DI for
  *   AppFramework types (IRequest, IAppConfig, IDBConnection, ContainerInterface, IAppManager)
- *   plus SettingsService, VectorizationService, LoggerInterface, and IL10N — all are single-call
+ *   plus SettingsService, LoggerInterface, and IL10N — all are single-call
  *   dependencies that cannot be cohesively grouped without hiding the NC DI contract.
  */
 class SettingsController extends Controller {
@@ -145,7 +144,6 @@ class SettingsController extends Controller {
 	 * @param ContainerInterface $container The container.
 	 * @param IAppManager $appManager The app manager.
 	 * @param SettingsService $settingsService The settings service.
-	 * @param VectorizationService $vectorizationService The vectorization service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IL10N|null $l10n The localization service.
 	 *
@@ -159,7 +157,6 @@ class SettingsController extends Controller {
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly SettingsService $settingsService,
-		private readonly VectorizationService $vectorizationService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IL10N $l10n = null,
 	) {
@@ -321,7 +318,7 @@ class SettingsController extends Controller {
 	/**
 	 * Get search backend configuration.
 	 *
-	 * Returns which search backend is currently active (solr, elasticsearch, etc).
+	 * Reports the search backend, which is always the database.
 	 *
 	 * @NoCSRFRequired
 	 *
@@ -366,11 +363,9 @@ class SettingsController extends Controller {
 		try {
 			$maintenance = $this->container->get(SearchIndexMaintenance::class);
 
-			$tables = [];
+			$tables = $maintenance->indexNamesFor(tableNames: $maintenance->tablesInScope());
 			$indexCount = 0;
-			foreach ($maintenance->tablesInScope() as $tableName) {
-				$indexes = array_keys($maintenance->indexesFor(tableName: $tableName));
-				$tables[$tableName] = $indexes;
+			foreach ($tables as $indexes) {
 				$indexCount += count($indexes);
 			}
 
@@ -387,45 +382,6 @@ class SettingsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end getSearchIndexStatus()
-
-	/**
-	 * Update search backend configuration.
-	 *
-	 * Sets which search backend should be active (requires app reload).
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse JSON response with updated backend config
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function updateSearchBackend(): JSONResponse {
-		try {
-			$data = $this->request->getParams();
-			$backend = $data['backend'] ?? $data['active'] ?? '';
-
-			if (empty($backend) === true) {
-				return new JSONResponse(
-					data: ['error' => $this->l10n->t('Backend parameter is required')],
-					statusCode: 400
-				);
-			}
-
-			$result = $this->settingsService->updateSearchBackendConfig($backend);
-
-			return new JSONResponse(
-				data: array_merge(
-					$result,
-					[
-						'message' => $this->l10n->t('Backend updated successfully. Please reload the application.'),
-						'reload_required' => true,
-					]
-				)
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-		}//end try
-	}//end updateSearchBackend()
 
 	/**
 	 * Get database information and vector search capabilities
@@ -983,125 +939,4 @@ class SettingsController extends Controller {
 			);
 		}//end try
 	}//end debugTypeFiltering()
-
-	/**
-	 * Perform semantic search using vector embeddings
-	 *
-	 * @param string $query Search query text
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param array $filters Optional filters (entity_type, entity_id, etc.)
-	 * @param string|null $provider Embedding provider override
-	 *
-	 * @return JSONResponse JSON response with semantic search results
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @psalm-return JSONResponse<200|400|500,
-	 *     array{success: bool, error?: string, trace?: string, query?: string,
-	 *     results?: array<int, array<string, mixed>>, total?: int<0, max>,
-	 *     limit?: int, filters?: array, timestamp?: string},
-	 *     array<never, never>>
-	 *
-	 * @spec openspec/specs/chat-ai/spec.md
-	 */
-	public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): JSONResponse {
-		try {
-			if (empty(trim($query)) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => $this->l10n->t('Query parameter is required'),
-					],
-					statusCode: 400
-				);
-			}
-
-			$results = $this->vectorizationService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'query' => $query,
-					'results' => $results,
-					'total' => count($results),
-					'limit' => $limit,
-					'filters' => $filters,
-					'timestamp' => date('c'),
-				]
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end semanticSearch()
-
-	/**
-	 * Perform hybrid search combining keyword and vector semantic search
-	 *
-	 * @param string $query Search query text
-	 * @param int $limit Maximum number of results (default: 20)
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse
-	 * @param array $weights Search type weights ['keyword' => 0.5, 'vector' => 0.5]
-	 * @param string|null $provider Embedding provider override
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse JSON response with hybrid search results
-	 *
-	 * @spec openspec/specs/chat-ai/spec.md
-	 */
-	public function hybridSearch(
-		string $query,
-		int $limit = 20,
-		array $keywordResults = [],
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-		?string $provider = null,
-	): JSONResponse {
-		try {
-			if (empty(trim($query)) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => $this->l10n->t('Query parameter is required'),
-					],
-					statusCode: 400
-				);
-			}
-
-			$result = $this->vectorizationService->hybridSearch(
-				query: $query,
-				keywordResults: $keywordResults,
-				limit: $limit,
-				weights: $weights,
-				provider: $provider
-			);
-			// The service already returns an array, so the old is_array() guard
-			// (and the [] fallback it protected) could never fire.
-			$resultArray = $result;
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'query' => $query,
-					...$resultArray,
-					'timestamp' => date('c'),
-				]
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end hybridSearch()
 }//end class

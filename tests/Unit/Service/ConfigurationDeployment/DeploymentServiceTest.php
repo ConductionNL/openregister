@@ -150,7 +150,7 @@ final class DeploymentServiceTest extends TestCase {
 		$preview = [
 			'changes' => [
 				$this->change('rbac', ['enabled' => true], ['enabled' => false]),
-				$this->change('solr', ['enabled' => false], ['enabled' => true]),
+				$this->change('archival', ['enabled' => false], ['enabled' => true]),
 			],
 			'refusals' => [],
 		];
@@ -174,7 +174,7 @@ final class DeploymentServiceTest extends TestCase {
 		$preview = [
 			'changes' => [
 				$this->change('rbac', ['enabled' => true], ['enabled' => false]),
-				$this->change('solr', ['enabled' => false], ['enabled' => true]),
+				$this->change('archival', ['enabled' => false], ['enabled' => true]),
 			],
 			'refusals' => [
 				['key' => 'llm', 'reason' => 'declared as object and the value is string', 'refusal' => 'invalid-value'],
@@ -317,13 +317,13 @@ final class DeploymentServiceTest extends TestCase {
 	public function testRollingBackAValueThatDidNotExistBeforeRemovesItAgain(): void {
 		$original = new ConfigurationDeployment();
 		$original->setUuid('dep-2');
-		$original->setName('first solr');
+		$original->setName('first archival');
 		$original->setChanges(
 			[
 				[
 					'layer' => ConfigurationLayer::INSTANCE,
 					'layerRef' => null,
-					'key' => 'solr',
+					'key' => 'archival',
 					'previous' => null,
 					// The key did not exist before that deployment, so undoing
 					// it must delete the key rather than write a null over it.
@@ -347,9 +347,9 @@ final class DeploymentServiceTest extends TestCase {
 
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturn(
-			new ConfigurationSnapshot(ConfigurationLayer::INSTANCE, null, 'solr', ['enabled' => true], true, 'dep-2', 'a')
+			new ConfigurationSnapshot(ConfigurationLayer::INSTANCE, null, 'archival', ['enabled' => true], true, 'dep-2', 'a')
 		);
-		$store->method('remove')->willReturn(['layer' => ConfigurationLayer::INSTANCE, 'key' => 'solr', 'present' => true, 'raw' => '{}']);
+		$store->method('remove')->willReturn(['layer' => ConfigurationLayer::INSTANCE, 'key' => 'archival', 'present' => true, 'raw' => '{}']);
 		$store->expects($this->once())->method('remove');
 		$store->expects($this->never())->method('write');
 
@@ -410,7 +410,7 @@ final class DeploymentServiceTest extends TestCase {
 			[
 				'changes' => [
 					$this->change('rbac', [], ['enabled' => false]),
-					$this->change('solr', [], ['enabled' => true]),
+					$this->change('archival', [], ['enabled' => true]),
 					$this->change('llm', [], ['provider' => 'ollama']),
 				],
 				'refusals' => [],

@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
  * across paths on purpose: a caller that learns to read one refusal reads all
  * of them.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+ * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
  */
 class ExportGate {
 
@@ -67,7 +67,7 @@ class ExportGate {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the export may run.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 */
 	public function refusalFor(?Schema $schema, string $profile, ?int $registerId = null): ?JSONResponse {
 		$refusal = $this->rights->refusalFor(schema: $schema);

@@ -76,7 +76,7 @@ class NotificationGroupPreferencesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -137,7 +137,7 @@ class NotificationGroupPreferencesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -201,7 +201,7 @@ class NotificationGroupPreferencesController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the write may proceed.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	private function refuseWrite(?string $groupId, ?string $schema, ?string $notification): ?JSONResponse {
 		$userId = $this->resolveUserId();
@@ -241,7 +241,7 @@ class NotificationGroupPreferencesController extends Controller {
 	 *
 	 * @return boolean True when the caller administers the group.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	private function administersGroup(string $userId, string $groupId): bool {
 		if ($this->groupManager->isAdmin($userId) === true) {

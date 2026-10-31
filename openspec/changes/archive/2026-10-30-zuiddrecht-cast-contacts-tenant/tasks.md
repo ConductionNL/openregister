@@ -1,0 +1,2 @@
+- [x] T01 Cast residents Pieter Bos and Henk Visser, companies Visser Bouw and Van Wijk, tenant Gemeente Waterland, employee Marieke Visser, with their BRP and KvK entries
+- [x] T02 PHPUnit: the shipped Zuiddrecht set names them and resolves

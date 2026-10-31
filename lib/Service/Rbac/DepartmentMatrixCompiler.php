@@ -51,6 +51,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+
 /**
  * Compiles an `authorization.matrix` block into conditional scopes.
  *
@@ -78,11 +81,12 @@ class DepartmentMatrixCompiler {
 	 * The canonical five plus `handle`, which is not canonical and is resolved
 	 * by the existing custom-verb voting. A verb outside this set is refused at
 	 * save rather than dropped: a row granting `handel` would compile to
-	 * nothing and read, in the grid, as a right somebody has.
+	 * nothing and read, in the grid, as a right somebody has. The three file
+	 * verbs grant what may be done with the object's files.
 	 *
 	 * @var string[]
 	 */
-	public const ACTIONS = ['read', 'create', 'update', 'delete', 'share', 'handle'];
+	public const ACTIONS = ['read', 'create', 'update', 'delete', 'share', 'handle', 'readFiles', 'addFiles', 'deleteFiles'];
 
 	/**
 	 * The verb `handle` falls back to when no voter claims it.
@@ -91,33 +95,62 @@ class DepartmentMatrixCompiler {
 	 */
 	public const HANDLE_FALLBACK = 'update';
 
+	/**
+	 * Reads a row's `where`.
+	 *
+	 * @var MatrixRowWhere
+	 */
+	private readonly MatrixRowWhere $where;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param MatrixRowWhere|null $where Reads a row's `where`; a fresh one when null.
+	 */
+	public function __construct(?MatrixRowWhere $where = null) {
+		$this->where = ($where ?? new MatrixRowWhere());
+	}//end __construct()
+
 
 	/**
 	 * Compile a matrix into authorization rules, by action.
 	 *
-	 * @param array<string, mixed> $matrix The declared matrix.
-	 * @param string[] $ownValues The caller's own field values, for `$self`.
+	 * A row's `where` is copied into the rule's `match` beside the field
+	 * condition, so it is one more AND-ed key of an ordinary conditional scope
+	 * and both evaluators read it as they read any other. A row past its
+	 * `until` compiles to nothing.
+	 *
+	 * @param array<string, mixed>   $matrix    The declared matrix.
+	 * @param string[]               $ownValues The caller's own field values, for `$self`.
+	 * @param DateTimeInterface|null $now       The moment `until` is read against; now when null.
 	 *
 	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function compile(array $matrix, array $ownValues): array {
+	public function compile(array $matrix, array $ownValues, ?DateTimeInterface $now = null): array {
 		$field = trim((string)($matrix['field'] ?? ''));
 		$rows = ($matrix['rows'] ?? null);
 		if ($field === '' || is_array($rows) === false) {
 			return [];
 		}
 
-		$byActionGroup = $this->gatherByActionGroup(rows: $rows, ownValues: $ownValues);
+		$gathered = $this->gatherByActionGroup(
+			rows: $rows,
+			ownValues: $ownValues,
+			field: $field,
+			now: ($now ?? new DateTimeImmutable())
+		);
 
 		$compiled = [];
-		foreach ($byActionGroup as $action => $groups) {
-			foreach ($groups as $group => $values) {
+		foreach ($gathered as $action => $scopes) {
+			foreach ($scopes as $scope) {
+				$values = $scope['values'];
 				sort($values);
 				$compiled[$action][] = [
-					'group' => $group,
-					'match' => [$field => ['$in' => $values]],
+					'group' => $scope['group'],
+					'match' => array_merge([$field => ['$in' => $values]], $scope['where']),
 				];
 			}
 		}
@@ -126,22 +159,26 @@ class DepartmentMatrixCompiler {
 	}//end compile()
 
 	/**
-	 * Gather the declared values per action and per group.
+	 * Gather the declared values per action, group and `where`.
 	 *
-	 * Values are gathered PER (action, group) and only then turned into one
-	 * rule, which is what D-1's "rows sharing a group merge into one scope"
-	 * asks for. Emitting a rule per row would work and would put four
-	 * predicates in an OR where one `$in` belongs.
+	 * Values are gathered PER (action, group, where) and only then turned into
+	 * one rule, which is what D-1's "rows sharing a group merge into one scope"
+	 * asks for. Rows with a different `where` stay separate scopes: merging
+	 * them would widen one row's condition to the other's values.
 	 *
 	 * @param array<int|string, mixed> $rows      The declared rows.
 	 * @param string[]                 $ownValues The caller's own field values, for `$self`.
+	 * @param string                   $field     The matrix field, which a `where` may not repeat.
+	 * @param DateTimeInterface        $now       The moment `until` is read against.
 	 *
-	 * @return array<string, array<string, array<int, string>>> Values by action, then group.
+	 * @return array<string, array<string, array{group: string, where: array<string, mixed>, values: array<int, string>}>>
+	 *         Scopes by action, keyed by group and `where`.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
 	 */
-	private function gatherByActionGroup(array $rows, array $ownValues): array {
-		$byActionGroup = [];
+	private function gatherByActionGroup(array $rows, array $ownValues, string $field, DateTimeInterface $now): array {
+		$gathered = [];
+		$constraints = new GrantConstraints();
 
 		foreach ($rows as $row) {
 			if (is_array($row) === false) {
@@ -153,6 +190,17 @@ class DepartmentMatrixCompiler {
 				continue;
 			}
 
+			if (array_key_exists(GrantConstraints::UNTIL_KEY, $row) === true
+				&& $constraints->reaches(entry: [GrantConstraints::UNTIL_KEY => $row[GrantConstraints::UNTIL_KEY]], area: [], now: $now) === false
+			) {
+				continue;
+			}
+
+			$where = $this->where->conditionsOf(row: $row, field: $field);
+			if ($where === null) {
+				continue;
+			}
+
 			$values = $this->valuesOf(row: $row, ownValues: $ownValues);
 			if (empty($values) === true) {
 				// 🔴 DROPPED WHOLE. See the class docblock: an empty `$in` is
@@ -161,16 +209,21 @@ class DepartmentMatrixCompiler {
 				continue;
 			}
 
+			$key = $group . "\0" . json_encode($where);
 			foreach ($this->actionsOf(row: $row) as $action) {
-				$existing = ($byActionGroup[$action][$group] ?? []);
-				$byActionGroup[$action][$group] = array_values(
-					array_unique(array_merge($existing, $values))
-				);
+				$existing = ($gathered[$action][$key]['values'] ?? []);
+				$gathered[$action][$key] = [
+					'group' => $group,
+					'where' => $where,
+					'values' => array_values(array_unique(array_merge($existing, $values))),
+				];
 			}
 		}//end foreach
 
-		return $byActionGroup;
+		return $gathered;
 	}//end gatherByActionGroup()
+
+
 
 	/**
 	 * Merge compiled rules into an authorization block.
@@ -217,6 +270,10 @@ class DepartmentMatrixCompiler {
 	/**
 	 * The caller's own values, from a group-prefix user source.
 	 *
+	 * `groups: true` adds every group id the caller holds, unprefixed, so
+	 * `$self` on a group-id field means "a group I am in". Both may be
+	 * declared; the union is used.
+	 *
 	 * @param array<string, mixed>|null $source The declared user source.
 	 * @param string[] $userGroups The caller's Nextcloud groups.
 	 *
@@ -225,12 +282,16 @@ class DepartmentMatrixCompiler {
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
 	 */
 	public function valuesFromGroups(?array $source, array $userGroups): array {
-		$prefix = trim((string)($source['groupPrefix'] ?? ''));
-		if ($prefix === '') {
-			return [];
+		$values = [];
+		if (($source['groups'] ?? false) === true) {
+			$values = array_map('strval', $userGroups);
 		}
 
-		$values = [];
+		$prefix = trim((string)($source['groupPrefix'] ?? ''));
+		if ($prefix === '') {
+			return array_values(array_unique($values));
+		}
+
 		foreach ($userGroups as $group) {
 			$group = (string)$group;
 			if (str_starts_with($group, $prefix) === true) {

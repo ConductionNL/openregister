@@ -299,7 +299,7 @@ class ObjectQuotaListenerTest extends TestCase {
 	 * and the listener is registered for it.
 	 */
 	public function testTheListenerIsSubscribedToObjectCreatingEvent(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/ListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(

@@ -313,6 +313,7 @@ class ViewMapper extends QBMapper {
 	 * @return View[] The views, each with its `access` set.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function findAllFor(ViewerReach $reach): array {
 		$this->verifyRbacPermission(action: 'read', entityType: 'view');
@@ -342,16 +343,12 @@ class ViewMapper extends QBMapper {
 				userGroups: $reach->groups
 			);
 
-			// An administrator reaches every view, and reaches it AS an
-			// administrator rather than as its owner: `accessFor()` answers what
-			// the view grants, and calling that `owner` would put a level on a
-			// row they cannot hand back.
+			// A list holds what the view grants the caller: their own, the ones
+			// shared with them and the public ones. Another user's private view
+			// is left out for an administrator too; their reach to it is for
+			// opening or managing it by id, not for their own lists.
 			if ($access === null) {
-				if ($reach->isAdmin === false) {
-					continue;
-				}
-
-				$access = ViewShareResolver::ACCESS_WRITE;
+				continue;
 			}
 
 			$entity->setAccess($access);

@@ -14,7 +14,7 @@ import type { APIRequestContext } from '@playwright/test'
  * observable: a chain authored as a flow terminates, is bounded, and leaves a
  * run history — the three things the bespoke mechanism could not give you.
  *
- * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
+ * @spec openspec/specs/flow-execution-mode/spec.md
  */
 import { expect, test } from '@playwright/test'
 

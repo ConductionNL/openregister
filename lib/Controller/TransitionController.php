@@ -167,6 +167,11 @@ class TransitionController extends Controller {
 	/**
 	 * List actions allowed from the object's current state.
 	 *
+	 * Deprecated for one release: `GET /api/objects/{register}/{schema}/{id}/actions`
+	 * answers the same transitions beside the declared actions. The shape here
+	 * is unchanged; every answer carries a `Deprecation` header and a `Link` to
+	 * the successor.
+	 *
 	 * @param string $id Object id/uuid/slug.
 	 *
 	 * @return JSONResponse JSON response with the list of allowed actions.
@@ -175,8 +180,24 @@ class TransitionController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-6
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
 	 */
 	public function availableActions(string $id): JSONResponse {
+		$response = $this->availableActionsResponse(id: $id);
+		$response->addHeader('Deprecation', 'true');
+		$response->addHeader('Link', '</apps/openregister/api/objects/{register}/{schema}/{id}/actions>; rel="successor-version"');
+
+		return $response;
+	}//end availableActions()
+
+	/**
+	 * The answer of {@see availableActions()}, before its deprecation headers.
+	 *
+	 * @param string $id Object id/uuid/slug.
+	 *
+	 * @return JSONResponse The list, or the refusal.
+	 */
+	private function availableActionsResponse(string $id): JSONResponse {
 		try {
 			$actions = $this->engine->availableActions(objectId: $id);
 		} catch (NotAuthorizedException $e) {
@@ -208,5 +229,5 @@ class TransitionController extends Controller {
 		}
 
 		return new JSONResponse(['actions' => $actions]);
-	}//end availableActions()
+	}//end availableActionsResponse()
 }//end class

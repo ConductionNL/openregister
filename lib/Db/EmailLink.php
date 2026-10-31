@@ -45,6 +45,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSubject(?string $subject)
  * @method string|null getSender()
  * @method void setSender(?string $sender)
+ * @method string|null getSenderName()
+ * @method void setSenderName(?string $senderName)
  * @method DateTime|null getMailDate()
  * @method void setMailDate(?DateTime $mailDate)
  * @method string|null getMetadata()
@@ -57,6 +59,14 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class EmailLink extends Entity implements JsonSerializable {
+
+	/**
+	 * The link details read from the metadata and shown beside the fields: the
+	 * mail's direction, the other party's name on an outgoing mail, how many
+	 * attachments it has, how it was linked (manual, mailbox, file), its
+	 * archive copy (such as pdf) and the shared mailbox it came in through.
+	 */
+	public const DETAIL_KEYS = ['direction', 'recipientName', 'attachmentCount', 'linkedVia', 'archivedAs', 'mailboxName'];
 
 	/**
 	 * The object uuid.
@@ -115,6 +125,13 @@ class EmailLink extends Entity implements JsonSerializable {
 	protected ?string $sender = null;
 
 	/**
+	 * The sender's display name, where the sender is the address.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $senderName = null;
+
+	/**
 	 * The mail date.
 	 *
 	 * @var DateTime|null
@@ -154,6 +171,7 @@ class EmailLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'mailMessageUid', type: 'string');
 		$this->addType(fieldName: 'subject', type: 'string');
 		$this->addType(fieldName: 'sender', type: 'string');
+		$this->addType(fieldName: 'senderName', type: 'string');
 		$this->addType(fieldName: 'mailDate', type: 'datetime');
 		$this->addType(fieldName: 'metadata', type: 'string');
 		$this->addType(fieldName: 'linkedBy', type: 'string');
@@ -161,9 +179,32 @@ class EmailLink extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
+	 * The link details from the metadata, one entry per DETAIL_KEYS key, null when absent.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
+	 */
+	public function details(): array {
+		$metadata = json_decode((string) $this->metadata, true);
+		if (is_array($metadata) === false) {
+			$metadata = [];
+		}
+
+		$details = [];
+		foreach (self::DETAIL_KEYS as $key) {
+			$details[$key] = ($metadata[$key] ?? null);
+		}
+
+		return $details;
+	}//end details()
+
+	/**
 	 * JSON serialization.
 	 *
 	 * @return array
+	 *
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -176,8 +217,10 @@ class EmailLink extends Entity implements JsonSerializable {
 			'mailMessageUid' => $this->mailMessageUid,
 			'subject' => $this->subject,
 			'sender' => $this->sender,
+			'senderName' => $this->senderName,
 			'mailDate' => $this->mailDate?->format(DateTime::ATOM),
 			'metadata' => $this->metadata,
+			'details' => $this->details(),
 			'linkedBy' => $this->linkedBy,
 			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
 		];

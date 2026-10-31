@@ -620,4 +620,20 @@ class DecisionTableNodeTest extends TestCase {
 		$this->assertSame($this->node->configKeys(), $formKeys);
 
 	}//end testPaletteAndFormCoverTheVocabulary()
+
+	/**
+	 * The stored table is picked from the tables in the decision-tables
+	 * register, not typed as a key (board DqFlow "Beslistabel").
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-stored-decision-table-is-picked-from-the-register
+	 */
+	public function testTheStoredTableIsPickedFromTheRegister(): void {
+		$fields = array_column(array: $this->node->configForm(), column_key: null, index_key: 'key');
+
+		$this->assertSame(expected: 'select', actual: $fields['tableRef']['type']);
+		$this->assertSame(expected: '/apps/openregister/api/objects/decision-tables/decision-table', actual: $fields['tableRef']['optionsFrom']);
+
+	}//end testTheStoredTableIsPickedFromTheRegister()
 }//end class

@@ -161,9 +161,9 @@ def parse_document():
         print(f"Parsing complete. Text length: {len(result['text'])}")
         return jsonify(result)
     
-    except Exception as e:
-        app.logger.error(f"Parse error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        app.logger.exception("Parse error")
+        return jsonify({'error': 'Document parsing failed'}), 500
 
 @app.route('/parse_pdf', methods=['POST'])
 def parse_pdf():
@@ -246,9 +246,9 @@ def parse_pdf():
             # Clean up temp file
             os.unlink(pdf_path)
     
-    except Exception as e:
-        app.logger.error(f"PDF parse error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        app.logger.exception("PDF parse error")
+        return jsonify({'error': 'PDF parsing failed'}), 500
 
 @app.route('/info', methods=['GET'])
 def info():

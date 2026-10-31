@@ -47,7 +47,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -123,7 +123,7 @@ class ApiCapabilitiesService {
 	 *
 	 * @return array<string, mixed> The versions, the limits and the contract links.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function publicCapabilities(): array {
 		$served = $this->catalogue->served();
@@ -152,7 +152,7 @@ class ApiCapabilitiesService {
 	 *
 	 * @return array<string, mixed> The full capabilities answer.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function sessionCapabilities(): array {
 		$capabilities = $this->publicCapabilities();
@@ -172,7 +172,7 @@ class ApiCapabilitiesService {
 	 *
 	 * @return array<string, mixed> The limits.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function limits(): array {
 		return [
@@ -196,7 +196,7 @@ class ApiCapabilitiesService {
 	 *
 	 * @return int|null The ceiling in bytes, or null when neither directive bounds it.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function uploadCeilingBytes(): ?int {
 		$candidates = [];
@@ -222,7 +222,7 @@ class ApiCapabilitiesService {
 	 *
 	 * @return int|null The byte count, or null when the value names no size.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public static function toBytes(string $value): ?int {
 		$trimmed = trim($value);
