@@ -1,0 +1,2332 @@
+{
+    "testImportMatchesTheRecording app id falls back when registers are a list without slugs": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "imported",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Configuration from github",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported",
+                    "application": "imported",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app imported",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "components": {
+                            "registers": [
+                                "not-an-array"
+                            ]
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Configuration from github",
+                        "description": "Imported from github",
+                        "type": "github",
+                        "app": "imported",
+                        "application": "imported",
+                        "version": "1.0.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "dev",
+                        "githubPath": "a/b.json",
+                        "isLocal": false,
+                        "syncEnabled": true,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncEnabled",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "imported",
+                    "imported",
+                    "1.0.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "Configuration from github",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported",
+                    "application": "imported",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": "1.0.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration Configuration from github from github",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from github",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording app id falls back without registers": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "imported",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Only title",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported",
+                    "application": "imported",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app imported",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "info": {
+                            "title": "Only title"
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Only title",
+                        "description": "Imported from github",
+                        "type": "github",
+                        "app": "imported",
+                        "application": "imported",
+                        "version": "1.0.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "dev",
+                        "githubPath": "a/b.json",
+                        "isLocal": false,
+                        "syncEnabled": true,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncEnabled",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "imported",
+                    "imported",
+                    "1.0.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "Only title",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported",
+                    "application": "imported",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": "1.0.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration Only title from github",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from github",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording app id from the first register key": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "imported-dcat-reg",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Configuration from github",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported-dcat-reg",
+                    "application": "imported-dcat-reg",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app imported-dcat-reg",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "components": {
+                            "registers": {
+                                "dcat-reg": {
+                                    "title": "no slug"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Configuration from github",
+                        "description": "Imported from github",
+                        "type": "github",
+                        "app": "imported-dcat-reg",
+                        "application": "imported-dcat-reg",
+                        "version": "1.0.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "dev",
+                        "githubPath": "a/b.json",
+                        "isLocal": false,
+                        "syncEnabled": true,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncEnabled",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "imported-dcat-reg",
+                    "imported-dcat-reg",
+                    "1.0.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "Configuration from github",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported-dcat-reg",
+                    "application": "imported-dcat-reg",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": "1.0.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration Configuration from github from github",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from github",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording app id from the first register slug": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "p.json"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "p.json",
+                    "main"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "imported-wooregister",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "XT",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported-wooregister",
+                    "application": "imported-wooregister",
+                    "version": "3.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/main/p.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "main",
+                    "githubPath": "p.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app imported-wooregister",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "x-openregister": {
+                            "version": "3.0",
+                            "title": "XT"
+                        },
+                        "components": {
+                            "registers": [
+                                {
+                                    "slug": "Woo Register!"
+                                },
+                                {
+                                    "slug": "second"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "XT",
+                        "description": "Imported from github",
+                        "type": "github",
+                        "app": "imported-wooregister",
+                        "application": "imported-wooregister",
+                        "version": "3.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/main/p.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "main",
+                        "githubPath": "p.json",
+                        "isLocal": false,
+                        "syncEnabled": true,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncEnabled",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "imported-wooregister",
+                    "imported-wooregister",
+                    "3.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "XT",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported-wooregister",
+                    "application": "imported-wooregister",
+                    "version": "3.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/main/p.json",
+                    "localVersion": "3.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "main",
+                    "githubPath": "p.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration XT from github",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from github",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording app id keeps underscores and dashes": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "imported-my_reg-2x",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Configuration from github",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported-my_reg-2x",
+                    "application": "imported-my_reg-2x",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app imported-my_reg-2x",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "components": {
+                            "registers": [
+                                {
+                                    "slug": "My_Reg-2 x"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Configuration from github",
+                        "description": "Imported from github",
+                        "type": "github",
+                        "app": "imported-my_reg-2x",
+                        "application": "imported-my_reg-2x",
+                        "version": "1.0.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "dev",
+                        "githubPath": "a/b.json",
+                        "isLocal": false,
+                        "syncEnabled": true,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncEnabled",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "imported-my_reg-2x",
+                    "imported-my_reg-2x",
+                    "1.0.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "Configuration from github",
+                    "description": "Imported from github",
+                    "type": "github",
+                    "app": "imported-my_reg-2x",
+                    "application": "imported-my_reg-2x",
+                    "version": "1.0.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": "1.0.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration Configuration from github from github",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from github",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording configuration exists": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "myapp",
+                    50,
+                    0,
+                    false
+                ]
+            }
+        ],
+        "status": 409,
+        "data": {
+            "error": "Configuration for app 'myapp' already exists. Please update the existing configuration instead.",
+            "existingConfigurationId": 1
+        }
+    },
+    "testImportMatchesTheRecording full metadata": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev",
+                            "syncEnabled": false,
+                            "syncInterval": "12"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "myapp",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Info title",
+                    "description": "Info description",
+                    "type": "app",
+                    "app": "myapp",
+                    "application": "myapp",
+                    "version": "2.1.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": false,
+                    "syncInterval": 12,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncInterval",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app myapp",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "info": {
+                            "version": "2.1.0",
+                            "title": "Info title",
+                            "description": "Info description"
+                        },
+                        "x-openregister": {
+                            "app": "myapp",
+                            "type": "app",
+                            "version": "9",
+                            "title": "X",
+                            "description": "Y"
+                        },
+                        "components": {
+                            "registers": [
+                                {
+                                    "slug": "ignored"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Info title",
+                        "description": "Info description",
+                        "type": "app",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "dev",
+                        "githubPath": "a/b.json",
+                        "isLocal": false,
+                        "syncEnabled": false,
+                        "syncInterval": 12,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncInterval",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "myapp",
+                    "myapp",
+                    "2.1.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "Info title",
+                    "description": "Info description",
+                    "type": "app",
+                    "app": "myapp",
+                    "application": "myapp",
+                    "version": "2.1.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": "2.1.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": false,
+                    "syncInterval": 12,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncInterval",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration Info title from github",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from github",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording github client throws a 302": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: moved",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Internal server error"
+        }
+    },
+    "testImportMatchesTheRecording github client throws a 400": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: bad",
+                    []
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Failed to import configuration: bad"
+        }
+    },
+    "testImportMatchesTheRecording github client throws a 404": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: not found",
+                    []
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Failed to import configuration: not found"
+        }
+    },
+    "testImportMatchesTheRecording github client throws a 599": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: edge",
+                    []
+                ]
+            }
+        ],
+        "status": 599,
+        "data": {
+            "error": "Internal server error"
+        }
+    },
+    "testImportMatchesTheRecording github client throws a 600": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: odd",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Internal server error"
+        }
+    },
+    "testImportMatchesTheRecording github client throws without a code": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: boom",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Internal server error"
+        }
+    },
+    "testImportMatchesTheRecording import throws": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "myapp",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Info title",
+                    "description": "Info description",
+                    "type": "app",
+                    "app": "myapp",
+                    "application": "myapp",
+                    "version": "2.1.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app myapp",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "info": {
+                            "version": "2.1.0",
+                            "title": "Info title",
+                            "description": "Info description"
+                        },
+                        "x-openregister": {
+                            "app": "myapp",
+                            "type": "app",
+                            "version": "9",
+                            "title": "X",
+                            "description": "Y"
+                        },
+                        "components": {
+                            "registers": [
+                                {
+                                    "slug": "ignored"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Info title",
+                        "description": "Info description",
+                        "type": "app",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "dev",
+                        "githubPath": "a/b.json",
+                        "isLocal": false,
+                        "syncEnabled": true,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncEnabled",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "myapp",
+                    "myapp",
+                    "2.1.0",
+                    false
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: import failed",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Internal server error"
+        }
+    },
+    "testImportMatchesTheRecording missing github parameters": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme"
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from github: Owner, repo, and path parameters are required",
+                    []
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Failed to import configuration: Owner, repo, and path parameters are required"
+        }
+    },
+    "testImportMatchesTheRecording no session": {
+        "calls": [],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "testImportMatchesTheRecording non-admin session": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "testImportMatchesTheRecording non-admin session with a forged userId": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "testImportMatchesTheRecording sync enabled as a string": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from github",
+                    {
+                        "params": {
+                            "owner": "acme",
+                            "repo": "conf",
+                            "path": "a/b.json",
+                            "branch": "dev",
+                            "syncEnabled": "true"
+                        }
+                    }
+                ]
+            },
+            {
+                "github.getFileContent": [
+                    "acme",
+                    "conf",
+                    "a/b.json",
+                    "dev"
+                ]
+            },
+            {
+                "mapper.findByApp": [
+                    "myapp",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Info title",
+                    "description": "Info description",
+                    "type": "app",
+                    "app": "myapp",
+                    "application": "myapp",
+                    "version": "2.1.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": false,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app myapp",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "info": {
+                            "version": "2.1.0",
+                            "title": "Info title",
+                            "description": "Info description"
+                        },
+                        "x-openregister": {
+                            "app": "myapp",
+                            "type": "app",
+                            "version": "9",
+                            "title": "X",
+                            "description": "Y"
+                        },
+                        "components": {
+                            "registers": [
+                                {
+                                    "slug": "ignored"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Info title",
+                        "description": "Info description",
+                        "type": "app",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": "github",
+                        "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": "acme/conf",
+                        "githubBranch": "dev",
+                        "githubPath": "a/b.json",
+                        "isLocal": false,
+                        "syncEnabled": false,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "githubBranch",
+                            "githubPath",
+                            "githubRepo",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "myapp",
+                    "myapp",
+                    "2.1.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "Info title",
+                    "description": "Info description",
+                    "type": "app",
+                    "app": "myapp",
+                    "application": "myapp",
+                    "version": "2.1.0",
+                    "sourceType": "github",
+                    "sourceUrl": "https://github.com/acme/conf/blob/dev/a/b.json",
+                    "localVersion": "2.1.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": "acme/conf",
+                    "githubBranch": "dev",
+                    "githubPath": "a/b.json",
+                    "isLocal": false,
+                    "syncEnabled": false,
+                    "syncInterval": 24,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "githubBranch",
+                        "githubPath",
+                        "githubRepo",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration Info title from github",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from github",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording url import with an invalid url": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from url",
+                    {
+                        "params": {
+                            "url": "not a url"
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from url: Invalid URL provided",
+                    []
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Failed to import configuration: Invalid URL provided"
+        }
+    },
+    "testImportMatchesTheRecording url import without a url": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from url",
+                    {
+                        "params": []
+                    }
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ConfigurationController] Failed to import from url: URL parameter is required",
+                    []
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Failed to import configuration: URL parameter is required"
+        }
+    }
+}
