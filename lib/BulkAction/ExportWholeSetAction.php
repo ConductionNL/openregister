@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRightService;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -83,6 +84,9 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 * @param ExportAuditRecorder  $recorder     The audit trail.
 	 * @param SchemaMapper         $schemaMapper Schema lookups for the per-schema file.
 	 * @param IRootFolder          $rootFolder   The actor's Files folder.
+	 * @param ExportRunRecorder|null $runs      Records the file as one export run that
+	 *                                          grows per row. Nullable so a hand-built
+	 *                                          action still writes.
 	 *
 	 * @return void
 	 */
@@ -93,6 +97,7 @@ class ExportWholeSetAction implements BulkActionInterface {
 		private readonly ExportAuditRecorder $recorder,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IRootFolder $rootFolder,
+		private readonly ?ExportRunRecorder $runs = null,
 	) {
 	}//end __construct()
 
@@ -340,7 +345,47 @@ class ExportWholeSetAction implements BulkActionInterface {
 
 		fwrite($handle, $line);
 		fclose($handle);
+
+		$this->recordRow(profile: $profile, actor: $actor, file: $file, filename: $filename);
 	}//end append()
+
+	/**
+	 * Grow the export run this file is, opening it on the file's first row.
+	 *
+	 * Keyed on the file id, so one file is one run however many rows the job
+	 * appends. A run that cannot be recorded does not fail the row: the row is
+	 * already in the file, and failing it would make the job retry a write
+	 * that happened.
+	 *
+	 * @param ExportProfile $profile  The profile.
+	 * @param IUser         $actor    The user the job runs as.
+	 * @param File          $file     The file the row went into.
+	 * @param string        $filename The file's name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	private function recordRow(ExportProfile $profile, IUser $actor, File $file, string $filename): void {
+		if ($this->runs === null) {
+			return;
+		}
+
+		try {
+			$this->runs->recordAppended(
+				source: 'whole-set',
+				actor: $actor->getUID(),
+				format: 'csv',
+				profile: $profile->getName(),
+				filename: $filename,
+				fileId: (int)$file->getId(),
+				filePath: $file->getPath(),
+				retentionSeconds: $profile->getRetentionSeconds()
+			);
+		} catch (Throwable $e) {
+			unset($e);
+		}
+	}//end recordRow()
 
 	/**
 	 * The file one schema's rows go into.
