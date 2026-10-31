@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Sabre\VObject\Document;
+use Sabre\VObject\Property;
 use Sabre\VObject\Reader;
 
 /**
@@ -285,148 +287,228 @@ class ContactService {
 	 *                                is absent).
 	 *
 	 * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each vCard property (TEL, ORG, PHOTO) requires
-	 * distinct handling: TEL is iterable or scalar, PHOTO may be URI/data-URL/raw bytes requiring
-	 * format detection; collapsing branches loses semantic specificity.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       TEL iterable vs scalar + PHOTO URI vs data vs bytes +
-	 * contactUid fallback produce many distinct execution paths; all are in-method because extracting
-	 * each to a helper would scatter the single "resolve phone+org+avatar" contract.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method resolves phone, org, and avatar from
-	 * vCard in one pass; splitting into three sub-helpers would require re-reading and re-parsing the
-	 * vCard three times or passing the parsed vCard object across helpers.
 	 */
 	private function extractVcardFields(?int $addressbookId, ?string $contactUri, ?string $contactUid): array {
 		$defaults = ['phone' => null, 'org' => null, 'avatarUrl' => null];
 
-		if ($addressbookId === null || $contactUri === null || $contactUri === '') {
-			// No CardDAV coordinates → still emit a fallback avatar URL
-			// when we have a uid so the chip can render an initials
-			// placeholder via the Contacts app's avatar endpoint.
-			if ($contactUid !== null && $contactUid !== '') {
-				$defaults['avatarUrl'] = '/index.php/apps/contacts/photo/' . rawurlencode($contactUid);
-			}
-
+		// No CardDAV coordinates: still emit a fallback avatar URL when
+		// there is a uid, so the chip can render an initials placeholder.
+		if ($this->hasCardCoordinates(addressbookId: $addressbookId, contactUri: $contactUri) === false) {
+			$defaults['avatarUrl'] = $this->contactPhotoRoute($contactUid);
 			return $defaults;
 		}
 
+		return $this->fieldsFromCard(
+			vcard: $this->readCard(addressbookId: $addressbookId, contactUri: $contactUri),
+			contactUid: $contactUid
+		);
+	}//end extractVcardFields()
+
+	/**
+	 * The phone, organisation and avatar URL of a parsed vCard; all null
+	 * when the card could not be read.
+	 *
+	 * Without an embedded PHOTO the Contacts app's per-uid avatar route is
+	 * used; it 404s when the contact has no photo, which the UI treats as
+	 * "use the initials placeholder".
+	 *
+	 * @param Document|null $vcard      The parsed vCard, or null.
+	 * @param string|null   $contactUid The vCard UID.
+	 *
+	 * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
+	 */
+	private function fieldsFromCard(?Document $vcard, ?string $contactUid): array {
+		if ($vcard === null) {
+			return ['phone' => null, 'org' => null, 'avatarUrl' => null];
+		}
+
+		return [
+			'phone' => $this->firstPhone($vcard),
+			'org' => $this->primaryOrganisation($vcard),
+			'avatarUrl' => $this->photoUrl($vcard) ?? $this->contactPhotoRoute($contactUid),
+		];
+	}//end fieldsFromCard()
+
+	/**
+	 * Whether a link row carries both an addressbook id and a vCard uri.
+	 *
+	 * @param int|null    $addressbookId The CardDAV addressbook id.
+	 * @param string|null $contactUri    The vCard uri.
+	 *
+	 * @return bool
+	 */
+	private function hasCardCoordinates(?int $addressbookId, ?string $contactUri): bool {
+		return $addressbookId !== null && $contactUri !== null && $contactUri !== '';
+	}//end hasCardCoordinates()
+
+	/**
+	 * Fetch and parse a vCard, or null when it cannot be read.
+	 *
+	 * @param int    $addressbookId The CardDAV addressbook id.
+	 * @param string $contactUri    The vCard uri.
+	 *
+	 * @return Document|null
+	 */
+	private function readCard(int $addressbookId, string $contactUri): ?Document {
+		$cardData = $this->fetchCardData(addressbookId: $addressbookId, contactUri: $contactUri);
+		if ($cardData === null) {
+			return null;
+		}
+
+		try {
+			return Reader::read($cardData);
+		} catch (\Throwable $e) {
+			$this->logger->debug('vCard parse failed for enrichment: ' . $e->getMessage());
+			return null;
+		}
+	}//end readCard()
+
+	/**
+	 * The raw vCard data of a card, or null when the backend has none.
+	 *
+	 * @param int    $addressbookId The CardDAV addressbook id.
+	 * @param string $contactUri    The vCard uri.
+	 *
+	 * @return mixed The `carddata` value, or null.
+	 */
+	private function fetchCardData(int $addressbookId, string $contactUri): mixed {
 		try {
 			$card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
 		} catch (\Throwable $e) {
 			$this->logger->debug('vCard lookup failed for enrichment: ' . $e->getMessage());
-			return $defaults;
+			return null;
 		}
 
 		if ($card === false || isset($card['carddata']) === false) {
-			return $defaults;
+			return null;
 		}
 
-		try {
-			$vcard = Reader::read($card['carddata']);
-		} catch (\Throwable $e) {
-			$this->logger->debug('vCard parse failed for enrichment: ' . $e->getMessage());
-			return $defaults;
+		return $card['carddata'];
+	}//end fetchCardData()
+
+	/**
+	 * The first non-empty TEL value of a vCard.
+	 *
+	 * @param Document $vcard The parsed vCard.
+	 *
+	 * @return string|null
+	 */
+	private function firstPhone(Document $vcard): ?string {
+		// TEL may be absent, a single value or an iterable of typed entries.
+		$tel = $vcard->TEL;
+		$entries = [$tel];
+		if (is_iterable($tel) === true) {
+			$entries = $tel;
 		}
 
-		$phone = null;
-		if (isset($vcard->TEL) === true) {
-			// TEL may be a single value or an iterable of typed entries.
-			// Prefer the first non-empty entry — the bespoke UI shows
-			// one number per chip; richer multi-number rendering belongs
-			// in the upcoming reverse-lookup flyout (AD-3).
-			$tel = $vcard->TEL;
-			if (is_iterable($tel) === true) {
-				foreach ($tel as $entry) {
-					$value = (string)$entry;
-					if ($value !== '') {
-						$phone = $value;
-						break;
-					}
-				}
-			}
-
-			if (is_iterable($tel) === false) {
-				$value = (string)$tel;
-				if ($value !== '') {
-					$phone = $value;
-				}
-			}
-		}//end if
-
-		$org = null;
-		if (isset($vcard->ORG) === true) {
-			$value = (string)$vcard->ORG;
-			// VCard ORG often uses semicolon-separated component fields
-			// (`Acme;Engineering;Backend`) — surface only the primary
-			// organisation name.
-			$primary = trim(explode(';', $value)[0]);
-			if ($primary !== '') {
-				$org = $primary;
+		foreach ($entries as $entry) {
+			$value = (string) $entry;
+			if ($value !== '') {
+				return $value;
 			}
 		}
 
-		$avatarUrl = null;
-		if (isset($vcard->PHOTO) === true) {
-			// Sabre auto-classifies vCard 3.0 PHOTO bodies as Binary when
-			// no `VALUE=URI` parameter is present, which means casting to
-			// string returns the base64-decoded blob. Use the raw
-			// mime-dir value and decide based on its shape instead.
-			$photoProp = $vcard->PHOTO;
-			$rawValue = '';
-			if (method_exists($photoProp, 'getRawMimeDirValue') === true) {
-				$rawValue = (string)$photoProp->getRawMimeDirValue();
-			}
+		return null;
+	}//end firstPhone()
 
-			if ($rawValue === '') {
-				$rawValue = (string)$photoProp;
-			}
-
-			if ($rawValue !== '') {
-				// Trim any line-folding artefacts ("https//examplecom/janjpg"
-				// can occur when Sabre eagerly strips colons/dots from
-				// the binary view of a URL; in that case we fall back to
-				// the per-uid Contacts route below).
-				if (preg_match('#^(https?://|data:)#i', $rawValue) === 1) {
-					$avatarUrl = $rawValue;
-				}
-
-				if (preg_match('#^(https?://|data:)#i', $rawValue) === 0) {
-					// Otherwise treat as inline image bytes; wrap as data URL.
-					$mediaType = 'image/jpeg';
-					if (isset($photoProp['TYPE']) === true) {
-						$typeParam = (string)$photoProp['TYPE'];
-						if ($typeParam !== '') {
-							$mediaType = 'image/' . strtolower($typeParam);
-						}
-					}
-
-					// Strip any embedded `data:` prefix Sabre may have
-					// left in place when round-tripping a data URL.
-					if (str_starts_with($rawValue, 'data:') === true) {
-						$avatarUrl = $rawValue;
-					}
-
-					if (str_starts_with($rawValue, 'data:') === false) {
-						$avatarUrl = 'data:' . $mediaType . ';base64,' . $rawValue;
-					}
-				}
-			}//end if
-		}//end if
-
-		// Fallback to the Contacts app's per-uid avatar route when no
-		// PHOTO property is embedded — the route 404s gracefully when
-		// the contact has no photo, which the UI treats as "use the
-		// initials placeholder".
-		if ($avatarUrl === null && $contactUid !== null && $contactUid !== '') {
-			$avatarUrl = '/index.php/apps/contacts/photo/' . rawurlencode($contactUid);
+	/**
+	 * The primary organisation name of a vCard ORG (`Acme;Engineering` gives `Acme`).
+	 *
+	 * @param Document $vcard The parsed vCard.
+	 *
+	 * @return string|null
+	 */
+	private function primaryOrganisation(Document $vcard): ?string {
+		if (isset($vcard->ORG) === false) {
+			return null;
 		}
 
-		return [
-			'phone' => $phone,
-			'org' => $org,
-			'avatarUrl' => $avatarUrl,
-		];
-	}//end extractVcardFields()
+		$primary = trim(explode(';', (string) $vcard->ORG)[0]);
+		if ($primary === '') {
+			return null;
+		}
+
+		return $primary;
+	}//end primaryOrganisation()
+
+	/**
+	 * The avatar URL an embedded PHOTO gives: a URL or data URL as is,
+	 * inline image bytes wrapped as a base64 data URL.
+	 *
+	 * Sabre classifies vCard 3.0 PHOTO bodies without `VALUE=URI` as
+	 * Binary, so the raw mime-dir value decides the shape.
+	 *
+	 * @param Document $vcard The parsed vCard.
+	 *
+	 * @return string|null
+	 */
+	private function photoUrl(Document $vcard): ?string {
+		if (isset($vcard->PHOTO) === false) {
+			return null;
+		}
+
+		$photo = $vcard->PHOTO;
+		$rawValue = $this->photoRawValue($photo);
+		if ($rawValue === '') {
+			return null;
+		}
+
+		if (preg_match('#^(https?://|data:)#i', $rawValue) === 1) {
+			return $rawValue;
+		}
+
+		return 'data:' . $this->photoMediaType($photo) . ';base64,' . $rawValue;
+	}//end photoUrl()
+
+	/**
+	 * The raw mime-dir value of a PHOTO, else its string value.
+	 *
+	 * @param Property $photo The PHOTO property.
+	 *
+	 * @return string
+	 */
+	private function photoRawValue(Property $photo): string {
+		$rawValue = '';
+		if (method_exists($photo, 'getRawMimeDirValue') === true) {
+			$rawValue = (string) $photo->getRawMimeDirValue();
+		}
+
+		if ($rawValue === '') {
+			$rawValue = (string) $photo;
+		}
+
+		return $rawValue;
+	}//end photoRawValue()
+
+	/**
+	 * The media type of an inline PHOTO, from its TYPE parameter (default JPEG).
+	 *
+	 * @param Property $photo The PHOTO property.
+	 *
+	 * @return string
+	 */
+	private function photoMediaType(Property $photo): string {
+		if (isset($photo['TYPE']) === false || (string) $photo['TYPE'] === '') {
+			return 'image/jpeg';
+		}
+
+		return 'image/' . strtolower((string) $photo['TYPE']);
+	}//end photoMediaType()
+
+	/**
+	 * The Contacts app's per-uid avatar route, or null without a uid.
+	 *
+	 * @param string|null $contactUid The vCard UID.
+	 *
+	 * @return string|null
+	 */
+	private function contactPhotoRoute(?string $contactUid): ?string {
+		if ($contactUid === null || $contactUid === '') {
+			return null;
+		}
+
+		return '/index.php/apps/contacts/photo/' . rawurlencode($contactUid);
+	}//end contactPhotoRoute()
 
 	/**
 	 * Link an existing contact to an object.
