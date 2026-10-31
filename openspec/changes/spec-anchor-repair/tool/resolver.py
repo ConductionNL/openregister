@@ -10,7 +10,10 @@ Categories (task spec a/b/c/d):
   DANGLING        : capability not recoverable / canonical spec file does not exist -> flag for human
 Only REPOINT_* are auto-applied. DANGLING is never guessed.
 """
-import collections, os, re, glob as _glob
+import collections
+import glob as _glob
+import os
+import re
 
 _TAG_SLUG = re.compile(r'[^a-z0-9]+')
 

@@ -12,7 +12,12 @@ Usage:
 Outputs a JSON report next to this script (<root-basename>.report.json) and a
 markdown review list (<root-basename>.dangling.md).
 """
-import os, re, sys, json, collections
+import collections
+import json
+import os
+import re
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import resolver
 

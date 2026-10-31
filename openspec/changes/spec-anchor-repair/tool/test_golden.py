@@ -8,7 +8,12 @@ and the rewritten source files with golden.json next to this file.
 Run:  python3 test_golden.py            (exit 0 = match)
       UPDATE_GOLDEN=1 python3 test_golden.py   (rewrite golden.json)
 """
-import json, os, shutil, subprocess, sys, tempfile
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GOLDEN = os.path.join(HERE, 'golden.json')
@@ -117,7 +122,7 @@ def _stable(text):
 
 def run(root, apply):
     args = [sys.executable, os.path.join(HERE, 'repoint.py'), root] + (['--apply'] if apply else [])
-    out = subprocess.run(args, capture_output=True, text=True)
+    out = subprocess.run(args, check=False, capture_output=True, text=True)
     base = os.path.join(HERE, APP)
     stdout = json.loads(out.stdout) if out.returncode == 0 else out.stdout
     result = {'exit': out.returncode, 'stdout': json.loads(json.dumps(stdout).replace(root, '<root>')), 'stderr': out.stderr}
