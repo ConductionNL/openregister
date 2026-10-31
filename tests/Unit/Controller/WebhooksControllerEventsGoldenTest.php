@@ -19,6 +19,7 @@ use Psr\Log\LoggerInterface;
  * Golden test for WebhooksController::events(): the full event catalogue,
  * its order and the response status, compared with
  * fixtures/webhooks-events-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
+ * Also pins that a write endpoint refuses when no session collaborators are wired.
  *
  * @covers \OCA\OpenRegister\Controller\WebhooksController
  */
@@ -50,5 +51,23 @@ class WebhooksControllerEventsGoldenTest extends TestCase {
 
 		$expected = json_decode((string)file_get_contents(self::FIXTURE), true);
 		$this->assertSame($expected, $actual);
+	}
+
+	public function testWriteEndpointsFailClosedWithoutTheSessionCollaborators(): void {
+		$webhookMapper = $this->createMock(WebhookMapper::class);
+		$webhookMapper->expects($this->never())->method('insert');
+		$controller = new WebhooksController(
+			'openregister',
+			$this->createMock(IRequest::class),
+			$webhookMapper,
+			$this->createMock(WebhookLogMapper::class),
+			$this->createMock(WebhookService::class),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$response = $controller->create();
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame(['error' => 'Administrator privileges are required to manage webhooks'], $response->getData());
 	}
 }
