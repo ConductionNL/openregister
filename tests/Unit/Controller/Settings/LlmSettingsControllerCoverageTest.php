@@ -124,18 +124,6 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getVectorStats — response structure
-	// =========================================================================
-
-	public function testGetVectorStatsResponseContainsExpectedKeys(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
-	}
-
-	public function testGetVectorStatsExceptionIncludesTrace(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
-	}
-
-	// =========================================================================
 	// clearAllEmbeddings — message field
 	// =========================================================================
 

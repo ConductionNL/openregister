@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -246,7 +247,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function deletedRefusal(
 		string $id,
@@ -944,7 +945,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -1193,7 +1194,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the read may proceed.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function refuseUnboundPurpose(array $resolved): ?JSONResponse {
 		if ($this->purposeGuard === null) {
@@ -1385,9 +1386,9 @@ class ObjectsController extends Controller {
 	 * - Search: _search
 	 * - Rendering: _extend, _fields, _filter/_unset
 	 * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
-	 * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
-	 * - Debug: _debug (enable debug information in response - SOLR only)
-	 * - Source: _source (force search source: 'database' or 'index'/'solr')
+	 * - Aggregations: _aggregations (enable aggregations in response)
+	 * - Debug: _debug (enable debug information in response)
+	 * - Source: _source (ignored; the database is the only search source)
 	 * - Sorting: _order
 	 * - Empty values: _empty (boolean, default: false). When false (default), null, empty string,
 	 *   and empty array values are stripped from the response to reduce payload size.
@@ -2714,9 +2715,9 @@ class ObjectsController extends Controller {
 	 * - Search: _search
 	 * - Rendering: _extend, _fields, _filter/_unset
 	 * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
-	 * - Aggregations: _aggregations (enable aggregations in response - SOLR only)
-	 * - Debug: _debug (enable debug information in response - SOLR only)
-	 * - Source: _source (force search source: 'database' or 'index'/'solr')
+	 * - Aggregations: _aggregations (enable aggregations in response)
+	 * - Debug: _debug (enable debug information in response)
+	 * - Source: _source (ignored; the database is the only search source)
 	 * - Sorting: _order
 	 * - Empty values: _empty (boolean, default: false). When false (default), null, empty string,
 	 *   and empty array values are stripped from the response to reduce payload size.
@@ -2913,7 +2914,7 @@ class ObjectsController extends Controller {
 			}//end try
 		}//end if
 
-		// Build search query and execute via normal route (magic tables or SOLR).
+		// Build search query and execute via the normal route (magic tables).
 		// Pass the already-resolved numeric register/schema IDs (when a
 		// register/schema query parameter was supplied) so the query filters
 		// on '@self.register' / '@self.schema' the same way the path-style
@@ -3411,7 +3412,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function withPermittedActions(
 		array $renderedData,
@@ -5769,7 +5770,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-suppress PossiblyUnusedMethod
 	 *
-	 * @spec openspec/changes/presence-departs-from-a-closing-tab/specs/realtime-updates/spec.md#requirement-a-closing-tab-can-say-it-left
+	 * @spec openspec/specs/realtime-updates/spec.md#requirement-a-closing-tab-can-say-it-left
 	 */
 	#[NoAdminRequired]
 	public function presenceDepartByBeacon(string $register, string $schema, string $id): JSONResponse {
@@ -5845,7 +5846,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
 		try {
@@ -5996,6 +5997,8 @@ class ObjectsController extends Controller {
 					],
 					statusCode: ExportTooLargeException::HTTP_STATUS
 				);
+			} catch (OfficeServerRequiredException $e) {
+				return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
 			}
 
 			$this->recordExportCompleted(
@@ -6058,7 +6061,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal to return, or null when the export may run.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	private function exportRefusalFor(Schema $schema, Register $register): ?JSONResponse {
 		$rightService = null;
@@ -6106,7 +6109,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function recordExportRefusal(
 		\OCA\OpenRegister\Service\Export\ExportRefusedException $refusal,
@@ -6137,7 +6140,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function recordExportCompleted(Register $register, Schema $schema, string $format, int $rowCount): void {
 		$recorder = $this->exportAuditRecorder();
@@ -6232,7 +6235,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return int The row count, header excluded.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function countCsvExportRows(string $csv): int {
 		$lines = array_filter(explode("\n", $csv), static fn ($line) => trim($line) !== '');
@@ -6247,7 +6250,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return int The row count, or 0 when the payload is not a list.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function countJsonExportRows(string $json): int {
 		$decoded = json_decode($json, true);
@@ -6269,7 +6272,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return int The row count, each sheet header excluded.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function countSpreadsheetExportRows(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet): int {
 		$rows = 0;
@@ -6602,49 +6605,6 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end getObjectVectorizationStats()
-
-	/**
-	 * Get count of objects for vectorization
-	 *
-	 * @return JSONResponse Object count
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @psalm-suppress NoValue
-	 *
-	 * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: mixed}, array<never, never>>
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	public function getObjectVectorizationCount(): JSONResponse {
-		try {
-			// Get schemas parameter if provided.
-			$schemas = $this->request->getParam(key: 'schemas');
-			if (is_string($schemas) === true) {
-				$schemas = json_decode($schemas, true);
-			}
-
-			// Use ObjectService delegation to handler.
-			$count = $this->objectService->getVectorizationCount(_schemas: $schemas);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'count' => $count,
-				]
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end getObjectVectorizationCount()
 
 	/**
 	 * Validate all objects for a register/schema combination
@@ -7181,7 +7141,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse The grouped reverse view, or 404 when the object is gone.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function referencedBy(
 		string $id,
@@ -7246,7 +7206,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse A GeoJSON FeatureCollection, or 404 when the object is gone.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function geoFeatures(
 		string $id,

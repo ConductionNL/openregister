@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ class ExampleSetExportRunsCheckTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function testTheCheckReadsAFragmentsExports(): void {
 		$this->app(app: 'openregister', fragment: $this->castFile());

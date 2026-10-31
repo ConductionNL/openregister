@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -119,7 +119,7 @@ class AppointmentAttendeeService {
 	 *
 	 * @return boolean True only when the RBAC-checked read succeeds.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function mayRead(string $objectUuid): bool {
 		try {
@@ -153,7 +153,7 @@ class AppointmentAttendeeService {
 	 *
 	 * @throws InvalidArgumentException When the status is not an answer, or the object is unknown.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
@@ -232,7 +232,7 @@ class AppointmentAttendeeService {
 	 *
 	 * @throws InvalidArgumentException When the object is unknown.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
@@ -255,7 +255,7 @@ class AppointmentAttendeeService {
 	 *
 	 * @return array<int, array<string, mixed>> The responses.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function responsesOn(ObjectEntity $object): array {
 		$data = $object->getObject();
@@ -270,7 +270,7 @@ class AppointmentAttendeeService {
 	 *
 	 * @return array<string, array<string, mixed>> The responses by attendee.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function responsesByAttendee(ObjectEntity $object): array {
 		$keyed = [];

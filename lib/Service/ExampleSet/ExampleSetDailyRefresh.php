@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
 
 declare(strict_types=1);
@@ -32,14 +32,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use Throwable;
 
 /**
  * Marks sets for a daily refresh and refreshes them.
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
 class ExampleSetDailyRefresh {
 	/**
@@ -70,10 +70,10 @@ class ExampleSetDailyRefresh {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function sets(): array {
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::KEY, '[]'), true);
+		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::KEY, '[]'), true);
 		if (is_array($decoded) === false) {
 			return [];
 		}
@@ -91,7 +91,7 @@ class ExampleSetDailyRefresh {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the one fact the call sets.
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function mark(string $set, bool $daily): void {
 		$sets = array_values(array_diff($this->sets(), [$set]));
@@ -99,7 +99,7 @@ class ExampleSetDailyRefresh {
 			$sets[] = $set;
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, self::KEY, (string) json_encode($sets));
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::KEY, (string) json_encode($sets));
 	}//end mark()
 
 	/**
@@ -109,7 +109,7 @@ class ExampleSetDailyRefresh {
 	 *
 	 * @return array<string, array<string, mixed>> Per set: `ok`, and `skipped` or the refusals, dropped, missing and lost.
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function run(?DateTimeImmutable $today=null): array {
 		$report = [];

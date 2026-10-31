@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use Throwable;
  * `sealed` field says plainly that the hash was not yet assigned rather than
  * implying the row has none.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class AuditSink {
 	/**
@@ -173,7 +173,7 @@ class AuditSink {
 	 *
 	 * @return string|null The configured path.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function path(): ?string {
 		try {
@@ -198,7 +198,7 @@ class AuditSink {
 	 *
 	 * @return string One of {@see AuditSink::FORMATS}.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function format(): string {
 		try {
@@ -219,7 +219,7 @@ class AuditSink {
 	 *
 	 * @return bool True when the instance ships its trail.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isConfigured(): bool {
 		return $this->path() !== null;
@@ -232,7 +232,7 @@ class AuditSink {
 	 *
 	 * @return string The JSON Lines record, newline terminated.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function renderLine(AuditTrail $entry): string {
 		$line = $entry->jsonSerialize();
@@ -257,7 +257,7 @@ class AuditSink {
 	 *              configured and it did not. True when no sink is configured,
 	 *              because there was nothing to fail.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function ship(AuditTrail $entry): bool {
 		$path = $this->path();
@@ -284,7 +284,7 @@ class AuditSink {
 	 *
 	 * @return int How many entries did not reach the file.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function shipMany(array $entries): int {
 		$failed = 0;
@@ -319,7 +319,7 @@ class AuditSink {
 	 *   warning in the middle of somebody's save. The error is not swallowed: it is read
 	 *   back from error_get_last() and put on the status verbatim.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function append(string $path, string $line, ?string &$error): bool {
 		$attempts = $this->attempts();
@@ -355,7 +355,7 @@ class AuditSink {
 	 *
 	 * @return string The failure, for the status and the gap entry.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function describeFailure(string $path, string $line, int|false $written): string {
 		if ($written !== false) {
@@ -381,7 +381,7 @@ class AuditSink {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function onFailure(AuditTrail $entry, string $error): void {
 		$this->logger->error(
@@ -420,7 +420,7 @@ class AuditSink {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function setFailureRecorder(callable $recorder): void {
 		$this->failureRecorder = $recorder;
@@ -431,7 +431,7 @@ class AuditSink {
 	 *
 	 * @return int At least one.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function attempts(): int {
 		try {
@@ -448,7 +448,7 @@ class AuditSink {
 	 *
 	 * @return int Microseconds, never negative.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function retryDelay(): int {
 		try {

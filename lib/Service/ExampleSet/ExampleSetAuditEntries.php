@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 gives a pre-built audit row the uuid the hash chain requires.
  *
- * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
  */
 class ExampleSetAuditEntries extends ExampleSetEngineRows {
 
@@ -74,7 +74,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
 	public function part(): string {
 		return 'auditEntries';
@@ -85,7 +85,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
 	public function noun(): string {
 		return 'audit entry';
@@ -99,7 +99,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -139,7 +139,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{id: int, object: string}|null} The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['object'];
@@ -186,7 +186,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -205,7 +205,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed`: the record lets go of it.
 	 *
-	 * @spec openspec/changes/example-set-audit-entries/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
 	public function revert(array $entry): string {
 		return 'removed';

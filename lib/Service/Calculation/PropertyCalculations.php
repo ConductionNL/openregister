@@ -55,7 +55,7 @@ final class PropertyCalculations {
 	 *
 	 * @return array<string, array<string, mixed>> Declarations keyed by property name.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function fromProperties(array $properties): array {
 		$collected = [];
@@ -86,7 +86,7 @@ final class PropertyCalculations {
 	 *
 	 * @return array<string, mixed> The one calculations map, or an empty array when neither declares anything.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function merge(array $annotation, array $properties): array {
 		return array_merge($annotation, $this->fromProperties(properties: $properties));
@@ -103,7 +103,7 @@ final class PropertyCalculations {
 	 *
 	 * @return array<int, string> The duplicated names.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function duplicates(array $annotation, array $properties): array {
 		return array_values(
@@ -127,7 +127,7 @@ final class PropertyCalculations {
 	 *
 	 * @return array<int, array{code: string, message: string}> The blocking errors, in input order.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function blockingErrors(array $errors, array $forwarded): array {
 		$blocking = [];

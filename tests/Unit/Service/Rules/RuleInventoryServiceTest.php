@@ -36,7 +36,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleInventoryServiceTest extends TestCase {
 
@@ -110,7 +110,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnAdministratorReadsWhatWillRunInEvaluationOrder(): void {
 		$service = $this->service(
@@ -144,7 +144,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARemovedAnnotationLeavesTheInventory(): void {
 		$service = $this->service();
@@ -171,7 +171,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testASwitchedOffRuleReadsAsDisabled(): void {
 		$schema = $this->schema();
@@ -192,7 +192,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARuleThatHasNotRunInsideTheWindowIsVisibleAsSuch(): void {
 		$stale = new RuleRunSummary();
@@ -225,7 +225,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARecentRunIsInsideTheWindow(): void {
 		$fresh = new RuleRunSummary();
@@ -250,7 +250,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAPropertyForwardedCalculationIsInventoriedOnce(): void {
 		$schema = new Schema();
@@ -277,7 +277,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFlowOnTwoEventsIsOneRule(): void {
 		$service = $this->service(
@@ -345,7 +345,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAScopeFilterKeepsThatScopeAndTheSchemaWideRules(): void {
 		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'a']);
@@ -363,7 +363,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFlowIsScopedThroughItsTriggerNode(): void {
 		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'b']);
@@ -381,7 +381,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testWithoutAFilterEveryRuleIsListedWithItsScope(): void {
 		$service = $this->scopedService();

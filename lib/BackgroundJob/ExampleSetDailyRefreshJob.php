@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Refreshes the marked example sets once a day.
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
 class ExampleSetDailyRefreshJob extends TimedJob {
 	/**
@@ -67,7 +67,7 @@ class ExampleSetDailyRefreshJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's job contract.
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	protected function run(mixed $argument): void {
 		try {

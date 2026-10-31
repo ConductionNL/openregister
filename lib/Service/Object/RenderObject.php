@@ -595,8 +595,7 @@ class RenderObject implements ObjectRendererInterface {
 	 * @return void
 	 *
 	 * Used by list pipelines that bypass the full renderEntity pipeline (the
-	 * cheap-path when no extend/fields/filter/unset is requested, or the SOLR/index
-	 * path which never renders rows). Walks rows, collects UUIDs, issues a single
+	 * cheap-path when no extend/fields/filter/unset is requested). Walks rows, collects UUIDs, issues a single
 	 * batched FileMapper lookup, and writes the lightweight ID list onto each row's
 	 * `\@self.files` (or the equivalent property on an ObjectEntity).
 	 *
@@ -747,7 +746,7 @@ class RenderObject implements ObjectRendererInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The lens resolver takes the rbac flag
 	 *
-	 * @spec openspec/changes/list-fast-path-resolves-lenses/specs/object-lenses/spec.md
+	 * @spec openspec/specs/object-lenses/spec.md
 	 */
 	public function applyLensesToRows(array &$rows, bool $_rbac=true): void {
 		if ($this->lensResolver === null) {
@@ -1897,7 +1896,7 @@ class RenderObject implements ObjectRendererInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The readable records.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 */
 	private function withoutRestrictedFiles(array $fileRecords): array {
 		if ($this->container === null || $fileRecords === []) {
@@ -3000,7 +2999,7 @@ class RenderObject implements ObjectRendererInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function applyRetentionClocks(ObjectEntity $entity): void {
 		if ($this->container === null) {
@@ -3254,7 +3253,7 @@ class RenderObject implements ObjectRendererInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
 		if ($schema === null) {

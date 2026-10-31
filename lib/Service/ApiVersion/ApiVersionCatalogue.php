@@ -45,7 +45,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -147,7 +147,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, ApiVersion> Versions keyed by identifier.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function all(): array {
 		if ($this->resolved === null) {
@@ -163,7 +163,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, ApiVersion> Versions keyed by identifier.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function served(): array {
 		return array_filter($this->all(), static fn (ApiVersion $version): bool => $version->isServed());
@@ -182,7 +182,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<int, string> The identifiers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function identifiers(): array {
 		return array_values(array_map(static fn (ApiVersion $version): string => $version->id, $this->all()));
@@ -194,7 +194,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<int, string> The served identifiers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function servedIdentifiers(): array {
 		return array_values(array_map(static fn (ApiVersion $version): string => $version->id, $this->served()));
@@ -213,7 +213,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return ApiVersion|null The declared version, or null when unknown.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function get(string $identifier): ?ApiVersion {
 		return ($this->all()[trim($identifier)] ?? null);
@@ -228,7 +228,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return ApiVersion The current version.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function current(): ApiVersion {
 		$supported = array_filter(
@@ -248,7 +248,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, string> Identifier to reason.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function rejections(): array {
 		if ($this->resolved === null) {
@@ -309,7 +309,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, string> The refusals, keyed by the version they concern.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function inspect(array $declarations): array {
 		$rejected = [];

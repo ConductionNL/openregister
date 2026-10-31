@@ -154,7 +154,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 	/**
 	 * The status reads every table's index names in one query, not one per table.
 	 *
-	 * @spec openspec/changes/search-index-status-one-query/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 *
 	 * @return void
 	 */

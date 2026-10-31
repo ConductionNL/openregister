@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+ * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
  */
 
 declare(strict_types=1);

@@ -49,7 +49,7 @@ use DateTimeInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Rbac
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class ExternalGrantGuard {
 	/**
@@ -94,7 +94,7 @@ class ExternalGrantGuard {
 	 *
 	 * @return array<int, array<string, mixed>> The entries that must not be written.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function endlessExternalGrants(?array $authorization): array {
 		$offending = [];
@@ -128,7 +128,7 @@ class ExternalGrantGuard {
 	 *
 	 * @return array<string, mixed>|null The refusal, or null when the block is fine.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function refusalFor(?array $authorization): ?array {
 		$offending = $this->endlessExternalGrants(authorization: $authorization);
@@ -158,7 +158,7 @@ class ExternalGrantGuard {
 	 *
 	 * @return array<int, array<string, mixed>> The grants about to lapse, soonest first.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function lapsingWithin(
 		?array $authorization,

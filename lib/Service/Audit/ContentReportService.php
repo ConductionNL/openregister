@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use Throwable;
  *   the evidence. A copy inheriting the object's retention would be deleted
  *   by the same sweep that deletes what it was evidence of.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReportService {
 	/**
@@ -131,7 +131,7 @@ class ContentReportService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ContentReport::hashCopy is the entity's own checksum, kept static
 	 *   so the copy and its later integrity check hash exactly the same way.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function file(ObjectEntity $object, string $reason, ?string $reporter): ContentReport {
 		$copy = $this->snapshot(object: $object);
@@ -171,7 +171,7 @@ class ContentReportService {
 	 *
 	 * @return array<string, mixed> The snapshot.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function snapshot(ObjectEntity $object): array {
 		return [
@@ -194,7 +194,7 @@ class ContentReportService {
 	 *
 	 * @return bool True when the caller is in the report's reviewer group.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function mayReadCopy(ContentReport $report, ?IUser $user): bool {
 		if ($user === null) {
@@ -226,7 +226,7 @@ class ContentReportService {
 	 *
 	 * @return array<string, mixed>|null The copy, or null when the caller may not read it.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function readCopy(ContentReport $report, ?IUser $user): ?array {
 		if ($this->mayReadCopy(report: $report, user: $user) === false) {
@@ -250,7 +250,7 @@ class ContentReportService {
 	 *
 	 * @return string[] The uuids of the copies the removal should name.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function noteRemoval(string $objectUuid, ?string $auditUuid = null): array {
 		if ($objectUuid === '') {
@@ -308,7 +308,7 @@ class ContentReportService {
 	 *
 	 * @return string The group id.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function reviewerGroup(): string {
 		try {
@@ -336,7 +336,7 @@ class ContentReportService {
 	 *
 	 * @return int The retention in days.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function retentionDays(): int {
 		try {

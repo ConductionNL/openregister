@@ -71,7 +71,7 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 *
 	 * @no-admin-idor-exempt The catalogue is the platform's own, identical for
 	 * every reader, and this method takes no caller-supplied identifier at all:
@@ -106,7 +106,7 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -127,7 +127,7 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 *
 	 * @NoCSRFRequired
 	 */

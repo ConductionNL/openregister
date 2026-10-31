@@ -76,7 +76,7 @@ class DestructionRecorder {
 	 *
 	 * @return array<string, mixed> The record as it was written.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function record(
 		ObjectEntity $object,

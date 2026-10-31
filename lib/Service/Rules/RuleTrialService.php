@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
  *   through the three mappers and evaluates through both condition dialects; each is one
  *   collaborator on the one dry-run path.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleTrialService {
 
@@ -112,7 +112,7 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The verdict, the trace and the writes it would make.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function trySample(Schema $schema, string $ruleId, array $sample, ?array $override = null): array {
 		$rule = $this->resolve(schema: $schema, ruleId: $ruleId, override: $override);
@@ -138,7 +138,7 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The verdict, the trace and the writes it would make.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function tryObject(
 		Schema $schema,
@@ -178,7 +178,7 @@ final class RuleTrialService {
 	 *
 	 * @return RuleDescriptor|array<string, mixed> The rule, or the refusal to return.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function resolve(Schema $schema, string $ruleId, ?array $override): RuleDescriptor|array {
 		$declared = $this->inventory->find(schema: $schema, ruleId: $ruleId);
@@ -217,7 +217,7 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The trial result.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function run(RuleDescriptor $rule, array $payload, ?string $objectUuid = null): array {
 		if ($rule->getKind() === RuleVocabulary::KIND_CALCULATION) {
@@ -249,7 +249,7 @@ final class RuleTrialService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) RuleTrace::fired and ::errored are named
 	 *   constructors on an immutable value object, not a collaborator to inject.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function runCalculation(RuleDescriptor $rule, array $payload, ?string $objectUuid): array {
 		try {
@@ -281,7 +281,7 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The trial result.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function runCondition(RuleDescriptor $rule, array $payload, ?string $objectUuid): array {
 		// The same four-key document the save path builds, with the transition
@@ -324,7 +324,7 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The trial result.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function result(RuleDescriptor $rule, RuleTrace $trace, array $writes, ?string $objectUuid): array {
 		return [
@@ -346,7 +346,7 @@ final class RuleTrialService {
 	 *
 	 * @return array<string, mixed> The refusal.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function refusal(string $code, string $message): array {
 		return ['ok' => false, 'committed' => false, 'error' => ['code' => $code, 'message' => $message]];

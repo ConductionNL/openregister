@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+ * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     The loader's whole register surface (read, match, write, delete,
  *                                                   ids) in one adapter, so the loader never touches ObjectService.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+ * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
 class ExampleSetStore {
 	/**
@@ -82,7 +82,7 @@ class ExampleSetStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function offers(string $register, string $schema): bool {
 		return $this->schemaId(register: $register, schema: $schema) !== null;
@@ -105,7 +105,7 @@ class ExampleSetStore {
 	 *
 	 * @return array<int, string> The refusals; empty when the schema accepts the object.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function validate(string $register, string $schema, array $data, array $plannedUsers=[]): array {
 		$schemaId = $this->schemaId(register: $register, schema: $schema);
@@ -135,7 +135,7 @@ class ExampleSetStore {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function find(string $register, string $schema, array $filters): array {
 		$service = $this->objectService();
@@ -187,7 +187,7 @@ class ExampleSetStore {
 	 *
 	 * @return array<int, array<string, mixed>> The matching rows; empty when none matches.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function matching(string $register, string $schema, array $where): array {
 		foreach ([$where, []] as $filters) {
@@ -221,7 +221,7 @@ class ExampleSetStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function rowMatches(array $row, array $where): bool {
 		foreach ($where as $field => $value) {
@@ -250,7 +250,7 @@ class ExampleSetStore {
 	 *
 	 * @return array<string, mixed>|null The row, with `id` set.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function get(string $register, string $schema, string $id): ?array {
 		return $this->read(register: $register, schema: $schema, id: $id)['row'];
@@ -271,7 +271,7 @@ class ExampleSetStore {
 	 * @return array{row: array<string, mixed>|null, error: string} The row with `id` set, or null with '' when it is
 	 *                                                              not there, or null with why the read failed.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function read(string $register, string $schema, string $id): array {
 		$service = $this->objectService();
@@ -309,7 +309,7 @@ class ExampleSetStore {
 	 *
 	 * @return array{id: string, error: string} The new id, or '' with why the write failed.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function create(string $register, string $schema, array $data, ?string $owner=null): array {
 		$service = $this->objectService();
@@ -343,7 +343,7 @@ class ExampleSetStore {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
 	public function update(string $register, string $schema, string $id, array $data): string {
 		$service = $this->objectService();
@@ -376,7 +376,7 @@ class ExampleSetStore {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function ownerOf(string $register, string $schema, string $id): ?string {
 		try {
@@ -394,7 +394,7 @@ class ExampleSetStore {
 	 *
 	 * @return string '' when handed over, otherwise why not.
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function assignOwner(string $id, string $owner): string {
 		$service = $this->objectService();
@@ -422,7 +422,7 @@ class ExampleSetStore {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-change-keeps-text/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
 	 */
 	public function textProperties(string $register, string $schema): array {
 		$service = $this->objectService();
@@ -458,7 +458,7 @@ class ExampleSetStore {
 	 * @return array{appendOnly: bool, kept: array<int, string>, lenses: array<int, string>} Whether rows are never
 	 *         updated, the fields kept as first written (readOnly, immutable), and the lens fields (never stored).
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	public function writeRules(string $register, string $schema): array {
 		$rules   = ['appendOnly' => false, 'kept' => [], 'lenses' => []];
@@ -528,8 +528,8 @@ class ExampleSetStore {
 	 *
 	 * @return string '' when the row is gone; otherwise the reason it stays.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function deleteRecorded(string $register, string $schema, string $id): string {
 		$service = $this->objectService();
@@ -584,7 +584,7 @@ class ExampleSetStore {
 	 *
 	 * @return string The id, or '' when the row names none.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function idOf(array $row): string {
 		$self = [];
@@ -608,7 +608,7 @@ class ExampleSetStore {
 	 *
 	 * @return int|null
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	public function registerId(string $register): ?int {
 		$service = $this->objectService();
@@ -635,7 +635,7 @@ class ExampleSetStore {
 	 *
 	 * @return int|null
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	public function schemaId(string $register, string $schema): ?int {
 		$service = $this->objectService();

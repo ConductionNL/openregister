@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Tasks and saved views of an example set, together.
  *
- * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) It holds one writer per fragment part; each is a separate kind, so the count grows with the parts.
  */
@@ -93,7 +93,7 @@ class ExampleSetEngineKinds {
 	 *
 	 * @return array<int, string> Refusals, also for each row of a kind this OpenRegister cannot write.
 	 *
-	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function check(array $fragment, array $context, array $users, ExampleSetValues $values): array {
 		$refusals = [];
@@ -124,7 +124,7 @@ class ExampleSetEngineKinds {
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
-	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function install(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$changed = false;
@@ -159,7 +159,7 @@ class ExampleSetEngineKinds {
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
-	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
 	 */
 	public function installFlows(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		return $this->flows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true;
@@ -173,7 +173,7 @@ class ExampleSetEngineKinds {
 	 *
 	 * @return array<string, mixed> The report with each row that is gone under `missing`.
 	 *
-	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function prove(array $report, array $record): array {
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
@@ -196,8 +196,8 @@ class ExampleSetEngineKinds {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-remove-deletes-the-tasks-a-set-wrote
-	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-remove-deletes-the-views-a-set-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-the-tasks-a-set-wrote
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-the-views-a-set-wrote
 	 */
 	public function delete(array &$record, array &$report, callable $written): void {
 		foreach ($this->kinds() as $part => [$rows, $noun]) {

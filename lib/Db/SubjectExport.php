@@ -227,7 +227,7 @@ class SubjectExport extends Entity implements JsonSerializable {
 	 *
 	 * @return static This entity, hydrated.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function hydrate(array $object): static {
 		foreach ($object as $key => $value) {
@@ -254,7 +254,7 @@ class SubjectExport extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when it may still be downloaded.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function isDownloadableAt(?DateTime $now = null): bool {
 		if ($this->status !== self::STATUS_READY) {

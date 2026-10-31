@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Writes, proves and restores per-user preferences for an example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
  */
 class ExampleSetUserPreferences {
 	/**
@@ -78,8 +78,8 @@ class ExampleSetUserPreferences {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
-	 * @spec openspec/changes/example-set-preferences-on-cast-admins/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function refusal(string $app, string $uid, string $key, array $users): string {
 		if (in_array($uid, $users, true) === false) {
@@ -108,7 +108,7 @@ class ExampleSetUserPreferences {
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to be
 	 *                                                                 written), or why the write failed.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function apply(string $uid, string $app, string $key, string $value): array {
 		$had = $this->has(uid: $uid, app: $app, key: $key);
@@ -136,7 +136,7 @@ class ExampleSetUserPreferences {
 	 *
 	 * @return array{error: string, entry: array<string, mixed>, wrote: bool}
 	 *
-	 * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
 	public function follow(array $entry, string $value, bool $refresh): array {
 		if ($refresh === false || $value === (string) $entry['new']) {
@@ -158,7 +158,7 @@ class ExampleSetUserPreferences {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function lost(array $entry): bool {
 		return $this->read(uid: (string) $entry['user'], app: (string) $entry['app'], key: (string) $entry['key']) !== (string) $entry['new'];
@@ -171,7 +171,7 @@ class ExampleSetUserPreferences {
 	 *
 	 * @return string `restored`, `left` (somebody changed it since) or `failed`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function revert(array $entry): string {
 		$uid = (string) $entry['user'];

@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-collectives-pages/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
  */
 
 declare(strict_types=1);

@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-external-party-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\Task;
 /**
  * Checks and shapes an example set's external task.
  *
- * @spec openspec/changes/example-set-external-party-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
  */
 final class ExampleSetExternalTask {
 	/**
@@ -59,7 +59,7 @@ final class ExampleSetExternalTask {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-external-party-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
 	 */
 	public static function refusal(array $data): string {
 		if (self::isExternal(data: $data) === false) {
@@ -99,7 +99,7 @@ final class ExampleSetExternalTask {
 	 *
 	 * @return array{metadata?: array{upload: array<string, mixed>}}
 	 *
-	 * @spec openspec/changes/example-set-external-party-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
 	 */
 	public static function metadata(array $data): array {
 		if (isset($data['uploadRules']) === false) {

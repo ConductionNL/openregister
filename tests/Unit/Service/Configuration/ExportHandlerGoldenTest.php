@@ -39,7 +39,13 @@ use Psr\Log\LoggerInterface;
  * `fixtures/export-config-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ExportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ExportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ExportSlugMaps
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Authorization\RbacGroupCollector
  */
 class ExportHandlerGoldenTest extends TestCase {
 
@@ -84,8 +90,6 @@ class ExportHandlerGoldenTest extends TestCase {
 	 * @param string $name The case name.
 	 *
 	 * @return void
-	 *
-	 * @covers ::exportConfig
 	 *
 	 * @dataProvider cases
 	 */

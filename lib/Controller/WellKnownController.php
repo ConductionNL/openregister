@@ -34,7 +34,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class WellKnownController extends Controller {
 	 *
 	 * @return DataDisplayResponse|JSONResponse The file, or a 404 when nothing is administered.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 *
 	 * @contract tests/Unit/Controller/WellKnownControllerTest.php
 	 */
@@ -127,7 +127,7 @@ class WellKnownController extends Controller {
 	 *
 	 * @return JSONResponse The index.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 *
 	 * @contract tests/Unit/Controller/WellKnownControllerTest.php
 	 */

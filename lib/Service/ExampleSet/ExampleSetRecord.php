@@ -23,20 +23,20 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 
 /**
  * The install record of one example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
  */
 class ExampleSetRecord {
 	/**
@@ -107,7 +107,7 @@ class ExampleSetRecord {
 	 *               of the OpenRegister organisations the set created; `tasks` and `views` map `<app>/<key>` to the
 	 *               uuid of the engine task or saved view the set wrote.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function read(string $set): array {
 		$record  = self::BLANK;
@@ -205,7 +205,7 @@ class ExampleSetRecord {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function isEmpty(array $record): bool {
 		foreach (array_keys(self::BLANK) as $part) {
@@ -234,7 +234,7 @@ class ExampleSetRecord {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function write(string $set, array $record): void {
 		if ($this->isEmpty(record: $record) === true) {
@@ -244,7 +244,7 @@ class ExampleSetRecord {
 				return;
 			}
 
-			$this->appConfig->deleteKey(Application::APP_ID, self::PREFIX.$set);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, self::PREFIX.$set);
 			return;
 		}
 
@@ -264,7 +264,7 @@ class ExampleSetRecord {
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
 	public static function letGoUndeclared(array $fragment, string $part, string $noun, array &$report, array &$record): bool {
 		$prefix   = $fragment['app'].'/';
@@ -300,7 +300,7 @@ class ExampleSetRecord {
 	 *
 	 * @return array<string, mixed> The report.
 	 *
-	 * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
 	public function hold(string $set, string $part, string $name, array $made, array $report, array &$record): array {
 		if ($made['error'] !== '') {
@@ -335,9 +335,9 @@ class ExampleSetRecord {
 	 * @return string
 	 */
 	private function stored(string $set): string {
-		$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', true);
+		$json = $this->appConfig->getValueString(AppIdentity::APP_ID, self::PREFIX.$set, '', true);
 		if ($json === '') {
-			$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', false);
+			$json = $this->appConfig->getValueString(AppIdentity::APP_ID, self::PREFIX.$set, '', false);
 		}
 
 		return $json;
@@ -352,6 +352,6 @@ class ExampleSetRecord {
 	 * @return void
 	 */
 	private function store(string $set, string $json): void {
-		$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, $json, true);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::PREFIX.$set, $json, true);
 	}//end store()
 }//end class

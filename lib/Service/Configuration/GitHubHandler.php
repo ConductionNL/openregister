@@ -1139,10 +1139,6 @@ class GitHubHandler implements GitHubClientInterface {
 	 *     commit_url: mixed|null, file_url: mixed|null
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex error handling for GitHub API responses
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Publish involves multiple error and success paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full publish handling requires comprehensive error logic
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function publishConfiguration(
@@ -1154,6 +1150,7 @@ class GitHubHandler implements GitHubClientInterface {
 		string $commitMessage,
 		?string $fileSha = null,
 	): array {
+		$location = new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch);
 		try {
 			$this->logger->info(
 				message: '[GitHubHandler] Publishing configuration to GitHub',
@@ -1168,51 +1165,17 @@ class GitHubHandler implements GitHubClientInterface {
 				]
 			);
 
-			// Base64 encode the content (GitHub API requires base64).
-			$encodedContent = base64_encode($content);
-
+			// The Contents API takes base64 content, and the file SHA when it updates a file.
 			$payload = [
 				'message' => $commitMessage,
-				'content' => $encodedContent,
+				'content' => base64_encode($content),
 				'branch' => $branch,
 			];
-
-			// If updating existing file, include SHA.
 			if ($fileSha !== null) {
 				$payload['sha'] = $fileSha;
 			}
 
-			// URL encode the path for the GitHub API (path may contain slashes, spaces, etc.).
-			// GitHub API expects path segments to be encoded, but slashes should remain as slashes.
-			// So we encode each segment separately.
-			$pathSegments = explode('/', $path);
-			$encodedPathSegments = array_map('rawurlencode', $pathSegments);
-			$encodedPath = implode('/', $encodedPathSegments);
-
-			$apiUrl = self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$encodedPath}";
-
-			$this->logger->debug(
-				message: '[GitHubHandler] GitHub API publish request',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'url' => $apiUrl,
-					'path' => $path,
-					'encoded_path' => $encodedPath,
-					'branch' => $branch,
-				]
-			);
-
-			$response = $this->client->request(
-				'PUT',
-				$apiUrl,
-				[
-					'headers' => $this->getHeaders(),
-					'json' => $payload,
-				]
-			);
-
-			$result = json_decode($response->getBody(), true);
+			$result = $this->putContents(location: $location, payload: $payload);
 
 			$this->logger->info(
 				message: '[GitHubHandler] Configuration published successfully',
@@ -1232,50 +1195,114 @@ class GitHubHandler implements GitHubClientInterface {
 				'file_url' => $result['content']['html_url'] ?? null,
 			];
 		} catch (GuzzleException $e) {
-			$errorMessage = $e->getMessage();
-			$statusCode = null;
-
-			if ($e instanceof RequestException && $e->hasResponse() === true) {
-				$statusCode = $e->getResponse()->getStatusCode();
-				$responseBody = $e->getResponse()->getBody()->getContents();
-				$errorData = json_decode($responseBody, true);
-
-				if (($errorData['message'] ?? null) !== null) {
-					$errorMessage = $errorData['message'];
-
-					// Provide more context for common errors.
-					if ($statusCode === 404) {
-						$repoPath = "{$owner}/{$repo}";
-						$errorMessage = "Not Found - Repository '{$repoPath}', branch ";
-						$errorMessage .= "'{$branch}', or path '{$path}' may not exist or you may not have access";
-					} elseif ($statusCode === 403) {
-						$repoPath = "{$owner}/{$repo}";
-						$errorMessage = 'Forbidden - You may not have write access to repository ';
-						$errorMessage .= "'{$repoPath}' or the branch '{$branch}' is protected";
-					} elseif ($statusCode === 422) {
-						$errorMessage = "Validation Error - {$errorMessage}. Check that the branch ";
-						$errorMessage .= "'{$branch}' exists and the path '{$path}' is valid";
-					}
-				}
-			}//end if
-
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub API publish failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $errorMessage,
-					'status_code' => $statusCode,
-					'owner' => $owner,
-					'repo' => $repo,
-					'path' => $path,
-					'branch' => $branch,
-				]
-			);
-
-			throw new Exception('Failed to publish configuration: ' . $errorMessage);
+			throw $this->publishFailure(exception: $e, location: $location);
 		}//end try
 	}//end publishConfiguration()
+
+	/**
+	 * Create or update a file through the GitHub Contents API.
+	 *
+	 * @param GitHubFileLocation   $location The file.
+	 * @param array<string, mixed> $payload  The request body.
+	 *
+	 * @return mixed The decoded response.
+	 *
+	 * @throws GuzzleException If the request fails.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function putContents(GitHubFileLocation $location, array $payload): mixed {
+		$encodedPath = $location->encodedPath();
+		$apiUrl = self::API_BASE."/repos/{$location->owner}/{$location->repo}/contents/{$encodedPath}";
+
+		$this->logger->debug(
+			message: '[GitHubHandler] GitHub API publish request',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'url' => $apiUrl,
+				'path' => $location->path,
+				'encoded_path' => $encodedPath,
+				'branch' => $location->branch,
+			]
+		);
+
+		$response = $this->client->request(
+			'PUT',
+			$apiUrl,
+			[
+				'headers' => $this->getHeaders(),
+				'json' => $payload,
+			]
+		);
+
+		return json_decode($response->getBody(), true);
+	}//end putContents()
+
+	/**
+	 * Log a failed publish and turn it into an exception with a readable message.
+	 *
+	 * @param GuzzleException    $exception The request failure.
+	 * @param GitHubFileLocation $location  The file that was being published.
+	 *
+	 * @return Exception
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function publishFailure(GuzzleException $exception, GitHubFileLocation $location): Exception {
+		$statusCode = null;
+		$errorMessage = $exception->getMessage();
+		if ($exception instanceof RequestException && $exception->hasResponse() === true) {
+			$statusCode = $exception->getResponse()->getStatusCode();
+			$errorMessage = $this->publishErrorMessage(exception: $exception, location: $location) ?? $errorMessage;
+		}
+
+		$this->logger->error(
+			message: '[GitHubHandler] GitHub API publish failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $errorMessage,
+				'status_code' => $statusCode,
+				'owner' => $location->owner,
+				'repo' => $location->repo,
+				'path' => $location->path,
+				'branch' => $location->branch,
+			]
+		);
+
+		return new Exception('Failed to publish configuration: '.$errorMessage);
+	}//end publishFailure()
+
+	/**
+	 * GitHub's own error message, with context for the common failures, or null when it sent none.
+	 *
+	 * @param RequestException   $exception The failure, with a response.
+	 * @param GitHubFileLocation $location  The file that was being published.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function publishErrorMessage(RequestException $exception, GitHubFileLocation $location): mixed {
+		$response = $exception->getResponse();
+		$errorData = json_decode($response->getBody()->getContents(), true);
+		$message = ($errorData['message'] ?? null);
+		if ($message === null) {
+			return null;
+		}
+
+		$repoPath = $location->repoPath();
+		return match ($response->getStatusCode()) {
+			404 => "Not Found - Repository '{$repoPath}', branch '{$location->branch}', "
+				."or path '{$location->path}' may not exist or you may not have access",
+			403 => 'Forbidden - You may not have write access to repository '
+				."'{$repoPath}' or the branch '{$location->branch}' is protected",
+			422 => "Validation Error - {$message}. Check that the branch "
+				."'{$location->branch}' exists and the path '{$location->path}' is valid",
+			default => $message,
+		};
+	}//end publishErrorMessage()
 
 	/**
 	 * Get file SHA for a specific file (needed for updates)

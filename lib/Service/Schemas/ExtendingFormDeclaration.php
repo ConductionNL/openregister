@@ -54,7 +54,7 @@ namespace OCA\OpenRegister\Service\Schemas;
  * The annotation sits either on the schema configuration, or on the property
  * that points at the thing being configured. Both are read.
  *
- * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 final class ExtendingFormDeclaration {
 
@@ -113,7 +113,7 @@ final class ExtendingFormDeclaration {
 	 *
 	 * @return array<string, array<string, mixed>> Path to declaration.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function fromSchema(array $configuration, array $properties): array {
 		$found = [];
@@ -147,8 +147,8 @@ final class ExtendingFormDeclaration {
 	 *
 	 * @return array<int, array{code: string, key: string, path: string, message: string}> The refusals, empty when valid.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per rule, each naming its own refusal.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      One branch per rule, each naming its own refusal.
@@ -212,7 +212,7 @@ final class ExtendingFormDeclaration {
 	 *
 	 * @return array<int, string> The forwarded keys, de-duplicated, in declaration order.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function forwards(mixed $annotation): array {
 		if (is_array($annotation) === false) {
@@ -248,7 +248,7 @@ final class ExtendingFormDeclaration {
 	 *
 	 * @return array<int, string> The keys the app's form leaves out.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function narrowing(mixed $annotation): array {
 		$forwarded = $this->forwards(annotation: $annotation);
@@ -264,7 +264,7 @@ final class ExtendingFormDeclaration {
 	 *
 	 * @return array<string, mixed> The app, the form, what it forwards, what it leaves out and the counts.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function describe(mixed $annotation, string $path = self::ANNOTATION): array {
 		$forwards = $this->forwards(annotation: $annotation);
@@ -302,8 +302,8 @@ final class ExtendingFormDeclaration {
 	 *
 	 * @return array<string, mixed> The property definition.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function toProperty(mixed $annotation, array $formValues): array {
 		$property = [];

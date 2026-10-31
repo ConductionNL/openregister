@@ -180,8 +180,29 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
+	/**
+	 * Every object an install or a refresh writes is caused by the set, as an import with the set as its run, so a
+	 * history can tell the set's upkeep from a person's change and the audit trail can find one load as a whole.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-example-sets-writes-are-caused-as-an-import-of-that-set
+	 */
+	public function testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days'));
+
+		$this->assertGreaterThan(expected: 3, actual: count($this->store->causes));
+		foreach ($this->store->causes as $cause) {
+			$this->assertSame(expected: ['cause' => 'import', 'run' => 'example-set:demo'], actual: $cause);
+		}
+
+		$this->assertSame(expected: 'person', actual: \OCA\OpenRegister\Service\WriteCause::current()['cause'], message: 'the cause ends with the run');
+	}//end testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet()
+
 	public function testARefreshRewritesTheDeclaredObjectsToTodaysValues(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
 		$this->installer->install(plan: $plan, today: $this->today());

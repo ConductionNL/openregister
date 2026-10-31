@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
  * The stored uuid is a cache of an answer that can go stale; the register is
  * the authority.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class PurposeRegistry {
 	/**
@@ -70,7 +70,7 @@ class PurposeRegistry {
 	 *
 	 * @return bool True when at least one active purpose is administered.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function hasAdministeredPurposes(): bool {
 		return $this->purposes->findAll(status: ProcessingPurpose::STATUS_ACTIVE) !== [];
@@ -81,7 +81,7 @@ class PurposeRegistry {
 	 *
 	 * @return ProcessingPurpose[] Every active purpose.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function usablePurposes(): array {
 		$usable = [];
@@ -101,7 +101,7 @@ class PurposeRegistry {
 	 *
 	 * @return Verwerkingsactiviteit|null The activity, or null when the purpose is unbound.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function boundActivity(ProcessingPurpose $purpose): ?Verwerkingsactiviteit {
 		$reference = (string)($purpose->getActivity() ?? '');
@@ -141,7 +141,7 @@ class PurposeRegistry {
 	 *
 	 * @throws PurposeRefusedException When no usable purpose was named.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function requirePurpose(?string $code): array {
 		$named = trim((string)($code ?? ''));
@@ -196,7 +196,7 @@ class PurposeRegistry {
 	 *
 	 * @return string[] Every usable purpose code.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function availableCodes(): array {
 		$codes = [];

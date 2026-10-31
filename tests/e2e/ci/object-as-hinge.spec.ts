@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * THE OBJECT AS THE HINGE BETWEEN CASES, end to end, over the HTTP API.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still
- * resolve once `openspec/changes/objects-as-the-hinge-between-cases/specs/`
+ * resolve once `openspec/changes/archive/2026-10-30-objects-as-the-hinge-between-cases/specs/`
  * is archived into `openspec/specs/`:
  *
  * @e2e linked-entity-types::an-address-has-a-history

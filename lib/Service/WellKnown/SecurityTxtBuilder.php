@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -110,7 +110,7 @@ class SecurityTxtBuilder {
 	 *
 	 * @return string|null The file body, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function build(?DateTimeImmutable $now = null): ?string {
 		$contact = $this->normaliseContact(value: $this->read(key: self::CONTACT_KEY));
@@ -145,7 +145,7 @@ class SecurityTxtBuilder {
 	 *
 	 * @return bool True when this instance publishes a contact.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function isConfigured(): bool {
 		return ($this->normaliseContact(value: $this->read(key: self::CONTACT_KEY)) !== null);
@@ -164,7 +164,7 @@ class SecurityTxtBuilder {
 	 *
 	 * @return string|null The contact URI, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	private function normaliseContact(?string $value): ?string {
 		if ($value === null) {

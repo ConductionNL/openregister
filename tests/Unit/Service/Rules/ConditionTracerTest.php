@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class ConditionTracerTest extends TestCase {
 
@@ -71,7 +71,7 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARuleThatDidNotFireNamesTheOperandAndTheValueItRead(): void {
 		$trace = $this->tracer->trace(
@@ -91,7 +91,7 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheAstDialectTracesToTheSameOperand(): void {
 		$trace = $this->tracer->trace(
@@ -110,7 +110,7 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnAndNamesTheClauseThatActuallyFailed(): void {
 		$trace = $this->tracer->trace(
@@ -135,7 +135,7 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnAbsentPropertyIsReportedAsNull(): void {
 		$trace = $this->tracer->trace(
@@ -155,7 +155,7 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFiredRuleCarriesNoOperand(): void {
 		$trace = $this->tracer->trace(
@@ -178,7 +178,7 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnreadableConditionKeepsTheVerdict(): void {
 		$trace = $this->tracer->trace(
@@ -200,7 +200,7 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testALongValueIsCutAndSaysSo(): void {
 		$long = str_repeat('a', (RuleTrace::VALUE_LIMIT + 50));

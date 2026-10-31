@@ -35,7 +35,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -96,7 +96,7 @@ class DeadlineDateResolver {
 	 *
 	 * @return DateTimeImmutable|null The resolved date, or null.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function resolve(
 		string $objectUuid,
@@ -128,7 +128,7 @@ class DeadlineDateResolver {
 	 *
 	 * @return DateTimeImmutable|null The engine's date, or null when unbound or unarmed.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface is the PHP conversion; there is no DI alternative.
 	 */
@@ -175,7 +175,7 @@ class DeadlineDateResolver {
 	 *
 	 * @return DateTimeImmutable|null The working day, or null when no calendar resolves.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function rollToWorkingDay(
 		DateTimeImmutable $date,

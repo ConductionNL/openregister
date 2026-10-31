@@ -91,8 +91,8 @@ class ExampleSetCommandsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
-	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	public function testRefreshRewritesWhatTheSetHolds(): void {
 		$tester = $this->install();

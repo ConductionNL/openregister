@@ -1379,7 +1379,7 @@ class TransitionEngine implements ObjectTransitionInterface {
 	 * @return list<array{field:string,required:bool,label?:string,options?:list<array{value:string,label:string}>}> In declaration order.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
-	 * @spec openspec/changes/a-transition-input-offers-choices/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function publishedInputs(array $inputs): array {
 		$asked     = $this->inputPresentation(inputs: $inputs);
@@ -1408,7 +1408,7 @@ class TransitionEngine implements ObjectTransitionInterface {
 	 *
 	 * @return array<string, array{label?: string, options?: list<array{value: string, label: string}>}> The presentation per field.
 	 *
-	 * @spec openspec/changes/a-transition-input-offers-choices/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function inputPresentation(array $inputs): array {
 		$presentation = [];
@@ -1445,7 +1445,7 @@ class TransitionEngine implements ObjectTransitionInterface {
 	 *
 	 * @return list<array{value: string, label: string}> The usable options, in declaration order.
 	 *
-	 * @spec openspec/changes/a-transition-input-offers-choices/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function publishedOptions(mixed $options): array {
 		if (is_array($options) === false) {
