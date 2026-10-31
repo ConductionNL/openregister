@@ -106,51 +106,129 @@ class RegisterTool extends AbstractTool {
 	}//end getFunctions()
 
 	/**
+	 * The function definitions that change nothing.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const READ_FUNCTIONS = [
+		[
+			'name' => 'list_registers',
+			'subject' => 'register',
+			'action' => 'list',
+			'description' => 'Get a list of all accessible registers',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of registers to return (default: 100)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of registers to skip for pagination (default: 0)',
+					],
+				],
+				'required' => [],
+			],
+		],
+		[
+			'name' => 'get_register',
+			'subject' => 'register',
+			'action' => 'get',
+			'description' => 'Get details about a specific register by ID or slug',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The register ID or slug to retrieve',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+	];
+
+	/**
 	 * The register descriptors that change nothing.
 	 *
 	 * @return array<int, array<string, mixed>> The read descriptors.
 	 */
 	private static function readFunctions(): array {
-		return [
-			[
-				'name' => 'list_registers',
-				'subject' => 'register',
-				'action' => 'list',
-				'description' => 'Get a list of all accessible registers',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of registers to return (default: 100)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of registers to skip for pagination (default: 0)',
-						],
-					],
-					'required' => [],
-				],
-			],
-			[
-				'name' => 'get_register',
-				'subject' => 'register',
-				'action' => 'get',
-				'description' => 'Get details about a specific register by ID or slug',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The register ID or slug to retrieve',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-		];
-
+		return self::READ_FUNCTIONS;
 	}//end readFunctions()
+
+	/**
+	 * The function definitions that change data.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const WRITE_FUNCTIONS = [
+		[
+			'name' => 'create_register',
+			'subject' => 'register',
+			'action' => 'create',
+			'description' => 'Create a new register',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'title' => [
+						'type' => 'string',
+						'description' => 'The title of the register',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'A description of what this register is for',
+					],
+					'slug' => [
+						'type' => 'string',
+						'description' => 'URL-friendly identifier (optional, generated from title if not provided)',
+					],
+				],
+				'required' => ['title'],
+			],
+		],
+		[
+			'name' => 'update_register',
+			'subject' => 'register',
+			'action' => 'update',
+			'description' => 'Update an existing register',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The register ID to update',
+					],
+					'title' => [
+						'type' => 'string',
+						'description' => 'New title for the register',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'New description for the register',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+		[
+			'name' => 'delete_register',
+			'subject' => 'register',
+			'action' => 'delete',
+			'description' => 'Delete a register (only if it has no objects)',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The register ID to delete',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+	];
 
 	/**
 	 * The register descriptors that change state.
@@ -164,72 +242,7 @@ class RegisterTool extends AbstractTool {
 	 * @return array<int, array<string, mixed>> The write descriptors.
 	 */
 	private static function writeFunctions(): array {
-		return [
-			[
-				'name' => 'create_register',
-				'subject' => 'register',
-				'action' => 'create',
-				'description' => 'Create a new register',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'title' => [
-							'type' => 'string',
-							'description' => 'The title of the register',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'A description of what this register is for',
-						],
-						'slug' => [
-							'type' => 'string',
-							'description' => 'URL-friendly identifier (optional, generated from title if not provided)',
-						],
-					],
-					'required' => ['title'],
-				],
-			],
-			[
-				'name' => 'update_register',
-				'subject' => 'register',
-				'action' => 'update',
-				'description' => 'Update an existing register',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The register ID to update',
-						],
-						'title' => [
-							'type' => 'string',
-							'description' => 'New title for the register',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'New description for the register',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-			[
-				'name' => 'delete_register',
-				'subject' => 'register',
-				'action' => 'delete',
-				'description' => 'Delete a register (only if it has no objects)',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The register ID to delete',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-		];
+		return self::WRITE_FUNCTIONS;
 	}//end writeFunctions()
 
 	/**
