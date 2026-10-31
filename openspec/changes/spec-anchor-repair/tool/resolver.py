@@ -10,7 +10,7 @@ Categories (task spec a/b/c/d):
   DANGLING        : capability not recoverable / canonical spec file does not exist -> flag for human
 Only REPOINT_* are auto-applied. DANGLING is never guessed.
 """
-import os, re, glob as _glob
+import collections, os, re, glob as _glob
 
 _TAG_SLUG = re.compile(r'[^a-z0-9]+')
 
@@ -43,43 +43,65 @@ def _strip_desc(desc):
     desc = re.sub(r'\s*\((?:retroactive annotation|cross-cap[^)]*)\)\s*$', '', desc)
     return desc.strip()
 
+class _TaskBlockParser:
+    """Collects {tasknum: (block_text, section_cap_or_None)} line by line, joining wrapped continuation lines."""
+
+    def __init__(self):
+        self.blocks = {}
+        self.cur = None
+        self.cur_section = None
+        self.buf = []
+        self.section = None
+
+    def feed(self, line):
+        sm = _SECTION.match(line)
+        if sm and self.cur is None:
+            self.section = sm.group(1)
+        m = _TASK_START.match(line)
+        if m:
+            self._start(m, line)
+        elif self.cur is not None:
+            self._continue(line)
+
+    def _start(self, m, line):
+        self.finish()
+        self.cur = int(m.group(1))
+        self.cur_section = self.section
+        self.buf = [line.strip()]
+
+    def _continue(self, line):
+        if re.match(r'^\s*-\s*\[', line) or re.match(r'^\s*#', line):
+            self.finish()
+            self.cur = None
+            self.buf = []
+            sm2 = _SECTION.match(line)
+            if sm2:
+                self.section = sm2.group(1)
+        elif line.strip():
+            self.buf.append(line.strip())
+
+    def finish(self):
+        """Close the open task block, if any."""
+        if self.cur is not None:
+            self.blocks[self.cur] = (' '.join(self.buf), self.cur_section)
+
+
 def _task_blocks(tasks_path, _cache={}):
     """Return {tasknum: block_text} for a tasks.md, joining wrapped continuation lines."""
     if tasks_path in _cache:
         return _cache[tasks_path]
-    blocks = {}  # tasknum -> (block_text, section_cap_or_None)
-    cur = None
-    buf = []
-    section = None
+    parser = _TaskBlockParser()
     try:
         with open(tasks_path, encoding='utf-8', errors='replace') as f:
             lines = f.readlines()
     except OSError:
-        _cache[tasks_path] = blocks
-        return blocks
+        _cache[tasks_path] = parser.blocks
+        return parser.blocks
     for line in lines:
-        sm = _SECTION.match(line)
-        if sm and cur is None:
-            section = sm.group(1)
-        m = _TASK_START.match(line)
-        if m:
-            if cur is not None:
-                blocks[cur] = (' '.join(buf), cur_section)
-            cur = int(m.group(1))
-            cur_section = section
-            buf = [line.strip()]
-        elif cur is not None:
-            if re.match(r'^\s*-\s*\[', line) or re.match(r'^\s*#', line):
-                blocks[cur] = (' '.join(buf), cur_section); cur = None; buf = []
-                sm2 = _SECTION.match(line)
-                if sm2:
-                    section = sm2.group(1)
-            elif line.strip():
-                buf.append(line.strip())
-    if cur is not None:
-        blocks[cur] = (' '.join(buf), cur_section)
-    _cache[tasks_path] = blocks
-    return blocks
+        parser.feed(line)
+    parser.finish()
+    _cache[tasks_path] = parser.blocks
+    return parser.blocks
 
 def _find_archived_tasks(root, slug):
     """Locate the tasks.md for an archived/live change <slug>. Deterministic first,
@@ -131,8 +153,9 @@ def _parse_task(tasks_path, tasknum):
         title = dm.group(1) if dm else ''
     return cap, reqid, _strip_desc(title)
 
-def _canonical_anchor(root, cap, desc):
-    """Return (relpath, anchor_or_None, category) for capability cap + requirement desc."""
+def _canonical_anchor(root, parsed):
+    """Return (relpath, anchor_or_None, category) for a parsed task's capability + requirement desc."""
+    cap, _, desc = parsed
     rel = f'openspec/specs/{cap}/spec.md'
     absf = os.path.join(root, rel)
     if not os.path.isfile(absf):
@@ -144,74 +167,107 @@ def _canonical_anchor(root, cap, desc):
                 return (rel, cand, 'REPOINT_ANCHOR')
     return (rel, None, 'REPOINT_FILE')
 
+_Ref = collections.namedtuple('_Ref', 'root path frag')
+
+
+def _dangling(note):
+    return {'category': 'DANGLING', 'new_target': None, 'note': note}
+
+
 def resolve(root, path, frag):
     """Given a broken target (path, frag) under app <root>, return a dict:
        {category, new_target|None, note}."""
-    # Shape 1: changes/<slug>/tasks.md[#task-N]
-    m = re.match(r'openspec/changes/([^/]+)/tasks\.md$', path)
-    if m and frag and re.match(r'task-(\d+)$', frag or ''):
-        slug = m.group(1)
-        tnum = int(frag.split('-', 1)[1])
-        tp = _find_archived_tasks(root, slug)
-        if not tp:
-            return {'category': 'DANGLING', 'new_target': None,
-                    'note': f'archived change {slug} tasks.md not found'}
-        parsed = _parse_task(tp, tnum)
-        if not parsed:
-            return {'category': 'DANGLING', 'new_target': None,
-                    'note': f'task-{tnum} not found in {slug}/tasks.md'}
-        cap, reqid, desc = parsed
-        res = _canonical_anchor(root, cap, desc)
-        if res is None:
-            return {'category': 'DANGLING', 'new_target': None,
-                    'note': f'capability {cap} has no canonical spec'}
-        rel, anchor, cat = res
-        return {'category': cat, 'new_target': rel + (f'#{anchor}' if anchor else ''),
-                'note': f'{cap}#{reqid}'}
-    # Shape 1b: changes/<slug>/tasks.md with NO task fragment, where <slug> is itself
-    # a canonical capability name -> file-level repoint (unambiguous: slug == cap verbatim).
-    if m and not frag:
-        slug = m.group(1)
-        rel = f'openspec/specs/{slug}/spec.md'
-        if os.path.isfile(os.path.join(root, rel)):
-            return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': f'slug==cap {slug}'}
-        return {'category': 'DANGLING', 'new_target': None,
-                'note': f'no-frag tasks.md, slug {slug} not a canonical cap'}
-    # Shape 2: changes/<slug>/specs/<cap>/spec.md[#anchor]
-    m = re.match(r'openspec/changes/([^/]+)/specs/([^/]+)/spec\.md$', path)
-    if m:
-        cap = m.group(2)
-        rel = f'openspec/specs/{cap}/spec.md'
-        absf = os.path.join(root, rel)
-        if not os.path.isfile(absf):
-            return {'category': 'DANGLING', 'new_target': None,
-                    'note': f'capability {cap} has no canonical spec'}
-        if not frag:
-            return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': cap}
-        if slugify(frag) in heading_slugs(absf):
-            # Emit the SLUGIFIED fragment, never the raw one. Gate-46 compares the
-            # fragment verbatim against slugify(heading), so a raw fragment carrying
-            # trailing punctuation (the @spec regex swallows a sentence-ending '.')
-            # or mixed case would still be flagged broken after the repoint.
-            return {'category': 'REPOINT_ANCHOR', 'new_target': f'{rel}#{slugify(frag)}', 'note': cap}
-        # fragment lost — capability proven, drop to file-level
-        return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': f'{cap} (anchor {frag} not in canonical)'}
-    # Shape 3: an ALREADY-canonical specs/<cap>/spec.md#frag whose fragment fails
-    # gate-46's verbatim compare but whose SLUGIFIED form is a real heading. The
-    # capability and the requirement are both already proven — only the fragment's
-    # punctuation/case is off (the @spec regex swallows a sentence-ending '.').
-    # Normalising it is unambiguous: we are not choosing a target, just spelling
-    # the one that is already there the way gate-46 reads it.
-    # This also self-heals the raw-fragment leak emitted by earlier tool rounds.
-    m = re.match(r'openspec/specs/([^/]+)/spec\.md$', path)
-    if m and frag:
-        absf = os.path.join(root, path)
-        if os.path.isfile(absf):
-            slugs = heading_slugs(absf)
-            if frag not in slugs and slugify(frag) in slugs:
-                return {'category': 'REPOINT_ANCHOR',
-                        'new_target': f'{path}#{slugify(frag)}',
-                        'note': f'{m.group(1)} (fragment normalised to gate-46 form)'}
+    ref = _Ref(root, path, frag)
+    for shape in (_resolve_tasks_ref, _resolve_change_spec_ref, _resolve_canonical_ref):
+        result = shape(ref)
+        if result is not None:
+            return result
     # anything else (specs/* anchor genuinely re-headed, design.md, proposal.md,
     # OTHER) -> human review
-    return {'category': 'DANGLING', 'new_target': None, 'note': 'unrecognised shape'}
+    return _dangling('unrecognised shape')
+
+
+def _resolve_tasks_ref(ref):
+    """Shape 1: changes/<slug>/tasks.md[#task-N]; None when the path or fragment is another shape."""
+    m = re.match(r'openspec/changes/([^/]+)/tasks\.md$', ref.path)
+    if not m:
+        return None
+    if not ref.frag:
+        return _resolve_tasks_file(ref.root, m.group(1))
+    if not re.match(r'task-(\d+)$', ref.frag):
+        return None
+    return _resolve_task(ref, m.group(1))
+
+
+def _resolve_task(ref, slug):
+    """changes/<slug>/tasks.md#task-N -> the canonical requirement the task line names."""
+    tnum = int(ref.frag.split('-', 1)[1])
+    tp = _find_archived_tasks(ref.root, slug)
+    if not tp:
+        return _dangling(f'archived change {slug} tasks.md not found')
+    parsed = _parse_task(tp, tnum)
+    if not parsed:
+        return _dangling(f'task-{tnum} not found in {slug}/tasks.md')
+    cap, reqid, _ = parsed
+    res = _canonical_anchor(ref.root, parsed)
+    if res is None:
+        return _dangling(f'capability {cap} has no canonical spec')
+    rel, anchor, cat = res
+    return {'category': cat, 'new_target': rel + (f'#{anchor}' if anchor else ''),
+            'note': f'{cap}#{reqid}'}
+
+
+def _resolve_tasks_file(root, slug):
+    """Shape 1b: changes/<slug>/tasks.md with NO task fragment, where <slug> is itself
+    a canonical capability name -> file-level repoint (unambiguous: slug == cap verbatim)."""
+    rel = f'openspec/specs/{slug}/spec.md'
+    if os.path.isfile(os.path.join(root, rel)):
+        return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': f'slug==cap {slug}'}
+    return _dangling(f'no-frag tasks.md, slug {slug} not a canonical cap')
+
+
+def _resolve_change_spec_ref(ref):
+    """Shape 2: changes/<slug>/specs/<cap>/spec.md[#anchor] -> the canonical spec of <cap>."""
+    m = re.match(r'openspec/changes/([^/]+)/specs/([^/]+)/spec\.md$', ref.path)
+    if not m:
+        return None
+    cap = m.group(2)
+    rel = f'openspec/specs/{cap}/spec.md'
+    absf = os.path.join(ref.root, rel)
+    if not os.path.isfile(absf):
+        return _dangling(f'capability {cap} has no canonical spec')
+    frag = ref.frag
+    if not frag:
+        return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': cap}
+    if slugify(frag) in heading_slugs(absf):
+        # Emit the SLUGIFIED fragment, never the raw one. Gate-46 compares the
+        # fragment verbatim against slugify(heading), so a raw fragment carrying
+        # trailing punctuation (the @spec regex swallows a sentence-ending '.')
+        # or mixed case would still be flagged broken after the repoint.
+        return {'category': 'REPOINT_ANCHOR', 'new_target': f'{rel}#{slugify(frag)}', 'note': cap}
+    # fragment lost — capability proven, drop to file-level
+    return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': f'{cap} (anchor {frag} not in canonical)'}
+
+
+def _resolve_canonical_ref(ref):
+    """Shape 3: an ALREADY-canonical specs/<cap>/spec.md#frag whose fragment fails
+    gate-46's verbatim compare but whose SLUGIFIED form is a real heading.
+
+    The capability and the requirement are both already proven; only the fragment's
+    punctuation/case is off (the @spec regex swallows a sentence-ending '.').
+    Normalising it is unambiguous: it spells the target that is already there the
+    way gate-46 reads it. This also self-heals the raw-fragment leak emitted by
+    earlier tool rounds.
+    """
+    m = re.match(r'openspec/specs/([^/]+)/spec\.md$', ref.path)
+    if not (m and ref.frag):
+        return None
+    absf = os.path.join(ref.root, ref.path)
+    if not os.path.isfile(absf):
+        return None
+    slugs = heading_slugs(absf)
+    if ref.frag not in slugs and slugify(ref.frag) in slugs:
+        return {'category': 'REPOINT_ANCHOR',
+                'new_target': f'{ref.path}#{slugify(ref.frag)}',
+                'note': f'{m.group(1)} (fragment normalised to gate-46 form)'}
+    return None
