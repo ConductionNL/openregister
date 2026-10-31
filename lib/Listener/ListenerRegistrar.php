@@ -484,6 +484,10 @@ final class ListenerRegistrar {
 		// on the objects that point at an updated object when that field changed.
 		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ReferencedCalculationListener::class);
 
+		// A changed date that other records' destruction date reads through a
+		// relation queues their recalculation, off the save.
+		$context->registerEventListener(ObjectUpdatedEvent::class, RelatedRetentionRecalculationListener::class);
+
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
 		// a task template on demand and blocks any lifecycle transition it
@@ -587,6 +591,10 @@ final class ListenerRegistrar {
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.
 		$context->registerEventListener(ObjectDeletingEvent::class, ConceptDeleteGuardListener::class);
+
+		// A frozen object refuses its delete the way it refuses a write, on
+		// every path that dispatches the deleting event.
+		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
 
 		// Named uniqueness constraints — a `refuse` constraint stops the write
 		// naming the combination and the conflicting object; a `report` one

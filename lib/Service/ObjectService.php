@@ -268,9 +268,6 @@ class ObjectService implements ObjectServiceInterface
      */
     private ?NotSuppliedHandler $notSuppliedHandler = null;
 
-    // **REMOVED**: Distributed caching mechanisms removed since SOLR is now our index.
-    // **REMOVED**: Cache TTL constants removed since SOLR is now our index.
-
     /**
      * Constructor for ObjectService.
      *
@@ -390,7 +387,6 @@ class ObjectService implements ObjectServiceInterface
     ) {
         // REFACTORED: Removed ExportHandler and VectorizationHandler to break circular deps.
         // Handlers should not depend on services - using ExportService, ImportService, VectorizationService.
-        // **REMOVED**: Cache initialization removed since SOLR is now our index.
         $this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
             registerMapper: $registerMapper,
             schemaMapper: $schemaMapper
@@ -4022,10 +4018,7 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Search objects with pagination and comprehensive faceting support
      *
-     * **SEARCH ENGINE**: This method uses Solr as the primary search engine when available,
-     * falling back to database search only when Solr is disabled or when using relation-based
-     * searches (ids/uses parameters). If Solr fails, the method will throw an exception
-     * rather than falling back to database search.
+     * **SEARCH ENGINE**: This method searches the database (magic tables).
      *
      * **PERFORMANCE OPTIMIZATION**: This method intelligently determines which operations
      * are needed based on the query parameters and only executes the required operations.
@@ -4128,7 +4121,7 @@ class ObjectService implements ObjectServiceInterface
      * @phpstan-return array<string, mixed>
      *
      * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \Exception If Solr search fails and cannot be recovered
+     * @throws \Exception If the search fails and cannot be recovered
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex search routing requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)      Many search options create many execution paths
@@ -6212,8 +6205,6 @@ class ObjectService implements ObjectServiceInterface
         );
     }//end deleteObjectsByRegister()
 
-    // **REMOVED**: clearResponseCache method removed since SOLR is now our index.
-    // **REMOVED**: generateCacheKey method removed since SOLR is now our index.
     // =========================================================================
     // NEW HANDLER DELEGATION METHODS
     // =========================================================================
@@ -6328,23 +6319,6 @@ class ObjectService implements ObjectServiceInterface
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
     }//end getVectorizationStatistics()
-
-    /**
-     * Get count of objects available for vectorization
-     *
-     * @param array|null $_schemas Optional schema filters
-     *
-     * @return never Object count
-     *
-     * @throws \Exception If count fails
-     *
-     * @spec exclude Deprecated throwing stub; disabled pending VectorizationService circular-dependency refactor.
-     */
-    public function getVectorizationCount(?array $_schemas=null)
-    {
-        // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
-        throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
-    }//end getVectorizationCount()
 
     // =========================================================================
     // CRUD HANDLER DELEGATION METHODS

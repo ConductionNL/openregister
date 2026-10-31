@@ -561,30 +561,6 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(500, $result->getStatus());
 	}
 
-	public function testGetObjectVectorizationCountSuccess(): void {
-		$this->request->method('getParam')->willReturn(null);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(42);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(42, $data['count']);
-	}
-
-	public function testGetObjectVectorizationCountError(): void {
-		$this->request->method('getParam')->willReturn(null);
-
-		$this->objectService->method('getVectorizationCount')
-			->willThrowException(new DBException('Count error'));
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(500, $result->getStatus());
-	}
-
 	public function testValidateReturns400WhenParamsMissing(): void {
 		$this->request->method('getParam')->willReturn(null);
 
@@ -3449,24 +3425,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getObjectVectorizationCount() — with views parameter
-	// =========================================================================
-
-	public function testGetObjectVectorizationCountWithViews(): void {
-		$this->request->method('getParam')->willReturnMap([
-			['views', null, '["view1"]'],
-		]);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(99);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame(99, $data['count']);
-	}
-
-	// =========================================================================
 	// logs() — register/schema not found paths
 	// =========================================================================
 
@@ -4893,25 +4851,6 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertArrayHasKey('limit', $data);
-	}
-
-	// =========================================================================
-	// getObjectVectorizationCount() — with schemas as JSON string
-	// =========================================================================
-
-	public function testGetObjectVectorizationCountWithSchemasJsonString(): void {
-		$this->request->method('getParam')->willReturnMap([
-			['schemas', null, '[1,2,3]'],
-		]);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(55);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(55, $data['count']);
 	}
 
 	// =========================================================================

@@ -1,0 +1,421 @@
+{
+ "info": {
+  "name": "OpenRegister frozen object refuses delete",
+  "description": "archival-frozen-refuses-delete-and-dates-follow task 3.1. Freezes an object, gets 409 on DELETE with a message naming who froze it and when, unfreezes, deletes it. Not registered in run-all.sh until its first live pass (decision 139).",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{adminUser}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{adminPassword}}",
+    "type": "string"
+   }
+  ]
+ },
+ "event": [
+  {
+   "listen": "prerequest",
+   "script": {
+    "exec": [
+     "if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+    ]
+   }
+  }
+ ],
+ "variable": [
+  {
+   "key": "baseUrl",
+   "value": "http://localhost:8080"
+  },
+  {
+   "key": "adminUser",
+   "value": "admin"
+  },
+  {
+   "key": "adminPassword",
+   "value": "admin"
+  },
+  {
+   "key": "run",
+   "value": ""
+  }
+ ],
+ "item": [
+  {
+   "name": "Create register",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"frozen-delete-{{run}}\", \"slug\": \"frozen-delete-{{run}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Create schema",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"frozen-delete-{{run}}\", \"slug\": \"frozen-delete-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Attach schema to register",
+   "request": {
+    "method": "PUT",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"frozen-delete-{{run}}\", \"slug\": \"frozen-delete-{{run}}\", \"schemas\": [\"{{schemaId}}\"]}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('register updated', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Create object",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"levering\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "const b = pm.response.json();",
+       "pm.collectionVariables.set('objectId', (b['@self'] && b['@self'].id) || b.uuid || b.id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Freeze the object",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"reason\": \"Account manager lock\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('frozen', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Delete the frozen object is 409",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('409', () => pm.response.to.have.status(409));",
+       "const b = pm.response.json();",
+       "pm.test('message names who and when', () => { pm.expect(b.error).to.match(/locked by .+ since \\d{4}-\\d{2}-\\d{2}/); pm.expect(b.errors.code).to.eql('object-frozen'); });"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "The object is still there",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('200', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Unfreeze",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('unfrozen', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Delete after the unfreeze goes through",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.oneOf([200,204]));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Cleanup schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+    }
+   }
+  },
+  {
+   "name": "Cleanup register",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+    }
+   }
+  }
+ ]
+}

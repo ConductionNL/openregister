@@ -33,7 +33,6 @@ use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -68,7 +67,6 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 			container: $container,
 			appManager: $this->createMock(originalClassName: IAppManager::class),
 			settingsService: $this->createMock(originalClassName: SettingsService::class),
-			vectorizationService: $this->createMock(originalClassName: VectorizationService::class),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 	}//end controllerWith()

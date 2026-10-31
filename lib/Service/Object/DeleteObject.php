@@ -427,7 +427,7 @@ class DeleteObject {
 				schemaId: $schemaIdInt
 			);
 		} catch (\Exception $e) {
-			// Gracefully handle cache invalidation errors (e.g., Solr not configured).
+			// Gracefully handle cache invalidation errors.
 			// Soft deletion should succeed even if cache invalidation fails.
 		}
 

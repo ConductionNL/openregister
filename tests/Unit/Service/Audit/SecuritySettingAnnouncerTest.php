@@ -99,7 +99,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 		return $user;
 	}//end user()
 
-	private function announcer(?IGroupManager $groups = null): SecuritySettingAnnouncer {
+	private function announcer(?IGroupManager $groups = null, ?SecuritySettingRegistry $registry = null): SecuritySettingAnnouncer {
 		if ($groups === null) {
 			$admins = $this->createMock(IGroup::class);
 			$admins->method('getUsers')->willReturn([$this->user('beheer1', 'Beheer 1'), $this->user('beheer2', 'Beheer 2')]);
@@ -111,7 +111,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 		$session->method('getUser')->willReturn($this->user('jan', 'Jan Jansen'));
 
 		return new SecuritySettingAnnouncer(
-			new SecuritySettingRegistry($this->appConfig()),
+			$registry ?? new SecuritySettingRegistry($this->appConfig()),
 			$this->notificationManager(),
 			$groups,
 			$session,
@@ -140,16 +140,25 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 	}//end testTheAdministratorsHearWhenAccessControlIsSwitchedOff()
 
 	public function testASecretIsAnnouncedWithoutEitherValue(): void {
-		$this->stored['solr'] = (string)json_encode(['password' => 'oud-geheim']);
-		$announcer = $this->announcer();
+		// No shipped setting is a secret, so a registry that marks one stands in.
+		$registry = $this->createMock(SecuritySettingRegistry::class);
+		$registry->method('snapshot')->willReturnCallback(
+			fn (): array => ['integration.apiToken' => $this->stored['integration.apiToken'] ?? null]
+		);
+		$registry->method('isSecurityRelevant')->willReturn(true);
+		$registry->method('isSecret')->willReturn(true);
+		$registry->method('label')->willReturn('Integration token');
+
+		$this->stored['integration.apiToken'] = 'oud-geheim';
+		$announcer = $this->announcer(registry: $registry);
 		$before = $announcer->snapshot();
 
-		$this->stored['solr'] = (string)json_encode(['password' => 'nieuw-geheim']);
+		$this->stored['integration.apiToken'] = 'nieuw-geheim';
 		$announcer->announce($before, $announcer->snapshot());
 
 		self::assertNotSame([], $this->sent, 'a changed secret is still announced');
 		$parameters = $this->sent[0]['parameters'];
-		self::assertSame('solr.password', $parameters['setting']);
+		self::assertSame('integration.apiToken', $parameters['setting']);
 		self::assertTrue($parameters['secret']);
 		self::assertArrayNotHasKey('oldValue', $parameters);
 		self::assertArrayNotHasKey('newValue', $parameters);
@@ -165,7 +174,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 		$registry = new SecuritySettingRegistry($this->appConfig());
 
 		self::assertTrue($registry->isSecret('integration.apiToken'));
-		self::assertTrue($registry->isSecret('solr.zookeeperPassword'));
+		self::assertTrue($registry->isSecret('mail.smtpPassword'));
 		self::assertFalse($registry->isSecret('rbac.enabled'));
 	}//end testACredentialMissingItsFlagIsStillNotQuoted()
 

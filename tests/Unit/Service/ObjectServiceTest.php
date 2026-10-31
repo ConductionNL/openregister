@@ -1953,13 +1953,6 @@ class ObjectServiceTest extends TestCase {
 		$this->service->getVectorizationStatistics();
 	}
 
-	public function testGetVectorizationCountThrowsDisabledException(): void {
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Vectorization temporarily disabled');
-
-		$this->service->getVectorizationCount();
-	}
-
 	// ── 41. mergeObjects delegation ─────────────────────────────────────
 
 	public function testMergeObjectsDelegatesToMergeHandler(): void {
