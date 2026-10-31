@@ -1,0 +1,2754 @@
+{
+    "dry run": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "dryRun": true,
+                "rows": [
+                    {
+                        "index": 0,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    },
+                    {
+                        "index": 1,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    },
+                    {
+                        "index": 2,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    }
+                ],
+                "validRows": 3,
+                "invalidRows": 0,
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "empty save result": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "flags off": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "importer"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "importer"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "importer"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false,
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "header only": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 0,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "row": 1,
+                        "object": [],
+                        "error": "No data rows found in CSV file"
+                    }
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "invalid ignored without validation": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "multitenancy off only": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    false,
+                    true,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no headers": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 0,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "row": 1,
+                        "object": [],
+                        "error": "No valid headers found in CSV file"
+                    }
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no queue": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] notify_push IQueue not available; skipping batch flush",
+                    {
+                        "error": "no notify_push"
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no register": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "threw": "TypeError",
+        "message": "OCA\\OpenRegister\\Service\\ImportService::processCsvSheet(): Argument #2 ($register) must be of type OCA\\OpenRegister\\Db\\Register, null given",
+        "code": 0
+    },
+    "no schema": {
+        "calls": [],
+        "threw": "InvalidArgumentException",
+        "message": "CSV import requires a specific schema",
+        "code": 0
+    },
+    "nothing saved": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [
+                    "n"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "100% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "only created": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "a"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "only empty rows": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 0,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "row": 1,
+                        "object": [],
+                        "error": "No data rows found in CSV file"
+                    }
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "only updated": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [],
+                "updated": [
+                    "u"
+                ],
+                "unchanged": [],
+                "errors": [],
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "pack": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    2
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "One",
+                        "status": "open",
+                        "name": "First",
+                        "_extra": "x"
+                    },
+                    2
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Two",
+                        "status": "closed",
+                        "name": "Second",
+                        "id": "7"
+                    },
+                    3
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    4
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    5
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Three",
+                        "name": "Third"
+                    },
+                    5
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "pack all rows fail": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    2
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "One",
+                        "status": "open",
+                        "name": "First",
+                        "_extra": "x"
+                    },
+                    2
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Two",
+                        "status": "closed",
+                        "name": "Second",
+                        "id": "7"
+                    },
+                    3
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    4
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    5
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Three",
+                        "name": "Third"
+                    },
+                    5
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 0,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "row": 2,
+                        "field": null,
+                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "type": "MigrationPackMappingError",
+                        "original_value": null
+                    },
+                    {
+                        "row": 3,
+                        "field": null,
+                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "type": "MigrationPackMappingError",
+                        "original_value": null
+                    },
+                    {
+                        "row": 5,
+                        "field": null,
+                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "type": "MigrationPackMappingError",
+                        "original_value": null
+                    }
+                ],
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 0,
+                    "totalFound": 0,
+                    "efficiency": 0
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "pack dry run": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    2
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "One",
+                        "status": "open",
+                        "name": "First",
+                        "_extra": "x"
+                    },
+                    2
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Two",
+                        "status": "closed",
+                        "name": "Second",
+                        "id": "7"
+                    },
+                    3
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    4
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    5
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Three",
+                        "name": "Third"
+                    },
+                    5
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 2,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "row": 3,
+                        "field": null,
+                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "type": "MigrationPackMappingError",
+                        "original_value": null
+                    }
+                ],
+                "dryRun": true,
+                "rows": [
+                    {
+                        "index": 0,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    },
+                    {
+                        "index": 1,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    }
+                ],
+                "validRows": 2,
+                "invalidRows": 0,
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "totalProcessed": 2,
+                    "totalFound": 2
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "pack with skipped and failing rows": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    2
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Two",
+                        "status": "closed",
+                        "name": "Second",
+                        "id": "7"
+                    },
+                    3
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    4
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    5
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Three",
+                        "name": "Third"
+                    },
+                    5
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 1,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 1,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [
+                    {
+                        "row": 5,
+                        "field": null,
+                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "type": "MigrationPackMappingError",
+                        "original_value": null
+                    }
+                ],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 1,
+                    "totalFound": 1,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "plain": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "publish flag": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": true
+                    }
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.",
+                    []
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "save throws": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Bulk save failed",
+        "code": 0
+    },
+    "slugless target": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema ",
+                    "slug": ""
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "unchanged without others": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [
+                    "a",
+                    "b",
+                    "c"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "100% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "validation errors": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] Processing CSV row",
+                    {
+                        "isAdmin": false,
+                        "username": "null"
+                    }
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] CSV import processing objects",
+                    {
+                        "objectCount": 3,
+                        "publish": false
+                    }
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true,
+                    false,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Worksheet": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [
+                    {
+                        "object": {
+                            "title": "Two"
+                        },
+                        "error": "bad",
+                        "type": "X"
+                    },
+                    {
+                        "object": {
+                            "title": "raw"
+                        },
+                        "error": "Validation failed",
+                        "type": "ValidationException"
+                    }
+                ],
+                "deduplication_efficiency": "25% operations avoided",
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "objectsPerSecond": "<time>",
+                    "totalProcessed": 3,
+                    "totalFound": 3,
+                    "efficiency": 100
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    }
+}

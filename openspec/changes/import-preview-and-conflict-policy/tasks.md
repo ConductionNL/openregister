@@ -40,6 +40,14 @@
 - [ ] 7.1 Hand the preview and the policy to integriq's `migration-source-adapters` (integriq#2001) as the target its source adapters write into, with candidate ids C-configuration-16, C-configuration-88, C-configuration-95, C-integrations-22 and C-integrations-50.
 - [ ] 7.2 Tell the filinq lane that the copy before destruction is what a vernietiging record points at.
 
+## 8. A whole base in one step (REQ-IPC-006, row x-import-product)
+
+- [ ] 8.1 `lib/Service/Import/BaseSetReader.php`: read a base export archive into a neutral set of tables, columns, column types and link columns, with one reader per format (`AirtableBaseReader`, `BaserowBaseReader`, `NocoDbBaseReader`) behind a `BaseSetReaderInterface` that integriq's source adapters can also produce. Unit test each reader with a small fixture archive under `tests/Fixtures/import/`.
+- [ ] 8.2 `lib/Service/Import/BaseSchemaProposer.php`: turn a set into a proposed register, one schema per table and a relation per link column, reusing the column type detection of the existing import; a link to a row outside the set becomes a per-row outcome, never a failure. Unit test: the two-table fixture gives two schemas and one relation; a dangling link is reported.
+- [ ] 8.3 Extend `lib/Controller/ImportPreviewController.php` and `lib/BackgroundJob/ImportPreviewRunner.php`: a base upload creates the proposal, the confirmed proposal saves the register and schemas, then runs one preview per table in dependency order and resolves links after all tables are written; routes `importPreview#proposeBase` and `importPreview#confirmBase` in `appinfo/routes.php` with `#[NoAdminRequired]` plus a register create check.
+- [ ] 8.4 Import screen: add a "Whole base" option to `src/modals/register/ImportRegister.vue` that uploads the archive, shows the proposed schemas and relations for confirmation and then the per-table outcome; `tests/e2e/ci/import-base.spec.ts` imports the two-table fixture.
+- [ ] 8.5 Hand the `BaseSetReaderInterface` set shape to integriq's `migration-source-adapters` (integriq#2001) so a running installation read by an adapter lands on the same path.
+
 ## Where this stopped
 
 Size L, so the first PR ships a capability that stands on its own: the

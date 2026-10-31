@@ -1438,7 +1438,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
 	 */
 	private function validateRolesAssignment(mixed $roles, string $context): void {
 		if (is_array($roles) === false) {
@@ -2475,7 +2475,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<string, array{through: string, property: string, label?: string}>
 	 *                                                                                The declared lenses, keyed by property name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getLenses(): array {
 		$configuration = $this->getConfiguration();
@@ -2558,7 +2558,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getListPresentation(): array {
 		$configuration = $this->getConfiguration();
@@ -2643,7 +2643,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getGeoInheritance(): array {
 		$configuration = $this->getConfiguration();
@@ -2753,6 +2753,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *   Example: 'profile.avatar' (should contain base64 encoded image data)
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
+	 *   a file property of this schema, unless the property sets its own.
 	 * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
@@ -2883,7 +2885,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// ever be declared.
 		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
 		// caller's own drafts out of the schema's lists by default.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
+		// `autoShare` is the schema-level default FilePropertyHandler reads for
+		// every file property.
+		$boolFields = ['allowFiles', 'autoShare', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
@@ -2901,7 +2905,11 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// UniqueConstraintEvaluator and UniqueConstraintListener read (named
 		// refuse/report constraints, beside the legacy `unique`). Off this
 		// list every save dropped it in silence and no constraint ever fired.
+		// `autoPublish` is the retired name of `autoShare`. It is kept unvalidated
+		// and never acted on, so FilePropertyHandler can still log the
+		// deprecation warning that names `autoShare`.
 		$passThrough = [
+			'autoPublish',
 			'unique',
 			'uniqueConstraints',
 			'facetCacheTtl',
@@ -3258,7 +3266,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
 	 * is a named constructor reading a config block; there is no instance to inject.
@@ -3705,7 +3713,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @throws InvalidArgumentException When the value is not a list of valid entries.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function validatePartyKindsValue(mixed $value): array {
 		if (is_array($value) === false || array_is_list($value) === false) {
@@ -3786,7 +3794,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function getPartyKinds(): array {
 		$configured = $this->configuration['partyKinds'] ?? null;
@@ -3810,7 +3818,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<string, mixed> The annotation as stored.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function getPartyAnnotation(): array {
 		$configured = $this->configuration['x-openregister-party'] ?? null;
@@ -4129,7 +4137,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<string, string> Reason codes mapped to their labels.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function notSuppliedReasons(): array {
 		$configuration = ($this->getConfiguration() ?? []);

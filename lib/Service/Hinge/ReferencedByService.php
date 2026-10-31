@@ -69,7 +69,7 @@ class ReferencedByService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
@@ -94,7 +94,7 @@ class ReferencedByService {
 	 *   PermissionHandler, ObjectService all take it); splitting this one method
 	 *   in two would make it the exception rather than the rule.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getReferencingGroups(ObjectEntity $object, array $query = [], bool $_rbac = true): array {
 		$targetUuid = (string)$object->getUuid();

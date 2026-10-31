@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class DependentValueListener implements IEventListener {
 
@@ -89,7 +89,7 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
@@ -111,7 +111,7 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validate(
 		ObjectCreatingEvent|ObjectUpdatingEvent $event,
@@ -158,7 +158,7 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @return array<string, mixed>|null The properties, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function tablesFor(ObjectEntity $object): ?array {
 		$reference = $object->getSchema();
@@ -182,7 +182,7 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @return array<string, mixed> The stored data.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function storedData(?ObjectEntity $stored): array {
 		if ($stored === null) {
@@ -205,7 +205,7 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, array $violations): void {
 		$byProperty = [];

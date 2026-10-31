@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Orders fragments by `after`.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
 class ExampleSetOrder {
 	/**
@@ -52,7 +52,7 @@ class ExampleSetOrder {
 	 *
 	 * @throws ExampleSetException When `after` forms a cycle.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	public function order(array $after, array $enabled, array $expected=[]): array {
 		$skipped = [];

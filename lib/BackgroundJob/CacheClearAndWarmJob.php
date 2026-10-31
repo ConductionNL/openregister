@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
  * pressed the button has no way to tell whether that has happened yet. One job
  * with one outcome answers "is the cache back".
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
  */
 class CacheClearAndWarmJob extends RecordedQueuedJob {
 
@@ -63,7 +63,7 @@ class CacheClearAndWarmJob extends RecordedQueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$this->cache->clearAllCaches();

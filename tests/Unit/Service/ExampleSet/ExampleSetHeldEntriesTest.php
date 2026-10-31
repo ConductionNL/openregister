@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
  */
 
 declare(strict_types=1);

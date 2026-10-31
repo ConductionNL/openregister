@@ -1726,7 +1726,7 @@ class SaveObject {
 	 *
 	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyExpressionDefaults(Schema $schema, array $data): array {
 		$properties = ($schema->getProperties() ?? []);
@@ -3746,7 +3746,7 @@ class SaveObject {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors saveObject()'s own RBAC flag.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function selfDataForUpdate(array $selfData, bool $_rbac): array {
 		if ($_rbac === true) {

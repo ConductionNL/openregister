@@ -70,7 +70,7 @@ class ExampleSetRemoveLiveTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testAFileTheSetAttachedIsDeletedByItsNodeAndItsObjectGoesWithIt(): void {
 		$objectId = $this->store->ids(register: 'pub', schema: 'publication')[0];
@@ -85,7 +85,7 @@ class ExampleSetRemoveLiveTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testAFileThatStaysIsNamedWithItsReasonAndKeepsItsObjectForTheNextRun(): void {
 		$objectId               = $this->store->ids(register: 'pub', schema: 'publication')[0];
@@ -111,7 +111,7 @@ class ExampleSetRemoveLiveTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testAnObjectUnderALegalHoldStaysWithItsReason(): void {
 		$caseId            = $this->store->ids(register: 'cases', schema: 'case')[0];

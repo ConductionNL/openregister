@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ContentReport>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReportMapper extends QBMapper {
 	/**
@@ -59,7 +59,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @throws DoesNotExistException When no row matches the id.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function find(int $id): ContentReport {
 		$qb = $this->db->getQueryBuilder();
@@ -77,7 +77,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport|null Null when no row matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findByUuid(string $uuid): ?ContentReport {
 		if ($uuid === '') {
@@ -106,7 +106,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport[] The reports.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findByObjectUuid(string $objectUuid): array {
 		if ($objectUuid === '') {
@@ -131,7 +131,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport[] The matching reports.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findAll(?string $status = null, ?string $organisationId = null, ?int $limit = null): array {
 		$qb = $this->db->getQueryBuilder();
@@ -163,7 +163,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function insert($entity): ContentReport {
 		if ($entity->getUuid() === null || $entity->getUuid() === '') {
@@ -187,7 +187,7 @@ class ContentReportMapper extends QBMapper {
 	 *
 	 * @return ContentReport The persisted report.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function update($entity): ContentReport {
 		$entity->setUpdated(new DateTime());

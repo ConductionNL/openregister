@@ -40,7 +40,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -71,7 +71,7 @@ use Throwable;
  * locator would hide the same seven collaborators rather than remove one,
  * and every one of them is read in a single method here.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 class OperationsConsoleService {
 
@@ -180,7 +180,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<string, mixed> The window and the three panes.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function panes(int $windowHours = self::DEFAULT_WINDOW_HOURS): array {
 		$since = $this->windowStart(windowHours: $windowHours);
@@ -203,7 +203,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<string, mixed> The pane.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function jobsPane(): array {
 		$states = $this->bulkJobs->countByState();
@@ -227,7 +227,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<string, mixed> The pane.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function notificationsPane(DateTime $since): array {
 		$statuses = $this->dispatches->countByStatus(since: $since);
@@ -256,7 +256,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<string, mixed> The pane.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function ruleRunsPane(DateTime $since): array {
 		$runs = $this->ruleRuns->findRecent(since: $since, limit: self::MAX_ROWS);
@@ -291,7 +291,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<string, mixed> The rows.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function jobs(?string $state = null, int $limit = 50): array {
 		$jobs = $this->bulkJobs->findAllJobs(
@@ -319,7 +319,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<string, mixed> The runs and the rules holding an error.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function ruleRuns(int $windowHours = self::DEFAULT_WINDOW_HOURS, int $limit = 50): array {
 		$runs = $this->ruleRuns->findRecent(
@@ -360,7 +360,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<string, mixed> The job and its verbs.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	private function describeBulkJob(BulkJob $job): array {
 		$state = (string)$job->getState();
@@ -396,7 +396,7 @@ class OperationsConsoleService {
 	 *
 	 * @return array<int, array<string, mixed>> The inventory, class order.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function backgroundJobs(): array {
 		$seen = [];
@@ -445,7 +445,7 @@ class OperationsConsoleService {
 	 *
 	 * @return bool True when its runs are recorded.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function isObserved(string $class): bool {
 		if (in_array($class, self::OBSERVED_JOBS, true) === true) {

@@ -406,7 +406,7 @@ class ValidateObject {
 	 *
 	 * @return NotSuppliedHandler The handler.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function notSupplied(): NotSuppliedHandler {
 		if ($this->notSuppliedHandler === null) {
@@ -1753,7 +1753,7 @@ class ValidateObject {
 	 *
 	 * @return ValidationResult The result of the validation.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function validateObjectWithPlannedUsers(
 		array $object,

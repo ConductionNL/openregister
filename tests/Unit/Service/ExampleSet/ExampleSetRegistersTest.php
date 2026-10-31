@@ -53,7 +53,7 @@ class ExampleSetRegistersTest extends TestCase {
 	 * The job is the one the import reports under the id it ran under, and the instance's other jobs are never read:
 	 * a job another process records meanwhile cannot be taken for the set's.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function testTheImportClaimsExactlyTheJobItReports(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
@@ -71,7 +71,7 @@ class ExampleSetRegistersTest extends TestCase {
 	/**
 	 * An import that recorded no job claims none, and a failed one says why.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function testAnImportWithoutAJobClaimsNothingAndAFailureIsNamed(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
@@ -88,7 +88,7 @@ class ExampleSetRegistersTest extends TestCase {
 	/**
 	 * Remove soft-deletes the objects of the recorded job and forgets it only when all of them went.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function testRemoveImportForgetsTheJobOnlyWhenEveryObjectWent(): void {
 		$audit = $this->createMock(AuditTrailMapper::class);

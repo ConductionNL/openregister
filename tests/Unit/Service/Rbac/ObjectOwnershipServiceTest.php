@@ -411,7 +411,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function testTheSystemScopeMayAssignWithoutASessionUser(): void {
 		$this->signIn(null);

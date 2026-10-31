@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Names the declared paths a stored object did not keep.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 class ExampleSetProof {
 	/**
@@ -46,7 +46,7 @@ class ExampleSetProof {
 	 *
 	 * @return array<int, string> Dot paths, such as `verblijfplaats.postcode`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function lostPaths(mixed $declared, mixed $stored, string $path=''): array {
 		$declared = $this->asDeclared(declared: $declared, stored: $stored);

@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -118,7 +118,7 @@ class CorrectionService {
 	 * @throws NotAuthorizedException When nobody is signed in, or the right is not held.
 	 * @throws CorrectionRefusedException When there is no reason, or nothing to correct.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function correct(string $register, string $schema, string $id, array $values, ?string $reason): array {
 		$user = $this->userSession->getUser();
@@ -218,7 +218,7 @@ class CorrectionService {
 	 *
 	 * @return AuditTrail|null The correction entry, or null when the trail is switched off.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function recordCorrection(
 		ObjectEntity $object,
@@ -285,7 +285,7 @@ class CorrectionService {
 	 *
 	 * @return AuditTrail|null The amended entry, or null.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function amendLastEntry(ObjectEntity $object, array $context): ?AuditTrail {
 		$lastLog = $object->getLastLog();

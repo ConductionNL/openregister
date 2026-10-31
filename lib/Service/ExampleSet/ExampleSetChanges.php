@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One change lifecycle: resolve, apply, refresh, prove and revert,
  *                                                   each reading JSON-text fields the same way.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 class ExampleSetChanges {
 	/**
@@ -70,8 +70,8 @@ class ExampleSetChanges {
 	 *               append: array<string, mixed>} The object, the object as the change makes it, and the filled
 	 *               `set` and `append`; or why the change cannot be made.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function resolve(array $change, array $context): array {
 		$none = ['refusal' => '', 'row' => [], 'merged' => [], 'set' => [], 'append' => []];
@@ -144,8 +144,8 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to change),
 	 *                                                                 or why the write failed.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function apply(array $change, array $resolved): array {
 		$row   = $resolved['row'];
@@ -203,7 +203,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function writtenReferences(array $record, string $name, string $key): array {
 		$written = (array) ($record['objects'][$key]['refs'] ?? []);
@@ -232,7 +232,7 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>, wrote: bool} The entry to hold, whether a field was
 	 *                                                                         written, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
 	public function follow(array $change, array $entry, array $context, bool $refresh): array {
 		$declared        = array_map('strval', array_keys((array) ($change['set'] ?? [])));
@@ -350,7 +350,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
 	 */
 	private function writtenAgain(array $entry, array $resolved): array {
 		$again = [];
@@ -380,7 +380,7 @@ class ExampleSetChanges {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
 	 */
 	private function undone(array $held, array $set): bool {
 		$isSet  = ($held['found'] === true && $held['value'] !== null);
@@ -428,7 +428,7 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>|null, left: array<int, string>} The record entry (null
 	 *         when no field had to be written), or why the write failed, and the fields left because somebody changed them.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function refresh(array $object, array $row, array $values, array $written=[]): array {
 		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
@@ -474,8 +474,8 @@ class ExampleSetChanges {
 	 *
 	 * @return array<int, string> Empty when the change is on the instance; `(gone)` when the object is.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function lost(array $entry): array {
 		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
@@ -528,8 +528,8 @@ class ExampleSetChanges {
 	 *                                                    too when the object could not be read),
 	 *                                                    and the paths left because somebody changed them.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function revert(array $entry): array {
 		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
@@ -598,7 +598,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function asSent(array $row, array $fields): array {
 		return $this->paths->withJsonText(row: $row, fields: $fields);
@@ -612,7 +612,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-change-keeps-text/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
 	 */
 	private function structuredText(array $change, array $row): array {
 		return array_values(

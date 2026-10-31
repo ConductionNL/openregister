@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -125,7 +125,7 @@ final class BulkJobRunnerTest extends TestCase {
 	 * paused job would keep walking its members and the console would show a
 	 * state nothing honours.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */

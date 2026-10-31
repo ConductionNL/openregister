@@ -601,7 +601,7 @@ final class LifecycleAnnotationValidator {
 	 * the SAME lookup the save path makes, which is what keeps the two from drifting.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateTransitionCondition(mixed $condition, string $action): ?array {
 		if (is_array($condition) === false) {
@@ -735,7 +735,7 @@ final class LifecycleAnnotationValidator {
 	 * constant table and holds no state; calling it statically IS the reuse.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateAutoWhenRule(mixed $autoWhen, string $action): ?array {
 		$code = 'lifecycle-autowhen-malformed';

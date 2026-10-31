@@ -185,3 +185,22 @@ deleted.
 - **GIVEN** an expired run carrying an uploaded file
 - **WHEN** the job executes
 - **THEN** the file is deleted with the run
+
+### Requirement: A form link MAY open an existing record for change (REQ-FJR-008)
+
+A journey MAY declare `mode: update` with a target schema. It SHALL then be started only from an access link whose subject is one object of that schema and whose capabilities include `edit`. The run SHALL be prefilled with the object's current values for the fields the journey declares, and its submit SHALL update that object through the same save path, validation and audit as any other update. Fields the journey does not declare SHALL be neither shown nor changed. An expired or revoked link SHALL answer as REQ-ABL-003 says.
+
+#### Scenario: A resident corrects their own request through a link
+
+- **GIVEN** an object `aanvraag` with `telefoon: 0612345678` and an access link on it with the `edit` capability for a journey that declares `telefoon`
+- **WHEN** the link is opened without an account and `telefoon` is changed to `0687654321` and submitted
+- **THEN** the object holds `0687654321`
+- **AND** the audit trail records the update with the link as the actor
+- @e2e exclude {specified only; task 6.3 adds tests/e2e/ci/form-update-link.spec.ts}
+
+#### Scenario: A field outside the journey is untouched
+
+- **GIVEN** the same link and journey, and an object field `status` the journey does not declare
+- **WHEN** a client submits `status: afgehandeld` through the run
+- **THEN** the answer is refused and `status` keeps its value
+- @e2e exclude {specified only; covered by JourneyRunServiceTest in task 6.2}

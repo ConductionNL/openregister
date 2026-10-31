@@ -38,7 +38,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -149,7 +149,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAGrantOnTheRootReachesTheGrandchild(): void {
 		$expander = new HierarchyGrantExpander(
@@ -176,7 +176,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testTheVerbDoesNotGrowOnTheWayDown(): void {
 		$expander = new HierarchyGrantExpander(
@@ -206,7 +206,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testInheritedVerbsNarrowTheMask(): void {
 		$expander = new HierarchyGrantExpander(
@@ -238,7 +238,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testADirectGrantOnAChildSurvives(): void {
 		$expander = new HierarchyGrantExpander(
@@ -269,7 +269,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testACycleTerminatesAndGrantsNothing(): void {
 		$expander = new HierarchyGrantExpander(
@@ -291,7 +291,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testACycleUnderAGrantStopsAtTheLoop(): void {
 		$expander = new HierarchyGrantExpander(
@@ -320,7 +320,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testTheDepthCapIsEnforced(): void {
 		$chain = [
@@ -349,7 +349,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testTheProvenanceNamesTheRoot(): void {
 		$expander = new HierarchyGrantExpander(
@@ -378,7 +378,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAnotherTreeIsNotReached(): void {
 		$expander = new HierarchyGrantExpander(
@@ -527,7 +527,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testNoGrantInheritsNothing(): void {
 		$expander = new HierarchyGrantExpander(
@@ -550,7 +550,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAFullyNarrowedInheritanceGrantsNothing(): void {
 		$expander = new HierarchyGrantExpander(
@@ -574,7 +574,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testBothSpellingsOfTheParentKeyAreRead(): void {
 		$expander = new HierarchyGrantExpander(
@@ -599,7 +599,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAnUndeclaredHierarchyIsNull(): void {
 		$expander = new HierarchyGrantExpander(
@@ -621,7 +621,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testTheAuthoredDepthIsBounded(): void {
 		$expander = new HierarchyGrantExpander(
@@ -651,7 +651,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAnUnknownVerbNarrowsToNothing(): void {
 		$expander = new HierarchyGrantExpander(

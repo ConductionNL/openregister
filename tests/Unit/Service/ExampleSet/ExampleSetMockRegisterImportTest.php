@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
  * @uses \OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Service\AppRegisterImportRunner

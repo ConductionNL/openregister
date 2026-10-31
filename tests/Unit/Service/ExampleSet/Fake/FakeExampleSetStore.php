@@ -65,6 +65,9 @@ class FakeExampleSetStore extends ExampleSetStore {
 	/** @var int Number of creates. */
 	public int $creates = 0;
 
+	/** @var list<array{cause: string, run: string|null}> The write cause in effect at each create and update. */
+	public array $causes = [];
+
 	/** @var int Number of validations. */
 	public int $validations = 0;
 
@@ -234,6 +237,7 @@ class FakeExampleSetStore extends ExampleSetStore {
 		}
 
 		$this->creates++;
+		$this->causes[] = \OCA\OpenRegister\Service\WriteCause::current();
 		foreach (($this->droppedFields[$register.' '.$schema] ?? []) as $field) {
 			unset($data[$field]);
 		}
@@ -263,6 +267,7 @@ class FakeExampleSetStore extends ExampleSetStore {
 		}
 
 		$this->updates++;
+		$this->causes[] = \OCA\OpenRegister\Service\WriteCause::current();
 		unset($data['@self'], $data['id']);
 		$this->rows[$register.' '.$schema][$id] = (['id' => $id] + $this->asStored(type: $register.' '.$schema, data: $data));
 

@@ -145,8 +145,7 @@ interface ObjectExporterInterface {
 	 * Export data to PDF format
 	 *
 	 * Renders the same tabular data the CSV/Excel exporters produce into an
-	 * A4-landscape PDF via Dompdf (already an OpenRegister dependency, used
-	 * by `PdfReportWriter`). Reuses the existing column/data-extraction
+	 * A4-landscape PDF: an ODT converted by the office server. Reuses the existing column/data-extraction
 	 * pipeline (`fetchObjectsForExport()`, `getHeaders()`,
 	 * `identifyNameCompanionColumns()`, `resolveUuidNameMap()`,
 	 * `getObjectValue()`, `resolveUuidsToNames()`) — only the renderer is
@@ -162,6 +161,7 @@ interface ObjectExporterInterface {
 	 * @return string Raw PDF bytes
 	 *
 	 * @throws \OCA\OpenRegister\Exception\ExportTooLargeException When the object count exceeds the PDF row limit.
+	 * @throws \OCA\OpenRegister\Exception\OfficeServerRequiredException When no office server converts to PDF.
 	 */
 	public function exportToPdf(
 		?RegisterInterface $register = null,
@@ -169,4 +169,11 @@ interface ObjectExporterInterface {
 		array $filters = [],
 		?IUser $currentUser = null,
 	): string;
+
+	/**
+	 * Whether PDF output is possible: an office server (Collabora or Euro-Office) converts to PDF.
+	 *
+	 * @return bool
+	 */
+	public function isPdfAvailable(): bool;
 }//end interface

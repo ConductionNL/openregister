@@ -159,7 +159,7 @@ class MagicRbacHandler {
 	 *
 	 * @return DenyResolver The one reader of the deny grammar.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyResolver(): DenyResolver {
 		return ($this->resolvers->denyResolver ?? new DenyResolver());
@@ -176,7 +176,7 @@ class MagicRbacHandler {
 	 *
 	 * @return DenyEnforcementMode The one reader of `openregister.deny_enforcement`.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyEnforcementMode(): DenyEnforcementMode {
 		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
@@ -379,7 +379,7 @@ class MagicRbacHandler {
 	 *
 	 * @return bool True when the draft predicate must be left out for this table.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function statusColumnMissing(?string $tableName): bool {
 		if ($this->metadataColumns === null || $tableName === null || $tableName === '') {
@@ -437,7 +437,7 @@ class MagicRbacHandler {
 	 * @return string|false|null The predicate, false when the caller is denied
 	 *                           outright, or null when nothing is enforced yet.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyFilterSqlFor(
 		?array $authorization,
@@ -1572,7 +1572,7 @@ class MagicRbacHandler {
 	 *
 	 * @return bool True when the verb is denied here.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function deniesHere(
 		?array $cascaded,
@@ -1943,7 +1943,7 @@ class MagicRbacHandler {
 	 *
 	 * @return string[] The same conditions, each narrowed by the deny term.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function withDenyTerm(array $conditions, ?string $denyTerm): array {
 		if ($denyTerm === null) {

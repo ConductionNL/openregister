@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -77,7 +77,7 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function testAPlanIsBroughtInOnceAndTakenAway(): void {
 		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
@@ -136,7 +136,7 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function testARefreshTakesAwayTheTaskOfAnItemItPutsBack(): void {
 		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);
@@ -155,7 +155,7 @@ class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function testRemovingTheSetTakesAwayTheTasksItsItemsMade(): void {
 		$this->caseWithPlans(rows: [['key' => 'woo-plan', 'data' => self::plan()]]);

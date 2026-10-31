@@ -51,7 +51,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ use Throwable;
 /**
  * Expands a grant set down every declared object hierarchy.
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class HierarchyGrantExpander {
 
@@ -134,7 +134,7 @@ class HierarchyGrantExpander {
 	 *
 	 * @return array{parent: string, maxDepth: int, verbs: string[]}|null The declaration.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declarationFor(Schema $schema): ?array {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -180,7 +180,7 @@ class HierarchyGrantExpander {
 	 * @return array{granted: array<string, int>, sources: array<string, string>}
 	 *         The expanded map, and where each inherited entry came from.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function expand(array $granted, ?array $seeds = null): array {
@@ -303,7 +303,7 @@ class HierarchyGrantExpander {
 	 *
 	 * @return array<string, string>|null Child uuid => parent uuid, or null.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function childrenOrNull(array $hierarchy, array $frontier, int $depth): ?array {
 		try {
@@ -340,7 +340,7 @@ class HierarchyGrantExpander {
 	 *
 	 * @return array<string, array{mask: int, root: string}>|null The next frontier, or null when the bound was passed.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function absorbLevel(
 		array $hierarchy,
@@ -418,7 +418,7 @@ class HierarchyGrantExpander {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function logRevisit(array $hierarchy, string $childUuid): void {
 		$this->logger->info(
@@ -447,7 +447,7 @@ class HierarchyGrantExpander {
 	 *
 	 * @return integer The narrowed bitmask.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function narrow(int $mask, array $verbs): int {
 		if (empty($verbs) === true) {

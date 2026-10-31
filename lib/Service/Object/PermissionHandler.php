@@ -352,7 +352,7 @@ class PermissionHandler {
 	 *
 	 * @return DenyResolver The one reader of the deny grammar.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyResolver(): DenyResolver {
 		return ($this->denyResolver ?? new DenyResolver());
@@ -1139,7 +1139,7 @@ class PermissionHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function logRefusal(
 		?array $authorization,
@@ -1202,7 +1202,7 @@ class PermissionHandler {
 	 *         The denial that decides it, or null when none reaches this caller
 	 *         or the instance is not enforcing yet.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function enforcedDenialFor(
 		?array $authorization,
@@ -1270,7 +1270,7 @@ class PermissionHandler {
 	 *
 	 * @return array<int, string> The verbs, in catalogue order.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function permittedActionsFor(
 		Schema $schema,
@@ -1334,7 +1334,7 @@ class PermissionHandler {
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function provenanceFor(
 		Schema $schema,
@@ -1406,7 +1406,7 @@ class PermissionHandler {
 	 *
 	 * @return PermissionCatalogue The set that can be granted here.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function permissionCatalogue(): PermissionCatalogue {
 		return ($this->permissionCatalogue ?? new PermissionCatalogue(eventDispatcher: $this->eventDispatcher));
@@ -1421,7 +1421,7 @@ class PermissionHandler {
 	 *
 	 * @return DenyEnforcementMode The one reader of `openregister.deny_enforcement`.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyEnforcementMode(): DenyEnforcementMode {
 		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
@@ -1468,7 +1468,7 @@ class PermissionHandler {
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
 	 *         The denial that decided it, or null when no deny reaches this caller.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denialFor(
 		?array $authorization,
@@ -1541,7 +1541,7 @@ class PermissionHandler {
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function firstMatchingConditionalDenial(
 		DenyResolver $resolver,
@@ -2851,7 +2851,7 @@ class PermissionHandler {
 	 * @return array<string, mixed>|null The block, with the matrix's rules in it.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function compileDepartmentMatrix(?array $authorization, Schema $schema): ?array {
 		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
@@ -2908,7 +2908,7 @@ class PermissionHandler {
 	 *
 	 * @return MatrixRowsFromApps The asker of app-contributed matrix rows.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function matrixRowsFromApps(): MatrixRowsFromApps {
 		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
@@ -3778,7 +3778,7 @@ class PermissionHandler {
 	 *
 	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
 	 *
-	 * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function grantNothingWhenEmpty(array $authorization): array {
 		if ($authorization !== []) {

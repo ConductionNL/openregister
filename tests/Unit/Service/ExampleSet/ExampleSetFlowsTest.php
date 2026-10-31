@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function testAFlowIsWrittenOnceSwitchedOffAndPublishedAndTakenAwayOnRemove(): void {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'omgevingsvergunning', 'data' => self::flow()]]]);
@@ -97,7 +97,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
 	 */
 	public function testAChangeQuotesAFlowOfItsFragment(): void {
 		$this->store->offer(register: 'cases', schema: 'caseType');
@@ -128,7 +128,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
 	 */
 	public function testAChangeQuotingAnUnknownFlowIsRefused(): void {
 		$this->store->offer(register: 'cases', schema: 'caseType');
@@ -154,7 +154,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
 	 */
 	public function testAFlowCarriesFinishedRunsThatGoWithIt(): void {
 		$runs = [
@@ -213,7 +213,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
 	 */
 	public function testARefreshUpdatesAHeldFlowWhereItIs(): void {
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'omgevingsvergunning', 'data' => self::flow()]]]);

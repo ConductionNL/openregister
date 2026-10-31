@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Listeyi kimin onayladığı ve ne zaman.",
         "Who made it.": "Kimin yaptığı.",
         "Who rejected the list, and why.": "Listeyi kimin reddettiği ve neden.",
-        "Woo published": "Woo kapsamında yayımlandı"
+        "Woo published": "Woo kapsamında yayımlandı",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF için bir ofis sunucusu (Collabora veya Euro-Office) gerekir ve hiçbiri kurulu değil. Yöneticinizden bir tane kurmasını isteyin veya raporu başka bir biçimde indirin.",
+        "The report could not be downloaded.": "Rapor indirilemedi."
     },
     "nplurals=2; plural=(n != 1);"
 )

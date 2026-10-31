@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the case plans of an example set.
  *
- * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
  */
 class ExampleSetCasePlans extends ExampleSetEngineRows {
 	/**
@@ -68,7 +68,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function part(): string {
 		return 'casePlans';
@@ -79,7 +79,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function noun(): string {
 		return 'case plan';
@@ -96,7 +96,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -139,7 +139,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{object: string, created: array<int, string>}|null} The entry, or why not.
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['object'];
@@ -171,7 +171,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -191,7 +191,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when they were already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		try {
@@ -214,7 +214,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	private function deleteRealisationTask(CaseItem $item): void {
 		$uuid = trim((string) $item->getRealisationUuid());

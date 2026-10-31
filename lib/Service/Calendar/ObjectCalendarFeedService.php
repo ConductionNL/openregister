@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -107,7 +107,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return string|null The iCalendar body, or null.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function render(CalendarFeedToken $token): ?string {
 		$user = $this->userManager->get((string)$token->getUserId());
@@ -143,7 +143,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return string|null The iCalendar body, or null when the scope is gone.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function renderAsCurrentUser(CalendarFeedToken $token): ?string {
 		$scope = $this->resolveScope(token: $token);
@@ -250,7 +250,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return array<int, mixed> The objects.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function listObjects(CalendarFeedToken $token, array $scope): array {
 		unset($token);
@@ -306,7 +306,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return array<int, ObjectDateDeclaration> The declarations, possibly empty.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function declarationsFor(ObjectEntity $object): array {
 		$schemaId = (string)$object->getSchema();
@@ -337,7 +337,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return array<int, ObjectDateDeclaration> The declarations.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
 	 * is a named constructor; a factory for one parse would add a class to hide a
@@ -358,7 +358,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return DateTimeZone The tenant zone, falling back to UTC.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function tenantTimeZone(): DateTimeZone {
 		try {

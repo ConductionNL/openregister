@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  */
 
 declare(strict_types=1);
@@ -130,7 +130,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
 	 */
 	public function testAPreferenceQuotesAViewOfItsFragment(): void {
 		$this->app(app: 'alpha', fragment: [
@@ -160,7 +160,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
 	 */
 	public function testAPreferenceQuotingAnUnknownViewIsRefused(): void {
 		$this->app(app: 'alpha', fragment: [
@@ -182,7 +182,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
 	public function testARefreshUpdatesAViewInPlace(): void {
 		$this->withViews([$this->savedSearch()]);
@@ -203,7 +203,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-views-keep-their-uuid/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
 	public function testAViewKeepsItsUuidAcrossARemove(): void {
 		$this->withViews([$this->savedSearch()]);

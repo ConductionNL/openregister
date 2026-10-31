@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Cine a aprobat lista și când.",
         "Who made it.": "Cine l-a realizat.",
         "Who rejected the list, and why.": "Cine a respins lista și de ce.",
-        "Woo published": "Publicat în temeiul Woo"
+        "Woo published": "Publicat în temeiul Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Un PDF necesită un server de birou (Collabora sau Euro-Office) și niciunul nu este instalat. Rugați administratorul să instaleze unul sau descărcați raportul în alt format.",
+        "The report could not be downloaded.": "Raportul nu a putut fi descărcat."
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

@@ -139,7 +139,7 @@ export default {
 		 *
 		 * @return {string} The label.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		kindLabel(kind) {
 			const found = this.kinds.find((row) => row.kind === kind)
@@ -153,7 +153,7 @@ export default {
 		 *
 		 * @return {string} The label.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		switchLabel(rule) {
 			if (rule.enabled) {

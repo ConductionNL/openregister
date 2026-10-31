@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/example-set-archival-setting/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
  */
 
 declare(strict_types=1);

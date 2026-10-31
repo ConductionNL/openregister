@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the Deck cards of an example set.
  *
- * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
  */
 class ExampleSetDeckCards extends ExampleSetEngineRows {
 	/**
@@ -73,7 +73,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function part(): string {
 		return 'deckCards';
@@ -84,7 +84,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function noun(): string {
 		return 'deck card';
@@ -98,7 +98,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -139,7 +139,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *     }|null
 	 * } The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$store = $this->store();
@@ -169,7 +169,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -186,7 +186,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		try {
