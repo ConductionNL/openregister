@@ -757,8 +757,6 @@ class SettingsController extends Controller {
 	 *     type: 'NO TYPE'|mixed, object_json: mixed}>}},
 	 *     array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
 	 *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
 	 *              information-disclosure risk).
@@ -789,143 +787,15 @@ class SettingsController extends Controller {
 			$objectService->setRegister($register);
 			$objectService->setSchema('organisation');
 
-			$results = [];
-
-			// Test 1: Get all organizations.
-			$query1 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-			];
-			$result1 = $objectService->searchObjectsPaginated($query1);
-			$results['all_organizations'] = [
-				'count' => count($result1['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-							'object_data' => $objectData,
-						];
-					},
-					$result1['results']
+			$results = [
+				'all_organizations' => $this->organisationsOfType(objectService: $objectService, types: []),
+				'type_samenwerking' => $this->organisationsOfType(objectService: $objectService, types: ['samenwerking']),
+				'type_community' => $this->organisationsOfType(objectService: $objectService, types: ['community']),
+				'type_both' => $this->organisationsOfType(
+					objectService: $objectService,
+					types: ['samenwerking', 'community']
 				),
-			];
-
-			// Test 2: Try type filtering with samenwerking.
-			$query2 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-				'type' => ['samenwerking'],
-			];
-			$result2 = $objectService->searchObjectsPaginated($query2);
-			$results['type_samenwerking'] = [
-				'count' => count($result2['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array with type.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-						];
-					},
-					$result2['results']
-				),
-			];
-
-			// Test 3: Try type filtering with community.
-			$query3 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-				'type' => ['community'],
-			];
-			$result3 = $objectService->searchObjectsPaginated($query3);
-			$results['type_community'] = [
-				'count' => count($result3['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array with type.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-						];
-					},
-					$result3['results']
-				),
-			];
-
-			// Test 4: Try type filtering with both types.
-			$query4 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-				'type' => ['samenwerking', 'community'],
-			];
-			$result4 = $objectService->searchObjectsPaginated($query4);
-			$results['type_both'] = [
-				'count' => count($result4['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array with type.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-						];
-					},
-					$result4['results']
-				),
-			];
-
-			// Test 5: Direct database query to check type field.
-			$connection = $this->container->get(\OCP\IDBConnection::class);
-			$qb = $connection->getQueryBuilder();
-			$qb->select('o.id', 'o.name', 'o.object')
-				->from('openregister_objects', 'o')
-				->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
-				->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
-
-			// NC's IResult does not expose Doctrine's fetchAllAssociative() on
-			// every supported server (absent on NC 32) — iterate fetch() instead
-			// (see RegisterMapper::getAllRegisterIdsWithSchema / MarkerLookupTrait).
-			$stmt = $qb->executeQuery();
-			$rows = [];
-			// Same reason as above, and here it matters more: a fetch() that
-			// answers NULL never satisfies `!== false`, so the loop would spin
-			// forever appending nulls rather than ending.
-			$row = $stmt->fetch();
-			while (is_array($row) === true) {
-				$rows[] = $row;
-				$row = $stmt->fetch();
-			}
-
-			$stmt->closeCursor();
-
-			$results['direct_database_query'] = [
-				'count' => count($rows),
-				'organizations' => array_map(
-					// Maps row to simplified array with type from JSON.
-					function (array $row): array {
-						$objectData = json_decode($row['object'], true);
-						return [
-							'id' => $row['id'],
-							'name' => $row['name'],
-							'type' => $objectData['type'] ?? 'NO TYPE',
-							'object_json' => $row['object'],
-						];
-					},
-					$rows
-				),
+				'direct_database_query' => $this->organisationsByNameInDatabase(),
 			];
 
 			return new JSONResponse(data: $results);
@@ -939,4 +809,78 @@ class SettingsController extends Controller {
 			);
 		}//end try
 	}//end debugTypeFiltering()
+
+	/**
+	 * Search the organisation schema in the database, optionally filtered on type.
+	 *
+	 * The unfiltered search also returns each organisation's object data.
+	 *
+	 * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service, set to the organisation schema.
+	 * @param list<string>  $types         The types to filter on; empty for no filter.
+	 *
+	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
+	 */
+	private function organisationsOfType(\OCA\OpenRegister\Service\ObjectService $objectService, array $types): array {
+		$query = [
+			'_limit' => 10,
+			'_page' => 1,
+			'_source' => 'database',
+		];
+		if ($types !== []) {
+			$query['type'] = $types;
+		}
+
+		$found = $objectService->searchObjectsPaginated($query);
+		$organisations = [];
+		foreach ($found['results'] as $org) {
+			$objectData = $org->getObject();
+			$summary = [
+				'id' => $org->getId(),
+				'name' => $org->getName(),
+				'type' => $objectData['type'] ?? 'NO TYPE',
+			];
+			if ($types === []) {
+				$summary['object_data'] = $objectData;
+			}
+
+			$organisations[] = $summary;
+		}
+
+		return ['count' => count($found['results']), 'organizations' => $organisations];
+	}//end organisationsOfType()
+
+	/**
+	 * Read the objects named like Samenwerking or Community straight from the objects table.
+	 *
+	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
+	 */
+	private function organisationsByNameInDatabase(): array {
+		$connection = $this->container->get(\OCP\IDBConnection::class);
+		$qb = $connection->getQueryBuilder();
+		$qb->select('o.id', 'o.name', 'o.object')
+			->from('openregister_objects', 'o')
+			->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
+			->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
+
+		// NC's IResult does not expose Doctrine's fetchAllAssociative() on every
+		// supported server (absent on NC 32), and a fetch() that answers NULL never
+		// satisfies `!== false`, so the loop ends on anything that is not a row.
+		$stmt = $qb->executeQuery();
+		$organisations = [];
+		$row = $stmt->fetch();
+		while (is_array($row) === true) {
+			$objectData = json_decode($row['object'], true);
+			$organisations[] = [
+				'id' => $row['id'],
+				'name' => $row['name'],
+				'type' => $objectData['type'] ?? 'NO TYPE',
+				'object_json' => $row['object'],
+			];
+			$row = $stmt->fetch();
+		}
+
+		$stmt->closeCursor();
+
+		return ['count' => count($organisations), 'organizations' => $organisations];
+	}//end organisationsByNameInDatabase()
 }//end class
