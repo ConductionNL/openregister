@@ -43,6 +43,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -484,7 +485,7 @@ class PermissionHandler {
 			schema: $schema
 		);
 		if ($cacheKey !== null && array_key_exists($cacheKey, $this->permissionCache) === true) {
-			return $this->permissionCache[$cacheKey];
+			return $this->elevated(verdict: $this->permissionCache[$cacheKey], schema: $schema, action: $action, object: $object);
 		}
 
 		$verdict = $this->evaluatePermission(
@@ -514,8 +515,33 @@ class PermissionHandler {
 			object: $object
 		);
 
-		return $verdict;
+		return $this->elevated(verdict: $verdict, schema: $schema, action: $action, object: $object);
 	}//end hasPermission()
+
+	/**
+	 * The verdict, or true when a declared action's open elevation lists this write.
+	 *
+	 * Asked only after the person's own rights refused, and never cached: the
+	 * elevation belongs to one action run, not to the person.
+	 *
+	 * @param bool              $verdict The person's own verdict.
+	 * @param Schema            $schema  The schema written to.
+	 * @param string            $action  The verb.
+	 * @param ObjectEntity|null $object  The object written, when the check names one.
+	 *
+	 * @return bool The verdict after elevation.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
+	 */
+	private function elevated(bool $verdict, Schema $schema, string $action, ?ObjectEntity $object): bool {
+		if ($verdict === true) {
+			return true;
+		}
+
+		return ObjectActionElevationScope::allows(schemaId: $schema->getId(), registerId: $object?->getRegister(), verb: $action);
+	}//end elevated()
 
 	/**
 	 * Whether the object is a draft that its schema keeps from this caller, whatever the action.

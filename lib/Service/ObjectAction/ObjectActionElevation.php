@@ -68,6 +68,10 @@ final class ObjectActionElevation {
 			return [sprintf('Action "%s": "elevate" must be a non-empty list of {register, schema, verbs}.', $key)];
 		}
 
+		if (($definition['mode'] ?? 'sync') === 'async') {
+			return [sprintf('Action "%s": an elevated action runs sync; a queued run would execute after its elevation has ended.', $key)];
+		}
+
 		foreach ($elevate as $entry) {
 			$refusal = self::entryRefusal(key: $key, entry: $entry);
 			if ($refusal !== null) {
@@ -75,18 +79,30 @@ final class ObjectActionElevation {
 			}
 		}
 
-		if ($authorization !== null && empty($authorization[$key] ?? null) === true) {
-			return [
-				sprintf(
-					'Action "%s": "elevate" needs an authorization rule granting "%s"; an elevated action open to everyone is a privilege escalation.',
-					$key,
-					$key
-				),
-			];
+		return self::grantRefusals(key: $key, authorization: $authorization);
+	}//end refusals()
+
+	/**
+	 * Refuse an elevation no authorization rule grants.
+	 *
+	 * @param string                    $key           The action key.
+	 * @param array<string, mixed>|null $authorization The authorization block; null skips the check.
+	 *
+	 * @return list<string> The refusals.
+	 */
+	private static function grantRefusals(string $key, ?array $authorization): array {
+		if ($authorization === null || empty($authorization[$key] ?? null) === false) {
+			return [];
 		}
 
-		return [];
-	}//end refusals()
+		return [
+			sprintf(
+				'Action "%s": "elevate" needs an authorization rule granting "%s"; an elevated action open to everyone is a privilege escalation.',
+				$key,
+				$key
+			),
+		];
+	}//end grantRefusals()
 
 	/**
 	 * The `elevate` entries of a declaration, normalised.

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -181,12 +182,43 @@ class AuditTrailMapper extends QBMapper {
 		// `resultSummary`, which is inside the canonical JSON.
 		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 
+		// A write a declared action elevated names that action, the person who
+		// ran it, and that it ran as the system (ADR-099).
+		$this->applyElevation(auditTrail: $auditTrail);
+
 		$inserted = $this->insert(entity: $auditTrail);
 
 		$this->shipToSink(entries: [$inserted]);
 
 		return $inserted;
 	}//end insertHashChained()
+
+	/**
+	 * Stamp the elevation of the action run in progress onto a row it covers.
+	 *
+	 * Before the INSERT, for the reason the attributions above give: `changed`
+	 * is inside the canonical JSON the sweep seals. Idempotent, so the builder
+	 * and the insert may both apply it.
+	 *
+	 * @param AuditTrail $auditTrail The row.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
+	 */
+	private function applyElevation(AuditTrail $auditTrail): void {
+		$elevation = ObjectActionElevationScope::attributionFor(
+			schemaId: $auditTrail->getSchema(),
+			verb: (string)$auditTrail->getAction()
+		);
+		if ($elevation === null) {
+			return;
+		}
+
+		$auditTrail->setChanged(array_merge($auditTrail->getChanged(), ['elevation' => $elevation]));
+	}//end applyElevation()
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -1090,6 +1122,10 @@ class AuditTrailMapper extends QBMapper {
 		// stamping only the inserts would leave every bulk write by a koppeling
 		// unable to say which koppeling made it.
 		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		// A write a declared action elevated names that action, the person who
+		// ran it, and that it ran as the system (ADR-099).
+		$this->applyElevation(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
