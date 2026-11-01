@@ -83,7 +83,9 @@ written with that reason, never skipped in silence.
 ## D-5. Record, second install, refresh and remove
 
 The record holds per row: the part, the key, the object uuid and the created id (the link's
-id and uuid, or the share's full id `ocinternal:<n>`). It never holds the anchor.
+id and uuid, or the share's full id `ocinternal:<n>` with its folder id, sharer, principal and share type). It never
+holds the anchor. A row under the recorded id is the set's only while those fields match (a link's uuid, a share's
+folder, sharer, principal and type); otherwise it counts as gone and is never deleted.
 
 | run | link | grant |
 |---|---|---|
@@ -135,7 +137,8 @@ The check refuses, naming the file and the row key:
 - a capability outside the link vocabulary `AccessLinkService` accepts;
 - an `expiresAt` that is not a date or lies before the install day, or a link without one;
 - a grant `type` outside `user` and `group` (remote types are not seedable);
-- a `shareWith` that is not an account or group of the cast, or an existing one the set adopts;
+- a `shareWith` that is not an account the set creates or adopts, or (type `group`) a group the set created; a
+  group that was on the instance before the set is refused, as there is no adopting of groups (D-9);
 - a `createdBy` or `sharedBy` that the set does not create or adopt;
 - `permissions` outside 1..31.
 
@@ -180,5 +183,11 @@ caller and core created the share; a live caller passes no `sharedAt` and nothin
   `{{accessLink:<key>.url}}` would record the address (which carries the anchor) as the value it wrote, so
   `ExampleSetChanges` records such a value as `example-set-secret:sha256:<hash>` and compares by hash in the proof,
   the refresh and remove. The url for the placeholder is read from the live row (`AccessLinkService::linkUrl()`).
-- **A group `shareWith`** must be the `gid` of a cast group; a fragment's own `groups` are not accepted.
+- **A group `shareWith`** must be a group the set created: in the record's `groups`, or (in the check, before the
+  first install) declared by the set and missing on the instance. A group that existed before the set is refused;
+  an opt-in to adopt one (`--adopt-group`) is left out until a set needs it.
+- **Where an address may be quoted.** `{{accessLink:<key>.url}}` is accepted only as the text of a change's `set`
+  field, where the record keeps the written value as a fingerprint. Anywhere else (a list or map value, a `where`,
+  `append`, app config, user preferences, objects or another part) the check refuses it. `id` and `uuid` may be
+  quoted anywhere.
 - **Expiry before the install day** is refused by the check; the link service refuses a past expiry again at mint.
