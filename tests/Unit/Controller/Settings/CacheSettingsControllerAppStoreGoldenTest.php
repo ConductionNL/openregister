@@ -62,6 +62,8 @@ class CacheSettingsControllerAppStoreGoldenTest extends TestCase {
 			'discover' => [['params' => ['type' => 'discover'], 'files' => $all]],
 			'all' => [['params' => ['type' => 'all'], 'files' => $all]],
 			'unknown type' => [['params' => ['type' => 'nope'], 'files' => $all]],
+			'type sent as a list' => [['params' => ['type' => ['all']], 'files' => $all]],
+			'type sent as a number' => [['params' => ['type' => 1], 'files' => $all]],
 			'all with missing, unreadable and invalid files' => [['params' => ['type' => 'all'], 'files' => [
 				'apps.json' => '{"data":[]}',
 				'categories.json' => 'not json',

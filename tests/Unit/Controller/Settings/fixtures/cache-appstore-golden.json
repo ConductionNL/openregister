@@ -452,6 +452,92 @@
             "note": "Fresh data will be fetched on the next visit to Settings > Apps"
         }
     },
+    "type sent as a list": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "apps.json",
+                    "{\"timestamp\":0,\"data\":[1,2]}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "apps.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "type sent as a number": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "apps.json",
+                    "{\"timestamp\":0,\"data\":[1,2]}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "apps.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
     "unknown type": {
         "calls": [
             {
