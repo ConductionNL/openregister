@@ -46,6 +46,11 @@ use ReflectionClass;
  *
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\PinnedTable
+ * @uses \OCA\OpenRegister\Service\Object\ReferrerPage
+ * @uses \OCA\OpenRegister\Service\Object\RelatedObjectSet
+ * @uses \OCA\OpenRegister\Service\Object\RelationLink
+ * @uses \OCA\OpenRegister\Service\Object\RelationSource
  */
 class RelationHandlerTest extends TestCase {
 	private RelationHandler $handler;

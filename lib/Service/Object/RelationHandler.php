@@ -601,138 +601,26 @@ class RelationHandler {
 		?int $_schemaId = null,
 	): array {
 		try {
-			// Get register and schema for magic table lookup if provided.
-			// Bypass RBAC/multitenancy for register/schema loading — the user's access
-			// to the actual objects will be checked by filterByRbac() later.
-			$register = null;
-			$schema = null;
-			if ($_registerId !== null && $_schemaId !== null) {
-				try {
-					$registerMapper = $this->registerMapper;
-					$register = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
-					$schema = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
-				} catch (\Exception $e) {
-					$this->logger->debug(
-						message: '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'registerId' => $_registerId,
-							'schemaId' => $_schemaId,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}
-
-			// Find the object (with magic table support if register/schema available).
+			// Register and schema are loaded without RBAC/multitenancy: the user's
+			// access to the related objects is checked by filterByRbac() below.
+			$pinned = $this->usesPin(registerId: $_registerId, schemaId: $_schemaId);
 			$object = $this->objectEntityMapper->find(
 				identifier: $objectId,
-				register: $register,
-				schema: $schema
+				register: $pinned->register,
+				schema: $pinned->schema
 			);
 
-			// Get pre-scanned relations from the object entity.
-			// These are populated during save/import by scanForRelations().
+			// Pre-scanned relations, populated during save/import by scanForRelations().
 			$relations = $object->getRelations() ?? [];
-
-			// Extract just the UUID values from the relations array.
-			// Relations can be stored as ['field' => 'uuid'] or as flat array of UUIDs.
-			$relationshipIds = [];
-			foreach ($relations as $value) {
-				if (is_string($value) === true && empty($value) === false) {
-					$relationshipIds[] = $value;
-				} elseif (is_array($value) === true) {
-					foreach ($value as $subValue) {
-						if (is_string($subValue) === true && empty($subValue) === false) {
-							$relationshipIds[] = $subValue;
-						}
-					}
-				}
-			}
-
-			if (empty($relationshipIds) === true) {
-				return [
-					'results' => [],
-					'total' => 0,
-					'limit' => $query['_limit'] ?? 30,
-					'offset' => $query['_offset'] ?? 0,
-				];
-			}
-
-			// Load the related objects from magic tables using cross-table search.
-			$uniqueIds = array_unique($relationshipIds);
-
-			// Filter out the object's own UUID to prevent self-references in results.
-			// Sometimes objects may have their own UUID in the relations array.
-			$objectUuid = $object->getUuid();
-			if ($objectUuid !== null) {
-				$uniqueIds = array_filter($uniqueIds, fn ($id) => $id !== $objectUuid);
-			}
-
-			// Re-check if we have any IDs left after filtering.
+			$uniqueIds = $this->relatedUuids(relations: $relations, ownUuid: $object->getUuid());
 			if (empty($uniqueIds) === true) {
-				return [
-					'results' => [],
-					'total' => 0,
-					'limit' => $query['_limit'] ?? 30,
-					'offset' => $query['_offset'] ?? 0,
-				];
+				return $this->emptyPage(query: $query);
 			}
 
-			// One UNION query over the magic tables says which tables hold the
-			// related UUIDs. It replaced loading every register and every
-			// schema (326 schema finds on :8099) and then querying the tables
-			// one by one: /uses on a pipelinq lead took 4.5 to 7 seconds for
-			// two results (round 4, 9 October 2026).
-			$magicMapper = $this->objectEntityMapper;
-			$located = $magicMapper->findMultipleAcrossAllMagicTables(uuids: array_values($uniqueIds));
+			$relatedObjects = $this->locateRelated(uuids: $uniqueIds);
 
-			// Each table that holds a match is then read through the same
-			// filtered query as before, so access rules apply exactly as they did.
-			$relatedObjects = [];
-			$foundUuids = [];
-			foreach ($this->tablesOf(objects: $located) as $table) {
-				$pair = $this->registerSchemaPair(registerId: $table['registerId'], schemaId: $table['schemaId']);
-				if ($pair === null) {
-					continue;
-				}
-
-				try {
-					$results = $magicMapper->findAllInRegisterSchemaTable(
-						register: $pair['register'],
-						schema: $pair['schema'],
-						filters: ['_ids' => $table['uuids'], '_limit' => 200]
-					);
-
-					foreach ($results as $obj) {
-						$uuid = $obj->getUuid();
-						if (in_array($uuid, $uniqueIds, true) === true && in_array($uuid, $foundUuids, true) === false) {
-							$relatedObjects[] = $obj;
-							$foundUuids[] = $uuid;
-						}
-					}
-				} catch (\Exception $e) {
-					// Table might not exist or query failed, continue.
-				}
-			}//end foreach
-
-			// Also check main objects table as fallback for any missing UUIDs.
-			// The UNION already fetched those rows, so they are reused rather
-			// than read a second time.
-			$missingUuids = array_diff($uniqueIds, $foundUuids);
-			if (empty($missingUuids) === false) {
-				foreach ($located as $candidate) {
-					if (in_array($candidate->getUuid(), $missingUuids, true) === true) {
-						$relatedObjects[] = $candidate;
-					}
-				}
-			}
-
-			// Apply RBAC filtering to all results.
-			// The magic mapper search applies RBAC at query level, but UUIDs denied by RBAC
-			// end up in $missingUuids and get fetched via findMultiple without RBAC.
-			// Filter all results to ensure RBAC is consistently enforced.
+			// The per-table reads apply RBAC at query level, but the fallback rows
+			// were located without it, so every result is filtered here.
 			if ($_rbac === true) {
 				$relatedObjects = $this->filterByRbac(objects: $relatedObjects);
 			}
@@ -747,44 +635,20 @@ class RelationHandler {
 				]
 			);
 
-			// Apply pagination.
 			$limit = $query['_limit'] ?? 30;
 			$offset = $query['_offset'] ?? 0;
 			$total = count($relatedObjects);
+			$page = array_slice($relatedObjects, $offset, $limit);
 
-			$relatedObjects = array_slice($relatedObjects, $offset, $limit);
-
-			// Name the link. The rows leave here serialised rather than as
-			// entities because the descriptor has nowhere to live on an
-			// entity, and ObjectsController::stampObjectUrls() already accepts
-			// either shape.
-			$sourceSchema = $schema;
-			if ($sourceSchema === null) {
-				$sourceSchema = $this->schemaOf(schemaId: $object->getSchema());
-			}
-
-			$rows = [];
-			foreach ($relatedObjects as $related) {
-				$row = $related;
-				if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
-					$row = $row->jsonSerialize();
-				}
-
-				if (is_array($row) === false) {
-					$rows[] = $related;
-					continue;
-				}
-
-				$rows[] = $this->withRelation(
-					row: $row,
-					schema: $sourceSchema,
-					path: $this->pathHolding(relations: $relations, uuid: (string)$related->getUuid()),
-					direction: RelationTypeResolver::DIRECTION_OUTGOING
-				);
-			}
+			// Rows leave serialised because the relation descriptor has nowhere
+			// to live on an entity; ObjectsController::stampObjectUrls() accepts either shape.
+			$source = new RelationSource(
+				relations: $relations,
+				schema: ($pinned->schema ?? $this->schemaOf(schemaId: $object->getSchema()))
+			);
 
 			return [
-				'results' => $rows,
+				'results' => array_map(fn ($related) => $this->outgoingRow(related: $related, source: $source), $page),
 				'total' => $total,
 				'limit' => $limit,
 				'offset' => $offset,
@@ -799,14 +663,204 @@ class RelationHandler {
 					'objectId' => $objectId,
 				]
 			);
-			return [
-				'results' => [],
-				'total' => 0,
-				'limit' => $query['_limit'] ?? 30,
-				'offset' => $query['_offset'] ?? 0,
-			];
+			return $this->emptyPage(query: $query);
 		}//end try
 	}//end getUses()
+
+	/**
+	 * Load the register and schema a lookup was pinned to, without RBAC or multitenancy.
+	 *
+	 * Nothing is loaded unless both ids are given. Loading stops at the first failure,
+	 * which is kept on the result for the caller to log.
+	 *
+	 * @param int|null $registerId The register id.
+	 * @param int|null $schemaId   The schema id.
+	 *
+	 * @return PinnedTable
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function pinnedTable(?int $registerId, ?int $schemaId): PinnedTable {
+		$pinned = new PinnedTable();
+		if ($registerId === null || $schemaId === null) {
+			return $pinned;
+		}
+
+		try {
+			$pinned->register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+			$pinned->schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			$pinned->failure = $e;
+		}
+
+		return $pinned;
+	}//end pinnedTable()
+
+	/**
+	 * The pinned register and schema of an outgoing lookup; a load failure is logged at debug level.
+	 *
+	 * @param int|null $registerId The register id.
+	 * @param int|null $schemaId   The schema id.
+	 *
+	 * @return PinnedTable
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function usesPin(?int $registerId, ?int $schemaId): PinnedTable {
+		$pinned = $this->pinnedTable(registerId: $registerId, schemaId: $schemaId);
+		if ($pinned->failure !== null) {
+			$this->logger->debug(
+				message: '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $registerId,
+					'schemaId' => $schemaId,
+					'error' => $pinned->failure->getMessage(),
+				]
+			);
+		}
+
+		return $pinned;
+	}//end usesPin()
+
+	/**
+	 * An empty page that echoes the requested limit and offset.
+	 *
+	 * @param array<string, mixed> $query The request's paging parameters.
+	 *
+	 * @return array{results: list<never>, total: 0, limit: mixed, offset: mixed}
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function emptyPage(array $query): array {
+		return [
+			'results' => [],
+			'total' => 0,
+			'limit' => $query['_limit'] ?? 30,
+			'offset' => $query['_offset'] ?? 0,
+		];
+	}//end emptyPage()
+
+	/**
+	 * The distinct uuids a relation map names, without the object's own uuid.
+	 *
+	 * Relations are stored as ['field' => 'uuid'] or as lists of uuids; empty
+	 * strings and non-string values are skipped. Keys are kept as array_unique() leaves them.
+	 *
+	 * @param array<mixed, mixed> $relations The stored relation map.
+	 * @param string|null         $ownUuid   The object's own uuid.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function relatedUuids(array $relations, ?string $ownUuid): array {
+		$ids = [];
+		foreach ($relations as $value) {
+			$candidates = [$value];
+			if (is_array($value) === true) {
+				$candidates = $value;
+			}
+
+			foreach ($candidates as $candidate) {
+				if (is_string($candidate) === true && empty($candidate) === false) {
+					$ids[] = $candidate;
+				}
+			}
+		}
+
+		$uniqueIds = array_unique($ids);
+		if ($ownUuid !== null) {
+			$uniqueIds = array_filter($uniqueIds, fn ($id) => $id !== $ownUuid);
+		}
+
+		return $uniqueIds;
+	}//end relatedUuids()
+
+	/**
+	 * Load the related objects: locate them in one UNION query, then read each table.
+	 *
+	 * The UNION replaced loading every register and schema and querying the tables
+	 * one by one (/uses on a pipelinq lead took 4.5 to 7 seconds). Each table that
+	 * holds a match is read through the filtered query, and a uuid no table read
+	 * returns falls back to the located row.
+	 *
+	 * @param array<mixed, string> $uuids The related uuids.
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function locateRelated(array $uuids): array {
+		$located = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: array_values($uuids));
+		$found = new RelatedObjectSet(wanted: $uuids);
+		foreach ($this->tablesOf(objects: $located) as $table) {
+			$this->readRelatedTable(table: $table, found: $found);
+		}
+
+		return $found->withFallback(located: $located);
+	}//end locateRelated()
+
+	/**
+	 * Read one table's related objects into the set; a table that cannot be read is skipped.
+	 *
+	 * @param array{registerId: int, schemaId: int, uuids: array<int, string>} $table The table and its uuids.
+	 * @param RelatedObjectSet                                                $found The set being filled.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function readRelatedTable(array $table, RelatedObjectSet $found): void {
+		$pair = $this->registerSchemaPair(registerId: $table['registerId'], schemaId: $table['schemaId']);
+		if ($pair === null) {
+			return;
+		}
+
+		try {
+			$results = $this->objectEntityMapper->findAllInRegisterSchemaTable(
+				register: $pair['register'],
+				schema: $pair['schema'],
+				filters: ['_ids' => $table['uuids'], '_limit' => 200]
+			);
+			foreach ($results as $obj) {
+				$found->offer(object: $obj);
+			}
+		} catch (\Exception $e) {
+			// Table might not exist or query failed, continue.
+		}
+	}//end readRelatedTable()
+
+	/**
+	 * One related object as a serialised row carrying its outgoing relation block.
+	 *
+	 * @param mixed          $related The related object.
+	 * @param RelationSource $source  The source object's relation map and schema.
+	 *
+	 * @return mixed The row, or the object itself when it does not serialise to an array.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function outgoingRow(mixed $related, RelationSource $source): mixed {
+		$row = $related;
+		if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
+			$row = $row->jsonSerialize();
+		}
+
+		if (is_array($row) === false) {
+			return $related;
+		}
+
+		return $this->withRelation(
+			row: $row,
+			link: new RelationLink(
+				schema: $source->schema,
+				path: $this->pathHolding(relations: $source->relations, uuid: (string)$related->getUuid())
+			)
+		);
+	}//end outgoingRow()
+
 
 	/**
 	 * Filter objects by RBAC (schema-level authorization).
@@ -1032,29 +1086,27 @@ class RelationHandler {
 	 * on the path that matters, and the fallback the spec names — the
 	 * property's title, and "referenced by" — is a perfectly good answer.
 	 *
-	 * @param array<string, mixed> $row The serialised object.
-	 * @param Schema|null $schema The schema that declares the property.
-	 * @param string|null $path The stored relation path.
-	 * @param string $direction One of RelationTypeResolver::DIRECTION_*.
+	 * @param array<string, mixed> $row  The serialised object.
+	 * @param RelationLink         $link The declaring schema, stored path and direction.
 	 *
 	 * @return array<string, mixed> The row, with `relation` attached.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function withRelation(array $row, ?Schema $schema, ?string $path, string $direction): array {
+	private function withRelation(array $row, RelationLink $link): array {
 		if ($this->relationTypes === null) {
 			return $row;
 		}
 
 		$descriptor = null;
-		if ($path !== null) {
-			$descriptor = $this->relationTypes->descriptorFor(schema: $schema, property: $path);
+		if ($link->path !== null) {
+			$descriptor = $this->relationTypes->descriptorFor(schema: $link->schema, property: $link->path);
 		}
 
 		$row['relation'] = $this->relationTypes->row(
 			descriptor: $descriptor,
-			direction: $direction,
-			path: $path
+			direction: $link->direction,
+			path: $link->path
 		);
 
 		return $row;
@@ -1096,116 +1148,42 @@ class RelationHandler {
 		?int $_schemaId = null,
 	): array {
 		try {
-			// Get register and schema for magic table lookup if provided.
-			// Bypass RBAC/multitenancy — access to objects will be checked separately.
-			$register = null;
-			$schema = null;
-			if ($_registerId !== null && $_schemaId !== null) {
-				try {
-					$registerMapper = $this->registerMapper;
-					$register = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
-					$schema = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[RelationHandler] Failed to load register/schema for getUsedBy magic table support',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-					);
-				}
+			// Register and schema are loaded without RBAC/multitenancy; access to
+			// the referrers is applied by the per-table reads.
+			$pinned = $this->pinnedTable(registerId: $_registerId, schemaId: $_schemaId);
+			if ($pinned->failure !== null) {
+				$this->logger->warning(
+					message: '[RelationHandler] Failed to load register/schema for getUsedBy magic table support',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $pinned->failure->getMessage()]
+				);
 			}
 
-			// Find the object (with magic table support if register/schema available).
 			$object = $this->objectEntityMapper->find(
 				identifier: $objectId,
-				register: $register,
-				schema: $schema
+				register: $pinned->register,
+				schema: $pinned->schema
 			);
-			$targetUuid = $object->getUuid();
+			$page = new ReferrerPage(targetUuid: $object->getUuid(), query: $query);
 
-			// One UNION query over the magic tables says which tables hold an
-			// object whose _relations name this UUID. It replaced a JSON
-			// query in every one of the 333 tables on :8099, each with a
-			// register and a schema find: /used on a pipelinq lead took 6.4 to
-			// 8 seconds for two results (round 4, 9 October 2026).
-			$results = [];
-			$magicMapper = $this->objectEntityMapper;
-			$limit = $query['_limit'] ?? 30;
-			$offset = $query['_offset'] ?? 0;
-			$totalResults = 0;
-			$magicTables = $this->tablesOf(
-				objects: $magicMapper->findByRelationAcrossAllMagicTables(uuid: (string)$targetUuid)
+			// One UNION query says which tables hold an object whose _relations name
+			// this uuid. It replaced a JSON query in every magic table (/used on a
+			// pipelinq lead took 6.4 to 8 seconds).
+			$tables = $this->tablesOf(
+				objects: $this->objectEntityMapper->findByRelationAcrossAllMagicTables(uuid: (string)$page->targetUuid)
 			);
-
-			// Each table that holds a match is then read through the same
-			// filtered query as before, so access rules apply exactly as they did.
-			foreach ($magicTables as $tableInfo) {
-				if (count($results) >= $limit) {
+			foreach ($tables as $tableInfo) {
+				if ($page->isFull() === true) {
 					break;
 				}
 
-				try {
-					$pair = $this->registerSchemaPair(registerId: $tableInfo['registerId'], schemaId: $tableInfo['schemaId']);
-					if ($pair === null) {
-						continue;
-					}
-
-					$tableRegister = $pair['register'];
-					$tableSchema = $pair['schema'];
-
-					// Search for objects where _relations contains the target UUID.
-					// Use JSON contains search on the _relations column.
-					$searchResults = $magicMapper->findAllInRegisterSchemaTable(
-						register: $tableRegister,
-						schema: $tableSchema,
-						limit: $limit - count($results),
-						offset: max(0, $offset - $totalResults),
-						filters: ['_relations_contains' => $targetUuid],
-						sort: ['_updated' => 'DESC']
-					);
-
-					foreach ($searchResults as $resultObject) {
-						// Skip the object itself.
-						if ($resultObject->getUuid() === $targetUuid) {
-							continue;
-						}
-
-						// The referencing object's own relation map says which
-						// of ITS properties holds this uuid, and that property
-						// lives on ITS schema — which is why the descriptor is
-						// resolved from $tableSchema and not from the schema of
-						// the object being read. Resolution is memoised per
-						// schema, so a reverse lookup over four hundred rows
-						// from three schemas resolves three descriptor sets.
-						$results[] = $this->withRelation(
-							row: $resultObject->jsonSerialize(),
-							schema: $tableSchema,
-							path: $this->pathHolding(
-								relations: ($resultObject->getRelations() ?? []),
-								uuid: (string)$targetUuid
-							),
-							direction: RelationTypeResolver::DIRECTION_INCOMING
-						);
-					}
-
-					$totalResults += count($searchResults);
-				} catch (\Exception $e) {
-					$this->logger->debug(
-						message: '[RelationHandler] Error searching magic table for usedBy',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'table' => $tableInfo['registerId'].'_'.$tableInfo['schemaId'],
-							'error' => $e->getMessage(),
-						]
-					);
-					continue;
-				}//end try
-			}//end foreach
+				$this->readReferrerTable(table: $tableInfo, page: $page);
+			}
 
 			return [
-				'results' => $results,
-				'total' => count($results),
-				'limit' => $limit,
-				'offset' => $offset,
+				'results' => $page->rows(),
+				'total' => count($page->rows()),
+				'limit' => $page->limit,
+				'offset' => $page->offset,
 			];
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -1217,12 +1195,72 @@ class RelationHandler {
 					'objectId' => $objectId,
 				]
 			);
-			return [
-				'results' => [],
-				'total' => 0,
-				'limit' => $query['_limit'] ?? 30,
-				'offset' => $query['_offset'] ?? 0,
-			];
+			return $this->emptyPage(query: $query);
 		}//end try
 	}//end getUsedBy()
+
+	/**
+	 * Read one table's referrers into the page, newest first.
+	 *
+	 * Each referrer's own relation map says which of ITS properties holds the uuid,
+	 * and that property lives on ITS schema, so the label is resolved from the table's
+	 * schema rather than from the schema of the object being read. A table that cannot
+	 * be read is logged and skipped.
+	 *
+	 * @param array{registerId: int, schemaId: int, uuids: array<int, string>} $table The table.
+	 * @param ReferrerPage                                                    $page  The page being filled.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function readReferrerTable(array $table, ReferrerPage $page): void {
+		try {
+			$pair = $this->registerSchemaPair(registerId: $table['registerId'], schemaId: $table['schemaId']);
+			if ($pair === null) {
+				return;
+			}
+
+			$searchResults = $this->objectEntityMapper->findAllInRegisterSchemaTable(
+				register: $pair['register'],
+				schema: $pair['schema'],
+				limit: $page->remaining(),
+				offset: $page->nextOffset(),
+				filters: ['_relations_contains' => $page->targetUuid],
+				sort: ['_updated' => 'DESC']
+			);
+
+			foreach ($searchResults as $resultObject) {
+				if ($resultObject->getUuid() === $page->targetUuid) {
+					continue;
+				}
+
+				$page->add(
+					row: $this->withRelation(
+						row: $resultObject->jsonSerialize(),
+						link: (new RelationLink(
+							schema: $pair['schema'],
+							path: $this->pathHolding(
+								relations: ($resultObject->getRelations() ?? []),
+								uuid: (string)$page->targetUuid
+							)
+						))->incoming()
+					)
+				);
+			}
+
+			$page->countRead(count: count($searchResults));
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[RelationHandler] Error searching magic table for usedBy',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'table' => $table['registerId'].'_'.$table['schemaId'],
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end readReferrerTable()
+
 }//end class
