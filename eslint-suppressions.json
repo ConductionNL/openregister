@@ -1286,7 +1286,7 @@
   },
   "src/store/modules/configuration.js": {
     "no-console": {
-      "count": 11
+      "count": 7
     },
     "no-unused-vars": {
       "count": 1
