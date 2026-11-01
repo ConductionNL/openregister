@@ -1491,108 +1491,79 @@ class CacheHandler implements ObjectNameCacheInterface {
 	 *
 	 * @return string|null Object name or null if not found
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Three cache layers plus a
-	 * two-source database fallback, each gated on the caller's read rights.
-	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function getSingleObjectName(string|int $identifier): ?string {
 		$this->beginNameScope();
-		$key = (string)$identifier;
 
 		// The read path is asked by UUID, so only a UUID is answered from cache;
 		// a numeric id or slug goes to the database, which knows the UUID.
-		$isUuid = str_contains($key, '-');
-
-		// Check in-memory cache first (fastest). Whatever layer the name comes
-		// from, it is only returned when the caller may see it (visibleNames()).
-		if ($isUuid === true && ($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
-			$this->stats['name_hits']++;
-			return ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])[$key] ?? null);
+		if (str_contains((string)$identifier, '-') === true) {
+			$cached = $this->cachedSingleName(key: (string)$identifier);
+			if ($cached !== null) {
+				return $cached['name'];
+			}
 		}
 
-		// Check distributed cache.
-		if ($isUuid === true && $this->nameDistributedCache !== null) {
-			try {
-				$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
-				if ($envelope !== null) {
-					$this->nameCache[$key] = $envelope['n'];
-					$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
-					$this->stats['name_hits']++;
-					return ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null);
-				}
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[CacheHandler] Failed to get object name from distributed cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $key,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end if
-
-		// Cache miss - load from database.
 		$this->stats['name_misses']++;
 
 		try {
-			// STEP 1: Try to find as organisation first (they take priority).
-			try {
-				// The findByUuid() call throws rather than returning null; the catch below
-				// is the "no such organisation" path.
-				$organisation = $this->organisationMapper->findByUuid((string)$identifier);
-				$name = $organisation->getName() ?? $organisation->getUuid();
-				if ($name === null) {
-					return null;
-				}
-
-				$this->setObjectName(
-					identifier: $identifier,
-					name: $name,
-					organisation: $organisation->getUuid(),
-					source: self::NAME_SOURCE_ORGANISATION
-				);
-				return ($this->visibleNames(candidates: [$key => $name])[$key] ?? null);
-			} catch (\Exception $e) {
-				// Organisation not found, continue to objects.
+			$organisation = $this->organisationSingleName(identifier: $identifier);
+			if ($organisation !== null) {
+				return $organisation['name'];
 			}
 
-			// STEP 2: Find the object across all magic tables. The LOOKUP is
-			// unscoped; the ANSWER is decided by the object read path below.
-			$result = $this->getObjectMapper()->findAcrossAllSources(
-				identifier: $identifier,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-			$object = ($result['object'] ?? null);
-			if ($object === null) {
-				return null;
-			}
-
-			$name = $object->getName() ?? $object->getUuid();
-			$source = self::objectNameSource(
-				register: (($result['register'] ?? null)?->getId() ?? $object->getRegister()),
-				schema: (($result['schema'] ?? null)?->getId() ?? $object->getSchema())
-			);
-			if ($name === null || $source === null) {
-				return null;
-			}
-
-			$uuid = (string)$object->getUuid();
-			$this->setObjectName(identifier: $identifier, name: $name, organisation: $object->getOrganisation(), source: $source);
-			if ($uuid !== $key) {
-				$this->setObjectName(identifier: $uuid, name: $name, organisation: $object->getOrganisation(), source: $source);
-			}
-
-			return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);
+			return $this->objectSingleName(identifier: $identifier);
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				message: '[CacheHandler] Failed to load entity for name lookup',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => (string)$identifier,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return null;
+	}//end getSingleObjectName()
+
+	/**
+	 * A cache hit for one UUID, from memory first and then the distributed cache.
+	 *
+	 * A hit is final: its name is returned only when the caller may see it, and a
+	 * hidden hit answers null without going to the database.
+	 *
+	 * @param string $key The UUID.
+	 *
+	 * @return array{name: string|null}|null The hit, or null on a miss.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function cachedSingleName(string $key): ?array {
+		if (($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
+			$this->stats['name_hits']++;
+			return ['name' => ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])[$key] ?? null)];
+		}
+
+		if ($this->nameDistributedCache === null) {
+			return null;
+		}
+
+		try {
+			$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
+			if ($envelope === null) {
+				return null;
+			}
+
+			$this->nameCache[$key] = $envelope['n'];
+			$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
+			$this->stats['name_hits']++;
+			return ['name' => ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null)];
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[CacheHandler] Failed to get object name from distributed cache',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -1603,7 +1574,82 @@ class CacheHandler implements ObjectNameCacheInterface {
 		}//end try
 
 		return null;
-	}//end getSingleObjectName()
+	}//end cachedSingleName()
+
+	/**
+	 * The name of the organisation with this UUID, which takes priority over objects.
+	 *
+	 * The mapper's findByUuid() throws rather than returning null, so any exception here means
+	 * "no such organisation" and the lookup moves on to objects.
+	 *
+	 * @param string|int $identifier The identifier asked for.
+	 *
+	 * @return array{name: string|null}|null The answer, or null when no organisation matched.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function organisationSingleName(string|int $identifier): ?array {
+		$key = (string)$identifier;
+		try {
+			$organisation = $this->organisationMapper->findByUuid($key);
+			$name = $organisation->getName() ?? $organisation->getUuid();
+			if ($name === null) {
+				return ['name' => null];
+			}
+
+			$this->setObjectName(
+				identifier: $identifier,
+				name: $name,
+				organisation: $organisation->getUuid(),
+				source: self::NAME_SOURCE_ORGANISATION
+			);
+			return ['name' => ($this->visibleNames(candidates: [$key => $name])[$key] ?? null)];
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end organisationSingleName()
+
+	/**
+	 * The name of the object with this id, uuid or slug, when the caller may read it.
+	 *
+	 * The LOOKUP is unscoped; the ANSWER is decided by the object read path. The name is
+	 * cached under the identifier asked for and under the object's UUID.
+	 *
+	 * @param string|int $identifier The identifier asked for.
+	 *
+	 * @return string|null The name, or null when not found, sourceless or not readable.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function objectSingleName(string|int $identifier): ?string {
+		$result = $this->getObjectMapper()->findAcrossAllSources(
+			identifier: $identifier,
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+		$object = ($result['object'] ?? null);
+		if ($object === null) {
+			return null;
+		}
+
+		$name = $object->getName() ?? $object->getUuid();
+		$source = self::objectNameSource(
+			register: (($result['register'] ?? null)?->getId() ?? $object->getRegister()),
+			schema: (($result['schema'] ?? null)?->getId() ?? $object->getSchema())
+		);
+		if ($name === null || $source === null) {
+			return null;
+		}
+
+		$uuid = (string)$object->getUuid();
+		$this->setObjectName(identifier: $identifier, name: $name, organisation: $object->getOrganisation(), source: $source);
+		if ($uuid !== (string)$identifier) {
+			$this->setObjectName(identifier: $uuid, name: $name, organisation: $object->getOrganisation(), source: $source);
+		}
+
+		return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);
+	}//end objectSingleName()
 
 	/**
 	 * Get multiple object names from cache or database
