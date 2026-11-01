@@ -4254,9 +4254,6 @@ class ObjectService implements ObjectServiceInterface
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If the search fails and cannot be recovered
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex search routing requires multiple branches
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Many search options create many execution paths
-     *
      * @spec exclude Facade routing the unified paginated/faceted search to the query + facet handlers;
      *   behavior owned by zoeken-filteren / faceting-configuration.
      */
@@ -4281,59 +4278,12 @@ class ObjectService implements ObjectServiceInterface
         // response time regardless of which backend (index/database) runs.
         $searchStartTime = microtime(true);
 
-        // Detect a cross-schema search: a `@self.schema` array, `_schemas`, or
-        // `@self.schemas` means the caller wants to search MANY schemas (e.g. the
-        // unified-search provider passes every searchable schema). Such a search
-        // must NOT be scoped to a single register — each schema is resolved to
-        // its own owning register downstream — so the ambient currentRegister
-        // (often a default like the first register) must not leak in.
-        $selfSchema       = ($query['@self']['schema'] ?? null);
-        $isMultiSchemaCtx = (is_array($selfSchema) === true && count($selfSchema) > 0)
-            || array_key_exists('_schemas', $query) === true
-            || (isset($query['@self']['schemas']) === true);
+        $query = $this->scopeSearchQuery(query: $query, views: $views);
 
-        // Add register and schema context to query for magic mapper routing.
-        // Use array_key_exists to allow explicit null values to disable auto-setting.
-        if ($this->currentRegister !== null
-            && array_key_exists('_register', $query) === false
-            && $isMultiSchemaCtx === false
-        ) {
-            $query['_register'] = $this->currentRegister->getId();
-        }
-
-        // Don't auto-set _schema when _schemas is provided (multi-schema search).
-        // Use array_key_exists to allow explicit null values to disable auto-setting.
-        if ($this->currentSchema !== null
-            && array_key_exists('_schema', $query) === false
-            && array_key_exists('_schemas', $query) === false
-        ) {
-            $query['_schema'] = $this->currentSchema->getId();
-        }
-
-        // Apply view filters if provided.
-        if ($views !== null && empty($views) === false) {
-            $query = $this->applyViewsToQuery(query: $query, viewIds: $views);
-        }
-
-        // Strip deprecated _source parameter (silently ignore for backward compatibility).
-        unset($query['_source']);
-
-        // Bypass multitenancy for schemas with public read access.
-        // Public schemas should be visible to all users regardless of organisation.
-        $effectiveMt = $_multitenancy;
-        if ($_multitenancy === true && $this->currentSchema !== null) {
-            $schemaAuth = $this->currentSchema->getAuthorization();
-            $readGroups = $schemaAuth['read'] ?? [];
-            if (in_array('public', $readGroups, true) === true) {
-                $effectiveMt = false;
-            }
-        }
-
-        // Use database search.
         $result = $this->queryHandler->searchObjectsPaginatedDatabase(
             query: $query,
             _rbac: $_rbac,
-            _multitenancy: $effectiveMt,
+            _multitenancy: $this->searchMultitenancy(multitenancy: $_multitenancy),
             deleted: $deleted,
             ids: $ids,
             uses: $uses
@@ -4345,7 +4295,123 @@ class ObjectService implements ObjectServiceInterface
         $result['@self']['multi']   = $_multitenancy;
         $result['@self']['deleted'] = $deleted;
 
-        // Add extended objects only if _extend is requested.
+        $result = $this->extendSearchResult(result: $result, query: $query);
+
+        $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+
+        return $result;
+    }//end searchObjectsPaginated()
+
+    /**
+     * Scope a paginated search query to the service context, apply views and drop `_source`.
+     *
+     * @param array<string, mixed> $query The search query.
+     * @param array|null           $views View ids whose filters apply, or null.
+     *
+     * @return array<string, mixed> The query the database search runs with.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function scopeSearchQuery(array $query, ?array $views): array
+    {
+        $query = $this->scopeQueryToContext(query: $query);
+
+        if ($views !== null && empty($views) === false) {
+            $query = $this->applyViewsToQuery(query: $query, viewIds: $views);
+        }
+
+        // Strip deprecated _source parameter (silently ignore for backward compatibility).
+        unset($query['_source']);
+
+        return $query;
+    }//end scopeSearchQuery()
+
+    /**
+     * Add the current register and schema to a query that does not name its own.
+     *
+     * Array keys are checked with array_key_exists, so an explicit null disables the
+     * default. A cross-schema search never gets the current register, because each
+     * schema resolves to its own owning register downstream.
+     *
+     * @param array<string, mixed> $query The search query.
+     *
+     * @return array<string, mixed> The query with `_register` and `_schema` defaults.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function scopeQueryToContext(array $query): array
+    {
+        if ($this->currentRegister !== null
+            && array_key_exists('_register', $query) === false
+            && $this->isMultiSchemaSearch(query: $query) === false
+        ) {
+            $query['_register'] = $this->currentRegister->getId();
+        }
+
+        if ($this->currentSchema !== null
+            && array_key_exists('_schema', $query) === false
+            && array_key_exists('_schemas', $query) === false
+        ) {
+            $query['_schema'] = $this->currentSchema->getId();
+        }
+
+        return $query;
+    }//end scopeQueryToContext()
+
+    /**
+     * Whether a query searches many schemas: a non-empty `@self.schema` array, `_schemas` or `@self.schemas`.
+     *
+     * @param array<string, mixed> $query The search query.
+     *
+     * @return bool True for a cross-schema search.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function isMultiSchemaSearch(array $query): bool
+    {
+        $selfSchema = ($query['@self']['schema'] ?? null);
+
+        return (is_array($selfSchema) === true && count($selfSchema) > 0)
+            || array_key_exists('_schemas', $query) === true
+            || (isset($query['@self']['schemas']) === true);
+    }//end isMultiSchemaSearch()
+
+    /**
+     * The multitenancy flag a paginated search runs with.
+     *
+     * A current schema whose read rule lists `public` is visible to every
+     * organisation, so multitenancy is switched off for it.
+     *
+     * @param bool $multitenancy The caller's multitenancy flag.
+     *
+     * @return bool The effective flag.
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
+     */
+    private function searchMultitenancy(bool $multitenancy): bool
+    {
+        if ($multitenancy === false || $this->currentSchema === null) {
+            return $multitenancy;
+        }
+
+        $schemaAuth = $this->currentSchema->getAuthorization();
+        $readGroups = $schemaAuth['read'] ?? [];
+
+        return in_array('public', $readGroups, true) === false;
+    }//end searchMultitenancy()
+
+    /**
+     * Add the `_extend` objects and the `_names` map to a paginated search result.
+     *
+     * @param array<string, mixed> $result The search result.
+     * @param array<string, mixed> $query  The query the search ran with.
+     *
+     * @return array<string, mixed> The result with its extensions.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function extendSearchResult(array $result, array $query): array
+    {
         // Normalize _extend to array (handles comma-separated string from URL).
         $extend = $query['_extend'] ?? [];
         if (is_string($extend) === true) {
@@ -4356,35 +4422,48 @@ class ObjectService implements ObjectServiceInterface
             $result['@self']['objects'] = $this->getExtendedObjects();
         }
 
-        // Add names mapping if _names is in _extend.
-        // This provides UUID-to-name mappings for all related objects in the results,
-        // reducing frontend calls to the names service.
         if (is_array($extend) === true && in_array('_names', $extend, true) === true) {
-            $resultsToProcess = $result['results'] ?? [];
-
-            // Only process if results exist and is an array.
-            $result['@self']['names'] = [];
-
-            if (is_array($resultsToProcess) === true && empty($resultsToProcess) === false) {
-                try {
-                    $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
-                } catch (\Throwable $e) {
-                    $errFile = $e->getFile();
-                    $errLine = $e->getLine();
-                    $this->logger->error(
-                        message: '[ObjectService] _names extension failed: '.$e->getMessage()." at {$errFile}:{$errLine}",
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-                    $result['@self']['names']       = [];
-                    $result['@self']['names_error'] = $e->getMessage();
-                }
-            }
-        }//end if
-
-        $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+            $result = $this->attachResultNames(result: $result);
+        }
 
         return $result;
-    }//end searchObjectsPaginated()
+    }//end extendSearchResult()
+
+    /**
+     * Add the UUID-to-name map of a search result's related objects as `@self.names`.
+     *
+     * A failed lookup leaves an empty map and records the message in `@self.names_error`.
+     *
+     * @param array<string, mixed> $result The search result.
+     *
+     * @return array<string, mixed> The result with `@self.names`.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function attachResultNames(array $result): array
+    {
+        $resultsToProcess = $result['results'] ?? [];
+
+        $result['@self']['names'] = [];
+        if (is_array($resultsToProcess) === false || empty($resultsToProcess) === true) {
+            return $result;
+        }
+
+        try {
+            $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
+        } catch (\Throwable $e) {
+            $errFile = $e->getFile();
+            $errLine = $e->getLine();
+            $this->logger->error(
+                message: '[ObjectService] _names extension failed: '.$e->getMessage()." at {$errFile}:{$errLine}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $result['@self']['names']       = [];
+            $result['@self']['names_error'] = $e->getMessage();
+        }
+
+        return $result;
+    }//end attachResultNames()
 
     /**
      * Build a paginated result from the current schema's object-source provider,
