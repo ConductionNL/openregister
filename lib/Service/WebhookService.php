@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,6 +77,13 @@ class WebhookService {
 	 * @var GuzzleClient
 	 */
 	private GuzzleClient $client;
+
+	/**
+	 * Resolves and classifies webhook target addresses.
+	 *
+	 * @var OutboundAddressGuard|null
+	 */
+	private ?OutboundAddressGuard $addressGuard = null;
 
 	/**
 	 * Logger
@@ -316,102 +324,20 @@ class WebhookService {
 			return;
 		}
 
-		// ── IPv6 literal detection ──────────────────────────────────────
-		// parse_url() keeps the surrounding brackets when the host is an IPv6
-		// literal (e.g. "http://[::1]/" yields $host = "[::1]"). Strip them
-		// before validation. A colon anywhere in $host (brackets or not) is
-		// the reliable heuristic that we have an IPv6 address rather than a
-		// plain hostname.
-		$bareHost = trim($host, '[]');
-		$isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
-			|| strpos($host, ':') !== false;
+		// Every A and AAAA record is checked, and a host that does not resolve is
+		// refused: the client resolves again when it connects.
+		$addresses = $this->addressGuard()->addressesOf(host: $host);
+		if (empty($addresses) === true) {
+			throw new RuntimeException('Webhook target URL host could not be resolved');
+		}
 
-		if ($isIpv6Literal === true) {
-			$reason = $this->blockedIpv6Reason(ip: $bareHost);
+		foreach ($addresses as $address) {
+			$reason = $this->blockedAddressReason(address: $address);
 			if ($reason !== null) {
 				throw new RuntimeException(
 					'Webhook target URL resolves to a blocked IP range (' . $reason . ')'
 				);
 			}
-
-			// Valid, non-blocked IPv6 literal — nothing more to check.
-			return;
-		}
-
-		// ── IPv6 DNS (AAAA) resolution ──────────────────────────────────
-		// gethostbyname() / gethostbynamel() only return A records.  Use
-		// dns_get_record() to pick up AAAA answers as well.
-		$aaaaRecords = @dns_get_record($host, DNS_AAAA);
-		if (is_array($aaaaRecords) === true) {
-			foreach ($aaaaRecords as $record) {
-				$ipv6 = $record['ipv6'] ?? '';
-				if ($ipv6 === '') {
-					continue;
-				}
-
-				$reason = $this->blockedIpv6Reason(ip: $ipv6);
-				if ($reason !== null) {
-					throw new RuntimeException(
-						'Webhook target URL resolves to a blocked IP range (' . $reason . ')'
-					);
-				}
-			}
-		}
-
-		// ── IPv4 resolution and range checks ───────────────────────────
-		// Resolve to IPv4 for range checks. gethostbyname() returns the input
-		// host unchanged on failure or when given an IP literal. To handle
-		// raw IP literals (the classic SSRF case), fall back to validating
-		// the host string directly when it looks like an IPv4 address.
-		$resolvedIp = gethostbyname($host);
-		$longIp = ip2long($resolvedIp);
-		if ($longIp === false) {
-			// The gethostbyname() call returned a non-IP (real DNS failure);
-			// try the host string directly so http://127.0.0.1/ still
-			// resolves to a long-IP we can range-check.
-			$longIp = ip2long($host);
-		}
-
-		if ($longIp === false) {
-			// Couldn't resolve at all — let the request through so a real
-			// DNS error surfaces as a delivery failure rather than a guard
-			// rejection.
-			return;
-		}
-
-		// Loopback 127.0.0.0/8.
-		if (($longIp & 0xFF000000) === 0x7F000000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (loopback)'
-			);
-		}
-
-		// RFC-1918 10.0.0.0/8.
-		if (($longIp & 0xFF000000) === 0x0A000000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (RFC-1918)'
-			);
-		}
-
-		// RFC-1918 172.16.0.0/12.
-		if (($longIp & 0xFFF00000) === 0xAC100000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (RFC-1918)'
-			);
-		}
-
-		// RFC-1918 192.168.0.0/16.
-		if (($longIp & 0xFFFF0000) === 0xC0A80000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (RFC-1918)'
-			);
-		}
-
-		// Link-local 169.254.0.0/16 — includes cloud metadata 169.254.169.254.
-		if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (link-local/metadata)'
-			);
 		}
 	}//end assertSafeWebhookUri()
 
@@ -522,54 +448,81 @@ class WebhookService {
 	 * @return bool True if the host resolves to a private/loopback/link-local IP.
 	 */
 	private function isPrivateHost(string $host): bool {
-		$host = strtolower($host);
 		if ($host === '') {
 			return false;
 		}
 
-		// ── IPv6 literal ────────────────────────────────────────────────
-		// Strip brackets that parse_url() may leave around IPv6 literals.
-		$bareHost = trim($host, '[]');
-		$isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
-			|| strpos($host, ':') !== false;
-
-		if ($isIpv6Literal === true) {
-			return $this->blockedIpv6Reason(ip: $bareHost) !== null;
-		}
-
-		// ── IPv6 DNS (AAAA) ─────────────────────────────────────────────
-		$aaaaRecords = @dns_get_record($host, DNS_AAAA);
-		if (is_array($aaaaRecords) === true) {
-			foreach ($aaaaRecords as $record) {
-				$ipv6 = $record['ipv6'] ?? '';
-				if ($ipv6 !== '' && $this->blockedIpv6Reason(ip: $ipv6) !== null) {
-					return true;
-				}
+		foreach ($this->addressGuard()->addressesOf(host: $host) as $address) {
+			if ($this->blockedAddressReason(address: $address) !== null) {
+				return true;
 			}
 		}
 
-		// ── IPv4 resolution ─────────────────────────────────────────────
-		// Same dual-path as assertSafeWebhookUri(): resolve via DNS first,
-		// then fall back to validating the host string directly so IP
-		// literals (127.0.0.1, 192.168.x.y …) are matched too.
-		$resolvedIp = gethostbyname($host);
-		$longIp = ip2long($resolvedIp);
-		if ($longIp === false) {
-			$longIp = ip2long($host);
-		}
-
-		if ($longIp === false) {
-			return false;
-		}
-
-		// Match each blocked CIDR range against the resolved IP.
-		// 127/8 loopback, 10/8, 172.16/12, 192.168/16, 169.254/16 link-local.
-		return (($longIp & 0xFF000000) === 0x7F000000)
-			|| (($longIp & 0xFF000000) === 0x0A000000)
-			|| (($longIp & 0xFFF00000) === 0xAC100000)
-			|| (($longIp & 0xFFFF0000) === 0xC0A80000)
-			|| (($longIp & 0xFFFF0000) === 0xA9FE0000);
+		return false;
 	}//end isPrivateHost()
+
+	/**
+	 * Return the block-list reason for one resolved address, or null if safe.
+	 *
+	 * IPv6 addresses keep their own labels from {@see blockedIpv6Reason()}, IPv4
+	 * addresses from {@see blockedIpv4Reason()}. Anything else that is not
+	 * routable on the open internet, in any notation, is reported as `reserved`.
+	 *
+	 * @param string $address An IPv4 or IPv6 address.
+	 *
+	 * @return string|null Human-readable range label, or null when the address is safe.
+	 */
+	private function blockedAddressReason(string $address): ?string {
+		$reason = $this->blockedIpv4Reason(ip: $address);
+		if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+			$reason = $this->blockedIpv6Reason(ip: $address);
+		}
+
+		if ($reason === null && $this->addressGuard()->isInternal(ipAddress: $address) === true) {
+			$reason = 'reserved';
+		}
+
+		return $reason;
+	}//end blockedAddressReason()
+
+	/**
+	 * Return the block-list reason for an IPv4 address, or null when it is not listed.
+	 *
+	 * @param string $ip IPv4 address string.
+	 *
+	 * @return string|null `loopback`, `RFC-1918` or `link-local/metadata`, or null.
+	 */
+	private function blockedIpv4Reason(string $ip): ?string {
+		$longIp = ip2long($ip);
+		if ($longIp === false) {
+			return null;
+		}
+
+		$ranges = [
+			['loopback', 0xFF000000, 0x7F000000],
+			['RFC-1918', 0xFF000000, 0x0A000000],
+			['RFC-1918', 0xFFF00000, 0xAC100000],
+			['RFC-1918', 0xFFFF0000, 0xC0A80000],
+			['link-local/metadata', 0xFFFF0000, 0xA9FE0000],
+		];
+		foreach ($ranges as [$label, $mask, $network]) {
+			if (($longIp & $mask) === $network) {
+				return $label;
+			}
+		}
+
+		return null;
+	}//end blockedIpv4Reason()
+
+	/**
+	 * The shared outbound address guard, created on first use.
+	 *
+	 * @return OutboundAddressGuard The guard.
+	 */
+	private function addressGuard(): OutboundAddressGuard {
+		$this->addressGuard ??= new OutboundAddressGuard();
+		return $this->addressGuard;
+	}//end addressGuard()
 
 	/**
 	 * Truncate a response body for log-context use.
