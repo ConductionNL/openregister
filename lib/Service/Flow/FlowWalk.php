@@ -106,26 +106,18 @@ class FlowWalk {
 	}//end stoppedResult()
 
 	/**
-	 * The pinned output for a step, or null when it is not pinned.
+	 * The pinned outputs of this run, by step name.
 	 *
-	 * Pins are a map of step name to an item list. A run carries them in its
-	 * `context` under `pins` (a test/authoring run supplies them without
-	 * touching the stored flow); a flow may also carry a `pins` map of its own,
-	 * used only as the fallback so a run's pins always win. A step whose name is
-	 * absent from both is not pinned and runs normally.
+	 * A run carries pins in its `context` under `pins` (a test/authoring run
+	 * supplies them without touching the stored flow); a flow may also carry a
+	 * `pins` map of its own, used only as the fallback so a run's pins always
+	 * win. A step whose name is absent is not pinned and runs normally.
 	 *
-	 * @param string $transitionName The step's transition name.
-	 *
-	 * @return array<int, mixed>|null The pinned items, or null when not pinned.
+	 * @return array<string, mixed> The pins, step name => item list.
 	 *
 	 * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
 	 */
-	public function pinnedFor(string $transitionName): ?array {
-		$pins = (array)($this->context['pins'] ?? ($this->flow['pins'] ?? []));
-		if (array_key_exists($transitionName, $pins) === false) {
-			return null;
-		}
-
-		return FlowItems::normalise(value: $pins[$transitionName]);
-	}//end pinnedFor()
+	public function pins(): array {
+		return (array)($this->context['pins'] ?? ($this->flow['pins'] ?? []));
+	}//end pins()
 }//end class

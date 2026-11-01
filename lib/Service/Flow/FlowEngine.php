@@ -301,7 +301,7 @@ class FlowEngine {
 	 *
 	 * `$startAt` runs the flow from a chosen node instead of its start — n8n's
 	 * "run from here". The seed items land on that node, and the steps before it
-	 * do not run; an author pins their output ({@see FlowWalk::pinnedFor()}) and
+	 * do not run; an author pins their output ({@see FlowWalk::pins()}) and
 	 * re-runs only the part being worked on. It is the initial place overridden,
 	 * so a resume — whose marking is already mid-graph and comes from the store —
 	 * is unaffected. A non-empty start node replaces the flow's `initial`; the
@@ -465,12 +465,12 @@ class FlowEngine {
 		$walk = $hop->walk;
 		$walk->items = $hop->itemsIn;
 
-		$pinned = $walk->pinnedFor(transitionName: $hop->name());
-		if ($pinned === null) {
+		$pins = $walk->pins();
+		if (array_key_exists($hop->name(), $pins) === false) {
 			return $this->dispatchHop(hop: $hop);
 		}
 
-		$walk->items = $pinned;
+		$walk->items = FlowItems::normalise(value: $pins[$hop->name()]);
 		$walk->log[] = $hop->pinnedEntry();
 		$this->advance(hop: $hop);
 
@@ -761,12 +761,12 @@ class FlowEngine {
 		$pass = $hop->pass;
 		$pass->items = $hop->itemsIn;
 
-		$pinned = $pass->pinnedFor(transitionName: $hop->name());
-		if ($pinned === null) {
+		$pins = $pass->pins();
+		if (array_key_exists($hop->name(), $pins) === false) {
 			return $this->dispatchOnStream(hop: $hop);
 		}
 
-		$pass->items = $pinned;
+		$pass->items = FlowItems::normalise(value: $pins[$hop->name()]);
 		$this->fireOnStream(hop: $hop, entry: $hop->pinnedEntry());
 
 		return null;
