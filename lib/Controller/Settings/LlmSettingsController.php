@@ -340,9 +340,6 @@ class LlmSettingsController extends Controller {
 	 *     modified: mixed|null, name: 'unknown'|mixed, size: 0|mixed}>,
 	 *     count?: int<0, max>}, array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function getOllamaModels(): JSONResponse {
@@ -351,50 +348,12 @@ class LlmSettingsController extends Controller {
 			$settings = $this->settingsService->getLLMSettingsOnly();
 			$ollamaUrl = $settings['ollamaConfig']['url'] ?? 'http://localhost:11434';
 
-			// Call Ollama API to get available models.
-			$apiUrl = rtrim($ollamaUrl, '/') . '/api/tags';
-
-			$ch = curl_init($apiUrl);
-			curl_setopt_array(
-				$ch,
-				[
-					CURLOPT_RETURNTRANSFER => true,
-					CURLOPT_TIMEOUT => 5,
-					CURLOPT_FOLLOWLOCATION => true,
-				]
-			);
-
-			$response = curl_exec($ch);
-			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			$curlError = curl_error($ch);
-			// No curl_close(): deprecated since PHP 8.0 and a no-op — the
-			// CurlHandle object is freed when it goes out of scope.
-			if ($curlError !== '') {
+			$fetched = $this->fetchOllamaModels(ollamaUrl: $ollamaUrl);
+			if (isset($fetched['error']) === true) {
 				return new JSONResponse(
 					data: [
 						'success' => false,
-						'error' => 'Failed to connect to Ollama: ' . $curlError,
-						'models' => [],
-					]
-				);
-			}
-
-			if ($httpCode !== 200) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => "Ollama API returned HTTP {$httpCode}",
-						'models' => [],
-					]
-				);
-			}
-
-			$data = json_decode($response, true);
-			if (isset($data['models']) === false || is_array($data['models']) === false) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'Unexpected response from Ollama API',
+						'error' => $fetched['error'],
 						'models' => [],
 					]
 				);
@@ -402,38 +361,8 @@ class LlmSettingsController extends Controller {
 
 			// Format models for frontend dropdown.
 			$models = array_map(
-				// phpcs:ignore Squiz.Commenting.BlockComment.NoEmptyLineBefore -- Empty line conflicts with "first argument must be on line after opening parenthesis" rule
-				// Format model for frontend dropdown.
-				function (array $model): array {
-					$name = $model['name'] ?? 'unknown';
-					// Format size if available.
-					$size = '';
-					if (($model['size'] ?? null) !== null && is_numeric($model['size']) === true) {
-						$size = $this->settingsService->formatBytes((int)$model['size']);
-					}
-
-					$family = $model['details']['family'] ?? '';
-
-					// Build description.
-					$description = $family;
-					if ($size !== '') {
-						// Add size separator if description exists.
-						if ($description !== '') {
-							$description .= ' • ';
-						}
-
-						$description .= $size;
-					}
-
-					return [
-						'id' => $name,
-						'name' => $name,
-						'description' => $description,
-						'size' => $model['size'] ?? 0,
-						'modified' => $model['modified_at'] ?? null,
-					];
-				},
-				$data['models']
+				fn (array $model): array => $this->formatOllamaModel(model: $model),
+				$fetched['models']
 			);
 
 			// Sort by name.
@@ -462,6 +391,82 @@ class LlmSettingsController extends Controller {
 			);
 		}//end try
 	}//end getOllamaModels()
+
+	/**
+	 * Fetch the raw model list from an Ollama instance's tags endpoint.
+	 *
+	 * @param string $ollamaUrl The Ollama base URL.
+	 *
+	 * @return array{error?: string, models?: array} The models, or the error that stopped the request.
+	 */
+	private function fetchOllamaModels(string $ollamaUrl): array {
+		$ch = curl_init(rtrim($ollamaUrl, '/') . '/api/tags');
+		curl_setopt_array(
+			$ch,
+			[
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_TIMEOUT => 5,
+				CURLOPT_FOLLOWLOCATION => true,
+			]
+		);
+
+		$response = curl_exec($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$curlError = curl_error($ch);
+		// No curl_close(): deprecated since PHP 8.0 and a no-op — the
+		// CurlHandle object is freed when it goes out of scope.
+		if ($curlError !== '') {
+			return ['error' => 'Failed to connect to Ollama: ' . $curlError];
+		}
+
+		if ($httpCode !== 200) {
+			return ['error' => "Ollama API returned HTTP {$httpCode}"];
+		}
+
+		$data = json_decode($response, true);
+		if (isset($data['models']) === false || is_array($data['models']) === false) {
+			return ['error' => 'Unexpected response from Ollama API'];
+		}
+
+		return ['models' => $data['models']];
+	}//end fetchOllamaModels()
+
+	/**
+	 * Format one Ollama model for the frontend dropdown.
+	 *
+	 * @param array<string, mixed> $model The model as Ollama lists it.
+	 *
+	 * @return array{id: mixed, name: mixed, description: string, size: mixed, modified: mixed}
+	 */
+	private function formatOllamaModel(array $model): array {
+		$name = $model['name'] ?? 'unknown';
+		// Format size if available.
+		$size = '';
+		if (is_numeric($model['size'] ?? null) === true) {
+			$size = $this->settingsService->formatBytes((int)$model['size']);
+		}
+
+		$family = $model['details']['family'] ?? '';
+
+		// Build description.
+		$description = $family;
+		if ($size !== '') {
+			// Add size separator if description exists.
+			if ($description !== '') {
+				$description .= ' • ';
+			}
+
+			$description .= $size;
+		}
+
+		return [
+			'id' => $name,
+			'name' => $name,
+			'description' => $description,
+			'size' => $model['size'] ?? 0,
+			'modified' => $model['modified_at'] ?? null,
+		];
+	}//end formatOllamaModel()
 
 	/**
 	 * Check if embedding model has changed and vectors need regeneration

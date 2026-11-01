@@ -256,6 +256,38 @@ class LlmSettingsControllerTest extends TestCase {
 		$this->controller->testChat();
 	}
 
+	/**
+	 * The status follows the chat test result: 200 on success, 400 otherwise.
+	 *
+	 * The container answers an object with the parameter names the controller
+	 * calls, so the result handling runs.
+	 */
+	public function testTestChatStatusFollowsTheResult(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['provider', null, 'openai'],
+				['config', [], ['apiKey' => 'key']],
+				['testMessage', 'Hello! Please respond with a brief greeting.', 'Hi'],
+			]);
+		$chat = new class {
+			/** @var list<bool> */
+			public array $answers = [true, false];
+
+			public function testChat(string $provider, array $config, string $testMessage): array {
+				return ['success' => array_shift($this->answers), 'provider' => $provider, 'message' => $testMessage];
+			}
+		};
+		$this->container->method('get')->willReturn($chat);
+
+		$ok = $this->controller->testChat();
+		$this->assertSame(200, $ok->getStatus());
+		$this->assertSame(['success' => true, 'provider' => 'openai', 'message' => 'Hi'], $ok->getData());
+
+		$failed = $this->controller->testChat();
+		$this->assertSame(400, $failed->getStatus());
+		$this->assertFalse($failed->getData()['success']);
+	}
+
 	public function testTestChatException(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
