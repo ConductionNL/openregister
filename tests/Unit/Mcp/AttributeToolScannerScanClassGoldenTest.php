@@ -78,6 +78,7 @@ abstract class ScanClassGoldenFixture {
  *
  * @covers \OCA\OpenRegister\Mcp\AttributeToolScanner
  * @uses   \OCA\OpenRegister\Mcp\Attribute\McpTool
+ * @uses   \OCA\OpenRegister\Mcp\ToolScanSubject
  */
 class AttributeToolScannerScanClassGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/attribute-tool-scanner-scan-class-golden.json';
