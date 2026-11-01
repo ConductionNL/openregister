@@ -57,6 +57,7 @@ class NamesControllerIndexGoldenTest extends TestCase {
 			'array of ids' => [['params' => ['ids' => ['u1', 'u2', 'u3']]]],
 			'single number' => [['params' => ['ids' => 42]]],
 			'empty string' => [['params' => ['ids' => '']]],
+			'an id the caller may not read gets no name' => [['params' => ['ids' => 'a,hidden'], 'visible' => ['a']]],
 			'bulk lookup fails' => [['params' => ['ids' => 'a'], 'throw' => 'bulk']],
 			'all names lookup fails' => [['params' => [], 'throw' => 'all']],
 		];
@@ -98,6 +99,10 @@ class NamesControllerIndexGoldenTest extends TestCase {
 
 			$names = [];
 			foreach ($ids as $id) {
+				if (isset($case['visible']) === true && in_array($id, $case['visible'], true) === false) {
+					continue;
+				}
+
 				$names[(string)$id] = 'Name of ' . $id;
 			}
 
@@ -133,6 +138,11 @@ class NamesControllerIndexGoldenTest extends TestCase {
 		$data = $response->getData();
 		if (isset($data['execution_time']) === true) {
 			$data['execution_time'] = preg_match('/^\d+(\.\d+)?ms$/', $data['execution_time']) === 1 ? '(n)ms' : '(other)';
+		}
+
+		if (isset($case['visible']) === true) {
+			$this->assertSame(['a' => 'Name of a'], $data['names']);
+			$this->assertSame(1, $data['total']);
 		}
 
 		$this->compare($this->dataName(), ['calls' => $this->calls, 'status' => $response->getStatus(), 'data' => $data]);

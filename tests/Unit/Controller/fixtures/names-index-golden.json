@@ -73,6 +73,52 @@
             "message": "all failed"
         }
     },
+    "an id the caller may not read gets no name": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        "a",
+                        "hidden"
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 2,
+                        "found_count": 1,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "a": "Name of a"
+            },
+            "total": 1,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
     "array of ids": {
         "calls": [
             {
