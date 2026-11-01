@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\GdprEntitiesController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
@@ -33,13 +34,15 @@ use Psr\Log\LoggerInterface;
 
 /**
  * A non-admin who belongs to two organisations sees only the GDPR entities,
- * types, categories and counts of their active organisation.
+ * types, categories and counts of their active organisation, and can open
+ * or delete by id only an entity of that organisation.
  *
  * The database is a small in-memory table that applies the organisation
  * filter the controller binds, so the assertions are about which rows come
  * back, not about which query was built.
  *
  * @covers \OCA\OpenRegister\Controller\GdprEntitiesController
+ * @uses \OCA\OpenRegister\Db\GdprEntity
  * @uses \OCA\OpenRegister\Db\Organisation
  */
 class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
@@ -55,6 +58,9 @@ class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
 
 	/** @var array<int, int> Relations per entity id. */
 	private const RELATIONS = [1 => 2, 3 => 5, 6 => 1];
+
+	/** @var list<int> Ids passed to the mapper's delete(). */
+	private array $deleted = [];
 
 	public function testIndexListsOnlyTheActiveOrganisationsEntities(): void {
 		$data = $this->controller(active: 'org-active')->index()->getData();
@@ -116,6 +122,53 @@ class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
 		$this->assertSame(8, $controller->getStats()->getData()['data']['totalRelations']);
 	}
 
+	public function testShowOpensAnEntityOfTheActiveOrganisation(): void {
+		$response = $this->controller(active: 'org-active')->show(1);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(1, $response->getData()['data']['id']);
+	}
+
+	public function testShowRefusesAnEntityOfAnotherOwnOrganisation(): void {
+		$response = $this->controller(active: 'org-active')->show(3);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['success' => false, 'message' => 'Entity not found'], $response->getData());
+	}
+
+	public function testShowRefusesEveryEntityWithoutAnActiveOrganisation(): void {
+		$this->assertSame(404, $this->controller(active: null)->show(1)->getStatus());
+	}
+
+	public function testAnAdminOpensAnEntityOfAnyOrganisation(): void {
+		$this->assertSame(200, $this->controller(active: 'org-active', admin: true)->show(6)->getStatus());
+	}
+
+	public function testDestroyDeletesAnEntityOfTheActiveOrganisation(): void {
+		$response = $this->controller(active: 'org-active')->destroy(2);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame([2], $this->deleted);
+	}
+
+	public function testDestroyRefusesAnEntityOfAnotherOwnOrganisation(): void {
+		$response = $this->controller(active: 'org-active')->destroy(4);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['success' => false, 'message' => 'Entity not found'], $response->getData());
+		$this->assertSame([], $this->deleted);
+	}
+
+	public function testDestroyRefusesEveryEntityWithoutAnActiveOrganisation(): void {
+		$this->assertSame(404, $this->controller(active: null)->destroy(1)->getStatus());
+		$this->assertSame([], $this->deleted);
+	}
+
+	public function testAnAdminDeletesAnEntityOfAnyOrganisation(): void {
+		$this->assertSame(200, $this->controller(active: 'org-active', admin: true)->destroy(5)->getStatus());
+		$this->assertSame([5], $this->deleted);
+	}
+
 	/**
 	 * Controller for `bob`, a member of org-active and org-other.
 	 *
@@ -161,7 +214,7 @@ class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
 		return new GdprEntitiesController(
 			'openregister',
 			$request,
-			$this->createMock(GdprEntityMapper::class),
+			$this->entityMapper($userSession),
 			$this->createMock(EntityRelationMapper::class),
 			$db,
 			$this->createMock(LoggerInterface::class),
@@ -170,6 +223,35 @@ class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
 			$organisationService,
 			$this->createMock(DecisionVisibility::class)
 		);
+	}
+
+	/**
+	 * A mapper over ENTITIES whose delete() records the deleted id.
+	 *
+	 * @param IUserSession $userSession Session of the acting user.
+	 *
+	 * @return GdprEntityMapper
+	 */
+	private function entityMapper(IUserSession $userSession): GdprEntityMapper {
+		$mapper = $this->createMock(GdprEntityMapper::class);
+		$mapper->method('find')->willReturnCallback(function (int $id): GdprEntity {
+			$row = array_values(array_filter(self::ENTITIES, fn (array $entity): bool => $entity['id'] === $id))[0];
+			$entity = new GdprEntity();
+			$entity->setId($row['id']);
+			$entity->setUuid('u-' . $row['id']);
+			$entity->setOrganisation($row['organisation']);
+			$entity->setType($row['type']);
+			$entity->setCategory($row['category']);
+			$entity->setValue($row['value']);
+			return $entity;
+		});
+		$mapper->method('delete')->willReturnCallback(function (GdprEntity $entity) use ($userSession): GdprEntity {
+			$this->assertSame('bob', $userSession->getUser()?->getUID());
+			$this->deleted[] = $entity->getId();
+			return $entity;
+		});
+
+		return $mapper;
 	}
 
 	private function organisation(string $uuid): Organisation {

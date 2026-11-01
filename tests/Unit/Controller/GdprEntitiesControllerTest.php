@@ -901,7 +901,7 @@ class GdprEntitiesControllerTest extends TestCase {
 
 	/**
 	 * Build a controller wired with a non-admin user belonging to the
-	 * given organisation UUIDs.
+	 * given organisation UUIDs, the first being the active one.
 	 *
 	 * @param array<int, string> $orgUuids Organisation UUIDs.
 	 *
@@ -928,6 +928,7 @@ class GdprEntitiesControllerTest extends TestCase {
 
 		$organisationService = $this->createMock(OrganisationService::class);
 		$organisationService->method('getUserOrganisations')->willReturn($orgs);
+		$organisationService->method('getActiveOrganisation')->willReturn($orgs[0] ?? null);
 
 		return new GdprEntitiesController(
 			'openregister',

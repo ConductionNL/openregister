@@ -188,7 +188,7 @@ class GdprEntitiesController extends Controller {
 			$entity = $this->entityMapper->find($id);
 
 			// SECURITY (#1825): non-admins may only view PII detected
-			// within an organisation they belong to. Return 404 (not
+			// within their active organisation. Return 404 (not
 			// 403) so we don't leak the existence of cross-tenant rows.
 			if ($this->isAdmin() === false) {
 				$entityOrg = (string)$entity->getOrganisation();
@@ -446,7 +446,7 @@ class GdprEntitiesController extends Controller {
 			$entity = $this->entityMapper->find($id);
 
 			// SECURITY (#1825): non-admins may only delete PII detected
-			// within an organisation they belong to. Return 404 (not
+			// within their active organisation. Return 404 (not
 			// 403) so we don't leak existence of cross-tenant rows.
 			if ($this->isAdmin() === false) {
 				$entityOrg = (string)$entity->getOrganisation();
@@ -520,9 +520,6 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Organisation UUIDs the active user's entity reads are scoped to.
 	 *
-	 * A non-admin is scoped to their active organisation only, not to every
-	 * organisation they belong to.
-	 *
 	 * @return array<int, string>|null Null for an admin (unscoped); otherwise
 	 *                                 the active organisation's UUID, where an
 	 *                                 empty list means deny-all.
@@ -532,12 +529,7 @@ class GdprEntitiesController extends Controller {
 			return null;
 		}
 
-		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
-		if ($uuid === '') {
-			return [];
-		}
-
-		return [$uuid];
+		return $this->accessibleOrganisationUuids();
 	}//end organisationScope()
 
 	/**
@@ -805,23 +797,21 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Organisation UUIDs the active user is allowed to see.
 	 *
-	 * Returns the list of organisation UUIDs the current (non-admin)
-	 * user belongs to. Admins are not scoped (callers should branch on
-	 * `isAdmin()` first). An empty list means "no accessible
-	 * organisations" and callers MUST treat that as deny-all.
+	 * Returns the UUID of the current (non-admin) user's active
+	 * organisation, not every organisation they belong to. Admins are not
+	 * scoped (callers should branch on `isAdmin()` first). An empty list
+	 * means "no active organisation" and callers MUST treat that as
+	 * deny-all.
 	 *
 	 * @return array<int, string> Accessible organisation UUIDs.
 	 */
 	private function accessibleOrganisationUuids(): array {
-		$uuids = [];
-		foreach ($this->organisationService->getUserOrganisations() as $organisation) {
-			$uuid = (string)$organisation->getUuid();
-			if ($uuid !== '') {
-				$uuids[] = $uuid;
-			}
+		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
+		if ($uuid === '') {
+			return [];
 		}
 
-		return array_values(array_unique($uuids));
+		return [$uuid];
 	}//end accessibleOrganisationUuids()
 
 	/**
