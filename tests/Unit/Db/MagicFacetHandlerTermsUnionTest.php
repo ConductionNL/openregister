@@ -43,6 +43,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class MagicFacetHandlerTermsUnionTest extends TestCase {
 
