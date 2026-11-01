@@ -12,7 +12,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -48,8 +51,49 @@ class TablesControllerTest extends TestCase {
 			$this->magicMapper,
 			$this->registerMapper,
 			$this->schemaMapper,
-			$this->logger
+			$this->logger,
+			$this->userSessionFor('admin'),
+			$this->groupManagerSaying(true)
 		);
+	}
+
+	private function userSessionFor(string $uid): IUserSession {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		return $session;
+	}
+
+	private function groupManagerSaying(bool $isAdmin): IGroupManager {
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn($isAdmin);
+		return $groupManager;
+	}
+
+	public function testSyncAndSyncAllRefuseANonAdmin(): void {
+		$controller = new TablesController(
+			'openregister',
+			$this->request,
+			$this->config,
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->schemaMapper,
+			$this->logger,
+			$this->userSessionFor('bob'),
+			$this->groupManagerSaying(false)
+		);
+		$this->registerMapper->expects($this->never())->method('find');
+		$this->registerMapper->expects($this->never())->method('findAll');
+		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
+
+		$single = $controller->sync(1, 1);
+		$all = $controller->syncAll();
+
+		$this->assertSame(403, $single->getStatus());
+		$this->assertSame(403, $all->getStatus());
+		$this->assertFalse($single->getData()['success']);
+		$this->assertFalse($all->getData()['success']);
 	}
 
 	/**
