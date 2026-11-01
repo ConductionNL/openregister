@@ -437,6 +437,32 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	}//end testTwoGrantsByTwoAccountsInOneBackgroundRunLeaveNoSession()
 
 	/**
+	 * Outside occ and the job a refresh or a remove deletes nothing the set made: the held link and share stay, and
+	 * each is named as not taken away.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-refresh-makes-the-access-links-and-grants-of-a-set-again
+	 */
+	public function testOutsideTheCommandLineNothingIsDeleted(): void {
+		$this->caseWith(links: [$this->sanneLink()], grants: [$this->staffGrant()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$link  = array_keys($this->links);
+		$share = array_keys($this->shares);
+
+		$this->services[ExampleSetActingAs::class] = new ExampleSetActingAs(userSession: $this->session, userManager: $this->users, cli: false);
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$this->assertStringContainsString(needle: 'access link "link-sanne": not refreshed', haystack: implode("\n", $report['dropped']));
+		$this->assertStringContainsString(needle: 'grant "grant-staff": not refreshed', haystack: implode("\n", $report['dropped']));
+
+		$removed = $this->remover->remove(set: 'demo');
+		$this->assertContains(needle: 'access link alpha/link-sanne', haystack: $removed['failed']);
+		$this->assertContains(needle: 'grant alpha/grant-staff', haystack: $removed['failed']);
+		$this->assertSame(expected: [$link, $share], actual: [array_keys($this->links), array_keys($this->shares)]);
+	}//end testOutsideTheCommandLineNothingIsDeleted()
+
+	/**
 	 * The acting scope refuses while somebody is signed in, refuses an unknown account, and puts the previous user
 	 * back when the call throws.
 	 *

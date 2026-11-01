@@ -242,6 +242,10 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function revert(array $entry): string {
+		if ($this->actingAs()->refusal() !== '') {
+			return 'failed';
+		}
+
 		try {
 			$share = $this->shares()->getShareById((string) ($entry['id'] ?? ''));
 		} catch (Throwable) {

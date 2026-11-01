@@ -27,7 +27,7 @@ it again (D-5).
 		"shareWith": "{{cast:juridische-zaken.gid}}",
 		"permissions": 1,
 		"sharedBy": "{{cast:pieter.uid}}",
-		"sharedAt": "{{datetime:-26 10:00}}",
+		"sharedAt": "{{datetime:-11 10:00}}",
 		"expiresAt": "{{date:14}}"
 	}
 ]

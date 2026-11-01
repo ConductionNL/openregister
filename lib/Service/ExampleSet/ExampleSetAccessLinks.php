@@ -202,6 +202,10 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
 	public function revert(array $entry): string {
+		if ($this->actingAs()->refusal() !== '') {
+			return 'failed';
+		}
+
 		try {
 			$link = $this->mapper()->findById(id: (int) ($entry['id'] ?? 0));
 			if ($link === null || $link->getUuid() !== (string) ($entry['uuid'] ?? '')) {

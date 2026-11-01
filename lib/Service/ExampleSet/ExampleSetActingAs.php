@@ -88,6 +88,27 @@ class ExampleSetActingAs {
 	}//end inBackgroundJob()
 
 	/**
+	 * Why this process may not act for a set's accounts, or '': only the command line or the daily refresh job may,
+	 * and never while somebody is signed in. Deleting what a set made is held to the same rule.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function refusal(): string {
+		if ($this->cli === false && self::$backgroundRuns === 0) {
+			return 'an example set acts as an account only from occ or the background job';
+		}
+
+		$signedIn = $this->userSession->getUser();
+		if ($signedIn !== null) {
+			return 'an example set does not act as an account while "'.$signedIn->getUID().'" is signed in';
+		}
+
+		return '';
+	}//end refusal()
+
+	/**
 	 * Run one call as an account, and put the previous user back however the call ends.
 	 *
 	 * @param string   $uid       The account to act as.
@@ -101,15 +122,12 @@ class ExampleSetActingAs {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function run(string $uid, callable $operation): mixed {
-		if ($this->cli === false && self::$backgroundRuns === 0) {
-			throw new ExampleSetException('an example set acts as an account only from occ or the background job');
+		$refusal = $this->refusal();
+		if ($refusal !== '') {
+			throw new ExampleSetException($refusal);
 		}
 
 		$previous = $this->userSession->getUser();
-		if ($previous !== null) {
-			throw new ExampleSetException('an example set does not act as an account while "'.$previous->getUID().'" is signed in');
-		}
-
 		$user = $this->userManager->get($uid);
 		if ($user === null) {
 			throw new ExampleSetException('no account "'.$uid.'" to act as');
