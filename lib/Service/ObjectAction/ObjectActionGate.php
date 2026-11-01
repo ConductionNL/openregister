@@ -39,7 +39,8 @@ use OCP\IUserSession;
 /**
  * The right and the precondition of an action.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression::isTrue() is the JSONLogic evaluator flows use.
+ * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression::isTrue() is the JSONLogic evaluator flows use;
+ *   ObjectActionElevationScope is the request-scoped elevation frame.
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
  */
@@ -51,11 +52,13 @@ class ObjectActionGate {
 	 * @param PermissionHandler $permissions The authorization block's judge.
 	 * @param IUserSession      $userSession The acting user.
 	 * @param IL10N             $l10n        Picks the reason's language.
+	 * @param ObjectActionElevationEntries $elevation Resolves an action's `elevate` entries.
 	 */
 	public function __construct(
 		private readonly PermissionHandler $permissions,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
+		private readonly ObjectActionElevationEntries $elevation,
 	) {
 	}//end __construct()
 
@@ -117,6 +120,29 @@ class ObjectActionGate {
 			]
 		);
 	}//end whenHolds()
+
+	/**
+	 * Run an action's body with its declared elevation open.
+	 *
+	 * Called only after the right and `when` have passed. Writes the person's
+	 * rights refuse are let through as the system for the listed
+	 * `(register, schema, verb)` only, and attributed to the action and person.
+	 *
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param callable               $operation  The body.
+	 *
+	 * @return mixed Whatever the body returned.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
+	 */
+	public function elevated(ObjectActionDefinition $definition, callable $operation): mixed {
+		return ObjectActionElevationScope::run(
+			action: $definition->key,
+			person: $this->userId(),
+			entries: $this->elevation->resolve(entries: $definition->elevate),
+			operation: $operation
+		);
+	}//end elevated()
 
 	/**
 	 * The reason given when `when` does not hold, in the user's language.

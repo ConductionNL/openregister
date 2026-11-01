@@ -25,6 +25,8 @@ use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
@@ -53,6 +55,8 @@ class ObjectActionRunnerTest extends TestCase {
 
 	private MacroActionResolver&MockObject $macros;
 
+	private ObjectActionElevationEntries&MockObject $elevation;
+
 	/**
 	 * Rights the caller holds, by action.
 	 *
@@ -76,6 +80,7 @@ class ObjectActionRunnerTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->macros->method('changesOf')->willReturn([['step' => 'Datum gezet', 'kind' => 'write']]);
 		$this->macros->method('nextForRun')->willReturn('stay');
+		$this->elevation = $this->createMock(ObjectActionElevationEntries::class);
 	}//end setUp()
 
 	/**
@@ -94,7 +99,7 @@ class ObjectActionRunnerTest extends TestCase {
 
 		return new ObjectActionRunner(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($this->permissions, $session, $l10n),
+			new ObjectActionGate($this->permissions, $session, $l10n, $this->elevation),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->steps,
 			$this->audit,
@@ -140,6 +145,12 @@ class ObjectActionRunnerTest extends TestCase {
 						'steps' => [['type' => 'acme.sign']],
 					],
 					'sendMail' => ['name' => 'Send mail', 'description' => 'Grant only.'],
+					'release' => [
+						'name' => 'Release',
+						'description' => 'Publish into the publication register.',
+						'steps' => [['type' => 'openregister.object-write']],
+						'elevate' => [['register' => 'publication', 'schema' => 'publication', 'verbs' => ['create']]],
+					],
 				],
 			]
 		);
@@ -356,6 +367,30 @@ class ObjectActionRunnerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $answer['status']);
 		$this->assertSame('flow', $answer['body']['kind']);
 	}//end testAnExistingMacroRunsItsFlowAsBefore()
+
+	public function testAnElevatingActionOpensItsElevationAroundTheBodyOnly(): void {
+		$this->elevation->expects($this->once())->method('resolve')
+			->with([['register' => 'publication', 'schema' => 'publication', 'verbs' => ['create']]])
+			->willReturn([['register' => '4', 'schema' => '9', 'verbs' => ['create']]]);
+		$during = null;
+		$this->flows->method('runForAction')->willReturnCallback(
+			function () use (&$during): FlowRun {
+				$during = ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create');
+				return $this->flowRun(FlowRun::STATUS_COMPLETED);
+			}
+		);
+
+		$this->assertSame(Http::STATUS_OK, $this->invoke('release')['status']);
+		$this->assertTrue($during, 'the listed write was not elevated during the run');
+		$this->assertFalse(ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create'), 'the elevation outlived the run');
+	}//end testAnElevatingActionOpensItsElevationAroundTheBodyOnly()
+
+	public function testARefusedActionNeverOpensItsElevation(): void {
+		$this->rights['release'] = false;
+		$this->elevation->expects($this->never())->method('resolve');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->invoke('release')['status']);
+	}//end testARefusedActionNeverOpensItsElevation()
 
 	public function testAWriteOnlyInputNeverReachesTheStoredContextOrTheDigest(): void {
 		$seen = [];
