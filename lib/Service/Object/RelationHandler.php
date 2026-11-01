@@ -723,7 +723,9 @@ class RelationHandler {
 			$missingUuids = array_diff($uniqueIds, $foundUuids);
 			if (empty($missingUuids) === false) {
 				foreach ($located as $candidate) {
-					if (in_array($candidate->getUuid(), $missingUuids, true) === true) {
+					if (in_array($candidate->getUuid(), $missingUuids, true) === true
+						&& $this->withinOrganisationBoundary(candidate: $candidate, _rbac: $_rbac, _multitenancy: $_multitenancy) === true
+					) {
 						$relatedObjects[] = $candidate;
 					}
 				}
@@ -807,6 +809,48 @@ class RelationHandler {
 			];
 		}//end try
 	}//end getUses()
+
+	/**
+	 * Whether a row the cross-table lookup found lies inside the caller's organisation boundary.
+	 *
+	 * That lookup applies no access rule, so the row is read again through the
+	 * single-object read, which applies the same organisation filter as the
+	 * per-table query.
+	 *
+	 * @param ObjectEntity $candidate     The row found by the cross-table lookup.
+	 * @param bool         $_rbac         Apply RBAC filters.
+	 * @param bool         $_multitenancy Apply multitenancy filters.
+	 *
+	 * @return bool True when the caller's read admits the row, or multitenancy is off.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function withinOrganisationBoundary(ObjectEntity $candidate, bool $_rbac, bool $_multitenancy): bool {
+		if ($_multitenancy === false) {
+			return true;
+		}
+
+		$pair = $this->registerSchemaPair(registerId: (int)$candidate->getRegister(), schemaId: (int)$candidate->getSchema());
+		if ($pair === null) {
+			return false;
+		}
+
+		try {
+			$this->objectEntityMapper->find(
+				identifier: (string)$candidate->getUuid(),
+				register: $pair['register'],
+				schema: $pair['schema'],
+				_rbac: $_rbac,
+				_multitenancy: true
+			);
+		} catch (\Exception $e) {
+			return false;
+		}
+
+		return true;
+	}//end withinOrganisationBoundary()
 
 	/**
 	 * Filter objects by RBAC (schema-level authorization).
