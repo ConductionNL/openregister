@@ -672,29 +672,26 @@
             ]
         ]
     },
-    "slug source never belongs": {
+    "slug source matches by id": {
         "result": {
-            "success": false,
+            "success": true,
             "statistics": {
-                "objectsMigrated": 0,
-                "objectsFailed": 1,
-                "propertiesMapped": 0,
-                "propertiesDiscarded": 0
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 4
             },
             "details": [
                 {
                     "objectId": "u-ok",
                     "objectTitle": "Ok",
-                    "success": false,
-                    "error": "Object u-ok does not belong to the specified source register/schema. Expected: register='src-slug', schema='2'. Actual: register='1', schema='2'"
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
                 }
             ],
-            "warnings": [
-                "Some objects failed to migrate. Check details for specific errors."
-            ],
-            "errors": [
-                "Failed to migrate object u-ok: Object u-ok does not belong to the specified source register/schema. Expected: register='src-slug', schema='2'. Actual: register='1', schema='2'"
-            ]
+            "warnings": [],
+            "errors": []
         },
         "calls": [
             [
@@ -722,32 +719,73 @@
                 [
                     "u-ok"
                 ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
             ]
         ]
     },
-    "slug source schema never belongs": {
+    "slug source schema matches by id": {
         "result": {
-            "success": false,
+            "success": true,
             "statistics": {
-                "objectsMigrated": 0,
-                "objectsFailed": 1,
-                "propertiesMapped": 0,
-                "propertiesDiscarded": 0
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 4
             },
             "details": [
                 {
                     "objectId": "u-ok",
                     "objectTitle": "Ok",
-                    "success": false,
-                    "error": "Object u-ok does not belong to the specified source register/schema. Expected: register='1', schema='sch-slug'. Actual: register='1', schema='2'"
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
                 }
             ],
-            "warnings": [
-                "Some objects failed to migrate. Check details for specific errors."
-            ],
-            "errors": [
-                "Failed to migrate object u-ok: Object u-ok does not belong to the specified source register/schema. Expected: register='1', schema='sch-slug'. Actual: register='1', schema='2'"
-            ]
+            "warnings": [],
+            "errors": []
         },
         "calls": [
             [
@@ -775,6 +813,50 @@
                 [
                     "u-ok"
                 ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
             ]
         ]
     },

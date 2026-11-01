@@ -204,8 +204,8 @@ class MigrationHandler {
 	/**
 	 * Refuse an object that does not live in the requested source register and schema.
 	 *
-	 * The stored register and schema are compared, as integers, with the values as
-	 * requested, so a source named by slug never matches.
+	 * The stored register and schema are compared with the ids of the loaded source
+	 * entities, so a source named by slug matches too.
 	 *
 	 * @param ObjectEntity $sourceObject The object as loaded.
 	 * @param MigrationRun $run          The migration.
@@ -220,7 +220,9 @@ class MigrationHandler {
 		$source = $run->source;
 		$actualRegister = $sourceObject->getRegister();
 		$actualSchema = $sourceObject->getSchema();
-		if ((int)$actualRegister === (int)$source->register && (int)$actualSchema === (int)$source->schema) {
+		if ((int)$actualRegister === (int)$source->registerEntity->getId()
+			&& (int)$actualSchema === (int)$source->schemaEntity->getId()
+		) {
 			return;
 		}
 
