@@ -73,6 +73,10 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			'entity with register only'       => $this->scenario(input: 'entity', passRegister: true),
 			'entity with full context'        => $this->scenario(input: 'entity', passRegister: true, passSchema: true),
 			'forged deleter in data'          => $this->scenario(input: ['id' => 'obj-1', 'deletedBy' => 'mallory', 'owner' => 'mallory', 'userId' => 'mallory', 'requestedBy' => 'mallory', '@self' => ['owner' => 'mallory']]),
+			'forged deleter on looked-up data' => $this->scenario(input: ['id' => 'obj-1'], forged: true),
+			'forged deleter on passed entity'  => $this->scenario(input: 'entity', passRegister: true, passSchema: true, forged: true),
+			'id wins over uuid'                => $this->scenario(input: ['id' => 'obj-1', 'uuid' => 'obj-2']),
+			'@self.id wins over uuid'          => $this->scenario(input: ['@self' => ['id' => 'obj-1'], 'uuid' => 'obj-2']),
 			'session user without org'        => $this->scenario(input: ['id' => 'obj-1'], user: 'bob'),
 			'no session user'                 => $this->scenario(input: ['id' => 'obj-1'], user: null),
 			'org lookup throws error'         => $this->scenario(input: ['id' => 'obj-1'], orgFails: true),
@@ -121,6 +125,7 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 	 * @param bool                        $updateFails  Whether the soft-delete update throws.
 	 * @param bool                        $draft        Whether the stored object is a draft.
 	 * @param string|null                 $folder       Folder behaviour: ok, none, throws, unbound; null wires no file service.
+	 * @param bool                        $forged       Whether the stored object data and owner name another user.
 	 *
 	 * @return array<string, mixed>
 	 *
@@ -144,6 +149,7 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 		bool $updateFails = false,
 		bool $draft = false,
 		?string $folder = null,
+		bool $forged = false,
 	): array {
 		$calls = [];
 
@@ -170,6 +176,14 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 
 		if ($folder !== null && $folder !== 'unbound') {
 			$lookedUp->setFolder('folder-1');
+		}
+
+		if ($forged === true) {
+			$forgedData = ['title' => 'kept', 'deletedBy' => 'mallory', 'owner' => 'mallory', 'userId' => 'mallory', '@self' => ['owner' => 'mallory', 'deleted' => ['deletedBy' => 'mallory']]];
+			$stored->setObject($forgedData);
+			$stored->setOwner('mallory');
+			$lookedUp->setObject($forgedData);
+			$lookedUp->setOwner('mallory');
 		}
 
 		$foundRegister = new Register();
