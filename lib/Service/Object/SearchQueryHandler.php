@@ -558,10 +558,6 @@ class SearchQueryHandler {
 	 *
 	 * @psalm-return array{'@self': array<string, array<int>|int|mixed>|mixed, _ids?: array|mixed,...}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex query building with parameter reconstruction
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths for handling different parameter formats
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
-	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function buildSearchQuery(
@@ -570,186 +566,35 @@ class SearchQueryHandler {
 		int|string|array|null $schema = null,
 		?array $ids = null,
 	): array {
-		// A schema served from an external object-source (DBAL virtual register)
-		// has FLAT, snake_case columns — `product_line`, `app_slug`,
-		// `competitor_id`. The dot-un-mangling in STEP 1 (which rebuilds
-		// `@self.register` from PHP's mangled `@self_register`) would wrongly
-		// split those column names into nested arrays
-		// (`product_line` → ['product' => ['line' => …]]), silently dropping the
-		// filter. Detect object-source schemas so their snake_case object-field
-		// keys stay literal; `@self.*` metadata keys still un-mangle. Magic-table
-		// schemas are unaffected.
-		$isObjectSourceSchema = $this->schemaHasObjectSource(schema: $schema);
+		$params = $this->filterableParams(
+			params: $this->liftBracketFilterUnlessDeclared(
+				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema),
+				schema: $schema
+			)
+		);
 
-		// STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
-		// PHP converts dots to underscores in parameter names, e.g.:.
-		// @self.register → @self_register.
-		// Person.address.street → person_address_street.
-		// We need to reconstruct nested arrays from underscore-separated paths.
-		$fixedParams = [];
-		foreach ($requestParams as $key => $value) {
-			// Skip parameters that start with underscore (system parameters like _limit, _offset).
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$fixedParams[$key] = $value;
-				continue;
-			}
-
-			// Check if key contains underscores (indicating PHP mangled dots).
-			// For object-source schemas, only un-mangle `@…` metadata keys and
-			// keep snake_case object-field keys (real DBAL columns) literal.
-			if (str_contains($key, '_') === true
-				&& ($isObjectSourceSchema === false || str_starts_with(haystack: $key, needle: '@') === true)
-			) {
-				// Split by underscore to reconstruct nested structure.
-				$parts = explode('_', $key);
-
-				// Build nested array structure.
-				$current = &$fixedParams;
-				$lastIndex = count($parts) - 1;
-
-				foreach ($parts as $index => $part) {
-					if ($index === $lastIndex) {
-						// Last part: assign the value.
-						$current[$part] = $value;
-						continue;
-					}
-
-					// Intermediate part: create nested array if needed.
-					if (isset($current[$part]) === false) {
-						$current[$part] = [];
-					}
-
-					if (isset($current[$part]) === true) {
-						/*
-						 * Ensure it's an array, reset if not.
-						 * @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier
-						 */
-
-						if (is_array($current[$part]) === false) {
-							$current[$part] = [];
-						}
-					}
-
-					$current = &$current[$part];
-				}//end foreach
-
-				continue;
-			}//end if
-
-			// No underscores: use as-is.
-			$fixedParams[$key] = $value;
-		}//end foreach
-
-		// STEP 1b: the bracket spelling. `filter[x]=v` means `x=v` here, as it
-		// does on the aggregation endpoints (openregister#3611). Before this,
-		// `filter` was read as a property filter on a property literally named
-		// `filter`, which no schema has, so every such query returned the empty
-		// set. The one schema this must not touch is one that really declares a
-		// `filter` property: there the old meaning is the right one.
-		if (is_array($fixedParams[FilterParams::FILTER_KEY] ?? null) === true
-			&& $this->schemaDeclaresFilterProperty(schema: $schema) === false
-		) {
-			$fixedParams = FilterParams::liftBracketFilter(params: $fixedParams);
-		}
-
-		// STEP 2: Remove system parameters that shouldn't be used as filters.
-		$params = $fixedParams;
-		unset($params['_route']);
-		foreach (FilterParams::OBJECT_SYSTEM_PARAMS as $systemParam) {
-			unset($params[$systemParam]);
-		}
-
-		// Build the query structure for searchObjectsPaginated.
-		$query = [];
-
-		// Extract metadata filters into @self.
-		$metadataFields = [
-			'register',
-			'schema',
-			'uuid',
-			'organisation',
-			'owner',
-			'application',
-			'created',
-			'updated',
-			'deleted',
-		];
-		$query['@self'] = [];
-
-		// Add register and schema to @self if provided.
-		// Support both single values and arrays for multi-register/schema filtering.
-		//
-		// These two used to be int-cast. `(int)'my-register'` is `0`, `0` is not
-		// `null`, so the search ran scoped to a register that cannot exist,
-		// found nothing, and reported nothing found — while the write path,
-		// handed the same slug, resolved it or threw. Three apps read that empty
-		// page as a fact about their data (openregister#3990). The reference is
-		// now resolved the way the write path resolves it, and refused the way
-		// the write path refuses it.
-		$registerId = $this->resolveReference(reference: $register, kind: 'register');
-		if ($registerId !== null) {
-			$query['@self']['register'] = $registerId;
-		}
-
-		$schemaId = $this->resolveReference(reference: $schema, kind: 'schema');
-		if ($schemaId !== null) {
-			$query['@self']['schema'] = $schemaId;
-		}
-
-		// Query structure built successfully.
-		// Extract special underscore parameters.
-		$specialParams = [];
-		$objectFilters = [];
-
-		foreach ($params as $key => $value) {
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$specialParams[$key] = $value;
-			} elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
-				// Only add to @self if not already set from function parameters.
-				if (isset($query['@self'][$key]) === false) {
-					$query['@self'][$key] = $value;
-				}
-
-				continue;
-			}
-
-			// This is an object field filter.
-			$objectFilters[$key] = $value;
-		}
+		$parts = $this->splitSearchParams(
+			params: $params,
+			self: $this->scopeFilters(register: $register, schema: $schema)
+		);
 
 		// STEP 2b: expand a branch filter into the concepts it stands for.
 		// `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root
 		// plus every narrower concept under it), walked at query time and
 		// bounded by depth, so moving a concept in the scheme changes what the
 		// filter matches with no reindex anywhere.
+		$objectFilters = $parts->objectFilters;
 		if ($this->codedFilters !== null) {
 			$objectFilters = $this->codedFilters->expand(filters: $objectFilters, schemaRef: $schema);
 		}
 
-		// Add object field filters directly to query.
-		$query = array_merge($query, $objectFilters);
+		$query = array_merge(['@self' => $parts->self], $objectFilters);
 
-		// Add IDs if provided.
 		if ($ids !== null) {
 			$query['_ids'] = $ids;
 		}
 
-		// Support both 'ids' and '_ids' parameters for flexibility.
-		if (isset($specialParams['ids']) === true) {
-			$query['_ids'] = $specialParams['ids'];
-			// Remove to avoid duplication.
-			unset($specialParams['ids']);
-		}
-
-		// Add all special parameters (they'll be handled by searchObjectsPaginated).
-		$query = array_merge($query, $specialParams);
-
-		// Normalize _ids from comma-separated string to array.
-		// URL query parameters like _ids=uuid1,uuid2 arrive as a single string,
-		// but downstream code (MagicMapper) expects an array.
-		if (isset($query['_ids']) === true && is_string($query['_ids']) === true) {
-			$query['_ids'] = array_filter(array_map('trim', explode(',', $query['_ids'])));
-		}
+		$query = $this->mergeSpecialParams(query: $query, special: $parts->special);
 
 		// The `_watching=true` lens, applied AFTER `_ids` is normalised to an
 		// array so the two can intersect rather than fight.
@@ -762,10 +607,189 @@ class SearchQueryHandler {
 		// The `_favourite=true` and `_recent=true` lenses, last, so that every
 		// earlier lens has already narrowed `_ids` and these two compose with it
 		// rather than replacing it.
-		$query = $this->applyPersonalLenses(query: $query);
+		return $this->applyPersonalLenses(query: $query);
+	}//end buildSearchQuery()
+
+	/**
+	 * Undo PHP's dot-to-underscore mangling of parameter names (`@self_register` back to `@self.register`).
+	 *
+	 * Underscore-prefixed system parameters (`_limit`, `_offset`) stay as they are. A schema served
+	 * from an external object source has FLAT, snake_case columns (`product_line`), so for it only
+	 * `@…` metadata keys are un-mangled; splitting its column names would silently drop the filter.
+	 *
+	 * @param array                 $requestParams The request parameters.
+	 * @param int|string|array|null $schema        The schema reference of the search.
+	 *
+	 * @return array<string, mixed> The parameters with nested paths rebuilt.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function restoreDottedParams(array $requestParams, int|string|array|null $schema): array {
+		$isObjectSourceSchema = $this->schemaHasObjectSource(schema: $schema);
+
+		$tree = new DottedParamTree();
+		foreach ($requestParams as $key => $value) {
+			if (str_starts_with(haystack: $key, needle: '_') === true) {
+				$tree->set(key: $key, value: $value);
+				continue;
+			}
+
+			if (str_contains($key, '_') === true
+				&& ($isObjectSourceSchema === false || str_starts_with(haystack: $key, needle: '@') === true)
+			) {
+				$tree->nest(key: $key, value: $value);
+				continue;
+			}
+
+			$tree->set(key: $key, value: $value);
+		}
+
+		return $tree->params;
+	}//end restoreDottedParams()
+
+	/**
+	 * Read the bracket spelling `filter[x]=v` as `x=v`, as the aggregation endpoints do (openregister#3611).
+	 *
+	 * Not for a schema that really declares a `filter` property: there the property filter is meant.
+	 *
+	 * @param array<string, mixed>  $params The parameters.
+	 * @param int|string|array|null $schema The schema reference of the search.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function liftBracketFilterUnlessDeclared(array $params, int|string|array|null $schema): array {
+		if (is_array($params[FilterParams::FILTER_KEY] ?? null) === true
+			&& $this->schemaDeclaresFilterProperty(schema: $schema) === false
+		) {
+			return FilterParams::liftBracketFilter(params: $params);
+		}
+
+		return $params;
+	}//end liftBracketFilterUnlessDeclared()
+
+	/**
+	 * The parameters without the route and the system parameters that are never filters.
+	 *
+	 * @param array<string, mixed> $params The parameters.
+	 *
+	 * @return array<string, mixed> The remaining parameters.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function filterableParams(array $params): array {
+		unset($params['_route']);
+		foreach (FilterParams::OBJECT_SYSTEM_PARAMS as $systemParam) {
+			unset($params[$systemParam]);
+		}
+
+		return $params;
+	}//end filterableParams()
+
+	/**
+	 * The `@self` register and schema filters of the call, single values or lists.
+	 *
+	 * A reference is resolved the way the write path resolves it, and refused the way the write
+	 * path refuses it; an int cast turned a slug into register 0 and an empty page
+	 * (openregister#3990).
+	 *
+	 * @param int|string|array|null $register The register reference.
+	 * @param int|string|array|null $schema   The schema reference.
+	 *
+	 * @return array<string, mixed> The `@self` filters.
+	 *
+	 * @throws RegisterNotFoundException When the register reference cannot be read.
+	 * @throws SchemaNotFoundException When the schema reference cannot be read.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function scopeFilters(int|string|array|null $register, int|string|array|null $schema): array {
+		$self = [];
+		$registerId = $this->resolveReference(reference: $register, kind: 'register');
+		if ($registerId !== null) {
+			$self['register'] = $registerId;
+		}
+
+		$schemaId = $this->resolveReference(reference: $schema, kind: 'schema');
+		if ($schemaId !== null) {
+			$self['schema'] = $schemaId;
+		}
+
+		return $self;
+	}//end scopeFilters()
+
+	/**
+	 * Sort the parameters into `@self` metadata filters, underscore parameters and object field filters.
+	 *
+	 * A metadata parameter never overrides the call's own register or schema. An underscore
+	 * parameter is kept both as a special parameter and among the object field filters.
+	 *
+	 * @param array<string, mixed> $params The parameters.
+	 * @param array<string, mixed> $self   The call's `@self` filters.
+	 *
+	 * @return SearchQueryParts The sorted parameters.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function splitSearchParams(array $params, array $self): SearchQueryParts {
+		$metadataFields = [
+			'register',
+			'schema',
+			'uuid',
+			'organisation',
+			'owner',
+			'application',
+			'created',
+			'updated',
+			'deleted',
+		];
+		$specialParams = [];
+		$objectFilters = [];
+
+		foreach ($params as $key => $value) {
+			if (str_starts_with(haystack: $key, needle: '_') === true) {
+				$specialParams[$key] = $value;
+			} elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
+				if (isset($self[$key]) === false) {
+					$self[$key] = $value;
+				}
+
+				continue;
+			}
+
+			$objectFilters[$key] = $value;
+		}
+
+		return new SearchQueryParts(self: $self, special: $specialParams, objectFilters: $objectFilters);
+	}//end splitSearchParams()
+
+	/**
+	 * Add the underscore parameters to the query, with `_ids` normalised to an array.
+	 *
+	 * URL parameters like `_ids=uuid1,uuid2` arrive as one string, but MagicMapper expects an array.
+	 *
+	 * @param array<string, mixed> $query   The query.
+	 * @param array<string, mixed> $special The underscore parameters.
+	 *
+	 * @return array<string, mixed> The query.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function mergeSpecialParams(array $query, array $special): array {
+		if (isset($special['ids']) === true) {
+			$query['_ids'] = $special['ids'];
+			unset($special['ids']);
+		}
+
+		$query = array_merge($query, $special);
+
+		if (isset($query['_ids']) === true && is_string($query['_ids']) === true) {
+			$query['_ids'] = array_filter(array_map('trim', explode(',', $query['_ids'])));
+		}
 
 		return $query;
-	}//end buildSearchQuery()
+	}//end mergeSpecialParams()
 
 	/**
 	 * Apply view filters to a query.

@@ -306,7 +306,7 @@ class LlmSettingsController extends Controller {
 
 			// Delegate to ChatService for testing.
 			$chatService = $this->container->get('OCA\OpenRegister\Service\ChatService');
-			$result = $chatService->testChat(provider: $provider, config: $config, testMessage: $testMessage);
+			$result = $chatService->testChat(provider: $provider, config: $config, _testMessage: $testMessage);
 
 			// Return appropriate status code.
 			$statusCode = 400;
