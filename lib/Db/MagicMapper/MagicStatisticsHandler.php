@@ -591,10 +591,6 @@ class MagicStatisticsHandler {
 	 *
 	 * @return ObjectEntity|null Converted entity or null on failure
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Row to entity conversion requires many field mappings
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete field mapping requires comprehensive handling
-	 *
 	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
@@ -605,153 +601,15 @@ class MagicStatisticsHandler {
 			$objectEntity->setRegister((string)$_register->getId());
 			$objectEntity->setSchema((string)$_schema->getId());
 
-			// Build column-to-property mapping and property types from schema.
-			// This allows us to restore original property names (e.g., 'e-mailadres').
-			// from their sanitized column names (e.g., 'e_mailadres').
-			// Also builds property type map for type conversion.
-			$columnToPropertyMap = [];
-			$propertyTypes = [];
-			$propertyFormats = [];
-			$properties = $_schema->getProperties() ?? [];
-			foreach ($properties as $propertyName => $propertyDef) {
-				$columnName = $this->sanitizeColumnName(name: $propertyName);
-				$columnToPropertyMap[$columnName] = $propertyName;
-				$propertyTypes[$propertyName] = $propertyDef['type'] ?? 'string';
-				if (isset($propertyDef['format']) === true) {
-					$propertyFormats[$propertyName] = $propertyDef['format'];
-				}
-			}
+			[$metadata, $objectData] = $this->splitRow(row: $row, propertyMap: $this->propertyColumnMap(schema: $_schema));
 
-			// Extract metadata fields (remove prefix).
-			$metadata = [];
-			$objectData = [];
-
-			foreach ($row as $columnName => $value) {
-				$metadataField = $this->columnRoles->field(column: $columnName, columnToPropertyMap: $columnToPropertyMap);
-				if ($metadataField !== null) {
-
-					// Handle datetime fields.
-					if (in_array(
-						$metadataField,
-						[
-							'created',
-							'updated',
-							'last_user_activity',
-							'expires',
-						],
-						true
-					) === true
-						&& ($value !== null) === true
-					) {
-						$value = new DateTime($value);
-					}
-
-					// Handle JSON fields.
-					if (in_array(
-						$metadataField,
-						[
-							'files',
-							'relations',
-							'locked',
-							'authorization',
-							'validation',
-							'deleted',
-							'archived',
-							'frozen',
-							'geo',
-							'retention',
-							'groups',
-						],
-						true
-					) === true
-						&& ($value !== null) === true
-					) {
-						$value = json_decode($value, true);
-					}
-
-					$metadata[$metadataField] = $value;
-					continue;
-				}//end if
-
-				// This is a schema property.
-				// Skip NULL values for properties not in this schema's definition.
-				// In UNION queries, NULL placeholders exist for other schemas' columns.
-				if ($value === null && isset($columnToPropertyMap[$columnName]) === false) {
-					continue;
-				}
-
-				// Map column name back to original property name using schema mapping.
-				// Falls back to camelCase conversion if not found in mapping.
-				$mappedName = $columnToPropertyMap[$columnName] ?? null;
-				$propertyName = $mappedName ?? $this->columnNameToPropertyName(columnName: $columnName);
-
-				// Apply schema-driven type coercion. The converter is the single
-				// source of truth for "DB column value → JSON-Schema-typed PHP value"
-				// — see lib/Service/Object/SchemaTypeConverter.php and
-				// openspec/specs/schema-driven-read-coercion/spec.md.
-				$schemaType = $propertyTypes[$propertyName] ?? 'string';
-				$value = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $schemaType);
-
-				// Format date/datetime values based on schema format. Runs after type
-				// coercion because the converter does not (and per design D5 should
-				// not) handle format-specific normalisation.
-				// Empty-string / whitespace-only input normalises to null via
-				// DateTimeNormalizer instead of PHP's "new DateTime('')" silently
-				// returning the current timestamp.
-				$propertyFormat = $propertyFormats[$propertyName] ?? null;
-				if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
-					if ($propertyFormat === 'date') {
-						$normalised = $this->dateTimeNormalizer->normalize($value);
-						$value = null;
-						if ($normalised !== null) {
-							$value = $normalised->format('Y-m-d');
-						}
-					} elseif ($propertyFormat === 'date-time') {
-						// Offset-less DATETIME column value: interpret it in the
-						// timezone the write path stored it in (WOO-567).
-						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
-					}
-				}
-
-				$objectData[$propertyName] = $value;
-			}//end foreach
-
-			// Set metadata fields on ObjectEntity.
-			foreach ($metadata as $field => $value) {
-				if ($value === null) {
-					// Log when critical metadata field is null (owner can be null for public objects).
-					if ($field === 'uuid' || $field === 'id') {
-						$this->logger->warning(
-							message: '[MagicStatisticsHandler] Critical metadata field is null',
-							context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
-						);
-					}
-
-					continue;
-				}
-
-				// Entity setters are magic (__call), so is_callable() is true for
-				// any name; ask whether ObjectEntity has the attribute instead.
-				$attribute = $this->columnRoles->attribute(field: $field);
-				if ($attribute === null) {
-					$this->skipUnknownMetadataField(field: $field);
-					continue;
-				}
-
-				$method = 'set' . ucfirst($attribute);
-				$objectEntity->$method($value);
-			}//end foreach
-
-			// Set object data.
+			$this->applyMetadata(objectEntity: $objectEntity, metadata: $metadata);
 			$objectEntity->setObject($objectData);
 
-			// CRITICAL FIX: Explicitly set ID and UUID to ensure they are never null.
-			// These are essential for audit trails, rendering, and API responses.
-			if (isset($metadata['id']) === true) {
-				$idValue = $metadata['id'];
-				if (is_numeric($idValue) === true) {
-					$objectEntity->setId((int)$idValue);
-				}
+			// Explicitly set ID and UUID so they are never null: audit trails,
+			// rendering and API responses depend on them.
+			if (isset($metadata['id']) === true && is_numeric($metadata['id']) === true) {
+				$objectEntity->setId((int)$metadata['id']);
 			}
 
 			if (isset($metadata['uuid']) === true) {
@@ -773,6 +631,163 @@ class MagicStatisticsHandler {
 			return null;
 		}//end try
 	}//end convertRowToObjectEntity()
+
+	/**
+	 * The column-to-property mapping and the property types and formats of a schema.
+	 *
+	 * The mapping restores original property names (e.g. 'e-mailadres') from
+	 * their sanitized column names (e.g. 'e_mailadres').
+	 *
+	 * @param Schema $schema The schema of the table.
+	 *
+	 * @return array{columns: array<string, string>, types: array<string, string>, formats: array<string, string>} The maps.
+	 */
+	private function propertyColumnMap(Schema $schema): array {
+		$map = ['columns' => [], 'types' => [], 'formats' => []];
+		foreach ($schema->getProperties() ?? [] as $propertyName => $propertyDef) {
+			$map['columns'][$this->sanitizeColumnName(name: $propertyName)] = $propertyName;
+			$map['types'][$propertyName] = $propertyDef['type'] ?? 'string';
+			if (isset($propertyDef['format']) === true) {
+				$map['formats'][$propertyName] = $propertyDef['format'];
+			}
+		}
+
+		return $map;
+	}//end propertyColumnMap()
+
+	/**
+	 * Split a row into its metadata fields and its property values.
+	 *
+	 * @param array $row         Database row
+	 * @param array $propertyMap The maps from propertyColumnMap()
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The metadata, keyed by field without prefix, and the object data.
+	 */
+	private function splitRow(array $row, array $propertyMap): array {
+		$metadata = [];
+		$objectData = [];
+		foreach ($row as $columnName => $value) {
+			$metadataField = $this->columnRoles->field(column: $columnName, columnToPropertyMap: $propertyMap['columns']);
+			if ($metadataField !== null) {
+				$metadata[$metadataField] = $this->metadataValue(field: $metadataField, value: $value);
+				continue;
+			}
+
+			// In UNION queries, NULL placeholders exist for other schemas' columns.
+			if ($value === null && isset($propertyMap['columns'][$columnName]) === false) {
+				continue;
+			}
+
+			// Falls back to camelCase conversion when the schema does not map the column.
+			$propertyName = $propertyMap['columns'][$columnName] ?? $this->columnNameToPropertyName(columnName: $columnName);
+			$objectData[$propertyName] = $this->propertyValue(
+				value: $value,
+				definition: [
+					'type' => $propertyMap['types'][$propertyName] ?? 'string',
+					'format' => $propertyMap['formats'][$propertyName] ?? null,
+				]
+			);
+		}
+
+		return [$metadata, $objectData];
+	}//end splitRow()
+
+	/**
+	 * A metadata column value as its ObjectEntity attribute takes it.
+	 *
+	 * @param string $field The metadata field without its prefix
+	 * @param mixed  $value The column value
+	 *
+	 * @return mixed A DateTime for date fields, decoded JSON for JSON fields, else the value.
+	 *
+	 * @throws Exception When a date field does not parse.
+	 */
+	private function metadataValue(string $field, mixed $value): mixed {
+		if ($value === null) {
+			return null;
+		}
+
+		if (in_array($field, ['created', 'updated', 'last_user_activity', 'expires'], true) === true) {
+			return new DateTime($value);
+		}
+
+		$jsonFields = ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'archived', 'frozen', 'geo', 'retention', 'groups'];
+		if (in_array($field, $jsonFields, true) === true) {
+			return json_decode($value, true);
+		}
+
+		return $value;
+	}//end metadataValue()
+
+	/**
+	 * A property column value as its JSON-Schema type and format read it.
+	 *
+	 * Type coercion runs first (see SchemaTypeConverter and
+	 * openspec/specs/schema-driven-read-coercion/spec.md); format
+	 * normalisation follows, since the converter does not handle formats.
+	 * An empty or whitespace-only date normalises to null rather than to
+	 * the current timestamp.
+	 *
+	 * @param mixed $value      The column value
+	 * @param array $definition The property's 'type' and 'format' (null when it has none)
+	 *
+	 * @return mixed The value.
+	 */
+	private function propertyValue(mixed $value, array $definition): mixed {
+		$value = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $definition['type']);
+		if ($value === null || is_string($value) === false) {
+			return $value;
+		}
+
+		if ($definition['format'] === 'date') {
+			$normalised = $this->dateTimeNormalizer->normalize($value);
+			return $normalised?->format('Y-m-d');
+		}
+
+		if ($definition['format'] === 'date-time') {
+			// Offset-less DATETIME column value: interpret it in the
+			// timezone the write path stored it in (WOO-567).
+			return $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
+		}
+
+		return $value;
+	}//end propertyValue()
+
+	/**
+	 * Set the metadata fields on an entity.
+	 *
+	 * Entity setters are magic (__call), so is_callable() is true for any
+	 * name; ObjectEntity is asked whether it has the attribute instead.
+	 *
+	 * @param ObjectEntity $objectEntity The entity being built
+	 * @param array        $metadata     The metadata, keyed by field without prefix
+	 *
+	 * @return void
+	 */
+	private function applyMetadata(ObjectEntity $objectEntity, array $metadata): void {
+		foreach ($metadata as $field => $value) {
+			if ($value === null) {
+				// Owner can be null for public objects; id and uuid never should be.
+				if ($field === 'uuid' || $field === 'id') {
+					$this->logger->warning(
+						message: '[MagicStatisticsHandler] Critical metadata field is null',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
+					);
+				}
+
+				continue;
+			}
+
+			$attribute = $this->columnRoles->attribute(field: $field);
+			if ($attribute === null) {
+				$this->skipUnknownMetadataField(field: $field);
+				continue;
+			}
+
+			$method = 'set' . ucfirst($attribute);
+			$objectEntity->$method($value);
+		}//end foreach
+	}//end applyMetadata()
 
 	/**
 	 * Note, once per field and process, a metadata column ObjectEntity has no attribute for.
