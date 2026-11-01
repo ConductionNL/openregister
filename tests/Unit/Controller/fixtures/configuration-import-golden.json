@@ -1767,6 +1767,283 @@
             "error": "Internal server error"
         }
     },
+    "testImportMatchesTheRecording gitlab import, admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Importing configuration from gitlab",
+                    {
+                        "params": {
+                            "namespace": "acme",
+                            "project": "conf",
+                            "path": "c/d.json",
+                            "ref": "release"
+                        }
+                    }
+                ]
+            },
+            {
+                "gitlab.getProjectByPath": [
+                    "acme",
+                    "conf"
+                ]
+            },
+            {
+                "gitlab.getFileContent": [
+                    77,
+                    "c/d.json",
+                    "release"
+                ]
+            },
+            {
+                "gitlab.getApiBase": []
+            },
+            {
+                "mapper.findByApp": [
+                    "myapp",
+                    50,
+                    0,
+                    false
+                ]
+            },
+            {
+                "mapper.insert": {
+                    "id": null,
+                    "uuid": null,
+                    "title": "Info title",
+                    "description": "Info description",
+                    "type": "app",
+                    "app": "myapp",
+                    "application": "myapp",
+                    "version": "2.1.0",
+                    "sourceType": "gitlab",
+                    "sourceUrl": "https://gitlab.example/acme/conf/-/blob/release/c/d.json",
+                    "localVersion": null,
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": null,
+                    "githubBranch": null,
+                    "githubPath": null,
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": null,
+                    "syncStatus": "never",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "isLocal",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Created configuration entity with ID 42 for app myapp",
+                    []
+                ]
+            },
+            {
+                "service.importFromJson": [
+                    {
+                        "info": {
+                            "version": "2.1.0",
+                            "title": "Info title",
+                            "description": "Info description"
+                        },
+                        "x-openregister": {
+                            "app": "myapp",
+                            "type": "app",
+                            "version": "9",
+                            "title": "X",
+                            "description": "Y"
+                        },
+                        "components": {
+                            "registers": [
+                                {
+                                    "slug": "ignored"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 42,
+                        "uuid": null,
+                        "title": "Info title",
+                        "description": "Info description",
+                        "type": "app",
+                        "app": "myapp",
+                        "application": "myapp",
+                        "version": "2.1.0",
+                        "sourceType": "gitlab",
+                        "sourceUrl": "https://gitlab.example/acme/conf/-/blob/release/c/d.json",
+                        "localVersion": null,
+                        "remoteVersion": null,
+                        "lastChecked": null,
+                        "autoUpdate": false,
+                        "notificationGroups": [],
+                        "githubRepo": null,
+                        "githubBranch": null,
+                        "githubPath": null,
+                        "isLocal": false,
+                        "syncEnabled": true,
+                        "syncInterval": 24,
+                        "lastSyncDate": null,
+                        "syncStatus": "never",
+                        "openregister": null,
+                        "organisation": null,
+                        "owner": null,
+                        "registers": [],
+                        "schemas": [],
+                        "objects": [],
+                        "views": [],
+                        "agents": [],
+                        "sources": [],
+                        "mappings": [],
+                        "applications": [],
+                        "created": null,
+                        "updated": null,
+                        "(updated fields)": [
+                            "app",
+                            "description",
+                            "id",
+                            "isLocal",
+                            "sourceType",
+                            "sourceUrl",
+                            "syncEnabled",
+                            "title",
+                            "type",
+                            "version"
+                        ]
+                    },
+                    "myapp",
+                    "myapp",
+                    "2.1.0",
+                    false
+                ]
+            },
+            {
+                "mapper.update": {
+                    "id": 42,
+                    "uuid": null,
+                    "title": "Info title",
+                    "description": "Info description",
+                    "type": "app",
+                    "app": "myapp",
+                    "application": "myapp",
+                    "version": "2.1.0",
+                    "sourceType": "gitlab",
+                    "sourceUrl": "https://gitlab.example/acme/conf/-/blob/release/c/d.json",
+                    "localVersion": "2.1.0",
+                    "remoteVersion": null,
+                    "lastChecked": null,
+                    "autoUpdate": false,
+                    "notificationGroups": [],
+                    "githubRepo": null,
+                    "githubBranch": null,
+                    "githubPath": null,
+                    "isLocal": false,
+                    "syncEnabled": true,
+                    "syncInterval": 24,
+                    "lastSyncDate": "(date)",
+                    "syncStatus": "success",
+                    "openregister": null,
+                    "organisation": null,
+                    "owner": null,
+                    "registers": [],
+                    "schemas": [],
+                    "objects": [],
+                    "views": [],
+                    "agents": [],
+                    "sources": [],
+                    "mappings": [],
+                    "applications": [],
+                    "created": null,
+                    "updated": null,
+                    "(updated fields)": [
+                        "app",
+                        "description",
+                        "id",
+                        "isLocal",
+                        "lastSyncDate",
+                        "localVersion",
+                        "sourceType",
+                        "sourceUrl",
+                        "syncEnabled",
+                        "syncStatus",
+                        "title",
+                        "type",
+                        "version"
+                    ]
+                }
+            },
+            {
+                "logger.debug": [
+                    "[ConfigurationController] Successfully imported configuration Info title from gitlab",
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": true,
+            "message": "Configuration imported successfully from gitlab",
+            "configurationId": 42,
+            "result": {
+                "registersCount": 2,
+                "schemasCount": 1,
+                "objectsCount": 0
+            }
+        }
+    },
+    "testImportMatchesTheRecording gitlab import, non-admin session": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "testImportMatchesTheRecording gitlab import, non-admin session with a forged userId": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
     "testImportMatchesTheRecording import throws": {
         "calls": [
             {

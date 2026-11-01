@@ -25,11 +25,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Golden test for the configuration import pipeline behind importFromGitHub()
- * and importFromUrl().
+ * Golden test for the configuration import pipeline behind importFromGitHub(),
+ * importFromGitLab() and importFromUrl().
  *
  * Every case records each collaborator call (the admin check with the acting
- * user, the GitHub client, the configuration mapper and service, the logger)
+ * user, the GitHub and GitLab clients, the configuration mapper and service, the logger)
  * and the response, and compares the recording with
  * fixtures/configuration-import-golden.json. Only the session user `alice` is
  * an administrator; a caller-supplied userId never counts. Dates are replaced
@@ -55,6 +55,7 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 	 */
 	public static function cases(): array {
 		$github = ['owner' => 'acme', 'repo' => 'conf', 'path' => 'a/b.json', 'branch' => 'dev'];
+		$gitlab = ['namespace' => 'acme', 'project' => 'conf', 'path' => 'c/d.json', 'ref' => 'release'];
 		$full = [
 			'info' => ['version' => '2.1.0', 'title' => 'Info title', 'description' => 'Info description'],
 			'x-openregister' => ['app' => 'myapp', 'type' => 'app', 'version' => '9', 'title' => 'X', 'description' => 'Y'],
@@ -89,6 +90,9 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			]]],
 			'app id falls back without registers' => [['user' => 'alice', 'params' => $github, 'config' => ['info' => ['title' => 'Only title']]]],
 			'import throws' => [['user' => 'alice', 'params' => $github, 'config' => $full, 'importThrows' => 'import failed']],
+			'gitlab import, non-admin session' => [['user' => 'bob', 'params' => $gitlab, 'action' => 'importFromGitLab']],
+			'gitlab import, non-admin session with a forged userId' => [['user' => 'bob', 'params' => $gitlab + ['userId' => 'alice'], 'action' => 'importFromGitLab']],
+			'gitlab import, admin' => [['user' => 'alice', 'params' => $gitlab, 'action' => 'importFromGitLab', 'config' => $full]],
 			'url import without a url' => [['user' => 'alice', 'params' => [], 'action' => 'importFromUrl']],
 			'url import with an invalid url' => [['user' => 'alice', 'params' => ['url' => 'not a url'], 'action' => 'importFromUrl']],
 		];
@@ -124,7 +128,7 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			$this->service($case),
 			$this->createMock(NotificationService::class),
 			$this->github($case),
-			$this->createMock(GitLabHandler::class),
+			$this->gitlab($case),
 			$this->createMock(IAppManager::class),
 			$this->logger(),
 			$userSession,
@@ -151,6 +155,26 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			return $case['config'] ?? [];
 		});
 		return $github;
+	}
+
+	/**
+	 * @param array<string, mixed> $case
+	 */
+	private function gitlab(array $case): GitLabHandler {
+		$gitlab = $this->createMock(GitLabHandler::class);
+		$gitlab->method('getProjectByPath')->willReturnCallback(function (...$args) {
+			$this->calls[] = ['gitlab.getProjectByPath' => $args];
+			return ['id' => 77];
+		});
+		$gitlab->method('getFileContent')->willReturnCallback(function (...$args) use ($case) {
+			$this->calls[] = ['gitlab.getFileContent' => $args];
+			return $case['config'] ?? [];
+		});
+		$gitlab->method('getApiBase')->willReturnCallback(function () {
+			$this->calls[] = ['gitlab.getApiBase' => []];
+			return 'https://gitlab.example/api/v4';
+		});
+		return $gitlab;
 	}
 
 	/**
