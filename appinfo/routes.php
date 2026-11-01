@@ -149,6 +149,8 @@ return [
         // matched first.
         ['name' => 'objectPermissions#history', 'url' => '/api/objects/{register}/{schema}/{id}/permissions/history', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectPermissions#index',   'url' => '/api/objects/{register}/{schema}/{id}/permissions',         'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // Who holds access to one object, one row per principal and origin (an-object-lists-its-grants-with-their-origin).
+        ['name' => 'objectGrants#index',        'url' => '/api/objects/{register}/{schema}/{id}/grants',              'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 
         // Per-object watchers: following, with a notify switch on the PUT body
         // (`{"notify": false}` follows quietly). Following an object is per-user state that must not
