@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use Throwable;
  * tables, and each question is a short method; splitting them would put the
  * memo in two places, which is how a stale answer reaches an authorization verdict.
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class HierarchyDescender {
 
@@ -119,7 +119,7 @@ class HierarchyDescender {
 	 * @return array<int, array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int}>
 	 *         One entry per register the hierarchical schema belongs to.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function hierarchicalTables(): array {
 		if ($this->memoised !== null) {
@@ -213,7 +213,7 @@ class HierarchyDescender {
 	 *
 	 * @return array<string, string> Child UUID => parent UUID.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function childrenOf(string $table, string $parentColumn, array $parentUuids, ?int $limit = null): array {
 		if (empty($parentUuids) === true || ($limit !== null && $limit < 1)) {
@@ -305,7 +305,7 @@ class HierarchyDescender {
 	 *
 	 * @return string[] The ancestor UUIDs, nearest first, empty when the schema declares no hierarchy.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function ancestorsOf(int $registerId, int $schemaId, string $objectUuid): array {
 		if ($objectUuid === '') {
@@ -352,7 +352,7 @@ class HierarchyDescender {
 	 *
 	 * @return array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int}|null The declaration, or null.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function hierarchyFor(int $registerId, int $schemaId): ?array {
 		$table = (MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId);
@@ -419,7 +419,7 @@ class HierarchyDescender {
 	 *
 	 * @return string The column name.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function columnFor(string $property): string {
 		return strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
@@ -430,7 +430,7 @@ class HierarchyDescender {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function forget(): void {
 		$this->memoised = null;

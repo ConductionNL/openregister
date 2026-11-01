@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
  *
  * Handles:
  * - Semantic search
- * - Hybrid search (SOLR + vectors)
+ * - Hybrid search (keyword + vectors)
  * - Vector statistics
  *
  * @category Controller

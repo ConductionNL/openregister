@@ -41,7 +41,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleReplayServiceTest extends TestCase {
 
@@ -159,7 +159,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARunawaySelectionIsRefusedBeforeAnythingIsCreated(): void {
 		$this->objects->method('countSearchObjects')->willReturn(4000);
@@ -190,7 +190,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheCountComesFromACountQuery(): void {
 		$this->objects->expects($this->once())
@@ -212,7 +212,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testASelectionWithinTheCeilingIsPreviewed(): void {
 		$this->objects->method('countSearchObjects')->willReturn(30);
@@ -241,7 +241,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARuleWithNoCeilingIsNotRefusedHere(): void {
 		$this->objects->method('countSearchObjects')->willReturn(4000);
@@ -266,7 +266,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnIdsSelectionIsCountedByItsDistinctIds(): void {
 		$this->objects->expects($this->never())->method('countSearchObjects');
@@ -290,7 +290,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnknownRuleIsRefused(): void {
 		$this->jobs->expects($this->never())->method('create');
@@ -314,7 +314,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAConditionCannotBeReplayed(): void {
 		$this->jobs->expects($this->never())->method('create');
@@ -335,7 +335,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnEmptySelectionIsRefused(): void {
 		$this->jobs->expects($this->never())->method('create');
@@ -357,7 +357,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testACountThatFailsRefusesRatherThanRuns(): void {
 		$this->objects->method('countSearchObjects')->willThrowException(new \RuntimeException('no'));

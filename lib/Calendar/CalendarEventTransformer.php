@@ -120,22 +120,7 @@ class CalendarEventTransformer {
 			'CATEGORIES' => [['OpenRegister', $schema->getTitle() ?? 'Schema'], []],
 		];
 
-		// Optional description.
-		if (empty($calendarConfig['descriptionTemplate']) === false) {
-			$description = $this->interpolateTemplate(
-				template: $calendarConfig['descriptionTemplate'],
-				objectData: $objectData
-			);
-			$veventProperties['DESCRIPTION'] = [$description, []];
-		}
-
-		// Optional location.
-		if (empty($calendarConfig['locationField']) === false) {
-			$locationValue = $objectData[$calendarConfig['locationField']] ?? null;
-			if (empty($locationValue) === false) {
-				$veventProperties['LOCATION'] = [$locationValue, []];
-			}
-		}
+		$veventProperties += $this->optionalProperties(objectData: $objectData, calendarConfig: $calendarConfig);
 
 		// URL to OpenRegister object.
 		$register = $object->getRegister();
@@ -152,6 +137,34 @@ class CalendarEventTransformer {
 			],
 		];
 	}//end transform()
+
+	/**
+	 * The optional DESCRIPTION and LOCATION properties, each present only when configured and non-empty.
+	 *
+	 * @param array $objectData     The object data
+	 * @param array $calendarConfig The calendar provider configuration
+	 *
+	 * @return array<string, array{0: mixed, 1: array}> The properties.
+	 */
+	private function optionalProperties(array $objectData, array $calendarConfig): array {
+		$properties = [];
+		if (empty($calendarConfig['descriptionTemplate']) === false) {
+			$description = $this->interpolateTemplate(
+				template: $calendarConfig['descriptionTemplate'],
+				objectData: $objectData
+			);
+			$properties['DESCRIPTION'] = [$description, []];
+		}
+
+		if (empty($calendarConfig['locationField']) === false) {
+			$locationValue = $objectData[$calendarConfig['locationField']] ?? null;
+			if (empty($locationValue) === false) {
+				$properties['LOCATION'] = [$locationValue, []];
+			}
+		}
+
+		return $properties;
+	}//end optionalProperties()
 
 	/**
 	 * Determine if events should be all-day based on config and schema property format

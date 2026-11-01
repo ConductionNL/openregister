@@ -257,6 +257,7 @@ import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import eventBus from '../../eventBus.js'
+import { addDateRange, addScope } from '../../services/routeQuery.js'
 
 export default {
 	name: 'AuditTrailSideBar',
@@ -685,12 +686,10 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			if (registerStore.registerItem && registerStore.registerItem.id) {
-				query.register = String(registerStore.registerItem.id)
-			}
-			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
-				query.schema = String(schemaStore.schemaItem.id)
-			}
+			addScope(query, {
+				register: registerStore.registerItem,
+				schema: schemaStore.schemaItem,
+			})
 			if (
 				Array.isArray(this.selectedActions)
 				&& this.selectedActions.length > 0
@@ -700,15 +699,7 @@ export default {
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
 				query.user = this.selectedUsers.map((u) => u.value).join(',')
 			}
-			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
-			if (this.dateFrom)
-				query.dateFrom = new Date(this.dateFrom).getDate()
-					? new Date(this.dateFrom).toISOString()
-					: null
-			if (this.dateTo)
-				query.dateTo = new Date(this.dateTo).getDate()
-					? new Date(this.dateTo).toISOString()
-					: null
+			addDateRange(query, this)
 			if (this.objectFilter) query.object = this.objectFilter
 			if (this.showOnlyWithChanges) query.onlyWithChanges = '1'
 			return query

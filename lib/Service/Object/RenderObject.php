@@ -594,8 +594,7 @@ class RenderObject {
 	 * @return void
 	 *
 	 * Used by list pipelines that bypass the full renderEntity pipeline (the
-	 * cheap-path when no extend/fields/filter/unset is requested, or the SOLR/index
-	 * path which never renders rows). Walks rows, collects UUIDs, issues a single
+	 * cheap-path when no extend/fields/filter/unset is requested). Walks rows, collects UUIDs, issues a single
 	 * batched FileMapper lookup, and writes the lightweight ID list onto each row's
 	 * `\@self.files` (or the equivalent property on an ObjectEntity).
 	 *
@@ -2999,7 +2998,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function applyRetentionClocks(ObjectEntity $entity): void {
 		if ($this->container === null) {
@@ -3253,7 +3252,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
 		if ($schema === null) {

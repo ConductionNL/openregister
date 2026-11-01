@@ -34,7 +34,7 @@ class LlmSettingsHandlerCoverageTest extends TestCase {
 		$this->assertNull($result['embeddingProvider']);
 		$this->assertNull($result['chatProvider']);
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	public function testGetLLMSettingsOnlyAddsEnabledIfMissing(): void {
@@ -65,7 +65,7 @@ class LlmSettingsHandlerCoverageTest extends TestCase {
 
 		$this->assertTrue($result['enabled']);
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	public function testGetLLMSettingsOnlyFillsMissingVectorConfigFields(): void {
@@ -82,7 +82,7 @@ class LlmSettingsHandlerCoverageTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertSame('php', $result['vectorConfig']['backend']);
-		$this->assertSame('_embedding_', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 		// solrCollection should be removed
 		$this->assertArrayNotHasKey('solrCollection', $result['vectorConfig']);
 	}
@@ -102,7 +102,7 @@ class LlmSettingsHandlerCoverageTest extends TestCase {
 		$result = $this->handler->getLLMSettingsOnly();
 
 		$this->assertSame('solr', $result['vectorConfig']['backend']);
-		$this->assertSame('custom_field', $result['vectorConfig']['solrField']);
+		$this->assertArrayNotHasKey('solrField', $result['vectorConfig']);
 	}
 
 	public function testUpdateLLMSettingsOnlyMergesWithExisting(): void {

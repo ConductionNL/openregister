@@ -20,7 +20,6 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -51,7 +50,6 @@ class SettingsControllerTest extends TestCase {
 	private IDBConnection $db;
 	private ContainerInterface $container;
 	private IAppManager $appManager;
-	private VectorizationService $vectorizationService;
 	private IRequest $request;
 	private LoggerInterface $logger;
 	private IL10N $l10n;
@@ -70,7 +68,6 @@ class SettingsControllerTest extends TestCase {
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
-		$this->vectorizationService = $this->createMock(VectorizationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->l10n = $this->createMock(IL10N::class);
 		$this->l10n->method('t')->willReturnCallback(
@@ -87,7 +84,6 @@ class SettingsControllerTest extends TestCase {
 			$this->container,
 			$this->appManager,
 			$this->settingsService,
-			$this->vectorizationService,
 			$this->logger,
 			$this->l10n
 		);
@@ -280,45 +276,6 @@ class SettingsControllerTest extends TestCase {
 	}
 
 	/**
-	 * Test updateSearchBackend endpoint with valid backend
-	 *
-	 * Note: SettingsService::updateSearchBackendConfig() expects array $data,
-	 * but SettingsController passes a string $backend directly. The mock enforces
-	 * the type signature, causing a TypeError. The controller only catches Exception
-	 * (not Error/TypeError), so the TypeError propagates.
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendReturnsValidJson(): void {
-		$this->request->method('getParams')
-			->willReturn(['backend' => 'elasticsearch']);
-
-		// The mock enforces the array type, so when the controller passes a string
-		// it will throw a TypeError. The controller catches Exception (not Error),
-		// so the TypeError propagates.
-		$this->expectException(\TypeError::class);
-
-		$this->controller->updateSearchBackend();
-	}
-
-	/**
-	 * Test updateSearchBackend endpoint with missing backend
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendWithMissingBackend(): void {
-		$this->request->method('getParams')
-			->willReturn([]);
-
-		$response = $this->controller->updateSearchBackend();
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$data = $response->getData();
-		$this->assertIsArray($data);
-		$this->assertArrayHasKey('error', $data);
-	}
-
-	/**
 	 * Test rebase handles service exceptions gracefully
 	 *
 	 * @return void
@@ -442,71 +399,6 @@ class SettingsControllerTest extends TestCase {
 		$data = $response->getData();
 		$this->assertIsArray($data);
 		$this->assertArrayHasKey('error', $data);
-	}
-
-	/**
-	 * Test semanticSearch returns results
-	 *
-	 * @return void
-	 */
-	public function testSemanticSearchReturnsResults(): void {
-		$this->vectorizationService
-			->method('semanticSearch')
-			->willReturn([
-				['id' => '1', 'score' => 0.95],
-			]);
-
-		$response = $this->controller->semanticSearch('test query', 10);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$data = $response->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame('test query', $data['query']);
-		$this->assertSame(1, $data['total']);
-	}
-
-	/**
-	 * Test semanticSearch returns 400 for empty query
-	 *
-	 * @return void
-	 */
-	public function testSemanticSearchReturns400ForEmptyQuery(): void {
-		$response = $this->controller->semanticSearch('   ', 10);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$data = $response->getData();
-		$this->assertFalse($data['success']);
-		$this->assertSame(400, $response->getStatus());
-	}
-
-	/**
-	 * Test semanticSearch handles exceptions
-	 *
-	 * @return void
-	 */
-	public function testSemanticSearchHandlesExceptions(): void {
-		$this->vectorizationService
-			->method('semanticSearch')
-			->willThrowException(new \Exception('Search error'));
-
-		$response = $this->controller->semanticSearch('test', 10);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertSame(500, $response->getStatus());
-		$data = $response->getData();
-		$this->assertFalse($data['success']);
-	}
-
-	/**
-	 * Test hybridSearch returns 400 for empty query
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchReturns400ForEmptyQuery(): void {
-		$response = $this->controller->hybridSearch('   ', 20);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertSame(400, $response->getStatus());
 	}
 
 	/**
@@ -635,45 +527,6 @@ class SettingsControllerTest extends TestCase {
 	}
 
 	/**
-	 * Test hybridSearch returns results when query is valid
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchReturnsResults(): void {
-		$this->vectorizationService
-			->method('hybridSearch')
-			->willReturn([
-				'results' => [['id' => '1']],
-				'total' => 1,
-			]);
-
-		$response = $this->controller->hybridSearch('test query', 20);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$data = $response->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame('test query', $data['query']);
-	}
-
-	/**
-	 * Test hybridSearch handles exceptions
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchHandlesExceptions(): void {
-		$this->vectorizationService
-			->method('hybridSearch')
-			->willThrowException(new \Exception('Search failed'));
-
-		$response = $this->controller->hybridSearch('test', 20);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertSame(500, $response->getStatus());
-		$data = $response->getData();
-		$this->assertFalse($data['success']);
-	}
-
-	/**
 	 * Test that all existing controller methods return JSONResponse objects
 	 *
 	 * This comprehensive test ensures API consistency across ALL endpoints
@@ -742,47 +595,6 @@ class SettingsControllerTest extends TestCase {
 		$this->assertArrayHasKey('error', $data);
 	}
 
-	// ── semanticSearch with filters and provider ──────────────────────
-
-	public function testSemanticSearchWithFiltersAndProvider(): void {
-		$this->vectorizationService
-			->method('semanticSearch')
-			->willReturn([
-				['id' => '1', 'score' => 0.9],
-				['id' => '2', 'score' => 0.85],
-			]);
-
-		$response = $this->controller->semanticSearch(
-			'test query',
-			5,
-			['entity_type' => 'register'],
-			'dolphin'
-		);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$data = $response->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(2, $data['total']);
-		$this->assertSame(5, $data['limit']);
-	}
-
-	// ── hybridSearch with filters ────────────────────────────────────
-
-	public function testHybridSearchWithFilters(): void {
-		$this->vectorizationService
-			->method('hybridSearch')
-			->willReturn([
-				'results' => [['id' => '1']],
-				'total' => 1,
-			]);
-
-		$response = $this->controller->hybridSearch('test query', 5);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$data = $response->getData();
-		$this->assertTrue($data['success']);
-	}
-
 	// ── getDatabaseInfo when cache is empty (forces refresh) ─────────
 
 	public function testGetDatabaseInfoWhenCacheEmpty(): void {
@@ -797,21 +609,6 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertSame(500, $response->getStatus());
-	}
-
-	/**
-	 * Test updateSearchBackend with 'active' key instead of 'backend'
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendWithActiveKey(): void {
-		$this->request->method('getParams')
-			->willReturn(['active' => 'solr']);
-
-		// Same TypeError issue as testUpdateSearchBackendReturnsValidJson
-		$this->expectException(\TypeError::class);
-
-		$this->controller->updateSearchBackend();
 	}
 
 	/**
@@ -1129,156 +926,6 @@ class SettingsControllerTest extends TestCase {
 			);
 
 		$this->controller->getDatabaseInfo();
-	}
-
-	/**
-	 * Test hybridSearch with custom weights and filters
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchWithCustomWeightsAndFilters(): void {
-		$customWeights = ['solr' => 0.7, 'vector' => 0.3];
-		$solrFilters = ['schema_id' => 42];
-
-		$this->vectorizationService
-			->method('hybridSearch')
-			->willReturn([
-				'results' => [['id' => '1', 'score' => 0.92]],
-				'total' => 1,
-				'weights' => $customWeights,
-			]);
-
-		$response = $this->controller->hybridSearch(
-			'advanced search',
-			15,
-			$solrFilters,
-			$customWeights,
-			'openai'
-		);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$data = $response->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame('advanced search', $data['query']);
-		$this->assertSame(1, $data['total']);
-	}
-
-	/**
-	 * Test semanticSearch with empty string query returns 400
-	 *
-	 * @return void
-	 */
-	public function testSemanticSearchWithEmptyStringReturns400(): void {
-		$response = $this->controller->semanticSearch('', 10);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertSame(400, $response->getStatus());
-		$data = $response->getData();
-		$this->assertFalse($data['success']);
-		$this->assertSame('Query parameter is required', $data['error']);
-	}
-
-	/**
-	 * Test hybridSearch with empty string query returns 400
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchWithEmptyStringReturns400(): void {
-		$response = $this->controller->hybridSearch('', 20);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertSame(400, $response->getStatus());
-		$data = $response->getData();
-		$this->assertFalse($data['success']);
-	}
-
-	/**
-	 * Test semanticSearch response includes timestamp
-	 *
-	 * @return void
-	 */
-	public function testSemanticSearchResponseIncludesTimestamp(): void {
-		$this->vectorizationService
-			->method('semanticSearch')
-			->willReturn([]);
-
-		$response = $this->controller->semanticSearch('query', 10);
-
-		$data = $response->getData();
-		$this->assertArrayHasKey('timestamp', $data);
-		$this->assertTrue($data['success']);
-		$this->assertSame(0, $data['total']);
-	}
-
-	/**
-	 * Test semanticSearch response includes filters in output
-	 *
-	 * @return void
-	 */
-	public function testSemanticSearchResponseIncludesFilters(): void {
-		$filters = ['entity_type' => 'schema', 'entity_id' => 5];
-
-		$this->vectorizationService
-			->method('semanticSearch')
-			->willReturn([]);
-
-		$response = $this->controller->semanticSearch('query', 10, $filters);
-
-		$data = $response->getData();
-		$this->assertSame($filters, $data['filters']);
-	}
-
-	/**
-	 * Test semanticSearch exception includes trace in response
-	 *
-	 * @return void
-	 */
-	public function testSemanticSearchExceptionIncludesTrace(): void {
-		$this->vectorizationService
-			->method('semanticSearch')
-			->willThrowException(new \Exception('Vector error'));
-
-		$response = $this->controller->semanticSearch('test', 10);
-
-		$data = $response->getData();
-		$this->assertArrayHasKey('trace', $data);
-		$this->assertSame('Vector error', $data['error']);
-	}
-
-	/**
-	 * Test hybridSearch exception includes trace in response
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchExceptionIncludesTrace(): void {
-		$this->vectorizationService
-			->method('hybridSearch')
-			->willThrowException(new \Exception('Hybrid error'));
-
-		$response = $this->controller->hybridSearch('test', 20);
-
-		$data = $response->getData();
-		$this->assertArrayHasKey('trace', $data);
-		$this->assertSame('Hybrid error', $data['error']);
-	}
-
-	/**
-	 * Test updateSearchBackend handles exception from settings service
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendHandlesServiceException(): void {
-		$this->request->method('getParams')
-			->willReturn(['backend' => 'solr']);
-
-		$this->settingsService
-			->method('updateSearchBackendConfig')
-			->willThrowException(new \Exception('Backend update failed'));
-
-		// TypeError occurs because mock enforces array type but controller passes string
-		$this->expectException(\TypeError::class);
-
-		$this->controller->updateSearchBackend();
 	}
 
 	/**
@@ -2045,85 +1692,4 @@ class SettingsControllerTest extends TestCase {
 		$data = $response->getData();
 		$this->assertStringContainsString('QB init failed', $data['error']);
 	}
-
-	// ── hybridSearch additional coverage ─────────────────────────────────
-
-	/**
-	 * Test hybridSearch response includes timestamp
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchResponseIncludesTimestamp(): void {
-		$this->vectorizationService
-			->method('hybridSearch')
-			->willReturn(['results' => []]);
-
-		$response = $this->controller->hybridSearch('valid query', 10);
-
-		$data = $response->getData();
-		$this->assertArrayHasKey('timestamp', $data);
-		$this->assertTrue($data['success']);
-	}
-
-	/**
-	 * Test hybridSearch merges result array keys into response via spread operator
-	 *
-	 * @return void
-	 */
-	public function testHybridSearchMergesResultKeysIntoResponse(): void {
-		$this->vectorizationService
-			->method('hybridSearch')
-			->willReturn([
-				'results' => [['id' => '1', 'score' => 0.9]],
-				'total' => 1,
-				'method' => 'hybrid',
-			]);
-
-		$response = $this->controller->hybridSearch('merge test', 10);
-
-		$data = $response->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame('merge test', $data['query']);
-		// Spread operator merges these keys into the response.
-		$this->assertSame(1, $data['total']);
-		$this->assertSame('hybrid', $data['method']);
-		$this->assertCount(1, $data['results']);
-	}
-
-	// ── updateSearchBackend additional coverage ─────────────────────────
-	// Note: The controller has a bug where it passes a string to
-	// SettingsService::updateSearchBackendConfig(array $data). Lines 525-535
-	// (success + exception handler) are unreachable due to this TypeError.
-	// The existing tests correctly document this with expectException(TypeError).
-
-	/**
-	 * Test updateSearchBackend with missing both 'backend' and 'active' keys
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendMissingBothKeysReturns400(): void {
-		$request = $this->createMock(IRequest::class);
-		$request->method('getParams')
-			->willReturn(['other_key' => 'value']);
-
-		$controller = new SettingsController(
-			'openregister',
-			$request,
-			$this->config,
-			$this->db,
-			$this->container,
-			$this->appManager,
-			$this->settingsService,
-			$this->vectorizationService,
-			$this->logger,
-			$this->l10n
-		);
-
-		$response = $controller->updateSearchBackend();
-
-		$this->assertSame(400, $response->getStatus());
-		$data = $response->getData();
-		$this->assertSame('Backend parameter is required', $data['error']);
-	}
-
 }

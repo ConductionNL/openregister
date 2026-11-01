@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -118,7 +118,7 @@ class CallerPolicy {
 	 *
 	 * @return array{limit: int, windowSeconds: int}|null The ceiling, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function limitFor(string $principal): ?array {
 		$limits = $this->read(key: self::LIMITS_KEY);
@@ -139,7 +139,7 @@ class CallerPolicy {
 	 *
 	 * @return array<int, string>|null The allowed addresses and ranges, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function addressesFor(string $principal): ?array {
 		$bindings = $this->read(key: self::ADDRESSES_KEY);
@@ -179,7 +179,7 @@ class CallerPolicy {
 	 *
 	 * @return bool True when the call is allowed from this address.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function allowsAddress(string $principal, string $address): bool {
 		$allowed = $this->addressesFor(principal: $principal);

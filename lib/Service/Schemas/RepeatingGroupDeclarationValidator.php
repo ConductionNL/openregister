@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ class RepeatingGroupDeclarationValidator {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function validate(array $property, string $path): void {
 		$isGroup = (($property['repeatingGroup'] ?? false) === true);
@@ -121,7 +121,7 @@ class RepeatingGroupDeclarationValidator {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateLabel(mixed $label, array $members, string $path): void {
 		if ($label === null) {
@@ -154,7 +154,7 @@ class RepeatingGroupDeclarationValidator {
 	 *
 	 * @return never
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function refuse(string $code, string $path, string $message): never {
 		throw new PropertyVocabularyException(

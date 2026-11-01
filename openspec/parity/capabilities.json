@@ -3185,7 +3185,7 @@
     "spec": "openspec/specs/skos-concept-registers",
     "requirement": [
      "openspec/changes/modelling-stated-requirements :: A coded property takes its allowed values from a concept scheme (REQ-MSR-003)",
-     "openspec/changes/code-list-lifecycle-and-hierarchy :: A property uses the hierarchy, the context and the weights (REQ-CLH-002)"
+     "openspec/specs/skos-concept-registers :: A property uses the hierarchy, the context and the weights (REQ-CLH-002)"
     ]
    },
    "reachedOn": "/schemas/:id (property editor); enforced on /objects save",

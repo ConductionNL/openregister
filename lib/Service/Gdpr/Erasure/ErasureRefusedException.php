@@ -35,7 +35,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Gdpr\Erasure
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class ErasureRefusedException extends Exception {
 	/**
@@ -64,7 +64,7 @@ class ErasureRefusedException extends Exception {
 	 *
 	 * @return string The rule id.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function getRule(): string {
 		return $this->rule;
@@ -75,7 +75,7 @@ class ErasureRefusedException extends Exception {
 	 *
 	 * @return int The status code.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function getStatusCode(): int {
 		return $this->statusCode;
@@ -86,7 +86,7 @@ class ErasureRefusedException extends Exception {
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function toResponseBody(): array {
 		return array_merge(

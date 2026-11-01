@@ -70,53 +70,60 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	}//end getAppId()
 
 	/**
+	 * The tool definitions.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'objects',
+			'description' => 'Manage objects (data records stored in a register under a schema)',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'action' => [
+						'type' => 'string',
+						'enum' => ['list', 'get', 'create', 'update', 'delete'],
+						'description' => 'The CRUD action to perform',
+					],
+					'register' => [
+						'type' => 'integer',
+						'description' => 'Register ID (required for all object actions)',
+					],
+					'schema' => [
+						'type' => 'integer',
+						'description' => 'Schema ID (required for all object actions)',
+					],
+					'id' => [
+						'type' => 'string',
+						'description' => 'Object UUID (required for get, update, delete)',
+					],
+					'data' => [
+						'type' => 'object',
+						'description' => 'Object data fields (for create and update)',
+					],
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of results (for list)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of results to skip (for list)',
+					],
+				],
+				'required' => ['action', 'register', 'schema'],
+			],
+		],
+	];
+
+	/**
 	 * Returns tool descriptors.
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
 	 */
 	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'objects',
-				'description' => 'Manage objects (data records stored in a register under a schema)',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list', 'get', 'create', 'update', 'delete'],
-							'description' => 'The CRUD action to perform',
-						],
-						'register' => [
-							'type' => 'integer',
-							'description' => 'Register ID (required for all object actions)',
-						],
-						'schema' => [
-							'type' => 'integer',
-							'description' => 'Schema ID (required for all object actions)',
-						],
-						'id' => [
-							'type' => 'string',
-							'description' => 'Object UUID (required for get, update, delete)',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'Object data fields (for create and update)',
-						],
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results (for list)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip (for list)',
-						],
-					],
-					'required' => ['action', 'register', 'schema'],
-				],
-			],
-		];
+		return self::TOOLS;
 	}//end getTools()
 
 	/**
@@ -190,7 +197,7 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $arguments Must contain id (UUID)
 	 *
 	 * @return array<string, mixed> Serialized object
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */

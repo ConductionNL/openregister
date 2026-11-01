@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 /**
  * A melder with no account is reached over the addresses the party holds.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 class PartyNotificationServiceTest extends TestCase {
 
@@ -241,7 +241,7 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function testAMelderWithNoAccountIsNotifiedAtTheCorrespondenceAddress(): void {
 		$this->objectHasPartyWith(
@@ -269,7 +269,7 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function testARefuseSendIndicatorStopsTheMessage(): void {
 		$this->objectHasPartyWith(
@@ -293,7 +293,7 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function testAPartyWithNoAddressIsReportedNotSkipped(): void {
 		$this->objectHasPartyWith(addresses: []);
@@ -309,7 +309,7 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function testARoleNarrowsTheRecipients(): void {
 		$this->objectHasPartyWith(

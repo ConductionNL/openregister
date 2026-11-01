@@ -697,8 +697,6 @@ class ChatController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with feedback confirmation or error
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse {
@@ -709,10 +707,10 @@ class ChatController extends Controller {
 
 			// Validate feedback type.
 			if (in_array($type, ['positive', 'negative'], true) === false) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Invalid feedback type'),
-						'message' => $this->l10n->t('type must be "positive" or "negative"'),
+				return $this->feedbackError(
+					texts: [
+						$this->l10n->t('Invalid feedback type'),
+						$this->l10n->t('type must be "positive" or "negative"'),
 					],
 					statusCode: 400
 				);
@@ -736,10 +734,10 @@ class ChatController extends Controller {
 			$message = $this->messageMapper->find($messageId);
 
 			if ($message->getConversationId() !== $conversation->getId()) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Message not found'),
-						'message' => $this->l10n->t('Message does not belong to this conversation'),
+				return $this->feedbackError(
+					texts: [
+						$this->l10n->t('Message not found'),
+						$this->l10n->t('Message does not belong to this conversation'),
 					],
 					statusCode: 404
 				);
@@ -747,80 +745,144 @@ class ChatController extends Controller {
 
 			// Get active organisation.
 			$organisation = $this->organisationService->getActiveOrganisation();
-			$organisationUuid = $organisation?->getUuid();
+			$input = [
+				'messageId' => $messageId,
+				'type' => $type,
+				'comment' => $comment,
+				'organisation' => $organisation?->getUuid(),
+			];
 
 			// Check if feedback already exists for this message.
 			$existingFeedback = $this->feedbackMapper->findByMessage(messageId: $messageId, userId: $this->userId);
 
 			if ($existingFeedback !== null) {
-				// Update existing feedback.
-				$existingFeedback->setType($type);
-				$existingFeedback->setComment($comment);
-
-				$feedback = $this->feedbackMapper->update($existingFeedback);
-
-				$this->logger->info(
-					message: '[ChatController] Message feedback updated',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'feedbackId' => $feedback->getId(),
-						'messageId' => $messageId,
-						'type' => $type,
-						'hasComment' => empty($comment) === false,
-					]
-				);
+				$feedback = $this->updateFeedback(feedback: $existingFeedback, input: $input);
 			}
 
 			if ($existingFeedback === null) {
-				// Create new feedback.
-				$feedback = new Feedback();
-				$feedback->setMessageId($messageId);
-				$feedback->setConversationId($conversation->getId());
-				$feedback->setAgentId($conversation->getAgentId() ?? 0);
-				$feedback->setUserId($this->userId);
-				$feedback->setOrganisation($organisationUuid);
-				$feedback->setType($type);
-				$feedback->setComment($comment);
-
-				$feedback = $this->feedbackMapper->insert($feedback);
-
-				$this->logger->info(
-					message: '[ChatController] Message feedback created',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'feedbackId' => $feedback->getId(),
-						'messageId' => $messageId,
-						'type' => $type,
-						'hasComment' => empty($comment) === false,
-					]
-				);
-			}//end if
+				$feedback = $this->createFeedback(conversation: $conversation, input: $input);
+			}
 
 			return new JSONResponse(data: $feedback->jsonSerialize(), statusCode: 200);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ChatController] Failed to save feedback',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'conversationUuid' => $conversationUuid ?? null,
-					'messageId' => $messageId ?? null,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $this->l10n->t('Failed to save feedback'),
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
+			return $this->feedbackFailure(
+				error: $e,
+				ids: ['conversationUuid' => $conversationUuid, 'messageId' => $messageId]
 			);
 		}//end try
 	}//end sendFeedback()
+
+	/**
+	 * Build a feedback error response from a translated error and message.
+	 *
+	 * @param array{0: string, 1: string} $texts      The translated error and message.
+	 * @param int                         $statusCode The HTTP status.
+	 *
+	 * @return JSONResponse
+	 */
+	private function feedbackError(array $texts, int $statusCode): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $texts[0],
+				'message' => $texts[1],
+			],
+			statusCode: $statusCode
+		);
+	}//end feedbackError()
+
+	/**
+	 * Update the acting user's existing feedback on a message.
+	 *
+	 * @param Feedback                                                                         $feedback The existing feedback.
+	 * @param array{messageId: int, type: string, comment: string, organisation: string|null} $input    The submitted feedback.
+	 *
+	 * @return Feedback The updated feedback.
+	 */
+	private function updateFeedback(Feedback $feedback, array $input): Feedback {
+		$feedback->setType($input['type']);
+		$feedback->setComment($input['comment']);
+
+		$feedback = $this->feedbackMapper->update($feedback);
+		$this->logFeedbackSaved(feedback: $feedback, input: $input + ['action' => 'updated']);
+
+		return $feedback;
+	}//end updateFeedback()
+
+	/**
+	 * Create the acting user's feedback on a message.
+	 *
+	 * @param Conversation                                                                     $conversation The conversation the message belongs to.
+	 * @param array{messageId: int, type: string, comment: string, organisation: string|null} $input        The submitted feedback.
+	 *
+	 * @return Feedback The created feedback.
+	 */
+	private function createFeedback(Conversation $conversation, array $input): Feedback {
+		$feedback = new Feedback();
+		$feedback->setMessageId($input['messageId']);
+		$feedback->setConversationId($conversation->getId());
+		$feedback->setAgentId($conversation->getAgentId() ?? 0);
+		$feedback->setUserId($this->userId);
+		$feedback->setOrganisation($input['organisation']);
+		$feedback->setType($input['type']);
+		$feedback->setComment($input['comment']);
+
+		$feedback = $this->feedbackMapper->insert($feedback);
+		$this->logFeedbackSaved(feedback: $feedback, input: $input + ['action' => 'created']);
+
+		return $feedback;
+	}//end createFeedback()
+
+	/**
+	 * Log that feedback was created or updated.
+	 *
+	 * @param Feedback                                                    $feedback The saved feedback.
+	 * @param array{messageId: int, type: string, comment: string, action: string} $input    The submitted feedback and what was done with it.
+	 *
+	 * @return void
+	 */
+	private function logFeedbackSaved(Feedback $feedback, array $input): void {
+		$this->logger->info(
+			message: '[ChatController] Message feedback ' . $input['action'],
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'feedbackId' => $feedback->getId(),
+				'messageId' => $input['messageId'],
+				'type' => $input['type'],
+				'hasComment' => empty($input['comment']) === false,
+			]
+		);
+	}//end logFeedbackSaved()
+
+	/**
+	 * Log a failed feedback save and build its 500 response.
+	 *
+	 * @param Exception                                       $error The failure.
+	 * @param array{conversationUuid: string, messageId: int} $ids   The requested conversation and message.
+	 *
+	 * @return JSONResponse
+	 */
+	private function feedbackFailure(Exception $error, array $ids): JSONResponse {
+		$this->logger->error(
+			message: '[ChatController] Failed to save feedback',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'conversationUuid' => $ids['conversationUuid'],
+				'messageId' => $ids['messageId'],
+				'error' => $error->getMessage(),
+				'trace' => $error->getTraceAsString(),
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'error' => $this->l10n->t('Failed to save feedback'),
+				'message' => $error->getMessage(),
+			],
+			statusCode: 500
+		);
+	}//end feedbackFailure()
 
 	/**
 	 * Get chat statistics
@@ -876,61 +938,13 @@ class ChatController extends Controller {
 				);
 			}
 
-			// Get agent count, scoped to the active organisation.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('id', 'total'))
-				->from('openregister_agents')
-				->where(
-					$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
-				);
+			$totalAgents = $this->countByOrganisation(table: 'openregister_agents', organisationUuid: $organisationUuid);
+			$totalConversations = $this->countByOrganisation(table: 'openregister_conversations', organisationUuid: $organisationUuid);
 
-			$totalAgents = (int)$qb->executeQuery()->fetchOne();
-
-			// Get conversation count, scoped to the active organisation.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('id', 'total'))
-				->from('openregister_conversations')
-				->where(
-					$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
-				);
-
-			$totalConversations = (int)$qb->executeQuery()->fetchOne();
-
-			// Collect the ids of conversations scoped to the active
-			// organisation so messages (no organisation column of their
-			// own) can be scoped via their conversation_id foreign key.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id')
-				->from('openregister_conversations')
-				->where(
-					$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
-				);
-
-			$result = $qb->executeQuery();
-			$conversationIds = [];
-			while (($row = $result->fetch()) !== false) {
-				$conversationIds[] = (int)$row['id'];
-			}
-
-			$result->closeCursor();
-
-			// Get message count, scoped to the conversation ids collected above.
-			// An empty id list means no conversations matched, so the message
-			// count is trivially 0 — skip the query rather than issuing an
-			// invalid empty IN (...) clause.
-			$totalMessages = 0;
-			if (empty($conversationIds) === false) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($qb->func()->count('id', 'total'))
-					->from('openregister_messages')
-					->where(
-						$qb->expr()->in(
-							'conversation_id',
-							$qb->createNamedParameter($conversationIds, IQueryBuilder::PARAM_INT_ARRAY)
-						)
-					);
-				$totalMessages = (int)$qb->executeQuery()->fetchOne();
-			}
+			// Messages have no organisation column of their own, so they are
+			// scoped via the conversation ids of the active organisation.
+			$conversationIds = $this->organisationConversationIds(organisationUuid: $organisationUuid);
+			$totalMessages = $this->countMessagesIn(conversationIds: $conversationIds);
 
 			return new JSONResponse(
 				data: [
@@ -959,4 +973,77 @@ class ChatController extends Controller {
 			);
 		}//end try
 	}//end getChatStats()
+
+	/**
+	 * Count the rows of a table that belong to an organisation.
+	 *
+	 * @param string $table            The table with an `organisation` column.
+	 * @param string $organisationUuid The organisation UUID.
+	 *
+	 * @return int The number of rows.
+	 */
+	private function countByOrganisation(string $table, string $organisationUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id', 'total'))
+			->from($table)
+			->where(
+				$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
+			);
+
+		return (int)$qb->executeQuery()->fetchOne();
+	}//end countByOrganisation()
+
+	/**
+	 * The ids of the conversations that belong to an organisation.
+	 *
+	 * @param string $organisationUuid The organisation UUID.
+	 *
+	 * @return array<int, int> The conversation ids.
+	 */
+	private function organisationConversationIds(string $organisationUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')
+			->from('openregister_conversations')
+			->where(
+				$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
+			);
+
+		$result = $qb->executeQuery();
+		$conversationIds = [];
+		while (($row = $result->fetch()) !== false) {
+			$conversationIds[] = (int)$row['id'];
+		}
+
+		$result->closeCursor();
+
+		return $conversationIds;
+	}//end organisationConversationIds()
+
+	/**
+	 * Count the messages of the given conversations.
+	 *
+	 * An empty id list skips the query rather than issuing an invalid empty
+	 * IN (...) clause.
+	 *
+	 * @param array<int, int> $conversationIds The conversation ids.
+	 *
+	 * @return int The number of messages.
+	 */
+	private function countMessagesIn(array $conversationIds): int {
+		if (empty($conversationIds) === true) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id', 'total'))
+			->from('openregister_messages')
+			->where(
+				$qb->expr()->in(
+					'conversation_id',
+					$qb->createNamedParameter($conversationIds, IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			);
+
+		return (int)$qb->executeQuery()->fetchOne();
+	}//end countMessagesIn()
 }//end class

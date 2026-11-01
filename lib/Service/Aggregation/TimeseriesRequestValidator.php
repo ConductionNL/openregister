@@ -54,36 +54,13 @@ class TimeseriesRequestValidator {
 	public const METADATA_FIELDS = ['_created', '_updated', '_deleted_at'];
 
 	/**
-	 * Allowed interval names on the REST endpoint. Mapped to the
-	 * AggregationQuery::DATE_BUCKET_GAPS vocabulary in lower-case.
-	 *
-	 * @var array<string, string>
-	 */
-	private const INTERVAL_MAP = [
-		'MINUTE' => 'minute',
-		'HOUR' => 'hour',
-		'DAY' => 'day',
-		'WEEK' => 'week',
-		'MONTH' => 'month',
-		'QUARTER' => 'quarter',
-		'YEAR' => 'year',
-	];
-
-	/**
-	 * Sub-day interval gaps (require `format: date-time` on the field).
-	 *
-	 * @var string[]
-	 */
-	private const SUB_DAY_GAPS = ['minute', 'hour'];
-
-	/**
 	 * Validate and normalise a request shape into an AggregationQuery.
 	 *
 	 * Input shape (all values strings as received from HTTP query
 	 * params; GraphQL resolver passes typed values but the shape is the
 	 * same):
 	 *  - field        (string, required)
-	 *  - interval     (string, optional — one of INTERVAL_MAP keys)
+	 *  - interval     (string, optional — see TimeseriesDateBucketValidator)
 	 *  - from         (string, required when interval set)
 	 *  - to           (string, required when interval set)
 	 *  - metric       (string, optional, default 'count')
@@ -101,17 +78,6 @@ class TimeseriesRequestValidator {
 	 *                                  The message is client-safe and
 	 *                                  maps directly to a 400 body.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *   Fail-fast validation chain — each branch is one independent
-	 *   guard returning a distinct client-facing error.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *   Each guard is short; the method length is the count of
-	 *   independent guards, not a structural concern.
-	 * @SuppressWarnings(PHPMD.ElseExpression)
-	 *   The else branch nulls metricField for count-metric requests —
-	 *   inlining it would obscure the contract that the value object
-	 *   expects null for count.
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *   AggregationQuery::create() is the canonical, validated factory
 	 *   for the value object.
@@ -119,113 +85,17 @@ class TimeseriesRequestValidator {
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
 	public function validate(array $input, Schema $schema): AggregationQuery {
-		$field = (string)($input['field'] ?? '');
-		if ($field === '') {
-			throw new InvalidArgumentException('`field` is required');
-		}
-
 		$allowed = $this->allowedFields(schema: $schema);
-		if (in_array($field, $allowed, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf('`field` "%s" is not a declared property of the schema', $field)
-			);
-		}
+		$this->assertFieldAllowed(input: $input, allowed: $allowed);
+		$metricField = $this->validatedMetricField(input: $input, allowed: $allowed);
+		$dateBucket = (new TimeseriesDateBucketValidator())->validate(input: $input, schema: $schema);
 
-		$metric = strtolower((string)($input['metric'] ?? 'count'));
-		$metricField = ($input['metricField'] ?? null);
-		if ($metric !== 'count') {
-			if ($metricField === null || $metricField === '') {
-				throw new InvalidArgumentException(
-					sprintf('`metricField` is required when metric is "%s"', $metric)
-				);
-			}
-
-			if (in_array((string)$metricField, $allowed, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf('`metricField` "%s" is not a declared property of the schema', $metricField)
-				);
-			}
-		} else {
-			// For count, field on AggregationQuery is null (count is
-			// record-level, not field-level).
-			$metricField = null;
-		}
-
-		$rawInterval = ($input['interval'] ?? null);
-		$dateBucket = null;
-		if ($rawInterval !== null && $rawInterval !== '') {
-			$intervalKey = strtoupper((string)$rawInterval);
-			if (isset(self::INTERVAL_MAP[$intervalKey]) === false) {
-				throw new InvalidArgumentException(
-					sprintf(
-						'`interval` MUST be one of %s (got: %s)',
-						implode(', ', array_keys(self::INTERVAL_MAP)),
-						(string)$rawInterval
-					)
-				);
-			}
-
-			$gap = self::INTERVAL_MAP[$intervalKey];
-
-			// Sub-day gaps require a date-time field.
-			if (in_array($gap, self::SUB_DAY_GAPS, true) === true) {
-				$format = $this->fieldFormat(schema: $schema, field: $field);
-				if ($format !== 'date-time') {
-					throw new InvalidArgumentException(
-						sprintf(
-							'sub-day interval "%s" requires a `date-time` field; "%s" has format "%s"',
-							$intervalKey,
-							$field,
-							$format ?? 'unspecified'
-						)
-					);
-				}
-			}
-
-			$from = (string)($input['from'] ?? '');
-			$to = (string)($input['to'] ?? '');
-			if ($from === '' || $to === '') {
-				throw new InvalidArgumentException(
-					'`from` and `to` are required when `interval` is set'
-				);
-			}
-
-			if (strtotime($from) === false || strtotime($to) === false) {
-				throw new InvalidArgumentException(
-					'`from` and `to` MUST be parseable ISO-8601 datetimes'
-				);
-			}
-
-			$dateBucket = [
-				'field' => $field,
-				'start' => $from,
-				'end' => $to,
-				'gap' => $gap,
-			];
-		}//end if
-
-		// Categorical groupBy fires when no interval was supplied (the
-		// bucketing axis IS the field) OR when explicitly absent. For
-		// interval-bucket requests we let dateBucket carry the field and
-		// leave groupBy null — AggregationQuery::create() rejects the
-		// combination as mutually exclusive.
+		// Categorical groupBy applies only without an interval: for
+		// interval-bucket requests dateBucket carries the field, and
+		// AggregationQuery::create() rejects the two together.
 		$groupBy = null;
 		if ($dateBucket === null) {
-			$groupBy = ['field' => $field];
-
-			// COMPOSITE grouping. `fields` groups on several columns and each
-			// bucket then carries `keys` instead of `key`. `field` stays
-			// required and is validated above, so a caller supplying `fields`
-			// must still name one — deliberately, because it keeps the
-			// single-field spelling the canonical one and gives the
-			// time-bucket branch above a field to bucket on.
-			$extraFields = ($input['fields'] ?? null);
-			if (is_array($extraFields) === true && $extraFields !== []) {
-				$groupBy = ['fields' => $this->validatedFields(
-					fields: $extraFields,
-					allowed: $allowed
-				)];
-			}
+			$groupBy = $this->validatedGroupBy(input: $input, allowed: $allowed);
 		}
 
 		// MULTI-METRIC. Validated by the SAME class the annotation path uses,
@@ -237,8 +107,129 @@ class TimeseriesRequestValidator {
 			allowed: $allowed
 		);
 
-		$filter = (array)($input['filter'] ?? []);
+		return AggregationQuery::create(
+			metric: $this->requestedMetric(input: $input),
+			field: $metricField,
+			filter: (array) ($input['filter'] ?? []),
+			groupBy: $groupBy,
+			dateBucket: $dateBucket,
+			metrics: $metrics,
+			cumulative: $this->validatedCumulative(input: $input, dateBucket: $dateBucket)
+		);
+	}//end validate()
 
+	/**
+	 * The requested `field`, as a string.
+	 *
+	 * @param array<string, mixed> $input The raw request shape.
+	 *
+	 * @return string
+	 */
+	private function requestedField(array $input): string {
+		return (string) ($input['field'] ?? '');
+	}//end requestedField()
+
+	/**
+	 * The requested metric, lower-cased; `count` when absent.
+	 *
+	 * @param array<string, mixed> $input The raw request shape.
+	 *
+	 * @return string
+	 */
+	private function requestedMetric(array $input): string {
+		return strtolower((string) ($input['metric'] ?? 'count'));
+	}//end requestedMetric()
+
+	/**
+	 * The `field` must be present and a declared property (or metadata column).
+	 *
+	 * @param array<string, mixed> $input   The raw request shape.
+	 * @param array<int, string>   $allowed Allow-listed field names.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the field is missing or not declared.
+	 */
+	private function assertFieldAllowed(array $input, array $allowed): void {
+		$field = $this->requestedField(input: $input);
+		if ($field === '') {
+			throw new InvalidArgumentException('`field` is required');
+		}
+
+		if (in_array($field, $allowed, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf('`field` "%s" is not a declared property of the schema', $field)
+			);
+		}
+	}//end assertFieldAllowed()
+
+	/**
+	 * The field a non-count metric runs over; null for count, which is
+	 * record-level rather than field-level.
+	 *
+	 * @param array<string, mixed> $input   The raw request shape.
+	 * @param array<int, string>   $allowed Allow-listed field names.
+	 *
+	 * @return mixed The `metricField` value, or null for count.
+	 *
+	 * @throws InvalidArgumentException When a non-count metric has no declared metricField.
+	 */
+	private function validatedMetricField(array $input, array $allowed): mixed {
+		$metric = $this->requestedMetric(input: $input);
+		if ($metric === 'count') {
+			return null;
+		}
+
+		$metricField = ($input['metricField'] ?? null);
+		if ($metricField === null || $metricField === '') {
+			throw new InvalidArgumentException(
+				sprintf('`metricField` is required when metric is "%s"', $metric)
+			);
+		}
+
+		if (in_array((string) $metricField, $allowed, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf('`metricField` "%s" is not a declared property of the schema', $metricField)
+			);
+		}
+
+		return $metricField;
+	}//end validatedMetricField()
+
+	/**
+	 * The categorical grouping: the `field`, or a composite `fields` list.
+	 *
+	 * `field` stays required even with `fields`, which keeps the
+	 * single-field spelling the canonical one; each bucket of a composite
+	 * grouping carries `keys` instead of `key`.
+	 *
+	 * @param array<string, mixed> $input   The raw request shape.
+	 * @param array<int, string>   $allowed Allow-listed field names.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws InvalidArgumentException When a `fields` member is not declared.
+	 */
+	private function validatedGroupBy(array $input, array $allowed): array {
+		$extraFields = ($input['fields'] ?? null);
+		if (is_array($extraFields) === false || $extraFields === []) {
+			return ['field' => $this->requestedField(input: $input)];
+		}
+
+		return ['fields' => $this->validatedFields(fields: $extraFields, allowed: $allowed)];
+	}//end validatedGroupBy()
+
+	/**
+	 * The `cumulative` flag; it needs an interval to accumulate over.
+	 *
+	 * @param array<string, mixed>                                              $input      The raw request shape.
+	 * @param array{field: string, start: string, end: string, gap: string}|null $dateBucket The time bucket, if any.
+	 *
+	 * @return bool
+	 *
+	 * @throws InvalidArgumentException When cumulative is set without an interval.
+	 */
+	private function validatedCumulative(array $input, ?array $dateBucket): bool {
 		$cumulative = $this->toBool(raw: $input['cumulative'] ?? false);
 		if ($cumulative === true && $dateBucket === null) {
 			throw new InvalidArgumentException(
@@ -246,17 +237,8 @@ class TimeseriesRequestValidator {
 			);
 		}
 
-		return AggregationQuery::create(
-			metric: $metric,
-			field: $metricField,
-			filter: $filter,
-			groupBy: $groupBy,
-			dateBucket: $dateBucket,
-			metrics: $metrics,
-			cumulative: $cumulative
-		);
-
-	}//end validate()
+		return $cumulative;
+	}//end validatedCumulative()
 
 	/**
 	 * Validate a composite `fields` list against the schema.
@@ -391,32 +373,4 @@ class TimeseriesRequestValidator {
 		return array_merge($declared, self::METADATA_FIELDS);
 	}//end allowedFields()
 
-	/**
-	 * Look up the JSON-Schema `format` for a declared property.
-	 *
-	 * @param Schema $schema The schema.
-	 * @param string $field The property name.
-	 *
-	 * @return string|null The format string, or null when the property
-	 *                     is a metadata column or has no format declared.
-	 */
-	private function fieldFormat(Schema $schema, string $field): ?string {
-		// Magic metadata cols are date-time-shaped by convention.
-		if (in_array($field, self::METADATA_FIELDS, true) === true) {
-			return 'date-time';
-		}
-
-		$properties = ($schema->getProperties() ?? []);
-		$property = ($properties[$field] ?? null);
-		if (is_array($property) === false) {
-			return null;
-		}
-
-		$format = ($property['format'] ?? null);
-		if (is_string($format) === true) {
-			return $format;
-		}
-
-		return null;
-	}//end fieldFormat()
 }//end class

@@ -52,7 +52,7 @@ class AssignAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return string The action id.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -63,7 +63,7 @@ class AssignAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getLabel(): string {
 		return 'Hand over to a handler';
@@ -74,7 +74,7 @@ class AssignAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getDescription(): string {
 		return 'Names one handler on every selected object. The reason you type is recorded against each one.';
@@ -86,7 +86,7 @@ class AssignAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return bool True.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function requiresJustification(): bool {
 		return true;
@@ -97,7 +97,7 @@ class AssignAction extends AbstractPropertyWriteAction {
 	 *
 	 * @return array<int, string> No guards.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getGuards(): array {
 		return [];
@@ -112,7 +112,7 @@ class AssignAction extends AbstractPropertyWriteAction {
 	 *
 	 * @throws InvalidArgumentException When the property or the value is missing.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function validateParameters(array $parameters): void {
 		$property = ($parameters['property'] ?? null);

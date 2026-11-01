@@ -53,7 +53,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per source
  * the act can remove, plus the audit that records what it removed.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class ReachRevocationService {
 	/**
@@ -95,7 +95,7 @@ class ReachRevocationService {
 	 *
 	 * @return array<string, mixed> One record naming every grant removed and every one retained.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function revokeAll(string $principal, string $reason = ''): array {
 		$principal = trim($principal);

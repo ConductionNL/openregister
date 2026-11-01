@@ -500,7 +500,7 @@ class NoteService {
 	 *
 	 * @return int The number of notes.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function countNotesForObject(string $objectUuid): int {
 		return $this->commentsManager->getNumberOfCommentsForObject(

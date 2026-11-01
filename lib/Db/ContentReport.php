@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ use OCP\AppFramework\Db\Entity;
  *   the removal that names it; each is a column the requirement asks for, and splitting them would put
  *   the evidence and the record of its removal in different tables.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReport extends Entity implements JsonSerializable {
 	/**
@@ -271,7 +271,7 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the status is one this entity recognises.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function isValidStatus(?string $status): bool {
 		if ($status === null || $status === '') {
@@ -286,7 +286,7 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when a removal has been recorded against this report.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isRemoved(): bool {
 		return $this->removedAt !== null;
@@ -297,7 +297,7 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the copy hashes to what was recorded.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function copyIsIntact(): bool {
 		if ($this->copyHash === null || $this->copyHash === '') {
@@ -314,7 +314,7 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return string The SHA-256 hex digest.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function hashCopy(array $copy): string {
 		return hash('sha256', (string)json_encode($copy, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
@@ -332,7 +332,7 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The serialized report.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

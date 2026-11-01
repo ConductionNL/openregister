@@ -238,7 +238,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink[] The links.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function findByPartyUuid(string $partyUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -257,7 +257,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink[] The links naming a party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function findPartiesForObject(string $objectUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -277,7 +277,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink|null The primary party's link.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function findPrimaryParty(string $objectUuid): ?ContactLink {
 		$qb = $this->db->getQueryBuilder();
@@ -306,7 +306,7 @@ class ContactLinkMapper extends QBMapper {
 	 *
 	 * @return ContactLink[] The candidate links.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function findByOperationMemo(string $operationId): array {
 		$qb = $this->db->getQueryBuilder();

@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleSummaryThrottleTest extends TestCase {
 
@@ -73,7 +73,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARepeatInsideTheWindowIsDropped(): void {
 		$this->assertFalse(
@@ -93,7 +93,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheSameVerdictPastTheWindowIsWritten(): void {
 		$this->assertTrue(
@@ -114,7 +114,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAChangedVerdictIsNeverDropped(): void {
 		$this->assertTrue(
@@ -134,7 +134,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnErrorIsNeverDropped(): void {
 		$this->assertTrue(
@@ -153,7 +153,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFirstEvaluationIsAlwaysWritten(): void {
 		$this->assertTrue(
@@ -173,7 +173,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheDerivedIdMatchesTheDescriptorsOwn(): void {
 		$descriptor = new RuleDescriptor(

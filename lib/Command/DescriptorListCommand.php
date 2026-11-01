@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Lists every app-declared register descriptor and whether it landed.
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 class DescriptorListCommand extends Command {
 	/**
@@ -62,7 +62,7 @@ class DescriptorListCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:descriptors:list')
@@ -112,7 +112,7 @@ class DescriptorListCommand extends Command {
 	 *
 	 * @return int 0 on success, 1 on a failed re-import.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$slug = $input->getOption('import');

@@ -2,6 +2,36 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TObject } from './object.types'
 
 import { z } from 'zod'
+import { withFallbacks } from '../withFallbacks.js'
+
+const SELF_FALLBACKS = {
+	id: '',
+	name: null,
+	description: null,
+	uuid: '',
+	uri: '',
+	version: null,
+	register: '',
+	schema: '',
+	schemaVersion: null,
+	relations: null,
+	files: null,
+	folder: null,
+	textRepresentation: null,
+	locked: null,
+	owner: null,
+	authorization: null,
+	application: null,
+	organisation: null,
+	groups: null,
+	validation: null,
+	deleted: null,
+	geo: null,
+	retention: null,
+	size: null,
+	updated: '',
+	created: '',
+}
 
 /**
  * Entity class representing an Object with validation
@@ -43,34 +73,7 @@ export class ObjectEntity implements TObject {
 	 * @spec exclude Entity model field-copy boilerplate: copies typed @self fields off the input with || defaults plus an extra-key passthrough; no standalone behavioural contract (validate() carries the schema contract).
 	 */
 	constructor(object: TObject) {
-		this['@self'] = {
-			id: object['@self']?.id || '',
-			name: object['@self']?.name || null,
-			description: object['@self']?.description || null,
-			uuid: object['@self']?.uuid || '',
-			uri: object['@self']?.uri || '',
-			version: object['@self']?.version || null,
-			register: object['@self']?.register || '',
-			schema: object['@self']?.schema || '',
-			schemaVersion: object['@self']?.schemaVersion || null,
-			relations: object['@self']?.relations || null,
-			files: object['@self']?.files || null,
-			folder: object['@self']?.folder || null,
-			textRepresentation: object['@self']?.textRepresentation || null,
-			locked: object['@self']?.locked || null,
-			owner: object['@self']?.owner || null,
-			authorization: object['@self']?.authorization || null,
-			application: object['@self']?.application || null,
-			organisation: object['@self']?.organisation || null,
-			groups: object['@self']?.groups || null,
-			validation: object['@self']?.validation || null,
-			deleted: object['@self']?.deleted || null,
-			geo: object['@self']?.geo || null,
-			retention: object['@self']?.retention || null,
-			size: object['@self']?.size || null,
-			updated: object['@self']?.updated || '',
-			created: object['@self']?.created || '',
-		}
+		this['@self'] = withFallbacks(object['@self'], SELF_FALLBACKS)
 
 		// Copy any additional properties
 		Object.keys(object).forEach((key) => {

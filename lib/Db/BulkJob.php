@@ -366,7 +366,7 @@ class BulkJob extends Entity implements JsonSerializable {
 	 *
 	 * @return static This entity, hydrated.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function hydrate(array $object): static {
 		$jsonFields = $this->getJsonFields();

@@ -4,8 +4,13 @@
  */
 
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
+import {
+	loadRelations,
+	postAndRefetch,
+	pruneRelations,
+	relationUrl,
+} from './relationCache.js'
 
 /**
  * Store wrapping the per-object Deck-card endpoints.
@@ -42,15 +47,7 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @spec exclude private URL-builder helper (no client state)
 		 */
 		_url(register, schema, id, suffix = '') {
-			return generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/deck'
-					+ suffix,
-				{
-					register,
-					schema,
-					id,
-				},
-			)
+			return relationUrl('deck', { register, schema, id, suffix })
 		},
 
 		/**
@@ -63,35 +60,12 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetch(register, schema, id) {
-			const k = `${register}:${schema}:${id}`
-			this.loading = { ...this.loading, [k]: true }
-			this.errors = { ...this.errors, [k]: null }
-			this.deckUnavailable = false
-
-			try {
-				const response = await axios.get(this._url(register, schema, id))
-				let list = response.data?.results || response.data || []
-				if (!Array.isArray(list)) {
-					list = []
-				}
-
-				this.byObject = { ...this.byObject, [k]: list }
-				return list
-			} catch (err) {
-				if (err.response?.status === 501) {
-					this.deckUnavailable = true
-					this.byObject = { ...this.byObject, [k]: [] }
-					return []
-				}
-
-				this.errors = {
-					...this.errors,
-					[k]: err.response?.data?.error || err.message || '',
-				}
-				throw err
-			} finally {
-				this.loading = { ...this.loading, [k]: false }
-			}
+			return loadRelations(this, {
+				url: this._url(register, schema, id),
+				key: `${register}:${schema}:${id}`,
+				flag: 'deckUnavailable',
+				arraysOnly: true,
+			})
 		},
 
 		/**
@@ -105,12 +79,11 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async createOrLink(register, schema, id, payload) {
-			const response = await axios.post(
-				this._url(register, schema, id),
+			return postAndRefetch(this, {
+				url: this._url(register, schema, id),
 				payload,
-			)
-			await this.fetch(register, schema, id)
-			return response.data
+				object: [register, schema, id],
+			})
 		},
 
 		/**
@@ -127,12 +100,10 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 			await axios.delete(
 				this._url(register, schema, id, '/' + encodeURIComponent(deckRef)),
 			)
-			const k = `${register}:${schema}:${id}`
-			const next = (this.byObject[k] || []).filter(
-				(c) => (c.ref || c.deckRef || c.id) !== deckRef,
-			)
-			this.byObject = { ...this.byObject, [k]: next }
-			return next
+			return pruneRelations(this, {
+				key: `${register}:${schema}:${id}`,
+				keep: (c) => (c.ref || c.deckRef || c.id) !== deckRef,
+			})
 		},
 
 		/**

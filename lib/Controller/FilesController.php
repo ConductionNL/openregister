@@ -2582,7 +2582,7 @@ class FilesController extends Controller {
 	 *
 	 * @contract tests/Unit/Service/File/FileMetadataFormHandlerTest.php
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function saveMetadataForm(string $register, string $schema, string $id): JSONResponse {

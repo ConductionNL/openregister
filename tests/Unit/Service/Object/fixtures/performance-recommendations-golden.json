@@ -1,0 +1,275 @@
+{
+    "fast, nothing else": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 12.5ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "at 500": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 500ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "just over 500": [
+        {
+            "type": "warning",
+            "issue": "Slow response time",
+            "message": "Total time 500.5ms exceeds 500ms target",
+            "suggestions": [
+                "Consider enabling caching",
+                "Optimize _extend usage",
+                "Review database query complexity"
+            ]
+        }
+    ],
+    "at 2000": [
+        {
+            "type": "warning",
+            "issue": "Slow response time",
+            "message": "Total time 2000ms exceeds 500ms target",
+            "suggestions": [
+                "Consider enabling caching",
+                "Optimize _extend usage",
+                "Review database query complexity"
+            ]
+        }
+    ],
+    "over 2000": [
+        {
+            "type": "critical",
+            "issue": "Very slow response time",
+            "message": "Total time 2500ms exceeds 2s threshold",
+            "suggestions": [
+                "Enable caching with appropriate TTL",
+                "Reduce _extend complexity or use selective loading",
+                "Consider database indexing optimization",
+                "Implement pagination with smaller page sizes"
+            ]
+        }
+    ],
+    "db at 200": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 10ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "db over 200": [
+        {
+            "type": "warning",
+            "issue": "Slow database queries",
+            "message": "Database query time 250.75ms is high",
+            "suggestions": [
+                "Add database indexes for frequently filtered columns",
+                "Optimize WHERE clauses",
+                "Consider selective field loading"
+            ]
+        }
+    ],
+    "relations at 1000": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 10ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "relations over 1000": [
+        {
+            "type": "critical",
+            "issue": "Very slow relationship loading",
+            "message": "Relationship loading time 1001ms is excessive",
+            "suggestions": [
+                "Reduce number of _extend relationships",
+                "Use selective relationship loading",
+                "Consider relationship caching",
+                "Implement relationship pagination if applicable"
+            ]
+        }
+    ],
+    "json at 100": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 10ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "json over 100": [
+        {
+            "type": "info",
+            "issue": "JSON processing overhead",
+            "message": "JSON processing time 101ms could be optimized",
+            "suggestions": [
+                "Consider JSON field truncation for large objects",
+                "Implement selective JSON field loading",
+                "Use lightweight object serialization"
+            ]
+        }
+    ],
+    "extend string": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 10ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "extend three": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 10ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "extend four": [
+        {
+            "type": "warning",
+            "issue": "High _extend usage",
+            "message": "Loading many relationships simultaneously",
+            "suggestions": [
+                "Consider reducing the number of _extend parameters",
+                "Use selective loading for only required relationships",
+                "Implement client-side lazy loading for secondary data"
+            ]
+        }
+    ],
+    "extend empty": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 10ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ],
+    "everything at once": [
+        {
+            "type": "critical",
+            "issue": "Very slow response time",
+            "message": "Total time 3000ms exceeds 2s threshold",
+            "suggestions": [
+                "Enable caching with appropriate TTL",
+                "Reduce _extend complexity or use selective loading",
+                "Consider database indexing optimization",
+                "Implement pagination with smaller page sizes"
+            ]
+        },
+        {
+            "type": "warning",
+            "issue": "Slow database queries",
+            "message": "Database query time 300ms is high",
+            "suggestions": [
+                "Add database indexes for frequently filtered columns",
+                "Optimize WHERE clauses",
+                "Consider selective field loading"
+            ]
+        },
+        {
+            "type": "critical",
+            "issue": "Very slow relationship loading",
+            "message": "Relationship loading time 2000ms is excessive",
+            "suggestions": [
+                "Reduce number of _extend relationships",
+                "Use selective relationship loading",
+                "Consider relationship caching",
+                "Implement relationship pagination if applicable"
+            ]
+        },
+        {
+            "type": "warning",
+            "issue": "High _extend usage",
+            "message": "Loading many relationships simultaneously",
+            "suggestions": [
+                "Consider reducing the number of _extend parameters",
+                "Use selective loading for only required relationships",
+                "Implement client-side lazy loading for secondary data"
+            ]
+        },
+        {
+            "type": "info",
+            "issue": "JSON processing overhead",
+            "message": "JSON processing time 150ms could be optimized",
+            "suggestions": [
+                "Consider JSON field truncation for large objects",
+                "Implement selective JSON field loading",
+                "Use lightweight object serialization"
+            ]
+        }
+    ],
+    "slow with only json": [
+        {
+            "type": "warning",
+            "issue": "Slow response time",
+            "message": "Total time 800ms exceeds 500ms target",
+            "suggestions": [
+                "Consider enabling caching",
+                "Optimize _extend usage",
+                "Review database query complexity"
+            ]
+        },
+        {
+            "type": "info",
+            "issue": "JSON processing overhead",
+            "message": "JSON processing time 120ms could be optimized",
+            "suggestions": [
+                "Consider JSON field truncation for large objects",
+                "Implement selective JSON field loading",
+                "Use lightweight object serialization"
+            ]
+        }
+    ],
+    "fast with only json": [
+        {
+            "type": "info",
+            "issue": "JSON processing overhead",
+            "message": "JSON processing time 120ms could be optimized",
+            "suggestions": [
+                "Consider JSON field truncation for large objects",
+                "Implement selective JSON field loading",
+                "Use lightweight object serialization"
+            ]
+        }
+    ],
+    "non-numeric timing": [
+        {
+            "type": "success",
+            "issue": "Excellent performance",
+            "message": "Response time 10ms meets performance target",
+            "suggestions": [
+                "Current optimization level is excellent",
+                "Consider this configuration as a performance baseline"
+            ]
+        }
+    ]
+}

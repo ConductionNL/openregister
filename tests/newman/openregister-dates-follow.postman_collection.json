@@ -1,0 +1,616 @@
+{
+ "info": {
+  "name": "OpenRegister destruction dates follow their source",
+  "description": "archival-frozen-refuses-delete-and-dates-follow task 3.2. Sets a client's end date, reads its and its contact person's destruction dates, clears it and reads them again. The contact follows through RelatedRetentionRecalculationJob, so the instance must run background jobs through cron.php (ajax or webcron mode). Not registered in run-all.sh until its first live pass (decision 139).",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{adminUser}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{adminPassword}}",
+    "type": "string"
+   }
+  ]
+ },
+ "event": [
+  {
+   "listen": "prerequest",
+   "script": {
+    "exec": [
+     "if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+    ]
+   }
+  }
+ ],
+ "variable": [
+  {
+   "key": "baseUrl",
+   "value": "http://localhost:8080"
+  },
+  {
+   "key": "adminUser",
+   "value": "admin"
+  },
+  {
+   "key": "adminPassword",
+   "value": "admin"
+  },
+  {
+   "key": "run",
+   "value": ""
+  }
+ ],
+ "item": [
+  {
+   "name": "Create register",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"dates-follow-{{run}}\", \"slug\": \"dates-follow-{{run}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Create client schema",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"client-{{run}}\", \"slug\": \"client-{{run}}\", \"properties\": {\"name\": {\"type\": \"string\"}, \"relationshipEndedAt\": {\"type\": \"string\", \"format\": \"date\"}}, \"archive\": {\"enabled\": true, \"afleidingswijze\": \"ander_datumkenmerk\", \"sourceDateProperty\": \"relationshipEndedAt\", \"defaultNominatie\": \"vernietigen\", \"defaultBewaartermijn\": \"P2Y\"}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "pm.collectionVariables.set('clientSchemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Create contact schema",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"contact-{{run}}\", \"slug\": \"contact-{{run}}\", \"properties\": {\"name\": {\"type\": \"string\"}, \"client\": {\"type\": \"string\", \"format\": \"uuid\"}}, \"archive\": {\"enabled\": true, \"afleidingswijze\": \"gerelateerde_zaak\", \"sourceRelation\": \"client\", \"sourceRelationProperty\": \"relationshipEndedAt\", \"defaultNominatie\": \"vernietigen\", \"defaultBewaartermijn\": \"P2Y\"}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "pm.collectionVariables.set('contactSchemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Attach schemas to register",
+   "request": {
+    "method": "PUT",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"dates-follow-{{run}}\", \"slug\": \"dates-follow-{{run}}\", \"schemas\": [\"{{clientSchemaId}}\", \"{{contactSchemaId}}\"]}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('register updated', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Create client without an end date",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"name\": \"Bakkerij Jansen\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('client created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "const b = pm.response.json();",
+       "pm.collectionVariables.set('clientId', (b['@self'] && b['@self'].id) || b.uuid || b.id);",
+       "const r = (b['@self'] && b['@self'].retention) || b.retention || {};",
+       "pm.test('no destruction date yet', () => pm.expect(r.archiefactiedatum || null).to.eql(null));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Create contact person",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"name\": \"Piet Jansen\", \"client\": \"{{clientId}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('contact created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+       "const b = pm.response.json();",
+       "pm.collectionVariables.set('contactId', (b['@self'] && b['@self'].id) || b.uuid || b.id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Set the client end date",
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"relationshipEndedAt\": \"2026-10-01\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('200', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "const r = (b['@self'] && b['@self'].retention) || b.retention || {};",
+       "pm.test('destruction date follows', () => pm.expect(r.archiefactiedatum).to.eql('2028-10-01'));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Run background jobs",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/cron.php"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('cron answered', () => pm.expect(pm.response.code).to.be.below(500));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "The contact follows",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('200', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "const r = (b['@self'] && b['@self'].retention) || b.retention || {};",
+       "pm.test('contact destruction date follows the client', () => pm.expect(r.archiefactiedatum).to.eql('2028-10-01'));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Clear the client end date",
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}"
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"relationshipEndedAt\": null}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('200', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "const r = (b['@self'] && b['@self'].retention) || b.retention || {};",
+       "pm.test('destruction date removed', () => pm.expect(r.archiefactiedatum || null).to.eql(null));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Run background jobs again",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/cron.php"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('cron answered', () => pm.expect(pm.response.code).to.be.below(500));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "The contact date is removed too",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('200', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "const r = (b['@self'] && b['@self'].retention) || b.retention || {};",
+       "pm.test('contact destruction date removed', () => pm.expect(r.archiefactiedatum || null).to.eql(null));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Cleanup contact",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
+    }
+   }
+  },
+  {
+   "name": "Cleanup client",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}"
+    }
+   }
+  },
+  {
+   "name": "Cleanup contact schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{contactSchemaId}}"
+    }
+   }
+  },
+  {
+   "name": "Cleanup client schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{clientSchemaId}}"
+    }
+   }
+  },
+  {
+   "name": "Cleanup register",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+    }
+   }
+  }
+ ]
+}

@@ -40,7 +40,7 @@ use RuntimeException;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleRunRecorderTest extends TestCase {
 
@@ -112,7 +112,7 @@ class RuleRunRecorderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARefusalIsRecordedWithItsDecidingOperand(): void {
 		$rows = [];
@@ -146,7 +146,7 @@ class RuleRunRecorderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testSwitchingTheDetailLogOffKeepsTheSummary(): void {
 		$rows = [];
@@ -169,7 +169,7 @@ class RuleRunRecorderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnErrorCarriesItsMessageIntoTheSummary(): void {
 		$rows = [];
@@ -193,7 +193,7 @@ class RuleRunRecorderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFailingLogStoreNeverReachesTheSave(): void {
 		$rows = [];
@@ -226,7 +226,7 @@ class RuleRunRecorderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheRecordedMomentIsTheOneTheCallerNamed(): void {
 		$rows = [];
@@ -253,7 +253,7 @@ class RuleRunRecorderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnreadableRetentionPeriodFallsBackToTheDefault(): void {
 		$config = $this->createMock(originalClassName: IAppConfig::class);

@@ -195,15 +195,11 @@ final class LifecycleStateValidator {
 				continue;
 			}
 
+			$scope = new StateFieldRuleScope(state: $state, kind: $kind, properties: $properties);
 			foreach ($entries as $entry) {
 				$errors = array_merge(
 					$errors,
-					$this->validateFieldRuleEntry(
-						entry: $entry,
-						state: $state,
-						kind: $kind,
-						properties: $properties
-					)
+					$this->validateFieldRuleEntry(entry: $entry, scope: $scope)
 				);
 			}
 		}//end foreach
@@ -214,81 +210,22 @@ final class LifecycleStateValidator {
 	/**
 	 * Validate one `{fields, groups, when}` entry.
 	 *
-	 * @param mixed $entry The declared entry.
-	 * @param string $state The state name.
-	 * @param string $kind The rule kind the entry sits under.
-	 * @param array<string, mixed> $properties The schema's declared properties.
+	 * @param mixed               $entry The declared entry.
+	 * @param StateFieldRuleScope $scope The state, rule kind and properties the entry sits in.
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per accepted spelling and
-	 *   per refusal; see the class docblock.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) Same reason.
 	 */
-	private function validateFieldRuleEntry(mixed $entry, string $state, string $kind, array $properties): array {
-		if (is_array($entry) === false) {
-			return [
-				[
-					'code' => 'lifecycle-state-field-entry-malformed',
-					'message' => sprintf(
-						'An entry of x-openregister-lifecycle.states."%s".fields."%s" must be an object '
-						. 'with a "fields" list.',
-						$state,
-						$kind
-					),
-				],
-			];
+	private function validateFieldRuleEntry(mixed $entry, StateFieldRuleScope $scope): array {
+		$shapeError = $this->fieldRuleEntryShapeError(entry: $entry, scope: $scope);
+		if ($shapeError !== null) {
+			return [$shapeError];
 		}
 
-		$names = ($entry['fields'] ?? ($entry['field'] ?? null));
-		if (is_string($names) === true) {
-			$names = [$names];
-		}
+		$errors = $this->validateFieldRuleNames(names: self::fieldRuleNames(entry: $entry), scope: $scope);
 
-		if (is_array($names) === false || $names === []) {
-			return [
-				[
-					'code' => 'lifecycle-state-field-entry-malformed',
-					'message' => sprintf(
-						'An entry of x-openregister-lifecycle.states."%s".fields."%s" must name at least one field.',
-						$state,
-						$kind
-					),
-				],
-			];
-		}
-
-		$errors = [];
-		foreach ($names as $name) {
-			if (is_string($name) === false || $name === '') {
-				$errors[] = [
-					'code' => 'lifecycle-state-field-entry-malformed',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states."%s".fields."%s" names a field that is not a string.',
-						$state,
-						$kind
-					),
-				];
-				continue;
-			}
-
-			if (isset($properties[$name]) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-state-field-missing',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states."%s".fields."%s" names field "%s", '
-						. 'which is not declared in `properties`.',
-						$state,
-						$kind,
-						$name
-					),
-				];
-			}
-		}//end foreach
-
-		$groupError = $this->validateFieldRuleGroups(entry: $entry, state: $state, kind: $kind);
+		$groupError = $this->validateFieldRuleGroups(entry: $entry, scope: $scope);
 		if ($groupError !== null) {
 			$errors[] = $groupError;
 		}
@@ -299,9 +236,9 @@ final class LifecycleStateValidator {
 				$errors,
 				$this->validateStateCondition(
 					condition: $when,
-					state: $state,
-					label: sprintf('fields."%s" condition', $kind),
-					properties: $properties
+					state: $scope->state,
+					label: sprintf('fields."%s" condition', $scope->kind),
+					properties: $scope->properties
 				)
 			);
 		}
@@ -310,17 +247,100 @@ final class LifecycleStateValidator {
 	}//end validateFieldRuleEntry()
 
 	/**
-	 * Validate an entry's optional `groups` clause.
+	 * The error for an entry that is not an object or names no field, or null.
 	 *
-	 * @param array<string, mixed> $entry The declared entry.
-	 * @param string $state The state name.
-	 * @param string $kind The rule kind the entry sits under.
+	 * @param mixed               $entry The declared entry.
+	 * @param StateFieldRuleScope $scope The state, rule kind and properties the entry sits in.
 	 *
 	 * @return array{code: string, message: string}|null The error, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validateFieldRuleGroups(array $entry, string $state, string $kind): ?array {
+	private function fieldRuleEntryShapeError(mixed $entry, StateFieldRuleScope $scope): ?array {
+		if (is_array($entry) === false) {
+			return [
+				'code' => 'lifecycle-state-field-entry-malformed',
+				'message' => 'An entry of ' . $scope->path() . ' must be an object with a "fields" list.',
+			];
+		}
+
+		if (self::fieldRuleNames(entry: $entry) === []) {
+			return [
+				'code' => 'lifecycle-state-field-entry-malformed',
+				'message' => 'An entry of ' . $scope->path() . ' must name at least one field.',
+			];
+		}
+
+		return null;
+	}//end fieldRuleEntryShapeError()
+
+	/**
+	 * The field names an entry declares, under `fields` or `field`, as a list.
+	 *
+	 * @param array<string, mixed> $entry The declared entry.
+	 *
+	 * @return array<mixed> The declared names, or an empty list when none are declared.
+	 */
+	private static function fieldRuleNames(array $entry): array {
+		$names = ($entry['fields'] ?? ($entry['field'] ?? null));
+		if (is_string($names) === true) {
+			return [$names];
+		}
+
+		if (is_array($names) === false) {
+			return [];
+		}
+
+		return $names;
+	}//end fieldRuleNames()
+
+	/**
+	 * Check every name an entry declares is a string the schema declares as a property.
+	 *
+	 * @param array<mixed>        $names The declared names.
+	 * @param StateFieldRuleScope $scope The state, rule kind and properties the entry sits in.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateFieldRuleNames(array $names, StateFieldRuleScope $scope): array {
+		$errors = [];
+		foreach ($names as $name) {
+			if (is_string($name) === false || $name === '') {
+				$errors[] = [
+					'code' => 'lifecycle-state-field-entry-malformed',
+					'message' => $scope->path() . ' names a field that is not a string.',
+				];
+				continue;
+			}
+
+			if (isset($scope->properties[$name]) === false) {
+				$errors[] = [
+					'code' => 'lifecycle-state-field-missing',
+					'message' => sprintf(
+						'%s names field "%s", which is not declared in `properties`.',
+						$scope->path(),
+						$name
+					),
+				];
+			}
+		}
+
+		return $errors;
+	}//end validateFieldRuleNames()
+
+	/**
+	 * Validate an entry's optional `groups` clause.
+	 *
+	 * @param array<string, mixed> $entry The declared entry.
+	 * @param StateFieldRuleScope  $scope The state, rule kind and properties the entry sits in.
+	 *
+	 * @return array{code: string, message: string}|null The error, or null.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateFieldRuleGroups(array $entry, StateFieldRuleScope $scope): ?array {
 		if (isset($entry['groups']) === false) {
 			return null;
 		}
@@ -333,12 +353,8 @@ final class LifecycleStateValidator {
 		if (is_array($groups) === false || $groups === []) {
 			return [
 				'code' => 'lifecycle-state-field-groups-malformed',
-				'message' => sprintf(
-					'x-openregister-lifecycle.states."%s".fields."%s" declares `groups` that is neither '
+				'message' => $scope->path() . ' declares `groups` that is neither '
 					. 'a group id nor a non-empty list of them. Omit `groups` to apply the rule to everyone.',
-					$state,
-					$kind
-				),
 			];
 		}
 
@@ -346,12 +362,7 @@ final class LifecycleStateValidator {
 			if (is_string($group) === false || $group === '') {
 				return [
 					'code' => 'lifecycle-state-field-groups-malformed',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states."%s".fields."%s" lists a group that is not a '
-						. 'non-empty string.',
-						$state,
-						$kind
-					),
+					'message' => $scope->path() . ' lists a group that is not a non-empty string.',
 				];
 			}
 		}
@@ -542,16 +553,7 @@ final class LifecycleStateValidator {
 				continue;
 			}
 
-			$names = ($entry['fields'] ?? ($entry['field'] ?? []));
-			if (is_string($names) === true) {
-				$names = [$names];
-			}
-
-			if (is_array($names) === false) {
-				continue;
-			}
-
-			foreach ($names as $name) {
+			foreach (self::fieldRuleNames(entry: $entry) as $name) {
 				if (is_string($name) === true && $name !== '') {
 					$hidden[] = $name;
 				}

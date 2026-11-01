@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -74,7 +74,7 @@ class SemanticRoleHandler {
 	 *
 	 * @return array<string,string> The property name holding each role.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function roles(array $properties): array {
 		$roles = [];
@@ -107,7 +107,7 @@ class SemanticRoleHandler {
 	 *
 	 * @return array<int,string> The refusals, empty when the declarations are valid.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function violations(array $properties): array {
 		$byRole = [];
@@ -155,7 +155,7 @@ class SemanticRoleHandler {
 	 *
 	 * @return array<string,string> The resolved help text, keyed by property name.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function helpTexts(array $properties, string $language): array {
 		$help = [];
@@ -182,7 +182,7 @@ class SemanticRoleHandler {
 	 *
 	 * @return string|null The help text.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function helpTextOf(mixed $property, string $language): ?string {
 		$raw = $this->annotationOf(property: $property, annotation: self::HELP_ANNOTATION);

@@ -431,7 +431,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 2
+      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -809,7 +809,7 @@
       "count": 2
     },
     "no-console": {
-      "count": 4
+      "count": 3
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -1050,7 +1050,7 @@
       "count": 2
     },
     "no-console": {
-      "count": 3
+      "count": 2
     },
     "vue/custom-event-name-casing": {
       "count": 1
@@ -1148,7 +1148,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 5
+      "count": 3
     }
   },
   "src/modals/webhook/EditWebhook.vue": {
@@ -1286,7 +1286,7 @@
   },
   "src/store/modules/configuration.js": {
     "no-console": {
-      "count": 11
+      "count": 7
     },
     "no-unused-vars": {
       "count": 1
@@ -1322,7 +1322,7 @@
   },
   "src/store/modules/quality.js": {
     "no-console": {
-      "count": 18
+      "count": 17
     }
   },
   "src/store/modules/register.js": {

@@ -1,0 +1,552 @@
+{
+    "date format is all day": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260302",
+                    {
+                        "VALUE": "DATE"
+                    }
+                ],
+                "DTEND": [
+                    "20260303",
+                    {
+                        "VALUE": "DATE"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "description and location": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301T083000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260301T093000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "DESCRIPTION": [
+                    "About Hearing",
+                    []
+                ],
+                "LOCATION": [
+                    "Room 4",
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "dtstart field empty": null,
+    "dtstart field missing": null,
+    "empty description template": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301T083000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260301T093000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "explicit all day": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301",
+                    {
+                        "VALUE": "DATE"
+                    }
+                ],
+                "DTEND": [
+                    "20260301",
+                    {
+                        "VALUE": "DATE"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "explicit not all day": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260302T000000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260302T010000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "location field empty": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301T083000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260301T093000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "minimal": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301T083000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260301T093000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "no dtstart config": null,
+    "no schema properties": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260302",
+                    {
+                        "VALUE": "DATE"
+                    }
+                ],
+                "DTEND": [
+                    "20260303",
+                    {
+                        "VALUE": "DATE"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "status mapping": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301T083000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260301T093000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CANCELLED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "status unmapped": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "obj-1",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301T083000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260301T093000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    },
+    "with end and title": {
+        "id": "openregister-3-obj-1",
+        "type": "VEVENT",
+        "calendar-key": "openregister-schema-3",
+        "calendar-uri": "openregister-schema-3",
+        "objects": [
+            {
+                "UID": [
+                    "openregister-3-obj-1",
+                    []
+                ],
+                "SUMMARY": [
+                    "Hearing at Room 4",
+                    []
+                ],
+                "DTSTART": [
+                    "20260301T083000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "DTEND": [
+                    "20260301T100000Z",
+                    {
+                        "VALUE": "DATE-TIME"
+                    }
+                ],
+                "STATUS": [
+                    "CONFIRMED",
+                    []
+                ],
+                "TRANSP": [
+                    "TRANSPARENT",
+                    []
+                ],
+                "CATEGORIES": [
+                    [
+                        "OpenRegister",
+                        "Hearings"
+                    ],
+                    []
+                ],
+                "URL": [
+                    "/apps/openregister/objects/7/3/obj-1",
+                    []
+                ]
+            }
+        ]
+    }
+}

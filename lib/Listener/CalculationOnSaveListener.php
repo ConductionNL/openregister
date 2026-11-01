@@ -80,7 +80,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -280,7 +280,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 *   derivation of a rule id; a descriptor built here would carry a declaration this
 	 *   path has no use for.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function recordRun(ObjectEntity $object, string $slug, string $name, RuleTrace $trace): void {
 		if ($slug === '') {
@@ -393,7 +393,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @return array<string, mixed>|null Calculations map, or null when nothing is declared.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function getCalculations(Schema $schema): ?array {
 		$config = ($schema->getConfiguration() ?? []);

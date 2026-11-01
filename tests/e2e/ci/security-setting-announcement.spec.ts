@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * A SECURITY SETTING CHANGES, AND THE ADMINISTRATORS HEAR ABOUT IT.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/audit-trail-shipped-and-purpose-bound/specs/` is
+ * once `openspec/changes/archive/2026-10-30-audit-trail-shipped-and-purpose-bound/specs/` is
  * archived into `openspec/specs/`:
  *
  * @e2e enhanced-audit-trail::the-beheerteam-hears-about-it

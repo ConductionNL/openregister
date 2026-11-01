@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Rules;
  * enumerate every other zaaktype in the register first. A table that must
  * constrain everything is written by giving every controlling value an entry.
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class DependentValueTable {
 
@@ -73,7 +73,7 @@ final class DependentValueTable {
 	 *
 	 * @return array<string, array{controlledBy: string, allowed: array<string, array<int, string>>}> The tables.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function tablesOf(array $properties): array {
 		$tables = [];
@@ -105,7 +105,7 @@ final class DependentValueTable {
 	 *
 	 * @return array{controlledBy: string, allowed: array<string, array<int, string>>}|null The table, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function tableOf(mixed $declaration): ?array {
 		if (is_array($declaration) === false) {
@@ -142,7 +142,7 @@ final class DependentValueTable {
 	 *
 	 * @return array<int, array{property: string, controlledBy: string, value: string, controllingValue: string, message: string}> The violations.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function violations(array $properties, array $data, array $stored = []): array {
 		$violations = [];
@@ -204,7 +204,7 @@ final class DependentValueTable {
 	 *
 	 * @return bool True when at least one property declares a table.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaresAny(array $properties): bool {
 		foreach ($properties as $property) {

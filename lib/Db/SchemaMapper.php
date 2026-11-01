@@ -406,7 +406,6 @@ class SchemaMapper extends QBMapper {
 
 		// Verify RBAC permission to read if RBAC is enabled.
 		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 
@@ -1049,7 +1048,6 @@ class SchemaMapper extends QBMapper {
 	): array {
 		// Verify RBAC permission to read if RBAC is enabled.
 		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 
@@ -1250,7 +1248,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateAuthorizationDeny(Schema $schema): void {
 		$authorization = $schema->getAuthorization();
@@ -1618,7 +1616,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function validateCalculationsAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -1905,7 +1903,7 @@ class SchemaMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
 	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateDependentValueTables(Schema $schema): void {
 		$properties = ($schema->getProperties() ?? []);
@@ -1940,7 +1938,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateExtendingFormAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2059,7 +2057,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function validateHingeAnnotations(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2215,7 +2213,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	private function validatePartyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2489,7 +2487,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When the declaration cannot be honoured.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateHierarchyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2554,7 +2552,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When a declaration cannot produce a link.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	private function validateExternalLinksAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);

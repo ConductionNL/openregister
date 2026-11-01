@@ -20,7 +20,6 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
-use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCP\IUserSession;
@@ -45,6 +44,29 @@ use Symfony\Component\Uid\Uuid;
  * @version  1.0.0
  */
 class TransformationHandler {
+
+	/**
+	 * The @self fields removed from a flat row to leave its business data.
+	 *
+	 * @var string[]
+	 */
+	private const METADATA_FIELDS = [
+		'@self',
+		'name',
+		'description',
+		'summary',
+		'image',
+		'slug',
+		'register',
+		'schema',
+		'organisation',
+		'uuid',
+		'owner',
+		'created',
+		'updated',
+		'id',
+	];
+
 	/**
 	 * Constructor for TransformationHandler.
 	 *
@@ -84,11 +106,6 @@ class TransformationHandler {
 	 * @psalm-return   array{valid: list<array<string, mixed>>, invalid: list<array<string, mixed>>}
 	 * @phpstan-return array{valid: list<array<string, mixed>>, invalid: list<array<string, mixed>>}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex transformation with multiple field validations
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for different object structures and metadata
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete transformation workflow
-	 * Else branches handle different object structures and fallbacks
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array {
@@ -96,99 +113,21 @@ class TransformationHandler {
 		$invalidObjects = [];
 
 		foreach ($objects as $index => &$object) {
-			// CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
-			// They don't have an '@self' key because they ARE the self data.
-			// Only extract @self if it exists (mixed schema or other paths).
-			// Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
-			// or extract @self if it exists (mixed schema or other paths).
-			$selfData = $object;
-			if (($object['@self'] ?? null) !== null) {
-				$selfData = $object['@self'];
-			}
+			$selfData = $this->selfDataOf(object: $object);
 
-			// Auto-wire @self metadata with proper UUID validation and generation.
-			new DateTime();
-
-			// Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
-			$providedId = $object['id'] ?? $selfData['id'] ?? null;
-			// Default: generate new UUID; override if a non-empty ID is provided.
-			$selfData['uuid'] = Uuid::v4()->toRfc4122();
-			if (($providedId !== null) === true && empty(trim($providedId)) === false) {
-				$selfData['uuid'] = $providedId;
-			}
-
-			// CRITICAL FIX: Use register and schema from object data if available.
-			// Register and schema should be provided in object data for this method.
-			if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
-				$selfData['register'] = $object['register'];
-				if (is_object($object['register']) === true) {
-					$selfData['register'] = $object['register']->getId();
-				}
-			}
-
-			if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
-				$selfData['schema'] = $object['schema'];
-				if (is_object($object['schema']) === true) {
-					$selfData['schema'] = $object['schema']->getId();
-				}
-			}
-
-			// Note: Register and schema should be set in object data before calling this method.
-			// VALIDATION FIX: Validate that required register and schema are properly set.
-			if (($selfData['register'] ?? null) === null || ($selfData['schema'] ?? null) === null) {
-				if (($selfData['register'] ?? null) === null) {
-					$invalidObjects[] = [
-						'object' => $object,
-						'error' => 'Register ID is required but not found in object data or method parameters',
-						'index' => $index,
-						'type' => 'MissingRegisterException',
-					];
-					continue;
-				}
-
-				if (($selfData['schema'] ?? null) === null) {
-					$invalidObjects[] = [
-						'object' => $object,
-						'error' => 'Schema ID is required but not found in object data or method parameters',
-						'index' => $index,
-						'type' => 'MissingSchemaException',
-					];
-					continue;
-				}
-			}//end if
-
-			// VALIDATION FIX: Verify schema exists in cache (validates schema exists in database).
-			if (isset($schemaCache[$selfData['schema']]) === false) {
+			$invalid = $this->invalidReason(selfData: $selfData, schemaCache: $schemaCache);
+			if ($invalid !== null) {
 				$invalidObjects[] = [
 					'object' => $object,
-					'error' => "Schema ID {$selfData['schema']} does not exist or could not be loaded",
+					'error' => $invalid['error'],
 					'index' => $index,
-					'type' => 'InvalidSchemaException',
+					'type' => $invalid['type'],
 				];
 				continue;
 			}
 
-			// Set owner to current user if not provided (with null check).
-			if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
-				$currentUser = $this->userSession->getUser();
-				$selfData['owner'] = null;
-				if ($currentUser !== null) {
-					$selfData['owner'] = $currentUser->getUID();
-				}
-			}
+			$selfData = $this->withOwnerAndOrganisation(selfData: $selfData);
 
-			// Set organization using optimized OrganisationService method if not provided.
-			if (($selfData['organisation'] ?? null) === null || empty($selfData['organisation']) === true) {
-				// NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
-				$selfData['organisation'] = null;
-				// TODO->getOrganisationForNewEntity().
-			}
-
-			// DATABASE-MANAGED: created and updated are handled by database DEFAULT and ON UPDATE clauses.
-			// METADATA EXTRACTION: Skip redundant extraction as prepareSingleSchemaObjectsOptimized already handles this.
-			// With enhanced twig-like concatenation support. This redundant extraction was overwriting the.
-			// Properly extracted metadata with simpler getValueFromPath results.
-			// DEBUG: Log mixed schema object structure.
 			$this->logger->info(
 				message: '[TransformationHandler] DEBUG - Mixed schema object structure',
 				context: [
@@ -200,89 +139,11 @@ class TransformationHandler {
 				]
 			);
 
-			// TEMPORARY FIX: Extract business data properly based on actual structure.
-			$hasObjectProperty = ($object['object'] ?? null) !== null && is_array($object['object']) === true;
-
-			if ($hasObjectProperty === true) {
-				// NEW STRUCTURE: object property contains business data.
-				$businessData = $object['object'];
-				$this->logger->info(
-					message: '[TransformationHandler] Using object property for business data (mixed)',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			if ($hasObjectProperty !== true) {
-				// LEGACY STRUCTURE: Remove metadata fields to isolate business data.
-				$businessData = $object;
-				$metadataFields = [
-					'@self',
-					'name',
-					'description',
-					'summary',
-					'image',
-					'slug',
-					'register',
-					'schema',
-					'organisation',
-					'uuid',
-					'owner',
-					'created',
-					'updated',
-					'id',
-				];
-
-				foreach ($metadataFields as $field) {
-					unset($businessData[$field]);
-				}
-
-				// CRITICAL DEBUG: Log what we're removing and what remains.
-				$this->logger->info(
-					message: '[TransformationHandler] Metadata removal applied (mixed)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'removed_fields' => array_intersect($metadataFields, array_keys($object)),
-						'remaining_keys' => array_keys($businessData),
-						'business_data_sample' => array_slice($businessData, 0, 3, true),
-					]
-				);
-			}//end if
-
-			// RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
-			// ONLY scan if relations weren't already set during preparation phase.
-			$relationsAlreadySet = ($selfData['relations'] ?? null) !== null && empty($selfData['relations']) === false;
-
-			if ($relationsAlreadySet === true) {
-				$this->logger->info(
-					message: '[TransformationHandler] Relations already set from preparation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $selfData['uuid'] ?? 'unknown',
-						'relationCount' => count($selfData['relations']),
-					]
-				);
-			} elseif (($schemaCache[$selfData['schema']] ?? null) !== null) {
-				$schema = $schemaCache[$selfData['schema']];
-				$relations = $this->relCascadeHandler->scanForRelations(
-					data: $businessData,
-					prefix: '',
-					schema: $schema
-				);
-				$selfData['relations'] = $relations;
-
-				$this->logger->info(
-					message: '[TransformationHandler] Relations scanned in transformation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $selfData['uuid'] ?? 'unknown',
-						'relationCount' => count($relations),
-						'relations' => array_slice($relations, 0, 3, true),
-					]
-				);
-			}//end if
+			$businessData = $this->businessDataOf(object: $object);
+			$selfData['relations'] = $this->relationsOf(
+				selfData: $selfData,
+				scan: new RelationScan(businessData: $businessData, schema: $schemaCache[$selfData['schema']])
+			);
 
 			// Store the clean business data in the database object column.
 			$selfData['object'] = $businessData;
@@ -296,4 +157,169 @@ class TransformationHandler {
 			'invalid' => $invalidObjects,
 		];
 	}//end transformObjectsToDatabaseFormatInPlace()
+
+	/**
+	 * The @self metadata of one object, with its uuid, register and schema filled in.
+	 *
+	 * A flat row is its own @self data. A non-empty `id` (the row's, else @self's) becomes the
+	 * uuid; otherwise a new uuid is generated. A register or schema missing from @self is taken
+	 * from the row, an entity as its id.
+	 *
+	 * @param array<string, mixed> $object The incoming object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function selfDataOf(array $object): array {
+		$selfData = $object;
+		if (($object['@self'] ?? null) !== null) {
+			$selfData = $object['@self'];
+		}
+
+		$providedId = $object['id'] ?? $selfData['id'] ?? null;
+		$selfData['uuid'] = Uuid::v4()->toRfc4122();
+		if (($providedId !== null) === true && empty(trim($providedId)) === false) {
+			$selfData['uuid'] = $providedId;
+		}
+
+		foreach (['register', 'schema'] as $field) {
+			if (($selfData[$field] ?? null) === null && ($object[$field] ?? null) !== null) {
+				$selfData[$field] = $object[$field];
+				if (is_object($object[$field]) === true) {
+					$selfData[$field] = $object[$field]->getId();
+				}
+			}
+		}
+
+		return $selfData;
+	}//end selfDataOf()
+
+	/**
+	 * Why an object cannot be stored: no register, no schema, or a schema that is not loaded.
+	 *
+	 * @param array<string, mixed>      $selfData    The object's @self metadata.
+	 * @param array<int|string, Schema> $schemaCache The loaded schemas by id.
+	 *
+	 * @return array{error: string, type: string}|null The reason, or null when the object is valid.
+	 */
+	private function invalidReason(array $selfData, array $schemaCache): ?array {
+		if (($selfData['register'] ?? null) === null) {
+			return [
+				'error' => 'Register ID is required but not found in object data or method parameters',
+				'type' => 'MissingRegisterException',
+			];
+		}
+
+		if (($selfData['schema'] ?? null) === null) {
+			return [
+				'error' => 'Schema ID is required but not found in object data or method parameters',
+				'type' => 'MissingSchemaException',
+			];
+		}
+
+		if (isset($schemaCache[$selfData['schema']]) === false) {
+			return [
+				'error' => "Schema ID {$selfData['schema']} does not exist or could not be loaded",
+				'type' => 'InvalidSchemaException',
+			];
+		}
+
+		return null;
+	}//end invalidReason()
+
+	/**
+	 * Default an empty owner to the current user (or null) and an empty organisation to null.
+	 *
+	 * @param array<string, mixed> $selfData The object's @self metadata.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function withOwnerAndOrganisation(array $selfData): array {
+		if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
+			$currentUser = $this->userSession->getUser();
+			$selfData['owner'] = null;
+			if ($currentUser !== null) {
+				$selfData['owner'] = $currentUser->getUID();
+			}
+		}
+
+		if (($selfData['organisation'] ?? null) === null || empty($selfData['organisation']) === true) {
+			$selfData['organisation'] = null;
+		}
+
+		return $selfData;
+	}//end withOwnerAndOrganisation()
+
+	/**
+	 * The business data of one object: its `object` array, or the row minus the metadata fields.
+	 *
+	 * @param array<string, mixed> $object The incoming object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function businessDataOf(array $object): array {
+		if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
+			$this->logger->info(
+				message: '[TransformationHandler] Using object property for business data (mixed)',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return $object['object'];
+		}
+
+		$businessData = array_diff_key($object, array_flip(self::METADATA_FIELDS));
+
+		$this->logger->info(
+			message: '[TransformationHandler] Metadata removal applied (mixed)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'removed_fields' => array_intersect(self::METADATA_FIELDS, array_keys($object)),
+				'remaining_keys' => array_keys($businessData),
+				'business_data_sample' => array_slice($businessData, 0, 3, true),
+			]
+		);
+
+		return $businessData;
+	}//end businessDataOf()
+
+	/**
+	 * The relations to store: those set during preparation, else a scan of the business data.
+	 *
+	 * @param array<string, mixed> $selfData The object's @self metadata.
+	 * @param RelationScan         $scan     The business data and its schema.
+	 *
+	 * @return array<mixed>
+	 */
+	private function relationsOf(array $selfData, RelationScan $scan): array {
+		if (($selfData['relations'] ?? null) !== null && empty($selfData['relations']) === false) {
+			$this->logger->info(
+				message: '[TransformationHandler] Relations already set from preparation',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $selfData['uuid'] ?? 'unknown',
+					'relationCount' => count($selfData['relations']),
+				]
+			);
+			return $selfData['relations'];
+		}
+
+		$relations = $this->relCascadeHandler->scanForRelations(
+			data: $scan->businessData,
+			prefix: '',
+			schema: $scan->schema
+		);
+
+		$this->logger->info(
+			message: '[TransformationHandler] Relations scanned in transformation',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $selfData['uuid'] ?? 'unknown',
+				'relationCount' => count($relations),
+				'relations' => array_slice($relations, 0, 3, true),
+			]
+		);
+
+		return $relations;
+	}//end relationsOf()
 }//end class

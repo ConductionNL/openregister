@@ -63,7 +63,7 @@ use Throwable;
  * ask every existing authority its own question rather than re-derive any of
  * them, so it holds one collaborator per authority.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class ErasurePreviewService {
 	/**
@@ -111,7 +111,7 @@ class ErasurePreviewService {
 	 * and emptyCounts() derives the zeroed block from them, so injecting it would
 	 * add a collaborator that can never vary.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function preview(
 		string $subjectId,
@@ -174,7 +174,7 @@ class ErasurePreviewService {
 	 *
 	 * @return string A hex sha256.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function digest(array $preview): string {
 		$material = [

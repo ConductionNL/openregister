@@ -12,7 +12,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+ * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
  */
 
 declare(strict_types=1);

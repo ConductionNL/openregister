@@ -2,64 +2,69 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TAuditTrail } from './auditTrail.types'
 
 import { z } from 'zod'
+import { withFallbacks } from '../withFallbacks.js'
+
+const FALLBACKS = {
+	id: 0,
+	uuid: '',
+	schema: 0,
+	register: 0,
+	object: 0,
+	objectUuid: null,
+	registerUuid: null,
+	schemaUuid: null,
+	action: '',
+	changed: [],
+	user: '',
+	userName: '',
+	session: '',
+	request: '',
+	ipAddress: '',
+	version: null,
+	created: '',
+	organisationId: null,
+	organisationIdType: null,
+	processingActivityId: null,
+	processingActivityUrl: null,
+	processingId: null,
+	confidentiality: null,
+	retentionPeriod: null,
+	size: 0,
+}
 
 export class AuditTrail implements TAuditTrail {
-	public id: number
-	public uuid: string
-	public schema: number
-	public register: number
-	public object: number
-	public objectUuid: string | null
-	public registerUuid: string | null
-	public schemaUuid: string | null
-	public action: string
-	public changed: object | unknown[]
-	public user: string
-	public userName: string
-	public session: string
-	public request: string
-	public ipAddress: string
-	public version: string | null
-	public created: string
-	public organisationId: string | null
-	public organisationIdType: string | null
-	public processingActivityId: string | null
-	public processingActivityUrl: string | null
-	public processingId: string | null
-	public confidentiality: string | null
-	public retentionPeriod: string | null
-	public size: number
+	public id!: number
+	public uuid!: string
+	public schema!: number
+	public register!: number
+	public object!: number
+	public objectUuid!: string | null
+	public registerUuid!: string | null
+	public schemaUuid!: string | null
+	public action!: string
+	public changed!: object | unknown[]
+	public user!: string
+	public userName!: string
+	public session!: string
+	public request!: string
+	public ipAddress!: string
+	public version!: string | null
+	public created!: string
+	public organisationId!: string | null
+	public organisationIdType!: string | null
+	public processingActivityId!: string | null
+	public processingActivityUrl!: string | null
+	public processingId!: string | null
+	public confidentiality!: string | null
+	public retentionPeriod!: string | null
+	public size!: number
 
 	/**
 	 * @param auditTrail
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(auditTrail: TAuditTrail) {
-		this.id = auditTrail.id || 0
-		this.uuid = auditTrail.uuid || ''
-		this.schema = auditTrail.schema || 0
-		this.register = auditTrail.register || 0
-		this.object = auditTrail.object || 0
-		this.objectUuid = auditTrail.objectUuid || null
-		this.registerUuid = auditTrail.registerUuid || null
-		this.schemaUuid = auditTrail.schemaUuid || null
-		this.action = auditTrail.action || ''
-		this.changed = auditTrail.changed || []
-		this.user = auditTrail.user || ''
-		this.userName = auditTrail.userName || ''
-		this.session = auditTrail.session || ''
-		this.request = auditTrail.request || ''
-		this.ipAddress = auditTrail.ipAddress || ''
-		this.version = auditTrail.version || null
-		this.created = auditTrail.created || ''
-		this.organisationId = auditTrail.organisationId || null
-		this.organisationIdType = auditTrail.organisationIdType || null
-		this.processingActivityId = auditTrail.processingActivityId || null
-		this.processingActivityUrl = auditTrail.processingActivityUrl || null
-		this.processingId = auditTrail.processingId || null
-		this.confidentiality = auditTrail.confidentiality || null
-		this.retentionPeriod = auditTrail.retentionPeriod || null
-		this.size = auditTrail.size || 0
+		Object.assign(this, withFallbacks(auditTrail, FALLBACKS))
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {

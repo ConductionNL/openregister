@@ -70,7 +70,7 @@ class SubjectExportController extends Controller {
 	 *   DataSubjectRequestService::assembleAccessExport, which loads every object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true), so a caller only ever exports what it may read.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function create(): JSONResponse {
 		$subject = trim((string)($this->request->getParam(key: 'subject') ?? ''));
@@ -103,7 +103,7 @@ class SubjectExportController extends Controller {
 	 *   request unless they are an administrator, and answers absent rather than forbidden so the existence of
 	 *   a request about a data subject is not disclosed.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function show(string $id): JSONResponse {
 		$export = $this->exports->load(uuid: $id);
@@ -132,7 +132,7 @@ class SubjectExportController extends Controller {
 	 * @no-admin-idor-exempt Guarded in-body and downstream: as show(), plus the assembler's own
 	 *   _rbac/_multitenancy scoping on every object it reads.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function download(string $id): DataDownloadResponse|JSONResponse {
 		$bytes = $this->exports->download(uuid: $id);

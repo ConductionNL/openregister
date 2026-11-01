@@ -372,6 +372,76 @@ export function failedStep(run, ordered = [], names = {}) {
 }
 
 /**
+ * The named fields of a log entry, null where the entry has none.
+ *
+ * @param {object} entry The log entry.
+ * @param {Array<string>} keys The field names.
+ * @return {object} The fields, in the order given.
+ */
+function entryFields(entry, keys) {
+	return Object.fromEntries(keys.map((key) => [key, entry[key] ?? null]))
+}
+
+/**
+ * The time a node took so far: the earlier total plus this entry's, or the
+ * earlier total when this entry names no number.
+ *
+ * @param {object} entry The log entry.
+ * @param {object|undefined} previous The node's row so far.
+ * @return {number|null} Milliseconds, or null when no entry named any.
+ */
+function summedDuration(entry, previous) {
+	if (typeof entry.durationMs === 'number') {
+		return (previous?.durationMs ?? 0) + entry.durationMs
+	}
+	return previous?.durationMs ?? null
+}
+
+/**
+ * The row of a node after one more of its log entries.
+ *
+ * @param {object} entry The log entry.
+ * @param {{nodeId: string, label: string, previous: object|undefined}} step The node, its label and its row so far.
+ * @return {object} The row.
+ */
+function loggedStepRow(entry, step) {
+	return {
+		nodeId: step.nodeId,
+		label: step.label,
+		status: entry.status || '',
+		times: (step.previous?.times ?? 0) + 1,
+		...entryFields(entry, ['itemsIn', 'itemsOut']),
+		durationMs: summedDuration(entry, step.previous),
+		...entryFields(entry, ['input', 'output']),
+		error: entry.error || entry.reason || '',
+		reached: true,
+	}
+}
+
+/**
+ * The row of a node the run never logged.
+ *
+ * @param {string} nodeId The node id.
+ * @param {string} label The node label.
+ * @return {object} The row.
+ */
+function unreachedStepRow(nodeId, label) {
+	return {
+		nodeId,
+		label,
+		status: '',
+		times: 0,
+		itemsIn: null,
+		itemsOut: null,
+		durationMs: null,
+		input: null,
+		output: null,
+		error: '',
+		reached: false,
+	}
+}
+
+/**
  * The run's steps, one row per node.
  *
  * The log can hold the same node many times (a loop, or a run that woke
@@ -395,44 +465,20 @@ export function stepRows(run, ordered = [], names = {}) {
 			id: nodeId,
 			type: entry.type,
 		}
-		const previous = rows.get(nodeId)
-		rows.set(nodeId, {
+		rows.set(
 			nodeId,
-			label: nodeLabel(node, names),
-			status: entry.status || '',
-			times: (previous?.times ?? 0) + 1,
-			itemsIn: entry.itemsIn ?? null,
-			itemsOut: entry.itemsOut ?? null,
-			durationMs:
-				typeof entry.durationMs === 'number'
-					? (previous?.durationMs ?? 0) + entry.durationMs
-					: (previous?.durationMs ?? null),
-			input: entry.input ?? null,
-			output: entry.output ?? null,
-			error: entry.error || entry.reason || '',
-			reached: true,
-		})
+			loggedStepRow(entry, {
+				nodeId,
+				label: nodeLabel(node, names),
+				previous: rows.get(nodeId),
+			}),
+		)
 	}
 
-	const result = [...rows.values()]
-	for (const node of ordered) {
-		if (!rows.has(node.id)) {
-			result.push({
-				nodeId: node.id,
-				label: nodeLabel(node, names),
-				status: '',
-				times: 0,
-				itemsIn: null,
-				itemsOut: null,
-				durationMs: null,
-				input: null,
-				output: null,
-				error: '',
-				reached: false,
-			})
-		}
-	}
-	return result
+	const unreached = ordered
+		.filter((node) => !rows.has(node.id))
+		.map((node) => unreachedStepRow(node.id, nodeLabel(node, names)))
+	return [...rows.values(), ...unreached]
 }
 
 /**
