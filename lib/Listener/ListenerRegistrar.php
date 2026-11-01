@@ -20,19 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
-use OCA\OpenRegister\Event\AgentCreatedEvent;
-use OCA\OpenRegister\Event\AgentUpdatedEvent;
-use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
-use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
-use OCA\OpenRegister\Event\ObjectLockedEvent;
-use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
-use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
@@ -41,16 +33,9 @@ use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Event\SourceCreatedEvent;
-use OCA\OpenRegister\Event\SourceUpdatedEvent;
-use OCA\OpenRegister\Event\ToolRegistrationEvent;
-use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use OCP\Comments\CommentsEntityEvent;
-use OCP\Files\Events\Node\NodeCreatedEvent;
-use OCP\Files\Events\Node\NodeWrittenEvent;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -58,6 +43,11 @@ use OCP\Files\Events\Node\NodeWrittenEvent;
  * Application::register() calls register() once. The registrations run in a
  * fixed order, and the order is part of the behaviour: listeners on the same
  * event run in the order they were registered.
+ *
+ * An event that only one component listens to is registered by that
+ * component's registrar in Registrar\. An event with listeners from more than
+ * one component stays here, in one ordered list. ListenerOrderTest pins the
+ * order of every event.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A registrar names every listener
  *   and every event it subscribes to; that coupling is what it is for.
@@ -73,9 +63,17 @@ final class ListenerRegistrar {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The component registrars are static, like this one; there is no instance to inject at registration time.
+	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
+		Registrar\AccessListenerRegistrar::register(context: $context);
+		Registrar\ConfigurationListenerRegistrar::register(context: $context);
+		Registrar\FlowsListenerRegistrar::register(context: $context);
+		Registrar\McpListenerRegistrar::register(context: $context);
+		Registrar\NotificationsListenerRegistrar::register(context: $context);
+		Registrar\WorkListenerRegistrar::register(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
 		self::registerFlowAndTaskListeners(context: $context);
 		self::registerSaveRuleListeners(context: $context);
@@ -92,71 +90,6 @@ final class ListenerRegistrar {
 	 * @return void
 	 */
 	private static function registerFileAndPlatformListeners(IRegistrationContext $context): void {
-		// FileChangeListener for automatic file text extraction.
-		$context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
-		$context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
-
-		// REQ-OAS-007: a write into a frozen or archived object's folder
-		// through Nextcloud Files or WebDAV is aborted; the files API refuses
-		// through FileWriteGuard in FilesController.
-		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeWrittenEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
-		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeCreatedEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
-		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeDeletedEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
-		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeRenamedEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
-
-		// Access derived from what an identity provider asserted, once per
-		// sign-in. Costs one app-config read on an instance that declares no
-		// rule, and never fails a sign-in: see the listener.
-		$context->registerEventListener(
-			\OCP\User\Events\UserLoggedInEvent::class,
-			\OCA\OpenRegister\Listener\IdentityClaimsLoginListener::class
-		);
-
-		// Flow node discovery. OpenRegister contributes its own built-ins
-		// through the same event every consuming app uses, so the contribution
-		// path is exercised by its owner and cannot rot unnoticed.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
-			\OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
-		);
-
-		// Flow oversight. Apps contribute the checks that may STOP a run — a
-		// kill switch, a spend budget, a maintenance window — through the same
-		// idiom as flow nodes. The engine hardcodes none of them, which is what
-		// keeps app-specific safety logic out of it.
-		//
-		// There is deliberately no resolver event beside these two. Flows live
-		// in one native table, so "which app owns this flow id" has a single
-		// answer and `FlowLocator` reads it directly; the resolver registry
-		// existed only to arbitrate between per-app object stores.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent::class,
-			\OCA\OpenRegister\Listener\FlowOversightRegistrationListener::class
-		);
-
-		// Principal discovery. WHO a step may ask: `user` and `group` are
-		// Nextcloud's own and are contributed here; a position on a body, a
-		// function, a case role are contributed by the app that owns the
-		// concept. None of that knowledge can move into the engine without it
-		// growing opinions about municipal organisation charts.
-		//
-		// ⚠️ NOT the resolver registry the comment above disclaims. That one
-		// arbitrated between per-app object stores for flow OWNERSHIP; this
-		// one answers "who does this reference mean", which is a different
-		// question with a different answer per instance.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent::class,
-			\OCA\OpenRegister\Listener\PrincipalResolverRegistrationListener::class
-		);
-
-		// Federated configuration sharing. Any app declares its shareable config
-		// types (flows, registers, case types, themes …) through this event, the
-		// same idiom as flow nodes; OpenRegister contributes its own built-ins.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent::class,
-			\OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
-		);
-
 		// The organisation tree guard. A party's parent is checked on the SAVE,
 		// not in whatever wrote the object: a check that lives in one caller is
 		// a check the next caller does not have, and a written cycle reaches
@@ -168,30 +101,6 @@ final class ListenerRegistrar {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\ObjectUpdatingEvent::class,
 			\OCA\OpenRegister\Listener\PartyTreeGuardListener::class
-		);
-
-		// Party roles across a merge. `mdm-merge` owns the merge; the party
-		// vocabulary — the roles both parties held, their addresses, and
-		// putting both back on a reversal — is contributed here rather than
-		// written as a second merge that could disagree with the first.
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\ObjectsMergedEvent::class,
-			\OCA\OpenRegister\Listener\PartyMergeListener::class
-		);
-
-		// Advertise the `openregister` OCM resource type in /ocm-provider discovery.
-		$context->registerEventListener(
-			\OCP\OCM\Events\ResourceTypeRegisterEvent::class,
-			\OCA\OpenRegister\Listener\OcmResourceTypeListener::class
-		);
-
-		// Register OpenRegister as a Context Chat (OCP\ContextChat) content
-		// provider — softly gated by IContentManager::isContextChatAvailable()
-		// inside the listener body, so an instance without the `context_chat`
-		// app installed is entirely unaffected.
-		$context->registerEventListener(
-			\OCP\ContextChat\Events\ContentProviderRegisterEvent::class,
-			ContentProviderRegistrationListener::class
 		);
 	}//end registerFileAndPlatformListeners()
 
@@ -224,41 +133,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
-		$context->registerEventListener(ObjectLockedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
-		$context->registerEventListener(ObjectUnlockedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
-		$context->registerEventListener(ObjectRevertedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
-
-		// Non-object native flow triggers: a file or a user is not an OpenRegister
-		// object, so its event rides on the run as a payload the worker seeds the
-		// first item from. A flow wired to file.created / user.created runs on
-		// these just as it does on object events.
-		$context->registerEventListener(\OCP\Files\Events\Node\NodeCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\Files\Events\Node\NodeWrittenEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\Files\Events\Node\NodeDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\User\Events\UserCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\User\Events\UserDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\Share\Events\ShareCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\Share\Events\ShareDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\SystemTag\TagAssignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-		$context->registerEventListener(\OCP\SystemTag\TagUnassignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
-
-		// ToolRegistrationListener for agent function tools.
-		$context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
-
-		// BulkActionRegistrationListener for the built-in bulk actions. A leaf
-		// app registers its own action on the same event (ADR-022).
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\BulkActionRegistrationEvent::class,
-			\OCA\OpenRegister\Listener\BulkActionRegistrationListener::class
-		);
-
-		// Tables schema-lifecycle listener — retire the managed virtual schema of
-		// a deleted Tables table. Guarded by class_exists so boot never fatals on
-		// an instance without the (soft-dependency) Tables app installed.
-		if (class_exists('OCA\\Tables\\Event\\TableDeletedEvent') === true) {
-			$context->registerEventListener('OCA\\Tables\\Event\\TableDeletedEvent', TablesTableDeletedListener::class);
-		}
 
 		// Flow preflight — refuse a flow document naming a step type this
 		// instance cannot run. Registered FIRST on both events so an unrunnable
@@ -351,18 +226,6 @@ final class ListenerRegistrar {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\TaskTerminalProjectionListener::class
-		);
-
-		// The safety-net write-back hook (design D-6): calendar writes that
-		// reached the backend without traversing the Sabre plugin are
-		// reverted to the engine's truth, and the actor is told why.
-		$context->registerEventListener(
-			\OCP\Calendar\Events\CalendarObjectUpdatedEvent::class,
-			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
-		);
-		$context->registerEventListener(
-			\OCP\Calendar\Events\CalendarObjectDeletedEvent::class,
-			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
 		);
 
 		// The case layer (flow-cmmn-case-semantics). A realisation ending (a task
@@ -512,10 +375,6 @@ final class ListenerRegistrar {
 		// published forms that submit into it, as the API does itself.
 		$context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\FormDestinationSchemaListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
-		$context->registerEventListener(
-			\OCA\OpenRegister\Event\TaskSequenceCompletedEvent::class,
-			ApprovalChainAdvanceListener::class
-		);
 
 		// Sequence progression (flow-approval-consolidation): a committed
 		// terminal task that belongs to a sequence enables the next position,
@@ -609,10 +468,6 @@ final class ListenerRegistrar {
 		// refused with the count and the cap. Updates never count.
 		$context->registerEventListener(ObjectCreatingEvent::class, ObjectQuotaListener::class);
 
-		// A saved view's count alert: the sweep decides when it fires, this
-		// listener tells the people it names, on the channels it declares.
-		$context->registerEventListener(ViewAlertCrossedEvent::class, ViewAlertCrossedListener::class);
-
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)
 		// is created/updated/deleted, recompute the referenced master's golden
@@ -686,21 +541,6 @@ final class ListenerRegistrar {
 		// and carries the transition's action/from/to as context, both of which
 		// EventCatalogListener dropped.
 
-		// Native Nextcloud Flow (workflowengine) composition — expose OR objects
-		// as a Flow entity and OR flows as a Flow operation. Guarded by
-		// class_exists so boot never fatals on an instance without the (soft
-		// dependency) workflowengine app.
-		if (class_exists('OCP\\WorkflowEngine\\Events\\RegisterEntitiesEvent') === true) {
-			$context->registerEventListener(
-				\OCP\WorkflowEngine\Events\RegisterEntitiesEvent::class,
-				FlowEngineRegistrationListener::class
-			);
-			$context->registerEventListener(
-				\OCP\WorkflowEngine\Events\RegisterOperationsEvent::class,
-				FlowEngineRegistrationListener::class
-			);
-		}
-
 		// System-entity notification bridge — routes create/update signals from
 		// OpenRegister's own system entities through the same annotation-notification
 		// pipeline used for stored register objects (spec: openregister-system-notifications).
@@ -708,12 +548,6 @@ final class ListenerRegistrar {
 		$context->registerEventListener(RegisterUpdatedEvent::class, SystemEntityNotificationListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, SystemEntityNotificationListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, SystemEntityNotificationListener::class);
-		$context->registerEventListener(ConfigurationCreatedEvent::class, SystemEntityNotificationListener::class);
-		$context->registerEventListener(ConfigurationUpdatedEvent::class, SystemEntityNotificationListener::class);
-		$context->registerEventListener(SourceCreatedEvent::class, SystemEntityNotificationListener::class);
-		$context->registerEventListener(SourceUpdatedEvent::class, SystemEntityNotificationListener::class);
-		$context->registerEventListener(AgentCreatedEvent::class, SystemEntityNotificationListener::class);
-		$context->registerEventListener(AgentUpdatedEvent::class, SystemEntityNotificationListener::class);
 
 		// Authorization cache eviction when the POLICY behind a memoised verdict
 		// is rewritten. PermissionHandler::clearInheritFromPublicCache() has
@@ -771,7 +605,6 @@ final class ListenerRegistrar {
 		);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
-		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
 
 		// Scheduled-notification per-object dedup pruning (Phase 3.4):
 		// - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
@@ -821,9 +654,6 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
-		$context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
-		$context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
-		$context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
 		$context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
@@ -840,60 +670,6 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, NotifyPushListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, NotifyPushListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, NotifyPushListener::class);
-
-		// FilesSidebarListener injects the sidebar tab script into the Files app.
-		$context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
-
-		// MailAppScriptListener injects the mail sidebar script into the Mail app
-		// (gated to the Mail app via TemplateResponse->getApp() === 'mail').
-		$context->registerEventListener(
-			\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
-			MailAppScriptListener::class
-		);
-
-		// IntegrationGlobalScriptListener loads the shared integration-registry
-		// bootstrap on EVERY full-page render so the registry is installed +
-		// populated universally — letting leaves render inside any consuming
-		// app's object detail page (e.g. an OpenCatalogi publication) without
-		// that app bootstrapping the registry itself (universal-shared-integration-registry).
-		$context->registerEventListener(
-			\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
-			\OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
-		);
-
-		// LeafScriptListener is the OTHER half of that, and without it the
-		// listener above delivers an empty promise for cross-app leaves. It
-		// installs and populates the registry with OpenRegister's OWN built-ins
-		// — it cannot contain a sibling app's Vue components, because those
-		// live in that app's bundle and Nextcloud serves only the current app's
-		// scripts.
-		//
-		// Measured 2026-09-04: no code path anywhere enqueued a providing app's
-		// bundle on a consuming page. Every addScript() here names
-		// 'openregister', nc-vue injects no scripts, and the providing apps
-		// register no template listener. So an ADR-066 leaf reached OCS
-		// discovery, satisfied gate-24 on both halves, and rendered NOTHING —
-		// `humaniq-hours` has been dark on dossiq case pages for as long as it
-		// has shipped.
-		//
-		// This enqueues each providing app's dedicated `leaves` entry, scoped
-		// to pages of apps that ship a register descriptor of their own.
-		$context->registerEventListener(
-			\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
-			\OCA\OpenRegister\Listener\LeafScriptListener::class
-		);
-
-		// PushClientScriptListener loads the always-on, opt-in Web Push
-		// subscribe client on EVERY full-page render (openregister-web-push-engine).
-		// The client never prompts on load — it only subscribes on a user
-		// gesture / settings toggle.
-		$context->registerEventListener(
-			\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
-			\OCA\OpenRegister\Listener\PushClientScriptListener::class
-		);
-
-		// CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
-		$context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
 
 		// ObjectCleanupListener cleans up notes and tasks when an object is deleted.
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
