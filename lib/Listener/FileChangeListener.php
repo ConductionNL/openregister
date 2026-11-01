@@ -133,7 +133,7 @@ class FileChangeListener implements IEventListener {
 		}
 
 		$filePath = $node->getPath();
-		if ($this->isInExtractionScope($filePath) === false) {
+		if ($this->isInExtractionScope(filePath: $filePath) === false) {
 			return;
 		}
 
