@@ -106,7 +106,7 @@ class ExampleSetEngineKinds {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function check(array $fragment, array $context, array $users, ExampleSetValues $values): array {
-		$refusals = [];
+		$refusals = $this->addressRefusals(fragment: $fragment);
 		$context['tasks'] = $values->tasksOf(fragment: $fragment, record: null);
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
 			if ($rows === null) {
@@ -122,6 +122,61 @@ class ExampleSetEngineKinds {
 
 		return $refusals;
 	}//end check()
+
+	/**
+	 * Where a fragment quotes an access link's address (`{{accessLink:key.url}}`) other than as the text of a change's
+	 * `set` field: only there does the record keep it as a fingerprint, so anywhere else it is refused.
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 *
+	 * @return array<int, string> One refusal per part that quotes it elsewhere.
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
+	 */
+	private function addressRefusals(array $fragment): array {
+		$parts = array_diff_key($fragment, ['app' => true, 'file' => true, 'dir' => true, 'changes' => true]);
+		foreach ((array) ($fragment['changes'] ?? []) as $index => $change) {
+			$parts['changes'][$index] = array_diff_key((array) $change, ['set' => true]);
+			foreach ((array) ($change['set'] ?? []) as $path => $value) {
+				if (is_string($value) === false) {
+					$parts['changes'][$index]['set'][$path] = $value;
+				}
+			}
+		}
+
+		$refusals = [];
+		foreach ($parts as $part => $declared) {
+			if ($this->quotesAddress(value: $declared) === true) {
+				$refusals[] = $fragment['file'].': '.$part.' quotes an access link address ({{accessLink:key.url}}); '
+					.'only a change may, as the text of a set field';
+			}
+		}
+
+		return $refusals;
+	}//end addressRefusals()
+
+	/**
+	 * Whether a declared value holds `{{accessLink:key.url}}` anywhere inside it.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return bool
+	 */
+	private function quotesAddress(mixed $value): bool {
+		if (is_string($value) === true) {
+			return preg_match('/\{\{\s*accessLink:[^}]*\.url\s*\}\}/', $value) === 1;
+		}
+
+		if (is_array($value) === true) {
+			foreach ($value as $key => $item) {
+				if ($this->quotesAddress(value: $key) === true || $this->quotesAddress(value: $item) === true) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}//end quotesAddress()
 
 	/**
 	 * Write the tasks and views of one fragment that the record does not hold.

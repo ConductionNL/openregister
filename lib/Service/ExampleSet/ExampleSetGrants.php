@@ -33,6 +33,7 @@ use DateTime;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\Share\IManager;
+use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -135,7 +136,8 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 *
 	 * @param array<string, mixed> $data    The filled grant fields.
 	 * @param array<int, string>   $users   The account ids the set creates or adopts.
-	 * @param array<string, mixed> $context The context: the set's `objects`, its `cast` and the install day.
+	 * @param array<string, mixed> $context The context: the set's `objects`, the groups it created (`setGroups`) and
+	 *                                      the install day.
 	 *
 	 * @return string
 	 *
@@ -153,7 +155,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 
 		$principals = $users;
 		if ($data['type'] === 'group') {
-			$principals = $this->castGroups(context: $context);
+			$principals = array_values(array_filter((array) ($context['setGroups'] ?? []), 'is_string'));
 		}
 
 		if (is_string($data['shareWith'] ?? null) === false || in_array($data['shareWith'], $principals, true) === false) {
@@ -180,7 +182,8 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @param string               $key  The grant's key in the fragment (unused).
 	 * @param array<string, mixed> $data The filled grant fields.
 	 *
-	 * @return array{error: string, entry: array{id: string, object: string}|null} The record entry, or why the grant failed.
+	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (the share's id, its object and the
+	 *                                                                 fields held() matches), or why the grant failed.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
 	 *
@@ -210,8 +213,74 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['id' => (string) $grant['id'], 'object' => $uuid]];
+		return ['error' => '', 'entry' => ['id' => (string) $grant['id'], 'object' => $uuid] + $this->fieldsOf(id: (string) $grant['id'])];
 	}//end write()
+
+	/**
+	 * The fields of a share that make it the set's: its folder, who shared it, with whom and how. A share that cannot
+	 * be read back gets no folder, so it is never taken for the set's.
+	 *
+	 * @param string $id The share's full id.
+	 *
+	 * @return array{node: int|null, sharedBy: string, sharedWith: string, shareType: int|null}
+	 */
+	private function fieldsOf(string $id): array {
+		try {
+			$share = $this->shares()->getShareById($id);
+		} catch (Throwable) {
+			return ['node' => null, 'sharedBy' => '', 'sharedWith' => '', 'shareType' => null];
+		}
+
+		return $this->identity(share: $share);
+	}//end fieldsOf()
+
+	/**
+	 * The fields that make a share the one the set made.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return array{node: int, sharedBy: string, sharedWith: string, shareType: int}
+	 */
+	private function identity(IShare $share): array {
+		return [
+			'node'       => (int) $share->getNodeId(),
+			'sharedBy'   => (string) $share->getSharedBy(),
+			'sharedWith' => (string) $share->getSharedWith(),
+			'shareType'  => (int) $share->getShareType(),
+		];
+	}//end identity()
+
+	/**
+	 * The share a record entry holds, or null when there is none under its id or the share there is not the one the
+	 * set made (another folder, sharer, principal or type).
+	 *
+	 * @param array<string, mixed> $entry A record entry from write().
+	 *
+	 * @return IShare|null
+	 */
+	private function held(array $entry): ?IShare {
+		if (isset($entry['node']) === false) {
+			return null;
+		}
+
+		try {
+			$share = $this->shares()->getShareById((string) ($entry['id'] ?? ''));
+		} catch (Throwable) {
+			return null;
+		}
+
+		$was = [
+			'node'       => (int) $entry['node'],
+			'sharedBy'   => (string) ($entry['sharedBy'] ?? ''),
+			'sharedWith' => (string) ($entry['sharedWith'] ?? ''),
+			'shareType'  => (int) ($entry['shareType'] ?? -1),
+		];
+		if ($this->identity(share: $share) !== $was) {
+			return null;
+		}
+
+		return $share;
+	}//end held()
 
 	/**
 	 * Whether a share the set made is gone.
@@ -223,17 +292,11 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function lost(array $entry): bool {
-		try {
-			$this->shares()->getShareById((string) ($entry['id'] ?? ''));
-		} catch (Throwable) {
-			return true;
-		}
-
-		return false;
+		return $this->held(entry: $entry) === null;
 	}//end lost()
 
 	/**
-	 * Delete a share the set made.
+	 * Delete a share the set made; a share under its id that is not the one the set made counts as gone and stays.
 	 *
 	 * @param array<string, mixed> $entry A record entry from write().
 	 *
@@ -246,9 +309,8 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return 'failed';
 		}
 
-		try {
-			$share = $this->shares()->getShareById((string) ($entry['id'] ?? ''));
-		} catch (Throwable) {
+		$share = $this->held(entry: $entry);
+		if ($share === null) {
 			return 'removed';
 		}
 
@@ -260,24 +322,6 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end revert()
-
-	/**
-	 * The gids of the cast's groups.
-	 *
-	 * @param array<string, mixed> $context The context; `cast` holds every cast entry by key.
-	 *
-	 * @return array<int, string>
-	 */
-	private function castGroups(array $context): array {
-		$gids = [];
-		foreach ((array) ($context['cast'] ?? []) as $entry) {
-			if (is_array($entry) === true && is_string($entry['gid'] ?? null) === true && $entry['gid'] !== '') {
-				$gids[] = $entry['gid'];
-			}
-		}
-
-		return $gids;
-	}//end castGroups()
 
 	/**
 	 * A checked date as a moment, or null when it is not declared.

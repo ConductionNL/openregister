@@ -348,7 +348,10 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: ['esra.demir'], actual: $this->sharedAs);
 		$this->assertNull(actual: $this->activeUser);
 		$first = array_keys($this->shares)[0];
-		$this->assertSame(expected: ['id' => $first, 'object' => $this->caseId()], actual: $this->record->read(set: 'demo')['grants']['alpha/grant-staff']);
+		$this->assertSame(
+			expected: ['id' => $first, 'object' => $this->caseId(), 'node' => 55, 'sharedBy' => 'esra.demir', 'sharedWith' => 'demo-staff', 'shareType' => IShare::TYPE_GROUP],
+			actual: $this->record->read(set: 'demo')['grants']['alpha/grant-staff']
+		);
 
 		$again = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertSame(expected: ['alpha/grant-staff' => 'kept'], actual: $again['grants']);
@@ -514,6 +517,92 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	}//end testTheActingScopeIsGuardedAndAlwaysRestores()
 
 	/**
+	 * A share under the recorded id whose folder, sharer, principal or type differ is not the set's: it is reported
+	 * missing, and neither a refresh nor remove deletes it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function testAnotherShareUnderTheRecordedIdIsNeverTakenForTheSets(): void {
+		$this->caseWith(grants: [$this->staffGrant()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$id    = array_keys($this->shares)[0];
+		$entry = $this->record->read(set: 'demo')['grants']['alpha/grant-staff'];
+		$this->assertSame(expected: [55, 'esra.demir', 'demo-staff', IShare::TYPE_GROUP], actual: [$entry['node'], $entry['sharedBy'], $entry['sharedWith'], $entry['shareType']]);
+
+		foreach (['nodeId' => 77, 'sharedBy' => 'tvisser', 'sharedWith' => 'tvisser', 'shareType' => IShare::TYPE_USER] as $field => $value) {
+			$foreign = new ArrayObject(['id' => (int) substr($id, 11), 'node' => null, 'nodeId' => 55, 'sharedBy' => 'esra.demir', 'sharedWith' => 'demo-staff', 'shareType' => IShare::TYPE_GROUP]);
+			$foreign[$field]   = $value;
+			$this->shares[$id] = $foreign;
+			$this->assertContains(needle: 'grant alpha/grant-staff', haystack: $this->installer->install(plan: $plan, today: $this->today())['missing'], message: $field);
+		}
+
+		$this->shares[$id]['nodeId'] = 77;
+		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$this->assertSame(expected: 77, actual: $this->shares[$id]['nodeId'], message: 'a refresh leaves the other share');
+		$this->remover->remove(set: 'demo');
+		$this->assertArrayHasKey(key: $id, array: $this->shares, message: 'remove leaves the other share');
+	}//end testAnotherShareUnderTheRecordedIdIsNeverTakenForTheSets()
+
+	/**
+	 * A link's address may be quoted only as the text of a change's set field; in a list, a map, app config or a user
+	 * preference the check refuses it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
+	 */
+	public function testALinkAddressIsQuotedOnlyAsTheTextOfASetField(): void {
+		$url   = '{{accessLink:link-sanne.url}}';
+		$cases = [
+			'list'       => ['changes' => [$this->namingChange(set: ['accessLinkUrl' => [$url]])]],
+			'map'        => ['changes' => [$this->namingChange(set: ['accessLinkUrl' => ['url' => $url]])]],
+			'where'      => ['changes' => [$this->namingChange(set: ['accessLinkUrl' => $url]) + ['where' => ['label' => $url]]]],
+			'appConfig'  => ['appConfig' => [['key' => 'demo_link', 'value' => $url]]],
+			'preference' => ['userPreferences' => [['user' => '{{cast:esra.uid}}', 'key' => 'demo_link', 'value' => $url]]],
+		];
+		foreach ($cases as $case => $extra) {
+			$this->caseWith(links: [$this->sanneLink()], share: true, extra: $extra);
+			$refusals = implode("\n", $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals']);
+			$this->assertStringContainsString(needle: 'quotes an access link address', haystack: $refusals, message: $case);
+		}
+
+		$this->caseWith(links: [$this->sanneLink()], share: true, extra: ['changes' => [$this->namingChange(set: ['accessLinkUrl' => 'Open: '.$url])]]);
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$this->assertSame(expected: [], actual: $refusals, message: 'text around the address in a set field is fine');
+	}//end testALinkAddressIsQuotedOnlyAsTheTextOfASetField()
+
+	/**
+	 * A group grant goes only to a group the set created: a group that was on the instance before is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function testAGroupGrantGoesOnlyToAGroupTheSetCreated(): void {
+		$this->accounts->createGroup(gid: 'demo-staff', displayName: 'Staff');
+		$this->caseWith(grants: [$this->staffGrant()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$refusals = implode("\n", $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertStringContainsString(needle: 'grant "grant-staff": shareWith "demo-staff" is no group of the set', haystack: $refusals);
+		$this->assertSame(expected: [], actual: $this->shares);
+	}//end testAGroupGrantGoesOnlyToAGroupTheSetCreated()
+
+	/**
+	 * A change that names Sanne's link on the share record, with the given `set`.
+	 *
+	 * @param array<string, mixed> $set The fields.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function namingChange(array $set): array {
+		return ['key' => 'share-sanne-names-its-link', 'register' => 'dossiq', 'schema' => 'caseShare', 'object' => 'share-sanne', 'set' => $set];
+	}//end namingChange()
+
+	/**
 	 * Install a fragment with a case owned by Esra, optionally a share record of type link and a change naming
 	 * its link, and the given links and grants.
 	 *
@@ -521,10 +610,11 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 * @param array<int, array<string, mixed>> $grants The grants.
 	 * @param bool                             $share  Whether to add the share record and the change.
 	 * @param string                           $owner  The case's owner.
+	 * @param array<string, mixed>             $extra  Further fragment parts.
 	 *
 	 * @return void
 	 */
-	private function caseWith(array $links = [], array $grants = [], bool $share = false, string $owner = '{{cast:esra.uid}}'): void {
+	private function caseWith(array $links = [], array $grants = [], bool $share = false, string $owner = '{{cast:esra.uid}}', array $extra = []): void {
 		$objects = [['key' => 'case', 'register' => 'dossiq', 'schema' => 'case', 'owner' => $owner, 'data' => ['title' => 'Verlichting fietspad Lindelaan']]];
 		$changes = [];
 		if ($share === true) {
@@ -540,12 +630,12 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			]];
 		}
 
-		$this->app(app: 'alpha', fragment: array_filter([
+		$this->app(app: 'alpha', fragment: array_merge(array_filter([
 			'objects'     => $objects,
 			'changes'     => $changes,
 			'accessLinks' => $links,
 			'grants'      => $grants,
-		]));
+		]), $extra));
 	}//end caseWith()
 
 	/**
@@ -767,6 +857,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		}
 
 		$share->method('getId')->willReturnCallback(fn (): string => (string) ($fields['id'] ?? ''));
+		$share->method('getNodeId')->willReturnCallback(fn (): int => (int) (($fields['node'] ?? null)?->getId() ?? ($fields['nodeId'] ?? 0)));
 		$share->method('getFullId')->willReturnCallback(fn (): string => 'ocinternal:'.($fields['id'] ?? ''));
 
 		return $share;

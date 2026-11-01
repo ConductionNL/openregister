@@ -110,6 +110,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$record    = $this->record->read(set: (string) $plan['set']);
 		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
 		$base      = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
+		$base['setGroups'] = $this->people->groupsOfSet(plan: $plan, record: $record);
 		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, record: $record, adopt: $adopt));
 		$checked   = [];
 		$changes   = [];
@@ -260,6 +261,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
 
 		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
+		// A grant goes only to a group this set created (ExampleSetGrants).
+		$base['setGroups'] = $record['groups'];
 		$written = [];
 		foreach ($plan['fragments'] as $fragment) {
 			$report = $this->installFragment(plan: $plan, fragment: $fragment, base: $base, report: $report, record: $record, written: $written);
