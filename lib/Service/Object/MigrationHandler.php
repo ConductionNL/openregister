@@ -115,7 +115,8 @@ class MigrationHandler {
 		foreach ($sourceObjects as $sourceObject) {
 			$remainingObjectIds = array_filter(
 				$remainingObjectIds,
-				fn ($id) => $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId()
+				// Compare as strings: ids arrive from the request as strings, getId() is an int.
+				fn ($id) => (string) $id !== $sourceObject->getUuid() && (string) $id !== (string) $sourceObject->getId()
 			);
 			$this->migrateOne(sourceObject: $sourceObject, run: $run);
 		}

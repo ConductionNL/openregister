@@ -4,7 +4,7 @@
             "success": true,
             "statistics": {
                 "objectsMigrated": 2,
-                "objectsFailed": 5,
+                "objectsFailed": 4,
                 "propertiesMapped": 3,
                 "propertiesDiscarded": 9
             },
@@ -46,12 +46,6 @@
                     "objectTitle": null,
                     "success": false,
                     "error": "Object with ID missing not found"
-                },
-                {
-                    "objectId": "12",
-                    "objectTitle": null,
-                    "success": false,
-                    "error": "Object with ID 12 not found"
                 }
             ],
             "warnings": [
@@ -61,8 +55,7 @@
                 "Failed to migrate object u-reg: Object u-reg does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='7', schema='2'",
                 "Failed to migrate object u-sch: Object u-sch does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='1', schema='8'",
                 "Failed to migrate object u-fail: update failed",
-                "Failed to migrate object missing: Object not found",
-                "Failed to migrate object 12: Object not found"
+                "Failed to migrate object missing: Object not found"
             ]
         },
         "calls": [
