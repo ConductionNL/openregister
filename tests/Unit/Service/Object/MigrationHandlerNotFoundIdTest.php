@@ -29,6 +29,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\MigrationRun
+ * @uses   \OCA\OpenRegister\Service\Object\MigrationSide
  */
 class MigrationHandlerNotFoundIdTest extends TestCase {
 
