@@ -178,60 +178,96 @@ class MoveObject {
 		Schema $targetSchema,
 		string $actor,
 	): array {
-		$uuid = (string)$object->getUuid();
-		$from = ['register' => $sourceRegister->getId(), 'schema' => $sourceSchema->getId()];
-		$to = ['register' => $targetRegister->getId(), 'schema' => $targetSchema->getId()];
+		$move = new ObjectMove(
+			object: $object,
+			source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
+			target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
+			actor: $actor
+		);
 
-		if ($from === $to) {
-			return $this->refusal(uuid: $uuid, from: $from, to: $to, error: 'This object is already there.');
+		if ($move->source->ids() === $move->target->ids()) {
+			return $this->refusal(move: $move, error: 'This object is already there.');
 		}
 
 		$verdict = $this->fits(object: $object, target: $targetSchema);
 		if ($verdict['fits'] === false) {
-			return [
-				'moved' => false,
-				'uuid' => $uuid,
-				'from' => $from,
-				'to' => $to,
-				'errors' => $verdict['errors'],
-			];
+			return $move->answer(moved: false, errors: $verdict['errors']);
 		}
 
-		// WRITE FIRST. See the class docblock: a failure here leaves the object
-		// exactly where it was, which is the recoverable half.
+		$writeError = $this->writeAtTarget(move: $move);
+		if ($writeError !== null) {
+			return $this->refusal(
+				move: $move,
+				error: 'The object could not be written at its new address, so it was not moved: ' . $writeError
+			);
+		}
+
+		$stranded = $this->removeFromSource(move: $move) === false;
+		$this->record(move: $move, stranded: $stranded);
+
+		$errors = [];
+		if ($stranded === true) {
+			$errors = ['The object moved, and its old row could not be removed. It is readable at both addresses.'];
+		}
+
+		return $move->answer(moved: true, errors: $errors);
+	}//end move()
+
+	/**
+	 * Write the object at its target address.
+	 *
+	 * WRITE FIRST. See the class docblock: a failure here leaves the object
+	 * exactly where it was, which is the recoverable half.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return string|null The write error, or null when the object was written.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	private function writeAtTarget(ObjectMove $move): ?string {
+		$object = $move->object;
 		try {
-			$object->setRegister((string)$targetRegister->getId());
-			$object->setSchema((string)$targetSchema->getId());
+			$object->setRegister((string)$move->target->register->getId());
+			$object->setSchema((string)$move->target->schema->getId());
 			$this->objects->updateObjectEntity(
 				entity: $object,
-				register: $targetRegister,
-				schema: $targetSchema
+				register: $move->target->register,
+				schema: $move->target->schema
 			);
 		} catch (Throwable $e) {
 			// Put the entity back the way it was in memory, so a caller that
 			// keeps using it is not holding an object that claims to live
 			// somewhere it does not.
-			$object->setRegister((string)$sourceRegister->getId());
-			$object->setSchema((string)$sourceSchema->getId());
+			$object->setRegister((string)$move->source->register->getId());
+			$object->setSchema((string)$move->source->schema->getId());
 
-			return $this->refusal(
-				uuid: $uuid,
-				from: $from,
-				to: $to,
-				error: 'The object could not be written at its new address, so it was not moved: ' . $e->getMessage()
-			);
+			return $e->getMessage();
 		}//end try
 
-		// THEN REMOVE, hard and with no events. A soft delete would leave a
-		// tombstone the trash picks up and offers to restore INTO A TABLE THE
-		// OBJECT NO LONGER BELONGS IN, and a delete event would tell eight
-		// listening apps that an object they can still read was deleted.
-		$stranded = false;
+		return null;
+	}//end writeAtTarget()
+
+	/**
+	 * Remove the old row, hard and with no events.
+	 *
+	 * A soft delete would leave a tombstone the trash picks up and offers to
+	 * restore INTO A TABLE THE OBJECT NO LONGER BELONGS IN, and a delete event
+	 * would tell eight listening apps that an object they can still read was
+	 * deleted.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return bool False when the old row survived (logged, not fatal).
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	private function removeFromSource(ObjectMove $move): bool {
 		try {
 			$this->objects->deleteObjectEntity(
-				entity: $object,
-				register: $sourceRegister,
-				schema: $sourceSchema,
+				entity: $move->object,
+				register: $move->source->register,
+				schema: $move->source->schema,
 				hardDelete: true,
 				dispatchEvents: false
 			);
@@ -239,29 +275,16 @@ class MoveObject {
 			// NOT fatal, and NOT silent. The object is readable at its new
 			// address; the old row is a duplicate that reads the same object,
 			// and somebody has to know it is there.
-			$stranded = true;
 			$this->logger->error(
-				message: '[MoveObject] object ' . $uuid . ' was written at its new address but its old row '
+				message: '[MoveObject] object ' . (string)$move->object->getUuid() . ' was written at its new address but its old row '
 					. 'could not be removed, so it is readable at both: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'from' => $from, 'to' => $to]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'from' => $move->source->ids(), 'to' => $move->target->ids()]
 			);
+			return false;
 		}//end try
 
-		$this->record(object: $object, from: $from, to: $to, actor: $actor, stranded: $stranded);
-
-		$errors = [];
-		if ($stranded === true) {
-			$errors = ['The object moved, and its old row could not be removed. It is readable at both addresses.'];
-		}
-
-		return [
-			'moved' => true,
-			'uuid' => $uuid,
-			'from' => $from,
-			'to' => $to,
-			'errors' => $errors,
-		];
-	}//end move()
+		return true;
+	}//end removeFromSource()
 
 	/**
 	 * One validation error, as a sentence naming the property where it can.
@@ -327,18 +350,16 @@ class MoveObject {
 	 * Both, because "this object moved" with only one address on it sends the
 	 * next reader looking through every register for where it came from.
 	 *
-	 * @param ObjectEntity         $object   The object.
-	 * @param array<string, mixed> $from     Where it was.
-	 * @param array<string, mixed> $to       Where it is.
-	 * @param string               $actor    Who moved it.
-	 * @param boolean              $stranded Whether the old row survived.
+	 * @param ObjectMove $move     The move; its actor is who moved it.
+	 * @param boolean    $stranded Whether the old row survived.
 	 *
 	 * @return void
 	 */
-	private function record(ObjectEntity $object, array $from, array $to, string $actor, bool $stranded): void {
+	private function record(ObjectMove $move, bool $stranded): void {
+		$object  = $move->object;
 		$actorId = null;
-		if ($actor !== '') {
-			$actorId = $actor;
+		if ($move->actor !== '') {
+			$actorId = $move->actor;
 		}
 
 		try {
@@ -346,8 +367,8 @@ class MoveObject {
 				object: $object,
 				action: self::ACTION,
 				context: [
-					'from' => $from,
-					'to' => $to,
+					'from' => $move->source->ids(),
+					'to' => $move->target->ids(),
 					'strandedSourceRow' => $stranded,
 				],
 				actorId: $actorId
@@ -367,14 +388,12 @@ class MoveObject {
 	/**
 	 * A refusal shaped like every other answer.
 	 *
-	 * @param string               $uuid  The object.
-	 * @param array<string, mixed> $from  Where it is.
-	 * @param array<string, mixed> $to    Where it was asked to go.
-	 * @param string               $error Why not.
+	 * @param ObjectMove $move  The move that was asked for.
+	 * @param string     $error Why not.
 	 *
 	 * @return array<string, mixed> The answer.
 	 */
-	private function refusal(string $uuid, array $from, array $to, string $error): array {
-		return ['moved' => false, 'uuid' => $uuid, 'from' => $from, 'to' => $to, 'errors' => [$error]];
+	private function refusal(ObjectMove $move, string $error): array {
+		return $move->answer(moved: false, errors: [$error]);
 	}//end refusal()
 }//end class
