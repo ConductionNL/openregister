@@ -90,6 +90,10 @@ class GoldenWalkDispatcher implements FlowStepDispatcher {
 				throw new FlowStop(reason: 'error stop at ' . $id, isError: true);
 			case 'double':
 				return array_merge($items, $items);
+			case 'many':
+				return array_merge($items, $items, $items, $items, $items, $items, $items);
+			case 'route-right':
+				return array_map(static fn (array $item): array => $item + [FlowItems::OUTPUT => 'right'], $items);
 			default:
 				return $items;
 		}
@@ -116,6 +120,8 @@ class GoldenWalkLogger extends AbstractLogger {
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamHop
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamPass
+ * @covers \OCA\OpenRegister\Service\Flow\FlowWalk
+ * @covers \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses   \OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItemPlacement
@@ -194,7 +200,21 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			'edges' => [['id' => 'there', 'from' => 'a', 'to' => 'b'], ['id' => 'back', 'from' => 'b', 'to' => 'a']],
 		];
 
+		$routed = [
+			'id' => 'routed',
+			'nodes' => [
+				['id' => 'r', 'type' => 'router', 'exits' => [['id' => 'left'], ['id' => 'right']]],
+				['id' => 'L', 'type' => 't.left'],
+				['id' => 'R', 'type' => 't.right'],
+			],
+			'edges' => [
+				['id' => 'toL', 'from' => 'r', 'fromExit' => 'left', 'to' => 'L'],
+				['id' => 'toR', 'from' => 'r', 'fromExit' => 'right', 'to' => 'R'],
+			],
+		];
+
 		return [
+			'routed' => $routed,
 			'linear' => $linear,
 			'split' => $split,
 			'switch' => $switch,
@@ -239,6 +259,9 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			'loop-ceiling' => ['flow' => 'loop'],
 			'malformed' => ['flow' => 'malformed'],
 			'start-at' => ['flow' => 'linear', 'startAt' => 'two'],
+			'many-items' => ['flow' => 'linear', 'behaviour' => ['one' => 'many']],
+			'routed-by-tag' => ['flow' => 'routed', 'behaviour' => ['r' => 'route-right']],
+			'pins-run-beats-flow' => ['flow' => 'linear', 'pins' => ['two' => [FlowItems::item(json: ['from' => 'run'])]], 'flowPins' => ['two' => [FlowItems::item(json: ['from' => 'flow'])], 'three' => [FlowItems::item(json: ['from' => 'flow-only'])]]],
 		];
 
 		$out = [];
@@ -315,6 +338,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			$flow = ['id' => 'resume', 'nodes' => [['id' => 'advice', 'type' => 't.a'], ['id' => 'hearing', 'type' => 't.h']], 'edges' => []];
 			$this->run->setMarking($case['marking']);
 			$this->run->setPlaceItems(['advice' => [FlowItems::item(json: ['branch' => 'A'])], 'hearing' => [FlowItems::item(json: ['branch' => 'H'])]]);
+		}
+
+		if (isset($case['flowPins']) === true) {
+			$flow['pins'] = $case['flowPins'];
 		}
 
 		foreach (($case['onError'] ?? []) as $nodeId => $policy) {
