@@ -1,0 +1,263 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`views store search-state golden applyView: empty configuration 1`] = `
+{
+  "activeView": {
+    "configuration": {},
+    "id": 3,
+  },
+  "calls": [],
+}
+`;
+
+exports[`views store search-state golden applyView: falsy values 1`] = `
+{
+  "activeView": {
+    "configuration": {
+      "advancedFilters": "",
+      "columns": undefined,
+      "enabledFacets": null,
+      "facetFilters": false,
+      "pagination": 0,
+      "registers": null,
+      "schemas": undefined,
+      "searchTerms": 0,
+      "sorting": null,
+      "source": "",
+    },
+    "id": 4,
+  },
+  "calls": [],
+}
+`;
+
+exports[`views store search-state golden applyView: full configuration 1`] = `
+{
+  "activeView": {
+    "configuration": {
+      "advancedFilters": {
+        "x": "y",
+      },
+      "columns": {
+        "c": true,
+      },
+      "enabledFacets": {
+        "e": true,
+      },
+      "facetFilters": {
+        "f": 1,
+      },
+      "pagination": {
+        "limit": 50,
+        "page": 2,
+      },
+      "registers": [
+        1,
+        2,
+      ],
+      "schemas": [
+        3,
+      ],
+      "searchTerms": [
+        "a",
+      ],
+      "sorting": {
+        "title": "asc",
+      },
+      "source": "database",
+    },
+    "id": 2,
+  },
+  "calls": [
+    [
+      "setSelectedRegisters",
+      [
+        1,
+        2,
+      ],
+    ],
+    [
+      "setSelectedSchemas",
+      [
+        3,
+      ],
+    ],
+    [
+      "setSource",
+      "database",
+    ],
+    [
+      "setSearchTerms",
+      [
+        "a",
+      ],
+    ],
+    [
+      "setFacetFilters",
+      {
+        "f": 1,
+      },
+    ],
+    [
+      "setEnabledFacets",
+      {
+        "e": true,
+      },
+    ],
+    [
+      "setAdvancedFilters",
+      {
+        "x": "y",
+      },
+    ],
+    [
+      "setPagination",
+      {
+        "limit": 50,
+        "page": 2,
+      },
+    ],
+    [
+      "setSorting",
+      {
+        "title": "asc",
+      },
+    ],
+    [
+      "setColumns",
+      {
+        "c": true,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`views store search-state golden applyView: no configuration 1`] = `
+{
+  "activeView": null,
+  "calls": [],
+}
+`;
+
+exports[`views store search-state golden applyView: null view 1`] = `
+{
+  "activeView": null,
+  "calls": [],
+}
+`;
+
+exports[`views store search-state golden applyView: partial configuration 1`] = `
+{
+  "activeView": {
+    "configuration": {
+      "extra": 1,
+      "schemas": [],
+      "sorting": {
+        "a": 1,
+      },
+    },
+    "id": 5,
+  },
+  "calls": [
+    [
+      "setSelectedSchemas",
+      [],
+    ],
+    [
+      "setSorting",
+      {
+        "a": 1,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`views store search-state golden createViewFromSearchState: empty state, all arguments 1`] = `
+{
+  "configuration": {
+    "advancedFilters": {},
+    "columns": {},
+    "enabledFacets": {},
+    "facetFilters": {},
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "registers": [],
+    "schemas": [],
+    "searchTerms": [],
+    "sorting": {},
+    "source": "auto",
+  },
+  "description": "desc",
+  "isDefault": true,
+  "isPublic": true,
+  "name": "n",
+}
+`;
+
+exports[`views store search-state golden createViewFromSearchState: falsy state 1`] = `
+{
+  "configuration": {
+    "advancedFilters": {},
+    "columns": {},
+    "enabledFacets": {},
+    "facetFilters": {},
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "registers": [],
+    "schemas": [],
+    "searchTerms": [],
+    "sorting": {},
+    "source": "auto",
+  },
+  "description": "",
+  "isDefault": false,
+  "isPublic": 1,
+  "name": "",
+}
+`;
+
+exports[`views store search-state golden createViewFromSearchState: full state, defaults 1`] = `
+{
+  "configuration": {
+    "advancedFilters": {
+      "c": 1,
+    },
+    "columns": {
+      "e": 1,
+    },
+    "enabledFacets": {
+      "b": 1,
+    },
+    "facetFilters": {
+      "a": 1,
+    },
+    "pagination": {
+      "limit": 5,
+      "page": 3,
+    },
+    "registers": [
+      1,
+    ],
+    "schemas": [
+      2,
+    ],
+    "searchTerms": [
+      "q",
+    ],
+    "sorting": {
+      "d": 1,
+    },
+    "source": "index",
+  },
+  "description": "",
+  "isDefault": false,
+  "isPublic": false,
+  "name": "name",
+}
+`;
