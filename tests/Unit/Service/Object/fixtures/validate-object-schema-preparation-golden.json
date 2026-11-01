@@ -819,6 +819,218 @@
         "computed": [],
         "required": []
     },
+    "prepare: computed twice in required": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "c",
+                "a"
+            ],
+            "properties": {
+                "a": {
+                    "type": "string"
+                },
+                "c": {
+                    "type": "string"
+                }
+            }
+        },
+        "computed": [
+            "a"
+        ],
+        "required": [
+            "c",
+            "a"
+        ]
+    },
+    "prepare: computed non-object neighbour": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "f"
+            ],
+            "properties": {
+                "f": {
+                    "type": "string"
+                },
+                "a": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "g": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "computed": null
+                }
+            }
+        },
+        "computed": [
+            "a"
+        ],
+        "required": [
+            "f"
+        ]
+    },
+    "prepare: required as numeric names": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                0
+            ],
+            "properties": {
+                "0": {
+                    "type": "string"
+                },
+                "x": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": [
+            0
+        ]
+    },
+    "prepare: required not a list, no props": {
+        "schemaObject": {
+            "type": "object",
+            "required": "a"
+        },
+        "computed": [],
+        "required": "a"
+    },
+    "prepare: null type string": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "n": {
+                    "type": [
+                        "null",
+                        "null"
+                    ]
+                },
+                "e": {
+                    "enum": [
+                        "a"
+                    ]
+                },
+                "m": {
+                    "enum": [
+                        null
+                    ],
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: translatable enum, false marker": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "t": {
+                    "translatable": false
+                },
+                "u": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "a"
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "enum": [
+                                    "a"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: translatable required order": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "b"
+            ],
+            "properties": {
+                "a": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "b": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    ]
+                },
+                "c": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": [
+            "b"
+        ]
+    },
+    "prepare: entity without slug": {
+        "threw": "TypeError"
+    },
+    "prepare: properties not an object": {
+        "threw": "TypeError"
+    },
+    "prepare: computed numeric name": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                true
+            ],
+            "properties": {
+                "1": {
+                    "type": "string"
+                },
+                "b": {
+                    "type": "string"
+                }
+            }
+        },
+        "computed": [
+            "1"
+        ],
+        "required": [
+            true
+        ]
+    },
     "prepare: properties as list": {
         "threw": "Error"
     }

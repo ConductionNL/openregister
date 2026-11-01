@@ -1949,9 +1949,6 @@ class ValidateObject {
 	 * @param Schema|null $schema The schema entity (for slug-based circular reference detection)
 	 *
 	 * @return array{schemaObject: object, computed: list<string>, required: array}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential schema mutations with per-property branching
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function prepareSchemaForValidation(object $schemaObject, ?Schema $schema): array {
 		// Get the current schema slug for circular reference detection.
@@ -1966,26 +1963,9 @@ class ValidateObject {
 			currentSchemaSlug: $currentSchemaSlug
 		);
 
-		// Collect computed property names BEFORE cleaning — the cleaning step
-		// strips the per-property `computed` marker, which previously made
-		// computed-property removal unreachable (the old code inspected the
-		// already-cleaned schema and never found a `computed` key).
-		$computedProperties = [];
-		if (($schemaObject->properties ?? null) !== null) {
-			foreach ($schemaObject->properties as $propName => $propSchema) {
-				// Both derivation engines make a property system-generated: the
-				// Twig `computed` marker and the JSON-AST `calculation` key. A
-				// value the client sent for either is dropped before
-				// validation, and neither can be required from user input.
-				if (is_object($propSchema) === false) {
-					continue;
-				}
-
-				if (($propSchema->computed ?? null) !== null || ($propSchema->calculation ?? null) !== null) {
-					$computedProperties[] = $propName;
-				}
-			}
-		}
+		// Collect computed property names BEFORE cleaning: the cleaning step
+		// strips the per-property `computed` marker.
+		$computedProperties = $this->collectComputedProperties(schemaObject: $schemaObject);
 
 		// Clean the schema by removing all Nextcloud-specific metadata properties.
 		$schemaObject = $this->cleanSchemaForValidation(schemaObject: $schemaObject);
@@ -1999,101 +1979,11 @@ class ValidateObject {
 			unset($schemaObject->required);
 		}
 
-		// Strip computed properties from the required list — computed fields
-		// are system-generated and can't be required from user input.
-		foreach ($computedProperties as $propName) {
-			if (is_array($schemaObject->required ?? null) === true) {
-				$reqKey = array_search($propName, $schemaObject->required, true);
-				if ($reqKey !== false) {
-					unset($schemaObject->required[$reqKey]);
-					$schemaObject->required = array_values($schemaObject->required);
-				}
-			}
-		}
+		$this->dropComputedFromRequired(schemaObject: $schemaObject, computed: $computedProperties);
 
 		$requiredFields = ($schemaObject->required ?? []);
-
-		/*
-		 * Modify schema to allow null values for non-required fields.
-		 * This ensures that null values are valid for optional fields.
-		 * @psalm-suppress NoValue
-		 */
-
-		if (property_exists($schemaObject, 'properties') === true) {
-			$properties = $schemaObject->properties;
-
-			// Handle properties object.
-			if (isset($properties) === true && is_object($properties) === true) {
-				foreach ($properties as $propertyName => $propertySchema) {
-					// Skip required fields - they should not allow null unless explicitly defined.
-					if (in_array($propertyName, $requiredFields) === true) {
-						continue;
-					}
-
-					// Special handling for enum fields - only allow null if not explicitly defined in enum.
-					if (($propertySchema->enum ?? null) !== null && is_array($propertySchema->enum) === true) {
-						// If enum doesn't include null, don't add it automatically.
-						// Enum fields should be either set to a valid enum value or omitted entirely.
-						if (in_array(null, $propertySchema->enum, true) === false) {
-							continue;
-						}
-					}
-
-					// For non-required fields, allow null values by modifying the type.
-					if (($propertySchema->type ?? null) !== null && is_string($propertySchema->type) === true) {
-						// Convert single type to array with null support.
-						$propertySchema->type = [$propertySchema->type, 'null'];
-					} elseif (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
-						// Add null to existing type array if not already present.
-						if (in_array('null', $propertySchema->type, true) === false) {
-							$propertySchema->type[] = 'null';
-						}
-					}
-				}//end foreach
-			}//end if
-		}//end if
-
-		// Translatable properties accept EITHER the scalar value (source-language
-		// / legacy write, or the X-Translation-Target-Language wrap path) OR a
-		// language-keyed object like {"nl": "Welkom", "en": "Welcome"}. The scalar
-		// branch is validated by the original (null-widened) property schema; the
-		// language-map branch validates every inner language value against that
-		// same scalar schema via additionalProperties. Without this widening a
-		// language-keyed write body is rejected by plain type validation (object
-		// vs string) BEFORE TranslationHandler::normalizeTranslationsForSave() can
-		// split it into per-language translation rows — which broke the entire
-		// i18n write path (see i18n-api-language-negotiation / i18n-source-of-truth).
-		if (property_exists($schemaObject, 'properties') === true
-			&& is_object($schemaObject->properties) === true
-		) {
-			foreach ($schemaObject->properties as $propertyName => $propertySchema) {
-				if (is_object($propertySchema) === false) {
-					continue;
-				}
-
-				if (($propertySchema->translatable ?? null) !== true) {
-					continue;
-				}
-
-				// Scalar branch: the property schema minus the custom marker.
-				$valueSchema = json_decode(json_encode($propertySchema));
-				unset($valueSchema->translatable);
-
-				// Language-map branch: an object whose every value matches the
-				// scalar schema (so language values are still type-checked).
-				$languageObjectSchema = (object)[
-					'type' => 'object',
-					'additionalProperties' => json_decode(json_encode($valueSchema)),
-				];
-
-				$schemaObject->properties->$propertyName = (object)[
-					'anyOf' => [
-						$valueSchema,
-						$languageObjectSchema,
-					],
-				];
-			}//end foreach
-		}//end if
+		$this->allowNullForOptionalProperties(schemaObject: $schemaObject, requiredFields: $requiredFields);
+		$this->acceptTranslationMaps(schemaObject: $schemaObject);
 
 		return [
 			'schemaObject' => $schemaObject,
@@ -2101,6 +1991,157 @@ class ValidateObject {
 			'required' => $requiredFields,
 		];
 	}//end prepareSchemaForValidation()
+
+	/**
+	 * The names of the properties the system derives: a Twig `computed` marker or a JSON-AST `calculation`.
+	 *
+	 * A value the client sent for either is dropped before validation, and neither can be required from user input.
+	 *
+	 * @param object $schemaObject The schema object, before cleaning
+	 *
+	 * @return list<int|string> The computed property names
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function collectComputedProperties(object $schemaObject): array {
+		$computedProperties = [];
+		foreach (($schemaObject->properties ?? []) as $propName => $propSchema) {
+			if (is_object($propSchema) === false) {
+				continue;
+			}
+
+			if (($propSchema->computed ?? null) !== null || ($propSchema->calculation ?? null) !== null) {
+				$computedProperties[] = $propName;
+			}
+		}
+
+		return $computedProperties;
+	}//end collectComputedProperties()
+
+	/**
+	 * Strip computed properties from the required list: they are system-generated.
+	 *
+	 * @param object $schemaObject The cleaned schema object, changed in place
+	 * @param array  $computed     The computed property names
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function dropComputedFromRequired(object $schemaObject, array $computed): void {
+		if (is_array($schemaObject->required ?? null) === false) {
+			return;
+		}
+
+		foreach ($computed as $propName) {
+			$reqKey = array_search($propName, $schemaObject->required, true);
+			if ($reqKey !== false) {
+				unset($schemaObject->required[$reqKey]);
+				$schemaObject->required = array_values($schemaObject->required);
+			}
+		}
+	}//end dropComputedFromRequired()
+
+	/**
+	 * Let every optional top-level property accept null, except an enum that does not list null.
+	 *
+	 * An enum field is either set to one of its values or omitted. A required field accepts null
+	 * only when its schema says so.
+	 *
+	 * @param object $schemaObject   The cleaned schema object, changed in place
+	 * @param mixed  $requiredFields The required property names
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function allowNullForOptionalProperties(object $schemaObject, mixed $requiredFields): void {
+		if (is_object($schemaObject->properties ?? null) === false) {
+			return;
+		}
+
+		foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+			if (in_array($propertyName, $requiredFields) === true || $this->enumExcludesNull(propertySchema: $propertySchema) === true) {
+				continue;
+			}
+
+			$this->addNullType(propertySchema: $propertySchema);
+		}
+	}//end allowNullForOptionalProperties()
+
+	/**
+	 * Whether a property is an enum that does not list null.
+	 *
+	 * @param mixed $propertySchema The property schema
+	 *
+	 * @return bool True when the property has an enum without null
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function enumExcludesNull(mixed $propertySchema): bool {
+		$enum = ($propertySchema->enum ?? null);
+		return is_array($enum) === true && in_array(null, $enum, true) === false;
+	}//end enumExcludesNull()
+
+	/**
+	 * Add `null` to a property's type, whether it is a single type or a list.
+	 *
+	 * @param mixed $propertySchema The property schema, changed in place
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function addNullType(mixed $propertySchema): void {
+		$type = ($propertySchema->type ?? null);
+		if (is_string($type) === true) {
+			$propertySchema->type = [$type, 'null'];
+			return;
+		}
+
+		if (is_array($type) === true && in_array('null', $type, true) === false) {
+			$propertySchema->type[] = 'null';
+		}
+	}//end addNullType()
+
+	/**
+	 * Let a translatable property accept its scalar value or a language-keyed object of such values.
+	 *
+	 * A language-keyed write body like {"nl": "Welkom", "en": "Welcome"} must pass validation before
+	 * TranslationHandler::normalizeTranslationsForSave() splits it into per-language translation rows.
+	 * Every language value is still checked against the scalar schema, through additionalProperties.
+	 *
+	 * @param object $schemaObject The cleaned schema object, changed in place
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function acceptTranslationMaps(object $schemaObject): void {
+		if (is_object($schemaObject->properties ?? null) === false) {
+			return;
+		}
+
+		foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+			if (is_object($propertySchema) === false || ($propertySchema->translatable ?? null) !== true) {
+				continue;
+			}
+
+			// Scalar branch: the property schema minus the custom marker.
+			$valueSchema = json_decode(json_encode($propertySchema));
+			unset($valueSchema->translatable);
+
+			$schemaObject->properties->$propertyName = (object)[
+				'anyOf' => [
+					$valueSchema,
+					(object)[
+						'type' => 'object',
+						'additionalProperties' => json_decode(json_encode($valueSchema)),
+					],
+				],
+			];
+		}
+	}//end acceptTranslationMaps()
 
 	/**
 	 * Let every NESTED property marked `nullable: true` accept `null`.
