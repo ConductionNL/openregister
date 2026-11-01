@@ -103,7 +103,7 @@
     "vue-loading-overlay": "^6.0.6",
     "vue-material-design-icons": "^5.4.0",
     "vue-router": "^5.3.1",
-    "vue3-apexcharts": "~1.8.0",
+    "vue3-apexcharts": "~1.11.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {
