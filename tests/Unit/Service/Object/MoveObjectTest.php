@@ -53,6 +53,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\MoveAddress
+ * @uses \OCA\OpenRegister\Service\Object\ObjectMove
  *
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
  */
