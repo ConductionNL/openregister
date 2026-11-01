@@ -168,9 +168,9 @@ class MigrationHandler {
 				try {
 					$objectDetail['objectTitle'] = $sourceObject->getName() ?? $sourceObject->getUuid();
 
-					// Verify the source object belongs to the expected register/schema (cast to int for comparison).
-					if ((int)$sourceObject->getRegister() !== (int)$sourceRegister
-						|| (int)$sourceObject->getSchema() !== (int)$sourceSchema
+					// Compare with the loaded entities' ids, so a source given by slug matches too.
+					if ((int)$sourceObject->getRegister() !== (int)$sourceRegisterEntity->getId()
+						|| (int)$sourceObject->getSchema() !== (int)$sourceSchemaEntity->getId()
 					) {
 						$actualRegister = $sourceObject->getRegister();
 						$actualSchema = $sourceObject->getSchema();
