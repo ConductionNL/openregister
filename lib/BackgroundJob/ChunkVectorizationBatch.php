@@ -44,12 +44,32 @@ final class ChunkVectorizationBatch {
 	 */
 	private const BATCH_SIZE = 50;
 
+	/**
+	 * Chunk mapper
+	 *
+	 * @var ChunkMapper
+	 */
 	private readonly ChunkMapper $chunkMapper;
 
+	/**
+	 * Embedding coordinator
+	 *
+	 * @var VectorEmbeddings
+	 */
 	private readonly VectorEmbeddings $embeddings;
 
+	/**
+	 * Vector storage handler
+	 *
+	 * @var VectorStorageHandler
+	 */
 	private readonly VectorStorageHandler $storageHandler;
 
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
 	private readonly LoggerInterface $logger;
 
 	/**
@@ -169,7 +189,7 @@ final class ChunkVectorizationBatch {
 			model: (string)$embeddingData['model'],
 			dimensions: (int)$embeddingData['dimensions'],
 			chunkIndex: (int)$chunk->getChunkIndex(),
-			totalChunks: max(1, $this->totalChunksOf($chunk)),
+			totalChunks: max(1, $this->totalChunksOf(chunk: $chunk)),
 			chunkText: substr((string)$chunk->getTextContent(), 0, 500),
 			metadata: [
 				'source_id' => $chunk->getSourceId(),
