@@ -708,7 +708,10 @@ class ChatController extends Controller {
 			// Validate feedback type.
 			if (in_array($type, ['positive', 'negative'], true) === false) {
 				return $this->feedbackError(
-					texts: ['Invalid feedback type', 'type must be "positive" or "negative"'],
+					texts: [
+						$this->l10n->t('Invalid feedback type'),
+						$this->l10n->t('type must be "positive" or "negative"'),
+					],
 					statusCode: 400
 				);
 			}
@@ -732,7 +735,10 @@ class ChatController extends Controller {
 
 			if ($message->getConversationId() !== $conversation->getId()) {
 				return $this->feedbackError(
-					texts: ['Message not found', 'Message does not belong to this conversation'],
+					texts: [
+						$this->l10n->t('Message not found'),
+						$this->l10n->t('Message does not belong to this conversation'),
+					],
 					statusCode: 404
 				);
 			}
@@ -767,9 +773,9 @@ class ChatController extends Controller {
 	}//end sendFeedback()
 
 	/**
-	 * Build a feedback error response from an untranslated error and message.
+	 * Build a feedback error response from a translated error and message.
 	 *
-	 * @param array{0: string, 1: string} $texts      The error and the message, untranslated.
+	 * @param array{0: string, 1: string} $texts      The translated error and message.
 	 * @param int                         $statusCode The HTTP status.
 	 *
 	 * @return JSONResponse
@@ -777,8 +783,8 @@ class ChatController extends Controller {
 	private function feedbackError(array $texts, int $statusCode): JSONResponse {
 		return new JSONResponse(
 			data: [
-				'error' => $this->l10n->t($texts[0]),
-				'message' => $this->l10n->t($texts[1]),
+				'error' => $texts[0],
+				'message' => $texts[1],
 			],
 			statusCode: $statusCode
 		);
