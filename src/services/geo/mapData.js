@@ -127,6 +127,8 @@ export function representativePoint(geometry) {
  * @param {Array<object>} rows        Object rows.
  * @param {string|null}   geoProperty Geo property name, or null to auto-detect.
  * @return {Array<object>} The marker list.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
  */
 export function buildMarkers(rows, geoProperty = null) {
 	if (!Array.isArray(rows)) {
@@ -148,6 +150,8 @@ export function buildMarkers(rows, geoProperty = null) {
  * @param {unknown}     row         The object row.
  * @param {string|null} geoProperty Geo property name, or null to auto-detect.
  * @return {object|null} The marker.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
  */
 function markerFor(row, geoProperty) {
 	if (row === null || typeof row !== 'object') {
@@ -171,6 +175,8 @@ function markerFor(row, geoProperty) {
  *
  * @param {object} row The object row.
  * @return {string|number|null} The id.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
  */
 function rowId(row) {
 	return row.id ?? (row['@self'] && row['@self'].id) ?? null
@@ -181,6 +187,8 @@ function rowId(row) {
  *
  * @param {object} row The object row.
  * @return {string} The title.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
  */
 function rowTitle(row) {
 	return String(row.title ?? row.name ?? row.id ?? '')
