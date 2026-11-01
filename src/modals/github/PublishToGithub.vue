@@ -123,6 +123,12 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
+import {
+	defaultBranch,
+	jsonOrThrow,
+	publishedText,
+	publishTarget,
+} from '../../services/githubPublish.js'
 import { navigationStore } from '../../store/store.js'
 
 export default {
@@ -334,12 +340,10 @@ export default {
 					},
 				)
 
-				if (!response.ok) {
-					const errorData = await response.json()
-					throw new Error(errorData.error || 'Failed to load repositories')
-				}
-
-				const data = await response.json()
+				const data = await jsonOrThrow(
+					response,
+					'Failed to load repositories',
+				)
 				this.repositories = data.repositories || []
 
 				// Pre-select the GitHub repo the entity was already published to
@@ -373,6 +377,20 @@ export default {
 		},
 
 		/**
+		 * Select the repository's default branch when none is selected yet.
+		 *
+		 * @spec exclude UI state helper — picks main, master or the first branch.
+		 */
+		selectDefaultBranch() {
+			if (this.branches.length > 0 && !this.selectedBranch) {
+				const branch = defaultBranch(this.branches)
+				if (branch) {
+					this.selectedBranch = branch.name
+				}
+			}
+		},
+
+		/**
 		 * @param {string} owner The repository owner
 		 * @param {string} repo The repository name
 		 * @spec exclude Modal data-load plumbing — fetches branches for the selected repository.
@@ -394,24 +412,10 @@ export default {
 					},
 				)
 
-				if (!response.ok) {
-					const errorData = await response.json()
-					throw new Error(errorData.error || 'Failed to load branches')
-				}
-
-				const data = await response.json()
+				const data = await jsonOrThrow(response, 'Failed to load branches')
 				this.branches = data.branches || []
 
-				// Select default branch if available
-				if (this.branches.length > 0 && !this.selectedBranch) {
-					const defaultBranch =
-						this.branches.find((b) => b.name === 'main')
-						|| this.branches.find((b) => b.name === 'master')
-						|| this.branches[0]
-					if (defaultBranch) {
-						this.selectedBranch = defaultBranch.name
-					}
-				}
+				this.selectDefaultBranch()
 			} catch (e) {
 				this.error = e.message || 'Failed to load branches'
 				console.error('Failed to load branches:', e)
@@ -456,34 +460,7 @@ export default {
 			this.success = false
 
 			try {
-				// Extract repository value (handle both object and string)
-				const repoValue =
-					typeof this.selectedRepository === 'object'
-						? this.selectedRepository.value
-							|| this.selectedRepository.full_name
-						: this.selectedRepository
-
-				if (!repoValue) {
-					throw new Error('Repository not selected')
-				}
-
-				const repo = this.repositories.find((r) => r.full_name === repoValue)
-				if (!repo) {
-					throw new Error('Repository not found')
-				}
-
-				const [owner, repoName] = repoValue.split('/')
-
-				// Extract branch value (handle both object and string)
-				const branchValue =
-					typeof this.selectedBranch === 'object'
-						? this.selectedBranch.value || this.selectedBranch.name
-						: this.selectedBranch
-
-				if (!branchValue) {
-					throw new Error('Branch not selected')
-				}
-
+				const target = publishTarget(this)
 				const response = await fetch(
 					`/index.php/apps/openregister/api/${this.entityPath}/${this.entity.id}/publish/github`,
 					{
@@ -492,10 +469,10 @@ export default {
 							'Content-Type': 'application/json',
 						},
 						body: JSON.stringify({
-							owner,
-							repo: repoName,
+							owner: target.owner,
+							repo: target.repo,
 							path: this.filePath.trim(),
-							branch: branchValue,
+							branch: target.branch,
 							commitMessage:
 								this.commitMessage
 								|| `${this.copy.commitPrefix}${this.entity.title}`,
@@ -503,19 +480,10 @@ export default {
 					},
 				)
 
-				if (!response.ok) {
-					const errorData = await response.json()
-					throw new Error(errorData.error || this.copy.failureMessage)
-				}
-
-				const data = await response.json()
+				const data = await jsonOrThrow(response, this.copy.failureMessage)
 
 				this.success = true
-				let message = `${this.copy.publishedMessage} Commit: ${data.commit_sha?.substring(0, 7) || 'N/A'}`
-				if (data.indexing_note) {
-					message += `\n\n${data.indexing_note}`
-				}
-				this.successMessage = message
+				this.successMessage = publishedText(this.copy.publishedMessage, data)
 
 				await this.refresh()
 
