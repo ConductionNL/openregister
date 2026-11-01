@@ -110,10 +110,10 @@ class GdprEntitiesController extends Controller {
 
 			// SECURITY (#1825): rows in `openregister_entities` store raw
 			// detected PII (names, emails, BSNs) and carry an
-			// `organisation` UUID. Non-admins must only ever see PII
-			// detected within their own organisation(s); admins see all.
-			// A non-admin with no accessible organisation is denied
-			// (empty result set, not an error) — fail-closed.
+			// `organisation` UUID. Non-admins only see PII detected within
+			// their active organisation; admins see all. A non-admin
+			// without an active organisation is denied (empty result set,
+			// not an error): fail-closed.
 			$orgUuids = $this->organisationScope();
 			if ($orgUuids === []) {
 				return new JSONResponse(
@@ -188,7 +188,7 @@ class GdprEntitiesController extends Controller {
 			$entity = $this->entityMapper->find($id);
 
 			// SECURITY (#1825): non-admins may only view PII detected
-			// within an organisation they belong to. Return 404 (not
+			// within their active organisation. Return 404 (not
 			// 403) so we don't leak the existence of cross-tenant rows.
 			if ($this->isAdmin() === false) {
 				$entityOrg = (string)$entity->getOrganisation();
@@ -386,7 +386,7 @@ class GdprEntitiesController extends Controller {
 			}
 
 			// SECURITY (#1825): stats aggregate raw PII counts; non-admins
-			// only see totals scoped to their own organisation(s).
+			// only see totals scoped to their active organisation.
 			$orgUuids = $this->organisationScope();
 			$stats = [
 				'totalEntities' => 0,
@@ -446,7 +446,7 @@ class GdprEntitiesController extends Controller {
 			$entity = $this->entityMapper->find($id);
 
 			// SECURITY (#1825): non-admins may only delete PII detected
-			// within an organisation they belong to. Return 404 (not
+			// within their active organisation. Return 404 (not
 			// 403) so we don't leak existence of cross-tenant rows.
 			if ($this->isAdmin() === false) {
 				$entityOrg = (string)$entity->getOrganisation();
@@ -521,8 +521,8 @@ class GdprEntitiesController extends Controller {
 	 * Organisation UUIDs the active user's entity reads are scoped to.
 	 *
 	 * @return array<int, string>|null Null for an admin (unscoped); otherwise
-	 *                                 the accessible UUIDs, where an empty list
-	 *                                 means deny-all.
+	 *                                 the active organisation's UUID, where an
+	 *                                 empty list means deny-all.
 	 */
 	private function organisationScope(): ?array {
 		if ($this->isAdmin() === true) {
@@ -797,23 +797,21 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Organisation UUIDs the active user is allowed to see.
 	 *
-	 * Returns the list of organisation UUIDs the current (non-admin)
-	 * user belongs to. Admins are not scoped (callers should branch on
-	 * `isAdmin()` first). An empty list means "no accessible
-	 * organisations" and callers MUST treat that as deny-all.
+	 * Returns the UUID of the current (non-admin) user's active
+	 * organisation, not every organisation they belong to. Admins are not
+	 * scoped (callers should branch on `isAdmin()` first). An empty list
+	 * means "no active organisation" and callers MUST treat that as
+	 * deny-all.
 	 *
 	 * @return array<int, string> Accessible organisation UUIDs.
 	 */
 	private function accessibleOrganisationUuids(): array {
-		$uuids = [];
-		foreach ($this->organisationService->getUserOrganisations() as $organisation) {
-			$uuid = (string)$organisation->getUuid();
-			if ($uuid !== '') {
-				$uuids[] = $uuid;
-			}
+		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
+		if ($uuid === '') {
+			return [];
 		}
 
-		return array_values(array_unique($uuids));
+		return [$uuid];
 	}//end accessibleOrganisationUuids()
 
 	/**

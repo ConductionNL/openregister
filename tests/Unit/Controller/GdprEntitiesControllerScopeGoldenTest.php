@@ -36,7 +36,8 @@ use RuntimeException;
  * bound organisation UUIDs), the logger messages and the response, and
  * compares the recording with fixtures/gdpr-entities-scope-golden.json.
  * The group manager answers "admin" only for the uid `root`, and the
- * organisation service answers only for the session user, so a forged
+ * organisation service answers only for the session user (bob belongs to
+ * two organisations, org-b2 is his active one), so a forged
  * userId, requestedBy, owner or organisation request value cannot widen the
  * scope. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
@@ -70,11 +71,11 @@ class GdprEntitiesControllerScopeGoldenTest extends TestCase {
 		foreach (['index', 'getStats', 'getTypes', 'getCategories'] as $action) {
 			$cases[$action . ' admin'] = [['action' => $action, 'user' => 'root', 'params' => []]];
 			$cases[$action . ' admin with filters'] = [['action' => $action, 'user' => 'root', 'params' => $filters]];
-			$cases[$action . ' member scoped to own organisations'] = [['action' => $action, 'user' => 'bob', 'params' => $filters]];
+			$cases[$action . ' member scoped to the active organisation'] = [['action' => $action, 'user' => 'bob', 'params' => $filters]];
 			$cases[$action . ' member with forged identity'] = [['action' => $action, 'user' => 'bob', 'params' => self::FORGED + $filters]];
-			$cases[$action . ' member without organisations'] = [['action' => $action, 'user' => 'carol', 'params' => $filters]];
-			$cases[$action . ' member without organisations, forged identity'] = [['action' => $action, 'user' => 'carol', 'params' => self::FORGED]];
-			$cases[$action . ' member with only blank organisation'] = [['action' => $action, 'user' => 'dave', 'params' => []]];
+			$cases[$action . ' member without an active organisation'] = [['action' => $action, 'user' => 'carol', 'params' => $filters]];
+			$cases[$action . ' member without an active organisation, forged identity'] = [['action' => $action, 'user' => 'carol', 'params' => self::FORGED]];
+			$cases[$action . ' member with a blank active organisation'] = [['action' => $action, 'user' => 'dave', 'params' => []]];
 			$cases[$action . ' anonymous'] = [['action' => $action, 'user' => null, 'params' => []]];
 			$cases[$action . ' anonymous with forged identity'] = [['action' => $action, 'user' => null, 'params' => self::FORGED]];
 			$cases[$action . ' query failure'] = [['action' => $action, 'user' => 'bob', 'params' => [], 'fail' => true]];
@@ -119,6 +120,16 @@ class GdprEntitiesControllerScopeGoldenTest extends TestCase {
 			$this->calls[] = ['organisationService.getUserOrganisations' => $uid];
 			$map = ['root' => ['org-root'], 'bob' => ['org-b1', '', 'org-b2', 'org-b1'], 'carol' => [], 'dave' => ['']];
 			return array_map(fn (string $uuid) => $this->organisation($uuid), $map[$uid] ?? []);
+		});
+		$orgService->method('getActiveOrganisation')->willReturnCallback(function () use ($userSession) {
+			$uid = $userSession->getUser()?->getUID();
+			$this->calls[] = ['organisationService.getActiveOrganisation' => $uid];
+			$map = ['root' => 'org-root', 'bob' => 'org-b2', 'dave' => ''];
+			if (isset($map[$uid]) === false) {
+				return null;
+			}
+
+			return $this->organisation($map[$uid]);
 		});
 
 		$db = $this->createMock(IDBConnection::class);
