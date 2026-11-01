@@ -1,0 +1,960 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`useEmailLinks.loadForMessage golden a refresh that fails or whose cache entry was dropped changes nothing 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        2,
+      ],
+      [
+        1,
+        2,
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+      ],
+    ],
+  },
+  "dropped": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 2,
+  },
+  "failedRefresh": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 2,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden a second load aborts the first 1`] = `
+{
+  "after": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 0,
+    "total": 7,
+  },
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [],
+  },
+  "whileLoading": {
+    "error": null,
+    "linkedObjects": [],
+    "loading": true,
+    "suggestedObjects": [],
+    "suggestedTotal": 0,
+    "total": 0,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden cached load without a sender and a cache bypass 1`] = `
+{
+  "bypass": {
+    "error": null,
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 0,
+    "total": 0,
+  },
+  "cached": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 0,
+    "total": 2,
+  },
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        2,
+      ],
+      [
+        1,
+        2,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [],
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden fresh load with a sender, then a cached load and its refresh 1`] = `
+{
+  "cached": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 2,
+  },
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        2,
+      ],
+    ],
+    "sender": [
+      [
+        "x@example.com",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+      [
+        "x@example.com",
+      ],
+    ],
+  },
+  "fresh": {
+    "calls": {
+      "linked": [
+        [
+          1,
+          2,
+          {
+            "aborted": false,
+            "signal": true,
+          },
+        ],
+      ],
+      "sender": [
+        [
+          "x@example.com",
+          {
+            "aborted": false,
+            "signal": true,
+          },
+        ],
+      ],
+    },
+    "state": {
+      "error": null,
+      "linkedObjects": [
+        {
+          "objectUuid": "a",
+        },
+        {
+          "objectUuid": "b",
+        },
+      ],
+      "loading": false,
+      "suggestedObjects": [
+        {
+          "objectUuid": "c",
+        },
+      ],
+      "suggestedTotal": 1,
+      "total": 7,
+    },
+  },
+  "refreshed": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 1,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden fresh load without a sender and with empty answers 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        3,
+        4,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        3,
+        5,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s@example.com",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "emptySender": {
+    "error": null,
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 0,
+    "total": 0,
+  },
+  "noSender": {
+    "error": null,
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 0,
+    "total": 0,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden linked fetch fails: abort 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+  "retried": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden linked fetch fails: canceled 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+  "retried": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden linked fetch fails: client 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": "network",
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+  "retried": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden linked fetch fails: network 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": "network",
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+  "retried": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden linked fetch fails: server 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": "server",
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+  "retried": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden linked fetch fails: timeout 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": "timeout",
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+  "retried": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden linked fetch fails: timeout over 500 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        3,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": "server",
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+  "retried": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
+
+exports[`useEmailLinks.loadForMessage golden sender fetch fails after the linked fetch 1`] = `
+{
+  "calls": {
+    "linked": [
+      [
+        1,
+        2,
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        1,
+        2,
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+    "sender": [
+      [
+        "s",
+        {
+          "aborted": true,
+          "signal": true,
+        },
+      ],
+      [
+        "s",
+        {
+          "aborted": false,
+          "signal": true,
+        },
+      ],
+    ],
+  },
+  "failed": {
+    "error": "server",
+    "linkedObjects": [],
+    "loading": false,
+    "suggestedObjects": [],
+    "suggestedTotal": 0,
+    "total": 7,
+  },
+  "notCached": {
+    "error": null,
+    "linkedObjects": [
+      {
+        "objectUuid": "a",
+      },
+      {
+        "objectUuid": "b",
+      },
+    ],
+    "loading": false,
+    "suggestedObjects": [
+      {
+        "objectUuid": "c",
+      },
+    ],
+    "suggestedTotal": 1,
+    "total": 7,
+  },
+}
+`;
