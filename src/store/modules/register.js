@@ -1,6 +1,80 @@
 import { defineStore } from 'pinia'
 import { Register } from '../../entities/index.js'
 
+/**
+ * The schema a CSV import goes into: the selected schema, for a .csv file only.
+ *
+ * @param {File} file The file to import.
+ * @return {Promise<string|number|null>} The schema id, or null.
+ */
+async function csvImportSchemaId(file) {
+	const fileExtension = file.name.split('.').pop().toLowerCase()
+	const { useSchemaStore } = await import('./schema.js')
+	const schemaStore = useSchemaStore()
+	return fileExtension === 'csv' && schemaStore.schemaItem
+		? schemaStore.schemaItem.id
+		: null
+}
+
+/**
+ * The endpoint and form an import posts.
+ *
+ * @param {File} file The file to import.
+ * @param {{registerId: string|number, schemaId: string|number|null}} target The register, and the schema for a CSV file.
+ * @return {{endpoint: string, formData: FormData}} The request.
+ */
+function importRequest(file, target) {
+	let endpoint = `/index.php/apps/openregister/api/registers/${target.registerId}/import`
+	const formData = new FormData()
+	formData.append('file', file)
+	if (target.schemaId) {
+		endpoint += `?schema=${target.schemaId}`
+		formData.append('schema', target.schemaId)
+	}
+	return { endpoint, formData }
+}
+
+/**
+ * Post an import and read its answer.
+ *
+ * @param {{endpoint: string, formData: FormData}} request The request.
+ * @return {Promise<{response: Response, responseData: object}>} The answer.
+ * @throws {Error} The answer's own error, the HTTP status, or a note that the body is not an object.
+ */
+async function postImport(request) {
+	// Create controller for potential timeout handling
+	const controller = new AbortController()
+	const timeoutId = setTimeout(
+		() => {
+			// Import taking longer than expected (5 minutes); no action taken.
+		},
+		5 * 60 * 1000,
+	) // 5 minutes warning
+
+	const response = await fetch(request.endpoint, {
+		method: 'POST',
+		body: request.formData,
+		signal: controller.signal,
+	})
+
+	clearTimeout(timeoutId)
+	const responseData = await response.json()
+
+	if (!response.ok) {
+		// If we have an error message in the response, use that
+		if (responseData && responseData.error) {
+			throw new Error(responseData.error)
+		}
+		throw new Error(`HTTP error! status: ${response.status}`)
+	}
+
+	if (!responseData || typeof responseData !== 'object') {
+		throw new Error('Invalid response data')
+	}
+
+	return { response, responseData }
+}
+
 // Module-scoped single-flight token for refreshRegisterList. The endpoint is
 // expensive (~5-16s with _extend=schemas + @self.stats on dev envs with 100+
 // registers), and every sidebar mount + AppInitializationService both call
@@ -409,61 +483,15 @@ export const useRegisterStore = defineStore('register', {
 				throw new Error('No register selected for import')
 			}
 
-			// Get the schema for CSV files
-			const fileExtension = file.name.split('.').pop().toLowerCase()
-			const { useSchemaStore } = await import('./schema.js')
-			const schemaStore = useSchemaStore()
-			const schemaId =
-				fileExtension === 'csv' && schemaStore.schemaItem
-					? schemaStore.schemaItem.id
-					: null
-
-			// Build basic endpoint
-			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import`
-			if (schemaId) {
-				endpoint += `?schema=${schemaId}`
-			}
-
-			const formData = new FormData()
-			formData.append('file', file)
-			if (schemaId) {
-				formData.append('schema', schemaId)
-			}
+			const schemaId = await csvImportSchemaId(file)
+			const request = importRequest(file, { registerId, schemaId })
 
 			// Start heartbeat to prevent gateway timeouts for large imports
 			// Use 15-second intervals for better timeout prevention
-			const heartbeat = this.startImportHeartbeat(15000, heartbeatCallback) // Every 15 seconds
+			const heartbeat = this.startImportHeartbeat(15000, heartbeatCallback)
 
 			try {
-				// Create controller for potential timeout handling
-				const controller = new AbortController()
-				const timeoutId = setTimeout(
-					() => {
-						// Import taking longer than expected (5 minutes); no action taken.
-					},
-					5 * 60 * 1000,
-				) // 5 minutes warning
-
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					body: formData,
-					signal: controller.signal,
-				})
-
-				clearTimeout(timeoutId)
-				const responseData = await response.json()
-
-				if (!response.ok) {
-					// If we have an error message in the response, use that
-					if (responseData && responseData.error) {
-						throw new Error(responseData.error)
-					}
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
+				const result = await postImport(request)
 
 				// Start the register refresh in the background without waiting for it to complete
 				// This way the import can complete and the loading state can be turned off
@@ -474,7 +502,7 @@ export const useRegisterStore = defineStore('register', {
 					)
 				})
 
-				return { response, responseData }
+				return result
 			} catch (error) {
 				console.error('RegisterStore: Error importing register:', error)
 				throw error // Pass through the original error message
