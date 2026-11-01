@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
 #[CoversClass(CacheHandler::class)]
 #[UsesClass(\OCA\OpenRegister\Db\ObjectEntity::class)]
 #[UsesClass(\OCA\OpenRegister\Db\Organisation::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\NameLookupRun::class)]
 class CacheHandlerNameReadRightsTest extends TestCase {
 	/** The caller's active organisation. */
 	private const ORG_CALLER = 'cccccccc-0000-0000-0000-000000000001';
