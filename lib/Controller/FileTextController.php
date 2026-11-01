@@ -455,6 +455,13 @@ class FileTextController extends Controller {
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
 	 */
 	public function anonymizeFile(int $fileId): JSONResponse {
+		if ($this->hasFileAccess(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'File not found or access denied'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
 		try {
 			$this->logger->info(
 				message: '[FileTextController] Anonymizing file',
