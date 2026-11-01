@@ -247,8 +247,9 @@ class AccessReviewGateTest extends TestCase {
 	/**
 	 * Stands in for PermissionHandler::hasGroupPermission() on one verb's list: a
 	 * bare group, a `{group, match}` entry over the record, or `user:<uid>`.
-	 * `public: true` and the default-open branch are deliberately not modelled:
-	 * the gate hands this a block holding the verb's list alone.
+	 * Like the real handler it answers yes to everything on a block carrying
+	 * `"public": true`, so a gate that hands it more than the verb's own list
+	 * is caught.
 	 *
 	 * @param array|null  $authorization The block.
 	 * @param string      $groupId       The group being tried.
@@ -261,6 +262,10 @@ class AccessReviewGateTest extends TestCase {
 	 * @return bool Whether an entry admits the caller through this group.
 	 */
 	public static function entryAdmits(?array $authorization, string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null, ?array $objectData = null): bool {
+		if (($authorization['public'] ?? false) === true) {
+			return true;
+		}
+
 		foreach (($authorization[$action] ?? []) as $entry) {
 			if ($entry === $groupId || ($userId !== null && $entry === 'user:' . $userId)) {
 				return true;
@@ -307,6 +312,29 @@ class AccessReviewGateTest extends TestCase {
 		$auditor = $this->gateFor(userId: 'auditor', groups: ['auditors'], resolved: $block, hasPermission: $everything);
 		$this->assertTrue($auditor->mayReadGrants($this->record), 'the control: the list still admits its own group');
 	}//end testAPublicBlockKeepsReadGrantsToItsOwnList()
+
+	/**
+	 * 🔴 A written list beside `"public": true` admits only its own group, on both reads.
+	 *
+	 * The case the fix exists for: the block names the verb, so the gate gets
+	 * past the empty-list check, and only matching that list on its own keeps
+	 * `public` from admitting everybody.
+	 *
+	 * @return void
+	 */
+	public function testAPublicBlockBesideAWrittenListAdmitsOnlyThatList(): void {
+		$everything = static fn (): bool => true;
+
+		$readGrants = $this->gateFor(userId: 'stagiair', groups: ['staff'], resolved: ['public' => true, 'readGrants' => [['group' => 'auditors']]], hasPermission: $everything);
+		$this->assertFalse($readGrants->mayReadGrants($this->record), '/grants through readGrants');
+
+		$manage = $this->gateFor(userId: 'stagiair', groups: ['staff'], resolved: ['public' => true, 'manage' => ['auditors']], hasPermission: $everything);
+		$this->assertFalse($manage->mayReviewAccess($this->record), '/permissions through manage');
+		$this->assertFalse($manage->mayReadGrants($this->record), '/grants through manage');
+
+		$auditor = $this->gateFor(userId: 'auditor', groups: ['auditors'], resolved: ['public' => true, 'manage' => ['auditors']], hasPermission: $everything);
+		$this->assertTrue($auditor->mayReviewAccess($this->record), 'the control: the list still admits its own group');
+	}//end testAPublicBlockBesideAWrittenListAdmitsOnlyThatList()
 
 	/**
 	 * A `readGrants` written on the record itself admits, so the cascade is asked with the record.

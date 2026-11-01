@@ -193,6 +193,14 @@ class ObjectShareReader {
 			return null;
 		}
 
+		// The app's own read-only lookup first: the OpenRegister user's folder,
+		// then the root. It reports a failed lookup as null, so a miss is
+		// confirmed against the root, where a failure throws.
+		$node = $this->folders->getNodeById(nodeId: (int)$folderId);
+		if (($node instanceof Folder) === true) {
+			return $node;
+		}
+
 		if ($this->rootFolder === null) {
 			throw new RuntimeException('No read-only folder lookup is wired');
 		}
