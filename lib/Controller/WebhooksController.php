@@ -68,6 +68,322 @@ use Psr\Log\LoggerInterface;
 class WebhooksController extends Controller {
 
 	/**
+	 * The webhook event types a subscription can name, with their display metadata.
+	 *
+	 * @var list<array{class: string, name: string, description: string, category: string, type: string, properties: list<string>}>
+	 */
+	private const EVENT_CATALOGUE = [
+		// Object events - Before events (ing).
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectCreatingEvent',
+			'name' => 'Object Creating',
+			'description' => 'Triggered before an object is created',
+			'category' => 'Object',
+			'type' => 'before',
+			'properties' => ['object'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectUpdatingEvent',
+			'name' => 'Object Updating',
+			'description' => 'Triggered before an object is updated',
+			'category' => 'Object',
+			'type' => 'before',
+			'properties' => ['newObject', 'oldObject'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectDeletingEvent',
+			'name' => 'Object Deleting',
+			'description' => 'Triggered before an object is deleted',
+			'category' => 'Object',
+			'type' => 'before',
+			'properties' => ['object'],
+		],
+		// Object events - After events (ed).
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectCreatedEvent',
+			'name' => 'Object Created',
+			'description' => 'Triggered after an object is created',
+			'category' => 'Object',
+			'type' => 'after',
+			'properties' => ['object'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectUpdatedEvent',
+			'name' => 'Object Updated',
+			'description' => 'Triggered after an object is updated',
+			'category' => 'Object',
+			'type' => 'after',
+			'properties' => ['newObject', 'oldObject'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectDeletedEvent',
+			'name' => 'Object Deleted',
+			'description' => 'Triggered after an object is deleted',
+			'category' => 'Object',
+			'type' => 'after',
+			'properties' => ['object'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectLockedEvent',
+			'name' => 'Object Locked',
+			'description' => 'Triggered when an object is locked',
+			'category' => 'Object',
+			'type' => 'after',
+			'properties' => ['object'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectUnlockedEvent',
+			'name' => 'Object Unlocked',
+			'description' => 'Triggered when an object is unlocked',
+			'category' => 'Object',
+			'type' => 'after',
+			'properties' => ['object'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ObjectRevertedEvent',
+			'name' => 'Object Reverted',
+			'description' => 'Triggered when an object is reverted',
+			'category' => 'Object',
+			'type' => 'after',
+			'properties' => ['object', 'revertPoint'],
+		],
+
+		// Register events.
+		[
+			'class' => 'OCA\OpenRegister\Event\RegisterCreatedEvent',
+			'name' => 'Register Created',
+			'description' => 'Triggered after a register is created',
+			'category' => 'Register',
+			'type' => 'after',
+			'properties' => ['register'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\RegisterUpdatedEvent',
+			'name' => 'Register Updated',
+			'description' => 'Triggered after a register is updated',
+			'category' => 'Register',
+			'type' => 'after',
+			'properties' => ['newRegister', 'oldRegister'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\RegisterDeletedEvent',
+			'name' => 'Register Deleted',
+			'description' => 'Triggered after a register is deleted',
+			'category' => 'Register',
+			'type' => 'after',
+			'properties' => ['register'],
+		],
+
+		// Schema events.
+		[
+			'class' => 'OCA\OpenRegister\Event\SchemaCreatedEvent',
+			'name' => 'Schema Created',
+			'description' => 'Triggered after a schema is created',
+			'category' => 'Schema',
+			'type' => 'after',
+			'properties' => ['schema'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\SchemaUpdatedEvent',
+			'name' => 'Schema Updated',
+			'description' => 'Triggered after a schema is updated',
+			'category' => 'Schema',
+			'type' => 'after',
+			'properties' => ['newSchema', 'oldSchema'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\SchemaDeletedEvent',
+			'name' => 'Schema Deleted',
+			'description' => 'Triggered after a schema is deleted',
+			'category' => 'Schema',
+			'type' => 'after',
+			'properties' => ['schema'],
+		],
+
+		// Application events.
+		[
+			'class' => 'OCA\OpenRegister\Event\ApplicationCreatedEvent',
+			'name' => 'Application Created',
+			'description' => 'Triggered after an application is created',
+			'category' => 'Application',
+			'type' => 'after',
+			'properties' => ['application'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ApplicationUpdatedEvent',
+			'name' => 'Application Updated',
+			'description' => 'Triggered after an application is updated',
+			'category' => 'Application',
+			'type' => 'after',
+			'properties' => ['newApplication', 'oldApplication'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ApplicationDeletedEvent',
+			'name' => 'Application Deleted',
+			'description' => 'Triggered after an application is deleted',
+			'category' => 'Application',
+			'type' => 'after',
+			'properties' => ['application'],
+		],
+
+		// Agent events.
+		[
+			'class' => 'OCA\OpenRegister\Event\AgentCreatedEvent',
+			'name' => 'Agent Created',
+			'description' => 'Triggered after an agent is created',
+			'category' => 'Agent',
+			'type' => 'after',
+			'properties' => ['agent'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\AgentUpdatedEvent',
+			'name' => 'Agent Updated',
+			'description' => 'Triggered after an agent is updated',
+			'category' => 'Agent',
+			'type' => 'after',
+			'properties' => ['newAgent', 'oldAgent'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\AgentDeletedEvent',
+			'name' => 'Agent Deleted',
+			'description' => 'Triggered after an agent is deleted',
+			'category' => 'Agent',
+			'type' => 'after',
+			'properties' => ['agent'],
+		],
+
+		// Source events.
+		[
+			'class' => 'OCA\OpenRegister\Event\SourceCreatedEvent',
+			'name' => 'Source Created',
+			'description' => 'Triggered after a source is created',
+			'category' => 'Source',
+			'type' => 'after',
+			'properties' => ['source'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\SourceUpdatedEvent',
+			'name' => 'Source Updated',
+			'description' => 'Triggered after a source is updated',
+			'category' => 'Source',
+			'type' => 'after',
+			'properties' => ['newSource', 'oldSource'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\SourceDeletedEvent',
+			'name' => 'Source Deleted',
+			'description' => 'Triggered after a source is deleted',
+			'category' => 'Source',
+			'type' => 'after',
+			'properties' => ['source'],
+		],
+
+		// Configuration events.
+		[
+			'class' => 'OCA\OpenRegister\Event\ConfigurationCreatedEvent',
+			'name' => 'Configuration Created',
+			'description' => 'Triggered after a configuration is created',
+			'category' => 'Configuration',
+			'type' => 'after',
+			'properties' => ['configuration'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ConfigurationUpdatedEvent',
+			'name' => 'Configuration Updated',
+			'description' => 'Triggered after a configuration is updated',
+			'category' => 'Configuration',
+			'type' => 'after',
+			'properties' => ['newConfiguration', 'oldConfiguration'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ConfigurationDeletedEvent',
+			'name' => 'Configuration Deleted',
+			'description' => 'Triggered after a configuration is deleted',
+			'category' => 'Configuration',
+			'type' => 'after',
+			'properties' => ['configuration'],
+		],
+
+		// View events.
+		[
+			'class' => 'OCA\OpenRegister\Event\ViewCreatedEvent',
+			'name' => 'View Created',
+			'description' => 'Triggered after a view is created',
+			'category' => 'View',
+			'type' => 'after',
+			'properties' => ['view'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ViewUpdatedEvent',
+			'name' => 'View Updated',
+			'description' => 'Triggered after a view is updated',
+			'category' => 'View',
+			'type' => 'after',
+			'properties' => ['newView', 'oldView'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ViewDeletedEvent',
+			'name' => 'View Deleted',
+			'description' => 'Triggered after a view is deleted',
+			'category' => 'View',
+			'type' => 'after',
+			'properties' => ['view'],
+		],
+
+		// Conversation events.
+		[
+			'class' => 'OCA\OpenRegister\Event\ConversationCreatedEvent',
+			'name' => 'Conversation Created',
+			'description' => 'Triggered after a conversation is created',
+			'category' => 'Conversation',
+			'type' => 'after',
+			'properties' => ['conversation'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ConversationUpdatedEvent',
+			'name' => 'Conversation Updated',
+			'description' => 'Triggered after a conversation is updated',
+			'category' => 'Conversation',
+			'type' => 'after',
+			'properties' => ['newConversation', 'oldConversation'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\ConversationDeletedEvent',
+			'name' => 'Conversation Deleted',
+			'description' => 'Triggered after a conversation is deleted',
+			'category' => 'Conversation',
+			'type' => 'after',
+			'properties' => ['conversation'],
+		],
+
+		// Organisation events.
+		[
+			'class' => 'OCA\OpenRegister\Event\OrganisationCreatedEvent',
+			'name' => 'Organisation Created',
+			'description' => 'Triggered after an organisation is created',
+			'category' => 'Organisation',
+			'type' => 'after',
+			'properties' => ['organisation'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\OrganisationUpdatedEvent',
+			'name' => 'Organisation Updated',
+			'description' => 'Triggered after an organisation is updated',
+			'category' => 'Organisation',
+			'type' => 'after',
+			'properties' => ['newOrganisation', 'oldOrganisation'],
+		],
+		[
+			'class' => 'OCA\OpenRegister\Event\OrganisationDeletedEvent',
+			'name' => 'Organisation Deleted',
+			'description' => 'Triggered after an organisation is deleted',
+			'category' => 'Organisation',
+			'type' => 'after',
+			'properties' => ['organisation'],
+		],
+	];
+
+	/**
 	 * Webhook mapper
 	 *
 	 * @var WebhookMapper
@@ -784,323 +1100,12 @@ class WebhooksController extends Controller {
 	 * @no-admin-idor-exempt No per-object resource: returns the static catalogue of available webhook event-type definitions
 	 *   (identical for every install); no tenant data.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function events(): JSONResponse {
-		$events = [
-			// Object events - Before events (ing).
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectCreatingEvent',
-				'name' => 'Object Creating',
-				'description' => 'Triggered before an object is created',
-				'category' => 'Object',
-				'type' => 'before',
-				'properties' => ['object'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectUpdatingEvent',
-				'name' => 'Object Updating',
-				'description' => 'Triggered before an object is updated',
-				'category' => 'Object',
-				'type' => 'before',
-				'properties' => ['newObject', 'oldObject'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectDeletingEvent',
-				'name' => 'Object Deleting',
-				'description' => 'Triggered before an object is deleted',
-				'category' => 'Object',
-				'type' => 'before',
-				'properties' => ['object'],
-			],
-			// Object events - After events (ed).
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectCreatedEvent',
-				'name' => 'Object Created',
-				'description' => 'Triggered after an object is created',
-				'category' => 'Object',
-				'type' => 'after',
-				'properties' => ['object'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectUpdatedEvent',
-				'name' => 'Object Updated',
-				'description' => 'Triggered after an object is updated',
-				'category' => 'Object',
-				'type' => 'after',
-				'properties' => ['newObject', 'oldObject'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectDeletedEvent',
-				'name' => 'Object Deleted',
-				'description' => 'Triggered after an object is deleted',
-				'category' => 'Object',
-				'type' => 'after',
-				'properties' => ['object'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectLockedEvent',
-				'name' => 'Object Locked',
-				'description' => 'Triggered when an object is locked',
-				'category' => 'Object',
-				'type' => 'after',
-				'properties' => ['object'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectUnlockedEvent',
-				'name' => 'Object Unlocked',
-				'description' => 'Triggered when an object is unlocked',
-				'category' => 'Object',
-				'type' => 'after',
-				'properties' => ['object'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ObjectRevertedEvent',
-				'name' => 'Object Reverted',
-				'description' => 'Triggered when an object is reverted',
-				'category' => 'Object',
-				'type' => 'after',
-				'properties' => ['object', 'revertPoint'],
-			],
-
-			// Register events.
-			[
-				'class' => 'OCA\OpenRegister\Event\RegisterCreatedEvent',
-				'name' => 'Register Created',
-				'description' => 'Triggered after a register is created',
-				'category' => 'Register',
-				'type' => 'after',
-				'properties' => ['register'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\RegisterUpdatedEvent',
-				'name' => 'Register Updated',
-				'description' => 'Triggered after a register is updated',
-				'category' => 'Register',
-				'type' => 'after',
-				'properties' => ['newRegister', 'oldRegister'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\RegisterDeletedEvent',
-				'name' => 'Register Deleted',
-				'description' => 'Triggered after a register is deleted',
-				'category' => 'Register',
-				'type' => 'after',
-				'properties' => ['register'],
-			],
-
-			// Schema events.
-			[
-				'class' => 'OCA\OpenRegister\Event\SchemaCreatedEvent',
-				'name' => 'Schema Created',
-				'description' => 'Triggered after a schema is created',
-				'category' => 'Schema',
-				'type' => 'after',
-				'properties' => ['schema'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\SchemaUpdatedEvent',
-				'name' => 'Schema Updated',
-				'description' => 'Triggered after a schema is updated',
-				'category' => 'Schema',
-				'type' => 'after',
-				'properties' => ['newSchema', 'oldSchema'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\SchemaDeletedEvent',
-				'name' => 'Schema Deleted',
-				'description' => 'Triggered after a schema is deleted',
-				'category' => 'Schema',
-				'type' => 'after',
-				'properties' => ['schema'],
-			],
-
-			// Application events.
-			[
-				'class' => 'OCA\OpenRegister\Event\ApplicationCreatedEvent',
-				'name' => 'Application Created',
-				'description' => 'Triggered after an application is created',
-				'category' => 'Application',
-				'type' => 'after',
-				'properties' => ['application'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ApplicationUpdatedEvent',
-				'name' => 'Application Updated',
-				'description' => 'Triggered after an application is updated',
-				'category' => 'Application',
-				'type' => 'after',
-				'properties' => ['newApplication', 'oldApplication'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ApplicationDeletedEvent',
-				'name' => 'Application Deleted',
-				'description' => 'Triggered after an application is deleted',
-				'category' => 'Application',
-				'type' => 'after',
-				'properties' => ['application'],
-			],
-
-			// Agent events.
-			[
-				'class' => 'OCA\OpenRegister\Event\AgentCreatedEvent',
-				'name' => 'Agent Created',
-				'description' => 'Triggered after an agent is created',
-				'category' => 'Agent',
-				'type' => 'after',
-				'properties' => ['agent'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\AgentUpdatedEvent',
-				'name' => 'Agent Updated',
-				'description' => 'Triggered after an agent is updated',
-				'category' => 'Agent',
-				'type' => 'after',
-				'properties' => ['newAgent', 'oldAgent'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\AgentDeletedEvent',
-				'name' => 'Agent Deleted',
-				'description' => 'Triggered after an agent is deleted',
-				'category' => 'Agent',
-				'type' => 'after',
-				'properties' => ['agent'],
-			],
-
-			// Source events.
-			[
-				'class' => 'OCA\OpenRegister\Event\SourceCreatedEvent',
-				'name' => 'Source Created',
-				'description' => 'Triggered after a source is created',
-				'category' => 'Source',
-				'type' => 'after',
-				'properties' => ['source'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\SourceUpdatedEvent',
-				'name' => 'Source Updated',
-				'description' => 'Triggered after a source is updated',
-				'category' => 'Source',
-				'type' => 'after',
-				'properties' => ['newSource', 'oldSource'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\SourceDeletedEvent',
-				'name' => 'Source Deleted',
-				'description' => 'Triggered after a source is deleted',
-				'category' => 'Source',
-				'type' => 'after',
-				'properties' => ['source'],
-			],
-
-			// Configuration events.
-			[
-				'class' => 'OCA\OpenRegister\Event\ConfigurationCreatedEvent',
-				'name' => 'Configuration Created',
-				'description' => 'Triggered after a configuration is created',
-				'category' => 'Configuration',
-				'type' => 'after',
-				'properties' => ['configuration'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ConfigurationUpdatedEvent',
-				'name' => 'Configuration Updated',
-				'description' => 'Triggered after a configuration is updated',
-				'category' => 'Configuration',
-				'type' => 'after',
-				'properties' => ['newConfiguration', 'oldConfiguration'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ConfigurationDeletedEvent',
-				'name' => 'Configuration Deleted',
-				'description' => 'Triggered after a configuration is deleted',
-				'category' => 'Configuration',
-				'type' => 'after',
-				'properties' => ['configuration'],
-			],
-
-			// View events.
-			[
-				'class' => 'OCA\OpenRegister\Event\ViewCreatedEvent',
-				'name' => 'View Created',
-				'description' => 'Triggered after a view is created',
-				'category' => 'View',
-				'type' => 'after',
-				'properties' => ['view'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ViewUpdatedEvent',
-				'name' => 'View Updated',
-				'description' => 'Triggered after a view is updated',
-				'category' => 'View',
-				'type' => 'after',
-				'properties' => ['newView', 'oldView'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ViewDeletedEvent',
-				'name' => 'View Deleted',
-				'description' => 'Triggered after a view is deleted',
-				'category' => 'View',
-				'type' => 'after',
-				'properties' => ['view'],
-			],
-
-			// Conversation events.
-			[
-				'class' => 'OCA\OpenRegister\Event\ConversationCreatedEvent',
-				'name' => 'Conversation Created',
-				'description' => 'Triggered after a conversation is created',
-				'category' => 'Conversation',
-				'type' => 'after',
-				'properties' => ['conversation'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ConversationUpdatedEvent',
-				'name' => 'Conversation Updated',
-				'description' => 'Triggered after a conversation is updated',
-				'category' => 'Conversation',
-				'type' => 'after',
-				'properties' => ['newConversation', 'oldConversation'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\ConversationDeletedEvent',
-				'name' => 'Conversation Deleted',
-				'description' => 'Triggered after a conversation is deleted',
-				'category' => 'Conversation',
-				'type' => 'after',
-				'properties' => ['conversation'],
-			],
-
-			// Organisation events.
-			[
-				'class' => 'OCA\OpenRegister\Event\OrganisationCreatedEvent',
-				'name' => 'Organisation Created',
-				'description' => 'Triggered after an organisation is created',
-				'category' => 'Organisation',
-				'type' => 'after',
-				'properties' => ['organisation'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\OrganisationUpdatedEvent',
-				'name' => 'Organisation Updated',
-				'description' => 'Triggered after an organisation is updated',
-				'category' => 'Organisation',
-				'type' => 'after',
-				'properties' => ['newOrganisation', 'oldOrganisation'],
-			],
-			[
-				'class' => 'OCA\OpenRegister\Event\OrganisationDeletedEvent',
-				'name' => 'Organisation Deleted',
-				'description' => 'Triggered after an organisation is deleted',
-				'category' => 'Organisation',
-				'type' => 'after',
-				'properties' => ['organisation'],
-			],
-		];
+		$events = self::EVENT_CATALOGUE;
 
 		return new JSONResponse(
 			data: [
