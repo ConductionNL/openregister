@@ -1970,6 +1970,7 @@ class ObjectServiceTest extends TestCase {
 	// ── 42. migrateObjects delegation ───────────────────────────────────
 
 	public function testMigrateObjectsDelegatesToMigrationHandler(): void {
+		$this->stubMigrationSides(readable: ['uuid-1'], updatable: ['uuid-1']);
 		$migrationHandler = $this->getProperty('migrationHandler');
 		$migrationHandler->expects($this->once())
 			->method('migrateObjects')
@@ -1978,6 +1979,88 @@ class ObjectServiceTest extends TestCase {
 		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['field1' => 'field2']);
 
 		$this->assertTrue($result['success']);
+	}
+
+	/**
+	 * Resolve the four sides of a migration and decide which objects the caller may read and update.
+	 *
+	 * @param array<int, string> $readable  Uuids the source table lets the caller read.
+	 * @param array<int, string> $updatable Uuids the caller may update.
+	 */
+	private function stubMigrationSides(array $readable, array $updatable): void {
+		$sourceRegister = new Register();
+		$sourceRegister->setId(1);
+		$sourceSchema = new Schema();
+		$sourceSchema->setId(2);
+		$targetSchema = new Schema();
+		$targetSchema->setId(4);
+		$this->getProperty('utilityHandler')->method('normalizeEntity')->willReturnCallback(
+			fn ($entity, string $type) => match ([$type, (string)$entity]) {
+				['register', '1'] => $sourceRegister,
+				['schema', '2'] => $sourceSchema,
+				['schema', '4'] => $targetSchema,
+				default => new Register(),
+			}
+		);
+		$this->objectEntityMapper->method('filterReadableUuids')->with(1, 2)->willReturn($readable);
+		$this->objectEntityMapper->method('findMultiple')->willReturnCallback(
+			function (array $uuids): array {
+				return array_map(
+					function (string $uuid): ObjectEntity {
+						$object = new ObjectEntity();
+						$object->setUuid($uuid);
+						$object->setOwner('alice');
+						return $object;
+					},
+					$uuids
+				);
+			}
+		);
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+			fn (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool =>
+				$action === 'update' && $schema === $sourceSchema && in_array($object?->getUuid(), $updatable, true)
+		);
+	}
+
+	public function testMigrateObjectsRefusesATargetSchemaTheCallerMayNotCreateIn(): void {
+		$this->stubMigrationSides(readable: ['uuid-1'], updatable: ['uuid-1']);
+		$this->permissionHandler->method('checkPermission')->willReturnCallback(
+			function (Schema $schema, string $action): void {
+				if ($action === 'create' && $schema->getId() === 4) {
+					throw new \OCA\OpenRegister\Exception\NotAuthorizedException('no create');
+				}
+			}
+		);
+		$this->getProperty('migrationHandler')->expects($this->never())->method('migrateObjects');
+
+		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
+
+		$this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['a' => 'b']);
+	}
+
+	public function testMigrateObjectsMovesOnlyObjectsTheCallerMayReadAndUpdate(): void {
+		$this->stubMigrationSides(readable: ['uuid-1', 'uuid-2'], updatable: ['uuid-1']);
+		$this->getProperty('migrationHandler')->expects($this->once())
+			->method('migrateObjects')
+			->with('1', '2', '3', '4', ['uuid-1'], ['a' => 'b'])
+			->willReturn(
+				[
+					'success' => true,
+					'statistics' => ['objectsMigrated' => 1, 'objectsFailed' => 0, 'propertiesMapped' => 1, 'propertiesDiscarded' => 0],
+					'details' => [['objectId' => 'uuid-1', 'objectTitle' => 'one', 'success' => true, 'error' => null]],
+					'warnings' => [],
+					'errors' => [],
+				]
+			);
+
+		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1', 'uuid-2', 'uuid-3'], ['a' => 'b']);
+
+		$this->assertSame(1, $result['statistics']['objectsMigrated']);
+		$this->assertSame(2, $result['statistics']['objectsFailed']);
+		$this->assertSame(['uuid-1', 'uuid-2', 'uuid-3'], array_column($result['details'], 'objectId'));
+		$this->assertSame('Object with ID uuid-2 not found', $result['details'][1]['error']);
+		$this->assertSame('Object with ID uuid-3 not found', $result['details'][2]['error']);
+		$this->assertCount(1, $result['warnings']);
 	}
 
 	// ── 43. validateObjectsBySchema / validateAndSaveObjectsBySchema ────
