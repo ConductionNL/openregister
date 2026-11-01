@@ -2,6 +2,11 @@
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  */
 import { defineStore } from 'pinia'
+import {
+	getListPage,
+	listPageQuery,
+	listPagination,
+} from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
 
@@ -236,62 +241,19 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.searchTrailLoading = true
 
 			try {
-				// Build query parameters
-				const params = new URLSearchParams()
-
-				// Add pagination
-				if (options.limit) params.append('limit', options.limit)
-				if (options.offset) params.append('offset', options.offset)
-				if (options.page) params.append('page', options.page)
-
-				// Add search
-				if (options.search || this.searchTrailSearch) {
-					params.append('search', options.search || this.searchTrailSearch)
-				}
-
-				// Add filters
-				const filters = { ...this.searchTrailFilters, ...options.filters }
-				Object.entries(filters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						params.append(key, value)
-					}
+				const query = listPageQuery(options, {
+					search: this.searchTrailSearch,
+					filters: this.searchTrailFilters,
 				})
+				const data = await getListPage(
+					`${apiUrl}/search-trails?${query}`,
+					'Failed to fetch search trails',
+				)
 
-				// Add sort
-				if (options.sort) {
-					Object.entries(options.sort).forEach(([field, direction]) => {
-						params.append('sort', field)
-						params.append('order', direction)
-					})
-				}
-
-				const url = `${apiUrl}/search-trails?${params.toString()}`
-
-				const response = await fetch(url, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch search trails')
-				}
-
-				// Update store state - ensure we pass clean data
 				this.setSearchTrailList(
 					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
 				)
-				this.setSearchTrailPagination({
-					total: data.total || 0,
-					page: data.page || 1,
-					pages: data.pages || 1,
-					limit: data.limit || 50,
-					offset: data.offset || 0,
-				})
+				this.setSearchTrailPagination(listPagination(data, 50))
 
 				return data
 			} catch (error) {
