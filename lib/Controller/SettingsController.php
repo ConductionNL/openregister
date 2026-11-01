@@ -674,8 +674,6 @@ class SettingsController extends Controller {
 	 *
 	 * @return array<string, mixed> Diagnostics payload
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Independent tolerant lookups
-	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#6.1
 	 */
 	private function getHybridSearchDiagnostics(bool $isPostgres): array {
@@ -697,84 +695,145 @@ class SettingsController extends Controller {
 		$sidecar = \OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
 
 		if ($isPostgres === true) {
-			try {
-				$result = $this->db->executeQuery(
-					'SELECT a.atttypmod FROM pg_attribute a '
-					. "WHERE a.attrelid = '" . $sidecar . "'::regclass "
-					. "AND a.attname = 'embedding' AND NOT a.attisdropped"
-				);
-				$typmod = $result->fetchOne();
-				$result->closeCursor();
-
-				if ($typmod !== false && (int)$typmod > 0) {
-					$diagnostics['annSidecarTable'] = true;
-					$diagnostics['embeddingVectorDimension'] = (int)$typmod;
-				}
-			} catch (\Throwable $e) {
-				// Sidecar unavailable — reported as false.
-			}
-
-			try {
-				$result = $this->db->executeQuery(
-					'SELECT indexname FROM pg_indexes WHERE indexname IN '
-					. "('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
-				);
-				while (is_array($row = $result->fetch()) === true) {
-					if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
-						$diagnostics['hnswIndex'] = true;
-					}
-
-					if ($row['indexname'] === 'idx_or_chunks_text_search_gin') {
-						$diagnostics['textSearchGinIndex'] = true;
-					}
-				}
-
-				$result->closeCursor();
-			} catch (\Throwable $e) {
-				// Reported as false.
-			}
-
-			try {
-				$result = $this->db->executeQuery(
-					'SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated '
-					. 'FROM *PREFIX*openregister_vectors v '
-					. "LEFT JOIN $sidecar a ON a.vector_id = v.id"
-				);
-				$row = $result->fetch();
-				$result->closeCursor();
-
-				// An is_array check, not `!== false`. fetch() can answer NULL
-				// as well as false, which passes a `!== false` guard and then
-				// warns on every offset read. Lines 476 and 644 of this file
-				// already use this idiom; this was the one site that did not.
-				if (is_array($row) === true) {
-					$diagnostics['vectors']['total'] = (int)$row['total'];
-					$diagnostics['vectors']['pgvectorPopulated'] = (int)$row['populated'];
-				}
-			} catch (\Throwable $e) {
-				// The ANN sidecar may not exist yet — plain row count only.
-				try {
-					$result = $this->db->executeQuery(
-						'SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors'
-					);
-					$total = $result->fetchOne();
-					$result->closeCursor();
-
-					if ($total !== false) {
-						$diagnostics['vectors']['total'] = (int)$total;
-					}
-				} catch (\Throwable $inner) {
-					// Reported as zero.
-				}
-			}//end try
-		}//end if
+			$diagnostics = array_replace(
+				$diagnostics,
+				$this->annSidecarDiagnostics(sidecar: $sidecar),
+				$this->searchIndexDiagnostics()
+			);
+			$diagnostics['vectors'] = $this->vectorCounts(sidecar: $sidecar);
+		}
 
 		// Chunk vectorization progress (platform-agnostic).
+		$diagnostics['chunks'] = $this->chunkVectorizationProgress();
+
+		return $diagnostics;
+	}//end getHybridSearchDiagnostics()
+
+	/**
+	 * Whether the pgvector ANN sidecar table exists, and its embedding dimension.
+	 *
+	 * @param string $sidecar The sidecar table name.
+	 *
+	 * @return array{annSidecarTable?: true, embeddingVectorDimension?: int} Empty when the sidecar is unavailable.
+	 */
+	private function annSidecarDiagnostics(string $sidecar): array {
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT a.atttypmod FROM pg_attribute a '
+				. "WHERE a.attrelid = '" . $sidecar . "'::regclass "
+				. "AND a.attname = 'embedding' AND NOT a.attisdropped"
+			);
+			$typmod = $result->fetchOne();
+			$result->closeCursor();
+
+			if ($typmod !== false && (int)$typmod > 0) {
+				return ['annSidecarTable' => true, 'embeddingVectorDimension' => (int)$typmod];
+			}
+		} catch (\Throwable $e) {
+			// Sidecar unavailable — reported as false.
+		}
+
+		return [];
+	}//end annSidecarDiagnostics()
+
+	/**
+	 * Whether the HNSW and the text-search GIN indexes exist.
+	 *
+	 * @return array{hnswIndex: bool, textSearchGinIndex: bool}
+	 */
+	private function searchIndexDiagnostics(): array {
+		$found = ['hnswIndex' => false, 'textSearchGinIndex' => false];
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT indexname FROM pg_indexes WHERE indexname IN '
+				. "('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+			);
+			while (is_array($row = $result->fetch()) === true) {
+				if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
+					$found['hnswIndex'] = true;
+				}
+
+				if ($row['indexname'] === 'idx_or_chunks_text_search_gin') {
+					$found['textSearchGinIndex'] = true;
+				}
+			}
+
+			$result->closeCursor();
+		} catch (\Throwable $e) {
+			// Reported as false.
+		}
+
+		return $found;
+	}//end searchIndexDiagnostics()
+
+	/**
+	 * The vector row count and how many of them have a pgvector sidecar row.
+	 *
+	 * @param string $sidecar The sidecar table name.
+	 *
+	 * @return array{total: int, pgvectorPopulated: int}
+	 */
+	private function vectorCounts(string $sidecar): array {
+		$counts = ['total' => 0, 'pgvectorPopulated' => 0];
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated '
+				. 'FROM *PREFIX*openregister_vectors v '
+				. "LEFT JOIN $sidecar a ON a.vector_id = v.id"
+			);
+			$row = $result->fetch();
+			$result->closeCursor();
+
+			// An is_array check, not `!== false`: fetch() can answer NULL
+			// as well as false, which passes a `!== false` guard and then
+			// warns on every offset read.
+			if (is_array($row) === true) {
+				$counts['total'] = (int)$row['total'];
+				$counts['pgvectorPopulated'] = (int)$row['populated'];
+			}
+		} catch (\Throwable $e) {
+			// The ANN sidecar may not exist yet — plain row count only.
+			$counts['total'] = $this->plainVectorCount();
+		}
+
+		return $counts;
+	}//end vectorCounts()
+
+	/**
+	 * The vector row count without the sidecar join.
+	 *
+	 * @return int The count, or zero when it cannot be read.
+	 */
+	private function plainVectorCount(): int {
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors'
+			);
+			$total = $result->fetchOne();
+			$result->closeCursor();
+
+			if ($total !== false) {
+				return (int)$total;
+			}
+		} catch (\Throwable $inner) {
+			// Reported as zero.
+		}
+
+		return 0;
+	}//end plainVectorCount()
+
+	/**
+	 * How many chunks exist and how many are vectorized.
+	 *
+	 * @return array{total: int, vectorized: int} Zeros for what cannot be read.
+	 */
+	private function chunkVectorizationProgress(): array {
+		$progress = ['total' => 0, 'vectorized' => 0];
 		try {
 			$chunkMapper = $this->container->get(\OCA\OpenRegister\Db\ChunkMapper::class);
 			if ($chunkMapper instanceof \OCA\OpenRegister\Db\ChunkMapper) {
-				$diagnostics['chunks']['total'] = $chunkMapper->countAll();
-				$diagnostics['chunks']['vectorized'] = $chunkMapper->countVectorized();
+				$progress['total'] = $chunkMapper->countAll();
+				$progress['vectorized'] = $chunkMapper->countVectorized();
 			}
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -783,8 +842,8 @@ class SettingsController extends Controller {
 			);
 		}
 
-		return $diagnostics;
-	}//end getHybridSearchDiagnostics()
+		return $progress;
+	}//end chunkVectorizationProgress()
 
 	/**
 	 * Get version information only
