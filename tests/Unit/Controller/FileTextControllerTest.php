@@ -708,6 +708,42 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals(404, $result->getStatus());
 	}//end testExtractFileTextRejectsInaccessibleFile()
 
+	public function testAnonymizeFileRejectsInaccessibleFile(): void {
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn($bob);
+
+		$rootFolder = $this->createMock(IRootFolder::class);
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->willReturn([]);
+		$rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+		$this->fileService->expects($this->never())->method('getFileById');
+		$this->fileService->expects($this->never())->method('anonymizeDocument');
+		$this->entityRelationMapper->expects($this->never())->method('findEntitiesForAnonymization');
+
+		$controller = new FileTextController(
+			'openregister',
+			$this->request,
+			$this->textExtractor,
+			$this->fileService,
+			$this->entityRelationMapper,
+			$this->logger,
+			$this->config,
+			$this->manualEntityService,
+			$userSession,
+			$rootFolder,
+			$this->groupManager
+		);
+
+		$result = $controller->anonymizeFile(999);
+
+		$this->assertEquals(404, $result->getStatus());
+		$this->assertArrayNotHasKey('anonymized_path', $result->getData());
+	}//end testAnonymizeFileRejectsInaccessibleFile()
+
 	public function testBulkExtractRejectsNonAdmin(): void {
 		$bob = $this->createMock(IUser::class);
 		$bob->method('getUID')->willReturn('bob');
