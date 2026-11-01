@@ -1,0 +1,2844 @@
+{
+    "getCategories admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "category"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "category",
+                    "ASC"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getCategories admin with empty tables": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "category"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "category",
+                    "ASC"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getCategories admin with filters": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "category"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "category",
+                    "ASC"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getCategories anonymous": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "getCategories anonymous with forged identity": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "getCategories member scoped to own organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "category"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "category",
+                    "ASC"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getCategories member with forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "category"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "category",
+                    "ASC"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getCategories member with only blank organisation": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "dave"
+            },
+            {
+                "organisationService.getUserOrganisations": "dave"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getCategories member without organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getCategories member without organisations, forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getCategories query failure": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "category"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "category",
+                    "ASC"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "logger.error": [
+                    "[GdprEntitiesController] Failed to get entity categories",
+                    "db down"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "Failed to get entity categories"
+        }
+    },
+    "getStats admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb2.select": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb2.groupBy": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb3.select": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb3.groupBy": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb4.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb4.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb4.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 7,
+                "totalRelations": 4,
+                "byType": {
+                    "EMAIL": 3,
+                    "NAME": 2
+                },
+                "byCategory": {
+                    "pii": 5,
+                    "special": 1
+                }
+            }
+        }
+    },
+    "getStats admin with empty tables": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb2.select": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb2.groupBy": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb3.select": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb3.groupBy": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb4.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb4.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb4.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 0,
+                "totalRelations": 0,
+                "byType": [],
+                "byCategory": []
+            }
+        }
+    },
+    "getStats admin with filters": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb2.select": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb2.groupBy": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb3.select": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb3.groupBy": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb4.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb4.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb4.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 7,
+                "totalRelations": 4,
+                "byType": {
+                    "EMAIL": 3,
+                    "NAME": 2
+                },
+                "byCategory": {
+                    "pii": 5,
+                    "special": 1
+                }
+            }
+        }
+    },
+    "getStats anonymous": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "getStats anonymous with forged identity": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "getStats member scoped to own organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb2.select": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb2.groupBy": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb2.andWhere": [
+                    "in(organisation, :p2)"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb3.select": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb3.groupBy": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "in(organisation, :p3)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb4.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb4.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb4.innerJoin": [
+                    "r",
+                    "openregister_entities",
+                    "e",
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb4.andWhere": [
+                    "in(e.organisation, :p4)"
+                ]
+            },
+            {
+                "qb4.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 7,
+                "totalRelations": 4,
+                "byType": {
+                    "EMAIL": 3,
+                    "NAME": 2
+                },
+                "byCategory": {
+                    "pii": 5,
+                    "special": 1
+                }
+            }
+        }
+    },
+    "getStats member with forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb2.select": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb2.groupBy": [
+                    "type"
+                ]
+            },
+            {
+                "qb2.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb2.andWhere": [
+                    "in(organisation, :p2)"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb3.select": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.selectAlias": [
+                    "COUNT(*)",
+                    "count"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb3.groupBy": [
+                    "category"
+                ]
+            },
+            {
+                "qb3.orderBy": [
+                    "count",
+                    "DESC"
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "in(organisation, :p3)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb4.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb4.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb4.innerJoin": [
+                    "r",
+                    "openregister_entities",
+                    "e",
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb4.andWhere": [
+                    "in(e.organisation, :p4)"
+                ]
+            },
+            {
+                "qb4.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 7,
+                "totalRelations": 4,
+                "byType": {
+                    "EMAIL": 3,
+                    "NAME": 2
+                },
+                "byCategory": {
+                    "pii": 5,
+                    "special": 1
+                }
+            }
+        }
+    },
+    "getStats member with only blank organisation": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "dave"
+            },
+            {
+                "organisationService.getUserOrganisations": "dave"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 0,
+                "totalRelations": 0,
+                "byType": [],
+                "byCategory": []
+            }
+        }
+    },
+    "getStats member without organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 0,
+                "totalRelations": 0,
+                "byType": [],
+                "byCategory": []
+            }
+        }
+    },
+    "getStats member without organisations, forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 0,
+                "totalRelations": 0,
+                "byType": [],
+                "byCategory": []
+            }
+        }
+    },
+    "getStats query failure": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "logger.error": [
+                    "[GdprEntitiesController] Failed to get entity stats",
+                    "db down"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "Failed to get entity statistics"
+        }
+    },
+    "getTypes admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "type"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "type",
+                    "ASC"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getTypes admin with empty tables": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "type"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "type",
+                    "ASC"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getTypes admin with filters": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "type"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "type",
+                    "ASC"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getTypes anonymous": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "getTypes anonymous with forged identity": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "getTypes member scoped to own organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "type"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "type",
+                    "ASC"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getTypes member with forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "type"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "type",
+                    "ASC"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                "first",
+                "second"
+            ]
+        }
+    },
+    "getTypes member with only blank organisation": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "dave"
+            },
+            {
+                "organisationService.getUserOrganisations": "dave"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getTypes member without organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getTypes member without organisations, forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
+        }
+    },
+    "getTypes query failure": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "qb1.selectDistinct": [
+                    "type"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    null
+                ]
+            },
+            {
+                "qb1.orderBy": [
+                    "type",
+                    "ASC"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "logger.error": [
+                    "[GdprEntitiesController] Failed to get entity types",
+                    "db down"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "Failed to get entity types"
+        }
+    },
+    "index admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb1.orderBy": [
+                    "e.detected_at",
+                    "DESC"
+                ]
+            },
+            {
+                "qb1.setMaxResults": [
+                    50
+                ]
+            },
+            {
+                "qb1.setFirstResult": [
+                    0
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                {
+                    "id": 11,
+                    "uuid": "u-11",
+                    "type": "EMAIL",
+                    "value": "a@b.nl",
+                    "category": "pii",
+                    "detectedAt": "d1",
+                    "updatedAt": "u1",
+                    "relationCount": 2
+                },
+                {
+                    "id": 12,
+                    "uuid": "u-12",
+                    "type": "NAME",
+                    "value": "Jan",
+                    "category": "pii",
+                    "detectedAt": "d2",
+                    "updatedAt": null,
+                    "relationCount": 0
+                }
+            ],
+            "count": 7,
+            "limit": 50,
+            "offset": 0
+        }
+    },
+    "index admin with empty tables": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb1.orderBy": [
+                    "e.detected_at",
+                    "DESC"
+                ]
+            },
+            {
+                "qb1.setMaxResults": [
+                    50
+                ]
+            },
+            {
+                "qb1.setFirstResult": [
+                    0
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [],
+            "count": 0,
+            "limit": 50,
+            "offset": 0
+        }
+    },
+    "index admin with filters": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "root"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "iLike(e.value, :p1)"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.type, :p2)"
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.category, :p3)"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "iLike(e.value, :p4)"
+                ]
+            },
+            {
+                "param": [
+                    ":p5",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.type, :p5)"
+                ]
+            },
+            {
+                "param": [
+                    ":p6",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.category, :p6)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb1.orderBy": [
+                    "e.detected_at",
+                    "DESC"
+                ]
+            },
+            {
+                "qb1.setMaxResults": [
+                    5
+                ]
+            },
+            {
+                "qb1.setFirstResult": [
+                    10
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                {
+                    "id": 11,
+                    "uuid": "u-11",
+                    "type": "EMAIL",
+                    "value": "a@b.nl",
+                    "category": "pii",
+                    "detectedAt": "d1",
+                    "updatedAt": "u1",
+                    "relationCount": 2
+                },
+                {
+                    "id": 12,
+                    "uuid": "u-12",
+                    "type": "NAME",
+                    "value": "Jan",
+                    "category": "pii",
+                    "detectedAt": "d2",
+                    "updatedAt": null,
+                    "relationCount": 0
+                }
+            ],
+            "count": 7,
+            "limit": 5,
+            "offset": 10
+        }
+    },
+    "index anonymous": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "index anonymous with forged identity": {
+        "calls": [],
+        "status": 401,
+        "data": {
+            "success": false,
+            "message": "Authentication required"
+        }
+    },
+    "index default limit with numeric strings": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(e.organisation, :p1)"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "in(e.organisation, :p2)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb1.orderBy": [
+                    "e.detected_at",
+                    "DESC"
+                ]
+            },
+            {
+                "qb1.setMaxResults": [
+                    2
+                ]
+            },
+            {
+                "qb1.setFirstResult": [
+                    0
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                {
+                    "id": 11,
+                    "uuid": "u-11",
+                    "type": "EMAIL",
+                    "value": "a@b.nl",
+                    "category": "pii",
+                    "detectedAt": "d1",
+                    "updatedAt": "u1",
+                    "relationCount": 2
+                },
+                {
+                    "id": 12,
+                    "uuid": "u-12",
+                    "type": "NAME",
+                    "value": "Jan",
+                    "category": "pii",
+                    "detectedAt": "d2",
+                    "updatedAt": null,
+                    "relationCount": 0
+                }
+            ],
+            "count": 7,
+            "limit": 2,
+            "offset": 0
+        }
+    },
+    "index member scoped to own organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(e.organisation, :p1)"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "iLike(e.value, :p2)"
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.type, :p3)"
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.category, :p4)"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p5",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "in(e.organisation, :p5)"
+                ]
+            },
+            {
+                "param": [
+                    ":p6",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "iLike(e.value, :p6)"
+                ]
+            },
+            {
+                "param": [
+                    ":p7",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.type, :p7)"
+                ]
+            },
+            {
+                "param": [
+                    ":p8",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.category, :p8)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb1.orderBy": [
+                    "e.detected_at",
+                    "DESC"
+                ]
+            },
+            {
+                "qb1.setMaxResults": [
+                    5
+                ]
+            },
+            {
+                "qb1.setFirstResult": [
+                    10
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                {
+                    "id": 11,
+                    "uuid": "u-11",
+                    "type": "EMAIL",
+                    "value": "a@b.nl",
+                    "category": "pii",
+                    "detectedAt": "d1",
+                    "updatedAt": "u1",
+                    "relationCount": 2
+                },
+                {
+                    "id": 12,
+                    "uuid": "u-12",
+                    "type": "NAME",
+                    "value": "Jan",
+                    "category": "pii",
+                    "detectedAt": "d2",
+                    "updatedAt": null,
+                    "relationCount": 0
+                }
+            ],
+            "count": 7,
+            "limit": 5,
+            "offset": 10
+        }
+    },
+    "index member with forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(e.organisation, :p1)"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "iLike(e.value, :p2)"
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.type, :p3)"
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.category, :p4)"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p5",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "in(e.organisation, :p5)"
+                ]
+            },
+            {
+                "param": [
+                    ":p6",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "iLike(e.value, :p6)"
+                ]
+            },
+            {
+                "param": [
+                    ":p7",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.type, :p7)"
+                ]
+            },
+            {
+                "param": [
+                    ":p8",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.category, :p8)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb1.orderBy": [
+                    "e.detected_at",
+                    "DESC"
+                ]
+            },
+            {
+                "qb1.setMaxResults": [
+                    5
+                ]
+            },
+            {
+                "qb1.setFirstResult": [
+                    10
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                {
+                    "id": 11,
+                    "uuid": "u-11",
+                    "type": "EMAIL",
+                    "value": "a@b.nl",
+                    "category": "pii",
+                    "detectedAt": "d1",
+                    "updatedAt": "u1",
+                    "relationCount": 2
+                },
+                {
+                    "id": 12,
+                    "uuid": "u-12",
+                    "type": "NAME",
+                    "value": "Jan",
+                    "category": "pii",
+                    "detectedAt": "d2",
+                    "updatedAt": null,
+                    "relationCount": 0
+                }
+            ],
+            "count": 7,
+            "limit": 5,
+            "offset": 10
+        }
+    },
+    "index member with only blank organisation": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "dave"
+            },
+            {
+                "organisationService.getUserOrganisations": "dave"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [],
+            "count": 0,
+            "limit": 50,
+            "offset": 0
+        }
+    },
+    "index member without organisations": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [],
+            "count": 0,
+            "limit": 5,
+            "offset": 10
+        }
+    },
+    "index member without organisations, forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "carol"
+            },
+            {
+                "organisationService.getUserOrganisations": "carol"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [],
+            "count": 0,
+            "limit": 50,
+            "offset": 0
+        }
+    },
+    "index query failure": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getUserOrganisations": "bob"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(e.organisation, :p1)"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    [
+                        "org-b1",
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "in(e.organisation, :p2)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "logger.error": [
+                    "[GdprEntitiesController] Failed to list entities",
+                    "db down"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "Failed to list entities: db down"
+        }
+    }
+}
