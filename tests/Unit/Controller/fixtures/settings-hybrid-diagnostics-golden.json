@@ -1,0 +1,639 @@
+{
+    "not postgres": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": false,
+            "embeddingVectorDimension": null,
+            "hnswIndex": false,
+            "textSearchGinIndex": false,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 0,
+                "pgvectorPopulated": 0
+            }
+        }
+    },
+    "not postgres, chunk mapper missing": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "no chunk mapper"
+                    }
+                ]
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": false,
+            "embeddingVectorDimension": null,
+            "hnswIndex": false,
+            "textSearchGinIndex": false,
+            "chunks": {
+                "total": 0,
+                "vectorized": 0
+            },
+            "vectors": {
+                "total": 0,
+                "pgvectorPopulated": 0
+            }
+        }
+    },
+    "not postgres, container answers something else": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": false,
+            "embeddingVectorDimension": null,
+            "hnswIndex": false,
+            "textSearchGinIndex": false,
+            "chunks": {
+                "total": 0,
+                "vectorized": 0
+            },
+            "vectors": {
+                "total": 0,
+                "pgvectorPopulated": 0
+            }
+        }
+    },
+    "postgres, every query fails": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "no chunk mapper"
+                    }
+                ]
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": false,
+            "embeddingVectorDimension": null,
+            "hnswIndex": false,
+            "textSearchGinIndex": false,
+            "chunks": {
+                "total": 0,
+                "vectorized": 0
+            },
+            "vectors": {
+                "total": 0,
+                "pgvectorPopulated": 0
+            }
+        }
+    },
+    "postgres, everything present": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 40,
+                "pgvectorPopulated": 31
+            }
+        }
+    },
+    "postgres, index query fails": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": false,
+            "textSearchGinIndex": false,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 40,
+                "pgvectorPopulated": 31
+            }
+        }
+    },
+    "postgres, only the gin index": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": false,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 40,
+                "pgvectorPopulated": 31
+            }
+        }
+    },
+    "postgres, only the hnsw index": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": true,
+            "textSearchGinIndex": false,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 40,
+                "pgvectorPopulated": 31
+            }
+        }
+    },
+    "postgres, sidecar column missing": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": false,
+            "embeddingVectorDimension": null,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 40,
+                "pgvectorPopulated": 31
+            }
+        }
+    },
+    "postgres, sidecar query fails": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": false,
+            "embeddingVectorDimension": null,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 40,
+                "pgvectorPopulated": 31
+            }
+        }
+    },
+    "postgres, sidecar without a dimension": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": false,
+            "embeddingVectorDimension": null,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 40,
+                "pgvectorPopulated": 31
+            }
+        }
+    },
+    "postgres, vector join fails, plain count empty": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 0,
+                "pgvectorPopulated": 0
+            }
+        }
+    },
+    "postgres, vector join fails, plain count works": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 12,
+                "pgvectorPopulated": 0
+            }
+        }
+    },
+    "postgres, vector row is not an array": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 0,
+                "pgvectorPopulated": 0
+            }
+        }
+    }
+}
