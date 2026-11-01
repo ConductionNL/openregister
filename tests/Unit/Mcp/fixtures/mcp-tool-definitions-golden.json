@@ -1,0 +1,302 @@
+{
+    "OCA\\OpenRegister\\Mcp\\BuiltIn\\FlowMcpToolProvider": [
+        {
+            "id": "openregister.runFlow",
+            "name": "Run a flow",
+            "description": "Queue an OpenRegister flow against an object. Returns the run uuid; poll it with openregister.flowRunStatus.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "flowId": {
+                        "type": "string",
+                        "description": "The id of the flow to run."
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "description": "The subject object uuid (optional for a subjectless flow)."
+                    },
+                    "register": {
+                        "type": "string",
+                        "description": "The subject object register slug (optional)."
+                    },
+                    "schema": {
+                        "type": "string",
+                        "description": "The subject object schema slug (optional)."
+                    }
+                },
+                "required": [
+                    "flowId"
+                ]
+            },
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "idempotentHint": false,
+            "scope": "create",
+            "reach": "instance"
+        },
+        {
+            "id": "openregister.saveFlow",
+            "name": "Create or update a flow",
+            "description": "Author an OpenRegister flow: its nodes (each with a type and config) and the edges between them. Omit uuid to create, pass one to update. A flow needs at least one trigger node (openregister.trigger-manual, .trigger-schedule or .trigger-object) and at least one end node (openregister.end). A node carries the step; an edge carries only from/to \u2014 an edge with a type is refused. List the available node types first.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "The flow to update. Omit to create a new one."
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The flow name."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "What the flow does."
+                    },
+                    "app": {
+                        "type": "string",
+                        "description": "The owning app id (defaults to openregister)."
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "Whether triggers may fire it."
+                    },
+                    "nodes": {
+                        "type": "array",
+                        "description": "The nodes. Each: {id, type, config, x?, y?}.",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "edges": {
+                        "type": "array",
+                        "description": "The connections. Each: {id, from, to}. NEVER a type.",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "readOnlyHint": false,
+            "destructiveHint": true,
+            "idempotentHint": false,
+            "scope": "create",
+            "reach": "instance"
+        },
+        {
+            "id": "openregister.flowRunStatus",
+            "name": "Get a flow run status",
+            "description": "Read the status, per-step log and result items of a flow run by its uuid.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "runUuid": {
+                        "type": "string",
+                        "description": "The uuid returned by openregister.runFlow."
+                    }
+                },
+                "required": [
+                    "runUuid"
+                ]
+            },
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "scope": "read",
+            "reach": "user"
+        }
+    ],
+    "OCA\\OpenRegister\\Mcp\\BuiltIn\\IntegrationsToolProvider": [
+        {
+            "id": "openregister.integrations",
+            "name": "integrations",
+            "description": "Discover and query pluggable integrations linked to OpenRegister objects (e.g. files, calendar, contacts, xwiki). Use action \"list-integrations\" to enumerate which integrations exist on this instance, then \"list\"/\"get\" to read linked things for a specific object, and \"link\"/\"create\" to attach a new linked thing where the integration supports it.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "list-integrations",
+                            "list",
+                            "get",
+                            "link",
+                            "create"
+                        ],
+                        "description": "list-integrations enumerates available integrations; list/get/link/create operate on linked things for one object."
+                    },
+                    "integrationId": {
+                        "type": "string",
+                        "description": "Stable integration id (e.g. \"files\", \"calendar\"). Required for list/get/link/create."
+                    },
+                    "register": {
+                        "type": "string",
+                        "description": "Register slug or numeric id (required for list/get/link/create)."
+                    },
+                    "schema": {
+                        "type": "string",
+                        "description": "Schema slug or numeric id (required for list/get/link/create)."
+                    },
+                    "objectId": {
+                        "type": "string",
+                        "description": "Object uuid that owns the linked things (required for list/get/link/create)."
+                    },
+                    "entityId": {
+                        "type": "string",
+                        "description": "Linked-thing id (required for get)."
+                    },
+                    "filters": {
+                        "type": "object",
+                        "description": "Optional list filters (_limit, _page, _search)."
+                    },
+                    "payload": {
+                        "type": "object",
+                        "description": "New linked-thing fields (for link/create)."
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            }
+        }
+    ],
+    "OCA\\OpenRegister\\Mcp\\BuiltIn\\ObjectsToolProvider": [
+        {
+            "id": "openregister.objects",
+            "name": "objects",
+            "description": "Manage objects (data records stored in a register under a schema)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "list",
+                            "get",
+                            "create",
+                            "update",
+                            "delete"
+                        ],
+                        "description": "The CRUD action to perform"
+                    },
+                    "register": {
+                        "type": "integer",
+                        "description": "Register ID (required for all object actions)"
+                    },
+                    "schema": {
+                        "type": "integer",
+                        "description": "Schema ID (required for all object actions)"
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "Object UUID (required for get, update, delete)"
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "Object data fields (for create and update)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (for list)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of results to skip (for list)"
+                    }
+                },
+                "required": [
+                    "action",
+                    "register",
+                    "schema"
+                ]
+            }
+        }
+    ],
+    "OCA\\OpenRegister\\Mcp\\BuiltIn\\RegistersToolProvider": [
+        {
+            "id": "openregister.registers",
+            "name": "registers",
+            "description": "Manage registers (data containers that group schemas and objects)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "list",
+                            "get",
+                            "create",
+                            "update",
+                            "delete"
+                        ],
+                        "description": "The CRUD action to perform"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "Register ID (required for get, update, delete)"
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "Register fields (for create and update)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (for list)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of results to skip (for list)"
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            }
+        }
+    ],
+    "OCA\\OpenRegister\\Mcp\\BuiltIn\\SchemasToolProvider": [
+        {
+            "id": "openregister.schemas",
+            "name": "schemas",
+            "description": "Manage schemas (data definitions that describe the structure of objects)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "list",
+                            "get",
+                            "create",
+                            "update",
+                            "delete"
+                        ],
+                        "description": "The CRUD action to perform"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "Schema ID (required for get, update, delete)"
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "Schema fields (for create and update)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (for list)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of results to skip (for list)"
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            }
+        }
+    ]
+}
