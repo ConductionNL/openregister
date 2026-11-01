@@ -79,151 +79,129 @@ class SchemaDiffService {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function diff(array $old, array $new, array $renames = []): SchemaChangeSet {
-		$oldProps = $this->properties(definition: $old);
-		$newProps = $this->properties(definition: $new);
-		$oldReq = $this->requiredSet(definition: $old);
-		$newReq = $this->requiredSet(definition: $new);
+		$run = new SchemaDiffRun(old: $old, new: $new);
+		$run->declareRenames(renames: $renames);
+		$this->collectRemoved(run: $run);
+		$this->collectAdded(run: $run);
+		$this->collectChanged(run: $run);
+		$this->collectNewlyRequired(run: $run);
+		$this->collectNoLongerRequired(run: $run);
 
-		$changes = [];
-		$hasBreaking = false;
-		$hasAddedProp = false;
-		$hasOtherChange = false;
-
-		// Map renamed-away source names so they are not double-counted as removals.
-		$renamedFrom = array_keys($renames);
-		$renamedTo = array_values($renames);
-
-		// Declared renames first.
-		foreach ($renames as $from => $to) {
-			if (array_key_exists($from, $oldProps) === false || array_key_exists($to, $newProps) === false) {
-				// The declared rename does not match the definitions; treat as
-				// ordinary add/remove handled below.
-				continue;
-			}
-
-			$changes[] = [
-				'property' => $from,
-				'kind' => 'renamed',
-				'old' => $from,
-				'new' => $to,
-			];
-			$hasBreaking = true;
-		}
-
-		// Removed properties (not accounted for by a rename).
-		foreach ($oldProps as $name => $def) {
-			if (array_key_exists($name, $newProps) === true) {
-				continue;
-			}
-
-			if (in_array($name, $renamedFrom, true) === true) {
-				continue;
-			}
-
-			$changes[] = [
-				'property' => $name,
-				'kind' => 'removed',
-				'old' => $def,
-			];
-			$hasBreaking = true;
-		}
-
-		// Added properties (not the target of a rename).
-		foreach ($newProps as $name => $def) {
-			if (array_key_exists($name, $oldProps) === true) {
-				continue;
-			}
-
-			if (in_array($name, $renamedTo, true) === true) {
-				continue;
-			}
-
-			$isRequired = in_array($name, $newReq, true);
-			$hasDefault = array_key_exists('default', (array)$def);
-			$changes[] = [
-				'property' => $name,
-				'kind' => 'added',
-				'new' => $def,
-			];
-
-			if ($isRequired === true && $hasDefault === false) {
-				// New required property with no default invalidates every
-				// existing object that lacks it.
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'added_required_no_default',
-					'new' => $def,
-				];
-				$hasBreaking = true;
-			} else {
-				$hasAddedProp = true;
-			}
-		}//end foreach
-
-		// Changed properties (present in both).
-		foreach ($newProps as $name => $newDef) {
-			if (array_key_exists($name, $oldProps) === false) {
-				continue;
-			}
-
-			$propChanges = $this->diffProperty(name: $name, oldDef: (array)$oldProps[$name], newDef: (array)$newDef);
-			foreach ($propChanges as $pc) {
-				$changes[] = $pc;
-				if ($this->kindIsBreaking(kind: $pc['kind']) === true) {
-					$hasBreaking = true;
-				} else {
-					$hasOtherChange = true;
-				}
-			}
-		}
-
-		// Required-set changes for properties that exist in both definitions.
-		foreach ($newReq as $name) {
-			if (in_array($name, $oldReq, true) === true) {
-				continue;
-			}
-
-			// Newly required. Already handled above if it is also a new property.
-			if (array_key_exists($name, $oldProps) === false) {
-				continue;
-			}
-
-			$hasDefault = array_key_exists('default', (array)($newProps[$name] ?? []));
-			if ($hasDefault === true) {
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'required_added_with_default',
-				];
-				$hasOtherChange = true;
-			} else {
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'required_added',
-				];
-				$hasBreaking = true;
-			}
-		}//end foreach
-
-		foreach ($oldReq as $name) {
-			if (in_array($name, $newReq, true) === true) {
-				continue;
-			}
-
-			if (array_key_exists($name, $newProps) === false) {
-				// Property removed entirely; already counted as removed.
-				continue;
-			}
-
-			// Relaxing a required constraint is compatible.
-			$changes[] = [
-				'property' => $name,
-				'kind' => 'required_removed',
-			];
-			$hasOtherChange = true;
-		}
-
-		return $this->classify(changes: $changes, hasBreaking: $hasBreaking, hasAddedProp: $hasAddedProp, hasOtherChange: $hasOtherChange);
+		return $run->changeSet();
 	}//end diff()
+
+	/**
+	 * Record properties of the old definition that the new one lacks, except declared renames.
+	 *
+	 * @param SchemaDiffRun $run The diff state.
+	 *
+	 * @return void
+	 */
+	private function collectRemoved(SchemaDiffRun $run): void {
+		foreach ($run->oldProps as $name => $def) {
+			if (array_key_exists($name, $run->newProps) === true || $run->isRenamedFrom(name: $name) === true) {
+				continue;
+			}
+
+			$run->breaking(change: ['property' => $name, 'kind' => 'removed', 'old' => $def]);
+		}
+	}//end collectRemoved()
+
+	/**
+	 * Record properties new in the new definition, except declared rename targets.
+	 *
+	 * A new required property with no default invalidates every existing
+	 * object that lacks it, so it is recorded a second time as breaking.
+	 *
+	 * @param SchemaDiffRun $run The diff state.
+	 *
+	 * @return void
+	 */
+	private function collectAdded(SchemaDiffRun $run): void {
+		foreach ($run->newProps as $name => $def) {
+			if (array_key_exists($name, $run->oldProps) === true || $run->isRenamedTo(name: $name) === true) {
+				continue;
+			}
+
+			$added = ['property' => $name, 'kind' => 'added', 'new' => $def];
+			if ($run->requiredWithoutDefault(name: $name) === true) {
+				$run->compatible(change: $added);
+				$run->breaking(change: ['property' => $name, 'kind' => 'added_required_no_default', 'new' => $def]);
+				continue;
+			}
+
+			$run->addition(change: $added);
+		}
+	}//end collectAdded()
+
+	/**
+	 * Record the definition changes of properties present in both definitions.
+	 *
+	 * @param SchemaDiffRun $run The diff state.
+	 *
+	 * @return void
+	 */
+	private function collectChanged(SchemaDiffRun $run): void {
+		foreach ($run->newProps as $name => $newDef) {
+			if (array_key_exists($name, $run->oldProps) === false) {
+				continue;
+			}
+
+			$propChanges = $this->diffProperty(name: $name, oldDef: (array)$run->oldProps[$name], newDef: (array)$newDef);
+			foreach ($propChanges as $change) {
+				if ($this->kindIsBreaking(kind: $change['kind']) === true) {
+					$run->breaking(change: $change);
+					continue;
+				}
+
+				$run->compatible(change: $change);
+			}
+		}
+	}//end collectChanged()
+
+	/**
+	 * Record existing properties that became required.
+	 *
+	 * Newly required with a default is compatible; without one it is breaking.
+	 * A property that is new as well is handled by collectAdded().
+	 *
+	 * @param SchemaDiffRun $run The diff state.
+	 *
+	 * @return void
+	 */
+	private function collectNewlyRequired(SchemaDiffRun $run): void {
+		foreach ($run->newReq as $name) {
+			if (in_array($name, $run->oldReq, true) === true || array_key_exists($name, $run->oldProps) === false) {
+				continue;
+			}
+
+			if (array_key_exists('default', (array)($run->newProps[$name] ?? [])) === true) {
+				$run->compatible(change: ['property' => $name, 'kind' => 'required_added_with_default']);
+				continue;
+			}
+
+			$run->breaking(change: ['property' => $name, 'kind' => 'required_added']);
+		}
+	}//end collectNewlyRequired()
+
+	/**
+	 * Record properties that are no longer required; relaxing is compatible.
+	 *
+	 * A property removed entirely is already recorded as removed.
+	 *
+	 * @param SchemaDiffRun $run The diff state.
+	 *
+	 * @return void
+	 */
+	private function collectNoLongerRequired(SchemaDiffRun $run): void {
+		foreach ($run->oldReq as $name) {
+			if (in_array($name, $run->newReq, true) === true || array_key_exists($name, $run->newProps) === false) {
+				continue;
+			}
+
+			$run->compatible(change: ['property' => $name, 'kind' => 'required_removed']);
+		}
+	}//end collectNoLongerRequired()
 
 	/**
 	 * Compute the next version string given the current one and a change set.
@@ -462,33 +440,6 @@ class SchemaDiffService {
 	}//end boundTightened()
 
 	/**
-	 * Classify the accumulated changes into a SchemaChangeSet.
-	 *
-	 * @param array<int, array<string, mixed>> $changes The change list.
-	 * @param bool $hasBreaking Any breaking change present.
-	 * @param bool $hasAddedProp Any added optional property.
-	 * @param bool $hasOtherChange Any other compatible change.
-	 *
-	 * @return SchemaChangeSet The classified change set.
-	 */
-	private function classify(array $changes, bool $hasBreaking, bool $hasAddedProp, bool $hasOtherChange): SchemaChangeSet {
-		if (count($changes) === 0) {
-			return new SchemaChangeSet([], SchemaChangeSet::CLASS_NONE, 'none');
-		}
-
-		if ($hasBreaking === true) {
-			return new SchemaChangeSet($changes, SchemaChangeSet::CLASS_BREAKING, 'major');
-		}
-
-		if ($hasAddedProp === true) {
-			return new SchemaChangeSet($changes, SchemaChangeSet::CLASS_COMPATIBLE, 'minor');
-		}
-
-		// Other compatible change (relaxed constraint, dropped requirement).
-		return new SchemaChangeSet($changes, SchemaChangeSet::CLASS_COMPATIBLE, 'patch');
-	}//end classify()
-
-	/**
 	 * Whether a change kind is breaking.
 	 *
 	 * @param string $kind The change kind.
@@ -510,38 +461,6 @@ class SchemaDiffService {
 		);
 
 	}//end kindIsBreaking()
-
-	/**
-	 * Extract the properties map from a definition.
-	 *
-	 * @param array<string, mixed> $definition The definition.
-	 *
-	 * @return array<string, mixed> The properties map.
-	 */
-	private function properties(array $definition): array {
-		$props = ($definition['properties'] ?? []);
-		if (is_array($props) === false) {
-			return [];
-		}
-
-		return $props;
-	}//end properties()
-
-	/**
-	 * Extract the required-property name set from a definition.
-	 *
-	 * @param array<string, mixed> $definition The definition.
-	 *
-	 * @return array<int, string> The required property names.
-	 */
-	private function requiredSet(array $definition): array {
-		$required = ($definition['required'] ?? []);
-		if (is_array($required) === false) {
-			return [];
-		}
-
-		return array_values(array_filter($required, 'is_string'));
-	}//end requiredSet()
 
 	/**
 	 * Normalise a JSON-schema type for comparison.
