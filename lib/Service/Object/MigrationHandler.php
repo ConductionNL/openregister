@@ -161,7 +161,8 @@ class MigrationHandler {
 				$remainingObjectIds = array_filter(
 					$remainingObjectIds,
 					function ($id) use ($sourceObject) {
-						return $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId();
+						// Compare as strings: ids arrive from the request as strings, getId() is an int.
+						return (string) $id !== $sourceObject->getUuid() && (string) $id !== (string) $sourceObject->getId();
 					}
 				);
 
