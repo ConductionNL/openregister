@@ -69,6 +69,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Facet computation requires schema, register, and query dependencies
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)          Each facet type is split into small single-purpose steps
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
@@ -514,15 +515,8 @@ class MagicFacetHandler {
 
 				$facets[$field] = ['type' => 'terms', 'buckets' => []];
 				if (empty($tablesWithColumn) === false) {
-					// Use first matching table's schema for label resolution.
-					$firstMatchingConfig = reset($tablesWithColumn);
-					$schemaForLabels = $firstMatchingConfig['schema'] ?? null;
-
 					$facets[$field] = $this->getTermsFacetUnion(
-						tableConfigs: $tablesWithColumn,
-						field: $columnName,
-						baseQuery: $baseQuery,
-						schema: $schemaForLabels
+						facet: new TermsFacetUnion(tableConfigs: $tablesWithColumn, field: $columnName, baseQuery: $baseQuery)
 					);
 				}
 			} elseif ($type === 'date_histogram') {
@@ -555,9 +549,6 @@ class MagicFacetHandler {
 		// Process @self metadata facets using UNION.
 		if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
 			$facets['@self'] = [];
-			// Use first table's schema for metadata facets (all tables share same metadata structure).
-			$firstTableConfig = reset($tableConfigs);
-			$metadataSchema = $firstTableConfig['schema'] ?? null;
 
 			foreach ($facetConfig['@self'] as $field => $config) {
 				$facetStart = microtime(true);
@@ -566,11 +557,7 @@ class MagicFacetHandler {
 
 				if ($type === 'terms') {
 					$facets['@self'][$field] = $this->getTermsFacetUnion(
-						tableConfigs: $tableConfigs,
-						field: $columnName,
-						baseQuery: $baseQuery,
-						schema: $metadataSchema,
-						isMetadata: true
+						facet: new TermsFacetUnion(tableConfigs: $tableConfigs, field: $columnName, baseQuery: $baseQuery, isMetadata: true)
 					);
 				} elseif ($type === 'date_histogram') {
 					// Date histograms still use single-table approach (less common).
@@ -607,191 +594,31 @@ class MagicFacetHandler {
 	 * array values in PHP. This is more reliable than trying to detect
 	 * array fields at SQL level and use jsonb_array_elements_text().
 	 *
-	 * @param array $tableConfigs Array of table configurations.
-	 * @param string $field The field/column name.
-	 * @param array $baseQuery Base query filters.
-	 * @param Schema|null $schema Schema for type checking (nullable for multi-schema).
-	 * @param bool $isMetadata Whether this is a metadata field.
+	 * @param TermsFacetUnion $facet The tables, column and filters of the facet.
 	 *
 	 * @return array Facet result with merged buckets.
 	 */
-	private function getTermsFacetUnion(
-		array $tableConfigs,
-		string $field,
-		array $baseQuery,
-		?Schema $schema,
-		bool $isMetadata = false,
-	): array {
-		if (empty($tableConfigs) === true) {
-			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
+	private function getTermsFacetUnion(TermsFacetUnion $facet): array {
+		if (empty($facet->tableConfigs) === true || $this->isSafeTermsColumn(field: $facet->field) === false) {
+			return $this->emptyTermsFacet();
 		}
 
-		// BUG-DB-2: $field is interpolated raw into the SQL below (CAST/WHERE/GROUP BY).
-		// For @self metadata facets it is built straight from request facet keys
-		// ("_".$rawKey) without going through sanitizeColumnName, so a crafted key
-		// could inject arbitrary SQL. Validate it is a safe column identifier and
-		// matches its own sanitized form before using it; otherwise skip the facet
-		// (empty buckets), mirroring the columnExists guard the other facet paths use.
-		$safeField = $this->sanitizeColumnName(name: $field);
-		if ($safeField !== $field || preg_match('/^[a-z_][a-z0-9_]*$/', $field) !== 1) {
-			$this->logger->warning(
-				message: '[MagicFacetHandler] Rejected unsafe terms-facet field name',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
-			);
-			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
+		$sql = $this->buildTermsUnionSql(facet: $facet);
+		if ($sql === null) {
+			return $this->emptyTermsFacet();
 		}
-
-		// Build UNION ALL query with simple GROUP BY.
-		// Array values will come as JSON strings like '["uuid1", "uuid2"]'
-		// and will be post-processed in PHP.
-		$unionParts = [];
-		$prefix = $this->getTablePrefix();
-
-		// Cast field to text for consistent types in UNION ALL queries.
-		// Different magic tables may have the same field name but different types
-		// (e.g., 'type' as text in one table, jsonb in another).
-		$platform = $this->db->getDatabasePlatform();
-		$castField = "CAST({$field} AS CHAR)";
-		if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform === true) {
-			$castField = "{$field}::text";
-		}
-
-		foreach ($tableConfigs as $tc) {
-			$tableName = $tc['tableName'];
-			$fullTableName = $prefix . $tableName;
-			$tcSchema = $tc['schema'];
-
-			// Defence in depth: skip tables that do not actually have this column
-			// (mirrors getDateHistogramFacetUnion's columnExists guard).
-			if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
-				continue;
-			}
-
-			// Simple SELECT with GROUP BY - no jsonb_array_elements_text complexity.
-			// The NULL group is kept rather than filtered out: it is the missing-value
-			// bucket, and counting it here is what keeps it inside the same query and
-			// the same access scope as every value bucket (ADR-009). `WHERE 1=1` holds
-			// the place the appended filter conditions below expect.
-			$subSql = "SELECT {$castField} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE 1=1";
-
-			// Use shared method for all filter conditions (single source of truth).
-			if ($this->searchHandler !== null) {
-				$whereConditions = $this->searchHandler->buildWhereConditionsSql(
-					query: $baseQuery,
-					schema: $tcSchema,
-					registerId: ($tc['register'] ?? null)?->getId(),
-					tableName: $tableName
-				);
-				foreach ($whereConditions as $condition) {
-					// Skip '1=0' conditions - they mean filter column doesn't exist on this schema.
-					if ($condition === '1=0') {
-						// Skip this table entirely.
-						continue 2;
-					}
-
-					$subSql .= " AND {$condition}";
-				}
-			}
-
-			$subSql .= " GROUP BY {$castField}";
-			$unionParts[] = $subSql;
-		}//end foreach
-
-		if (empty($unionParts) === true) {
-			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
-		}
-
-		// Combine with UNION ALL and aggregate.
-		$unionSql = implode("\nUNION ALL\n", $unionParts);
-		$limit = self::MAX_FACET_BUCKETS;
-		$innerSql = "SELECT facet_value, SUM(cnt) as doc_count FROM (\n" . $unionSql . "\n) combined";
-		// The NULL group is pinned first so a wide facet's bucket cap can never
-		// truncate it. A missing bucket that silently reads zero is worse than
-		// no missing bucket at all.
-		$sql = $innerSql . ' GROUP BY facet_value'
-			. ' ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC'
-			. ' LIMIT ' . $limit;
 
 		try {
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute();
-
-			// Collect raw buckets from database, peeling off the NULL group.
-			$rawBuckets = [];
-			$missingCount = 0;
-			while (($row = $stmt->fetch()) !== false) {
-				if ($row['facet_value'] === null) {
-					$missingCount = (int)$row['doc_count'];
-					continue;
-				}
-
-				$rawBuckets[] = [
-					'key' => $row['facet_value'],
-					'count' => (int)$row['doc_count'],
-				];
-			}
+			[$rawBuckets, $missingCount] = $this->fetchTermsRows(sql: $sql);
 
 			// PHP POST-PROCESSING: Normalize array values.
 			// This splits JSON array values like '["uuid1", "uuid2"]' into individual values
 			// and merges their counts. Much more reliable than SQL-based array detection.
 			$normalizedBuckets = $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets);
 
-			// Collect UUIDs for label resolution.
-			$uuidsToResolve = [];
-			foreach ($normalizedBuckets as $bucket) {
-				$key = $bucket['key'];
-				if (is_string($key) === true
-					&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
-				) {
-					$uuidsToResolve[] = $key;
-				}
-			}
-
-			// Batch resolve labels AFTER normalization (so we only resolve individual UUIDs).
-			$labelMap = [];
-			$firstConfig = reset($tableConfigs);
-			if ($isMetadata === false
-				&& $this->anyHoldsObjectReferences(tableConfigs: $tableConfigs, column: $field) === false
-			) {
-				$uuidsToResolve = [];
-			}
-
-			if (empty($uuidsToResolve) === false && $isMetadata === false) {
-				$labelMap = $this->batchResolveUuidLabels(
-					uuids: $uuidsToResolve,
-					field: $field,
-					schema: $firstConfig['schema'],
-					register: $firstConfig['register']
-				);
-			}
-
-			// Build final buckets with labels.
-			$buckets = [];
-			$firstConfig = reset($tableConfigs);
-			foreach ($normalizedBuckets as $bucket) {
-				$key = $bucket['key'];
-				// For metadata facets, use getFieldLabel to resolve IDs to names.
-				$label = $labelMap[$key] ?? (string)$key;
-				if ($isMetadata === true) {
-					$label = $this->getFieldLabel(
-						field: $field,
-						value: $key,
-						isMetadata: true,
-						register: $firstConfig['register'],
-						schema: $firstConfig['schema']
-					);
-				}
-
-				$buckets[] = [
-					'key' => $key,
-					'results' => $bucket['count'],
-					'label' => $label,
-				];
-			}//end foreach
-
 			return [
 				'type' => 'terms',
-				'buckets' => $buckets,
+				'buckets' => $this->labelTermsBuckets(facet: $facet, normalizedBuckets: $normalizedBuckets),
 				'missing' => ['results' => $missingCount],
 			];
 		} catch (\Exception $e) {
@@ -800,14 +627,232 @@ class MagicFacetHandler {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'field' => $field,
+					'field' => $facet->field,
 					'error' => $e->getMessage(),
 					'sql' => $sql,
 				]
 			);
-			return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
+			return $this->emptyTermsFacet();
 		}//end try
 	}//end getTermsFacetUnion()
+
+	/**
+	 * A terms facet without buckets.
+	 *
+	 * @return array The empty facet.
+	 */
+	private function emptyTermsFacet(): array {
+		return ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]];
+	}//end emptyTermsFacet()
+
+	/**
+	 * Whether a terms-facet column may be interpolated into raw SQL.
+	 *
+	 * The column is interpolated raw (CAST/WHERE/GROUP BY), and for @self
+	 * metadata facets it is built straight from request facet keys, so it must
+	 * be a plain identifier that equals its own sanitized form.
+	 *
+	 * @param string $field The column name.
+	 *
+	 * @return bool False, with a warning logged, for an unsafe name.
+	 */
+	private function isSafeTermsColumn(string $field): bool {
+		$safeField = $this->sanitizeColumnName(name: $field);
+		if ($safeField !== $field || preg_match('/^[a-z_][a-z0-9_]*$/', $field) !== 1) {
+			$this->logger->warning(
+				message: '[MagicFacetHandler] Rejected unsafe terms-facet field name',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
+			);
+			return false;
+		}
+
+		return true;
+	}//end isSafeTermsColumn()
+
+	/**
+	 * The UNION ALL statement of a terms facet, grouped per value.
+	 *
+	 * Array values come back as JSON strings like '["uuid1", "uuid2"]' and are
+	 * split in PHP afterwards. The NULL group is kept: it is the missing-value
+	 * bucket, counted in the same query and access scope as every value bucket
+	 * (ADR-009), and pinned first so the bucket cap can never truncate it.
+	 *
+	 * @param TermsFacetUnion $facet The tables, column and filters of the facet.
+	 *
+	 * @return string|null The statement, or null when no table takes part.
+	 */
+	private function buildTermsUnionSql(TermsFacetUnion $facet): ?string {
+		$prefix = $this->getTablePrefix();
+
+		// Cast to text: tables may hold the same column with different types.
+		$castField = "CAST({$facet->field} AS CHAR)";
+		if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform === true) {
+			$castField = "{$facet->field}::text";
+		}
+
+		$unionParts = [];
+		foreach ($facet->tableConfigs as $tableConfig) {
+			$conditions = $this->termsTableConditions(facet: $facet, tableConfig: $tableConfig);
+			if ($conditions === null) {
+				continue;
+			}
+
+			$unionParts[] = "SELECT {$castField} as facet_value, COUNT(*) as cnt FROM {$prefix}{$tableConfig['tableName']} WHERE 1=1"
+				. $conditions . " GROUP BY {$castField}";
+		}
+
+		if (empty($unionParts) === true) {
+			return null;
+		}
+
+		$unionSql = implode("\nUNION ALL\n", $unionParts);
+		return "SELECT facet_value, SUM(cnt) as doc_count FROM (\n" . $unionSql . "\n) combined"
+			. ' GROUP BY facet_value'
+			. ' ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC'
+			. ' LIMIT ' . self::MAX_FACET_BUCKETS;
+	}//end buildTermsUnionSql()
+
+	/**
+	 * The filter conditions one table adds to its part of a terms union.
+	 *
+	 * @param TermsFacetUnion $facet       The tables, column and filters of the facet.
+	 * @param array           $tableConfig One entry of the facet's table configurations.
+	 *
+	 * @return string|null The conditions as " AND ..." text, or null when the
+	 *                     table lacks the column or its filters rule it out.
+	 */
+	private function termsTableConditions(TermsFacetUnion $facet, array $tableConfig): ?string {
+		$tableName = $tableConfig['tableName'];
+		if ($this->columnExists(tableName: $tableName, columnName: $facet->field) === false) {
+			return null;
+		}
+
+		if ($this->searchHandler === null) {
+			return '';
+		}
+
+		$conditions = '';
+		$whereConditions = $this->searchHandler->buildWhereConditionsSql(
+			query: $facet->baseQuery,
+			schema: $tableConfig['schema'],
+			registerId: ($tableConfig['register'] ?? null)?->getId(),
+			tableName: $tableName
+		);
+		foreach ($whereConditions as $condition) {
+			// '1=0' means a filter column does not exist on this schema.
+			if ($condition === '1=0') {
+				return null;
+			}
+
+			$conditions .= " AND {$condition}";
+		}
+
+		return $conditions;
+	}//end termsTableConditions()
+
+	/**
+	 * Run a terms union and split off the NULL group.
+	 *
+	 * @param string $sql The union statement.
+	 *
+	 * @return array{0: array<int, array{key: mixed, count: int}>, 1: int} The value buckets and the missing count.
+	 */
+	private function fetchTermsRows(string $sql): array {
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute();
+
+		$rawBuckets = [];
+		$missingCount = 0;
+		while (($row = $stmt->fetch()) !== false) {
+			if ($row['facet_value'] === null) {
+				$missingCount = (int)$row['doc_count'];
+				continue;
+			}
+
+			$rawBuckets[] = [
+				'key' => $row['facet_value'],
+				'count' => (int)$row['doc_count'],
+			];
+		}
+
+		return [$rawBuckets, $missingCount];
+	}//end fetchTermsRows()
+
+	/**
+	 * The labelled buckets of a terms union.
+	 *
+	 * @param TermsFacetUnion $facet             The tables, column and filters of the facet.
+	 * @param array           $normalizedBuckets Buckets of ['key' => value, 'count' => int].
+	 *
+	 * @return array<int, array{key: mixed, results: int, label: string}> The buckets.
+	 */
+	private function labelTermsBuckets(TermsFacetUnion $facet, array $normalizedBuckets): array {
+		$labelMap = $this->termsUnionLabelMap(facet: $facet, normalizedBuckets: $normalizedBuckets);
+		$tableConfigs = $facet->tableConfigs;
+		$firstConfig = reset($tableConfigs);
+
+		$buckets = [];
+		foreach ($normalizedBuckets as $bucket) {
+			$key = $bucket['key'];
+			// For metadata facets, use getFieldLabel to resolve IDs to names.
+			$label = $labelMap[$key] ?? (string)$key;
+			if ($facet->isMetadata === true) {
+				$label = $this->getFieldLabel(
+					field: $facet->field,
+					value: $key,
+					isMetadata: true,
+					register: $firstConfig['register'],
+					schema: $firstConfig['schema']
+				);
+			}
+
+			$buckets[] = [
+				'key' => $key,
+				'results' => $bucket['count'],
+				'label' => $label,
+			];
+		}
+
+		return $buckets;
+	}//end labelTermsBuckets()
+
+	/**
+	 * Object names for the UUID keys of a terms union, looked up in one batch.
+	 *
+	 * Runs after normalization, so only individual UUIDs are resolved. Metadata
+	 * facets and columns no table holds object references in get none.
+	 *
+	 * @param TermsFacetUnion $facet             The tables, column and filters of the facet.
+	 * @param array           $normalizedBuckets Buckets of ['key' => value, 'count' => int].
+	 *
+	 * @return array<string, string> Labels keyed by UUID.
+	 */
+	private function termsUnionLabelMap(TermsFacetUnion $facet, array $normalizedBuckets): array {
+		$uuidsToResolve = [];
+		foreach ($normalizedBuckets as $bucket) {
+			$key = $bucket['key'];
+			if (is_string($key) === true
+				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
+			) {
+				$uuidsToResolve[] = $key;
+			}
+		}
+
+		if (empty($uuidsToResolve) === true || $facet->isMetadata === true
+			|| $this->anyHoldsObjectReferences(tableConfigs: $facet->tableConfigs, column: $facet->field) === false
+		) {
+			return [];
+		}
+
+		$tableConfigs = $facet->tableConfigs;
+		$firstConfig = reset($tableConfigs);
+		return $this->batchResolveUuidLabels(
+			uuids: $uuidsToResolve,
+			field: $facet->field,
+			schema: $firstConfig['schema'],
+			register: $firstConfig['register']
+		);
+	}//end termsUnionLabelMap()
 
 	/**
 	 * Normalize facet buckets by splitting JSON array values into individual values.
