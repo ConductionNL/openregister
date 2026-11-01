@@ -1,0 +1,544 @@
+{
+    "all": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "apps.json",
+                    "{\"timestamp\":0,\"data\":[1,2]}"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "categories.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "categories.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "categories.json",
+                    "{\"timestamp\":0}"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "discover.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "discover.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "discover.json",
+                    "{\"timestamp\":0,\"x\":\"y\"}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "apps.json",
+                "categories.json",
+                "discover.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "all with a generic file error": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "categories.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "categories.json"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "discover.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "discover.json"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [],
+            "skipped": [
+                "apps.json (not found)",
+                "categories.json (invalid format)",
+                "discover.json (invalid format)"
+            ],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "all with missing, unreadable and invalid files": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "categories.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "categories.json"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "discover.json"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [],
+            "skipped": [
+                "apps.json (invalid format)",
+                "categories.json (invalid format)",
+                "discover.json (not found)"
+            ],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "app data fails": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[CacheSettingsController] Failed to invalidate app store cache: app data broken",
+                    {
+                        "exception": "RuntimeException: app data broken"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "Failed to invalidate app store cache: app data broken"
+        }
+    },
+    "apps": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "apps.json",
+                    "{\"timestamp\":0,\"data\":[1,2]}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "apps.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "categories": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "categories.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "categories.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "categories.json",
+                    "{\"timestamp\":0}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "categories.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "default type": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "apps.json",
+                    "{\"timestamp\":0,\"data\":[1,2]}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "apps.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "discover": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "discover.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "discover.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "discover.json",
+                    "{\"timestamp\":0,\"x\":\"y\"}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "discover.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "no appstore folder": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "No app store cache exists yet",
+            "invalidated": [],
+            "skipped": []
+        }
+    },
+    "timestamp of null is invalid": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [],
+            "skipped": [
+                "apps.json (invalid format)"
+            ],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "unknown type": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "apps.json",
+                    "{\"timestamp\":0,\"data\":[1,2]}"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "App store cache invalidated successfully",
+            "invalidated": [
+                "apps.json"
+            ],
+            "skipped": [],
+            "note": "Fresh data will be fetched on the next visit to Settings > Apps"
+        }
+    },
+    "write fails": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "appDataFactory.get": [
+                    "appstore"
+                ]
+            },
+            {
+                "appData.getFolder": [
+                    "/"
+                ]
+            },
+            {
+                "folder.getFile": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.getContent": [
+                    "apps.json"
+                ]
+            },
+            {
+                "file.putContent": [
+                    "apps.json",
+                    "{\"timestamp\":0,\"data\":[1,2]}"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[CacheSettingsController] Failed to invalidate app store cache: read-only",
+                    {
+                        "exception": "Exception: read-only"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "Failed to invalidate app store cache: read-only"
+        }
+    }
+}
