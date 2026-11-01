@@ -29,31 +29,9 @@ use Symfony\Component\Workflow\Workflow;
 /**
  * The per-pass state of FlowEngine's stream walk.
  *
- * The constructor arguments are fixed for the pass. The log, the items in hand
- * and the items per place change with every firing.
+ * A walk that also holds the marking store and the stream collaborator.
  */
-final class FlowStreamPass {
-
-	/**
-	 * The run log so far.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	public array $log = [];
-
-	/**
-	 * The items in hand, returned with the result.
-	 *
-	 * @var array<int, mixed>
-	 */
-	public array $items = [];
-
-	/**
-	 * Items per place.
-	 *
-	 * @var array<string, array>
-	 */
-	public array $placeItems = [];
+final class FlowStreamPass extends FlowWalk {
 
 	/**
 	 * Constructor.
@@ -69,14 +47,15 @@ final class FlowStreamPass {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A value object carrying the pass's collaborators
 	 */
 	public function __construct(
-		public readonly array $flow,
-		public readonly Workflow $workflow,
+		array $flow,
+		Workflow $workflow,
 		public readonly MarkingStoreInterface $store,
-		public readonly object $subject,
-		public readonly FlowStepDispatcher $dispatcher,
-		public readonly array $context,
+		object $subject,
+		FlowStepDispatcher $dispatcher,
+		array $context,
 		public readonly FlowStreamWalk $streams,
 	) {
+		parent::__construct(flow: $flow, workflow: $workflow, subject: $subject, dispatcher: $dispatcher, context: $context);
 	}//end __construct()
 
 	/**
@@ -99,17 +78,4 @@ final class FlowStreamPass {
 
 		return $candidates;
 	}//end candidatesFor()
-
-	/**
-	 * The run result envelope of the pass: status, log, context and items.
-	 *
-	 * @param string $status The run status.
-	 *
-	 * @return array{status: string, log: array, context: array, items: array} The envelope.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	public function result(string $status): array {
-		return ['status' => $status, 'log' => $this->log, 'context' => $this->context, 'items' => $this->items];
-	}//end result()
 }//end class

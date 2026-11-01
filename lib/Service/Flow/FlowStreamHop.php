@@ -26,17 +26,10 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * A hop of the stream walk, from its claim until it is committed or ends the run.
  */
-final class FlowStreamHop {
+final class FlowStreamHop extends FlowWalkHop {
 
 	/**
-	 * When the hop started, as `microtime(true)` returns it.
-	 *
-	 * @var float
-	 */
-	public readonly float $startedAt;
-
-	/**
-	 * Constructor. The start moment is taken when the hop is made.
+	 * Constructor.
 	 *
 	 * @param FlowStreamPass     $pass       The pass the hop belongs to.
 	 * @param object             $transition The transition being fired.
@@ -47,54 +40,23 @@ final class FlowStreamHop {
 	 */
 	public function __construct(
 		public readonly FlowStreamPass $pass,
-		public readonly object $transition,
-		public readonly array $step,
-		public readonly array $itemsIn,
+		object $transition,
+		array $step,
+		array $itemsIn,
 		public readonly string $streamId,
 		public readonly array $claimed,
 	) {
-		$this->startedAt = microtime(true);
+		parent::__construct(walk: $pass, transition: $transition, step: $step, itemsIn: $itemsIn);
 	}//end __construct()
 
 	/**
-	 * The transition name.
+	 * The stream fields a stream walk's log entry carries: the stream and its ordinal path.
 	 *
-	 * @return string The name.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	public function name(): string {
-		return (string)$this->transition->getName();
-	}//end name()
-
-	/**
-	 * The step's catalogue id, carried onto every log entry.
-	 *
-	 * @return string The step type, or an empty string.
+	 * @return array{streamId: string, ordinalPath: string} The fields.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
-	public function stepType(): string {
-		return (string)($this->step['type'] ?? '');
-	}//end stepType()
-
-	/**
-	 * The places the firing took, in the transition's declaration order.
-	 *
-	 * @param array<int, string> $taken The output places the exit claimed.
-	 *
-	 * @return array<int, string> The taken places, ordered.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
-	 */
-	public function takenInOrder(array $taken): array {
-		$takenTos = [];
-		foreach ($this->transition->getTos() as $to) {
-			if (in_array((string)$to, array_map('strval', $taken), true) === true) {
-				$takenTos[] = (string)$to;
-			}
-		}
-
-		return $takenTos;
-	}//end takenInOrder()
+	public function streamTags(): array {
+		return ['streamId' => $this->streamId, 'ordinalPath' => $this->pass->streams->pathOf(id: $this->streamId)];
+	}//end streamTags()
 }//end class
