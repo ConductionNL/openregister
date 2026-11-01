@@ -114,11 +114,14 @@ class GoldenWalkLogger extends AbstractLogger {
  * The golden master.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
+ * @covers \OCA\OpenRegister\Service\Flow\FlowStreamHop
+ * @covers \OCA\OpenRegister\Service\Flow\FlowStreamPass
  * @uses   \OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItemPlacement
  * @uses   \OCA\OpenRegister\Service\Flow\FlowTokenRouter
  * @uses   \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowGraph
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunMarkingStore
  * @uses   \OCA\OpenRegister\Service\Flow\FlowStepReport
  * @uses   \OCA\OpenRegister\Service\Flow\FlowStop

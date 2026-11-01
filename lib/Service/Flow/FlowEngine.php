@@ -564,10 +564,7 @@ class FlowEngine {
 				// own report (a send node's per-recipient outcomes, say). The
 				// report handle travels in the context and is drained per hop,
 				// so a node's detail lands on ITS entry and no other.
-				$report = $this->stepReport(context: $context);
-				if ($report !== []) {
-					$entry['report'] = $report;
-				}
+				$entry = $this->withStepReport(entry: $entry, context: $context);
 
 				$log[] = $entry;
 			} catch (FlowStop $stop) {
@@ -635,10 +632,7 @@ class FlowEngine {
 				// A failing step's report is worth MORE than a completing one's:
 				// a send node that delivered to two recipients and failed on the
 				// third records exactly which sends went out before the throw.
-				$report = $this->stepReport(context: $context);
-				if ($report !== []) {
-					$entry['report'] = $report;
-				}
+				$entry = $this->withStepReport(entry: $entry, context: $context);
 
 				$log[] = $entry;
 				$outcome = $this->outcomeForFailedStep(
@@ -812,7 +806,7 @@ class FlowEngine {
 		$error = sprintf('Flow did not settle within %d transitions; it may contain an unbounded loop.', self::MAX_TRANSITIONS);
 		$pass->streams->finalize(enabled: false, forcedTerminal: self::STATUS_FAILED);
 
-		return $this->passResult(pass: $pass, status: self::STATUS_FAILED) + ['error' => $error];
+		return $pass->result(status: self::STATUS_FAILED) + ['error' => $error];
 	}//end streamCeilingReached()
 
 	/**
@@ -830,7 +824,14 @@ class FlowEngine {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	private function claimStreamHop(FlowStreamPass $pass, string $streamId): ?FlowStreamHop {
-		$transition = $this->streamCandidate(pass: $pass, streamId: $streamId);
+		// This stream's candidates, narrowed by edge conditions exactly as
+		// the single-stream walk narrows them.
+		$candidates = $pass->candidatesFor(streamId: $streamId);
+		$transition = null;
+		if ($candidates !== []) {
+			$transition = $this->selectTransition(enabled: $candidates, flow: $pass->flow, placeItems: $pass->placeItems, context: $pass->context);
+		}
+
 		if ($transition === null) {
 			$pass->streams->exhaust(id: $streamId);
 			return null;
@@ -855,36 +856,6 @@ class FlowEngine {
 			claimed: $claimed
 		);
 	}//end claimStreamHop()
-
-	/**
-	 * The transition a stream fires next.
-	 *
-	 * The candidates are the enabled transitions consuming from the place the
-	 * stream's token sits on, narrowed by edge conditions exactly as the
-	 * single-stream walk narrows them.
-	 *
-	 * @param FlowStreamPass $pass     The pass.
-	 * @param string         $streamId The stream.
-	 *
-	 * @return object|null The transition, or null when none is eligible.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	private function streamCandidate(FlowStreamPass $pass, string $streamId): ?object {
-		$place = $pass->streams->placeOf(id: $streamId);
-		$candidates = [];
-		foreach ($pass->workflow->getEnabledTransitions(subject: $pass->subject) as $transition) {
-			if ($place !== null && in_array($place, array_map('strval', $transition->getFroms()), true) === true) {
-				$candidates[] = $transition;
-			}
-		}
-
-		if ($candidates === []) {
-			return null;
-		}
-
-		return $this->selectTransition(enabled: $candidates, flow: $pass->flow, placeItems: $pass->placeItems, context: $pass->context);
-	}//end streamCandidate()
 
 	/**
 	 * Run one claimed hop: a pinned step is committed as it is, any other step is dispatched.
@@ -988,6 +959,10 @@ class FlowEngine {
 	/**
 	 * Add the hop's step report to a log entry, when the step wrote one.
 	 *
+	 * Taking (rather than reading) is what scopes a report to one hop: the
+	 * handle is cleared by the read, so a node's detail can never bleed onto a
+	 * later step's log entry.
+	 *
 	 * @param array<string, mixed> $entry   The log entry.
 	 * @param array                $context The run context carrying the report handle.
 	 *
@@ -996,9 +971,14 @@ class FlowEngine {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
 	 */
 	private function withStepReport(array $entry, array $context): array {
-		$report = $this->stepReport(context: $context);
-		if ($report !== []) {
-			$entry['report'] = $report;
+		$report = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($report instanceof FlowStepReport) === false) {
+			return $entry;
+		}
+
+		$detail = $report->take();
+		if ($detail !== []) {
+			$entry['report'] = $detail;
 		}
 
 		return $entry;
@@ -1040,7 +1020,7 @@ class FlowEngine {
 
 		$pass->streams->finalize(enabled: false, forcedTerminal: $stopStatus);
 
-		return $this->passResult(pass: $pass, status: $stopStatus) + ['error' => $stopError];
+		return $pass->result(status: $stopStatus) + ['error' => $stopError];
 	}//end stopStreams()
 
 	/**
@@ -1158,7 +1138,7 @@ class FlowEngine {
 		$pass->streams->endStream(id: $hop->streamId, status: $terminal, error: $entry['error'], claimed: $hop->claimed, enabled: false);
 		$pass->streams->finalize(enabled: false, forcedTerminal: $terminal);
 
-		return $this->passResult(pass: $pass, status: $terminal) + ['error' => $entry['error']];
+		return $pass->result(status: $terminal) + ['error' => $entry['error']];
 	}//end endFailedStream()
 
 	/**
@@ -1177,27 +1157,13 @@ class FlowEngine {
 		$enabled = $pass->streams->workRemains(transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject));
 		$status = $pass->streams->finalize(enabled: $enabled);
 
-		$result = $this->passResult(pass: $pass, status: $status);
+		$result = $pass->result(status: $status);
 		if ($status === self::STATUS_SUSPENDED) {
 			$result['resumeAt'] = $pass->streams->run()->getResumeAt();
 		}
 
 		return $result;
 	}//end finishStreamPass()
-
-	/**
-	 * The run result envelope of a pass: status, log, context and items.
-	 *
-	 * @param FlowStreamPass $pass   The pass.
-	 * @param string         $status The run status.
-	 *
-	 * @return array{status: string, log: array, context: array, items: array} The envelope.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	private function passResult(FlowStreamPass $pass, string $status): array {
-		return ['status' => $status, 'log' => $pass->log, 'context' => $pass->context, 'items' => $pass->items];
-	}//end passResult()
 
 	/**
 	 * Advance the marking for one firing and commit it on its stream.
@@ -1229,7 +1195,7 @@ class FlowEngine {
 		$pass->workflow->apply(subject: $pass->subject, transitionName: $name);
 		$this->pruneUntakenExits(workflow: $pass->workflow, subject: $pass->subject, transition: $transition, taken: $taken, context: $pass->context);
 
-		$takenTos = $this->takenInOrder(transition: $transition, taken: $taken);
+		$takenTos = $hop->takenInOrder(taken: $taken);
 		$result = $pass->streams->commitFiring(
 			id: $hop->streamId,
 			transition: $name,
@@ -1266,27 +1232,6 @@ class FlowEngine {
 		$entry['firings'] = $result->firings;
 		$pass->log[] = $entry;
 	}//end fireOnStream()
-
-	/**
-	 * The places a firing took, in the transition's declaration order.
-	 *
-	 * @param object             $transition The fired transition.
-	 * @param array<int, string> $taken      The output places the exit claimed.
-	 *
-	 * @return array<int, string> The taken places, ordered.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
-	 */
-	private function takenInOrder(object $transition, array $taken): array {
-		$takenTos = [];
-		foreach ($transition->getTos() as $to) {
-			if (in_array((string)$to, array_map('strval', $taken), true) === true) {
-				$takenTos[] = (string)$to;
-			}
-		}
-
-		return $takenTos;
-	}//end takenInOrder()
 
 	/**
 	 * Override where a flow starts, for "run from here".
@@ -1395,28 +1340,6 @@ class FlowEngine {
 
 		return null;
 	}//end outcomeForFailedStep()
-
-	/**
-	 * Drain the hop's step report from the context, when one travels there.
-	 *
-	 * Taking (rather than reading) is what scopes a report to one hop: the
-	 * handle is cleared by the read, so a node's detail can never bleed onto a
-	 * later step's log entry.
-	 *
-	 * @param array $context The run context.
-	 *
-	 * @return array<string, mixed> The report detail, or an empty array.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
-	 */
-	private function stepReport(array $context): array {
-		$report = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
-		if (($report instanceof FlowStepReport) === false) {
-			return [];
-		}
-
-		return $report->take();
-	}//end stepReport()
 
 	/**
 	 * A `microtime(true)` moment as ISO 8601 with milliseconds, for the run log.

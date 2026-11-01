@@ -77,4 +77,24 @@ final class FlowStreamHop {
 	public function stepType(): string {
 		return (string)($this->step['type'] ?? '');
 	}//end stepType()
+
+	/**
+	 * The places the firing took, in the transition's declaration order.
+	 *
+	 * @param array<int, string> $taken The output places the exit claimed.
+	 *
+	 * @return array<int, string> The taken places, ordered.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
+	 */
+	public function takenInOrder(array $taken): array {
+		$takenTos = [];
+		foreach ($this->transition->getTos() as $to) {
+			if (in_array((string)$to, array_map('strval', $taken), true) === true) {
+				$takenTos[] = (string)$to;
+			}
+		}
+
+		return $takenTos;
+	}//end takenInOrder()
 }//end class

@@ -78,4 +78,38 @@ final class FlowStreamPass {
 		public readonly FlowStreamWalk $streams,
 	) {
 	}//end __construct()
+
+	/**
+	 * The enabled transitions consuming from the place a stream's token sits on.
+	 *
+	 * @param string $streamId The stream.
+	 *
+	 * @return array<int, object> The candidate transitions, in declaration order.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	public function candidatesFor(string $streamId): array {
+		$place = $this->streams->placeOf(id: $streamId);
+		$candidates = [];
+		foreach ($this->workflow->getEnabledTransitions(subject: $this->subject) as $transition) {
+			if ($place !== null && in_array($place, array_map('strval', $transition->getFroms()), true) === true) {
+				$candidates[] = $transition;
+			}
+		}
+
+		return $candidates;
+	}//end candidatesFor()
+
+	/**
+	 * The run result envelope of the pass: status, log, context and items.
+	 *
+	 * @param string $status The run status.
+	 *
+	 * @return array{status: string, log: array, context: array, items: array} The envelope.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	public function result(string $status): array {
+		return ['status' => $status, 'log' => $this->log, 'context' => $this->context, 'items' => $this->items];
+	}//end result()
 }//end class
