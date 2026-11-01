@@ -6399,6 +6399,8 @@ class ObjectsController extends Controller {
 			);
 
 			return new JSONResponse(data: $migrationResult);
+		} catch (NotAuthorizedException $exception) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
 		} catch (DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Register or schema not found'], statusCode: 404);
 		} catch (\InvalidArgumentException $exception) {

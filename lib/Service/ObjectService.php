@@ -5648,12 +5648,17 @@ class ObjectService implements ObjectServiceInterface
      * @param array      $objectIds      Array of object IDs to migrate
      * @param array      $mapping        Mapping where keys are target properties, values are source properties
      *
+     * The caller needs create permission on the target schema. Only the source
+     * objects the caller may read (RBAC and multitenancy of the source table) and
+     * update are moved; any other requested id is reported as not found.
+     *
      * @return array Migration report with success status, statistics, details, warnings, and errors.
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found.
      * @throws \InvalidArgumentException If invalid parameters provided.
+     * @throws NotAuthorizedException If the caller may not create objects in the target schema.
      *
-     * @spec exclude One-line delegation to MigrationHandler::migrateObjects(); migration logic owned by the handler.
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function migrateObjects(
         string|int $sourceRegister,
@@ -5663,16 +5668,100 @@ class ObjectService implements ObjectServiceInterface
         array $objectIds,
         array $mapping
     ): array {
-        // ARCHITECTURAL DELEGATION: Delegate to MigrationHandler for all migration logic.
-        return $this->migrationHandler->migrateObjects(
+        $sourceRegisterEntity = $this->utilityHandler->normalizeEntity(entity: $sourceRegister, type: 'register');
+        $sourceSchemaEntity   = $this->utilityHandler->normalizeEntity(entity: $sourceSchema, type: 'schema');
+        $targetSchemaEntity   = $this->utilityHandler->normalizeEntity(entity: $targetSchema, type: 'schema');
+        if (($sourceRegisterEntity instanceof Register) === false
+            || ($sourceSchemaEntity instanceof Schema) === false
+            || ($targetSchemaEntity instanceof Schema) === false
+        ) {
+            throw new OcpDoesNotExistException('One or more registers/schemas not found');
+        }
+
+        $this->checkPermission(schema: $targetSchemaEntity, action: 'create');
+
+        $permitted = $this->migratableObjectIds(
+            register: $sourceRegisterEntity,
+            schema: $sourceSchemaEntity,
+            objectIds: $objectIds
+        );
+
+        $report = $this->migrationHandler->migrateObjects(
             sourceRegister: $sourceRegister,
             sourceSchema: $sourceSchema,
             targetRegister: $targetRegister,
             targetSchema: $targetSchema,
-            objectIds: $objectIds,
+            objectIds: $permitted,
             mapping: $mapping
         );
+
+        return $this->reportUnmigratedAsNotFound(
+            report: $report,
+            objectIds: array_values(array_diff(array_map('strval', $objectIds), $permitted))
+        );
     }//end migrateObjects()
+
+    /**
+     * The requested source objects the caller may read and update.
+     *
+     * @param Register $register  The source register.
+     * @param Schema   $schema    The source schema.
+     * @param array    $objectIds The requested object uuids.
+     *
+     * @return array<int, string> The uuids that may be migrated.
+     */
+    private function migratableObjectIds(Register $register, Schema $schema, array $objectIds): array
+    {
+        $readable = $this->objectMapper->filterReadableUuids(
+            registerId: (int) $register->getId(),
+            schemaId: (int) $schema->getId(),
+            uuids: array_values(array_map('strval', $objectIds))
+        );
+
+        $permitted = [];
+        foreach ($this->objectMapper->findMultiple($readable) as $object) {
+            $mayUpdate = $this->permissionHandler->hasPermission(
+                schema: $schema,
+                action: 'update',
+                objectOwner: $object->getOwner(),
+                object: $object
+            );
+            if ($mayUpdate === true) {
+                $permitted[] = (string) $object->getUuid();
+            }
+        }
+
+        return $permitted;
+    }//end migratableObjectIds()
+
+    /**
+     * Add requested objects that were not migrated to a migration report as not found.
+     *
+     * @param array              $report    The migration report.
+     * @param array<int, string> $objectIds The ids to report.
+     *
+     * @return array The report.
+     */
+    private function reportUnmigratedAsNotFound(array $report, array $objectIds): array
+    {
+        foreach ($objectIds as $objectId) {
+            $report['details'][] = [
+                'objectId'    => $objectId,
+                'objectTitle' => null,
+                'success'     => false,
+                'error'       => "Object with ID {$objectId} not found",
+            ];
+            $report['statistics']['objectsFailed'] = (($report['statistics']['objectsFailed'] ?? 0) + 1);
+            $report['errors'][] = "Failed to migrate object {$objectId}: Object not found";
+        }
+
+        $warning = 'Some objects failed to migrate. Check details for specific errors.';
+        if ($objectIds !== [] && in_array($warning, ($report['warnings'] ?? []), true) === false) {
+            $report['warnings'][] = $warning;
+        }
+
+        return $report;
+    }//end reportUnmigratedAsNotFound()
 
     /**
      * Perform bulk delete operations on objects by UUID
