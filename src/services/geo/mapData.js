@@ -134,23 +134,56 @@ export function buildMarkers(rows, geoProperty = null) {
 	}
 	const markers = []
 	for (const row of rows) {
-		if (row === null || typeof row !== 'object') {
-			continue
+		const marker = markerFor(row, geoProperty)
+		if (marker !== null) {
+			markers.push(marker)
 		}
-		const geometry = locateGeometry(row, geoProperty)
-		const point = representativePoint(geometry)
-		if (point === null) {
-			continue
-		}
-		markers.push({
-			id: row.id ?? (row['@self'] && row['@self'].id) ?? null,
-			title: String(row.title ?? row.name ?? row.id ?? ''),
-			lon: point[0],
-			lat: point[1],
-			properties: row,
-		})
 	}
 	return markers
+}
+
+/**
+ * The marker for one object row, or null when the row has no point.
+ *
+ * @param {unknown}     row         The object row.
+ * @param {string|null} geoProperty Geo property name, or null to auto-detect.
+ * @return {object|null} The marker.
+ */
+function markerFor(row, geoProperty) {
+	if (row === null || typeof row !== 'object') {
+		return null
+	}
+	const point = representativePoint(locateGeometry(row, geoProperty))
+	if (point === null) {
+		return null
+	}
+	return {
+		id: rowId(row),
+		title: rowTitle(row),
+		lon: point[0],
+		lat: point[1],
+		properties: row,
+	}
+}
+
+/**
+ * The id of an object row: its own id, else its `@self` id, else null.
+ *
+ * @param {object} row The object row.
+ * @return {string|number|null} The id.
+ */
+function rowId(row) {
+	return row.id ?? (row['@self'] && row['@self'].id) ?? null
+}
+
+/**
+ * The marker title of an object row: title, name or id, as text.
+ *
+ * @param {object} row The object row.
+ * @return {string} The title.
+ */
+function rowTitle(row) {
+	return String(row.title ?? row.name ?? row.id ?? '')
 }
 
 /**
