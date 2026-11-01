@@ -352,6 +352,22 @@
 				"function": "Regisseur jeugdteam"
 			},
 			{
+				"key": "yildiz",
+				"uid": "f.yildiz",
+				"displayName": "Fatma Yildiz",
+				"givenName": "Fatma",
+				"prefix": "",
+				"familyName": "Yildiz",
+				"email": "fatma.yildiz@zuiddrecht.example",
+				"role": "employee",
+				"department": "Publiekszaken",
+				"groups": [
+					"medewerkers",
+					"publiekszaken"
+				],
+				"function": "Baliemedewerker burgerzaken"
+			},
+			{
 				"key": "ilse",
 				"uid": "ilse.brouwer",
 				"displayName": "Ilse Brouwer",
