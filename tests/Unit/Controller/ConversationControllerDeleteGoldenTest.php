@@ -70,6 +70,7 @@ class ConversationControllerDeleteGoldenTest extends TestCase {
 		}
 
 		$cases['destroy feedback delete failure'] = [['action' => 'destroy', 'user' => 'alice', 'archived' => true, 'fail' => 'feedback']];
+		$cases['destroyPermanent feedback delete failure'] = [['action' => 'destroyPermanent', 'user' => 'alice', 'fail' => 'feedback']];
 		$cases['destroy soft delete failure'] = [['action' => 'destroy', 'user' => 'alice', 'fail' => 'softDelete']];
 		$cases['restore failure'] = [['action' => 'restore', 'user' => 'alice', 'archived' => true, 'fail' => 'restore']];
 		return $cases;

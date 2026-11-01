@@ -835,7 +835,10 @@ class ConversationController extends Controller {
 				return $this->accessDenied(message: 'You do not have permission to delete this conversation');
 			}
 
-			// Delete messages first.
+			// Delete feedback first.
+			$this->feedbackMapper->deleteByConversation($conversation->getId());
+
+			// Delete messages.
 			$this->messageMapper->deleteByConversation($conversation->getId());
 
 			// Delete conversation.

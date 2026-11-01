@@ -266,6 +266,42 @@ class ConversationControllerTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 	}
 
+	public function testDestroyPermanentDeletesFeedbackMessagesAndConversation(): void {
+		$conv = new Conversation();
+		$conv->setId(42);
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->conversationMapper->method('canUserModifyConversation')->willReturn(true);
+
+		$this->feedbackMapper->expects($this->once())
+			->method('deleteByConversation')
+			->with(42);
+		$this->messageMapper->expects($this->once())
+			->method('deleteByConversation')
+			->with(42);
+		$this->conversationMapper->expects($this->once())
+			->method('delete')
+			->with($conv);
+
+		$result = $this->controller->destroyPermanent('uuid-123');
+
+		$this->assertEquals(200, $result->getStatus());
+	}
+
+	public function testDestroyPermanentAccessDeniedDeletesNothing(): void {
+		$conv = new Conversation();
+		$conv->setId(42);
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->conversationMapper->method('canUserModifyConversation')->willReturn(false);
+
+		$this->feedbackMapper->expects($this->never())->method('deleteByConversation');
+		$this->messageMapper->expects($this->never())->method('deleteByConversation');
+		$this->conversationMapper->expects($this->never())->method('delete');
+
+		$result = $this->controller->destroyPermanent('uuid-123');
+
+		$this->assertEquals(403, $result->getStatus());
+	}
+
 	public function testDestroyPermanentAccessDenied(): void {
 		$conv = new Conversation();
 		$this->conversationMapper->method('findByUuid')->willReturn($conv);
