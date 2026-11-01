@@ -259,9 +259,6 @@ class RegistersController extends Controller {
 	 *
 	 * @return JSONResponse The JSON response containing the list of registers
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-1
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -269,31 +266,14 @@ class RegistersController extends Controller {
 		// Get request parameters for filtering and searching.
 		$params = $this->request->getParams();
 
-		// Extract pagination and search parameters.
-		$limit = null;
-		if (isset($params['_limit']) === true) {
-			$limit = (int)$params['_limit'];
-		}
-
-		$offset = null;
-		if (isset($params['_offset']) === true) {
-			$offset = (int)$params['_offset'];
-		}
-
-		$page = null;
-		if (isset($params['_page']) === true) {
-			$page = (int)$params['_page'];
-		}
+		$page = $this->listPage(params: $params);
+		$limit = $page['limit'];
+		$offset = $page['offset'];
 
 		// Note: search parameter not currently used in this endpoint.
 		$extend = $params['_extend'] ?? [];
 		if (is_string($extend) === true) {
 			$extend = [$extend];
-		}
-
-		// Convert page to offset if provided.
-		if ($page !== null && $limit !== null) {
-			$offset = ($page - 1) * $limit;
 		}
 
 		// Extract filters.
@@ -335,40 +315,8 @@ class RegistersController extends Controller {
 		if (in_array('schemas', $extend, true) === true
 			&& in_array('@self.stats', $extend, true) === true
 		) {
-			$statsByRegisterId = [];
-
-			// Resolve every schema across every register in ONE query. This used to call
-			// schemaMapper->find() per schema id inside the loop below — on an instance
-			// with 76 registers and 1,231 schemas that is 1,231 round trips to render one
-			// list. Orphan ids simply do not come back from the bulk read, which is the
-			// same "skip it" outcome the old DoesNotExistException catch produced.
-			$allSchemaIds = [];
-			foreach ($registers as $register) {
-				foreach (($register->getSchemas() ?? []) as $schemaId) {
-					$allSchemaIds[] = (int)$schemaId;
-				}
-			}
-
-			$schemasById = $this->schemaMapper->findMultipleOptimized(ids: array_values(array_unique($allSchemaIds)));
-
-			foreach ($registers as $register) {
-				$expandedSchemas = [];
-				foreach (($register->getSchemas() ?? []) as $schemaId) {
-					$schema = ($schemasById[(int)$schemaId] ?? null);
-					if ($schema === null) {
-						// Orphan ID — cannot contribute to stats.
-						continue;
-					}
-
-					$expandedSchemas[] = $schema;
-				}
-
-				$statsByRegisterId[(int)$register->getId()] = $this->registerService->getSchemaObjectCounts(
-					registerId: (int)$register->getId(),
-					schemas: $expandedSchemas
-				);
-			}//end foreach
-		}//end if
+			$statsByRegisterId = $this->schemaStatsByRegister(registers: $registers);
+		}
 
 		$registersArr = $this->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
 
@@ -378,31 +326,107 @@ class RegistersController extends Controller {
 		// because they depend on multiple mappers (object-entity +
 		// audit-trail) the serializer does not have access to.
 		if (in_array('@self.stats', $extend, true) === true) {
-			foreach ($registersArr as &$register) {
-				$register['stats'] = [
-					// A register's object stats are the sum of its schemas' object stats,
-					// which we ALREADY computed above in one UNION per register
-					// ($statsByRegisterId). ObjectEntityMapper::getStatistics() recomputes
-					// the same numbers the slow way — for every register it walks the full
-					// register/schema-pair list and issues a per-table count. On a dev
-					// instance (76 registers, 1,231 schemas) that per-register recount was
-					// ~4.7s of a ~7s request. Reuse the counts in hand; only the
-					// '@self.stats'-without-'schemas' caller (no per-schema counts) falls
-					// back to the mapper.
-					'objects' => $this->registerObjectStats(
-						registerId: (int)$register['id'],
-						schemaStats: ($statsByRegisterId[(int)$register['id']] ?? null)
-					),
-					'logs' => $this->auditTrailMapper->getStatistics(registerId: $register['id'], schemaId: null),
-					'files' => [ 'total' => 0, 'size' => 0 ],
-				];
-			}
-
-			unset($register);
-		}//end if
+			$registersArr = $this->withRegisterStats(registers: $registersArr, statsByRegisterId: $statsByRegisterId);
+		}
 
 		return new JSONResponse(data: ['results' => $registersArr]);
 	}//end index()
+
+	/**
+	 * The limit and offset a list request asks for; a page with a limit sets the offset.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array{limit: int|null, offset: int|null}
+	 */
+	private function listPage(array $params): array {
+		$limit = null;
+		if (isset($params['_limit']) === true) {
+			$limit = (int)$params['_limit'];
+		}
+
+		$offset = null;
+		if (isset($params['_offset']) === true) {
+			$offset = (int)$params['_offset'];
+		}
+
+		if (isset($params['_page']) === true && $limit !== null) {
+			$offset = ((int)$params['_page'] - 1) * $limit;
+		}
+
+		return ['limit' => $limit, 'offset' => $offset];
+	}//end listPage()
+
+	/**
+	 * The object counts per schema of every register, keyed by register id.
+	 *
+	 * Every schema across every register is resolved in ONE query; schemaMapper->find()
+	 * per schema id took 1,231 round trips to render one list on an instance with 76
+	 * registers and 1,231 schemas. Orphan ids do not come back from the bulk read and
+	 * cannot contribute to stats.
+	 *
+	 * @param array<Register> $registers The registers in the list.
+	 *
+	 * @return array<int, array> The schema counts per register id.
+	 */
+	private function schemaStatsByRegister(array $registers): array {
+		$allSchemaIds = [];
+		foreach ($registers as $register) {
+			foreach (($register->getSchemas() ?? []) as $schemaId) {
+				$allSchemaIds[] = (int)$schemaId;
+			}
+		}
+
+		$schemasById = $this->schemaMapper->findMultipleOptimized(ids: array_values(array_unique($allSchemaIds)));
+
+		$statsByRegisterId = [];
+		foreach ($registers as $register) {
+			$expandedSchemas = [];
+			foreach (($register->getSchemas() ?? []) as $schemaId) {
+				$schema = ($schemasById[(int)$schemaId] ?? null);
+				if ($schema !== null) {
+					$expandedSchemas[] = $schema;
+				}
+			}
+
+			$statsByRegisterId[(int)$register->getId()] = $this->registerService->getSchemaObjectCounts(
+				registerId: (int)$register->getId(),
+				schemas: $expandedSchemas
+			);
+		}
+
+		return $statsByRegisterId;
+	}//end schemaStatsByRegister()
+
+	/**
+	 * Attach register-level statistics to serialized registers.
+	 *
+	 * They stay a controller concern because they depend on the object and audit-trail
+	 * mappers the serializer does not have. A register's object stats are the sum of its
+	 * schemas' counts already in hand; only a list without per-schema counts falls back
+	 * to the mapper, whose per-register recount was ~4.7s of a ~7s request on a dev
+	 * instance with 76 registers.
+	 *
+	 * @param array<int, array<string, mixed>> $registers         The serialized registers.
+	 * @param array<int, array>|null           $statsByRegisterId The schema counts per register id, if computed.
+	 *
+	 * @return array<int, array<string, mixed>> The registers with a `stats` block.
+	 */
+	private function withRegisterStats(array $registers, ?array $statsByRegisterId): array {
+		foreach ($registers as &$register) {
+			$register['stats'] = [
+				'objects' => $this->registerObjectStats(
+					registerId: (int)$register['id'],
+					schemaStats: ($statsByRegisterId[(int)$register['id']] ?? null)
+				),
+				'logs' => $this->auditTrailMapper->getStatistics(registerId: $register['id'], schemaId: null),
+				'files' => [ 'total' => 0, 'size' => 0 ],
+			];
+		}
+
+		unset($register);
+		return $registers;
+	}//end withRegisterStats()
 
 	/**
 	 * Register-level object statistics, reused from the per-schema counts when we have them.

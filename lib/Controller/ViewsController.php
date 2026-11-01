@@ -275,6 +275,69 @@ class ViewsController extends Controller {
 	}//end refuseForbiddenViewFields()
 
 	/**
+	 * A 400 response with one error message.
+	 *
+	 * @param string $error The error message.
+	 *
+	 * @return JSONResponse A 400 response.
+	 */
+	private function badRequest(string $error): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $error,
+			],
+			statusCode: 400
+		);
+	}//end badRequest()
+
+	/**
+	 * The view query a request body declares.
+	 *
+	 * The frontend still sends `configuration`, of which only the query keys are kept;
+	 * otherwise a `query` array is taken as is.
+	 *
+	 * @param array<string, mixed> $data The request body.
+	 *
+	 * @return array<string, mixed>|null The query, or null when the body declares none.
+	 */
+	private function viewQueryFrom(array $data): ?array {
+		$config = $data['configuration'] ?? null;
+		if (is_array($config) === true) {
+			return [
+				'registers' => $config['registers'] ?? [],
+				'schemas' => $config['schemas'] ?? [],
+				'source' => $config['source'] ?? 'auto',
+				'searchTerms' => $config['searchTerms'] ?? [],
+				'facetFilters' => $config['facetFilters'] ?? [],
+				'enabledFacets' => $config['enabledFacets'] ?? [],
+			];
+		}
+
+		$query = $data['query'] ?? null;
+		if (is_array($query) === true) {
+			return $query;
+		}
+
+		return null;
+	}//end viewQueryFrom()
+
+	/**
+	 * The presentation a request body declares, when it is an array.
+	 *
+	 * @param array<string, mixed> $data The request body.
+	 *
+	 * @return array<string, mixed>|null The presentation, or null.
+	 */
+	private function presentationFrom(array $data): ?array {
+		$presentation = $data['presentation'] ?? null;
+		if (is_array($presentation) === false) {
+			return null;
+		}
+
+		return $presentation;
+	}//end presentationFrom()
+
+	/**
 	 * Get all views for the current user
 	 *
 	 * This method retrieves all saved views that belong to the current user,
@@ -455,57 +518,16 @@ class ViewsController extends Controller {
 
 			$data = $this->request->getParams();
 
-			// Validate required fields.
 			if (isset($data['name']) === false || empty($data['name']) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'View name is required',
-					],
-					statusCode: 400
-				);
+				return $this->badRequest(error: 'View name is required');
 			}
 
-			/*
-			 * Initialize query before conditional assignment.
-			 *
-			 * @var array<string, mixed> $query
-			 */
-
-			$query = [];
-
-			// Validate that query or configuration is provided.
-			$hasConfig = ($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true;
-			$hasQuery = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
-			if ($hasConfig === false && $hasQuery === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'View query or configuration is required',
-					],
-					statusCode: 400
-				);
+			$query = $this->viewQueryFrom(data: $data);
+			if ($query === null) {
+				return $this->badRequest(error: 'View query or configuration is required');
 			}
 
-			// Extract query parameters from configuration or query.
-			if ($hasConfig === true) {
-				// Frontend still sends 'configuration', extract only query params.
-				$config = $data['configuration'];
-				$query = [
-					'registers' => $config['registers'] ?? [],
-					'schemas' => $config['schemas'] ?? [],
-					'source' => $config['source'] ?? 'auto',
-					'searchTerms' => $config['searchTerms'] ?? [],
-					'facetFilters' => $config['facetFilters'] ?? [],
-					'enabledFacets' => $config['enabledFacets'] ?? [],
-				];
-			} elseif ($hasQuery === true) {
-				// Direct query parameter.
-				$query = $data['query'];
-			}
-
-			$presentation = $data['presentation'] ?? null;
-			if (is_array($presentation) === false) {
-				$presentation = null;
-			}
+			$presentation = $this->presentationFrom(data: $data);
 
 			$shareRefusal = $this->refuseInvalidShares(data: $data);
 			if ($shareRefusal !== null) {
@@ -597,57 +619,16 @@ class ViewsController extends Controller {
 				return $refusal;
 			}
 
-			// Validate required fields.
 			if (isset($data['name']) === false || empty($data['name']) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'View name is required',
-					],
-					statusCode: 400
-				);
+				return $this->badRequest(error: 'View name is required');
 			}
 
-			/*
-			 * Initialize query before conditional assignment.
-			 *
-			 * @var array<string, mixed> $query
-			 */
-
-			$query = [];
-
-			// Validate that query or configuration is provided.
-			$hasConfig = ($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true;
-			$hasQuery = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
-			if ($hasConfig === false && $hasQuery === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'View query or configuration is required',
-					],
-					statusCode: 400
-				);
+			$query = $this->viewQueryFrom(data: $data);
+			if ($query === null) {
+				return $this->badRequest(error: 'View query or configuration is required');
 			}
 
-			// Extract query parameters from configuration or query.
-			if ($hasConfig === true) {
-				// Frontend still sends 'configuration', extract only query params.
-				$config = $data['configuration'];
-				$query = [
-					'registers' => $config['registers'] ?? [],
-					'schemas' => $config['schemas'] ?? [],
-					'source' => $config['source'] ?? 'auto',
-					'searchTerms' => $config['searchTerms'] ?? [],
-					'facetFilters' => $config['facetFilters'] ?? [],
-					'enabledFacets' => $config['enabledFacets'] ?? [],
-				];
-			} elseif ($hasQuery === true) {
-				// Direct query parameter.
-				$query = $data['query'];
-			}
-
-			$presentation = $data['presentation'] ?? null;
-			if (is_array($presentation) === false) {
-				$presentation = null;
-			}
+			$presentation = $this->presentationFrom(data: $data);
 
 			$shareRefusal = $this->refuseInvalidShares(data: $data);
 			if ($shareRefusal !== null) {
@@ -761,28 +742,8 @@ class ViewsController extends Controller {
 			$favoredBy = $data['favoredBy'] ?? $view->getFavoredBy();
 
 			// Handle query parameter.
-			$query = $view->getQuery() ?? [];
-			if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
-				$config = $data['configuration'];
-				$query = [
-					'registers' => $config['registers'] ?? [],
-					'schemas' => $config['schemas'] ?? [],
-					'source' => $config['source'] ?? 'auto',
-					'searchTerms' => $config['searchTerms'] ?? [],
-					'facetFilters' => $config['facetFilters'] ?? [],
-					'enabledFacets' => $config['enabledFacets'] ?? [],
-				];
-			} elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
-				$query = $data['query'];
-			}
-
-			// Handle presentation parameter — fall back to the existing stored
-			// value (not null) so a PATCH that omits presentation cannot
-			// silently wipe an existing kanban/calendar config.
-			$presentation = $view->getPresentation();
-			if (($data['presentation'] ?? null) !== null && is_array($data['presentation']) === true) {
-				$presentation = $data['presentation'];
-			}
+			$query = $this->viewQueryFrom(data: $data) ?? ($view->getQuery() ?? []);
+			$presentation = $this->presentationFrom(data: $data) ?? $view->getPresentation();
 
 			$shareRefusal = $this->refuseInvalidShares(data: $data);
 			if ($shareRefusal !== null) {

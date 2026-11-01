@@ -91,6 +91,122 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	}//end getDescription()
 
 	/**
+	 * The function definitions, in OpenAI function calling format.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const FUNCTIONS = [
+		[
+			'name' => 'list_agents',
+			'subject' => 'agent',
+			'action' => 'list',
+			'description' => 'List all agents accessible to current user. Returns name, type, status with privacy settings respected.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of results to return (default: 50)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of results to skip for pagination (default: 0)',
+					],
+				],
+				'required' => [],
+			],
+		],
+		[
+			'name' => 'get_agent',
+			'subject' => 'agent',
+			'action' => 'get',
+			'description' => 'Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'uuid' => [
+						'type' => 'string',
+						'description' => 'UUID of the agent to retrieve',
+					],
+				],
+				'required' => ['uuid'],
+			],
+		],
+		[
+			'name' => 'create_agent',
+			'subject' => 'agent',
+			'action' => 'create',
+			'description' => 'Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'name' => [
+						'type' => 'string',
+						'description' => 'Name of the agent (required)',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'Description of what the agent does',
+					],
+					'type' => [
+						'type' => 'string',
+						'description' => 'Type of agent (e.g., "assistant", "support", "analyzer")',
+					],
+					'systemPrompt' => [
+						'type' => 'string',
+						'description' => 'System prompt that defines the agent\'s behavior and personality',
+					],
+				],
+				'required' => ['name'],
+			],
+		],
+		[
+			'name' => 'update_agent',
+			'subject' => 'agent',
+			'action' => 'update',
+			'description' => 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'uuid' => [
+						'type' => 'string',
+						'description' => 'UUID of the agent to update',
+					],
+					'name' => [
+						'type' => 'string',
+						'description' => 'New name for the agent',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'New description',
+					],
+					'systemPrompt' => [
+						'type' => 'string',
+						'description' => 'New system prompt',
+					],
+				],
+				'required' => ['uuid'],
+			],
+		],
+		[
+			'name' => 'delete_agent',
+			'subject' => 'agent',
+			'action' => 'delete',
+			'description' => 'Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'uuid' => [
+						'type' => 'string',
+						'description' => 'UUID of the agent to delete',
+					],
+				],
+				'required' => ['uuid'],
+			],
+		],
+	];
+
+	/**
 	 * Get function definitions for LLM function calling
 	 *
 	 * Returns function definitions in OpenAI function calling format.
@@ -98,132 +214,10 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	 *
 	 * @return array<int, array<string, mixed>> Array of function definitions
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getFunctions(): array {
-		$listDesc = 'List all agents accessible to current user. ';
-		$listDesc .= 'Returns name, type, status with privacy settings respected.';
-		$getDesc = 'Get detailed agent information by UUID. ';
-		$getDesc .= 'Returns configuration, system prompt, model settings, and tools.';
-		$createDesc = 'Create a new AI agent. Requires name and system prompt. ';
-		$createDesc .= 'Configure model, temperature, tools, and privacy.';
-		$updateDesc = 'Update an existing agent. Only the owner can modify agents. ';
-		$updateDesc .= 'Provide the UUID and fields to update.';
-		$deleteDesc = 'Permanently delete agent (owner only). ';
-		$deleteDesc .= 'Deletes all associated conversations. Cannot be undone.';
-
-		return [
-			[
-				'name' => 'list_agents',
-				'subject' => 'agent',
-				'action' => 'list',
-				'description' => $listDesc,
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results to return (default: 50)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip for pagination (default: 0)',
-						],
-					],
-					'required' => [],
-				],
-			],
-			[
-				'name' => 'get_agent',
-				'subject' => 'agent',
-				'action' => 'get',
-				'description' => $getDesc,
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'uuid' => [
-							'type' => 'string',
-							'description' => 'UUID of the agent to retrieve',
-						],
-					],
-					'required' => ['uuid'],
-				],
-			],
-			[
-				'name' => 'create_agent',
-				'subject' => 'agent',
-				'action' => 'create',
-				'description' => $createDesc,
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'name' => [
-							'type' => 'string',
-							'description' => 'Name of the agent (required)',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'Description of what the agent does',
-						],
-						'type' => [
-							'type' => 'string',
-							'description' => 'Type of agent (e.g., "assistant", "support", "analyzer")',
-						],
-						'systemPrompt' => [
-							'type' => 'string',
-							'description' => 'System prompt that defines the agent\'s behavior and personality',
-						],
-					],
-					'required' => ['name'],
-				],
-			],
-			[
-				'name' => 'update_agent',
-				'subject' => 'agent',
-				'action' => 'update',
-				'description' => $updateDesc,
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'uuid' => [
-							'type' => 'string',
-							'description' => 'UUID of the agent to update',
-						],
-						'name' => [
-							'type' => 'string',
-							'description' => 'New name for the agent',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'New description',
-						],
-						'systemPrompt' => [
-							'type' => 'string',
-							'description' => 'New system prompt',
-						],
-					],
-					'required' => ['uuid'],
-				],
-			],
-			[
-				'name' => 'delete_agent',
-				'subject' => 'agent',
-				'action' => 'delete',
-				'description' => $deleteDesc,
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'uuid' => [
-							'type' => 'string',
-							'description' => 'UUID of the agent to delete',
-						],
-					],
-					'required' => ['uuid'],
-				],
-			],
-		];
+		return self::FUNCTIONS;
 	}//end getFunctions()
 
 	/**

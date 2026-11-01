@@ -2,11 +2,44 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TOrganisation } from './organisation.types'
 
 import { z } from 'zod'
+import { COPY, NO_QUOTA, NO_USAGE, withFallbacks } from '../withFallbacks.js'
+
+const FALLBACKS = {
+	id: COPY,
+	uuid: '',
+	name: '',
+	slug: '',
+	description: '',
+	users: [],
+	groups: [],
+	isDefault: false,
+	active: COPY,
+	owner: '',
+	parent: null,
+	children: [],
+	quota: NO_QUOTA,
+	usage: NO_USAGE,
+	authorization: {
+		register: { create: [], read: [], update: [], delete: [] },
+		schema: { create: [], read: [], update: [], delete: [] },
+		object: { create: [], read: [], update: [], delete: [] },
+		view: { create: [], read: [], update: [], delete: [] },
+		agent: { create: [], read: [], update: [], delete: [] },
+		configuration: { create: [], read: [], update: [], delete: [] },
+		application: { create: [], read: [], update: [], delete: [] },
+		object_publish: [],
+		agent_use: [],
+		dashboard_view: [],
+		llm_use: [],
+	},
+	created: '',
+	updated: '',
+}
 
 export class Organisation implements TOrganisation {
 	public id?: number
 	public uuid?: string
-	public name: string
+	public name!: string
 	public slug?: string
 	public description?: string
 	public users?: string[]
@@ -41,47 +74,8 @@ export class Organisation implements TOrganisation {
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(organisation: TOrganisation) {
-		this.id = organisation.id
-		this.uuid = organisation.uuid || ''
-		this.name = organisation.name || ''
-		this.slug = organisation.slug || ''
-		this.description = organisation.description || ''
-		this.users = organisation.users || []
-		this.groups = organisation.groups || []
-		this.isDefault = organisation.isDefault || false
+		Object.assign(this, withFallbacks(organisation, FALLBACKS))
 		this.active = organisation.active !== false
-		this.owner = organisation.owner || ''
-		this.parent = organisation.parent || null
-		this.children = organisation.children || []
-		this.quota = organisation.quota || {
-			storage: null,
-			bandwidth: null,
-			requests: null,
-			users: null,
-			groups: null,
-		}
-		this.usage = organisation.usage || {
-			storage: 0,
-			bandwidth: 0,
-			requests: 0,
-			users: 0,
-			groups: 0,
-		}
-		this.authorization = organisation.authorization || {
-			register: { create: [], read: [], update: [], delete: [] },
-			schema: { create: [], read: [], update: [], delete: [] },
-			object: { create: [], read: [], update: [], delete: [] },
-			view: { create: [], read: [], update: [], delete: [] },
-			agent: { create: [], read: [], update: [], delete: [] },
-			configuration: { create: [], read: [], update: [], delete: [] },
-			application: { create: [], read: [], update: [], delete: [] },
-			object_publish: [],
-			agent_use: [],
-			dashboard_view: [],
-			llm_use: [],
-		}
-		this.created = organisation.created || ''
-		this.updated = organisation.updated || ''
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {
