@@ -140,6 +140,8 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			'object with null register'        => $this->runScenario(steps: [['id' => self::UUID]], answers: [self::UUID . '|-' => 'obj'], objectRegister: null),
 			'prior context restored'           => $this->runScenario(steps: [['id' => self::UUID, 'register' => 'R1', 'schema' => 'S10']], answers: [self::UUID . '|10' => 'obj'], prior: true),
 			'prior context restored on throw'  => $this->runScenario(steps: [['id' => self::UUID, 'register' => 'R1', 'schema' => 'S10']], answers: [self::UUID . '|10' => 'obj'], prior: true, denyRead: true),
+			'string schema leaves no pending ref' => $this->runScenario(steps: [['id' => self::UUID, 'schema' => '10']], answers: [self::UUID . '|10' => 'obj'], thenSetRegister: '2'),
+			'cached null register, call names one' => $this->runScenario(steps: [['id' => self::UUID, 'schema' => 'S10'], ['id' => self::UUID, 'register' => 'R1']], answers: [self::UUID . '|10' => 'obj'], objectRegister: null),
 			'pending ref is not inherited'     => $this->runScenario(steps: [['id' => self::UUID, 'register' => 'R1']], answers: [self::UUID . '|-' => 'obj'], pendingRef: '20'),
 			'integer id'                       => $this->runScenario(steps: [['id' => 42, 'schema' => 'S10']], answers: ['42|10' => 'obj']),
 		];
@@ -163,6 +165,7 @@ class ObjectServiceFindGoldenTest extends TestCase {
 	 * @param string|null                      $objectRegister The register id stored on the object.
 	 * @param bool                             $prior          Whether the service already has a register/schema context.
 	 * @param string|null                      $pendingRef     A schema ref left pending by an earlier caller.
+	 * @param string|null                      $thenSetRegister A register id set on the service after the calls.
 	 *
 	 * @return array<string, mixed>
 	 *
@@ -178,6 +181,7 @@ class ObjectServiceFindGoldenTest extends TestCase {
 		?string $objectRegister = '1',
 		bool $prior = false,
 		?string $pendingRef = null,
+		?string $thenSetRegister = null,
 	): array {
 		$this->calls = [];
 		$this->answers = $answers;
@@ -206,6 +210,15 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			$results[] = $this->callFind(service: $service, step: $step);
 		}
 
+		$pendingAfter = (new ReflectionProperty(ObjectService::class, 'currentSchemaRef'))->getValue($service);
+		$contextAfter = ['register' => $service->getCurrentRegisterEntity()?->getId(), 'schema' => $service->getCurrentSchemaEntity()?->getId()];
+		$afterSetRegister = null;
+		if ($thenSetRegister !== null) {
+			$this->calls[] = ['then setRegister' => $thenSetRegister];
+			$service->setRegister(register: $thenSetRegister);
+			$afterSetRegister = ['register' => $service->getCurrentRegisterEntity()?->getId(), 'schema' => $service->getCurrentSchemaEntity()?->getId()];
+		}
+
 		$cache = new ReflectionProperty(ObjectService::class, 'uuidScopeCache');
 		$cached = [];
 		foreach ($cache->getValue($service) as $key => $scope) {
@@ -215,11 +228,7 @@ class ObjectServiceFindGoldenTest extends TestCase {
 		return [
 			'results' => $results,
 			'calls'   => $this->calls,
-			'after'   => [
-				'register' => $service->getCurrentRegisterEntity()?->getId(),
-				'schema'   => $service->getCurrentSchemaEntity()?->getId(),
-				'cache'    => $cached,
-			],
+			'after'   => $contextAfter + ['cache' => $cached] + ($thenSetRegister === null ? [] : ['pendingRef' => $pendingAfter, 'afterSetRegister' => $afterSetRegister]),
 		];
 	}//end runScenario()
 
