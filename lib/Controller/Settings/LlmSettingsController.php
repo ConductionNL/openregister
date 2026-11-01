@@ -348,20 +348,21 @@ class LlmSettingsController extends Controller {
 			$settings = $this->settingsService->getLLMSettingsOnly();
 			$ollamaUrl = $settings['ollamaConfig']['url'] ?? 'http://localhost:11434';
 
-			$fetched = $this->fetchOllamaTags(ollamaUrl: $ollamaUrl);
+			$fetched = $this->fetchOllamaModels(ollamaUrl: $ollamaUrl);
 			if (isset($fetched['error']) === true) {
-				return $this->ollamaFailure(error: $fetched['error']);
-			}
-
-			$data = json_decode($fetched['body'], true);
-			if (isset($data['models']) === false || is_array($data['models']) === false) {
-				return $this->ollamaFailure(error: 'Unexpected response from Ollama API');
+				return new JSONResponse(
+					data: [
+						'success' => false,
+						'error' => $fetched['error'],
+						'models' => [],
+					]
+				);
 			}
 
 			// Format models for frontend dropdown.
 			$models = array_map(
 				fn (array $model): array => $this->formatOllamaModel(model: $model),
-				$data['models']
+				$fetched['models']
 			);
 
 			// Sort by name.
@@ -392,13 +393,13 @@ class LlmSettingsController extends Controller {
 	}//end getOllamaModels()
 
 	/**
-	 * Fetch the model list body from an Ollama instance's tags endpoint.
+	 * Fetch the raw model list from an Ollama instance's tags endpoint.
 	 *
 	 * @param string $ollamaUrl The Ollama base URL.
 	 *
-	 * @return array{error?: string, body?: string} The body, or the error that stopped the request.
+	 * @return array{error?: string, models?: array} The models, or the error that stopped the request.
 	 */
-	private function fetchOllamaTags(string $ollamaUrl): array {
+	private function fetchOllamaModels(string $ollamaUrl): array {
 		$ch = curl_init(rtrim($ollamaUrl, '/') . '/api/tags');
 		curl_setopt_array(
 			$ch,
@@ -422,25 +423,13 @@ class LlmSettingsController extends Controller {
 			return ['error' => "Ollama API returned HTTP {$httpCode}"];
 		}
 
-		return ['body' => $response];
-	}//end fetchOllamaTags()
+		$data = json_decode($response, true);
+		if (isset($data['models']) === false || is_array($data['models']) === false) {
+			return ['error' => 'Unexpected response from Ollama API'];
+		}
 
-	/**
-	 * The response for an Ollama model list that could not be read.
-	 *
-	 * @param string $error What went wrong.
-	 *
-	 * @return JSONResponse
-	 */
-	private function ollamaFailure(string $error): JSONResponse {
-		return new JSONResponse(
-			data: [
-				'success' => false,
-				'error' => $error,
-				'models' => [],
-			]
-		);
-	}//end ollamaFailure()
+		return ['models' => $data['models']];
+	}//end fetchOllamaModels()
 
 	/**
 	 * Format one Ollama model for the frontend dropdown.
@@ -453,7 +442,7 @@ class LlmSettingsController extends Controller {
 		$name = $model['name'] ?? 'unknown';
 		// Format size if available.
 		$size = '';
-		if (($model['size'] ?? null) !== null && is_numeric($model['size']) === true) {
+		if (is_numeric($model['size'] ?? null) === true) {
 			$size = $this->settingsService->formatBytes((int)$model['size']);
 		}
 
