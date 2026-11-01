@@ -29,7 +29,7 @@ use RuntimeException;
 
 /**
  * Golden record of canDelete() over graphs that use every onDelete action, a chain, a cycle,
- * a soft-deleted dependent, a lookup that fails and a chain deeper than the depth limit. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
+ * a soft-deleted dependent, a lookup that fails and a chain deeper than the depth limit and an unknown onDelete value. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -99,6 +99,9 @@ class ReferentialIntegrityDeletionGraphGoldenTest extends TestCase {
 
 		$expected = json_decode((string) file_get_contents(self::FIXTURE), true);
 		$this->assertSame(expected: $expected, actual: $actual);
+
+		// An unknown onDelete value adds no target and no blocker.
+		$this->assertStringNotContainsString(needle: 'odd-uuid', haystack: (string) json_encode($actual['mixed']));
 	}//end testAnalysesMatchTheGolden()
 
 	/**
@@ -151,6 +154,7 @@ class ReferentialIntegrityDeletionGraphGoldenTest extends TestCase {
 			$this->schema(id: 10, properties: ['parent' => ['$ref' => '11', 'onDelete' => 'RESTRICT']]),
 			$this->schema(id: 11, properties: []),
 			$this->schema(id: 12, properties: ['parent' => ['$ref' => '12', 'onDelete' => 'CASCADE']]),
+			$this->schema(id: 13, properties: ['odd' => ['$ref' => '1', 'onDelete' => 'BOGUS']]),
 		];
 	}//end schemas()
 
@@ -173,6 +177,7 @@ class ReferentialIntegrityDeletionGraphGoldenTest extends TestCase {
 			$this->object(uuid: 'a-uuid', schema: '8', data: ['peer' => 'b-uuid']),
 			$this->object(uuid: 'b-uuid', schema: '9', data: ['peer' => 'a-uuid']),
 			$this->object(uuid: 'broken-uuid', schema: '11', data: []),
+			$this->object(uuid: 'odd-uuid', schema: '13', data: ['odd' => 'person-uuid']),
 		];
 		for ($i = 0; $i <= 12; $i++) {
 			$list[] = $this->object(uuid: 'chain-' . $i, schema: '12', data: ['parent' => 'chain-' . ($i - 1)]);
