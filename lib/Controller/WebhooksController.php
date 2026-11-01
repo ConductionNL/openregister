@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Webhook;
+use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\WebhookService;
@@ -60,8 +61,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is the
- *   unsaved Webhook entity the mapping preview builds from the dialog's fields.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The classes over the limit are the
+ *   unsaved Webhook entity the mapping preview builds from the dialog's fields and
+ *   the WebhookLog a retry reads its payload from.
  *
  * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
@@ -1012,38 +1014,7 @@ class WebhooksController extends Controller {
 				);
 			}
 
-			// Get the latest log entry to retrieve error details.
-			$latestLogs = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: 1, offset: 0);
-			$errorMessage = 'Test webhook delivery failed';
-			$errorDetails = null;
-
-			if (empty($latestLogs) === false) {
-				$latestLog = $latestLogs[0];
-				if ($latestLog->getErrorMessage() !== null) {
-					$errorMessage = $latestLog->getErrorMessage();
-				}
-
-				if ($latestLog->getStatusCode() !== null) {
-					$errorDetails = [
-						'status_code' => $latestLog->getStatusCode(),
-						'response_body' => $latestLog->getResponseBody(),
-					];
-				}
-			}
-
-			$responseData = [
-				'success' => false,
-				'message' => $errorMessage,
-			];
-
-			if ($errorDetails !== null) {
-				$responseData['error_details'] = $errorDetails;
-			}
-
-			return new JSONResponse(
-				data: $responseData,
-				statusCode: 500
-			);
+			return $this->failedDeliveryResponse(webhookId: $id, message: 'Test webhook delivery failed');
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(
 				data: [
@@ -1417,18 +1388,7 @@ class WebhooksController extends Controller {
 			// and answered this endpoint with a 500.
 			$webhook = $this->webhookMapper->find($log->getWebhook());
 
-			// Extract payload from request body if available, otherwise use stored payload.
-			$payload = [];
-			if ($log->getRequestBody() !== null) {
-				$decoded = json_decode($log->getRequestBody() ?? '{}', true);
-				if ($decoded !== null) {
-					$payload = $decoded;
-				}
-			} elseif ($log->getPayload() !== null) {
-				$payload = $log->getPayloadArray();
-			}
-
-			// If no payload found, return error.
+			$payload = $this->retryPayload(log: $log);
 			if (empty($payload) === true) {
 				return new JSONResponse(
 					data: [
@@ -1459,38 +1419,7 @@ class WebhooksController extends Controller {
 				);
 			}
 
-			// Get the latest log entry to retrieve error details.
-			$latestLogs = $this->webhookLogMapper->findByWebhook(webhookId: $webhook->getId(), limit: 1, offset: 0);
-			$errorMessage = 'Webhook retry delivery failed';
-			$errorDetails = null;
-
-			if (empty($latestLogs) === false) {
-				$latestLog = $latestLogs[0];
-				if ($latestLog->getErrorMessage() !== null) {
-					$errorMessage = $latestLog->getErrorMessage();
-				}
-
-				if ($latestLog->getStatusCode() !== null) {
-					$errorDetails = [
-						'status_code' => $latestLog->getStatusCode(),
-						'response_body' => $latestLog->getResponseBody(),
-					];
-				}
-			}
-
-			$responseData = [
-				'success' => false,
-				'message' => $errorMessage,
-			];
-
-			if ($errorDetails !== null) {
-				$responseData['error_details'] = $errorDetails;
-			}
-
-			return new JSONResponse(
-				data: $responseData,
-				statusCode: 500
-			);
+			return $this->failedDeliveryResponse(webhookId: $webhook->getId(), message: 'Webhook retry delivery failed');
 		} catch (DoesNotExistException $e) {
 			$this->logger->error(
 				message: '[WebhooksController] Webhook log not found for retry: ' . $e->getMessage(),
@@ -1527,4 +1456,63 @@ class WebhooksController extends Controller {
 			);
 		}//end try
 	}//end retry()
+
+	/**
+	 * The payload a failed delivery is retried with: the logged request body, else the stored payload.
+	 *
+	 * @param WebhookLog $log The failed delivery's log entry.
+	 *
+	 * @return array<mixed> The payload; empty when the log holds none.
+	 */
+	private function retryPayload(WebhookLog $log): array {
+		if ($log->getRequestBody() !== null) {
+			$decoded = json_decode($log->getRequestBody() ?? '{}', true);
+			if (is_array($decoded) === true) {
+				return $decoded;
+			}
+
+			return [];
+		}
+
+		if ($log->getPayload() !== null) {
+			return $log->getPayloadArray();
+		}
+
+		return [];
+	}//end retryPayload()
+
+	/**
+	 * The 500 response for a delivery that failed, with the error the webhook's newest log entry recorded.
+	 *
+	 * @param int    $webhookId The webhook that was delivered.
+	 * @param string $message   The message when the log entry records none.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function failedDeliveryResponse(int $webhookId, string $message): JSONResponse {
+		$latestLogs = $this->webhookLogMapper->findByWebhook(webhookId: $webhookId, limit: 1, offset: 0);
+		$responseData = [
+			'success' => false,
+			'message' => $message,
+		];
+
+		if (empty($latestLogs) === false) {
+			$latestLog = $latestLogs[0];
+			if ($latestLog->getErrorMessage() !== null) {
+				$responseData['message'] = $latestLog->getErrorMessage();
+			}
+
+			if ($latestLog->getStatusCode() !== null) {
+				$responseData['error_details'] = [
+					'status_code' => $latestLog->getStatusCode(),
+					'response_body' => $latestLog->getResponseBody(),
+				];
+			}
+		}
+
+		return new JSONResponse(
+			data: $responseData,
+			statusCode: 500
+		);
+	}//end failedDeliveryResponse()
 }//end class

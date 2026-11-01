@@ -90,86 +90,123 @@ final class ObservabilityManifest {
 		}
 
 		$diagnostics = [];
-
-		// Health section.
-		$statusCodePolicy = self::POLICY_ADR006;
-		$cors = false;
-		$checks = [];
-		$healthValid = true;
-
-		$health = $block['health'] ?? null;
-		if (is_array($health) === true) {
-			$policy = $health['statusCodePolicy'] ?? self::POLICY_ADR006;
-			if (is_string($policy) === true && in_array($policy, self::POLICIES, true) === true) {
-				$statusCodePolicy = $policy;
-			} else {
-				$shownPolicy = gettype($policy);
-				if (is_scalar($policy) === true) {
-					$shownPolicy = (string)$policy;
-				}
-
-				$diagnostics[] = sprintf('Invalid statusCodePolicy "%s"; defaulting to adr006.', $shownPolicy);
-			}
-
-			$cors = ($health['cors'] ?? false) === true;
-
-			$rawChecks = $health['checks'] ?? [];
-			if (is_array($rawChecks) === true) {
-				foreach ($rawChecks as $index => $rawCheck) {
-					if (is_array($rawCheck) === false) {
-						$diagnostics[] = sprintf('Health check #%d is not an object.', $index);
-						$healthValid = false;
-						continue;
-					}
-
-					try {
-						$checks[] = HealthCheckDescriptor::fromArray(raw: $rawCheck, index: (int)$index);
-					} catch (ObservabilityValidationException $e) {
-						$diagnostics[] = $e->getMessage();
-						$healthValid = false;
-					}
-				}
-			} else {
-				$diagnostics[] = 'observability.health.checks must be an array.';
-				$healthValid = false;
-			}
-		}//end if
+		$health = self::parseHealth(health: ($block['health'] ?? null), diagnostics: $diagnostics);
 
 		// If the health block was malformed enough to lose checks, fall back to default health.
-		if ($healthValid === false || $checks === []) {
+		$checks = $health['checks'];
+		if ($health['valid'] === false || $checks === []) {
 			$checks = self::defaultChecks(manifest: $manifest);
 		}
 
-		// Metrics section.
-		$metrics = [];
-		$rawMetrics = $block['metrics'] ?? [];
-		if (is_array($rawMetrics) === true) {
-			foreach ($rawMetrics as $index => $rawMetric) {
-				if (is_array($rawMetric) === false) {
-					$diagnostics[] = sprintf('Metric #%d is not an object.', $index);
-					continue;
-				}
-
-				try {
-					$metrics[] = MetricDescriptor::fromArray(raw: $rawMetric);
-				} catch (ObservabilityValidationException $e) {
-					// Skip the single bad metric; implicit info/up always still serve.
-					$diagnostics[] = $e->getMessage();
-				}
-			}
-		} else {
-			$diagnostics[] = 'observability.metrics must be an array.';
-		}
+		$metrics = self::parseMetrics(rawMetrics: ($block['metrics'] ?? []), diagnostics: $diagnostics);
 
 		return new self(
 			appId: $appId,
 			checks: $checks,
 			metrics: $metrics,
-			statusCodePolicy: $statusCodePolicy,
-			cors: $cors,
+			statusCodePolicy: $health['statusCodePolicy'],
+			cors: $health['cors'],
 			diagnostics: $diagnostics
 		);
 	}//end fromManifest()
+
+	/**
+	 * Read the health section: status code policy, CORS flag and checks.
+	 *
+	 * @param mixed    $health      The `observability.health` value.
+	 * @param string[] $diagnostics Diagnostics collected so far; appended to.
+	 *
+	 * @return array{statusCodePolicy: string, cors: bool, checks: HealthCheckDescriptor[], valid: bool}
+	 */
+	private static function parseHealth(mixed $health, array &$diagnostics): array {
+		$result = ['statusCodePolicy' => self::POLICY_ADR006, 'cors' => false, 'checks' => [], 'valid' => true];
+		if (is_array($health) === false) {
+			return $result;
+		}
+
+		$result['statusCodePolicy'] = self::parseStatusCodePolicy(
+			policy: ($health['statusCodePolicy'] ?? self::POLICY_ADR006),
+			diagnostics: $diagnostics
+		);
+		$result['cors'] = ($health['cors'] ?? false) === true;
+
+		$rawChecks = $health['checks'] ?? [];
+		if (is_array($rawChecks) === false) {
+			$diagnostics[] = 'observability.health.checks must be an array.';
+			$result['valid'] = false;
+			return $result;
+		}
+
+		foreach ($rawChecks as $index => $rawCheck) {
+			if (is_array($rawCheck) === false) {
+				$diagnostics[] = sprintf('Health check #%d is not an object.', $index);
+				$result['valid'] = false;
+				continue;
+			}
+
+			try {
+				$result['checks'][] = HealthCheckDescriptor::fromArray(raw: $rawCheck, index: (int)$index);
+			} catch (ObservabilityValidationException $e) {
+				$diagnostics[] = $e->getMessage();
+				$result['valid'] = false;
+			}
+		}
+
+		return $result;
+	}//end parseHealth()
+
+	/**
+	 * The status code policy, or adr006 with a diagnostic when it is not a known policy.
+	 *
+	 * @param mixed    $policy      The declared policy.
+	 * @param string[] $diagnostics Diagnostics collected so far; appended to.
+	 *
+	 * @return string
+	 */
+	private static function parseStatusCodePolicy(mixed $policy, array &$diagnostics): string {
+		if (is_string($policy) === true && in_array($policy, self::POLICIES, true) === true) {
+			return $policy;
+		}
+
+		$shownPolicy = gettype($policy);
+		if (is_scalar($policy) === true) {
+			$shownPolicy = (string)$policy;
+		}
+
+		$diagnostics[] = sprintf('Invalid statusCodePolicy "%s"; defaulting to adr006.', $shownPolicy);
+		return self::POLICY_ADR006;
+	}//end parseStatusCodePolicy()
+
+	/**
+	 * Read the metrics section, skipping each bad metric; implicit info/up always still serve.
+	 *
+	 * @param mixed    $rawMetrics  The `observability.metrics` value.
+	 * @param string[] $diagnostics Diagnostics collected so far; appended to.
+	 *
+	 * @return MetricDescriptor[]
+	 */
+	private static function parseMetrics(mixed $rawMetrics, array &$diagnostics): array {
+		if (is_array($rawMetrics) === false) {
+			$diagnostics[] = 'observability.metrics must be an array.';
+			return [];
+		}
+
+		$metrics = [];
+		foreach ($rawMetrics as $index => $rawMetric) {
+			if (is_array($rawMetric) === false) {
+				$diagnostics[] = sprintf('Metric #%d is not an object.', $index);
+				continue;
+			}
+
+			try {
+				$metrics[] = MetricDescriptor::fromArray(raw: $rawMetric);
+			} catch (ObservabilityValidationException $e) {
+				$diagnostics[] = $e->getMessage();
+			}
+		}
+
+		return $metrics;
+	}//end parseMetrics()
 
 	/**
 	 * Build the default config for an app with no (or an unusable)

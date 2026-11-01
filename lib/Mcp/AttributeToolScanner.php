@@ -118,75 +118,24 @@ final class AttributeToolScanner {
 	 *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}>
 	 */
 	public function scanClass(string $appId, string $className, LoggerInterface $logger): array {
+		$subject = new ToolScanSubject(appId: $appId, className: $className, logger: $logger);
 		if (class_exists($className) === false) {
-			$logger->warning(
-				'[AttributeToolScanner] Scannable class does not exist',
-				['appId' => $appId, 'class' => $className]
-			);
+			$subject->warn(message: '[AttributeToolScanner] Scannable class does not exist');
 			return [];
 		}
 
 		try {
 			$reflectionClass = new ReflectionClass($className);
 		} catch (Throwable $e) {
-			$logger->warning(
-				'[AttributeToolScanner] Could not reflect scannable class',
-				['appId' => $appId, 'class' => $className, 'error' => $e->getMessage()]
-			);
+			$subject->warn(message: '[AttributeToolScanner] Could not reflect scannable class', context: ['error' => $e->getMessage()]);
 			return [];
 		}
 
 		$descriptors = [];
 
 		foreach ($reflectionClass->getMethods() as $method) {
-			$attributes = $method->getAttributes(McpTool::class);
-			if ($attributes === []) {
-				continue;
-			}
-
-			if ($method->isPublic() === false) {
-				$logger->warning(
-					'[AttributeToolScanner] #[McpTool] on a non-public method is ignored',
-					['appId' => $appId, 'class' => $className, 'method' => $method->getName()]
-				);
-				continue;
-			}
-
-			if ($method->isStatic() === true || $method->isAbstract() === true) {
-				$logger->warning(
-					'[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored',
-					['appId' => $appId, 'class' => $className, 'method' => $method->getName()]
-				);
-				continue;
-			}
-
-			try {
-				$attributeInstance = $attributes[0]->newInstance();
-			} catch (Throwable $e) {
-				$logger->warning(
-					'[AttributeToolScanner] Could not instantiate #[McpTool] attribute',
-					[
-						'appId' => $appId,
-						'class' => $className,
-						'method' => $method->getName(),
-						'error' => $e->getMessage(),
-					]
-				);
-				continue;
-			}
-
-			$invalid = $this->unrecognisedDeclaration(attribute: $attributeInstance);
-			if ($invalid !== null) {
-				$logger->warning(
-					sprintf('[AttributeToolScanner] #[McpTool] declares an unrecognised `%s`; tool skipped', $invalid['key']),
-					[
-						'appId' => $appId,
-						'class' => $className,
-						'method' => $method->getName(),
-						$invalid['key'] => $invalid['value'],
-						'allowed' => $invalid['allowed'],
-					]
-				);
+			$attributeInstance = $this->toolAttribute(method: $method, subject: $subject);
+			if ($attributeInstance === null) {
 				continue;
 			}
 
@@ -196,10 +145,82 @@ final class AttributeToolScanner {
 				method: $method,
 				attribute: $attributeInstance
 			);
-		}//end foreach
+		}
 
 		return $descriptors;
 	}//end scanClass()
+
+	/**
+	 * The `#[McpTool]` attribute of a method, or null when the method is not a tool.
+	 *
+	 * A method is not a tool when it has no attribute, cannot be called directly,
+	 * its attribute cannot be instantiated, or its attribute declares a value the
+	 * scanner does not recognise; each of the last three is logged.
+	 *
+	 * @param ReflectionMethod $method  The method.
+	 * @param ToolScanSubject  $subject The class being scanned.
+	 *
+	 * @return McpTool|null
+	 */
+	private function toolAttribute(ReflectionMethod $method, ToolScanSubject $subject): ?McpTool {
+		$attributes = $method->getAttributes(McpTool::class);
+		if ($attributes === [] || $this->isCallableTool(method: $method, subject: $subject) === false) {
+			return null;
+		}
+
+		try {
+			$attributeInstance = $attributes[0]->newInstance();
+		} catch (Throwable $e) {
+			$subject->warn(
+				message: '[AttributeToolScanner] Could not instantiate #[McpTool] attribute',
+				context: ['method' => $method->getName(), 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+
+		$invalid = $this->unrecognisedDeclaration(attribute: $attributeInstance);
+		if ($invalid !== null) {
+			$subject->warn(
+				message: sprintf('[AttributeToolScanner] #[McpTool] declares an unrecognised `%s`; tool skipped', $invalid['key']),
+				context: [
+					'method' => $method->getName(),
+					$invalid['key'] => $invalid['value'],
+					'allowed' => $invalid['allowed'],
+				]
+			);
+			return null;
+		}
+
+		return $attributeInstance;
+	}//end toolAttribute()
+
+	/**
+	 * Whether an attributed method is a public instance method; logs why when it is not.
+	 *
+	 * @param ReflectionMethod $method  The attributed method.
+	 * @param ToolScanSubject  $subject The class being scanned.
+	 *
+	 * @return bool
+	 */
+	private function isCallableTool(ReflectionMethod $method, ToolScanSubject $subject): bool {
+		if ($method->isPublic() === false) {
+			$subject->warn(
+				message: '[AttributeToolScanner] #[McpTool] on a non-public method is ignored',
+				context: ['method' => $method->getName()]
+			);
+			return false;
+		}
+
+		if ($method->isStatic() === true || $method->isAbstract() === true) {
+			$subject->warn(
+				message: '[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored',
+				context: ['method' => $method->getName()]
+			);
+			return false;
+		}
+
+		return true;
+	}//end isCallableTool()
 
 	/**
 	 * Build one descriptor for an attributed method.

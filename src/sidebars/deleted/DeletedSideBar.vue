@@ -200,6 +200,7 @@ import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import eventBus from '../../eventBus.js'
+import { addDateRange, addScope } from '../../services/routeQuery.js'
 
 export default {
 	name: 'DeletedSideBar',
@@ -484,24 +485,14 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			if (registerStore.registerItem && registerStore.registerItem.id) {
-				query.register = String(registerStore.registerItem.id)
-			}
-			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
-				query.schema = String(schemaStore.schemaItem.id)
-			}
+			addScope(query, {
+				register: registerStore.registerItem,
+				schema: schemaStore.schemaItem,
+			})
 			if (this.selectedDeletedBy && this.selectedDeletedBy.value) {
 				query.deletedBy = String(this.selectedDeletedBy.value)
 			}
-			// JS dates are awful, so we first check if it's a valid date and then get the ISO string.
-			if (this.dateFrom)
-				query.dateFrom = new Date(this.dateFrom).getDate()
-					? new Date(this.dateFrom).toISOString()
-					: null
-			if (this.dateTo)
-				query.dateTo = new Date(this.dateTo).getDate()
-					? new Date(this.dateTo).toISOString()
-					: null
+			addDateRange(query, this)
 			return query
 		},
 

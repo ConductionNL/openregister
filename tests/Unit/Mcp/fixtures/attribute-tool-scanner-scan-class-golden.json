@@ -1,0 +1,184 @@
+{
+    "class without tools": {
+        "descriptors": [],
+        "log": []
+    },
+    "fixture class": {
+        "descriptors": [
+            {
+                "id": "demo.find",
+                "name": "find",
+                "description": "Find things.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "term": {
+                            "type": "string",
+                            "description": "What to look for"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "How many"
+                        }
+                    },
+                    "required": [
+                        "term"
+                    ]
+                },
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                "method": "find",
+                "paramNames": [
+                    "term",
+                    "limit"
+                ],
+                "readOnlyHint": true,
+                "scope": "read",
+                "subject": "thing",
+                "reach": "user",
+                "action": "list"
+            },
+            {
+                "id": "demo.renamed",
+                "name": "renamed",
+                "description": "Declared description.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "value": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "value"
+                    ]
+                },
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                "method": "write",
+                "paramNames": [
+                    "value"
+                ],
+                "destructiveHint": true
+            },
+            {
+                "id": "demo.undocumented",
+                "name": "undocumented",
+                "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture::undocumented (no description declared).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": []
+                },
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                "method": "undocumented",
+                "paramNames": []
+            }
+        ],
+        "log": [
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] #[McpTool] on a non-public method is ignored",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                    "method": "hidden"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                    "method": "shared"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                    "method": "later"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] #[McpTool] declares an unrecognised `scope`; tool skipped",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                    "method": "badScope",
+                    "scope": "everything",
+                    "allowed": [
+                        "read",
+                        "create",
+                        "update",
+                        "delete"
+                    ]
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] #[McpTool] declares an unrecognised `reach`; tool skipped",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                    "method": "badReach",
+                    "reach": "galaxy",
+                    "allowed": [
+                        "self",
+                        "user",
+                        "instance",
+                        "external"
+                    ]
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] #[McpTool] declares an unrecognised `annotations`; tool skipped",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                    "method": "badAnnotation",
+                    "annotations": "",
+                    "allowed": [
+                        "non-empty string key => scalar value, other than the MCP hint keys readOnlyHint, destructiveHint, idempotentHint, openWorldHint, title"
+                    ]
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] Could not instantiate #[McpTool] attribute",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\ScanClassGoldenFixture",
+                    "method": "badArgument",
+                    "error": true
+                }
+            ]
+        ]
+    },
+    "missing class": {
+        "descriptors": [],
+        "log": [
+            [
+                "log",
+                "warning",
+                "[AttributeToolScanner] Scannable class does not exist",
+                {
+                    "appId": "demo",
+                    "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\NoSuchScanFixture"
+                }
+            ]
+        ]
+    }
+}
