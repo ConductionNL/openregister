@@ -479,6 +479,7 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
 import eventBus from '../../eventBus.js'
+import { addDateRange, addStrings } from '../../services/routeQuery.js'
 
 const ACTIVITY_PERIOD_FORMATS = {
 	hourly: (date) => date.toLocaleString(),
@@ -1180,23 +1181,14 @@ export default {
 				query.success = String(this.selectedSuccessStatus.value)
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0)
 				query.user = this.selectedUsers.map((u) => u.value || u).join(',')
-			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
-			if (this.dateFrom)
-				query.dateFrom = new Date(this.dateFrom).getDate()
-					? new Date(this.dateFrom).toISOString()
-					: null
-			if (this.dateTo)
-				query.dateTo = new Date(this.dateTo).getDate()
-					? new Date(this.dateTo).toISOString()
-					: null
+			addDateRange(query, this)
 			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
-			if (this.executionTimeFrom)
-				query.executionTimeFrom = String(this.executionTimeFrom)
-			if (this.executionTimeTo)
-				query.executionTimeTo = String(this.executionTimeTo)
-			if (this.resultCountFrom)
-				query.resultCountFrom = String(this.resultCountFrom)
-			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
+			addStrings(query, [
+				['executionTimeFrom', this.executionTimeFrom],
+				['executionTimeTo', this.executionTimeTo],
+				['resultCountFrom', this.resultCountFrom],
+				['resultCountTo', this.resultCountTo],
+			])
 			return query
 		},
 
