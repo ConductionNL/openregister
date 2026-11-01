@@ -3,6 +3,20 @@ import type { TConfiguration } from './configuration.types'
 
 import { z } from 'zod'
 
+const CONFIGURATION_SCHEMA = z.object({
+	id: z.string().min(1),
+	title: z.string().min(1),
+	description: z.string().nullable(),
+	type: z.string(),
+	application: z.string(),
+	owner: z.string(),
+	organisation: z.number().nullable(),
+	registers: z.array(z.number()).optional(),
+	schemas: z.array(z.number()).optional(),
+	created: z.string(),
+	updated: z.string(),
+})
+
 /**
  * Entity class representing a Configuration with validation
  */
@@ -70,20 +84,6 @@ export class ConfigurationEntity implements TConfiguration {
 	 * Validates the configuration against a schema
 	 */
 	public validate(): ZodSafeParseResult<unknown> {
-		const schema = z.object({
-			id: z.string().min(1),
-			title: z.string().min(1),
-			description: z.string().nullable(),
-			type: z.string(),
-			application: z.string(),
-			owner: z.string(),
-			organisation: z.number().nullable(),
-			registers: z.array(z.number()).optional(),
-			schemas: z.array(z.number()).optional(),
-			created: z.string(),
-			updated: z.string(),
-		})
-
-		return schema.safeParse(this)
+		return CONFIGURATION_SCHEMA.safeParse(this)
 	}
 }
