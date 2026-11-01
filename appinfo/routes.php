@@ -807,10 +807,12 @@ return [
         // object-scoped (it lists files inside the object's folder), so
         // the specific `/api/integrations/shares/files/...` route is
         // declared before the per-object wildcard `{shareId}` route.
+        // `/shares` on an object belongs to the grant API (objectSharing#*
+        // above), so file shares live under `/file-shares`.
         ['name' => 'shareLinks#files',   'url' => '/api/integrations/shares/files/{register}/{schema}/{id}', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'shareLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'shareLinks#create',  'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'shareLinks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'shareId' => '[^/]+']],
+        ['name' => 'shareLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/file-shares',       'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#create',  'url' => '/api/objects/{register}/{schema}/{id}/file-shares',       'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/file-shares/{shareId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'shareId' => '[^/]+']],
 
         // Flow (workflowengine) — Tier-2 link-table API. Admin-gated:
         // POST/DELETE return 403 for non-admins; GET is read-only for
