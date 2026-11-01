@@ -68,6 +68,7 @@ class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 			'postgres, only the gin index' => [['postgres' => true, 'chunks' => 'mapper', 'sql' => ['indexes' => ['rows' => [['indexname' => 'idx_or_chunks_text_search_gin']]]] + $healthy]],
 			'postgres, index query fails' => [['postgres' => true, 'chunks' => 'mapper', 'sql' => ['indexes' => ['throw' => 'no catalog']] + $healthy]],
 			'postgres, vector row is not an array' => [['postgres' => true, 'chunks' => 'mapper', 'sql' => ['vectors' => ['rows' => []]] + $healthy]],
+			'postgres, vector fetch answers null' => [['postgres' => true, 'chunks' => 'mapper', 'sql' => ['vectors' => ['fetchNull' => true]] + $healthy]],
 			'postgres, vector join fails, plain count works' => [['postgres' => true, 'chunks' => 'mapper', 'sql' => ['vectors' => ['throw' => 'no join'], 'fallback' => ['one' => '12']] + $healthy]],
 			'postgres, vector join fails, plain count empty' => [['postgres' => true, 'chunks' => 'mapper', 'sql' => ['vectors' => ['throw' => 'no join'], 'fallback' => ['one' => false]] + $healthy]],
 			'postgres, every query fails' => [['postgres' => true, 'chunks' => 'throw', 'sql' => [
@@ -164,8 +165,12 @@ class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 			$this->calls[] = ['result.fetchOne' => []];
 			return $answer['one'] ?? false;
 		});
-		$result->method('fetch')->willReturnCallback(function () use (&$rows) {
+		$result->method('fetch')->willReturnCallback(function () use (&$rows, $answer) {
 			$this->calls[] = ['result.fetch' => []];
+			if (($answer['fetchNull'] ?? false) === true) {
+				return null;
+			}
+
 			return array_shift($rows) ?? false;
 		});
 		$result->method('closeCursor')->willReturnCallback(function () {

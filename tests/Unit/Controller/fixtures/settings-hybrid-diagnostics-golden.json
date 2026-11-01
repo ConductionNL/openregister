@@ -468,6 +468,60 @@
             }
         }
     },
+    "postgres, vector fetch answers null": {
+        "calls": [
+            {
+                "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            }
+        ],
+        "diagnostics": {
+            "annSidecarTable": true,
+            "embeddingVectorDimension": 1536,
+            "hnswIndex": true,
+            "textSearchGinIndex": true,
+            "chunks": {
+                "total": 70,
+                "vectorized": 55
+            },
+            "vectors": {
+                "total": 0,
+                "pgvectorPopulated": 0
+            }
+        }
+    },
     "postgres, vector join fails, plain count empty": {
         "calls": [
             {
