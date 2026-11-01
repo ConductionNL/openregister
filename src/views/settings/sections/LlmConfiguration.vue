@@ -416,6 +416,11 @@ import FileVectorizationModal from '../../../modals/settings/FileVectorizationMo
 import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
 import ObjectVectorizationModal from '../../../modals/settings/ObjectVectorizationModal.vue'
+import {
+	applyProviderConfig,
+	applyVectorAnswer,
+	databaseInfoFrom,
+} from '../../../services/llmStats.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
 /**
@@ -568,34 +573,7 @@ export default {
 				const settings = await this.settingsStore.getLlmSettings()
 				if (settings) {
 					this.llmSettings = { ...this.llmSettings, ...settings }
-
-					// Extract provider configuration
-					this.providerConfig.embeddingProvider =
-						settings.embeddingProvider || null
-					this.providerConfig.chatProvider = settings.chatProvider || null
-
-					// Extract model names based on provider
-					if (settings.embeddingProvider === 'openai') {
-						this.providerConfig.embeddingModel =
-							settings.openaiConfig?.model || null
-					} else if (settings.embeddingProvider === 'fireworks') {
-						this.providerConfig.embeddingModel =
-							settings.fireworksConfig?.embeddingModel || null
-					} else if (settings.embeddingProvider === 'ollama') {
-						this.providerConfig.embeddingModel =
-							settings.ollamaConfig?.model || null
-					}
-
-					if (settings.chatProvider === 'openai') {
-						this.providerConfig.chatModel =
-							settings.openaiConfig?.chatModel || null
-					} else if (settings.chatProvider === 'fireworks') {
-						this.providerConfig.chatModel =
-							settings.fireworksConfig?.chatModel || null
-					} else if (settings.chatProvider === 'ollama') {
-						this.providerConfig.chatModel =
-							settings.ollamaConfig?.chatModel || null
-					}
+					applyProviderConfig(this.providerConfig, settings)
 				}
 			} catch (error) {
 				console.error('Failed to load LLM settings:', error)
@@ -706,55 +684,33 @@ export default {
 				)
 				if (response.data && response.data.success) {
 					const db = response.data.database
-
-					// Check if a different vector backend is configured
-					let performanceNote = db.performanceNote
-					let vectorSupport = db.vectorSupport
-					const displayType = db.type || 'Unknown'
-					const displayVersion = db.version || 'Unknown'
-
-					// Check LLM settings for vector backend
-					let recommendedPlugin = db.recommendedPlugin
-					try {
-						const llmResponse = await axios.get(
-							generateUrl('/apps/openregister/api/settings/llm'),
-						)
-						const vectorBackend = llmResponse.data.vectorConfig?.backend
-
-						if (vectorBackend === 'database' && db.vectorSupport) {
-							performanceNote = `✅ Using ${db.type} with native vector operations for fast similarity search.`
-							recommendedPlugin = db.recommendedPlugin + ' (active ✓)'
-							vectorSupport = true
-						} else if (
-							vectorBackend === 'database'
-							&& !db.vectorSupport
-						) {
-							performanceNote = db.performanceNote
-							recommendedPlugin = db.recommendedPlugin
-						} else {
-							// 'php' / not set — use defaults from db info
-							performanceNote = db.performanceNote
-							recommendedPlugin = db.recommendedPlugin
-						}
-					} catch (e) {
-						// If we can't check LLM settings, use default
-						recommendedPlugin = db.recommendedPlugin
-					}
-
-					this.databaseInfo = {
-						type: displayType,
-						version: displayVersion,
-						vectorSupport,
-						recommendedPlugin: recommendedPlugin || null,
-						performanceNote,
-						extensions: db.extensions || [],
-						hybridSearch: db.hybridSearch || null,
-						lastUpdated: db.lastUpdated || null,
-					}
+					// Built before the backend request, so a missing database
+					// answer fails without making one.
+					const info = databaseInfoFrom(db)
+					const backend = await this.loadVectorBackend()
+					this.databaseInfo =
+						backend === 'database' ? databaseInfoFrom(db, backend) : info
 				}
 			} catch (error) {
 				console.error('Failed to load database info:', error)
 				// Don't throw error, just use defaults
+			}
+		},
+
+		/**
+		 * Load the configured vector backend
+		 *
+		 * @spec exclude UI plumbing — reads the LLM settings for the database info display
+		 * @return {Promise<string|undefined>} The backend, or undefined when it cannot be read
+		 */
+		async loadVectorBackend() {
+			try {
+				const llmResponse = await axios.get(
+					generateUrl('/apps/openregister/api/settings/llm'),
+				)
+				return llmResponse.data.vectorConfig?.backend
+			} catch (e) {
+				return undefined
 			}
 		},
 
@@ -843,46 +799,7 @@ export default {
 			try {
 				const response = await this.settingsStore.getVectorStats()
 				if (response) {
-					// Extract stats from response (data is in 'stats' object)
-					const stats = response.stats || response
-
-					// Update connection status
-					this.llmConnectionStatus = response.success
-						? 'Connected'
-						: 'Disconnected'
-
-					// Update vector stats
-					this.vectorStats.totalVectors = stats.total_vectors || 0
-					this.vectorStats.objectVectors =
-						stats.by_type?.object || stats.object_vectors || 0
-					this.vectorStats.fileVectors =
-						stats.by_type?.file || stats.file_vectors || 0
-					this.vectorStats.storageMB =
-						stats.storage?.total_mb?.toFixed(1) || '0.0'
-
-					// Update file stats
-					if (response.files) {
-						this.fileStats.totalFiles = response.files.total_files || 0
-						this.fileStats.filesExtracted =
-							response.files.files_extracted || 0
-						this.fileStats.vectorizedFiles =
-							response.files.vectorized_files || 0
-						this.fileStats.pendingFiles =
-							response.files.pending_files || 0
-						this.fileStats.totalChunks = response.files.total_chunks || 0
-					}
-
-					// Update object stats
-					if (response.objects) {
-						this.objectStats.totalObjects =
-							response.objects.total_objects || 0
-						this.objectStats.vectorizedObjects =
-							response.objects.vectorized_objects || 0
-						this.objectStats.pendingObjects =
-							response.objects.pending_objects || 0
-						this.objectStats.progressPercentage =
-							response.objects.percentage_complete || 0
-					}
+					applyVectorAnswer(this, response)
 				}
 			} catch (error) {
 				console.error('Failed to load vector stats:', error)
