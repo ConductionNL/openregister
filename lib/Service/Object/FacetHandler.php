@@ -166,7 +166,6 @@ class FacetHandler {
 		// **INTELLIGENT FACETING**: Try current filters first, then smart fallback.
 		$result = $this->calculateFacetsWithFallback(
 			facetQuery: $facetQuery,
-			facetConfig: $facetConfig,
 			facetableConfig: $facetableConfig
 		);
 
@@ -302,128 +301,194 @@ class FacetHandler {
 	 * options, even when their current search/filters return zero results.
 	 * Also handles non-aggregated facets by making separate schema-scoped queries.
 	 *
-	 * @param array $facetQuery Query for facet calculation (without pagination).
-	 * @param array $facetConfig Facet configuration.
+	 * @param array $facetQuery      Query for facet calculation (without pagination).
 	 * @param array $facetableConfig Facetable field configuration from schema discovery.
 	 *
 	 * @return array Facets with performance metadata including strategy and fallback status.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
 	 */
-	private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig, array $facetableConfig = []): array {
+	private function calculateFacetsWithFallback(array $facetQuery, array $facetableConfig = []): array {
 		// **STAGE 1**: Try facets with current filters.
 		$facets = $this->unifiedObjectMapper->getSimpleFacets($facetQuery);
-
-		// **STAGE 2**: Check if we got meaningful facets.
-		$totalFacetResults = $this->countFacetResults(facets: $facets);
 		$hasRestrictFilter = $this->hasRestrictiveFilters(query: $facetQuery);
-
-		$strategy = 'filtered';
-		$fallbackUsed = false;
 
 		// NOTE: The "intelligent fallback" that stripped object field filters and returned
 		// collection-wide facet counts has been removed. It caused #453: after selecting a
 		// Type filter, other facets showed full-dataset counts instead of scoped counts.
 		// Showing empty/scoped facets is correct; showing unscoped counts is misleading.
-		if ($totalFacetResults === 0 && $hasRestrictFilter === true) {
-			$this->logger->debug(
-				message: '[FacetHandler] Facets empty with restrictive filters — returning empty facets (no fallback)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'originalQuery' => array_keys($facetQuery),
-					'totalResults' => $totalFacetResults,
-				]
-			);
-		}//end if
+		if ($hasRestrictFilter === true && $this->countFacetResults(facets: $facets) === 0) {
+			$this->logEmptyFilteredFacets(facetQuery: $facetQuery);
+		}
 
-		// **NON-AGGREGATED CLEANUP**: Remove fields from aggregated results that are ONLY configured
-		// as non-aggregated (not present in object_fields). getSimpleFacets returns all fields from the
-		// magic table, but fields that are exclusively non-aggregated should not appear as aggregated facets.
-		$nonAggregatedFields = $facetableConfig['non_aggregated_fields'] ?? [];
+		$facets = $this->withoutNonAggregatedOnlyFields(facets: $facets, facetableConfig: $facetableConfig);
+		$facets = array_replace(
+			$facets,
+			$this->nonAggregatedFacets(
+				facetQuery: $facetQuery,
+				nonAggregatedFields: ($facetableConfig['non_aggregated_fields'] ?? [])
+			)
+		);
+
+		// Extract per-facet metrics before transformation (if available).
+		$perFacetMetrics = $facets['_metrics'] ?? null;
+		unset($facets['_metrics']);
+
+		$performanceMetadata = [
+			'strategy' => 'filtered',
+			'fallback_used' => false,
+			'total_facet_results' => $this->countFacetResults(facets: $facets),
+			'has_restrictive_filters' => $hasRestrictFilter,
+		];
+		if ($perFacetMetrics !== null) {
+			$performanceMetadata['facet_db_ms'] = $perFacetMetrics;
+		}
+
+		return [
+			'facets' => $this->transformFacetsToStandardFormat(facets: $facets, facetableConfig: $facetableConfig),
+			'performance_metadata' => $performanceMetadata,
+		];
+	}//end calculateFacetsWithFallback()
+
+	/**
+	 * Note that a filtered query found no facet results; there is no collection-wide fallback.
+	 *
+	 * @param array $facetQuery Query for facet calculation (without pagination).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 */
+	private function logEmptyFilteredFacets(array $facetQuery): void {
+		$this->logger->debug(
+			message: '[FacetHandler] Facets empty with restrictive filters — returning empty facets (no fallback)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'originalQuery' => array_keys($facetQuery),
+				'totalResults' => 0,
+			]
+		);
+	}//end logEmptyFilteredFacets()
+
+	/**
+	 * Drop the aggregated facets of fields that are configured ONLY as non-aggregated.
+	 *
+	 * The mapper's getSimpleFacets returns every field of the magic table, but a field that is exclusively
+	 * non-aggregated (not in object_fields) gets its own schema-scoped facet instead.
+	 *
+	 * @param array $facets          Raw facets from the mapper
+	 * @param array $facetableConfig Facetable field configuration from schema discovery
+	 *
+	 * @return array The facets without those fields
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function withoutNonAggregatedOnlyFields(array $facets, array $facetableConfig): array {
 		$aggregatedFieldKeys = array_keys($facetableConfig['object_fields'] ?? []);
-		foreach ($nonAggregatedFields as $afterField) {
+		foreach ($facetableConfig['non_aggregated_fields'] ?? [] as $afterField) {
 			$fieldName = $afterField['field'];
 			if (in_array($fieldName, $aggregatedFieldKeys, true) === false && isset($facets[$fieldName]) === true) {
 				unset($facets[$fieldName]);
 			}
 		}
 
-		// **NON-AGGREGATED FACETS**: Make separate schema-scoped queries for non-aggregated fields.
+		return $facets;
+	}//end withoutNonAggregatedOnlyFields()
+
+	/**
+	 * The schema-scoped facets of every non-aggregated field, keyed by their unique facet key.
+	 *
+	 * @param array $facetQuery          Query for facet calculation (without pagination)
+	 * @param array $nonAggregatedFields The non-aggregated fields: field, schemaId and facetConfig
+	 *
+	 * @return array The non-aggregated facets, each with its metadata for the transform step
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function nonAggregatedFacets(array $facetQuery, array $nonAggregatedFields): array {
+		$facets = [];
 		foreach ($nonAggregatedFields as $afterField) {
-			$fieldName = $afterField['field'];
-			$schemaId = $afterField['schemaId'];
-			$config = $afterField['facetConfig'];
-
-			// Build a schema-scoped query to get facets for this field only.
-			// IMPORTANT: Remove plural schema/register keys so getSimpleFacets() routes
-			// to the single-schema path instead of the multi-schema UNION path.
-			$scopedQuery = $facetQuery;
-			$scopedQuery['@self']['schema'] = $schemaId;
-			unset($scopedQuery['@self']['schemas'], $scopedQuery['_schemas']);
-
-			try {
-				$scopedFacets = $this->unifiedObjectMapper->getSimpleFacets($scopedQuery);
-
-				// Remove metrics from scoped results.
-				unset($scopedFacets['_metrics']);
-
-				if (isset($scopedFacets[$fieldName]) === true) {
-					// Generate a unique key for this non-aggregated facet.
-					$uniqueKey = $this->generateNonAggregatedFacetKey(
-						fieldName: $fieldName,
-						schemaId: $schemaId,
-						facetConfig: $config
-					);
-
-					// Store the scoped facet data with metadata for the transform step.
-					$facets[$uniqueKey] = $scopedFacets[$fieldName];
-					$facets[$uniqueKey]['_nonAggregated'] = true;
-					$facets[$uniqueKey]['_schemaId'] = $schemaId;
-					$facets[$uniqueKey]['_facetConfig'] = $config;
-					$facets[$uniqueKey]['_fieldName'] = $fieldName;
-				}
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[FacetHandler] Failed to get non-aggregated facet',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'field' => $fieldName,
-						'schemaId' => $schemaId,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		// Extract per-facet metrics before transformation (if available).
-		$perFacetMetrics = $facets['_metrics'] ?? null;
-		unset($facets['_metrics']);
-
-		// **OUTPUT FORMAT**: Transform facets to standardized format matching external API.
-		$transformedFacets = $this->transformFacetsToStandardFormat(
-			facets: $facets,
-			facetableConfig: $facetableConfig
-		);
-
-		$performanceMetadata = [
-			'strategy' => $strategy,
-			'fallback_used' => $fallbackUsed,
-			'total_facet_results' => $this->countFacetResults(facets: $facets),
-			'has_restrictive_filters' => $hasRestrictFilter,
-		];
-
-		// Include per-facet timing if available.
-		if ($perFacetMetrics !== null) {
-			$performanceMetadata['facet_db_ms'] = $perFacetMetrics;
+			$facets = array_replace(
+				$facets,
+				$this->nonAggregatedFacet(facetQuery: $facetQuery, afterField: $afterField)
+			);
 		}
 
-		return [
-			'facets' => $transformedFacets,
-			'performance_metadata' => $performanceMetadata,
-		];
-	}//end calculateFacetsWithFallback()
+		return $facets;
+	}//end nonAggregatedFacets()
+
+	/**
+	 * One non-aggregated field's facet from a query scoped to its schema; none when the query fails.
+	 *
+	 * The plural schema/register keys are removed so getSimpleFacets() takes the single-schema
+	 * path instead of the multi-schema UNION path. Every other key of the query is kept.
+	 *
+	 * @param array $facetQuery Query for facet calculation (without pagination)
+	 * @param array $afterField The non-aggregated field: field, schemaId and facetConfig
+	 *
+	 * @return array The facet under its unique key, or an empty array
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function nonAggregatedFacet(array $facetQuery, array $afterField): array {
+		$fieldName = $afterField['field'];
+		$schemaId = $afterField['schemaId'];
+		$config = $afterField['facetConfig'];
+
+		$scopedQuery = $facetQuery;
+		$scopedQuery['@self']['schema'] = $schemaId;
+		unset($scopedQuery['@self']['schemas'], $scopedQuery['_schemas']);
+
+		$facets = [];
+		try {
+			$scopedFacets = $this->unifiedObjectMapper->getSimpleFacets($scopedQuery);
+
+			// Remove metrics from scoped results.
+			unset($scopedFacets['_metrics']);
+
+			if (isset($scopedFacets[$fieldName]) === true) {
+				$uniqueKey = $this->generateNonAggregatedFacetKey(
+					fieldName: $fieldName,
+					schemaId: $schemaId,
+					facetConfig: $config
+				);
+
+				$facets[$uniqueKey] = $scopedFacets[$fieldName];
+				$facets[$uniqueKey]['_nonAggregated'] = true;
+				$facets[$uniqueKey]['_schemaId'] = $schemaId;
+				$facets[$uniqueKey]['_facetConfig'] = $config;
+				$facets[$uniqueKey]['_fieldName'] = $fieldName;
+			}
+		} catch (\Exception $e) {
+			$this->logNonAggregatedFailure(afterField: $afterField, exception: $e);
+		}//end try
+
+		return $facets;
+	}//end nonAggregatedFacet()
+
+	/**
+	 * Note that a non-aggregated field's scoped facet query failed; the field is left out.
+	 *
+	 * @param array      $afterField The non-aggregated field: field and schemaId
+	 * @param \Exception $exception  What the scoped query threw
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function logNonAggregatedFailure(array $afterField, \Exception $exception): void {
+		$this->logger->warning(
+			message: '[FacetHandler] Failed to get non-aggregated facet',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'field' => $afterField['field'],
+				'schemaId' => $afterField['schemaId'],
+				'error' => $exception->getMessage(),
+			]
+		);
+	}//end logNonAggregatedFailure()
 
 	/**
 	 * Generate a unique key for a non-aggregated facet entry.
