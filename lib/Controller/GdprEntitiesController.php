@@ -110,10 +110,10 @@ class GdprEntitiesController extends Controller {
 
 			// SECURITY (#1825): rows in `openregister_entities` store raw
 			// detected PII (names, emails, BSNs) and carry an
-			// `organisation` UUID. Non-admins must only ever see PII
-			// detected within their own organisation(s); admins see all.
-			// A non-admin with no accessible organisation is denied
-			// (empty result set, not an error) — fail-closed.
+			// `organisation` UUID. Non-admins only see PII detected within
+			// their active organisation; admins see all. A non-admin
+			// without an active organisation is denied (empty result set,
+			// not an error): fail-closed.
 			$orgUuids = $this->organisationScope();
 			if ($orgUuids === []) {
 				return new JSONResponse(
@@ -386,7 +386,7 @@ class GdprEntitiesController extends Controller {
 			}
 
 			// SECURITY (#1825): stats aggregate raw PII counts; non-admins
-			// only see totals scoped to their own organisation(s).
+			// only see totals scoped to their active organisation.
 			$orgUuids = $this->organisationScope();
 			$stats = [
 				'totalEntities' => 0,
@@ -520,16 +520,24 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Organisation UUIDs the active user's entity reads are scoped to.
 	 *
+	 * A non-admin is scoped to their active organisation only, not to every
+	 * organisation they belong to.
+	 *
 	 * @return array<int, string>|null Null for an admin (unscoped); otherwise
-	 *                                 the accessible UUIDs, where an empty list
-	 *                                 means deny-all.
+	 *                                 the active organisation's UUID, where an
+	 *                                 empty list means deny-all.
 	 */
 	private function organisationScope(): ?array {
 		if ($this->isAdmin() === true) {
 			return null;
 		}
 
-		return $this->accessibleOrganisationUuids();
+		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
+		if ($uuid === '') {
+			return [];
+		}
+
+		return [$uuid];
 	}//end organisationScope()
 
 	/**
