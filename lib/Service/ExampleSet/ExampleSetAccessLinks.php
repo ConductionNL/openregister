@@ -119,7 +119,7 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
-	public function refusalIn(array $data, array $users, array $context): string {
+	protected function refusalIn(array $data, array $users, array $context): string {
 		$why = $this->refusal(data: $data, users: $users);
 		if ($why !== '') {
 			return $why;
@@ -166,7 +166,7 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 						subjectId: $object,
 						capabilities: array_values((array) ($data['capabilities'] ?? [])),
 						expiresAt: (string) $data['expiresAt'],
-						label: (isset($data['label']) === true ? (string) $data['label'] : null)
+						label: $this->labelOf(data: $data)
 					);
 				}
 			);
@@ -243,7 +243,11 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 			}
 
 			if ($link !== null) {
-				$links[$key] = ['id' => (int) $link->getId(), 'uuid' => (string) $link->getUuid(), 'url' => $this->links()->linkUrl(anchor: (string) $link->getAnchor())];
+				$links[$key] = [
+					'id'   => (int) $link->getId(),
+					'uuid' => (string) $link->getUuid(),
+					'url'  => $this->links()->linkUrl(anchor: (string) $link->getAnchor()),
+				];
 			}
 		}
 
@@ -288,6 +292,21 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 
 		return $link;
 	}//end held()
+
+	/**
+	 * The declared label, or null when the row names none.
+	 *
+	 * @param array<string, mixed> $data The filled link fields.
+	 *
+	 * @return string|null
+	 */
+	private function labelOf(array $data): ?string {
+		if (isset($data['label']) === false) {
+			return null;
+		}
+
+		return (string) $data['label'];
+	}//end labelOf()
 
 	/**
 	 * Why declared capabilities cannot be minted, or ''.

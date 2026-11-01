@@ -437,8 +437,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		// A refresh updates the flows too, so it is known before they are written.
 		$context['refresh'] = (($plan['refresh'] ?? false) === true);
 
-		// Before the changes, so a change can quote a flow or an access link (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
-		if ($this->engineRows?->installBeforeChanges(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+		// Before the changes, so a change can quote a flow or an access link
+		// (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
+		$early = $this->engineRows?->installBeforeChanges(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values);
+		if ($early === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 

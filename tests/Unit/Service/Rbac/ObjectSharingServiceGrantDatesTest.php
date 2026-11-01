@@ -168,6 +168,6 @@ class ObjectSharingServiceGrantDatesTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->assertSame(expected: 3, actual: (new ShareTimeWriter($db))->stamp(shareId: 41, at: new DateTime('2026-10-06 10:00 UTC')));
+		$this->assertSame(expected: 3, actual: (new ShareTimeWriter($db))->stamp(shareId: 41, moment: new DateTime('2026-10-06 10:00 UTC')));
 	}//end testTheShareTimeIsWrittenOnTheShareAndItsRecipientRows()
 }//end class

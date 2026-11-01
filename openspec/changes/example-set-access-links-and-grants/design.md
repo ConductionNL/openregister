@@ -139,11 +139,46 @@ The check refuses, naming the file and the row key:
 - a `createdBy` or `sharedBy` that the set does not create or adopt;
 - `permissions` outside 1..31.
 
-## D-8. Open questions
+## D-8. Open questions, answered from the code
 
-- Does `setVolatileActiveUser()` leave anything behind for the daily refresh job, which runs
-  several sets in one process? The `finally` restores the previous user; a test runs two
-  grants by different accounts in one job.
-- `setShareTime()` on a new share: core may overwrite it in `createShare()`. If it does, the
-  part sets it after creation through the share provider's update, or the board's "op 6 okt"
-  becomes a data call.
+**Does `setVolatileActiveUser()` leave anything behind for the daily refresh job?** No session state, and nothing
+that can decide for another account.
+
+- Core's `OC\User\Session::setVolatileActiveUser()` only assigns the in-memory `$activeUser`; it writes nothing to
+  the session store. `ExampleSetActingAs` reads the previous user first and puts it back in a `finally`, so a throw
+  inside `grant()` or `mint()` restores it too. In the CLI and in cron the previous user is null (`CronService`
+  swaps in a fresh `Memory` session before running jobs), so after each call `getUser()` answers null again.
+- What does stay is keyed by the account it was built for, so it cannot admit anybody else:
+  `ObjectGrantResolver`'s per-request memo is keyed by uid (and `grant()` calls `forget()` itself), and
+  `OrganisationService` caches the active organisation in the session under a key that ends in the uid. In cron that
+  session is the throwaway `Memory` one.
+- Test: `ExampleSetAccessLinksAndGrantsTest::testTwoGrantsByTwoAccountsInOneBackgroundRunLeaveNoSession` runs two
+  grants by two accounts in one background run and checks each was made as its own account and the session is empty
+  afterwards; `testTheActingScopeIsGuardedAndAlwaysRestores` checks the restore after a throw.
+
+**Does core overwrite the share time on create?** Yes. `OC\Share20\DefaultShareProvider::create()` writes `stime`
+from `ITimeFactory::now()` and sets that on the share it returns, whatever the caller set; its `update()` never
+writes `stime`. So `grant()` does not set the share time before `createShare()`. It writes it after creation through
+`ShareTimeWriter`, one `UPDATE share SET stime` on the new share's id and on the per-recipient rows of a group share
+(`parent` = that id), the same direct-table pattern as `ObjectFileShareReowner`. Only after the guard admitted the
+caller and core created the share; a live caller passes no `sharedAt` and nothing is written. The grants list's
+`shared` row now carries `sharedAt` beside `expiresAt` (D-3).
+
+## D-9. Choices made while building
+
+- **Fragment shape.** Rows are `{key, data}` like every other engine part (`tasks`, `emailLinks`), not flat as the
+  example in D-1 shows; the fields inside `data` are those of D-1.
+- **Where the set may act as an account.** `ExampleSetActingAs` refuses unless the process is the command line
+  (`occ`, system cron) or the daily refresh job opened its frame (`ExampleSetActingAs::inBackgroundJob()`, for AJAX
+  and web cron), refuses while any user is signed in, and refuses an account that does not exist. The installer is
+  also reachable through `ExampleSetInstallerInterface`; a request that calls it gets its links and grants reported
+  as not written, never made.
+- **Links go through the mint guard too.** `mint()` takes the minting user as an argument and checks nothing about
+  the subject; the HTTP controller asks `AccessLinkMintGuard::mayMint()` first. The part does the same, inside the
+  acting scope, so a link is minted only by an account that may read the object.
+- **The anchor stays out of the record.** A link's record entry is `{id, uuid, object}`. A change that writes
+  `{{accessLink:<key>.url}}` would record the address (which carries the anchor) as the value it wrote, so
+  `ExampleSetChanges` records such a value as `example-set-secret:sha256:<hash>` and compares by hash in the proof,
+  the refresh and remove. The url for the placeholder is read from the live row (`AccessLinkService::linkUrl()`).
+- **A group `shareWith`** must be the `gid` of a cast group; a fragment's own `groups` are not accepted.
+- **Expiry before the install day** is refused by the check; the link service refuses a past expiry again at mint.

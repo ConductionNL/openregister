@@ -300,6 +300,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 				['key' => 'foreign-group', 'data' => ['shareWith' => 'admin'] + $grant],
 				['key' => 'too-wide', 'data' => ['permissions' => 40] + $grant],
 				['key' => 'stranger-shares', 'data' => ['sharedBy' => 'admin'] + $grant],
+				['key' => 'grant-not-ours', 'data' => ['object' => '0a0b0c0d-0000-4000-8000-000000000000'] + $grant],
 			]
 		);
 
@@ -315,6 +316,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			'grant "foreign-group": shareWith',
 			'grant "too-wide": permissions',
 			'grant "stranger-shares": sharedBy',
+			'grant "grant-not-ours": object',
 		] as $expected) {
 			$this->assertStringContainsString(needle: 'demo.json: '.$expected, haystack: $refusals);
 		}
@@ -666,8 +668,8 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			return (in_array($user->getUID(), $this->admins, true) === true ? ['admin'] : []);
 		});
 		$times = $this->createMock(ShareTimeWriter::class);
-		$times->method('stamp')->willReturnCallback(function (int $shareId, \DateTimeInterface $at): int {
-			$this->shares['ocinternal:'.$shareId]['shareTime'] = DateTime::createFromInterface($at);
+		$times->method('stamp')->willReturnCallback(function (int $shareId, \DateTimeInterface $moment): int {
+			$this->shares['ocinternal:'.$shareId]['shareTime'] = DateTime::createFromInterface($moment);
 			return 1;
 		});
 

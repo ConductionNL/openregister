@@ -337,7 +337,7 @@ class ObjectSharingService {
 
 		$created = $this->shareManager->createShare($share);
 		if ($sharedAt !== null && $this->shareTimes !== null) {
-			$this->shareTimes->stamp(shareId: (int)$created->getId(), at: $sharedAt);
+			$this->shareTimes->stamp(shareId: (int)$created->getId(), moment: $sharedAt);
 			$created->setShareTime($sharedAt);
 		}
 

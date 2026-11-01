@@ -52,7 +52,20 @@ abstract class ExampleSetEngineRows {
 	 * shows, so a changed declaration reaches it. An access link and a grant are made again, so their dates follow
 	 * the install day and a link revoked during a demonstration is back.
 	 */
-	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates', 'exportRuns', 'parties', 'appointments', 'casePlans', 'flows', 'emailLinks', 'accessLinks', 'grants'];
+	public const REFRESHED = [
+		'views',
+		'tasks',
+		'notes',
+		'readStates',
+		'exportRuns',
+		'parties',
+		'appointments',
+		'casePlans',
+		'flows',
+		'emailLinks',
+		'accessLinks',
+		'grants',
+	];
 
 	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).
@@ -98,7 +111,7 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
-	public function refusalIn(array $data, array $users, array $context): string {
+	protected function refusalIn(array $data, array $users, array $context): string {
 		return $this->refusal(data: $data, users: $users);
 	}//end refusalIn()
 

@@ -52,16 +52,16 @@ class ShareTimeWriter {
 	 * Set the share time of one share.
 	 *
 	 * @param int               $shareId The share's own id (not the provider-prefixed one).
-	 * @param DateTimeInterface $at      The share time.
+	 * @param DateTimeInterface $moment  The share time.
 	 *
 	 * @return int How many rows were written.
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function stamp(int $shareId, DateTimeInterface $at): int {
+	public function stamp(int $shareId, DateTimeInterface $moment): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update('share')
-			->set('stime', $qb->createNamedParameter($at->getTimestamp(), IQueryBuilder::PARAM_INT))
+			->set('stime', $qb->createNamedParameter($moment->getTimestamp(), IQueryBuilder::PARAM_INT))
 			->where(
 				$qb->expr()->orX(
 					$qb->expr()->eq('id', $qb->createNamedParameter($shareId, IQueryBuilder::PARAM_INT)),

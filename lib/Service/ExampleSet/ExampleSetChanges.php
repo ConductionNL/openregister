@@ -277,17 +277,7 @@ class ExampleSetChanges {
 			return ['error' => $error, 'entry' => $entry, 'wrote' => false];
 		}
 
-		foreach ($entry['set'] as $index => $set) {
-			$path = (string) $set['path'];
-			if (array_key_exists($path, $again) === true) {
-				$entry['set'][$index]['new'] = $this->recorded(change: $change, path: $path, value: $again[$path]);
-			}
-		}
-
-		foreach ($fresh as $row) {
-			$row['new']     = $this->recorded(change: $change, path: (string) $row['path'], value: $row['new']);
-			$entry['set'][] = $row;
-		}
+		$entry['set'] = $this->withWritten(change: $change, rows: $entry['set'], again: $again, fresh: $fresh);
 
 		return ['error' => '', 'entry' => $entry, 'wrote' => true];
 	}//end follow()
@@ -531,6 +521,33 @@ class ExampleSetChanges {
 
 		return $held['found'] === true && $this->proof->lostPaths(declared: $written, stored: $held['value']) === [];
 	}//end stillHolds()
+
+	/**
+	 * The record rows of a held change after a follow wrote fields again or for the first time, each value as the
+	 * record keeps it.
+	 *
+	 * @param array<string, mixed>             $change The declared change.
+	 * @param array<int, array<string, mixed>> $rows   The held rows.
+	 * @param array<string, mixed>             $again  The values written again, by path.
+	 * @param array<int, array<string, mixed>> $fresh  The rows of fields written for the first time.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function withWritten(array $change, array $rows, array $again, array $fresh): array {
+		foreach ($rows as $index => $set) {
+			$path = (string) $set['path'];
+			if (array_key_exists($path, $again) === true) {
+				$rows[$index]['new'] = $this->recorded(change: $change, path: $path, value: $again[$path]);
+			}
+		}
+
+		foreach ($fresh as $row) {
+			$row['new'] = $this->recorded(change: $change, path: (string) $row['path'], value: $row['new']);
+			$rows[]     = $row;
+		}
+
+		return $rows;
+	}//end withWritten()
 
 	/**
 	 * Whether a recorded value is the fingerprint of an access link's address.

@@ -105,6 +105,17 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return 'sharedBy '.(string) json_encode($data['sharedBy'] ?? null).' is no account the set creates or adopts';
 		}
 
+		return $this->rightsRefusal(data: $data);
+	}//end refusal()
+
+	/**
+	 * Why the declared permissions or verbs cannot be granted, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled grant fields.
+	 *
+	 * @return string
+	 */
+	private function rightsRefusal(array $data): string {
 		$permissions = ($data['permissions'] ?? 1);
 		if (is_int($permissions) === false || $permissions < 1 || $permissions > 31) {
 			return 'permissions '.(string) json_encode($permissions).' is not a number from 1 to 31';
@@ -117,7 +128,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 		}
 
 		return '';
-	}//end refusal()
+	}//end rightsRefusal()
 
 	/**
 	 * Why a filled grant cannot be made in this run, or '': refusal(), then the object, the principal and the dates.
@@ -130,7 +141,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function refusalIn(array $data, array $users, array $context): string {
+	protected function refusalIn(array $data, array $users, array $context): string {
 		$why = $this->refusal(data: $data, users: $users);
 		if ($why !== '') {
 			return $why;
