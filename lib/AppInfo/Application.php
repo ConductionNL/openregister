@@ -136,6 +136,9 @@ class Application extends App implements IBootstrap {
 		include_once __DIR__ . '/../../vendor/autoload.php';
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.register.in');
 
+		// Old names of classes that moved to a component directory.
+		ClassAliasMap::fromFile()->apply(context: $context);
+
 		FeatureToggleRegistrar::register(context: $context);
 		ServiceRegistrar::register(context: $context);
 
