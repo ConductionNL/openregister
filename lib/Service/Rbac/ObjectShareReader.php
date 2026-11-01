@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
@@ -60,14 +61,16 @@ class ObjectShareReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param FolderManagementHandler $folders      Resolves an object's NC folder.
+	 * @param FolderManagementHandler $folders      Resolves an object's NC folder, creating it when missing.
 	 * @param IManager                $shareManager Core share manager.
 	 * @param LoggerInterface         $logger       Where an unresolvable folder is noted.
+	 * @param IRootFolder|null        $rootFolder   Looks a folder up by id without creating anything.
 	 */
 	public function __construct(
 		private readonly FolderManagementHandler $folders,
 		private readonly IManager $shareManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?IRootFolder $rootFolder = null,
 	) {
 	}//end __construct()
 
@@ -81,13 +84,19 @@ class ObjectShareReader {
 	 * every share on the folder whoever created it, and a share type that
 	 * cannot be read throws instead of shrinking the answer.
 	 *
+	 * The two readings also find the folder differently. Without `$complete`
+	 * the folder is created when the object has none, as `/shares` always did.
+	 * With `$complete` nothing is created: an object that never had a folder,
+	 * or whose folder is gone, has no shares, and a folder or folder owner
+	 * that cannot be looked up throws.
+	 *
 	 * @param ObjectEntity $object   The object.
 	 * @param string[]     $sharers  The uids whose shares to read.
 	 * @param bool         $complete Every share on the folder, failing loudly.
 	 *
 	 * @return array<string, array{type: string, share: IShare}> The shares with their type label.
 	 *
-	 * @throws RuntimeException When `$complete` is set and a share type cannot be read.
+	 * @throws RuntimeException When `$complete` is set and the folder, its owner or a share type cannot be read.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two readings differ only in reach and in failure,
 	 *                                              and both callers name the flag.
@@ -95,7 +104,11 @@ class ObjectShareReader {
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
 	public function sharesOn(ObjectEntity $object, array $sharers, bool $complete = false): array {
-		$folder = $this->resolveFolder(object: $object);
+		$folder = match ($complete) {
+			true => $this->existingFolder(object: $object),
+			false => $this->resolveFolder(object: $object),
+		};
+
 		if ($folder === null) {
 			return [];
 		}
@@ -143,19 +156,61 @@ class ObjectShareReader {
 	}//end sharesBy()
 
 	/**
-	 * The uid that owns the folder, or null when core cannot say.
+	 * The uid that owns the folder.
 	 *
 	 * @param Folder $folder The folder.
 	 *
-	 * @return string|null The owner uid.
+	 * @return string The owner uid.
+	 *
+	 * @throws RuntimeException When the owner cannot be read.
 	 */
-	private function folderOwner(Folder $folder): ?string {
+	private function folderOwner(Folder $folder): string {
 		try {
-			return $folder->getOwner()?->getUID();
+			$owner = $folder->getOwner()?->getUID();
 		} catch (Throwable $e) {
+			throw new RuntimeException('The owner of an object folder could not be read', 0, $e);
+		}
+
+		if ($owner === null || $owner === '') {
+			throw new RuntimeException('An object folder has no owner to read its shares as');
+		}
+
+		return $owner;
+	}//end folderOwner()
+
+	/**
+	 * The object's folder as it stands, never created or recreated.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return Folder|null The folder, or null when the object has none or its folder is gone.
+	 *
+	 * @throws RuntimeException When the lookup itself fails.
+	 */
+	private function existingFolder(ObjectEntity $object): ?Folder {
+		$folderId = $object->getFolder();
+		if (is_numeric($folderId) === false) {
 			return null;
 		}
-	}//end folderOwner()
+
+		if ($this->rootFolder === null) {
+			throw new RuntimeException('No read-only folder lookup is wired');
+		}
+
+		try {
+			$nodes = $this->rootFolder->getById((int)$folderId);
+		} catch (Throwable $e) {
+			throw new RuntimeException('The folder of an object could not be looked up', 0, $e);
+		}
+
+		foreach ($nodes as $node) {
+			if (($node instanceof Folder) === true) {
+				return $node;
+			}
+		}
+
+		return null;
+	}//end existingFolder()
 
 	/**
 	 * Resolve the object's NC folder, creating it if it has none.

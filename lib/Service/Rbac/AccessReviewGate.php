@@ -141,13 +141,7 @@ class AccessReviewGate {
 		}
 
 		$userId = $this->callerUid();
-		$groups = [];
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$groups = $this->groupManager->getUserGroupIds($user);
-		}
-
-		if ($this->grantManage->admittedAs(userId: $userId, userGroups: $groups, object: $object) !== null) {
+		if ($this->grantManage->admittedAs(userId: $userId, userGroups: $this->callerGroups(), object: $object) !== null) {
 			return true;
 		}
 
@@ -157,17 +151,59 @@ class AccessReviewGate {
 	/**
 	 * Whether this caller holds `manage` here through a rule somebody wrote.
 	 *
-	 * 🔴 THE GRANT HAS TO BE WRITTEN DOWN. A schema that configures nothing
-	 * resolves default-open, so `manage` would answer true for every signed-in
-	 * caller, and the access reads would hand back the rules that
-	 * `renderEntity()` deliberately strips out of a non-admin object read. On
-	 * such a schema only the owner and an administrator may ask.
+	 * 🔴 THE GRANT HAS TO BE WRITTEN DOWN, UNDER `manage` ITSELF. A schema that
+	 * configures nothing resolves default-open, and a block carrying
+	 * `"public": true` grants every verb to every caller, so asking
+	 * `hasPermission('manage')` alone would make every reader an auditor and
+	 * hand back the rules `renderEntity()` strips from a non-admin read.
 	 *
 	 * @param string|null $userId The caller.
 	 *
 	 * @return bool True when the caller may review access here.
 	 */
 	private function managesTheSchema(?string $userId): bool {
+		return $this->writtenRuleAdmits(action: 'manage', userId: $userId, object: null);
+	}//end managesTheSchema()
+
+	/**
+	 * Whether the record's `readGrants` rule admits this caller.
+	 *
+	 * The record is passed, so a conditional entry such as `{"group":
+	 * "authenticated", "match": {"assignee": "$userId"}}` is evaluated against
+	 * it, and an object-level `readGrants` counts.
+	 *
+	 * @param ObjectEntity $object The record.
+	 * @param string|null  $userId The caller.
+	 *
+	 * @return bool True when a written `readGrants` rule admits the caller.
+	 */
+	private function readGrantsAdmits(ObjectEntity $object, ?string $userId): bool {
+		if ($userId === null) {
+			return false;
+		}
+
+		return $this->writtenRuleAdmits(action: self::READ_GRANTS, userId: $userId, object: $object);
+	}//end readGrantsAdmits()
+
+	/**
+	 * Whether an entry written under this verb admits the caller, and the full decision agrees.
+	 *
+	 * 🔴 NEITHER DEFAULT-OPEN NOR `public: true` COUNTS. Both make
+	 * `hasPermission()` answer yes for every verb without any entry naming the
+	 * caller. So the verb's own list must be written and non-empty, and one of
+	 * its entries must admit the caller on its own: the list is matched alone,
+	 * in a block that holds nothing else, for `authenticated` and each of the
+	 * caller's groups (user entries and `match` clauses included, through
+	 * `hasGroupPermission()`). Only then is `hasPermission()` asked, so an
+	 * enforced deny still refuses.
+	 *
+	 * @param string            $action The verb.
+	 * @param string|null       $userId The caller.
+	 * @param ObjectEntity|null $object The record, for object-level rules and conditions; null asks at schema level.
+	 *
+	 * @return bool True when a written entry admits the caller.
+	 */
+	private function writtenRuleAdmits(string $action, ?string $userId, ?ObjectEntity $object): bool {
 		$schema = $this->schema();
 		if ($schema === null) {
 			return false;
@@ -176,60 +212,59 @@ class AccessReviewGate {
 		$handler = $this->objectService->getPermissionHandler();
 
 		try {
-			$resolved = $handler->resolveAuthorization(schema: $schema);
-		} catch (\Throwable $e) {
-			// Fail closed: a report about rules nobody could resolve would be a
-			// report about nothing.
-			return false;
-		}
-
-		if (is_array($resolved) === false || $resolved === []) {
-			return false;
-		}
-
-		return $handler->hasPermission(schema: $schema, action: 'manage', userId: $userId);
-	}//end managesTheSchema()
-
-	/**
-	 * Whether the record's `readGrants` rule admits this caller.
-	 *
-	 * 🔴 NO DEFAULT-OPEN. `hasPermission()` grants every verb on a block that
-	 * writes nothing, so the verb is only asked when the cascaded block for
-	 * this record actually writes a `readGrants` list. The record is passed,
-	 * so a conditional entry such as `{"group": "authenticated", "match":
-	 * {"assignee": "$userId"}}` is evaluated against it.
-	 *
-	 * @param ObjectEntity $object The record.
-	 * @param string|null  $userId The caller.
-	 *
-	 * @return bool True when a written `readGrants` rule admits the caller.
-	 */
-	private function readGrantsAdmits(ObjectEntity $object, ?string $userId): bool {
-		$schema = $this->schema();
-		if ($schema === null || $userId === null) {
-			return false;
-		}
-
-		$handler = $this->objectService->getPermissionHandler();
-
-		try {
 			$resolved = $handler->resolveAuthorization(schema: $schema, object: $object);
 		} catch (\Throwable $e) {
+			// Fail closed: rules nobody could resolve admit nobody.
 			return false;
 		}
 
-		if (is_array($resolved) === false || empty($resolved[self::READ_GRANTS]) === true) {
+		if (is_array($resolved) === false || empty($resolved[$action]) === true || is_array($resolved[$action]) === false) {
+			return false;
+		}
+
+		$ownList = [$action => $resolved[$action]];
+		$admitted = false;
+		foreach (['authenticated', ...$this->callerGroups()] as $groupId) {
+			if ($handler->hasGroupPermission(
+				authorization: $ownList,
+				groupId: (string)$groupId,
+				action: $action,
+				userId: $userId,
+				objectData: $object?->getObject(),
+				objectOrganisation: $object?->getOrganisation()
+			) === true
+			) {
+				$admitted = true;
+				break;
+			}
+		}
+
+		if ($admitted === false) {
 			return false;
 		}
 
 		return $handler->hasPermission(
 			schema: $schema,
-			action: self::READ_GRANTS,
+			action: $action,
 			userId: $userId,
-			objectOwner: $object->getOwner(),
+			objectOwner: $object?->getOwner(),
 			object: $object
 		);
-	}//end readGrantsAdmits()
+	}//end writtenRuleAdmits()
+
+	/**
+	 * The caller's group ids.
+	 *
+	 * @return string[] The groups, empty when anonymous.
+	 */
+	private function callerGroups(): array {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return [];
+		}
+
+		return $this->groupManager->getUserGroupIds($user);
+	}//end callerGroups()
 
 	/**
 	 * The schema the request named, or null when it cannot be resolved.

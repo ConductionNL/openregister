@@ -66,6 +66,7 @@ class AccessReviewGateTest extends TestCase {
 	 * @param bool                 $holdsRight    Whether the caller holds `grant_manage` on the record.
 	 * @param callable|null        $hasPermission Stands in for PermissionHandler::hasPermission().
 	 * @param array|null           $authorization The record's own `_authorization` block.
+	 * @param array<string, mixed> $objectLevel   Rules the cascade adds only when it is asked with the record.
 	 *
 	 * @return AccessReviewGate The gate.
 	 */
@@ -76,13 +77,19 @@ class AccessReviewGateTest extends TestCase {
 		bool $holdsRight = false,
 		?callable $hasPermission = null,
 		?array $authorization = null,
+		array $objectLevel = [],
 	): AccessReviewGate {
 		$schema = new Schema();
 		$schema->setId(7);
 
 		$handler = $this->createMock(PermissionHandler::class);
-		$handler->method('resolveAuthorization')->willReturn($resolved);
+		$handler->method('resolveAuthorization')->willReturnCallback(
+			static fn (Schema $schema, ?ObjectEntity $object = null): array => ($objectLevel !== [] && $object !== null)
+				? array_merge($resolved, $objectLevel)
+				: $resolved
+		);
 		$handler->method('hasPermission')->willReturnCallback($hasPermission ?? static fn (): bool => false);
+		$handler->method('hasGroupPermission')->willReturnCallback([self::class, 'entryAdmits']);
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('getSchema')->willReturn(7);
@@ -149,6 +156,8 @@ class AccessReviewGateTest extends TestCase {
 	public function testAWrittenManageHolderIsAdmitted(): void {
 		$gate = $this->gateFor(
 			userId: 'mvries',
+			groups: ['beheerders'],
+			resolved: self::ASSIGNEE_RULE + ['manage' => ['beheerders']],
 			hasPermission: static fn (Schema $schema, string $action): bool => $action === 'manage'
 		);
 
@@ -235,4 +244,94 @@ class AccessReviewGateTest extends TestCase {
 		$this->assertFalse($gate->mayReadGrants($this->record));
 		$this->assertNotContains('readGrants', $asked);
 	}//end testABlockWithoutReadGrantsAdmitsNobodyThroughIt()
+	/**
+	 * Stands in for PermissionHandler::hasGroupPermission() on one verb's list: a
+	 * bare group, a `{group, match}` entry over the record, or `user:<uid>`.
+	 * `public: true` and the default-open branch are deliberately not modelled:
+	 * the gate hands this a block holding the verb's list alone.
+	 *
+	 * @param array|null  $authorization The block.
+	 * @param string      $groupId       The group being tried.
+	 * @param string      $action        The verb.
+	 * @param string|null $userId        The caller.
+	 * @param string|null $userGroup     Unused.
+	 * @param string|null $objectOwner   Unused.
+	 * @param array|null  $objectData    The record.
+	 *
+	 * @return bool Whether an entry admits the caller through this group.
+	 */
+	public static function entryAdmits(?array $authorization, string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null, ?array $objectData = null): bool {
+		foreach (($authorization[$action] ?? []) as $entry) {
+			if ($entry === $groupId || ($userId !== null && $entry === 'user:' . $userId)) {
+				return true;
+			}
+
+			if (is_array($entry) === true && ($entry['group'] ?? null) === $groupId) {
+				$match = ($entry['match'] ?? []);
+				if ($match === [] || (($match['assignee'] ?? null) === '$userId' && ($objectData['assignee'] ?? null) === $userId)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}//end entryAdmits()
+
+	/**
+	 * 🔴 `"public": true` does not make every reader a `manage` holder, for either read.
+	 *
+	 * PermissionHandler answers yes to every verb on such a block; the stand-in
+	 * here does the same.
+	 *
+	 * @return void
+	 */
+	public function testAPublicBlockGrantsNobodyManage(): void {
+		$gate = $this->gateFor(userId: 'stagiair', resolved: ['public' => true, 'read' => ['public']], hasPermission: static fn (): bool => true);
+
+		$this->assertFalse($gate->mayReviewAccess($this->record), '/permissions');
+		$this->assertFalse($gate->mayReadGrants($this->record), '/grants');
+	}//end testAPublicBlockGrantsNobodyManage()
+
+	/**
+	 * 🔴 With `"public": true`, a `readGrants` list still admits only the people it names.
+	 *
+	 * @return void
+	 */
+	public function testAPublicBlockKeepsReadGrantsToItsOwnList(): void {
+		$block = ['public' => true, 'readGrants' => [['group' => 'auditors']]];
+		$everything = static fn (): bool => true;
+
+		$staff = $this->gateFor(userId: 'stagiair', groups: ['staff'], resolved: $block, hasPermission: $everything);
+		$this->assertFalse($staff->mayReadGrants($this->record));
+
+		$auditor = $this->gateFor(userId: 'auditor', groups: ['auditors'], resolved: $block, hasPermission: $everything);
+		$this->assertTrue($auditor->mayReadGrants($this->record), 'the control: the list still admits its own group');
+	}//end testAPublicBlockKeepsReadGrantsToItsOwnList()
+
+	/**
+	 * A `readGrants` written on the record itself admits, so the cascade is asked with the record.
+	 *
+	 * @return void
+	 */
+	public function testAnObjectLevelReadGrantsAdmits(): void {
+		$gate = $this->gateFor(
+			userId: 'kvries',
+			resolved: ['read' => ['authenticated']],
+			hasPermission: static fn (Schema $schema, string $action): bool => $action === 'readGrants',
+			objectLevel: ['readGrants' => ['user:kvries']]
+		);
+
+		$this->assertTrue($gate->mayReadGrants($this->record));
+	}//end testAnObjectLevelReadGrantsAdmits()
+
+	/**
+	 * An entry that names the caller does not outrank the full decision, so an enforced deny still refuses.
+	 *
+	 * @return void
+	 */
+	public function testTheFullDecisionStillHasTheLastWord(): void {
+		$gate = $this->gateFor(userId: 'tvisser', hasPermission: static fn (): bool => false);
+
+		$this->assertFalse($gate->mayReadGrants($this->record));
+	}//end testTheFullDecisionStillHasTheLastWord()
 }//end class

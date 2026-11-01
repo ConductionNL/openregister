@@ -130,10 +130,17 @@ class ObjectGrantsReportTest extends TestCase {
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
 		);
 
+		// The complete reading only: the panel's reading misses a share a
+		// colleague made and swallows a failed read, so it is never what the
+		// grants list is built from.
 		$shareReader = $this->createMock(ObjectShareReader::class);
-		$shareReader->method('sharesOn')->willReturn($shares);
+		$shareReader->method('sharesOn')->willReturnCallback(
+			static fn (ObjectEntity $object, array $sharers, bool $complete = false): array => $complete === true ? $shares : []
+		);
 		$lister = $this->createMock(InheritedGrantLister::class);
-		$lister->method('inheritedSharesFor')->willReturn($inherited);
+		$lister->method('inheritedSharesFor')->willReturnCallback(
+			static fn (ObjectEntity $object, bool $complete = false): array => $complete === true ? $inherited : []
+		);
 
 		$matcher = new ConditionMatcher(
 			$this->createMock(IUserSession::class),

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectShareReader;
 use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use OCP\IUser;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
@@ -53,21 +54,45 @@ class ObjectShareReaderTest extends TestCase {
 	private array $asked = [];
 
 	/**
+	 * Whether the creating folder lookup was used.
+	 *
+	 * @var bool
+	 */
+	private bool $created = false;
+
+	/**
 	 * A reader over one folder, owned by the OpenRegister system user.
 	 *
-	 * @param callable $sharesBy Answers getSharesBy(sharer, type, reshares).
-	 * @param bool     $folder   Whether the object has a folder.
+	 * @param callable    $sharesBy Answers getSharesBy(sharer, type, reshares).
+	 * @param string      $folder   `found`, `gone` (the stored id finds nothing), `throws` (the lookup fails)
+	 *                              or `ownerless` (the folder has no owner).
 	 *
 	 * @return ObjectShareReader The reader.
 	 */
-	private function readerFor(callable $sharesBy, bool $folder = true): ObjectShareReader {
+	private function readerFor(callable $sharesBy, string $folder = 'found'): ObjectShareReader {
 		$systemUser = $this->createMock(IUser::class);
 		$systemUser->method('getUID')->willReturn('openregister');
 		$node = $this->createMock(Folder::class);
-		$node->method('getOwner')->willReturn($systemUser);
+		$node->method('getOwner')->willReturn($folder === 'ownerless' ? null : $systemUser);
 
 		$folders = $this->createMock(FolderManagementHandler::class);
-		$folders->method('getObjectFolder')->willReturn($folder === true ? $node : null);
+		$folders->method('getObjectFolder')->willReturnCallback(
+			function () use ($node): Folder {
+				$this->created = true;
+				return $node;
+			}
+		);
+
+		$root = $this->createMock(IRootFolder::class);
+		$root->method('getById')->willReturnCallback(
+			static function () use ($folder, $node): array {
+				if ($folder === 'throws') {
+					throw new RuntimeException('storage unavailable');
+				}
+
+				return $folder === 'gone' ? [] : [$node];
+			}
+		);
 
 		$manager = $this->createMock(IManager::class);
 		$manager->method('getSharesBy')->willReturnCallback(
@@ -77,7 +102,7 @@ class ObjectShareReaderTest extends TestCase {
 			}
 		);
 
-		return new ObjectShareReader($folders, $manager, new NullLogger());
+		return new ObjectShareReader($folders, $manager, new NullLogger(), $root);
 	}//end readerFor()
 
 	/**
@@ -109,6 +134,7 @@ class ObjectShareReaderTest extends TestCase {
 		$object->setOwner('bea');
 		$object->setRegister('1');
 		$object->setSchema('7');
+		$object->setFolder('55');
 		return $object;
 	}//end object()
 
@@ -152,6 +178,7 @@ class ObjectShareReaderTest extends TestCase {
 
 		$this->assertSame(['ocinternal:41'], array_keys($found));
 		$this->assertContains('openregister', array_column($this->asked, 0));
+		$this->assertFalse($this->created);
 	}//end testTheCompleteReadingFindsAShareSomebodyElseMade()
 
 	/**
@@ -167,15 +194,49 @@ class ObjectShareReaderTest extends TestCase {
 	}//end testTheCompleteReadingThrowsOnAnUnreadableType()
 
 	/**
-	 * An object without a folder has no shares.
+	 * The complete reading never creates a folder: an object without one, or whose folder is gone, has no shares.
 	 *
 	 * @return void
 	 */
 	public function testAnObjectWithoutAFolderHasNoShares(): void {
-		$reader = $this->readerFor(static fn (): array => [], folder: false);
+		$object = $this->object();
+		$object->setFolder(null);
 
-		$this->assertSame([], $reader->sharesOn(object: $this->object(), sharers: ['bea'], complete: true));
+		$this->assertSame([], $this->readerFor(static fn (): array => [])->sharesOn(object: $object, sharers: ['bea'], complete: true));
+		$this->assertSame([], $this->readerFor(static fn (): array => [], folder: 'gone')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true));
+		$this->assertFalse($this->created, 'a read must not create or recreate a folder');
 	}//end testAnObjectWithoutAFolderHasNoShares()
+
+	/**
+	 * The panel reading keeps creating the folder, as `/shares` always has.
+	 *
+	 * @return void
+	 */
+	public function testThePanelReadingStillResolvesTheFolderAsBefore(): void {
+		$this->readerFor(static fn (): array => [])->sharesOn(object: $this->object(), sharers: ['bea']);
+
+		$this->assertTrue($this->created);
+	}//end testThePanelReadingStillResolvesTheFolderAsBefore()
+
+	/**
+	 * A folder lookup that fails is an error, not "no shares".
+	 *
+	 * @return void
+	 */
+	public function testTheCompleteReadingThrowsWhenTheFolderCannotBeLookedUp(): void {
+		$this->expectException(RuntimeException::class);
+		$this->readerFor(static fn (): array => [], folder: 'throws')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+	}//end testTheCompleteReadingThrowsWhenTheFolderCannotBeLookedUp()
+
+	/**
+	 * A folder without an owner cannot be read completely, so it throws rather than reading less.
+	 *
+	 * @return void
+	 */
+	public function testTheCompleteReadingThrowsWhenTheFolderHasNoOwner(): void {
+		$this->expectException(RuntimeException::class);
+		$this->readerFor(static fn (): array => [], folder: 'ownerless')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+	}//end testTheCompleteReadingThrowsWhenTheFolderHasNoOwner()
 
 	/**
 	 * The inherited lister keeps its row shape and names the ancestor; the complete reading throws on a failed walk.
