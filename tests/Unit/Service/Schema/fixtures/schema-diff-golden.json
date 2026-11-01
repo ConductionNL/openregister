@@ -72,6 +72,29 @@
         "breaking": false,
         "next": "1.4.2"
     },
+    "bound absent to null": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": null,
+                "new": {
+                    "maxLength": null
+                }
+            }
+        ],
+        "classification": "breaking",
+        "bump": "major",
+        "breaking": true,
+        "next": "2.0.0"
+    },
+    "bound both null": {
+        "changes": [],
+        "classification": "none",
+        "bump": "none",
+        "breaking": false,
+        "next": "1.4.2"
+    },
     "bound equal": {
         "changes": [],
         "classification": "none",
@@ -96,6 +119,58 @@
         "bump": "patch",
         "breaking": false,
         "next": "1.4.3"
+    },
+    "bound null to absent": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "minLength": null
+                },
+                "new": null
+            }
+        ],
+        "classification": "compatible",
+        "bump": "patch",
+        "breaking": false,
+        "next": "1.4.3"
+    },
+    "bound numeric string equal value": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "minimum": 5
+                },
+                "new": {
+                    "minimum": "5"
+                }
+            }
+        ],
+        "classification": "compatible",
+        "bump": "patch",
+        "breaking": false,
+        "next": "1.4.3"
+    },
+    "bound numeric string raised": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": {
+                    "minimum": "2"
+                },
+                "new": {
+                    "minimum": "3"
+                }
+            }
+        ],
+        "classification": "breaking",
+        "bump": "major",
+        "breaking": true,
+        "next": "2.0.0"
     },
     "declared rename": {
         "changes": [
@@ -273,6 +348,148 @@
         "breaking": false,
         "next": "1.4.3"
     },
+    "every keyword on one property": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "type_changed",
+                "old": "string",
+                "new": "integer"
+            },
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": {
+                    "minLength": 1
+                },
+                "new": {
+                    "minLength": 2
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": null,
+                "new": {
+                    "minItems": 1
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "maxLength": 9
+                },
+                "new": {
+                    "maxLength": 10
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "maximum": 4
+                },
+                "new": null
+            },
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": {
+                    "enum": [
+                        "x",
+                        "y"
+                    ]
+                },
+                "new": {
+                    "enum": [
+                        "x"
+                    ]
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": {
+                    "pattern": "^a"
+                },
+                "new": {
+                    "pattern": "^b"
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": null,
+                "new": {
+                    "format": "int32"
+                }
+            }
+        ],
+        "classification": "breaking",
+        "bump": "major",
+        "breaking": true,
+        "next": "2.0.0"
+    },
+    "every keyword relaxed on two properties": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "minimum": 3
+                },
+                "new": {
+                    "minimum": 1
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "maxItems": 2
+                },
+                "new": {
+                    "maxItems": 6
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "enum": [
+                        "x"
+                    ]
+                },
+                "new": {
+                    "enum": [
+                        "x",
+                        "z"
+                    ]
+                }
+            },
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "format": "date"
+                },
+                "new": null
+            },
+            {
+                "property": "b",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "pattern": "^x"
+                },
+                "new": null
+            }
+        ],
+        "classification": "compatible",
+        "bump": "patch",
+        "breaking": false,
+        "next": "1.4.3"
+    },
     "format changed": {
         "changes": [
             {
@@ -290,6 +507,38 @@
         "bump": "major",
         "breaking": true,
         "next": "2.0.0"
+    },
+    "format introduced": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": null,
+                "new": {
+                    "format": "date"
+                }
+            }
+        ],
+        "classification": "breaking",
+        "bump": "major",
+        "breaking": true,
+        "next": "2.0.0"
+    },
+    "format removed": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "format": "date"
+                },
+                "new": null
+            }
+        ],
+        "classification": "compatible",
+        "bump": "patch",
+        "breaking": false,
+        "next": "1.4.3"
     },
     "format same": {
         "changes": [],
@@ -606,6 +855,13 @@
         "breaking": false,
         "next": "1.4.3"
     },
+    "pattern and format both null": {
+        "changes": [],
+        "classification": "none",
+        "bump": "none",
+        "breaking": false,
+        "next": "1.4.2"
+    },
     "pattern changed": {
         "changes": [
             {
@@ -639,6 +895,22 @@
         "bump": "major",
         "breaking": true,
         "next": "2.0.0"
+    },
+    "pattern null to absent": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_relaxed",
+                "old": {
+                    "pattern": null
+                },
+                "new": null
+            }
+        ],
+        "classification": "compatible",
+        "bump": "patch",
+        "breaking": false,
+        "next": "1.4.3"
     },
     "pattern removed": {
         "changes": [

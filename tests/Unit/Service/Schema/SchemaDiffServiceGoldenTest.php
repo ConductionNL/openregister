@@ -81,7 +81,26 @@ class SchemaDiffServiceGoldenTest extends TestCase {
 			'pattern changed' => [self::def(['a' => $str + ['pattern' => '^a']]), self::def(['a' => $str + ['pattern' => '^b']]), []],
 			'format changed' => [self::def(['a' => $str + ['format' => 'date']]), self::def(['a' => $str + ['format' => 'email']]), []],
 			'format same' => [self::def(['a' => $str + ['format' => 'date']]), self::def(['a' => $str + ['format' => 'date']]), []],
-			'newly required no default' => [self::def(['a' => $str]), self::def(['a' => $str], ['a']), []],
+			'format introduced' => [self::def(['a' => $str]), self::def(['a' => $str + ['format' => 'date']]), []],
+			'format removed' => [self::def(['a' => $str + ['format' => 'date']]), self::def(['a' => $str]), []],
+			'pattern and format both null' => [self::def(['a' => $str + ['pattern' => null, 'format' => null]]), self::def(['a' => $str + ['pattern' => null, 'format' => null]]), []],
+			'pattern null to absent' => [self::def(['a' => $str + ['pattern' => null]]), self::def(['a' => $str]), []],
+			'bound null to absent' => [self::def(['a' => $str + ['minLength' => null]]), self::def(['a' => $str]), []],
+			'bound absent to null' => [self::def(['a' => $str]), self::def(['a' => $str + ['maxLength' => null]]), []],
+			'bound both null' => [self::def(['a' => $str + ['maxLength' => null]]), self::def(['a' => $str + ['maxLength' => null]]), []],
+			'bound numeric string equal value' => [self::def(['a' => $int + ['minimum' => 5]]), self::def(['a' => $int + ['minimum' => '5']]), []],
+			'bound numeric string raised' => [self::def(['a' => $int + ['minimum' => '2']]), self::def(['a' => $int + ['minimum' => '3']]), []],
+			'every keyword on one property' => [
+				self::def(['a' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 9, 'maximum' => 4, 'enum' => ['x', 'y'], 'pattern' => '^a']]),
+				self::def(['a' => ['type' => 'integer', 'minLength' => 2, 'minItems' => 1, 'maxLength' => 10, 'enum' => ['x'], 'pattern' => '^b', 'format' => 'int32']]),
+				[],
+			],
+			'every keyword relaxed on two properties' => [
+				self::def(['a' => ['type' => ['null', 'string'], 'minimum' => 3, 'maxItems' => 2, 'enum' => ['x'], 'format' => 'date'], 'b' => ['type' => 'string', 'pattern' => '^x']]),
+				self::def(['a' => ['type' => ['string', 'null'], 'minimum' => 1, 'maxItems' => 6, 'enum' => ['x', 'z']], 'b' => ['type' => 'string']]),
+				[],
+			],
+			'newly required no default' =>[self::def(['a' => $str]), self::def(['a' => $str], ['a']), []],
 			'newly required with default' => [self::def(['a' => $str]), self::def(['a' => $str + ['default' => '']], ['a']), []],
 			'newly required unknown property' => [self::def(['a' => $str]), self::def(['a' => $str], ['zz']), []],
 			'required removed' => [self::def(['a' => $str], ['a']), self::def(['a' => $str]), []],
@@ -140,4 +159,26 @@ class SchemaDiffServiceGoldenTest extends TestCase {
 		$this->assertArrayHasKey($name, $golden, 'No golden recording for this case.');
 		$this->assertSame($golden[$name], $actual);
 	}//end testDiffMatchesGolden()
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: array<string, mixed>}>
+	 */
+	public static function typeErrorCases(): array {
+		$str = ['type' => 'string'];
+
+		return [
+			'numeric name in both' => [self::def(['7' => $str]), self::def(['7' => ['type' => 'integer']])],
+			'enum scalar to scalar' => [self::def(['a' => $str + ['enum' => 'x']]), self::def(['a' => $str + ['enum' => 'y']])],
+			'enum scalar to absent' => [self::def(['a' => $str + ['enum' => 'x']]), self::def(['a' => $str])],
+		];
+	}//end typeErrorCases()
+
+	/**
+	 * @param array<string, mixed> $old
+	 * @param array<string, mixed> $new
+	 */
+	#[DataProvider('typeErrorCases')]
+	public function testDiffRaisesTypeError(array $old, array $new): void {
+		$this->expectException(\TypeError::class);
+		(new SchemaDiffService())->diff($old, $new);
+	}//end testDiffRaisesTypeError()
 }//end class
