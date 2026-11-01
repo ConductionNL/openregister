@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -85,10 +86,6 @@ class MigrationHandler {
 	 * @throws OcpDoesNotExistException If register or schema not found.
 	 * @throws InvalidArgumentException If invalid parameters provided.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Migration with validation requires multiple conditional checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple migration paths for different object types
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive migration requires detailed processing
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function migrateObjects(
@@ -99,177 +96,144 @@ class MigrationHandler {
 		array $objectIds,
 		array $mapping,
 	): array {
-		// Initialize migration report.
-		$migrationReport = [
+		$run = new MigrationRun(
+			source: [$sourceRegister, $sourceSchema],
+			target: [$targetRegister, $targetSchema]
+		);
+		$run->mapping = $mapping;
+
+		$this->loadSides(run: $run);
+		if ($run->source->isLoaded() === false || $run->target->isLoaded() === false) {
+			throw new OcpDoesNotExistException('One or more registers/schemas not found');
+		}
+
+		$sourceObjects = $this->objectMapper->findMultiple($objectIds);
+
+		// An id stays here until an object with that uuid or id is returned, so whatever is
+		// left was not found.
+		$remainingObjectIds = $objectIds;
+		foreach ($sourceObjects as $sourceObject) {
+			$remainingObjectIds = array_filter(
+				$remainingObjectIds,
+				fn ($id) => $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId()
+			);
+			$this->migrateOne(sourceObject: $sourceObject, run: $run);
+		}
+
+		foreach ($remainingObjectIds as $notFoundId) {
+			$run->notFound(notFoundId: $notFoundId);
+		}
+
+		return $run->report();
+	}//end migrateObjects()
+
+	/**
+	 * Load the source register and schema, then the target register and schema.
+	 *
+	 * @param MigrationRun $run The migration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function loadSides(MigrationRun $run): void {
+		foreach ([$run->source, $run->target] as $side) {
+			$side->registerEntity = $this->utilityHandler->normalizeEntity(entity: $side->register, type: 'register');
+			$side->schemaEntity = $this->utilityHandler->normalizeEntity(entity: $side->schema, type: 'schema');
+		}
+	}//end loadSides()
+
+	/**
+	 * Move one object to the target register and schema with its mapped data, and report it.
+	 *
+	 * Any failure is recorded on the run and the next object is tried.
+	 *
+	 * @param ObjectEntity $sourceObject The object as loaded.
+	 * @param MigrationRun $run          The migration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function migrateOne(ObjectEntity $sourceObject, MigrationRun $run): void {
+		$objectId = $sourceObject->getUuid();
+		$objectDetail = [
+			'objectId' => $objectId,
+			'objectTitle' => null,
 			'success' => false,
-			'statistics' => [
-				'objectsMigrated' => 0,
-				'objectsFailed' => 0,
-				'propertiesMapped' => 0,
-				'propertiesDiscarded' => 0,
-			],
-			'details' => [],
-			'warnings' => [],
-			'errors' => [],
+			'error' => null,
 		];
 
 		try {
-			// Load source and target registers/schemas.
-			$sourceRegisterEntity = $this->utilityHandler->normalizeEntity(
-				entity: $sourceRegister,
-				type: 'register'
+			$objectDetail['objectTitle'] = $sourceObject->getName() ?? $sourceObject->getUuid();
+			$this->assertInSource(sourceObject: $sourceObject, run: $run);
+
+			$sourceData = $sourceObject->getObject();
+			$mappedData = $this->dataManipHandler->mapObjectProperties(
+				sourceData: $sourceData,
+				mapping: $run->mapping
 			);
-			$sourceSchemaEntity = $this->utilityHandler->normalizeEntity(
-				entity: $sourceSchema,
-				type: 'schema'
-			);
-			$targetRegisterEntity = $this->utilityHandler->normalizeEntity(
-				entity: $targetRegister,
-				type: 'register'
-			);
-			$targetSchemaEntity = $this->utilityHandler->normalizeEntity(
-				entity: $targetSchema,
-				type: 'schema'
+			$run->countMapping(sourceData: $sourceData, mappedData: $mappedData);
+
+			$this->logger->debug(
+				message: '[MigrationHandler] Object properties mapped',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'mappedData' => $mappedData,
+				]
 			);
 
-			// Validate entities exist.
-			$anyEntityMissing = $sourceRegisterEntity === null
-				|| $sourceSchemaEntity === null
-				|| $targetRegisterEntity === null
-				|| $targetSchemaEntity === null;
-			if ($anyEntityMissing === true) {
-				throw new OcpDoesNotExistException('One or more registers/schemas not found');
-			}
+			// Files and relations stay attached to the object, so moving it moves them.
+			$sourceObject->setRegister($run->target->registerEntity->getId());
+			$sourceObject->setSchema($run->target->schemaEntity->getId());
+			$sourceObject->setObject($mappedData);
+			$savedObject = $this->objectMapper->update($sourceObject);
 
-			// Get all source objects at once using MagicMapper.
-			$sourceObjects = $this->objectMapper->findMultiple($objectIds);
-
-			// Keep track of remaining object IDs to find which ones weren't found.
-			$remainingObjectIds = $objectIds;
-
-			// Process each found source object.
-			foreach ($sourceObjects as $sourceObject) {
-				$objectId = $sourceObject->getUuid();
-				$objectDetail = [
-					'objectId' => $objectId,
-					'objectTitle' => null,
-					'success' => false,
-					'error' => null,
-				];
-
-				// Remove this object from the remaining list (it was found) - do this BEFORE try-catch.
-				$remainingObjectIds = array_filter(
-					$remainingObjectIds,
-					function ($id) use ($sourceObject) {
-						return $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId();
-					}
-				);
-
-				try {
-					$objectDetail['objectTitle'] = $sourceObject->getName() ?? $sourceObject->getUuid();
-
-					// Verify the source object belongs to the expected register/schema (cast to int for comparison).
-					if ((int)$sourceObject->getRegister() !== (int)$sourceRegister
-						|| (int)$sourceObject->getSchema() !== (int)$sourceSchema
-					) {
-						$actualRegister = $sourceObject->getRegister();
-						$actualSchema = $sourceObject->getSchema();
-						$expected = "register='{$sourceRegister}', schema='{$sourceSchema}'";
-						$actual = "register='{$actualRegister}', schema='{$actualSchema}'";
-						$message = sprintf(
-							'Object %s does not belong to the specified source register/schema. Expected: %s. Actual: %s',
-							$objectId,
-							$expected,
-							$actual
-						);
-						throw new InvalidArgumentException($message);
-					}
-
-					// Get source object data (the JSON object property).
-					$sourceData = $sourceObject->getObject();
-
-					// Map properties according to mapping configuration.
-					$mappedData = $this->dataManipHandler->mapObjectProperties(
-						sourceData: $sourceData,
-						mapping: $mapping
-					);
-					$migrationReport['statistics']['propertiesMapped'] += count($mappedData);
-					$migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
-
-					// Log the mapping result for debugging.
-					$this->logger->debug(
-						message: '[MigrationHandler] Object properties mapped',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'mappedData' => $mappedData,
-						]
-					);
-
-					// Store original files and relations before altering the object.
-					$originalFiles = $sourceObject->getFolder();
-					$originalRelations = $sourceObject->getRelations();
-
-					// Alter the existing object to migrate it to the target register/schema.
-					$sourceObject->setRegister($targetRegisterEntity->getId());
-
-					$sourceObject->setSchema($targetSchemaEntity->getId());
-
-					$sourceObject->setObject($mappedData);
-
-					// Update the object using the mapper.
-					$savedObject = $this->objectMapper->update($sourceObject);
-
-					// Handle file migration (files should already be attached to the object).
-					if ($originalFiles !== null) {
-						// Files are already associated with this object, no migration needed.
-					}
-
-					// Handle relations migration (relations are already on the object).
-					if (empty($originalRelations) === false) {
-						// Relations are preserved on the object, no additional migration needed.
-					}
-
-					$objectDetail['success'] = true;
-					$objectDetail['newObjectId'] = $savedObject->getUuid();
-					// Same UUID, but migrated.
-					$migrationReport['statistics']['objectsMigrated']++;
-				} catch (Exception $e) {
-					$objectDetail['error'] = $e->getMessage();
-					$migrationReport['statistics']['objectsFailed']++;
-					$migrationReport['errors'][] = "Failed to migrate object {$objectId}: " . $e->getMessage();
-				}//end try
-
-				$migrationReport['details'][] = $objectDetail;
-			}//end foreach
-
-			// Handle objects that weren't found.
-			foreach ($remainingObjectIds as $notFoundId) {
-				$objectDetail = [
-					'objectId' => $notFoundId,
-					'objectTitle' => null,
-					'success' => false,
-					'error' => "Object with ID {$notFoundId} not found",
-				];
-
-				$migrationReport['details'][] = $objectDetail;
-				$migrationReport['statistics']['objectsFailed']++;
-				$migrationReport['errors'][] = "Failed to migrate object {$notFoundId}: Object not found";
-			}
-
-			// Set overall success if at least one object was migrated.
-			$migrationReport['success'] = $migrationReport['statistics']['objectsMigrated'] > 0;
-
-			// Add warnings if some objects failed.
-			if ($migrationReport['statistics']['objectsFailed'] > 0) {
-				$migrationReport['warnings'][] = 'Some objects failed to migrate. Check details for specific errors.';
-			}
+			$objectDetail['success'] = true;
+			$objectDetail['newObjectId'] = $savedObject->getUuid();
+			$run->migrated();
 		} catch (Exception $e) {
-			$migrationReport['errors'][] = $e->getMessage();
-
-			throw $e;
+			$objectDetail['error'] = $e->getMessage();
+			$run->failed(objectId: $objectId, reason: $e->getMessage());
 		}//end try
 
-		return $migrationReport;
-	}//end migrateObjects()
+		$run->addDetail(detail: $objectDetail);
+	}//end migrateOne()
+
+	/**
+	 * Refuse an object that does not live in the requested source register and schema.
+	 *
+	 * The stored register and schema are compared, as integers, with the values as
+	 * requested, so a source named by slug never matches.
+	 *
+	 * @param ObjectEntity $sourceObject The object as loaded.
+	 * @param MigrationRun $run          The migration.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the object lives elsewhere.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function assertInSource(ObjectEntity $sourceObject, MigrationRun $run): void {
+		$source = $run->source;
+		$actualRegister = $sourceObject->getRegister();
+		$actualSchema = $sourceObject->getSchema();
+		if ((int)$actualRegister === (int)$source->register && (int)$actualSchema === (int)$source->schema) {
+			return;
+		}
+
+		$expected = "register='{$source->register}', schema='{$source->schema}'";
+		$actual = "register='{$actualRegister}', schema='{$actualSchema}'";
+		throw new InvalidArgumentException(
+			sprintf(
+				'Object %s does not belong to the specified source register/schema. Expected: %s. Actual: %s',
+				$sourceObject->getUuid(),
+				$expected,
+				$actual
+			)
+		);
+	}//end assertInSource()
+
 }//end class
