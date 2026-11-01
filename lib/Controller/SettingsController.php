@@ -394,137 +394,28 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with database info
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
 	public function getDatabaseInfo(): JSONResponse {
 		try {
-			// Check if refresh is requested or if we should use cached data.
-			$refresh = filter_var(
-				$this->request->getParam('refresh', false),
-				FILTER_VALIDATE_BOOLEAN
-			);
-
-			// Try to get cached database info if not refreshing.
-			if ($refresh === false) {
-				$cachedInfo = $this->config->getValueString('openregister', 'databaseInfo', '');
-				if (empty($cachedInfo) === false) {
-					$cached = json_decode($cachedInfo, true);
-					if ($cached !== null && isset($cached['database']) === true) {
-						$cached['fromCache'] = true;
-						return new JSONResponse(data: $cached);
-					}
-				}
+			$cached = $this->cachedDatabaseInfo();
+			if ($cached !== null) {
+				return new JSONResponse(data: $cached);
 			}
 
-			// Get database platform information.
-			// Note: getDatabasePlatform() returns a platform instance, but we avoid type hinting it.
-			$platform = $this->db->getDatabasePlatform();
-			// Get platform name as string.
-			$platformName = 'unknown';
-			if (method_exists($platform, 'getName') === true) {
-				$platformName = $platform->getName();
-			}
-
-			// Determine database type and version.
-			$dbType = 'Unknown';
-			$dbVersion = 'Unknown';
-			$vectorSupport = false;
-			$recommendedPlugin = null;
-			$performanceNote = null;
-			$extensions = [];
-
-			if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
-				// Check if it's MariaDB or MySQL.
-				try {
-					$stmt = $this->db->prepare('SELECT VERSION()');
-					$result = $stmt->execute();
-					$version = $result->fetchOne();
-
-					$dbType = 'MySQL';
-					if (stripos($version, 'MariaDB') !== false) {
-						$dbType = 'MariaDB';
-					}
-
-					preg_match('/\d+\.\d+\.\d+/', $version, $matches);
-					$dbVersion = $matches[0] ?? $version;
-				} catch (Exception $e) {
-					$dbType = 'MySQL/MariaDB';
-					$dbVersion = 'Unknown';
-				}
-
-				// MariaDB/MySQL do not support native vector operations.
-				$vectorSupport = false;
-				$recommendedPlugin = 'pgvector for PostgreSQL';
-				$performanceNote = 'Current: Similarity calculated in PHP (slow).'
-					. ' Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
-			} elseif (strpos($platformName, 'postgres') !== false) {
-				$dbType = 'PostgreSQL';
-
-				try {
-					$stmt = $this->db->prepare('SELECT VERSION()');
-					$result = $stmt->execute();
-					$version = $result->fetchOne();
-					preg_match('/PostgreSQL (\d+\.\d+)/', $version, $matches);
-					$dbVersion = $matches[1] ?? 'Unknown';
-				} catch (Exception $e) {
-					$dbVersion = 'Unknown';
-				}
-
-				// Fetch all installed PostgreSQL extensions.
-				try {
-					$stmt = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
-					$result = $stmt->execute();
-					while (is_array($row = $result->fetch()) === true) {
-						$extensions[] = [
-							'name' => $row['extname'],
-							'version' => $row['extversion'],
-						];
-					}
-				} catch (Exception $e) {
-					$this->logger->warning(
-						message: '[SettingsController] Failed to fetch PostgreSQL extensions',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-					);
-				}
-
-				// Check if pgvector extension is installed.
-				$hasVector = false;
-				foreach ($extensions as $ext) {
-					if ($ext['name'] === 'vector') {
-						$hasVector = true;
-						break;
-					}
-				}
-
-				$vectorSupport = false;
-				$recommendedPlugin = 'pgvector (not installed)';
-				$performanceNote = 'Install pgvector extension: CREATE EXTENSION vector;';
-				if ($hasVector === true) {
-					$vectorSupport = true;
-					$recommendedPlugin = 'pgvector (installed)';
-					$performanceNote = 'Optimal: Using database-level vector operations for fast semantic search.';
-				}
-			} elseif (strpos($platformName, 'sqlite') !== false) {
-				$dbType = 'SQLite';
-				$vectorSupport = false;
-				$recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';
-				$performanceNote = 'SQLite not recommended for production vector search.';
-			}//end if
+			$platformName = $this->databasePlatformName();
+			$profile = $this->databaseProfile(platformName: $platformName);
 
 			// Build the database info array.
 			$databaseInfo = [
-				'type' => $dbType,
-				'version' => $dbVersion,
+				'type' => $profile['type'],
+				'version' => $profile['version'],
 				'platform' => $platformName,
-				'vectorSupport' => $vectorSupport,
-				'recommendedPlugin' => $recommendedPlugin,
-				'performanceNote' => $performanceNote,
-				'extensions' => $extensions,
-				'hybridSearch' => $this->getHybridSearchDiagnostics(isPostgres: $dbType === 'PostgreSQL'),
+				'vectorSupport' => $profile['vectorSupport'],
+				'recommendedPlugin' => $profile['recommendedPlugin'],
+				'performanceNote' => $profile['performanceNote'],
+				'extensions' => $profile['extensions'],
+				'hybridSearch' => $this->getHybridSearchDiagnostics(isPostgres: $profile['type'] === 'PostgreSQL'),
 				'lastUpdated' => (new DateTime())->format('c'),
 			];
 
@@ -563,6 +454,188 @@ class SettingsController extends Controller {
 			);
 		}//end try
 	}//end getDatabaseInfo()
+
+	/**
+	 * The cached database info, unless the caller asked for a refresh.
+	 *
+	 * @return array<string, mixed>|null The cached response data marked as from cache, or null.
+	 */
+	private function cachedDatabaseInfo(): ?array {
+		$refresh = filter_var(
+			$this->request->getParam('refresh', false),
+			FILTER_VALIDATE_BOOLEAN
+		);
+		if ($refresh === true) {
+			return null;
+		}
+
+		$cachedInfo = $this->config->getValueString('openregister', 'databaseInfo', '');
+		if (empty($cachedInfo) === true) {
+			return null;
+		}
+
+		$cached = json_decode($cachedInfo, true);
+		if ($cached === null || isset($cached['database']) === false) {
+			return null;
+		}
+
+		$cached['fromCache'] = true;
+		return $cached;
+	}//end cachedDatabaseInfo()
+
+	/**
+	 * The name of the active database platform.
+	 *
+	 * The platform instance from getDatabasePlatform() is deliberately not type hinted.
+	 *
+	 * @return string The platform name, or 'unknown'.
+	 */
+	private function databasePlatformName(): string {
+		$platform = $this->db->getDatabasePlatform();
+		if (method_exists($platform, 'getName') === true) {
+			return $platform->getName();
+		}
+
+		return 'unknown';
+	}//end databasePlatformName()
+
+	/**
+	 * The database type, version, extensions and vector-search advice for a platform.
+	 *
+	 * @param string $platformName The active platform's name.
+	 *
+	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string|null,
+	 *     performanceNote: string|null, extensions: list<array{name: mixed, version: mixed}>}
+	 */
+	private function databaseProfile(string $platformName): array {
+		if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
+			return $this->mysqlProfile();
+		}
+
+		if (strpos($platformName, 'postgres') !== false) {
+			return $this->postgresProfile();
+		}
+
+		$profile = [
+			'type' => 'Unknown',
+			'version' => 'Unknown',
+			'vectorSupport' => false,
+			'recommendedPlugin' => null,
+			'performanceNote' => null,
+			'extensions' => [],
+		];
+		if (strpos($platformName, 'sqlite') !== false) {
+			$profile['type'] = 'SQLite';
+			$profile['recommendedPlugin'] = 'sqlite-vss or migrate to PostgreSQL';
+			$profile['performanceNote'] = 'SQLite not recommended for production vector search.';
+		}
+
+		return $profile;
+	}//end databaseProfile()
+
+	/**
+	 * The profile of a MySQL or MariaDB server, which has no native vector operations.
+	 *
+	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string,
+	 *     performanceNote: string, extensions: list<array{name: mixed, version: mixed}>}
+	 */
+	private function mysqlProfile(): array {
+		$profile = [
+			'type' => 'MySQL/MariaDB',
+			'version' => 'Unknown',
+			'vectorSupport' => false,
+			'recommendedPlugin' => 'pgvector for PostgreSQL',
+			'performanceNote' => 'Current: Similarity calculated in PHP (slow).'
+				. ' Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.',
+			'extensions' => [],
+		];
+
+		try {
+			$version = $this->serverVersion();
+
+			$profile['type'] = 'MySQL';
+			if (stripos($version, 'MariaDB') !== false) {
+				$profile['type'] = 'MariaDB';
+			}
+
+			preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+			$profile['version'] = $matches[0] ?? $version;
+		} catch (Exception $e) {
+			// Reported as MySQL/MariaDB of unknown version.
+		}
+
+		return $profile;
+	}//end mysqlProfile()
+
+	/**
+	 * The profile of a PostgreSQL server, with its installed extensions and pgvector status.
+	 *
+	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string,
+	 *     performanceNote: string, extensions: list<array{name: mixed, version: mixed}>}
+	 */
+	private function postgresProfile(): array {
+		$version = 'Unknown';
+		try {
+			preg_match('/PostgreSQL (\d+\.\d+)/', $this->serverVersion(), $matches);
+			$version = $matches[1] ?? 'Unknown';
+		} catch (Exception $e) {
+			// Reported as an unknown version.
+		}
+
+		$extensions = $this->postgresExtensions();
+		$profile = [
+			'type' => 'PostgreSQL',
+			'version' => $version,
+			'vectorSupport' => false,
+			'recommendedPlugin' => 'pgvector (not installed)',
+			'performanceNote' => 'Install pgvector extension: CREATE EXTENSION vector;',
+			'extensions' => $extensions,
+		];
+		if (in_array('vector', array_column($extensions, 'name'), true) === true) {
+			$profile['vectorSupport'] = true;
+			$profile['recommendedPlugin'] = 'pgvector (installed)';
+			$profile['performanceNote'] = 'Optimal: Using database-level vector operations for fast semantic search.';
+		}
+
+		return $profile;
+	}//end postgresProfile()
+
+	/**
+	 * The database server's version string.
+	 *
+	 * @return mixed The result of SELECT VERSION().
+	 */
+	private function serverVersion() {
+		$stmt = $this->db->prepare('SELECT VERSION()');
+		$result = $stmt->execute();
+		return $result->fetchOne();
+	}//end serverVersion()
+
+	/**
+	 * The installed PostgreSQL extensions; empty when the catalog cannot be read.
+	 *
+	 * @return list<array{name: mixed, version: mixed}>
+	 */
+	private function postgresExtensions(): array {
+		$extensions = [];
+		try {
+			$stmt = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
+			$result = $stmt->execute();
+			while (is_array($row = $result->fetch()) === true) {
+				$extensions[] = [
+					'name' => $row['extname'],
+					'version' => $row['extversion'],
+				];
+			}
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[SettingsController] Failed to fetch PostgreSQL extensions',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+		}
+
+		return $extensions;
+	}//end postgresExtensions()
 
 	/**
 	 * Refresh database information
