@@ -938,61 +938,13 @@ class ChatController extends Controller {
 				);
 			}
 
-			// Get agent count, scoped to the active organisation.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('id', 'total'))
-				->from('openregister_agents')
-				->where(
-					$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
-				);
+			$totalAgents = $this->countByOrganisation(table: 'openregister_agents', organisationUuid: $organisationUuid);
+			$totalConversations = $this->countByOrganisation(table: 'openregister_conversations', organisationUuid: $organisationUuid);
 
-			$totalAgents = (int)$qb->executeQuery()->fetchOne();
-
-			// Get conversation count, scoped to the active organisation.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('id', 'total'))
-				->from('openregister_conversations')
-				->where(
-					$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
-				);
-
-			$totalConversations = (int)$qb->executeQuery()->fetchOne();
-
-			// Collect the ids of conversations scoped to the active
-			// organisation so messages (no organisation column of their
-			// own) can be scoped via their conversation_id foreign key.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id')
-				->from('openregister_conversations')
-				->where(
-					$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
-				);
-
-			$result = $qb->executeQuery();
-			$conversationIds = [];
-			while (($row = $result->fetch()) !== false) {
-				$conversationIds[] = (int)$row['id'];
-			}
-
-			$result->closeCursor();
-
-			// Get message count, scoped to the conversation ids collected above.
-			// An empty id list means no conversations matched, so the message
-			// count is trivially 0 — skip the query rather than issuing an
-			// invalid empty IN (...) clause.
-			$totalMessages = 0;
-			if (empty($conversationIds) === false) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($qb->func()->count('id', 'total'))
-					->from('openregister_messages')
-					->where(
-						$qb->expr()->in(
-							'conversation_id',
-							$qb->createNamedParameter($conversationIds, IQueryBuilder::PARAM_INT_ARRAY)
-						)
-					);
-				$totalMessages = (int)$qb->executeQuery()->fetchOne();
-			}
+			// Messages have no organisation column of their own, so they are
+			// scoped via the conversation ids of the active organisation.
+			$conversationIds = $this->organisationConversationIds(organisationUuid: $organisationUuid);
+			$totalMessages = $this->countMessagesIn(conversationIds: $conversationIds);
 
 			return new JSONResponse(
 				data: [
@@ -1021,4 +973,77 @@ class ChatController extends Controller {
 			);
 		}//end try
 	}//end getChatStats()
+
+	/**
+	 * Count the rows of a table that belong to an organisation.
+	 *
+	 * @param string $table            The table with an `organisation` column.
+	 * @param string $organisationUuid The organisation UUID.
+	 *
+	 * @return int The number of rows.
+	 */
+	private function countByOrganisation(string $table, string $organisationUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id', 'total'))
+			->from($table)
+			->where(
+				$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
+			);
+
+		return (int)$qb->executeQuery()->fetchOne();
+	}//end countByOrganisation()
+
+	/**
+	 * The ids of the conversations that belong to an organisation.
+	 *
+	 * @param string $organisationUuid The organisation UUID.
+	 *
+	 * @return array<int, int> The conversation ids.
+	 */
+	private function organisationConversationIds(string $organisationUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')
+			->from('openregister_conversations')
+			->where(
+				$qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
+			);
+
+		$result = $qb->executeQuery();
+		$conversationIds = [];
+		while (($row = $result->fetch()) !== false) {
+			$conversationIds[] = (int)$row['id'];
+		}
+
+		$result->closeCursor();
+
+		return $conversationIds;
+	}//end organisationConversationIds()
+
+	/**
+	 * Count the messages of the given conversations.
+	 *
+	 * An empty id list skips the query rather than issuing an invalid empty
+	 * IN (...) clause.
+	 *
+	 * @param array<int, int> $conversationIds The conversation ids.
+	 *
+	 * @return int The number of messages.
+	 */
+	private function countMessagesIn(array $conversationIds): int {
+		if (empty($conversationIds) === true) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id', 'total'))
+			->from('openregister_messages')
+			->where(
+				$qb->expr()->in(
+					'conversation_id',
+					$qb->createNamedParameter($conversationIds, IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			);
+
+		return (int)$qb->executeQuery()->fetchOne();
+	}//end countMessagesIn()
 }//end class
