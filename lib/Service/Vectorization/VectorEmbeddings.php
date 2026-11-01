@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vectorization;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
@@ -48,7 +49,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class VectorEmbeddings {
+class VectorEmbeddings implements EmbeddingGeneratorInterface {
 	/**
 	 * Constructor
 	 *

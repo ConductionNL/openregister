@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCP\IConfig;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -45,7 +46,7 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class CalendarEventService {
+class CalendarEventService implements ObjectCalendarEventsInterface {
 
 	/**
 	 * NC app id used for IConfig user-value persistence.

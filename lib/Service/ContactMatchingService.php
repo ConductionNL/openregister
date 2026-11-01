@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -41,7 +42,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ContactMatchingService {
+class ContactMatchingService implements ContactMatcherInterface {
 
 	/**
 	 * Cache TTL in seconds.

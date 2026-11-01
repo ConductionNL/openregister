@@ -74,7 +74,7 @@ use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -565,7 +565,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param IUserManager $userManager User manager for user operations
 	 * @param IAppConfig $appConfig App configuration for feature flags
 	 * @param LoggerInterface $logger Logger for debugging and monitoring
-	 * @param SettingsService $settingsService Settings service for configuration
+	 * @param AppSettingsInterface $settingsService Settings service for configuration
 	 * @param ContainerInterface $container Container for lazy loading services
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
@@ -581,7 +581,7 @@ class MagicMapper extends AbstractObjectMapper {
 		private readonly IUserManager $userManager,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly ContainerInterface $container,
 	) {
 		// Initialize specialized handlers for modular functionality.

@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -59,9 +59,9 @@ class ChatHealthController extends Controller {
 	/**
 	 * Settings service for LLM configuration lookup.
 	 *
-	 * @var SettingsService
+	 * @var AppSettingsInterface
 	 */
-	private readonly SettingsService $settingsService;
+	private readonly AppSettingsInterface $settingsService;
 
 	/**
 	 * Logger.
@@ -75,7 +75,7 @@ class ChatHealthController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param SettingsService $settingsService Settings service for LLM config
+	 * @param AppSettingsInterface $settingsService Settings service for LLM config
 	 * @param LoggerInterface $logger Logger for surfacing config errors
 	 *
 	 * @return void
@@ -83,7 +83,7 @@ class ChatHealthController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		SettingsService $settingsService,
+		AppSettingsInterface $settingsService,
 		LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -95,14 +95,14 @@ class FileChangeListener implements IEventListener {
 	/**
 	 * Constructor
 	 *
-	 * @param SettingsService $settingsService Settings service
+	 * @param AppSettingsInterface $settingsService Settings service
 	 * @param IJobList $jobList Job list for queuing background jobs
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {

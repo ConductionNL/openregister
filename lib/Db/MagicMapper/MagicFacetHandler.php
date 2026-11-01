@@ -147,9 +147,9 @@ class MagicFacetHandler {
 	/**
 	 * Cache handler for UUID to name resolution
 	 *
-	 * @var \OCA\OpenRegister\Service\Object\CacheHandler|null
+	 * @var \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null
 	 */
-	private ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null;
+	private ?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null;
 
 	/**
 	 * Distributed cache factory for persistent label caching
@@ -191,7 +191,7 @@ class MagicFacetHandler {
 	 *
 	 * @param IDBConnection $db Database connection for queries
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler Cache handler for name resolution
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null $cacheHandler Cache handler for name resolution
 	 * @param ICacheFactory|null $cacheFactory Cache factory for distributed caching
 	 * @param MagicSearchHandler|null $searchHandler Search handler for shared query building
 	 * @param ContainerInterface|null $container Container for lazy resolution
@@ -200,7 +200,7 @@ class MagicFacetHandler {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null,
+		?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null,
 		?ICacheFactory $cacheFactory = null,
 		?MagicSearchHandler $searchHandler = null,
 		?ContainerInterface $container = null,
@@ -257,7 +257,7 @@ class MagicFacetHandler {
 		$this->lazyResolved = true;
 
 		try {
-			$this->cacheHandler = $this->container->get(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+			$this->cacheHandler = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface::class);
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				message: '[MagicFacetHandler] CacheHandler not available: ' . $e->getMessage(),

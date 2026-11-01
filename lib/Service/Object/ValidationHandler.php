@@ -620,12 +620,12 @@ class ValidationHandler {
 	private function convertChunkToArrays(array $objectsChunk): array {
 		$objectsData = [];
 		foreach ($objectsChunk as $object) {
-			$objectData = $object->getObject();
 			if (is_array($object) === true) {
-				$objectData = $object;
+				$objectsData[] = $object;
+				continue;
 			}
 
-			$objectsData[] = $objectData;
+			$objectsData[] = $object->getObject();
 		}
 
 		return $objectsData;

@@ -89,6 +89,13 @@ class ValidateObject {
 	public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
 	/**
+	 * What a related-object reference matches: a UUID (optionally prefixed, or without dashes) or a numeric id.
+	 *
+	 * @var string
+	 */
+	private const UUID_REFERENCE_PATTERN = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
+	/**
 	 * Messages that name the property, one argument and the value: the argument key, its
 	 * default, and the sprintf template.
 	 *
@@ -649,7 +656,7 @@ class ValidateObject {
 		$this->dropUnusableRef(schema: $propertySchema);
 
 		// UUID pattern for related object references.
-		$uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+		$uuidPat = self::UUID_REFERENCE_PATTERN;
 
 		$this->applyInversedByRelation(propertySchema: $propertySchema, uuidPattern: $uuidPat);
 		$this->transformArrayItemsForOpenRegister(propertySchema: $propertySchema, uuidPattern: $uuidPat);
@@ -984,7 +991,7 @@ class ValidateObject {
 	 */
 	private function transformToUuidProperty(object $objectSchema): void {
 		// UUID pattern for related object references.
-		$uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+		$uuidPat = self::UUID_REFERENCE_PATTERN;
 
 		// If this property has inversedBy, it should support both objects and UUID strings.
 		if (($objectSchema->inversedBy ?? null) === null) {
@@ -1203,155 +1210,94 @@ class ValidateObject {
 	}//end getMixedValue()
 
 	/**
-	 * Transforms schema for validation by handling circular references, OpenRegister configurations, and schema resolution.
+	 * Transforms a schema for validation: self-references, OpenRegister object configurations and `$id`.
 	 *
-	 * This function combines all schema transformation steps into a single method:
-	 * 1. Detects and transforms circular references (self-references)
-	 * 2. Transforms OpenRegister-specific object configurations
-	 * 3. Resolves schema references
+	 * 1. A property that references the current schema becomes a UUID reference (see transformSelfReference())
+	 * 2. OpenRegister-specific object configurations are transformed
+	 * 3. `$id` is removed, to prevent duplicate schema ID errors
 	 *
-	 * @param object $schemaObject The schema object to transform
-	 * @param array $object The object data to transform
+	 * @param object $schemaObject      The schema object to transform
 	 * @param string $currentSchemaSlug The current schema slug to detect self-references
 	 *
-	 * @return (array|object)[] Array containing [transformedSchema, transformedObject]
-	 *
-	 * @psalm-return list{object, array}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex schema transformation with multiple scenarios
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema transformation logic
-	 * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates is a stateless enum-style helper
+	 * @return object The transformed schema
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array {
-
+	private function transformSchemaForValidation(object $schemaObject, string $currentSchemaSlug): object {
 		if (isset($schemaObject->properties) === false) {
-			return [$schemaObject, $object];
+			return $schemaObject;
 		}
 
-		$propertiesArray = (array)$schemaObject->properties;
-		// Step 1: Handle circular references.
-		foreach ($propertiesArray as $propertyName => $propertySchema) {
-			// Suppress unused variable warning for $propertyName - only processing schemas.
-			unset($propertyName);
-			// Check if this property has a $ref that references the current schema.
+		foreach ((array) $schemaObject->properties as $propertySchema) {
 			if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
-				// Check if this is a related-object with objectConfiguration.
-				// Handle both array and object formats for objectConfiguration.
-				$config = $propertySchema->objectConfiguration ?? null;
-				$handling = null;
-				if (is_array($config) === true && isset($config['handling']) === true) {
-					$handling = $config['handling'];
-				} elseif (is_object($config) === true && isset($config->handling) === true) {
-					$handling = $config->handling;
-				}
+				$this->transformSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug);
+			}
+		}
 
-				// UUID pattern for related object references.
-				$uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
-
-				if ($config !== null && ObjectHandling::relates($handling) === true) {
-					// Handle inversedBy relationships for single objects.
-					if (($propertySchema->inversedBy ?? null) !== null) {
-						// For inversedBy properties, allow objects, UUIDs, or null
-						// (pre-validation cascading will handle transformation).
-						$propertySchema->oneOf = [
-							(object)[
-								'type' => 'null',
-								'description' => 'No related object (inversedBy - managed by other side)',
-							],
-							(object)[
-								'type' => 'string',
-								'pattern' => $uuidPat,
-								'description' => 'UUID reference to a related object',
-							],
-							(object)[
-								'type' => 'object',
-								'description' => 'Nested object that will be created separately',
-							],
-						];
-						unset($propertySchema->type, $propertySchema->pattern);
-					}//end if
-
-					if (($propertySchema->inversedBy ?? null) === null) {
-						// For non-inversedBy properties, expect string UUID.
-						// Support prefixed UUIDs, UUIDs without dashes,
-						// and numeric IDs.
-						$uuidPattern = $uuidPat;
-						$propertySchema->type = 'string';
-						$propertySchema->pattern = $uuidPattern;
-						$desc = 'UUID reference to a related object (self-reference)';
-						$propertySchema->description = $desc;
-					}//end if
-
-					unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
-				} elseif (($propertySchema->type ?? null) !== null
-					&& $propertySchema->type === 'array'
-					&& (($propertySchema->items ?? null) !== null) === true
-					&& is_object($propertySchema->items) === true
-					&& $this->isSelfReference(
-						propertySchema: $propertySchema->items,
-						schemaSlug: $currentSchemaSlug
-					) === true
-				) {
-					// Check if array items are self-referencing.
-					$propertySchema->type = 'array';
-
-					// Handle inversedBy relationships differently for validation.
-					if (($propertySchema->items->inversedBy ?? null) !== null) {
-						// For inversedBy properties, allow objects or UUIDs
-						// (pre-validation cascading will handle transformation).
-						$propertySchema->type = 'array';
-						$propertySchema->items = (object)[
-							'oneOf' => [
-								(object)[
-									'type' => 'string',
-									'pattern' => $uuidPat,
-									'description' => 'UUID reference to a related object',
-								],
-								(object)[
-									'type' => 'object',
-									'description' => 'Nested object that will be created separately',
-								],
-							],
-						];
-					}//end if
-
-					if (($propertySchema->items->inversedBy ?? null) === null) {
-						// For non-inversedBy properties, expect array of UUIDs.
-						$propertySchema->items = (object)[
-							'type' => 'string',
-							'pattern' => $uuidPat,
-							'description' => 'UUID reference to a related object (self-reference)',
-						];
-					}//end if
-
-					unset($propertySchema->{'$ref'});
-
-					// Ensure items has a valid schema after transformation.
-					if (isset($propertySchema->items->type) === false && isset($propertySchema->items->oneOf) === false) {
-						$propertySchema->items->type = 'string';
-					}
-				}//end if
-
-				// Remove the $ref to prevent circular validation issues.
-				unset($propertySchema->{'$ref'});
-			}//end if
-		}//end foreach
-
-		// Step 2: Transform OpenRegister-specific object configurations.
 		$schemaObject = $this->transformOpenRegisterObjectConfigurations(schemaObject: $schemaObject);
 
-		// Step 3: Remove $id property to prevent duplicate schema ID errors.
 		if (($schemaObject->{'$id'} ?? null) !== null) {
 			unset($schemaObject->{'$id'});
 		}
 
-		// Step 4: Pre-process the schema to resolve all schema references (but skip UUID-transformed properties).
-		// Temporarily disable schema resolution to see if that's causing the duplicate schema ID issue.
-		// $schemaObject = $this->preprocessSchemaReferences($schemaObject, [], true);.
-		return [$schemaObject, $object];
+		return $schemaObject;
 	}//end transformSchemaForValidation()
+
+	/**
+	 * Rewrite a property that references the current schema, so validation does not recurse into it.
+	 *
+	 * A related-object or related-schema property becomes a UUID reference: with inversedBy it also
+	 * accepts null or a nested object, and it loses its own shape. An array whose items reference the
+	 * current schema becomes an array of UUID references. Either way the `$ref` is removed.
+	 *
+	 * @param object $propertySchema The self-referencing property schema, changed in place
+	 * @param string $schemaSlug     The current schema slug
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectHandling::relates is a stateless enum-style helper
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function transformSelfReference(object $propertySchema, string $schemaSlug): void {
+		$handling = $this->getMixedValue(data: ($propertySchema->objectConfiguration ?? null), key: 'handling');
+		if (ObjectHandling::relates($handling) === true) {
+			$this->transformSelfRelatedObject(propertySchema: $propertySchema);
+		} elseif (($propertySchema->type ?? null) === 'array'
+			&& is_object($propertySchema->items ?? null) === true
+			&& $this->isSelfReference(propertySchema: $propertySchema->items, schemaSlug: $schemaSlug) === true
+		) {
+			$propertySchema->items = (object)[
+				'type' => 'string',
+				'pattern' => self::UUID_REFERENCE_PATTERN,
+				'description' => 'UUID reference to a related object (self-reference)',
+			];
+		}
+
+		unset($propertySchema->{'$ref'});
+	}//end transformSelfReference()
+
+	/**
+	 * Turn a self-referencing related object into a UUID reference; with inversedBy, also null or a nested object.
+	 *
+	 * @param object $propertySchema The property schema, changed in place
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function transformSelfRelatedObject(object $propertySchema): void {
+		unset($propertySchema->properties, $propertySchema->required);
+		if (($propertySchema->inversedBy ?? null) !== null) {
+			$propertySchema->oneOf = $this->inversedByObjectAlternatives(uuidPattern: self::UUID_REFERENCE_PATTERN);
+			unset($propertySchema->type, $propertySchema->pattern);
+			return;
+		}
+
+		$propertySchema->type = 'string';
+		$propertySchema->pattern = self::UUID_REFERENCE_PATTERN;
+		$propertySchema->description = 'UUID reference to a related object (self-reference)';
+	}//end transformSelfRelatedObject()
 
 	/**
 	 * Cleans a schema object by removing all Nextcloud-specific metadata properties.
@@ -1681,7 +1627,7 @@ class ValidateObject {
 			unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
 
 			// UUID pattern for string validation.
-			$uuidPattern = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+			$uuidPattern = self::UUID_REFERENCE_PATTERN;
 
 			// Accept either a UUID string or an object with an id field.
 			// This allows flexibility in how related objects are submitted.
@@ -2015,9 +1961,8 @@ class ValidateObject {
 		}
 
 		// Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
-		[$schemaObject] = $this->transformSchemaForValidation(
+		$schemaObject = $this->transformSchemaForValidation(
 			schemaObject: $schemaObject,
-			object: [],
 			currentSchemaSlug: $currentSchemaSlug
 		);
 

@@ -23,13 +23,13 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -142,9 +142,9 @@ class RelationsController extends Controller {
 	/**
 	 * Task service.
 	 *
-	 * @var TaskService
+	 * @var ObjectCalendarTasksInterface
 	 */
-	private readonly TaskService $taskService;
+	private readonly ObjectCalendarTasksInterface $taskService;
 
 	/**
 	 * Email service.
@@ -156,9 +156,9 @@ class RelationsController extends Controller {
 	/**
 	 * Calendar event service.
 	 *
-	 * @var CalendarEventService
+	 * @var ObjectCalendarEventsInterface
 	 */
-	private readonly CalendarEventService $calendarEventService;
+	private readonly ObjectCalendarEventsInterface $calendarEventService;
 
 	/**
 	 * Contact service.
@@ -195,9 +195,9 @@ class RelationsController extends Controller {
 	 * @param IRequest $request HTTP request
 	 * @param ObjectService $objectService Object service
 	 * @param NoteService $noteService Note service
-	 * @param TaskService $taskService Task service
+	 * @param ObjectCalendarTasksInterface $taskService Task service
 	 * @param EmailService $emailService Email service
-	 * @param CalendarEventService $calendarEventService Calendar event service
+	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service
 	 * @param ContactService $contactService Contact service
 	 * @param DeckCardService $deckCardService Deck card service
 	 * @param LoggerInterface $logger PSR-3 logger
@@ -212,9 +212,9 @@ class RelationsController extends Controller {
 		IRequest $request,
 		ObjectService $objectService,
 		NoteService $noteService,
-		TaskService $taskService,
+		ObjectCalendarTasksInterface $taskService,
 		EmailService $emailService,
-		CalendarEventService $calendarEventService,
+		ObjectCalendarEventsInterface $calendarEventService,
 		ContactService $contactService,
 		DeckCardService $deckCardService,
 		LoggerInterface $logger,

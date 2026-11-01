@@ -27,7 +27,7 @@ use Exception;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStorageHandler;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -54,9 +54,9 @@ final class ChunkVectorizationBatch {
 	/**
 	 * Embedding coordinator
 	 *
-	 * @var VectorEmbeddings
+	 * @var EmbeddingGeneratorInterface
 	 */
-	private readonly VectorEmbeddings $embeddings;
+	private readonly EmbeddingGeneratorInterface $embeddings;
 
 	/**
 	 * Vector storage handler
@@ -88,7 +88,7 @@ final class ChunkVectorizationBatch {
 	 */
 	public function __construct(ContainerInterface $container) {
 		$this->chunkMapper    = $container->get(ChunkMapper::class);
-		$this->embeddings     = $container->get(VectorEmbeddings::class);
+		$this->embeddings     = $container->get(EmbeddingGeneratorInterface::class);
 		$this->storageHandler = $container->get(VectorStorageHandler::class);
 		$this->logger         = $container->get(LoggerInterface::class);
 	}//end __construct()
