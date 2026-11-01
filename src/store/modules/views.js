@@ -14,6 +14,59 @@ import { defineStore } from 'pinia'
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  */
+/**
+ * The parts of the search state a view saves: the configuration key, the
+ * search store field it is read from, the setter that applies it and the
+ * value saved when the field is empty. Applied in this order.
+ */
+const SEARCH_STATE = [
+	{
+		key: 'registers',
+		field: 'selectedRegisters',
+		setter: 'setSelectedRegisters',
+		empty: () => [],
+	},
+	{
+		key: 'schemas',
+		field: 'selectedSchemas',
+		setter: 'setSelectedSchemas',
+		empty: () => [],
+	},
+	{ key: 'source', field: 'source', setter: 'setSource', empty: () => 'auto' },
+	{
+		key: 'searchTerms',
+		field: 'searchTerms',
+		setter: 'setSearchTerms',
+		empty: () => [],
+	},
+	{
+		key: 'facetFilters',
+		field: 'facetFilters',
+		setter: 'setFacetFilters',
+		empty: () => ({}),
+	},
+	{
+		key: 'enabledFacets',
+		field: 'enabledFacets',
+		setter: 'setEnabledFacets',
+		empty: () => ({}),
+	},
+	{
+		key: 'advancedFilters',
+		field: 'advancedFilters',
+		setter: 'setAdvancedFilters',
+		empty: () => ({}),
+	},
+	{
+		key: 'pagination',
+		field: 'pagination',
+		setter: 'setPagination',
+		empty: () => ({ page: 1, limit: 20 }),
+	},
+	{ key: 'sorting', field: 'sorting', setter: 'setSorting', empty: () => ({}) },
+	{ key: 'columns', field: 'columns', setter: 'setColumns', empty: () => ({}) },
+]
+
 export const useViewsStore = defineStore('views', {
 	state: () => ({
 		/**
@@ -401,53 +454,10 @@ export const useViewsStore = defineStore('views', {
 			}
 
 			const config = view.configuration
-
-			// Apply registers and schemas
-			if (config.registers) {
-				searchStore.setSelectedRegisters(config.registers)
-			}
-			if (config.schemas) {
-				searchStore.setSelectedSchemas(config.schemas)
-			}
-
-			// Apply source
-			if (config.source) {
-				searchStore.setSource(config.source)
-			}
-
-			// Apply search terms
-			if (config.searchTerms) {
-				searchStore.setSearchTerms(config.searchTerms)
-			}
-
-			// Apply facet filters
-			if (config.facetFilters) {
-				searchStore.setFacetFilters(config.facetFilters)
-			}
-
-			// Apply enabled facets
-			if (config.enabledFacets) {
-				searchStore.setEnabledFacets(config.enabledFacets)
-			}
-
-			// Apply advanced filters
-			if (config.advancedFilters) {
-				searchStore.setAdvancedFilters(config.advancedFilters)
-			}
-
-			// Apply pagination
-			if (config.pagination) {
-				searchStore.setPagination(config.pagination)
-			}
-
-			// Apply sorting
-			if (config.sorting) {
-				searchStore.setSorting(config.sorting)
-			}
-
-			// Apply columns
-			if (config.columns) {
-				searchStore.setColumns(config.columns)
+			for (const { key, setter } of SEARCH_STATE) {
+				if (config[key]) {
+					searchStore[setter](config[key])
+				}
 			}
 
 			this.setActiveView(view)
@@ -477,18 +487,12 @@ export const useViewsStore = defineStore('views', {
 				description,
 				isDefault,
 				isPublic,
-				configuration: {
-					registers: searchStore.selectedRegisters || [],
-					schemas: searchStore.selectedSchemas || [],
-					source: searchStore.source || 'auto',
-					searchTerms: searchStore.searchTerms || [],
-					facetFilters: searchStore.facetFilters || {},
-					enabledFacets: searchStore.enabledFacets || {},
-					advancedFilters: searchStore.advancedFilters || {},
-					pagination: searchStore.pagination || { page: 1, limit: 20 },
-					sorting: searchStore.sorting || {},
-					columns: searchStore.columns || {},
-				},
+				configuration: Object.fromEntries(
+					SEARCH_STATE.map(({ key, field, empty }) => [
+						key,
+						searchStore[field] || empty(),
+					]),
+				),
 			}
 		},
 
