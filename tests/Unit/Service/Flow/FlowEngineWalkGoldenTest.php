@@ -212,6 +212,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			'linear-double' => ['flow' => 'linear', 'behaviour' => ['two' => 'double']],
 			'split-suspend' => ['flow' => 'split', 'behaviour' => ['advice' => 'suspend']],
 			'split-clean' => ['flow' => 'split'],
+			'split-hearing-doubles-advice-stops' => ['flow' => 'split', 'behaviour' => ['hearing' => 'double', 'advice' => 'stop']],
+			'split-advice-doubles-hearing-stops' => ['flow' => 'split', 'behaviour' => ['advice' => 'double', 'hearing' => 'stop']],
+			'split-hearing-doubles-advice-fails' => ['flow' => 'split', 'behaviour' => ['hearing' => 'double', 'advice' => 'fail']],
+			'split-hearing-doubles-advice-waits' => ['flow' => 'split', 'behaviour' => ['hearing' => 'double', 'advice' => 'suspend']],
 			'stop-author' => ['flow' => 'linear', 'behaviour' => ['two' => 'stop']],
 			'stop-error' => ['flow' => 'linear', 'behaviour' => ['two' => 'stop-error']],
 			'fail-default' => ['flow' => 'linear', 'behaviour' => ['two' => 'fail']],
@@ -583,7 +587,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 					}
 				}
 
+				// The committed place items carry a marker, so the walk is seen
+				// to continue from what was committed rather than from its own copy.
 				$exhausted = [];
+				$placeItems['committed-' . $firings] = [];
 				return new FlowFiringResult(marking: $marking, placeItems: $placeItems, streams: [], firings: $firings);
 			}
 		);

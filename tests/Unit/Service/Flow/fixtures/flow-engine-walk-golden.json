@@ -3462,6 +3462,171 @@
             ]
         ]
     },
+    "single:split-advice-doubles-hearing-stops": {
+        "result": {
+            "status": "stopped",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "type": "t.advice",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 2,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                {
+                    "transition": "hearing",
+                    "startedAt": "~",
+                    "type": "t.hearing",
+                    "status": "stopped",
+                    "reason": "author stop at hearing",
+                    "checkId": null,
+                    "durationMs": "~"
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "error": null
+        },
+        "marking": {
+            "hearing": 1,
+            "end:advice": 1
+        },
+        "trace": [
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "push",
+                "run-1",
+                "hearing",
+                12
+            ],
+            [
+                "dispatch",
+                "hearing",
+                1
+            ],
+            [
+                "pop"
+            ]
+        ]
+    },
     "single:split-clean": {
         "result": {
             "status": "completed",
@@ -3693,6 +3858,322 @@
             [
                 "dispatch",
                 "done",
+                1
+            ],
+            [
+                "pop"
+            ]
+        ]
+    },
+    "single:split-hearing-doubles-advice-fails": {
+        "result": {
+            "status": "failed",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "type": "t.advice",
+                    "status": "failed",
+                    "error": "boom at advice",
+                    "durationMs": "~"
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "error": "boom at advice"
+        },
+        "marking": {
+            "advice": 1,
+            "hearing": 1
+        },
+        "trace": [
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
+                1
+            ],
+            [
+                "log",
+                "warning",
+                "[FlowEngine] Flow step failed",
+                {
+                    "flow": "split",
+                    "transition": "advice",
+                    "policy": "stop",
+                    "error": "boom at advice"
+                }
+            ],
+            [
+                "pop"
+            ]
+        ]
+    },
+    "single:split-hearing-doubles-advice-stops": {
+        "result": {
+            "status": "stopped",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "type": "t.advice",
+                    "status": "stopped",
+                    "reason": "author stop at advice",
+                    "checkId": null,
+                    "durationMs": "~"
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "error": null
+        },
+        "marking": {
+            "advice": 1,
+            "hearing": 1
+        },
+        "trace": [
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
+                1
+            ],
+            [
+                "pop"
+            ]
+        ]
+    },
+    "single:split-hearing-doubles-advice-waits": {
+        "result": {
+            "status": "suspended",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "status": "suspended",
+                    "reason": "waiting on advice"
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "resumeAt": "2030-01-01T00:00:00+00:00"
+        },
+        "marking": {
+            "advice": 1,
+            "hearing": 1
+        },
+        "trace": [
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
                 1
             ],
             [
@@ -4796,6 +5277,7 @@
                     "three"
                 ],
                 {
+                    "committed-1": 0,
                     "three": 1
                 },
                 [
@@ -4867,6 +5349,8 @@
                     "end:three"
                 ],
                 {
+                    "committed-1": 0,
+                    "committed-2": 0,
                     "end:three": 1
                 },
                 [
@@ -5277,6 +5761,7 @@
                 ],
                 {
                     "hearing": 1,
+                    "committed-1": 0,
                     "end:advice": 1
                 },
                 [
@@ -5386,7 +5871,9 @@
                     "done"
                 ],
                 {
+                    "committed-1": 0,
                     "end:advice": 1,
+                    "committed-2": 0,
                     "done": 1
                 },
                 [
@@ -5469,7 +5956,10 @@
                     "end:done"
                 ],
                 {
+                    "committed-1": 0,
                     "end:advice": 1,
+                    "committed-2": 0,
+                    "committed-3": 0,
                     "end:done": 1
                 },
                 [
@@ -6088,6 +6578,7 @@
                 ],
                 {
                     "hearing": 1,
+                    "committed-1": 0,
                     "end:advice": 1
                 },
                 [
@@ -6701,6 +7192,7 @@
                     "end:b"
                 ],
                 {
+                    "committed-1": 0,
                     "end:b": 1
                 },
                 [
@@ -7046,6 +7538,7 @@
                     "end:b"
                 ],
                 {
+                    "committed-1": 0,
                     "end:b": 1
                 },
                 [
@@ -7436,6 +7929,7 @@
                     "three"
                 ],
                 {
+                    "committed-1": 0,
                     "three": 1
                 },
                 [
@@ -7535,6 +8029,8 @@
                     "end:three"
                 ],
                 {
+                    "committed-1": 0,
+                    "committed-2": 0,
                     "end:three": 1
                 },
                 [
@@ -7961,6 +8457,7 @@
                     "three"
                 ],
                 {
+                    "committed-1": 0,
                     "three": 2
                 },
                 [
@@ -8069,6 +8566,8 @@
                     "end:three"
                 ],
                 {
+                    "committed-1": 0,
+                    "committed-2": 0,
                     "end:three": 2
                 },
                 [
@@ -8833,6 +9332,7 @@
                     "three"
                 ],
                 {
+                    "committed-1": 0,
                     "three": 1
                 },
                 [
@@ -8932,6 +9432,8 @@
                     "end:three"
                 ],
                 {
+                    "committed-1": 0,
+                    "committed-2": 0,
                     "end:three": 1
                 },
                 [
@@ -9289,6 +9791,7 @@
                     "three"
                 ],
                 {
+                    "committed-1": 0,
                     "three": 1
                 },
                 [
@@ -9358,6 +9861,8 @@
                     "end:three"
                 ],
                 {
+                    "committed-1": 0,
+                    "committed-2": 0,
                     "end:three": 1
                 },
                 [
@@ -9814,6 +10319,7 @@
                 ],
                 {
                     "hearing": 1,
+                    "committed-1": 0,
                     "end:advice": 1
                 },
                 [
@@ -9901,7 +10407,9 @@
                     "done"
                 ],
                 {
+                    "committed-1": 0,
                     "end:advice": 1,
+                    "committed-2": 0,
                     "done": 2
                 },
                 [
@@ -9982,7 +10490,10 @@
                     "end:done"
                 ],
                 {
+                    "committed-1": 0,
                     "end:advice": 1,
+                    "committed-2": 0,
+                    "committed-3": 0,
                     "end:done": 2
                 },
                 [
@@ -10367,6 +10878,7 @@
                 ],
                 {
                     "hearing": 1,
+                    "committed-1": 0,
                     "end:advice": 1
                 },
                 [
@@ -10756,6 +11268,7 @@
                     "three"
                 ],
                 {
+                    "committed-1": 0,
                     "three": 1
                 },
                 [
@@ -11133,6 +11646,7 @@
                 ],
                 {
                     "end:advice": 1,
+                    "committed-1": 0,
                     "end:hearing": 1
                 },
                 [
@@ -11220,6 +11734,404 @@
                 "finalize",
                 false,
                 null
+            ]
+        ]
+    },
+    "stream:split-advice-doubles-hearing-stops": {
+        "result": {
+            "status": "stopped",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~",
+                    "recorded": true,
+                    "streamId": "s1",
+                    "ordinalPath": "gone",
+                    "firings": 1
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "type": "t.advice",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 2,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~",
+                    "recorded": true,
+                    "streamId": "s1.1",
+                    "ordinalPath": "0001.0001",
+                    "firings": 2
+                },
+                {
+                    "transition": "hearing",
+                    "startedAt": "~",
+                    "type": "t.hearing",
+                    "status": "stopped",
+                    "reason": "author stop at hearing",
+                    "checkId": null,
+                    "durationMs": "~",
+                    "streamId": "s1.2",
+                    "ordinalPath": "0001.0002"
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "error": null
+        },
+        "marking": {
+            "hearing": 1,
+            "end:advice": 1
+        },
+        "trace": [
+            [
+                "begin",
+                {
+                    "start": 1
+                }
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1"
+            ],
+            [
+                "claim",
+                "s1",
+                "start",
+                [
+                    "start",
+                    "advice",
+                    "hearing"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "workRemains",
+                [
+                    "advice",
+                    "hearing"
+                ],
+                null,
+                [
+                    "advice",
+                    "hearing"
+                ],
+                true
+            ],
+            [
+                "commitFiring",
+                "s1",
+                "start",
+                [
+                    "start"
+                ],
+                [
+                    "advice",
+                    "hearing"
+                ],
+                {
+                    "advice": 1,
+                    "hearing": 1
+                },
+                [
+                    "advice",
+                    "hearing",
+                    "start"
+                ],
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                true,
+                "running",
+                null
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.1"
+            ],
+            [
+                "claim",
+                "s1.1",
+                "advice",
+                [
+                    "advice",
+                    "end:advice"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "workRemains",
+                [
+                    "hearing"
+                ],
+                null,
+                [
+                    "end:advice"
+                ],
+                true
+            ],
+            [
+                "commitFiring",
+                "s1.1",
+                "advice",
+                [
+                    "advice"
+                ],
+                [
+                    "end:advice"
+                ],
+                {
+                    "hearing": 1,
+                    "committed-1": 0,
+                    "end:advice": 2
+                },
+                [
+                    "advice",
+                    "end:advice"
+                ],
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "type": "t.advice",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 2,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                true,
+                "running",
+                null
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.2"
+            ],
+            [
+                "claim",
+                "s1.2",
+                "hearing",
+                [
+                    "hearing",
+                    "done"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "hearing",
+                12
+            ],
+            [
+                "dispatch",
+                "hearing",
+                1
+            ],
+            [
+                "release",
+                [
+                    "done",
+                    "hearing"
+                ]
+            ],
+            [
+                "finalize",
+                false,
+                "stopped"
+            ],
+            [
+                "pop"
             ]
         ]
     },
@@ -11583,6 +12495,7 @@
                 ],
                 {
                     "hearing": 1,
+                    "committed-1": 0,
                     "end:advice": 1
                 },
                 [
@@ -11684,7 +12597,9 @@
                     "done"
                 ],
                 {
+                    "committed-1": 0,
                     "end:advice": 1,
+                    "committed-2": 0,
                     "done": 1
                 },
                 [
@@ -11795,7 +12710,10 @@
                     "end:done"
                 ],
                 {
+                    "committed-1": 0,
                     "end:advice": 1,
+                    "committed-2": 0,
+                    "committed-3": 0,
                     "end:done": 1
                 },
                 [
@@ -11877,6 +12795,1117 @@
             [
                 "workRemains",
                 [],
+                null,
+                [],
+                false
+            ],
+            [
+                "finalize",
+                false,
+                null
+            ]
+        ]
+    },
+    "stream:split-hearing-doubles-advice-fails": {
+        "result": {
+            "status": "failed",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~",
+                    "recorded": true,
+                    "streamId": "s1",
+                    "ordinalPath": "gone",
+                    "firings": 1
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "type": "t.advice",
+                    "status": "failed",
+                    "error": "boom at advice",
+                    "durationMs": "~",
+                    "streamId": "s1.1",
+                    "ordinalPath": "0001.0001"
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "error": "boom at advice"
+        },
+        "marking": {
+            "advice": 1,
+            "hearing": 1
+        },
+        "trace": [
+            [
+                "begin",
+                {
+                    "start": 1
+                }
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1"
+            ],
+            [
+                "claim",
+                "s1",
+                "start",
+                [
+                    "start",
+                    "advice",
+                    "hearing"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "workRemains",
+                [
+                    "advice",
+                    "hearing"
+                ],
+                null,
+                [
+                    "advice",
+                    "hearing"
+                ],
+                true
+            ],
+            [
+                "commitFiring",
+                "s1",
+                "start",
+                [
+                    "start"
+                ],
+                [
+                    "advice",
+                    "hearing"
+                ],
+                {
+                    "advice": 1,
+                    "hearing": 1
+                },
+                [
+                    "advice",
+                    "hearing",
+                    "start"
+                ],
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                true,
+                "running",
+                null
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.1"
+            ],
+            [
+                "claim",
+                "s1.1",
+                "advice",
+                [
+                    "advice",
+                    "end:advice"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
+                1
+            ],
+            [
+                "log",
+                "warning",
+                "[FlowEngine] Flow step failed",
+                {
+                    "flow": "split",
+                    "transition": "advice",
+                    "policy": "stop",
+                    "error": "boom at advice"
+                }
+            ],
+            [
+                "endStream",
+                "s1.1",
+                "failed",
+                "boom at advice",
+                [
+                    "advice",
+                    "end:advice"
+                ],
+                false
+            ],
+            [
+                "finalize",
+                false,
+                "failed"
+            ],
+            [
+                "pop"
+            ]
+        ]
+    },
+    "stream:split-hearing-doubles-advice-stops": {
+        "result": {
+            "status": "stopped",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~",
+                    "recorded": true,
+                    "streamId": "s1",
+                    "ordinalPath": "gone",
+                    "firings": 1
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "type": "t.advice",
+                    "status": "stopped",
+                    "reason": "author stop at advice",
+                    "checkId": null,
+                    "durationMs": "~",
+                    "streamId": "s1.1",
+                    "ordinalPath": "0001.0001"
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "error": null
+        },
+        "marking": {
+            "advice": 1,
+            "hearing": 1
+        },
+        "trace": [
+            [
+                "begin",
+                {
+                    "start": 1
+                }
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1"
+            ],
+            [
+                "claim",
+                "s1",
+                "start",
+                [
+                    "start",
+                    "advice",
+                    "hearing"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "workRemains",
+                [
+                    "advice",
+                    "hearing"
+                ],
+                null,
+                [
+                    "advice",
+                    "hearing"
+                ],
+                true
+            ],
+            [
+                "commitFiring",
+                "s1",
+                "start",
+                [
+                    "start"
+                ],
+                [
+                    "advice",
+                    "hearing"
+                ],
+                {
+                    "advice": 1,
+                    "hearing": 1
+                },
+                [
+                    "advice",
+                    "hearing",
+                    "start"
+                ],
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                true,
+                "running",
+                null
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.1"
+            ],
+            [
+                "claim",
+                "s1.1",
+                "advice",
+                [
+                    "advice",
+                    "end:advice"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
+                1
+            ],
+            [
+                "release",
+                [
+                    "advice",
+                    "end:advice"
+                ]
+            ],
+            [
+                "finalize",
+                false,
+                "stopped"
+            ],
+            [
+                "pop"
+            ]
+        ]
+    },
+    "stream:split-hearing-doubles-advice-waits": {
+        "result": {
+            "status": "suspended",
+            "log": [
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~",
+                    "recorded": true,
+                    "streamId": "s1",
+                    "ordinalPath": "gone",
+                    "firings": 1
+                },
+                {
+                    "transition": "advice",
+                    "startedAt": "~",
+                    "status": "suspended",
+                    "reason": "waiting on advice",
+                    "streamId": "s1.1",
+                    "ordinalPath": "0001.0001"
+                },
+                {
+                    "transition": "hearing",
+                    "startedAt": "~",
+                    "type": "t.hearing",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 2,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~",
+                    "recorded": true,
+                    "streamId": "s1.2",
+                    "ordinalPath": "0001.0002",
+                    "firings": 2
+                },
+                {
+                    "transition": "done",
+                    "startedAt": "~",
+                    "type": "t.done",
+                    "status": "completed",
+                    "itemsIn": 2,
+                    "itemsOut": 2,
+                    "input": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~",
+                    "recorded": true,
+                    "streamId": "s1.2",
+                    "ordinalPath": "0001.0002",
+                    "firings": 3
+                }
+            ],
+            "context": {
+                "x-openregister-attribution-run": "run-1",
+                "x-openregister-attribution-base": 10
+            },
+            "items": [
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                },
+                {
+                    "json": {
+                        "n": 1
+                    },
+                    "binary": [],
+                    "pairedItem": {
+                        "item": 0
+                    }
+                }
+            ],
+            "resumeAt": "2030-01-01T00:00:00+00:00"
+        },
+        "marking": {
+            "advice": 1,
+            "end:done": 1
+        },
+        "trace": [
+            [
+                "begin",
+                {
+                    "start": 1
+                }
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1"
+            ],
+            [
+                "claim",
+                "s1",
+                "start",
+                [
+                    "start",
+                    "advice",
+                    "hearing"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "start",
+                10
+            ],
+            [
+                "dispatch",
+                "start",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "workRemains",
+                [
+                    "advice",
+                    "hearing"
+                ],
+                null,
+                [
+                    "advice",
+                    "hearing"
+                ],
+                true
+            ],
+            [
+                "commitFiring",
+                "s1",
+                "start",
+                [
+                    "start"
+                ],
+                [
+                    "advice",
+                    "hearing"
+                ],
+                {
+                    "advice": 1,
+                    "hearing": 1
+                },
+                [
+                    "advice",
+                    "hearing",
+                    "start"
+                ],
+                {
+                    "transition": "start",
+                    "startedAt": "~",
+                    "type": "t.start",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 1,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": null
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                true,
+                "running",
+                null
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.1"
+            ],
+            [
+                "claim",
+                "s1.1",
+                "advice",
+                [
+                    "advice",
+                    "end:advice"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "advice",
+                11
+            ],
+            [
+                "dispatch",
+                "advice",
+                1
+            ],
+            [
+                "workRemains",
+                [
+                    "advice",
+                    "hearing"
+                ],
+                "s1.1",
+                [],
+                true
+            ],
+            [
+                "park",
+                "s1.1",
+                "2030-01-01T00:00:00+00:00",
+                "waiting on advice",
+                [
+                    "advice",
+                    "end:advice"
+                ],
+                true
+            ],
+            [
+                "pop"
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.2"
+            ],
+            [
+                "claim",
+                "s1.2",
+                "hearing",
+                [
+                    "hearing",
+                    "done"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "hearing",
+                12
+            ],
+            [
+                "dispatch",
+                "hearing",
+                1
+            ],
+            [
+                "pop"
+            ],
+            [
+                "workRemains",
+                [
+                    "advice",
+                    "done"
+                ],
+                null,
+                [
+                    "done"
+                ],
+                true
+            ],
+            [
+                "commitFiring",
+                "s1.2",
+                "hearing",
+                [
+                    "hearing"
+                ],
+                [
+                    "done"
+                ],
+                {
+                    "advice": 1,
+                    "committed-1": 0,
+                    "done": 2
+                },
+                [
+                    "done",
+                    "hearing"
+                ],
+                {
+                    "transition": "hearing",
+                    "startedAt": "~",
+                    "type": "t.hearing",
+                    "status": "completed",
+                    "itemsIn": 1,
+                    "itemsOut": 2,
+                    "input": {
+                        "count": 1,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                true,
+                "running",
+                null
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.2"
+            ],
+            [
+                "claim",
+                "s1.2",
+                "done",
+                [
+                    "done",
+                    "end:done"
+                ]
+            ],
+            [
+                "push",
+                "run-1",
+                "done",
+                13
+            ],
+            [
+                "dispatch",
+                "done",
+                2
+            ],
+            [
+                "pop"
+            ],
+            [
+                "workRemains",
+                [
+                    "advice"
+                ],
+                null,
+                [
+                    "end:done"
+                ],
+                false
+            ],
+            [
+                "commitFiring",
+                "s1.2",
+                "done",
+                [
+                    "done"
+                ],
+                [
+                    "end:done"
+                ],
+                {
+                    "advice": 1,
+                    "committed-1": 0,
+                    "committed-2": 0,
+                    "end:done": 2
+                },
+                [
+                    "done",
+                    "end:done"
+                ],
+                {
+                    "transition": "done",
+                    "startedAt": "~",
+                    "type": "t.done",
+                    "status": "completed",
+                    "itemsIn": 2,
+                    "itemsOut": 2,
+                    "input": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "output": {
+                        "count": 2,
+                        "truncated": false,
+                        "items": [
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            },
+                            {
+                                "json": {
+                                    "n": 1
+                                },
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "durationMs": "~"
+                },
+                false,
+                "running",
+                null
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                "s1.2"
+            ],
+            [
+                "exhaust",
+                "s1.2"
+            ],
+            [
+                "budgetSpent"
+            ],
+            [
+                "nextStream",
+                null
+            ],
+            [
+                "workRemains",
+                [
+                    "advice"
+                ],
                 null,
                 [],
                 false
@@ -12266,6 +14295,7 @@
                 ],
                 {
                     "advice": 1,
+                    "committed-1": 0,
                     "done": 1
                 },
                 [
@@ -12368,6 +14398,8 @@
                 ],
                 {
                     "advice": 1,
+                    "committed-1": 0,
+                    "committed-2": 0,
                     "end:done": 1
                 },
                 [
@@ -12715,6 +14747,7 @@
                     "end:three"
                 ],
                 {
+                    "committed-1": 0,
                     "end:three": 1
                 },
                 [
@@ -13523,6 +15556,7 @@
                     "end:hi"
                 ],
                 {
+                    "committed-1": 0,
                     "end:hi": 1
                 },
                 [
@@ -13877,6 +15911,7 @@
                     "end:lo"
                 ],
                 {
+                    "committed-1": 0,
                     "end:lo": 1
                 },
                 [
