@@ -40,12 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use DateTime;
-use Exception;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStorageHandler;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -75,11 +70,6 @@ class ChunkVectorizationJob extends TimedJob {
 	 * Interval: 5 minutes (matches BlobMigrationJob::INTERVAL)
 	 */
 	private const INTERVAL = 5 * 60;
-
-	/**
-	 * Maximum chunks to embed per run (bounded provider calls)
-	 */
-	private const BATCH_SIZE = 50;
 
 	/**
 	 * Maximum BLOB rows to convert to pgvector per run (cheap, no provider calls)
@@ -120,54 +110,14 @@ class ChunkVectorizationJob extends TimedJob {
 
 		$logger = $this->container->get(LoggerInterface::class);
 		$appConfig = $this->container->get(IAppConfig::class);
-		$chunkMapper = $this->container->get(ChunkMapper::class);
-		$embeddings = $this->container->get(VectorEmbeddings::class);
-		$storageHandler = $this->container->get(VectorStorageHandler::class);
 
 		$logger->debug(
 			message: '[ChunkVectorizationJob] Starting chunk vectorization batch',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		$vectorized = 0;
-		$failed = 0;
-
-		try {
-			[$vectorized, $failed] = $this->vectorizeChunks(
-				chunkMapper: $chunkMapper,
-				embeddings: $embeddings,
-				storageHandler: $storageHandler,
-				logger: $logger
-			);
-		} catch (\Throwable $e) {
-			$logger->warning(
-				message: '[ChunkVectorizationJob] Chunk vectorization batch failed '
-					. '(embedding provider unavailable or misconfigured?)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-		}
-
-		// The pgvector warm-up backfill (job-only warm-up, DECIDED 2026-07-06).
-		$backfill = ['converted' => 0, 'failed' => 0, 'remaining' => 0];
-		try {
-			$backfill = $this->runWarmupBackfill(
-				storageHandler: $storageHandler,
-				appConfig: $appConfig
-			);
-		} catch (\Throwable $e) {
-			$logger->error(
-				message: '[ChunkVectorizationJob] pgvector warm-up backfill failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-		}
+		[$vectorized, $failed] = $this->vectorizeBatch(logger: $logger);
+		$backfill = $this->runBackfill(logger: $logger, appConfig: $appConfig);
 
 		$appConfig->setValueString(
 			app: 'openregister',
@@ -198,114 +148,61 @@ class ChunkVectorizationJob extends TimedJob {
 	}//end run()
 
 	/**
-	 * Vectorize a batch of unvectorized chunks.
+	 * Vectorize one batch of chunks; a provider-level failure is logged and counts as nothing done.
 	 *
-	 * A single chunk's embedding or storage failure is logged and skipped —
-	 * the rest of the batch continues, and the failed chunk stays
-	 * `vectorized = false` for retry on the next scheduled run.
-	 *
-	 * @param ChunkMapper $chunkMapper Chunk mapper
-	 * @param VectorEmbeddings $embeddings Embedding coordinator
-	 * @param VectorStorageHandler $storageHandler Vector storage handler
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return array{0: int, 1: int} [vectorized count, failed count]
 	 *
-	 * @throws Exception When the batch-embedding call itself fails (e.g. no provider configured)
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2
 	 */
-	private function vectorizeChunks(
-		ChunkMapper $chunkMapper,
-		VectorEmbeddings $embeddings,
-		VectorStorageHandler $storageHandler,
-		LoggerInterface $logger,
-	): array {
-		$chunks = $chunkMapper->findUnvectorized(limit: self::BATCH_SIZE);
-
-		if ($chunks === []) {
+	private function vectorizeBatch(LoggerInterface $logger): array {
+		$batch = new ChunkVectorizationBatch(container: $this->container);
+		try {
+			return $batch->vectorize();
+		} catch (\Throwable $e) {
+			$logger->warning(
+				message: '[ChunkVectorizationJob] Chunk vectorization batch failed '
+					. '(embedding provider unavailable or misconfigured?)',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
 			return [0, 0];
 		}
+	}//end vectorizeBatch()
 
-		$texts = array_map(
-			static fn (Chunk $chunk): string => (string)$chunk->getTextContent(),
-			$chunks
-		);
-
-		// The batch-embedding call tolerates per-text failures (null embedding
-		// entries) but throws when the provider itself is unavailable.
-		$embeddingResults = $embeddings->generateBatchEmbeddings($texts);
-
-		$vectorized = 0;
-		$failed = 0;
-		$totalChunksCache = [];
-
-		foreach ($chunks as $index => $chunk) {
-			$embeddingData = $embeddingResults[$index] ?? null;
-
-			if ($embeddingData === null || ($embeddingData['embedding'] ?? null) === null) {
-				$failed++;
-				$logger->warning(
-					message: '[ChunkVectorizationJob] Embedding failed for chunk, will retry next run',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'chunk_id' => $chunk->getId(),
-						'error' => $embeddingData['error'] ?? 'No embedding returned',
-					]
-				);
-				continue;
-			}
-
-			try {
-				$sourceKey = $chunk->getSourceType() . '_' . $chunk->getSourceId();
-				if (isset($totalChunksCache[$sourceKey]) === false) {
-					$totalChunksCache[$sourceKey] = count(
-						$chunkMapper->findBySource(
-							sourceType: (string)$chunk->getSourceType(),
-							sourceId: (int)$chunk->getSourceId()
-						)
-					);
-				}
-
-				$storageHandler->storeVector(
-					entityType: (string)$chunk->getSourceType(),
-					entityId: (string)$chunk->getSourceId(),
-					embedding: $embeddingData['embedding'],
-					model: (string)$embeddingData['model'],
-					dimensions: (int)$embeddingData['dimensions'],
-					chunkIndex: (int)$chunk->getChunkIndex(),
-					totalChunks: max(1, $totalChunksCache[$sourceKey]),
-					chunkText: substr((string)$chunk->getTextContent(), 0, 500),
-					metadata: [
-						'source_id' => $chunk->getSourceId(),
-						'start_offset' => $chunk->getStartOffset(),
-						'end_offset' => $chunk->getEndOffset(),
-					]
-				);
-
-				$chunk->setVectorized(true);
-				$chunk->setUpdatedAt(new DateTime());
-				$chunkMapper->update($chunk);
-				$vectorized++;
-			} catch (Exception $e) {
-				$failed++;
-				$logger->warning(
-					message: '[ChunkVectorizationJob] Failed to store vector for chunk, will retry next run',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'chunk_id' => $chunk->getId(),
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return [$vectorized, $failed];
-	}//end vectorizeChunks()
+	/**
+	 * Run the pgvector warm-up backfill (job-only warm-up, DECIDED 2026-07-06); a failure is logged.
+	 *
+	 * @param LoggerInterface $logger    Logger
+	 * @param IAppConfig      $appConfig App config (cursor storage)
+	 *
+	 * @return array{converted: int, failed: int, remaining: int, ...}
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2
+	 */
+	private function runBackfill(LoggerInterface $logger, IAppConfig $appConfig): array {
+		$storageHandler = $this->container->get(VectorStorageHandler::class);
+		try {
+			return $this->runWarmupBackfill(
+				storageHandler: $storageHandler,
+				appConfig: $appConfig
+			);
+		} catch (\Throwable $e) {
+			$logger->error(
+				message: '[ChunkVectorizationJob] pgvector warm-up backfill failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
+			return ['converted' => 0, 'failed' => 0, 'remaining' => 0];
+		}
+	}//end runBackfill()
 
 	/**
 	 * Run one pgvector warm-up backfill batch with cursor tracking.
