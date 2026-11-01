@@ -6,6 +6,7 @@ import {
 	getListPage,
 	listPageQuery,
 	listPagination,
+	requestJson,
 } from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -185,19 +186,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			this.statisticsLoading = true
 
 			try {
-				const response = await fetch(`${apiUrl}/audit-trails/statistics`, {
+				const data = await requestJson(`${apiUrl}/audit-trails/statistics`, {
 					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to fetch statistics',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch statistics')
-				}
 
 				this.setStatistics(data)
 				return data
@@ -219,19 +211,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		async deleteAuditTrail(id) {
 			try {
-				const response = await fetch(`${apiUrl}/audit-trails/${id}`, {
+				const data = await requestJson(`${apiUrl}/audit-trails/${id}`, {
 					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to delete audit trail',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to delete audit trail')
-				}
 
 				// Remove from audit trail list
 				this.auditTrailList = this.auditTrailList.filter(
@@ -255,20 +238,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		async deleteMultipleAuditTrails(ids) {
 			try {
-				const response = await fetch(`${apiUrl}/audit-trails`, {
+				const data = await requestJson(`${apiUrl}/audit-trails`, {
 					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-					body: JSON.stringify({ ids }),
+					body: { ids },
+					failure: 'Failed to delete audit trails',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to delete audit trails')
-				}
 
 				// Remove deleted audit trails from list
 				this.auditTrailList = this.auditTrailList.filter(
