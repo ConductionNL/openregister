@@ -262,78 +262,39 @@ class QueryHandler {
 			throw new Exception('Refusing a view-scoped search without a view to scope it by.');
 		}
 
-		// Detect if complex rendering is needed (extend, fields, filter, unset).
-		$hasComplexRendering = empty($query['_extend'] ?? []) === false
-			|| empty($query['_fields'] ?? null) === false
-			|| empty($query['_filter'] ?? null) === false
-			|| empty($query['_unset'] ?? null) === false;
-
-		// Get active organization context for multi-tenancy.
-		$activeOrgUuid = null;
-		if ($_multitenancy === true) {
-			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
-		}
-
 		// Execute database search.
 		$result = $this->objectMapper->searchObjects(
 			query: $query,
-			_activeOrgUuid: $activeOrgUuid,
+			_activeOrgUuid: $this->activeOrganisation(multitenancy: $_multitenancy),
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
 			ids: $ids,
 			uses: $uses
 		);
 
-		// If _count is requested, return count instead of objects.
-		if (($query['_count'] ?? false) === true || ($query['_count'] ?? false) === 'true') {
-			return count($result);
-		}
-
-		// Check if any result object has a schema with property-level authorization.
-		// If yes, we need to render to filter unauthorized properties.
-		if ($hasComplexRendering === false && is_array($result) === true && empty($result) === false) {
-			$schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
-			$checkedSchemas = [];
-			foreach ($result as $object) {
-				$schemaId = $object->getSchema();
-				if (isset($checkedSchemas[$schemaId]) === true) {
-					if ($checkedSchemas[$schemaId] === true) {
-						$hasComplexRendering = true;
-						break;
-					}
-
-					continue;
-				}
-
-				try {
-					$schema = $schemaMapper->find($schemaId);
-					$checkedSchemas[$schemaId] = $schema->hasPropertyAuthorization();
-					if ($checkedSchemas[$schemaId] === true) {
-						$hasComplexRendering = true;
-						break;
-					}
-				} catch (\Exception $e) {
-					$checkedSchemas[$schemaId] = false;
-				}
-			}//end foreach
-		}//end if
-
-		// Return early if no complex rendering is needed.
-		if ($hasComplexRendering === false) {
-			return $result;
-		}
-
-		// Apply complex rendering (extend, fields, filter, unset).
-		return $this->renderHandler->renderEntities(
-			entities: $result,
-			_extend: $query['_extend'] ?? [],
-			_filter: $query['_filter'] ?? null,
-			_fields: $query['_fields'] ?? null,
-			_unset: $query['_unset'] ?? null,
-			_rbac: $_rbac,
-			_multitenancy: $_multitenancy
+		$shaper = new SearchResultShaper(renderHandler: $this->renderHandler, container: $this->container);
+		return $shaper->shape(
+			result: $result,
+			request: new SearchRenderRequest(query: $query, rbac: $_rbac, multitenancy: $_multitenancy)
 		);
 	}//end searchObjects()
+
+	/**
+	 * The active organisation a search is scoped to, or null without multitenancy.
+	 *
+	 * @param bool $multitenancy Whether multitenancy filtering applies.
+	 *
+	 * @return string|null The organisation uuid of the session context.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function activeOrganisation(bool $multitenancy): ?string {
+		if ($multitenancy === false) {
+			return null;
+		}
+
+		return $this->performanceHandler->getActiveOrganisationForContext();
+	}//end activeOrganisation()
 
 	/**
 	 * Search objects with pagination (main entry point).
