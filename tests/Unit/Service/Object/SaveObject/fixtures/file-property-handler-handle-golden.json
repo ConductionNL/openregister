@@ -268,6 +268,63 @@
         ],
         "exception": null
     },
+    "delete single, stored array": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": [
+                        42,
+                        43
+                    ]
+                }
+            },
+            {
+                "deleteFile": 42,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 42 for property doc",
+                "context": []
+            },
+            {
+                "deleteFile": 43,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 43 for property doc",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
     "delete array": {
         "object": {
             "other": "kept",

@@ -55,6 +55,7 @@ class FilePropertyHandlerHandleGoldenTest extends TestCase {
 			'delete single non-num'   => $this->scenario(properties: $single, stored: ['doc' => 'abc'], value: null, property: 'doc'),
 			'delete single empty'     => $this->scenario(properties: $single, stored: ['doc' => ''], value: null, property: 'doc'),
 			'delete nothing stored'   => $this->scenario(properties: $single, stored: [], value: null, property: 'doc'),
+			'delete single, stored array' => $this->scenario(properties: $single, stored: ['doc' => [42, 43]], value: null, property: 'doc'),
 			'delete array'            => $this->scenario(properties: $array, stored: ['docs' => [10, 'x', 13, '20']], value: [], property: 'docs'),
 			'delete array via null'   => $this->scenario(properties: $array, stored: ['docs' => [11]], value: null, property: 'docs'),
 			'array non-array value'   => $this->scenario(properties: $array, stored: [], value: self::FILE, property: 'docs'),
