@@ -699,6 +699,7 @@ import RbacTable from '../../components/RbacTable.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import RemoveUserDialog from './RemoveUserDialog.vue'
+import { searchGroupsDebounced } from '../../services/groupSearch.js'
 
 export default {
 	name: 'EditOrganisation',
@@ -890,63 +891,12 @@ export default {
 		 * @spec exclude Debounced group-autocomplete search; UI search plumbing.
 		 */
 		searchGroups(searchQuery) {
-			// Clear existing debounce timer
-			if (this.groupSearchDebounce) {
-				clearTimeout(this.groupSearchDebounce)
-			}
-
-			// If search is empty, load all cached groups
-			if (!searchQuery || searchQuery.trim() === '') {
-				this.loadNextcloudGroupsFromStore()
-				return
-			}
-
-			// Debounce the search by 300ms
-			this.groupSearchDebounce = setTimeout(async () => {
-				this.loadingGroups = true
-				try {
-					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(
-						`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`,
-						{
-							headers: {
-								'OCS-APIRequest': 'true',
-							},
-						},
-					)
-
-					if (response.ok) {
-						const data = await response.json()
-						if (data.ocs?.data?.groups) {
-							// Transform group IDs into objects
-							const searchResults = data.ocs.data.groups.map(
-								(groupId) => ({
-									id: groupId,
-									name: groupId,
-									userCount: 0,
-								}),
-							)
-
-							// Merge with already selected groups to ensure they remain visible
-							const selectedGroupIds = this.selectedGroups.map(
-								(g) => g.id,
-							)
-							const mergedGroups = [
-								...this.selectedGroups,
-								...searchResults.filter(
-									(g) => !selectedGroupIds.includes(g.id),
-								),
-							]
-
-							this.availableGroups = mergedGroups
-						}
-					}
-				} catch (error) {
-					console.error('Error searching Nextcloud groups:', error)
-				} finally {
-					this.loadingGroups = false
-				}
-			}, 300)
+			searchGroupsDebounced(this, {
+				query: searchQuery,
+				onEmpty: () => this.loadNextcloudGroupsFromStore(),
+				toGroup: (groupId) => ({ id: groupId, name: groupId, userCount: 0 }),
+				warnOnRefusal: false,
+			})
 		},
 
 		/**
