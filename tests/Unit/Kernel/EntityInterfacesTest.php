@@ -18,10 +18,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\ScheduledReport;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -29,6 +33,17 @@ use ReflectionClass;
 use ReflectionMethod;
 
 class EntityInterfacesTest extends TestCase {
+
+	/**
+	 * Public entity methods that stay off the interface, because their
+	 * signature names a Service or Db class a Kernel contract may not name.
+	 *
+	 * @var array<class-string, array<int, string>>
+	 */
+	private const ENTITY_ONLY = [
+		Schema::class   => ['getManagedByConfiguration', 'hydrate', 'validateProperties'],
+		Register::class => ['getManagedByConfiguration'],
+	];
 
 	/**
 	 * Each entity with the Kernel interface it implements.
@@ -40,6 +55,8 @@ class EntityInterfacesTest extends TestCase {
 			'Task'            => [Task::class, TaskInterface::class],
 			'FlowTimer'       => [FlowTimer::class, FlowTimerInterface::class],
 			'ScheduledReport' => [ScheduledReport::class, ScheduledReportInterface::class],
+			'Schema'          => [Schema::class, SchemaInterface::class],
+			'Register'        => [Register::class, RegisterInterface::class],
 		];
 	}//end entities()
 
@@ -57,7 +74,7 @@ class EntityInterfacesTest extends TestCase {
 	}//end testTheEntityImplementsItsInterface()
 
 	/**
-	 * Every @method accessor of the entity is listed on the interface.
+	 * Every @method accessor of the entity is on the interface, as a tag or as a declared method.
 	 *
 	 * @param class-string $entity    The entity class.
 	 * @param class-string $interface The Kernel interface.
@@ -67,9 +84,9 @@ class EntityInterfacesTest extends TestCase {
 	#[DataProvider('entities')]
 	public function testEveryColumnAccessorIsOnTheInterface(string $entity, string $interface): void {
 		$missing = array_values(
-			array_diff(
-				$this->methodTags(class: $entity),
-				$this->methodTags(class: $interface)
+			array_filter(
+				array_diff($this->methodTags(class: $entity), $this->methodTags(class: $interface)),
+				fn (string $method): bool => method_exists($interface, $method) === false
 			)
 		);
 
@@ -95,6 +112,10 @@ class EntityInterfacesTest extends TestCase {
 
 		$missing = [];
 		foreach ($declared as $method) {
+			if (in_array($method->getName(), self::ENTITY_ONLY[$entity] ?? [], true) === true) {
+				continue;
+			}
+
 			if (method_exists($interface, $method->getName()) === false) {
 				$missing[] = $method->getName();
 			}

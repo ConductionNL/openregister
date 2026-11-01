@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IUser;
 
 /**
@@ -36,8 +34,8 @@ interface ObjectImporterInterface {
 	 * Import data from CSV file.
 	 *
 	 * @param string $filePath The path to the CSV file.
-	 * @param Register|null $register Optional register to associate with imported objects.
-	 * @param Schema|null $schema Optional schema to associate with imported objects.
+	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
+	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
 	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
 	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
 	 * @param bool $_rbac Whether to enforce RBAC checks (default: true, unused).
@@ -54,8 +52,8 @@ interface ObjectImporterInterface {
 	 */
 	public function importFromCsv(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -71,8 +69,8 @@ interface ObjectImporterInterface {
 	 * Import data from Excel file.
 	 *
 	 * @param string $filePath The path to the Excel file.
-	 * @param Register|null $register Optional register to associate with imported objects.
-	 * @param Schema|null $schema Optional schema to associate with imported objects.
+	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
+	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
 	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
 	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
 	 * @param bool $_rbac Whether to apply RBAC checks (default: true, unused).
@@ -114,8 +112,8 @@ interface ObjectImporterInterface {
 	 */
 	public function importFromExcel(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -148,10 +146,10 @@ interface ObjectImporterInterface {
 	 * an opaque exception.
 	 *
 	 * @param string $filePath Path to the uploaded JSON file
-	 * @param Register|null $register Register to import into. When null, the payload is checked for
+	 * @param RegisterInterface|null $register Register to import into. When null, the payload is checked for
 	 *                                a register-bundle envelope to auto-create it; see
 	 *                                `$registerSlug` and `@throws` below.
-	 * @param Schema|null $schema Target schema (required — JSON import is single-schema, like
+	 * @param SchemaInterface|null $schema Target schema (required — JSON import is single-schema, like
 	 *                            CSV — unless resolved from a register-bundle's own schemas)
 	 * @param bool $validation Whether to validate objects against the schema
 	 * @param bool $events Whether to dispatch object lifecycle events
@@ -177,8 +175,8 @@ interface ObjectImporterInterface {
 	 */
 	public function importFromJson(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
