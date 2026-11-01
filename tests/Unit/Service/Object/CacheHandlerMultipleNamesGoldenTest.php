@@ -86,6 +86,9 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 	/** @var bool */
 	private bool $oracleThrows = false;
 
+	/** @var bool */
+	private bool $idlessRegister = false;
+
 	/**
 	 * Every scenario matches the recorded golden.
 	 *
@@ -124,6 +127,9 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 			'object load throws'          => $this->scenario(identifiers: [self::ORG_A, self::U1], organisations: [[self::ORG_A, 'Org A']], objectsThrow: true, readable: $readable),
 			'another session user'        => $this->scenario(identifiers: [self::U1, self::ORG_A, self::ORG_B], organisations: [[self::ORG_A, 'Org A'], [self::ORG_B, 'Org B']], objects: [$objects['u1']], readable: $readable, uid: 'mallory'),
 			'read path throws'            => $this->scenario(identifiers: [self::U1, self::ORG_A], organisations: [[self::ORG_A, 'Org A']], objects: [$objects['u1']], readable: $readable, oracleThrows: true),
+			'second call, disjoint identifiers' => $this->scenario(identifiers: [self::U1], objects: [$objects['u1'], $objects['u2-free']], readable: $readable, thenAsk: [self::U2]),
+			'sourceless table rows'           => $this->scenario(identifiers: [self::U4], rows: ['oc_openregister_table__2' => [[self::U4, 'Four without source', self::ORG_A]]], readable: $readable, idlessRegister: true),
+			'other tenant organisation envelope' => $this->scenario(identifiers: [self::ORG_B, self::ORG_A], distributed: ['name_' . self::ORG_B => ['n' => 'Org B', 'o' => self::ORG_B, 's' => 'organisation'], 'name_' . self::ORG_A => ['n' => 'Org A', 'o' => self::ORG_A, 's' => 'organisation']], readable: $readable),
 			'second call as another user'     => $this->scenario(identifiers: [self::ORG_A, self::U1], organisations: [[self::ORG_A, 'Org A']], objects: [$objects['u1']], readable: $readable, thenAs: 'mallory'),
 			'duplicate identifiers'       => $this->scenario(identifiers: [self::U1, self::U1, 'one'], objects: [$objects['u1']], readable: $readable),
 		];
@@ -153,6 +159,8 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 	 * @param bool                                       $oracleThrows       Whether the read path throws.
 	 * @param array<int, string>                         $extraIdentifiers   Identifiers appended to the request.
 	 * @param string|null                                $thenAs             When set, the same handler is asked again as this user.
+	 * @param array<int, string>|null                    $thenAsk            When set, the same handler is then asked for these identifiers.
+	 * @param bool                                       $idlessRegister     Whether the only register has no id, so its rows carry no source.
 	 *
 	 * @return array<string, mixed>
 	 *
@@ -174,7 +182,10 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 		bool $oracleThrows = false,
 		array $extraIdentifiers = [],
 		?string $thenAs = null,
+		?array $thenAsk = null,
+		bool $idlessRegister = false,
 	): array {
+		$this->idlessRegister = $idlessRegister;
 		$this->calls = [];
 		$this->distributed = $distributed;
 		$this->distributedFails = $distributedFails;
@@ -190,6 +201,11 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 		$this->calls[] = ['setup done'];
 
 		$result = $handler->getMultipleObjectNames(array_merge($identifiers, $extraIdentifiers));
+		if ($thenAsk !== null) {
+			$this->calls[] = ['then ask' => $thenAsk];
+			$result = ['first' => $result, 'second' => $handler->getMultipleObjectNames($thenAsk)];
+		}
+
 		if ($thenAs !== null) {
 			$this->uid = $thenAs;
 			$this->calls[] = ['now as' => $thenAs];
@@ -292,6 +308,11 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 
 				$found = [];
 				foreach ($objects as $spec) {
+					$keys = array_map('strval', array_filter([$spec['uuid'], $spec['id'], $spec['slug'], $spec['uri']], fn ($key): bool => $key !== null));
+					if (array_intersect($keys, array_map('strval', $ids)) === []) {
+						continue;
+					}
+
 					$object = new ObjectEntity();
 					$object->setId($spec['id']);
 					$object->setUuid($spec['uuid']);
@@ -323,7 +344,10 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 		);
 
 		$register = new Register();
-		$register->setId(1);
+		if ($this->idlessRegister === false) {
+			$register->setId(1);
+		}
+
 		$register->setSchemas([2, 3]);
 		$register->setConfiguration(['schemas' => ['schema-2' => ['magicMapping' => true], '3' => ['magicMapping' => true]]]);
 		$registerMapper = $this->createMock(RegisterMapper::class);
