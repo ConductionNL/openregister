@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -3104,8 +3105,6 @@ class ObjectService implements ObjectServiceInterface
      * @throws \Exception If user does not have delete permission.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
@@ -3129,171 +3128,49 @@ class ObjectService implements ObjectServiceInterface
             $this->discardPendingSchemaRef();
             // Explicit acting user for the permission check; null keeps today's
             // session-resolved behaviour for every existing caller.
-            $actingUserId = $currentUser?->getUID();
+            $request = new ObjectDeleteRequest(
+                uuid: $uuid,
+                rbac: $_rbac,
+                multitenancy: $_multitenancy,
+                retentionSweep: $_retentionSweep,
+                currentUser: $currentUser,
+                scoped: ($register !== null && $schema !== null)
+            );
 
-            // Resolve the explicit scope (if any) onto the service's currentRegister
-            // / currentSchema so downstream context (permission checks, audit-trail
-            // recording) sees the API-supplied scope, not a stale leftover from a
-            // previous call on this service instance.
-            $hasScope = ($register !== null && $schema !== null);
-            if ($register !== null) {
-                $this->setRegister(register: $register);
-            }
-
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
+            $this->applyDeleteScope(register: $register, schema: $schema);
 
             // A schema served by an object source keeps no rows in a magic table,
-            // so the MagicMapper lookups below can only miss, and a scoped miss is
-            // rethrown as "not found" before the delete handler's provider
-            // dispatch runs. That made every DELETE on such a schema a 404: a
-            // writable database source could not delete, and the organisation
-            // projection never gave its own refusal.
+            // so the MagicMapper lookups below can only miss, and a scoped miss
+            // would be rethrown as "not found" before the delete handler's
+            // provider dispatch runs.
             $sourcedSchema = null;
             if ($this->currentSchema !== null && $this->currentSchema->getObjectSource() !== null) {
                 $sourcedSchema = $this->currentSchema;
             }
 
-            // Reject deletion of transferred objects (archiefstatus = overgebracht).
-            // Looked up with the caller's flags, so the guard sees the object the
-            // delete handler below would touch; with the session scope it missed
-            // an object outside it and let a `_multitenancy: false` delete through.
-            // An external row has no retention block, so a sourced schema skips it.
-            if ($sourcedSchema === null) {
-                $this->rejectIfTransferred(uuid: $uuid, _rbac: $_rbac, _multitenancy: $_multitenancy);
-            }
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
-
-            // A view-backed type holds no objects of its own to delete.
-            $this->rejectIfViewBacked(operation: 'delete');
-
-            // Reject DELETE operations on append-only schemas.
-            if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-                $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-                throw new AppendOnlyException(
-                    schemaIdentifier: $schemaSlug,
-                    operation: 'delete'
-                );
-            }
-
-            // Reject DELETE operations on archival-annotated schemas unless this
-            // call originates from the retention sweep cron (which alone sets
-            // $_retentionSweep true). User-driven deletes get a structured 403.
-            //
-            // A DRAFT IS NOT YET A RECORD (decisions 180 and 216). It holds
-            // unsent input, nothing refers to it, and it was never received,
-            // so the archival term of its schema has not started. Without
-            // this an archival schema kept every abandoned draft for ever: its
-            // owner could not discard it and the draft cleanup could not
-            // remove it. Only a STORED draft passes, and a saved object can
-            // never go back to draft (DraftStatusPolicy), so no record can be
-            // turned into one to get past this gate.
-            if ($this->currentSchema !== null
-                && $this->isDeletableDraft(uuid: $uuid, retentionSweep: $_retentionSweep, _rbac: $_rbac, _multitenancy: $_multitenancy) === false
-            ) {
-                $this->rejectIfArchivalImmutable(
-                    schema: $this->currentSchema,
-                    retentionSweep: $_retentionSweep
-                );
-            }
+            $this->rejectRefusedDelete(request: $request, sourcedSchema: $sourcedSchema);
 
             if ($sourcedSchema !== null) {
                 return $this->deleteFromObjectSource(
                     schema: $sourcedSchema,
                     uuid: $uuid,
-                    actingUserId: $actingUserId,
+                    actingUserId: $request->actingUserId(),
                     _rbac: $_rbac,
                     _multitenancy: $_multitenancy,
-                    hasScope: $hasScope
+                    hasScope: $request->scoped
                 );
             }
 
-            // Find the object to get its owner for permission check (include soft-deleted objects).
-            // When the caller supplied both register + schema, the lookup is scoped
-            // to a single magic table — a UUID in a different scope raises
-            // DoesNotExistException and never reaches the delete handler.
-            $scopedRegister = null;
-            $scopedSchema   = null;
-            if ($hasScope === true) {
-                $scopedRegister = $this->currentRegister;
-                $scopedSchema   = $this->currentSchema;
+            $objectToDelete = $this->resolvePermittedDeleteTarget(request: $request);
+
+            // A draft is removed for good, with its files: a tombstone of
+            // unsent input serves nobody, and on an archival schema the
+            // purge would refuse it for ever (decisions 180 and 216).
+            if ($objectToDelete !== null && $objectToDelete->isDraft() === true) {
+                $permanent = true;
             }
 
-            $objectToDelete = null;
-            try {
-                // With the caller's flags. The delete handler honours them, so a
-                // lookup that ignored them applied the session's RBAC and tenant
-                // scope to a caller that had turned them off, answered "not
-                // found" for an object that exists, and the handler never ran.
-                $objectToDelete = $this->objectMapper->find(
-                    identifier: $uuid,
-                    register: $scopedRegister,
-                    schema: $scopedSchema,
-                    includeDeleted: true,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
-                );
-
-                // If no schema was provided but we have an object, derive the schema from the object.
-                if ($this->currentSchema === null) {
-                    $this->setSchema(schema: $objectToDelete->getSchema());
-                }
-
-                \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
-
-                // Check user has permission to delete this specific object.
-                $this->checkPermission(
-                    schema: $this->currentSchema,
-                    action: 'delete',
-                    userId: $actingUserId,
-                    objectOwner: $objectToDelete->getOwner(),
-                    _rbac: $_rbac,
-                    object: $objectToDelete
-                );
-
-                \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
-
-                // A draft is removed for good, with its files: a tombstone of
-                // unsent input serves nobody, and on an archival schema the
-                // purge would refuse it for ever (decisions 180 and 216).
-                if ($objectToDelete->isDraft() === true) {
-                    $permanent = true;
-                }
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Scoped lookup is authoritative: if the caller asked for a
-                // specific (register, schema) and the UUID is not in that scope,
-                // re-throw so the failure mode is "404 not in scope" instead of
-                // "silently look at another magic table" (the #1638 bug).
-                if ($hasScope === true) {
-                    throw $e;
-                }
-
-                // Unscoped path: object doesn't exist anywhere, no permission check
-                // needed but let deleteHandler raise its own consistent error path.
-                if ($this->currentSchema !== null) {
-                    $this->checkPermission(
-                        schema: $this->currentSchema,
-                        action: 'delete',
-                        userId: $actingUserId,
-                        objectOwner: null,
-                        _rbac: $_rbac
-                    );
-                }
-            }//end try
-
-            // Somebody else's draft is not the caller's to delete, whatever the
-            // read lookup above let through. Answered as not found, like the
-            // save path (refuseSomebodyElsesDraft), so it is not announced.
-            $deleter = ($currentUser ?? $this->userSession->getUser());
-            if ($_rbac === true && $objectToDelete !== null && $this->currentSchema !== null
-                && $this->draftKeptFromCaller(object: $objectToDelete, schema: $this->currentSchema, user: $deleter) === true
-            ) {
-                throw new OcpDoesNotExistException('Object not found');
-            }
+            $this->refuseDeletingSomebodyElsesDraft(request: $request, object: $objectToDelete);
 
             return $this->deleteHandler->deleteObject(
                 register: $this->currentRegister,
@@ -3302,13 +3179,191 @@ class ObjectService implements ObjectServiceInterface
                 originalObjectId: null,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
-                scoped: $hasScope,
+                scoped: $request->scoped,
                 permanent: $permanent
             );
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end deleteObject()
+
+    /**
+     * Resolve a delete call's register and schema onto the current context.
+     *
+     * Downstream context (permission checks, audit-trail recording) then sees the
+     * API-supplied scope, not a stale leftover from a previous call on this service.
+     *
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function applyDeleteScope(
+        Register | string | int | null $register,
+        Schema | string | int | null $schema
+    ): void {
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
+    }//end applyDeleteScope()
+
+    /**
+     * Refuse a delete the object or its schema does not allow, before anything is looked up for it.
+     *
+     * In order: a transferred object (looked up with the caller's flags; an external row has
+     * no retention block, so a sourced schema skips it), a view-backed type, an append-only
+     * schema, and an archival schema unless the retention sweep calls or the object is a
+     * stored draft (a draft is not yet a record, decisions 180 and 216).
+     *
+     * @param ObjectDeleteRequest $request       The delete call.
+     * @param Schema|null         $sourcedSchema The current schema when an object source serves it.
+     *
+     * @return void
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object is transferred.
+     * @throws AppendOnlyException When the schema is append-only.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function rejectRefusedDelete(ObjectDeleteRequest $request, ?Schema $sourcedSchema): void
+    {
+        if ($sourcedSchema === null) {
+            $this->rejectIfTransferred(uuid: $request->uuid, _rbac: $request->rbac, _multitenancy: $request->multitenancy);
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
+
+        $this->rejectIfViewBacked(operation: 'delete');
+
+        if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
+            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+            throw new AppendOnlyException(
+                schemaIdentifier: $schemaSlug,
+                operation: 'delete'
+            );
+        }
+
+        if ($this->currentSchema !== null
+            && $this->isDeletableDraft(
+                uuid: $request->uuid,
+                retentionSweep: $request->retentionSweep,
+                _rbac: $request->rbac,
+                _multitenancy: $request->multitenancy
+            ) === false
+        ) {
+            $this->rejectIfArchivalImmutable(
+                schema: $this->currentSchema,
+                retentionSweep: $request->retentionSweep
+            );
+        }
+    }//end rejectRefusedDelete()
+
+    /**
+     * Find the object to delete (soft-deleted rows included) and check the acting user may delete it.
+     *
+     * The lookup uses the caller's flags, which the delete handler honours too. When the caller
+     * supplied register and schema the lookup is scoped to that one table and a miss is
+     * authoritative (#1638). An unscoped miss checks the schema's delete right without an owner
+     * and leaves the not-found answer to the delete handler.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     *
+     * @return ObjectEntity|null The object, or null after an unscoped miss.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When a scoped lookup misses.
+     * @throws \Exception When the acting user may not delete.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function resolvePermittedDeleteTarget(ObjectDeleteRequest $request): ?ObjectEntity
+    {
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($request->scoped === true) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
+        try {
+            $objectToDelete = $this->objectMapper->find(
+                identifier: $request->uuid,
+                register: $scopedRegister,
+                schema: $scopedSchema,
+                includeDeleted: true,
+                _rbac: $request->rbac,
+                _multitenancy: $request->multitenancy
+            );
+
+            // If no schema was provided, derive it from the object.
+            if ($this->currentSchema === null) {
+                $this->setSchema(schema: $objectToDelete->getSchema());
+            }
+
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
+
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'delete',
+                userId: $request->actingUserId(),
+                objectOwner: $objectToDelete->getOwner(),
+                _rbac: $request->rbac,
+                object: $objectToDelete
+            );
+
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
+
+            return $objectToDelete;
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            if ($request->scoped === true) {
+                throw $e;
+            }
+
+            if ($this->currentSchema !== null) {
+                $this->checkPermission(
+                    schema: $this->currentSchema,
+                    action: 'delete',
+                    userId: $request->actingUserId(),
+                    objectOwner: null,
+                    _rbac: $request->rbac
+                );
+            }
+
+            return null;
+        }//end try
+    }//end resolvePermittedDeleteTarget()
+
+    /**
+     * Answer "not found" when the object is somebody else's draft, whatever the lookup let through.
+     *
+     * Like the save path (refuseSomebodyElsesDraft) it is not announced. The deleter is the
+     * explicit acting user, or else the session user.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     * @param ObjectEntity|null   $object  The object to delete, or null after an unscoped miss.
+     *
+     * @return void
+     *
+     * @throws OcpDoesNotExistException When the draft is kept from the deleter.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function refuseDeletingSomebodyElsesDraft(ObjectDeleteRequest $request, ?ObjectEntity $object): void
+    {
+        $deleter = ($request->currentUser ?? $this->userSession->getUser());
+        if ($request->rbac === true && $object !== null && $this->currentSchema !== null
+            && $this->draftKeptFromCaller(object: $object, schema: $this->currentSchema, user: $deleter) === true
+        ) {
+            throw new OcpDoesNotExistException('Object not found');
+        }
+    }//end refuseDeletingSomebodyElsesDraft()
 
     /**
      * Hand a delete on an object-source schema to the delete handler's provider dispatch.
