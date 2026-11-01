@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -62,9 +62,9 @@ class TasksController extends Controller {
 	/**
 	 * Task service for CalDAV VTODO operations.
 	 *
-	 * @var TaskService
+	 * @var ObjectCalendarTasksInterface
 	 */
-	private readonly TaskService $taskService;
+	private readonly ObjectCalendarTasksInterface $taskService;
 
 	/**
 	 * Object service for object validation.
@@ -78,7 +78,7 @@ class TasksController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param TaskService $taskService Task service for VTODO operations
+	 * @param ObjectCalendarTasksInterface $taskService Task service for VTODO operations
 	 * @param ObjectService $objectService Object service for object validation
 	 * @param TaskInboxService|null $inbox The engine inbox the aggregate answers from;
 	 *                                     without it the aggregate refuses (401), never
@@ -94,7 +94,7 @@ class TasksController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		TaskService $taskService,
+		ObjectCalendarTasksInterface $taskService,
 		ObjectService $objectService,
 		private readonly ?TaskInboxService $inbox = null,
 		private readonly ?IUserSession $userSession = null,

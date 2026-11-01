@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 
 /**
  * Golden test for ChunkVectorizationJob::run().
@@ -285,7 +286,7 @@ class ChunkVectorizationJobGoldenTest extends TestCase
         $this->registerService(LoggerInterface::class, fn () => $logger);
         $this->registerService(IAppConfig::class, fn () => $config);
         $this->registerService(ChunkMapper::class, fn () => $mapper);
-        $this->registerService(VectorEmbeddings::class, fn () => $embeddings);
+        $this->registerService(EmbeddingGeneratorInterface::class, fn () => $embeddings);
         $this->registerService(VectorStorageHandler::class, fn () => $storage);
     }//end wire()
 
