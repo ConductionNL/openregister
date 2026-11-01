@@ -1,0 +1,14 @@
+1) OCA\OpenRegister\Tests\Unit\Db\AuditTrailActionPrefixTest::testCountByActionPrefixCountsEachActionOfThePrefix
+10) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperRevertQueryTest::testUntilAnAuditTrailIdReturnsOnlyThisObjectsLaterEntries
+11) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperRevertQueryTest::testUntilAVersionReturnsTheEntriesAfterIt
+12) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperRevertQueryTest::testRevertObjectRestoresTheDataOfTheChosenEntry
+13) OCA\OpenRegister\Tests\Unit\Db\AuditTrailToolInvocationInsertTest::testAToolInvocationIsWrittenToTheAuditTable
+2) OCA\OpenRegister\Tests\Unit\Db\AuditTrailActionPrefixTest::testAPrefixWithoutRowsCountsNothing
+3) OCA\OpenRegister\Tests\Unit\Db\AuditTrailActionPrefixTest::testFindAllFiltersOnAnActionPrefix
+4) OCA\OpenRegister\Tests\Unit\Db\AuditTrailActionPrefixTest::testAnExactActionStillFiltersExactly
+5) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperReadHistoryTest::testRepeatedReadsCollapseToTheLatest
+6) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperReadHistoryTest::testOnlyThisReadersReadsCount
+7) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperReadHistoryTest::testTheLimitKeepsTheNewest
+8) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperReadHistoryTest::testOnlyAPersonsReadsCount
+9) OCA\OpenRegister\Tests\Unit\Db\AuditTrailMapperRevertQueryTest::testFindByObjectUntilRunsAgainstTheMigratedTable
+Tests: 25815, Assertions: 66641, Errors: 13, Warnings: 1, Skipped: 27.
