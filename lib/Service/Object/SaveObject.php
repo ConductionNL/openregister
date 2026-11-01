@@ -3086,11 +3086,10 @@ class SaveObject implements ObjectSaverInterface {
 	 * @throws ObjectExistsException When $failIfExists is true and the identifier is already taken.
 	 * @throws DuplicateBlockedException When the schema declares `onCreate: "block"`, the candidate
 	 *         strongly matches a stored object, and the caller may not override.
+	 * @throws \InvalidArgumentException When an entity is not a stored row.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
-	 *
-	 * @throws \InvalidArgumentException When an entity is not a stored row.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */

@@ -376,9 +376,12 @@ interface ObjectRowInterface extends JsonSerializable, ObjectEntityInterface {
 	 * This getter has special logic to inject the UUID as 'id' field,
 	 * so it must remain explicit rather than using the magic method.
 	 *
-	 * @return (mixed|null|string)[]
+	 * The payload keys come from stored JSON, so they are `array-key`, as in
+	 * the published Contract\ObjectEntityInterface. A narrower shape here is
+	 * more specific than ObjectEntity's own `@method` declaration, which psalm
+	 * rejects (LessSpecificImplementedReturnType).
 	 *
-	 * @psalm-return array{id: mixed|null|string,...}
+	 * @return array<array-key, mixed>
 	 */
 	public function getObject(): array;
 
