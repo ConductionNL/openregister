@@ -15,7 +15,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
-use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -38,8 +37,6 @@ class FileTextControllerTest extends TestCase {
 
 	private LoggerInterface&MockObject $logger;
 
-	private IAppConfig&MockObject $config;
-
 	private ManualEntityService&MockObject $manualEntityService;
 
 	private IUserSession&MockObject $userSession;
@@ -56,7 +53,6 @@ class FileTextControllerTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 		$this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->config = $this->createMock(IAppConfig::class);
 		$this->manualEntityService = $this->createMock(ManualEntityService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->rootFolder = $this->createMock(IRootFolder::class);
@@ -78,7 +74,6 @@ class FileTextControllerTest extends TestCase {
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$this->userSession,
 			$this->rootFolder,
@@ -136,7 +131,6 @@ class FileTextControllerTest extends TestCase {
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$session,
 			$rootFolder,
@@ -148,130 +142,6 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals(404, $result->getStatus());
 		$this->assertArrayNotHasKey('text', $result->getData());
 	}//end testGetFileTextRefusesAFileTheCallerCannotOpen()
-
-	// =========================================================================
-	// extractFileText
-	// =========================================================================
-	public function testExtractFileTextDisabledWhenNoConfig(): void {
-		$this->config->method('hasKey')->willReturn(false);
-		$this->config->method('getValueString')->willReturn('{}');
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('disabled', $data['message']);
-	}//end testExtractFileTextDisabledWhenNoConfig()
-
-	public function testExtractFileTextDisabledWhenScopeIsNone(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'none',
-				]
-			)
-		);
-
-		$this->logger->expects($this->once())
-			->method('info');
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('disabled', $data['message']);
-	}//end testExtractFileTextDisabledWhenScopeIsNone()
-
-	public function testExtractFileTextSuccess(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'all',
-				]
-			)
-		);
-
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(1, true);
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertStringContainsString('successfully', $data['message']);
-	}//end testExtractFileTextSuccess()
-
-	public function testExtractFileTextSuccessWithDifferentFileId(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'all',
-				]
-			)
-		);
-
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(99, true);
-
-		$result = $this->controller->extractFileText(99);
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-	}//end testExtractFileTextSuccessWithDifferentFileId()
-
-	public function testExtractFileTextException(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'all',
-				]
-			)
-		);
-		$this->textExtractor->method('extractFile')
-			->willThrowException(new \Exception('Extract error'));
-
-		$this->logger->expects($this->once())
-			->method('error');
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('Extract error', $data['message']);
-	}//end testExtractFileTextException()
-
-	public function testExtractFileTextWithNullExtractionScope(): void {
-		// Config has key but extractionScope is not set (null fallback).
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'someOtherKey' => 'value',
-				]
-			)
-		);
-
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(5, true);
-
-		$result = $this->controller->extractFileText(5);
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-	}//end testExtractFileTextWithNullExtractionScope()
 
 	// =========================================================================
 	// bulkExtract
@@ -671,42 +541,6 @@ class FileTextControllerTest extends TestCase {
 	// =========================================================================
 	// access guards
 	// =========================================================================
-	public function testExtractFileTextRejectsInaccessibleFile(): void {
-		$bob = $this->createMock(IUser::class);
-		$bob->method('getUID')->willReturn('bob');
-
-		$userSession = $this->createMock(IUserSession::class);
-		$userSession->method('getUser')->willReturn($bob);
-
-		$rootFolder = $this->createMock(IRootFolder::class);
-		$userFolder = $this->createMock(Folder::class);
-		$userFolder->method('getById')->willReturn([]);
-		$rootFolder->method('getUserFolder')->willReturn($userFolder);
-
-		$groupManager = $this->createMock(IGroupManager::class);
-		$groupManager->method('isAdmin')->willReturn(false);
-
-		$this->textExtractor->expects($this->never())
-			->method('extractFile');
-
-		$controller = new FileTextController(
-			'openregister',
-			$this->request,
-			$this->textExtractor,
-			$this->fileService,
-			$this->entityRelationMapper,
-			$this->logger,
-			$this->config,
-			$this->manualEntityService,
-			$userSession,
-			$rootFolder,
-			$groupManager
-		);
-
-		$result = $controller->extractFileText(999);
-
-		$this->assertEquals(404, $result->getStatus());
-	}//end testExtractFileTextRejectsInaccessibleFile()
 
 	public function testBulkExtractRejectsNonAdmin(): void {
 		$bob = $this->createMock(IUser::class);
@@ -733,7 +567,6 @@ class FileTextControllerTest extends TestCase {
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$userSession,
 			$rootFolder,
@@ -794,7 +627,6 @@ class FileTextControllerTest extends TestCase {
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$userSession,
 			$rootFolder,

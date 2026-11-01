@@ -1044,26 +1044,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	}//end testFileTextControllerDeleteFileText()
 
 	/**
-	 * Test FileTextController::extractFileText when extraction is disabled
-	 *
-	 * @return void
-	 */
-	public function testFileTextControllerExtractFileTextDisabled(): void {
-		// Ensure extraction is disabled.
-		$this->appConfig->setValueString('openregister', 'fileManagement', json_encode(['extractionScope' => 'none']));
-
-		$controller = $this->buildFileTextController();
-		$response = $controller->extractFileText(1);
-		$data = $response->getData();
-
-		$this->assertSame(501, $response->getStatus());
-		$this->assertFalse($data['success']);
-
-		// Cleanup config.
-		$this->appConfig->deleteKey('openregister', 'fileManagement');
-	}//end testFileTextControllerExtractFileTextDisabled()
-
-	/**
 	 * Test FileTextController::getStats
 	 *
 	 * @return void
@@ -1880,7 +1860,6 @@ class ControllersIntegrationTest2 extends TestCase {
 			\OC::$server->get(FileService::class),
 			\OC::$server->get(EntityRelationMapper::class),
 			$this->logger,
-			$this->appConfig,
 			\OC::$server->get(ManualEntityService::class),
 			$this->buildAccessibleUserSession(),
 			$this->buildAccessibleRootFolder(),
