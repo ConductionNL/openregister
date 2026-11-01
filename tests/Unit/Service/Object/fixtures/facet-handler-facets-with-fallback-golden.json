@@ -1,0 +1,1808 @@
+{
+    "no filters": {
+        "queries": [
+            []
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "empty, search filter": {
+        "queries": [
+            {
+                "_search": "zzz"
+            }
+        ],
+        "logs": [
+            [
+                "debug",
+                "[FacetHandler] Facets empty with restrictive filters \u2014 returning empty facets (no fallback)",
+                {
+                    "file": "FacetHandler.php",
+                    "originalQuery": [
+                        "_search"
+                    ],
+                    "totalResults": 0
+                }
+            ]
+        ],
+        "result": {
+            "facets": {
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 0,
+                        "buckets": []
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 0,
+                "has_restrictive_filters": true
+            }
+        }
+    },
+    "empty, field filter": {
+        "queries": [
+            {
+                "colour": "green"
+            }
+        ],
+        "logs": [
+            [
+                "debug",
+                "[FacetHandler] Facets empty with restrictive filters \u2014 returning empty facets (no fallback)",
+                {
+                    "file": "FacetHandler.php",
+                    "originalQuery": [
+                        "colour"
+                    ],
+                    "totalResults": 0
+                }
+            ]
+        ],
+        "result": {
+            "facets": [],
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 0,
+                "has_restrictive_filters": true
+            }
+        }
+    },
+    "empty, empty field filter": {
+        "queries": [
+            {
+                "colour": "",
+                "@self": {
+                    "register": 2
+                }
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": [],
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 0,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "results, field filter": {
+        "queries": [
+            {
+                "colour": "red"
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": true
+            }
+        }
+    },
+    "metrics": {
+        "queries": [
+            {
+                "_search": "q"
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": true,
+                "facet_db_ms": {
+                    "colour": 2.25,
+                    "size": {
+                        "buckets": [
+                            {
+                                "results": 4
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "object field config": {
+        "queries": [
+            []
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Kleur",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "non-aggregated only": {
+        "queries": [
+            {
+                "@self": {
+                    "owner": "mallory",
+                    "organisation": "other-org",
+                    "schemas": [
+                        3,
+                        4
+                    ],
+                    "register": 2
+                },
+                "_schemas": [
+                    3,
+                    4
+                ],
+                "userId": "",
+                "_multitenancy": false,
+                "_rbac": false
+            },
+            {
+                "@self": {
+                    "owner": "mallory",
+                    "organisation": "other-org",
+                    "register": 2,
+                    "schema": 3
+                },
+                "userId": "",
+                "_multitenancy": false,
+                "_rbac": false
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag_name": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag Name",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 9,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "scoped",
+                                "count": 7,
+                                "label": "scoped"
+                            }
+                        ]
+                    },
+                    "schema": 3
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "non-aggregated and object": {
+        "queries": [
+            {
+                "@self": {
+                    "owner": "mallory",
+                    "organisation": "other-org",
+                    "schemas": [
+                        3,
+                        4
+                    ],
+                    "register": 2
+                },
+                "_schemas": [
+                    3,
+                    4
+                ],
+                "userId": "",
+                "_multitenancy": false,
+                "_rbac": false
+            },
+            {
+                "@self": {
+                    "owner": "mallory",
+                    "organisation": "other-org",
+                    "register": 2,
+                    "schema": 3
+                },
+                "userId": "",
+                "_multitenancy": false,
+                "_rbac": false
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                },
+                "tag_name": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag Name",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 9,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "scoped",
+                                "count": 7,
+                                "label": "scoped"
+                            }
+                        ]
+                    },
+                    "schema": 3
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "untitled key": {
+        "queries": [
+            {
+                "colour": "red"
+            },
+            {
+                "colour": "red",
+                "@self": {
+                    "schema": 4
+                }
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                },
+                "size_schema_4": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "S",
+                                "count": 1,
+                                "label": "S"
+                            }
+                        ]
+                    },
+                    "schema": 4
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": true
+            }
+        }
+    },
+    "scoped misses the field": {
+        "queries": [
+            [],
+            {
+                "@self": {
+                    "schema": 3
+                }
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "scoped fails": {
+        "queries": [
+            {
+                "_search": "x"
+            },
+            {
+                "_search": "x",
+                "@self": {
+                    "schema": 3
+                }
+            },
+            {
+                "_search": "x",
+                "@self": {
+                    "schema": 4
+                }
+            }
+        ],
+        "logs": [
+            [
+                "warning",
+                "[FacetHandler] Failed to get non-aggregated facet",
+                {
+                    "file": "FacetHandler.php",
+                    "field": "tag",
+                    "schemaId": 3,
+                    "error": "scoped query failed"
+                }
+            ]
+        ],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "maat": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Maat",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "M",
+                                "count": 2,
+                                "label": "M"
+                            }
+                        ]
+                    },
+                    "schema": 4
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": true
+            }
+        }
+    },
+    "colliding keys": {
+        "queries": [
+            [],
+            {
+                "@self": {
+                    "schema": 3
+                }
+            },
+            {
+                "@self": {
+                    "schema": 4
+                }
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag_name": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag Name",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "four",
+                                "count": 4,
+                                "label": "four"
+                            }
+                        ]
+                    },
+                    "schema": 4
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "key equals a base facet": {
+        "queries": [
+            [],
+            {
+                "@self": {
+                    "schema": 3
+                }
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "colour",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "scoped",
+                                "count": 7,
+                                "label": "scoped"
+                            }
+                        ]
+                    },
+                    "schema": 3
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "numeric key": {
+        "queries": [
+            [],
+            {
+                "@self": {
+                    "schema": 3
+                }
+            }
+        ],
+        "logs": [],
+        "threw": "TypeError"
+    },
+    "numeric base key": {
+        "queries": [
+            []
+        ],
+        "logs": [],
+        "threw": "TypeError"
+    },
+    "string schema id": {
+        "queries": [
+            [],
+            {
+                "@self": {
+                    "schema": "3"
+                }
+            }
+        ],
+        "logs": [],
+        "threw": "TypeError"
+    },
+    "scalar scoped facet": {
+        "queries": [
+            [],
+            {
+                "@self": {
+                    "schema": 3
+                }
+            }
+        ],
+        "logs": [],
+        "threw": "Error"
+    },
+    "field named _metrics": {
+        "queries": [
+            [],
+            {
+                "@self": {
+                    "schema": 3
+                }
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "size": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": false
+            }
+        }
+    },
+    "self without schemas": {
+        "queries": [
+            {
+                "@self": {
+                    "register": 2
+                },
+                "size": "L"
+            },
+            {
+                "@self": {
+                    "register": 2,
+                    "schema": 4
+                },
+                "size": "L"
+            }
+        ],
+        "logs": [],
+        "result": {
+            "facets": {
+                "_register": {
+                    "name": "_register",
+                    "type": "terms",
+                    "title": "Register",
+                    "description": "metadata field: Register",
+                    "data_type": "integer",
+                    "index_field": "self_register",
+                    "index_type": "pint",
+                    "queryParameter": "@self[register]",
+                    "source": "metadata",
+                    "show_count": true,
+                    "enabled": false,
+                    "order": 1,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": 2,
+                                "count": 5,
+                                "label": "Reg"
+                            }
+                        ]
+                    }
+                },
+                "colour": {
+                    "name": "colour",
+                    "type": "terms",
+                    "title": "Colour",
+                    "description": "object field: colour",
+                    "data_type": "string",
+                    "index_field": "colour",
+                    "index_type": "string",
+                    "queryParameter": "colour",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 2,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 2,
+                        "buckets": [
+                            {
+                                "value": "red",
+                                "count": 3,
+                                "label": "red"
+                            },
+                            {
+                                "value": "blue",
+                                "count": 1,
+                                "label": "blue"
+                            }
+                        ]
+                    }
+                },
+                "tag": {
+                    "name": "tag",
+                    "type": "terms",
+                    "title": "Tag",
+                    "description": "object field: tag",
+                    "data_type": "string",
+                    "index_field": "tag",
+                    "index_type": "string",
+                    "queryParameter": "tag",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 3,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "x",
+                                "count": 1,
+                                "label": "x"
+                            }
+                        ]
+                    }
+                },
+                "size_schema_4": {
+                    "name": "size",
+                    "type": "terms",
+                    "title": "Size",
+                    "description": "object field: size",
+                    "data_type": "string",
+                    "index_field": "size",
+                    "index_type": "string",
+                    "queryParameter": "size",
+                    "source": "object",
+                    "show_count": true,
+                    "enabled": true,
+                    "order": 4,
+                    "data": {
+                        "type": "terms",
+                        "total_count": 1,
+                        "buckets": [
+                            {
+                                "value": "L",
+                                "count": 2,
+                                "label": "L"
+                            }
+                        ]
+                    },
+                    "schema": 4
+                }
+            },
+            "performance_metadata": {
+                "strategy": "filtered",
+                "fallback_used": false,
+                "total_facet_results": 5,
+                "has_restrictive_filters": true
+            }
+        }
+    }
+}
