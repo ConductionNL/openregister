@@ -1373,18 +1373,17 @@ class MagicFacetHandler {
 			return $this->facetCache[$cacheKey];
 		}
 
-		$result = $this->emptyTermsFacet();
 		if ($this->columnExists(tableName: $facet->tableName, columnName: $facet->field) === false) {
 			$this->logger->debug(
 				message: '[MagicFacetHandler] Column does not exist for facet',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $facet->tableName, 'field' => $facet->field]
 			);
-		} else {
-			$result = $this->countTableTerms(facet: $facet);
+			$this->facetCache[$cacheKey] = $this->emptyTermsFacet();
+			return $this->facetCache[$cacheKey];
 		}
 
-		$this->facetCache[$cacheKey] = $result;
-		return $result;
+		$this->facetCache[$cacheKey] = $this->countTableTerms(facet: $facet);
+		return $this->facetCache[$cacheKey];
 	}//end getTermsFacet()
 
 	/**
