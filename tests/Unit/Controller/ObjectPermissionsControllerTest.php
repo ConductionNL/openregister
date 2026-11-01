@@ -40,7 +40,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
@@ -60,6 +62,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\AccessReviewGate
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessHistory
@@ -87,6 +90,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 	 * @param boolean                $schemaDeclaresRules Whether the schema's cascade writes any rules down.
 	 * @param boolean                $registerUnset       Whether ObjectService lost its register after resolving the object.
 	 * @param LoggerInterface|null   $logger              The logger the controller reports failures to.
+	 * @param array|null             $resolvedOverride    The cascaded block, instead of the one the flags pick.
 	 *
 	 * @return ObjectPermissionsController The controller under test.
 	 */
@@ -99,6 +103,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		bool $schemaDeclaresRules = true,
 		bool $registerUnset = false,
 		?LoggerInterface $logger = null,
+		?array $resolvedOverride = null,
 	): ObjectPermissionsController {
 		$object = new ObjectEntity();
 		$object->setUuid(self::UUID);
@@ -107,12 +112,17 @@ class ObjectPermissionsControllerTest extends TestCase {
 
 		$permissionHandler = $this->createMock(originalClassName: PermissionHandler::class);
 		$permissionHandler->method('hasPermission')->willReturn($manages);
+		$permissionHandler->method('hasGroupPermission')->willReturn($manages);
 		// The schema below writes rules down, which is what the guard requires
 		// before a `manage` grant counts: on a schema that configures nothing,
 		// `manage` resolves default-open for everybody.
 		$resolved = [];
 		if ($schemaDeclaresRules === true) {
-			$resolved = ['roles' => ['behandelaar' => ['behandelaars']]];
+			$resolved = ['roles' => ['behandelaar' => ['behandelaars']], 'manage' => ['behandelaars']];
+		}
+
+		if ($resolvedOverride !== null) {
+			$resolved = $resolvedOverride;
 		}
 
 		$permissionHandler->method('resolveAuthorization')->willReturn($resolved);
@@ -173,8 +183,13 @@ class ObjectPermissionsControllerTest extends TestCase {
 			request: $this->createMock(originalClassName: IRequest::class),
 			objectService: $objectService,
 			report: $report,
-			userSession: $userSession,
-			groupManager: $groupManager,
+			gate: new AccessReviewGate(
+				objectService: $objectService,
+				report: $report,
+				userSession: $userSession,
+				groupManager: $groupManager,
+				grantManage: $this->createMock(originalClassName: GrantManageGuard::class)
+			),
 			logger: ($logger ?? new NullLogger())
 		);
 	}//end controllerFor()
@@ -297,6 +312,26 @@ class ObjectPermissionsControllerTest extends TestCase {
 
 		$this->assertSame(403, $response->getStatus());
 	}//end testADefaultOpenSchemaDoesNotMakeEverybodyAnAuditor()
+
+	/**
+	 * 🔴 `"public": true` in a block is not a written `manage` grant.
+	 *
+	 * PermissionHandler answers yes to every verb on a block that opts into
+	 * public access, so asking it for `manage` alone made every reader of
+	 * such a schema an auditor of it.
+	 *
+	 * @return void
+	 */
+	public function testAPublicBlockDoesNotMakeEverybodyAnAuditor(): void {
+		$response = $this->controllerFor(
+			userId: 'noor',
+			manages: true,
+			owner: 'bea',
+			resolvedOverride: ['public' => true, 'read' => ['public']]
+		)->index('zaken', 'zaak', self::UUID);
+
+		$this->assertSame(403, $response->getStatus());
+	}//end testAPublicBlockDoesNotMakeEverybodyAnAuditor()
 
 	/**
 	 * The owner still reads it there, because the object is theirs.

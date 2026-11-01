@@ -201,6 +201,10 @@ class PermissionHandler {
 		'readFiles',
 		'addFiles',
 		'deleteFiles',
+		// The grants list of an object, canonical on this path for the same
+		// reason. It never resolves default-open: AccessReviewGate only asks
+		// when the cascaded block writes it.
+		'readGrants',
 	];
 
 	/**
