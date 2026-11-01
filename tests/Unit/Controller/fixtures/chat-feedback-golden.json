@@ -77,6 +77,78 @@
             "message": "t:You do not have access to this conversation"
         }
     },
+    "conversation with an empty owner": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Access denied"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "You do not have access to this conversation"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "t:Access denied",
+            "message": "t:You do not have access to this conversation"
+        }
+    },
+    "conversation without an owner": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Access denied"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "You do not have access to this conversation"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "t:Access denied",
+            "message": "t:You do not have access to this conversation"
+        }
+    },
     "existing feedback of the acting user": {
         "calls": [
             {

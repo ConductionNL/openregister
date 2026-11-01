@@ -67,6 +67,8 @@ class ChatControllerFeedbackGoldenTest extends TestCase {
 			'invalid type' => [['type' => 'neutral']],
 			'missing type' => [[]],
 			'conversation of another user' => [['type' => 'positive', 'owner' => 'mallory']],
+			'conversation without an owner' => [['type' => 'positive', 'owner' => null, 'existing' => true]],
+			'conversation with an empty owner' => [['type' => 'positive', 'owner' => '', 'existing' => true]],
 			'message of another conversation' => [['type' => 'positive', 'messageConversation' => 99]],
 			'new positive feedback with a comment' => [['type' => 'positive', 'comment' => 'Helpful', 'organisation' => 'org-1', 'agentId' => 5]],
 			'new negative feedback without a comment or organisation' => [['type' => 'negative']],
@@ -108,7 +110,7 @@ class ChatControllerFeedbackGoldenTest extends TestCase {
 
 			$conversation = new Conversation();
 			$conversation->setId(3);
-			$conversation->setUserId($case['owner'] ?? self::ACTING_USER);
+			$conversation->setUserId(array_key_exists('owner', $case) === true ? $case['owner'] : self::ACTING_USER);
 			if (isset($case['agentId']) === true) {
 				$conversation->setAgentId($case['agentId']);
 			}
