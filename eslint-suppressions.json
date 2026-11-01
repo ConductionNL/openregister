@@ -1322,7 +1322,7 @@
   },
   "src/store/modules/quality.js": {
     "no-console": {
-      "count": 18
+      "count": 17
     }
   },
   "src/store/modules/register.js": {
