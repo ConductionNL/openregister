@@ -1279,151 +1279,38 @@ class ConfigurationController extends Controller {
 	 * 6. Update sync status
 	 * 7. Return success response
 	 *
-	 * @param callable $fetchConfig Function that fetches config data from source
-	 * @param array $params Request parameters
-	 * @param string $sourceType Source type (github, gitlab, url)
-	 *
-	 * @psalm-suppress InvalidReturnType
-	 * @psalm-suppress InvalidReturnStatement
-	 * @psalm-suppress InvalidArgument
+	 * @param callable $fetchConfig Function that fetches config data from the request parameters
+	 * @param string   $sourceType  Source type (github, gitlab, url)
 	 *
 	 * @return JSONResponse JSON response with import result
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
-	private function importFromSource(callable $fetchConfig, array $params, string $sourceType): JSONResponse {
+	private function importFromSource(callable $fetchConfig, string $sourceType): JSONResponse {
+		$params = $this->request->getParams();
 		try {
-			// Extract common parameters.
-			$syncEnabled = ($params['syncEnabled'] ?? true) === true;
-			$syncInterval = (int)($params['syncInterval'] ?? 24);
-
-			// Log import start.
 			$this->logger->debug(
 				message: "[ConfigurationController] Importing configuration from {$sourceType}",
 				context: ['file' => __FILE__, 'line' => __LINE__, 'params' => $params]
 			);
 
 			// Step 1: Fetch configuration data from source (source-specific logic).
-			$fetchResult = $fetchConfig($params);
-			$configData = $fetchResult['configData'];
-			$sourceUrl = $fetchResult['sourceUrl'];
-			$metadata = $fetchResult['metadata'];
-
-			// Step 2: Extract metadata from config.
-			$info = $configData['info'] ?? [];
-			$xOpenregister = $configData['x-openregister'] ?? [];
-
-			// Derive the configuration's app id. Prefer the explicit
-			// x-openregister.app; otherwise derive a stable id from the first
-			// register's slug so two independent URL imports (e.g. a Woo and a
-			// DCAT register) don't both collapse onto the generic 'imported'
-			// bucket and 409 the second import. Idempotent: re-importing the
-			// same register yields the same id, so it updates instead of
-			// colliding.
-			$appId = $xOpenregister['app'] ?? null;
-			if (empty($appId) === true) {
-				$registers = $configData['components']['registers'] ?? [];
-				$firstSlug = null;
-				if (is_array($registers) === true && empty($registers) === false) {
-					$first = reset($registers);
-					if (is_array($first) === true) {
-						$firstSlug = ($first['slug'] ?? null);
-					} else {
-						$firstSlug = null;
-					}
-
-					if ($firstSlug === null) {
-						$key = array_key_first($registers);
-						if (is_string($key) === true) {
-							$firstSlug = $key;
-						}
-					}
-				}
-
-				if (empty($firstSlug) === false) {
-					$appId = 'imported-' . preg_replace('/[^a-z0-9_-]+/', '', strtolower((string)$firstSlug));
-				} else {
-					$appId = 'imported';
-				}
-			}//end if
-
-			$version = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
-			$title = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$sourceType}";
-			$description = $info['description'] ?? $xOpenregister['description'] ?? "Imported from {$sourceType}";
+			$plan = $this->importPlan(fetchResult: $fetchConfig($params), sourceType: $sourceType);
+			$plan['syncEnabled'] = ($params['syncEnabled'] ?? true) === true;
+			$plan['syncInterval'] = (int)($params['syncInterval'] ?? 24);
 
 			// Step 3: Check if configuration already exists for this app.
-			$existingConfigs = $this->configurationMapper->findByApp($appId);
+			$existingConfigs = $this->configurationMapper->findByApp($plan['appId']);
 			if (count($existingConfigs) > 0) {
 				return new JSONResponse(
 					data: [
-						'error' => $this->getExistingConfigErrorMessage(appId: $appId),
+						'error' => $this->getExistingConfigErrorMessage(appId: $plan['appId']),
 						'existingConfigurationId' => $existingConfigs[0]->getId(),
 					],
 					statusCode: 409
 				);
 			}
 
-			// Step 4: Create Configuration entity.
-			$configuration = new Configuration();
-			$configuration->setTitle($title);
-			$configuration->setDescription($description);
-			$configuration->setType($xOpenregister['type'] ?? $sourceType);
-			$configuration->setSourceType($sourceType);
-			$configuration->setSourceUrl($sourceUrl);
-			$configuration->setApp($appId);
-			$configuration->setVersion($version);
-			$configuration->setLocalVersion(null);
-			// Will be set after import.
-			$configuration->setIsLocal(false);
-			$configuration->setSyncEnabled($syncEnabled);
-			$configuration->setSyncInterval($syncInterval);
-			$configuration->setAutoUpdate(false);
-			$configuration->setRegisters([]);
-			$configuration->setSchemas([]);
-			$configuration->setObjects([]);
-
-			// Set source-specific fields if available.
-			$hasGithubMeta = isset($metadata['owner'], $metadata['repo'], $metadata['path'], $metadata['branch']);
-			if ($sourceType === 'github' && $hasGithubMeta === true) {
-				$configuration->setGithubRepo("{$metadata['owner']}/{$metadata['repo']}");
-				$configuration->setGithubBranch($metadata['branch']);
-				$configuration->setGithubPath($metadata['path']);
-			}
-
-			$configuration = $this->configurationMapper->insert($configuration);
-
-			$configId = $configuration->getId();
-			$msg = "[ConfigurationController] Created configuration entity with ID {$configId} for app {$appId}";
-			$this->logger->debug(
-				message: $msg,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Step 5: Import using the standard flow with the configuration entity.
-			$result = $this->configurationService->importFromJson(
-				data: $configData,
-				configuration: $configuration,
-				owner: $appId,
-				appId: $appId,
-				version: $version,
-				force: false
-			);
-
-			// Step 6: Update configuration with sync status and imported entity IDs.
-			$configuration->setLocalVersion($version);
-			$configuration->setSyncStatus('success');
-			$configuration->setLastSyncDate(new DateTime());
-
-			// The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
-			// But we need to save the sync status.
-			$this->configurationMapper->update($configuration);
-
-			$configTitle = $configuration->getTitle();
-			$msg = "[ConfigurationController] Successfully imported configuration {$configTitle} from {$sourceType}";
-			$this->logger->debug(
-				message: $msg,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$configuration = $this->insertImportedConfiguration(plan: $plan);
+			$result = $this->runImport(configuration: $configuration, plan: $plan);
 
 			// Step 7: Return success response.
 			return new JSONResponse(
@@ -1440,29 +1327,196 @@ class ConfigurationController extends Controller {
 				statusCode: 201
 			);
 		} catch (Exception $e) {
-			// Determine status code from exception or default to 500.
-			$statusCode = (int)$e->getCode();
-			if ($statusCode < 400 || $statusCode >= 600) {
-				$statusCode = 500;
-			}
-
-			$this->logger->error(
-				message: "[ConfigurationController] Failed to import from {$sourceType}: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// SEC-CTRL-7: only 4xx validation responses keep the specific message;
-			// 500s return a generic envelope (the real error is logged above).
-			if ($statusCode >= 500) {
-				return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: $statusCode);
-			}
-
-			return new JSONResponse(
-				data: ['error' => 'Failed to import configuration: ' . $e->getMessage()],
-				statusCode: $statusCode
-			);
+			return $this->importFailure(exception: $e, sourceType: $sourceType);
 		}//end try
 	}//end importFromSource()
+
+	/**
+	 * What an import from a source creates: the fetched data plus the app id, version and labels it carries.
+	 *
+	 * @param array{configData: array, sourceUrl: string, metadata: array} $fetchResult The fetched source.
+	 * @param string                                                       $sourceType  Source type (github, gitlab, url).
+	 *
+	 * @return array<string, mixed> The import plan.
+	 */
+	private function importPlan(array $fetchResult, string $sourceType): array {
+		$configData = $fetchResult['configData'];
+		$info = $configData['info'] ?? [];
+		$xOpenregister = $configData['x-openregister'] ?? [];
+
+		return [
+			'configData' => $configData,
+			'sourceUrl' => $fetchResult['sourceUrl'],
+			'metadata' => $fetchResult['metadata'],
+			'sourceType' => $sourceType,
+			'appId' => $this->importAppId(configData: $configData),
+			'version' => $info['version'] ?? $xOpenregister['version'] ?? '1.0.0',
+			'title' => $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$sourceType}",
+			'description' => $info['description'] ?? $xOpenregister['description'] ?? "Imported from {$sourceType}",
+			'type' => $xOpenregister['type'] ?? $sourceType,
+		];
+	}//end importPlan()
+
+	/**
+	 * The app id an imported configuration belongs to.
+	 *
+	 * Prefers the explicit x-openregister.app; otherwise derives a stable id from the
+	 * first register's slug (or key), so two independent imports of different registers
+	 * do not both collapse onto the generic 'imported' bucket and 409 the second import.
+	 * Re-importing the same register yields the same id, so it updates instead of colliding.
+	 *
+	 * @param array $configData The fetched configuration.
+	 *
+	 * @return mixed The explicit app id as given, or the derived string id.
+	 */
+	private function importAppId(array $configData) {
+		$appId = $configData['x-openregister']['app'] ?? null;
+		if (empty($appId) === false) {
+			return $appId;
+		}
+
+		$firstSlug = $this->firstRegisterSlug(registers: $configData['components']['registers'] ?? []);
+		if (empty($firstSlug) === false) {
+			return 'imported-' . preg_replace('/[^a-z0-9_-]+/', '', strtolower((string)$firstSlug));
+		}
+
+		return 'imported';
+	}//end importAppId()
+
+	/**
+	 * The slug of the first register in a configuration, or its key when it has none.
+	 *
+	 * @param mixed $registers The configuration's components.registers.
+	 *
+	 * @return mixed The slug or key, or null.
+	 */
+	private function firstRegisterSlug($registers) {
+		if (is_array($registers) === false || empty($registers) === true) {
+			return null;
+		}
+
+		$first = reset($registers);
+		if (is_array($first) === true && ($first['slug'] ?? null) !== null) {
+			return $first['slug'];
+		}
+
+		$key = array_key_first($registers);
+		if (is_string($key) === true) {
+			return $key;
+		}
+
+		return null;
+	}//end firstRegisterSlug()
+
+	/**
+	 * Create and insert the configuration entity for an import plan.
+	 *
+	 * @param array<string, mixed> $plan The import plan, with its sync settings.
+	 *
+	 * @return Configuration The inserted configuration.
+	 */
+	private function insertImportedConfiguration(array $plan): Configuration {
+		$configuration = new Configuration();
+		$configuration->setTitle($plan['title']);
+		$configuration->setDescription($plan['description']);
+		$configuration->setType($plan['type']);
+		$configuration->setSourceType($plan['sourceType']);
+		$configuration->setSourceUrl($plan['sourceUrl']);
+		$configuration->setApp($plan['appId']);
+		$configuration->setVersion($plan['version']);
+		// Set after the import.
+		$configuration->setLocalVersion(null);
+		$configuration->setIsLocal(false);
+		$configuration->setSyncEnabled($plan['syncEnabled']);
+		$configuration->setSyncInterval($plan['syncInterval']);
+		$configuration->setAutoUpdate(false);
+		$configuration->setRegisters([]);
+		$configuration->setSchemas([]);
+		$configuration->setObjects([]);
+
+		$metadata = $plan['metadata'];
+		$hasGithubMeta = isset($metadata['owner'], $metadata['repo'], $metadata['path'], $metadata['branch']);
+		if ($plan['sourceType'] === 'github' && $hasGithubMeta === true) {
+			$configuration->setGithubRepo("{$metadata['owner']}/{$metadata['repo']}");
+			$configuration->setGithubBranch($metadata['branch']);
+			$configuration->setGithubPath($metadata['path']);
+		}
+
+		$configuration = $this->configurationMapper->insert($configuration);
+
+		$configId = $configuration->getId();
+		$this->logger->debug(
+			message: "[ConfigurationController] Created configuration entity with ID {$configId} for app {$plan['appId']}",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $configuration;
+	}//end insertImportedConfiguration()
+
+	/**
+	 * Import a plan's data into its configuration and record the sync status.
+	 *
+	 * The import already stores the imported entity ids on the configuration; this saves the sync status.
+	 *
+	 * @param Configuration        $configuration The inserted configuration.
+	 * @param array<string, mixed> $plan          The import plan.
+	 *
+	 * @return array The import result with registers, schemas and objects.
+	 */
+	private function runImport(Configuration $configuration, array $plan): array {
+		$result = $this->configurationService->importFromJson(
+			data: $plan['configData'],
+			configuration: $configuration,
+			owner: $plan['appId'],
+			appId: $plan['appId'],
+			version: $plan['version'],
+			force: false
+		);
+
+		$configuration->setLocalVersion($plan['version']);
+		$configuration->setSyncStatus('success');
+		$configuration->setLastSyncDate(new DateTime());
+		$this->configurationMapper->update($configuration);
+
+		$configTitle = $configuration->getTitle();
+		$this->logger->debug(
+			message: "[ConfigurationController] Successfully imported configuration {$configTitle} from {$plan['sourceType']}",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $result;
+	}//end runImport()
+
+	/**
+	 * The response for a failed import: the exception's 4xx code with its message, otherwise a generic 500.
+	 *
+	 * @param Exception $exception  The failure.
+	 * @param string    $sourceType Source type (github, gitlab, url).
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function importFailure(Exception $exception, string $sourceType): JSONResponse {
+		$statusCode = (int)$exception->getCode();
+		if ($statusCode < 400 || $statusCode >= 600) {
+			$statusCode = 500;
+		}
+
+		$this->logger->error(
+			message: "[ConfigurationController] Failed to import from {$sourceType}: " . $exception->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		// SEC-CTRL-7: only 4xx validation responses keep the specific message;
+		// 500s return a generic envelope (the real error is logged above).
+		if ($statusCode >= 500) {
+			return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: $statusCode);
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Failed to import configuration: ' . $exception->getMessage()],
+			statusCode: $statusCode
+		);
+	}//end importFailure()
 
 	/**
 	 * Import configuration from GitHub
@@ -1486,7 +1540,6 @@ class ConfigurationController extends Controller {
 
 		return $this->importFromSource(
 			fetchConfig: fn (array $params) => $this->fetchConfigFromGitHub(params: $params),
-			params: $this->request->getParams(),
 			sourceType: 'github'
 		);
 	}//end importFromGitHub()
@@ -1513,7 +1566,6 @@ class ConfigurationController extends Controller {
 
 		return $this->importFromSource(
 			fetchConfig: fn (array $params) => $this->fetchConfigFromGitLab(params: $params),
-			params: $this->request->getParams(),
 			sourceType: 'gitlab'
 		);
 	}//end importFromGitLab()
@@ -1540,7 +1592,6 @@ class ConfigurationController extends Controller {
 
 		return $this->importFromSource(
 			fetchConfig: fn (array $params) => $this->fetchConfigFromUrl(params: $params),
-			params: $this->request->getParams(),
 			sourceType: 'url'
 		);
 	}//end importFromUrl()

@@ -1,0 +1,1392 @@
+{
+    "alice": {
+        "result": {
+            "valid": [
+                {
+                    "id": "flat-1",
+                    "register": 1,
+                    "schema": 10,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "T",
+                    "link": "ref-a",
+                    "owner": "alice",
+                    "uuid": "flat-1",
+                    "organisation": null,
+                    "relations": {
+                        "link": "ref-a@10"
+                    },
+                    "object": {
+                        "title": "T",
+                        "link": "ref-a"
+                    }
+                },
+                {
+                    "id": "self-1",
+                    "owner": "bob",
+                    "uuid": "self-1",
+                    "register": 2,
+                    "schema": 10,
+                    "organisation": null,
+                    "relations": {
+                        "parent": "ref-b@10"
+                    },
+                    "object": {
+                        "title": "X",
+                        "parent": "ref-b"
+                    }
+                },
+                {
+                    "register": 1,
+                    "schema": 10,
+                    "relations": {
+                        "p": "q"
+                    },
+                    "uuid": "(generated)",
+                    "owner": "alice",
+                    "organisation": null,
+                    "object": {
+                        "v": "ref-c"
+                    }
+                },
+                {
+                    "id": "   ",
+                    "register": 1,
+                    "schema": 10,
+                    "organisation": "org-1",
+                    "x": 1,
+                    "uuid": "(generated)",
+                    "owner": "alice",
+                    "relations": [],
+                    "object": {
+                        "x": 1
+                    }
+                },
+                {
+                    "id": "ignored",
+                    "organisation": null,
+                    "uuid": "org-kept",
+                    "register": 1,
+                    "schema": 10,
+                    "owner": "alice",
+                    "relations": {
+                        "k": "ref-d@10"
+                    },
+                    "object": {
+                        "object": "not-an-array",
+                        "k": "ref-d"
+                    }
+                },
+                {
+                    "relations": {
+                        "z": "ref-e@10"
+                    },
+                    "uuid": "rel-set",
+                    "register": 1,
+                    "schema": 10,
+                    "owner": "alice",
+                    "organisation": null,
+                    "object": {
+                        "z": "ref-e"
+                    }
+                },
+                {
+                    "register": 5,
+                    "schema": 10,
+                    "uuid": "int-like",
+                    "owner": "alice",
+                    "organisation": null,
+                    "relations": [],
+                    "object": []
+                }
+            ],
+            "invalid": [
+                {
+                    "object": {
+                        "id": "no-register",
+                        "schema": 10
+                    },
+                    "error": "Register ID is required but not found in object data or method parameters",
+                    "index": 6,
+                    "type": "MissingRegisterException"
+                },
+                {
+                    "object": {
+                        "id": "no-schema",
+                        "register": 1
+                    },
+                    "error": "Schema ID is required but not found in object data or method parameters",
+                    "index": 7,
+                    "type": "MissingSchemaException"
+                },
+                {
+                    "object": {
+                        "id": "no-both"
+                    },
+                    "error": "Register ID is required but not found in object data or method parameters",
+                    "index": 8,
+                    "type": "MissingRegisterException"
+                },
+                {
+                    "object": {
+                        "id": "bad-schema",
+                        "register": 1,
+                        "schema": 99
+                    },
+                    "error": "Schema ID 99 does not exist or could not be loaded",
+                    "index": 9,
+                    "type": "InvalidSchemaException"
+                }
+            ]
+        },
+        "log": [
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "register",
+                        "schema",
+                        "name",
+                        "slug",
+                        "title",
+                        "link",
+                        "owner"
+                    ],
+                    "has_object_property": false,
+                    "sample_data": {
+                        "id": "flat-1",
+                        "register": 1,
+                        "schema": 10
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "1": "name",
+                        "5": "slug",
+                        "6": "register",
+                        "7": "schema",
+                        "10": "owner",
+                        "13": "id"
+                    },
+                    "remaining_keys": [
+                        "title",
+                        "link"
+                    ],
+                    "business_data_sample": {
+                        "title": "T",
+                        "link": "ref-a"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "flat-1",
+                    "relationCount": 1,
+                    "relations": {
+                        "link": "ref-a@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "@self",
+                        "register",
+                        "schema",
+                        "object"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "@self": {
+                            "id": "self-1",
+                            "owner": "bob"
+                        },
+                        "register": {
+                            "id": 2,
+                            "uuid": null,
+                            "slug": null,
+                            "title": null,
+                            "version": null,
+                            "description": null,
+                            "schemas": [],
+                            "source": null,
+                            "tablePrefix": null,
+                            "folder": null,
+                            "updated": null,
+                            "created": null,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "authorization": [],
+                            "sharedWith": [],
+                            "groups": [],
+                            "type": null,
+                            "languages": null,
+                            "configuration": [],
+                            "quota": {
+                                "storage": null,
+                                "bandwidth": null,
+                                "requests": null,
+                                "users": null,
+                                "groups": null
+                            },
+                            "usage": {
+                                "storage": 0,
+                                "bandwidth": 0,
+                                "requests": 0,
+                                "users": 0,
+                                "groups": 0
+                            },
+                            "deleted": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null
+                        },
+                        "schema": {
+                            "id": 10,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": null,
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Using object property for business data (mixed)",
+                "context": []
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "self-1",
+                    "relationCount": 1,
+                    "relations": {
+                        "parent": "ref-b@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "@self",
+                        "object"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "@self": {
+                            "register": 1,
+                            "schema": 10,
+                            "relations": {
+                                "p": "q"
+                            }
+                        },
+                        "object": {
+                            "v": "ref-c"
+                        }
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Using object property for business data (mixed)",
+                "context": []
+            },
+            {
+                "message": "[TransformationHandler] Relations already set from preparation",
+                "context": {
+                    "uuid": "(generated)",
+                    "relationCount": 1
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "register",
+                        "schema",
+                        "organisation",
+                        "x"
+                    ],
+                    "has_object_property": false,
+                    "sample_data": {
+                        "id": "   ",
+                        "register": 1,
+                        "schema": 10
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "6": "register",
+                        "7": "schema",
+                        "8": "organisation",
+                        "13": "id"
+                    },
+                    "remaining_keys": [
+                        "x"
+                    ],
+                    "business_data_sample": {
+                        "x": 1
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "(generated)",
+                    "relationCount": 0,
+                    "relations": []
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "@self",
+                        "register",
+                        "schema",
+                        "object",
+                        "k"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "id": "org-kept",
+                        "@self": {
+                            "id": "ignored",
+                            "organisation": ""
+                        },
+                        "register": 1
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "0": "@self",
+                        "6": "register",
+                        "7": "schema",
+                        "13": "id"
+                    },
+                    "remaining_keys": [
+                        "object",
+                        "k"
+                    ],
+                    "business_data_sample": {
+                        "object": "not-an-array",
+                        "k": "ref-d"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "org-kept",
+                    "relationCount": 1,
+                    "relations": {
+                        "k": "ref-d@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "register",
+                        "schema",
+                        "@self",
+                        "object"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "id": "rel-set",
+                        "register": 1,
+                        "schema": 10
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Using object property for business data (mixed)",
+                "context": []
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "rel-set",
+                    "relationCount": 1,
+                    "relations": {
+                        "z": "ref-e@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "@self",
+                        "register",
+                        "schema"
+                    ],
+                    "has_object_property": false,
+                    "sample_data": {
+                        "id": "int-like",
+                        "@self": {
+                            "register": 5,
+                            "schema": 10
+                        },
+                        "register": 1
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "0": "@self",
+                        "6": "register",
+                        "7": "schema",
+                        "13": "id"
+                    },
+                    "remaining_keys": [],
+                    "business_data_sample": []
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "int-like",
+                    "relationCount": 0,
+                    "relations": []
+                }
+            }
+        ],
+        "objectsAfter": [
+            {
+                "id": "flat-1",
+                "register": 1,
+                "schema": 10,
+                "name": "N",
+                "slug": "s",
+                "title": "T",
+                "link": "ref-a",
+                "owner": ""
+            },
+            {
+                "@self": {
+                    "id": "self-1",
+                    "owner": "bob"
+                },
+                "register": {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                "schema": {
+                    "id": 10,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                },
+                "object": {
+                    "title": "X",
+                    "parent": "ref-b"
+                }
+            },
+            {
+                "@self": {
+                    "register": 1,
+                    "schema": 10,
+                    "relations": {
+                        "p": "q"
+                    }
+                },
+                "object": {
+                    "v": "ref-c"
+                }
+            },
+            {
+                "id": "   ",
+                "register": 1,
+                "schema": 10,
+                "organisation": "org-1",
+                "x": 1
+            },
+            {
+                "id": "org-kept",
+                "@self": {
+                    "id": "ignored",
+                    "organisation": ""
+                },
+                "register": 1,
+                "schema": 10,
+                "object": "not-an-array",
+                "k": "ref-d"
+            },
+            {
+                "id": "rel-set",
+                "register": 1,
+                "schema": 10,
+                "@self": {
+                    "relations": []
+                },
+                "object": {
+                    "z": "ref-e"
+                }
+            },
+            {
+                "id": "no-register",
+                "schema": 10
+            },
+            {
+                "id": "no-schema",
+                "register": 1
+            },
+            {
+                "id": "no-both"
+            },
+            {
+                "id": "bad-schema",
+                "register": 1,
+                "schema": 99
+            },
+            {
+                "id": "int-like",
+                "@self": {
+                    "register": 5,
+                    "schema": 10
+                },
+                "register": 1,
+                "schema": 99
+            }
+        ]
+    },
+    "anonymous": {
+        "result": {
+            "valid": [
+                {
+                    "id": "flat-1",
+                    "register": 1,
+                    "schema": 10,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "T",
+                    "link": "ref-a",
+                    "owner": null,
+                    "uuid": "flat-1",
+                    "organisation": null,
+                    "relations": {
+                        "link": "ref-a@10"
+                    },
+                    "object": {
+                        "title": "T",
+                        "link": "ref-a"
+                    }
+                },
+                {
+                    "id": "self-1",
+                    "owner": "bob",
+                    "uuid": "self-1",
+                    "register": 2,
+                    "schema": 10,
+                    "organisation": null,
+                    "relations": {
+                        "parent": "ref-b@10"
+                    },
+                    "object": {
+                        "title": "X",
+                        "parent": "ref-b"
+                    }
+                },
+                {
+                    "register": 1,
+                    "schema": 10,
+                    "relations": {
+                        "p": "q"
+                    },
+                    "uuid": "(generated)",
+                    "owner": null,
+                    "organisation": null,
+                    "object": {
+                        "v": "ref-c"
+                    }
+                },
+                {
+                    "id": "   ",
+                    "register": 1,
+                    "schema": 10,
+                    "organisation": "org-1",
+                    "x": 1,
+                    "uuid": "(generated)",
+                    "owner": null,
+                    "relations": [],
+                    "object": {
+                        "x": 1
+                    }
+                },
+                {
+                    "id": "ignored",
+                    "organisation": null,
+                    "uuid": "org-kept",
+                    "register": 1,
+                    "schema": 10,
+                    "owner": null,
+                    "relations": {
+                        "k": "ref-d@10"
+                    },
+                    "object": {
+                        "object": "not-an-array",
+                        "k": "ref-d"
+                    }
+                },
+                {
+                    "relations": {
+                        "z": "ref-e@10"
+                    },
+                    "uuid": "rel-set",
+                    "register": 1,
+                    "schema": 10,
+                    "owner": null,
+                    "organisation": null,
+                    "object": {
+                        "z": "ref-e"
+                    }
+                },
+                {
+                    "register": 5,
+                    "schema": 10,
+                    "uuid": "int-like",
+                    "owner": null,
+                    "organisation": null,
+                    "relations": [],
+                    "object": []
+                }
+            ],
+            "invalid": [
+                {
+                    "object": {
+                        "id": "no-register",
+                        "schema": 10
+                    },
+                    "error": "Register ID is required but not found in object data or method parameters",
+                    "index": 6,
+                    "type": "MissingRegisterException"
+                },
+                {
+                    "object": {
+                        "id": "no-schema",
+                        "register": 1
+                    },
+                    "error": "Schema ID is required but not found in object data or method parameters",
+                    "index": 7,
+                    "type": "MissingSchemaException"
+                },
+                {
+                    "object": {
+                        "id": "no-both"
+                    },
+                    "error": "Register ID is required but not found in object data or method parameters",
+                    "index": 8,
+                    "type": "MissingRegisterException"
+                },
+                {
+                    "object": {
+                        "id": "bad-schema",
+                        "register": 1,
+                        "schema": 99
+                    },
+                    "error": "Schema ID 99 does not exist or could not be loaded",
+                    "index": 9,
+                    "type": "InvalidSchemaException"
+                }
+            ]
+        },
+        "log": [
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "register",
+                        "schema",
+                        "name",
+                        "slug",
+                        "title",
+                        "link",
+                        "owner"
+                    ],
+                    "has_object_property": false,
+                    "sample_data": {
+                        "id": "flat-1",
+                        "register": 1,
+                        "schema": 10
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "1": "name",
+                        "5": "slug",
+                        "6": "register",
+                        "7": "schema",
+                        "10": "owner",
+                        "13": "id"
+                    },
+                    "remaining_keys": [
+                        "title",
+                        "link"
+                    ],
+                    "business_data_sample": {
+                        "title": "T",
+                        "link": "ref-a"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "flat-1",
+                    "relationCount": 1,
+                    "relations": {
+                        "link": "ref-a@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "@self",
+                        "register",
+                        "schema",
+                        "object"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "@self": {
+                            "id": "self-1",
+                            "owner": "bob"
+                        },
+                        "register": {
+                            "id": 2,
+                            "uuid": null,
+                            "slug": null,
+                            "title": null,
+                            "version": null,
+                            "description": null,
+                            "schemas": [],
+                            "source": null,
+                            "tablePrefix": null,
+                            "folder": null,
+                            "updated": null,
+                            "created": null,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "authorization": [],
+                            "sharedWith": [],
+                            "groups": [],
+                            "type": null,
+                            "languages": null,
+                            "configuration": [],
+                            "quota": {
+                                "storage": null,
+                                "bandwidth": null,
+                                "requests": null,
+                                "users": null,
+                                "groups": null
+                            },
+                            "usage": {
+                                "storage": 0,
+                                "bandwidth": 0,
+                                "requests": 0,
+                                "users": 0,
+                                "groups": 0
+                            },
+                            "deleted": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null
+                        },
+                        "schema": {
+                            "id": 10,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": null,
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Using object property for business data (mixed)",
+                "context": []
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "self-1",
+                    "relationCount": 1,
+                    "relations": {
+                        "parent": "ref-b@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "@self",
+                        "object"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "@self": {
+                            "register": 1,
+                            "schema": 10,
+                            "relations": {
+                                "p": "q"
+                            }
+                        },
+                        "object": {
+                            "v": "ref-c"
+                        }
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Using object property for business data (mixed)",
+                "context": []
+            },
+            {
+                "message": "[TransformationHandler] Relations already set from preparation",
+                "context": {
+                    "uuid": "(generated)",
+                    "relationCount": 1
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "register",
+                        "schema",
+                        "organisation",
+                        "x"
+                    ],
+                    "has_object_property": false,
+                    "sample_data": {
+                        "id": "   ",
+                        "register": 1,
+                        "schema": 10
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "6": "register",
+                        "7": "schema",
+                        "8": "organisation",
+                        "13": "id"
+                    },
+                    "remaining_keys": [
+                        "x"
+                    ],
+                    "business_data_sample": {
+                        "x": 1
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "(generated)",
+                    "relationCount": 0,
+                    "relations": []
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "@self",
+                        "register",
+                        "schema",
+                        "object",
+                        "k"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "id": "org-kept",
+                        "@self": {
+                            "id": "ignored",
+                            "organisation": ""
+                        },
+                        "register": 1
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "0": "@self",
+                        "6": "register",
+                        "7": "schema",
+                        "13": "id"
+                    },
+                    "remaining_keys": [
+                        "object",
+                        "k"
+                    ],
+                    "business_data_sample": {
+                        "object": "not-an-array",
+                        "k": "ref-d"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "org-kept",
+                    "relationCount": 1,
+                    "relations": {
+                        "k": "ref-d@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "register",
+                        "schema",
+                        "@self",
+                        "object"
+                    ],
+                    "has_object_property": true,
+                    "sample_data": {
+                        "id": "rel-set",
+                        "register": 1,
+                        "schema": 10
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Using object property for business data (mixed)",
+                "context": []
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "rel-set",
+                    "relationCount": 1,
+                    "relations": {
+                        "z": "ref-e@10"
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] DEBUG - Mixed schema object structure",
+                "context": {
+                    "available_keys": [
+                        "id",
+                        "@self",
+                        "register",
+                        "schema"
+                    ],
+                    "has_object_property": false,
+                    "sample_data": {
+                        "id": "int-like",
+                        "@self": {
+                            "register": 5,
+                            "schema": 10
+                        },
+                        "register": 1
+                    }
+                }
+            },
+            {
+                "message": "[TransformationHandler] Metadata removal applied (mixed)",
+                "context": {
+                    "removed_fields": {
+                        "0": "@self",
+                        "6": "register",
+                        "7": "schema",
+                        "13": "id"
+                    },
+                    "remaining_keys": [],
+                    "business_data_sample": []
+                }
+            },
+            {
+                "message": "[TransformationHandler] Relations scanned in transformation",
+                "context": {
+                    "uuid": "int-like",
+                    "relationCount": 0,
+                    "relations": []
+                }
+            }
+        ],
+        "objectsAfter": [
+            {
+                "id": "flat-1",
+                "register": 1,
+                "schema": 10,
+                "name": "N",
+                "slug": "s",
+                "title": "T",
+                "link": "ref-a",
+                "owner": ""
+            },
+            {
+                "@self": {
+                    "id": "self-1",
+                    "owner": "bob"
+                },
+                "register": {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                "schema": {
+                    "id": 10,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                },
+                "object": {
+                    "title": "X",
+                    "parent": "ref-b"
+                }
+            },
+            {
+                "@self": {
+                    "register": 1,
+                    "schema": 10,
+                    "relations": {
+                        "p": "q"
+                    }
+                },
+                "object": {
+                    "v": "ref-c"
+                }
+            },
+            {
+                "id": "   ",
+                "register": 1,
+                "schema": 10,
+                "organisation": "org-1",
+                "x": 1
+            },
+            {
+                "id": "org-kept",
+                "@self": {
+                    "id": "ignored",
+                    "organisation": ""
+                },
+                "register": 1,
+                "schema": 10,
+                "object": "not-an-array",
+                "k": "ref-d"
+            },
+            {
+                "id": "rel-set",
+                "register": 1,
+                "schema": 10,
+                "@self": {
+                    "relations": []
+                },
+                "object": {
+                    "z": "ref-e"
+                }
+            },
+            {
+                "id": "no-register",
+                "schema": 10
+            },
+            {
+                "id": "no-schema",
+                "register": 1
+            },
+            {
+                "id": "no-both"
+            },
+            {
+                "id": "bad-schema",
+                "register": 1,
+                "schema": 99
+            },
+            {
+                "id": "int-like",
+                "@self": {
+                    "register": 5,
+                    "schema": 10
+                },
+                "register": 1,
+                "schema": 99
+            }
+        ]
+    }
+}

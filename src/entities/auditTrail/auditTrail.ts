@@ -4,6 +4,34 @@ import type { TAuditTrail } from './auditTrail.types'
 import { z } from 'zod'
 import { withFallbacks } from '../withFallbacks.js'
 
+const FALLBACKS = {
+	id: 0,
+	uuid: '',
+	schema: 0,
+	register: 0,
+	object: 0,
+	objectUuid: null,
+	registerUuid: null,
+	schemaUuid: null,
+	action: '',
+	changed: [],
+	user: '',
+	userName: '',
+	session: '',
+	request: '',
+	ipAddress: '',
+	version: null,
+	created: '',
+	organisationId: null,
+	organisationIdType: null,
+	processingActivityId: null,
+	processingActivityUrl: null,
+	processingId: null,
+	confidentiality: null,
+	retentionPeriod: null,
+	size: 0,
+}
+
 export class AuditTrail implements TAuditTrail {
 	public id!: number
 	public uuid!: string
@@ -36,36 +64,7 @@ export class AuditTrail implements TAuditTrail {
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(auditTrail: TAuditTrail) {
-		Object.assign(
-			this,
-			withFallbacks(auditTrail, {
-				id: 0,
-				uuid: '',
-				schema: 0,
-				register: 0,
-				object: 0,
-				objectUuid: null,
-				registerUuid: null,
-				schemaUuid: null,
-				action: '',
-				changed: [],
-				user: '',
-				userName: '',
-				session: '',
-				request: '',
-				ipAddress: '',
-				version: null,
-				created: '',
-				organisationId: null,
-				organisationIdType: null,
-				processingActivityId: null,
-				processingActivityUrl: null,
-				processingId: null,
-				confidentiality: null,
-				retentionPeriod: null,
-				size: 0,
-			}),
-		)
+		Object.assign(this, withFallbacks(auditTrail, FALLBACKS))
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {

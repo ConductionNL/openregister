@@ -431,7 +431,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 2
+      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -809,7 +809,7 @@
       "count": 2
     },
     "no-console": {
-      "count": 4
+      "count": 3
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -1148,7 +1148,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 5
+      "count": 3
     }
   },
   "src/modals/webhook/EditWebhook.vue": {

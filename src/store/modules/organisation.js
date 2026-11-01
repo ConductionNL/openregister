@@ -1,6 +1,70 @@
 import { defineStore } from 'pinia'
 import { Organisation } from '../../entities/index.js'
 
+/**
+ * Whether an organisation is the one a uuid or id names.
+ *
+ * @param {object} organisation The organisation.
+ * @param {string|number} organisationId Its uuid or id.
+ * @return {boolean} True when either matches.
+ */
+function isOrganisation(organisation, organisationId) {
+	return organisation.uuid === organisationId || organisation.id === organisationId
+}
+
+/**
+ * Save an organisation and read the answer.
+ *
+ * @param {string|number} organisationId The organisation's uuid, else its id.
+ * @param {object} body The fields to save.
+ * @return {Promise<{response: Response, data: object}>} The answer.
+ * @throws {Error} The answer's message, else the HTTP status.
+ */
+async function putOrganisation(organisationId, body) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/organisations/${organisationId}`,
+		{
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		},
+	)
+
+	if (!response.ok) {
+		const errorData = await response.json()
+		throw new Error(
+			errorData.message || `HTTP error! status: ${response.status}`,
+		)
+	}
+
+	return { response, data: await response.json() }
+}
+
+/**
+ * Put a saved organisation into the list and, when it is the current one,
+ * into the current item.
+ *
+ * @param {object} store The organisation store.
+ * @param {{organisationId: string|number, savedOrganisation: object}} saved The saved organisation and the uuid or id it was saved under.
+ */
+function applySavedOrganisation(store, saved) {
+	const { organisationId, savedOrganisation } = saved
+	const index = store.organisationList.findIndex((org) =>
+		isOrganisation(org, organisationId),
+	)
+	if (index !== -1) {
+		store.organisationList[index] = new Organisation(savedOrganisation)
+	}
+	if (
+		store.organisationItem
+		&& isOrganisation(store.organisationItem, organisationId)
+	) {
+		store.setOrganisationItem(savedOrganisation)
+	}
+}
+
 export const useOrganisationStore = defineStore('organisation', {
 	state: () => ({
 		organisationItem: false,
@@ -338,50 +402,17 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			// API expects UUID, not ID
 			const organisationId = organisationData.uuid || organisationData.id
-			const endpoint = `/index.php/apps/openregister/api/organisations/${organisationId}`
 
 			// Clean the data before sending - remove read-only fields
 			const cleanedData = this.cleanOrganisationForSave(organisationData)
 
 			try {
-				const response = await fetch(endpoint, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(cleanedData),
-				})
-
-				if (!response.ok) {
-					const errorData = await response.json()
-					throw new Error(
-						errorData.message
-							|| `HTTP error! status: ${response.status}`,
-					)
-				}
-
-				const data = await response.json()
-				const savedOrganisation = data.organisation || data
-
-				// Update existing in list
-				const index = this.organisationList.findIndex(
-					(org) =>
-						org.uuid === organisationId || org.id === organisationId,
+				const { response, data } = await putOrganisation(
+					organisationId,
+					cleanedData,
 				)
-				if (index !== -1) {
-					this.organisationList[index] = new Organisation(
-						savedOrganisation,
-					)
-				}
-
-				// Update current item if it's the same organisation
-				if (
-					this.organisationItem
-					&& (this.organisationItem.uuid === organisationId
-						|| this.organisationItem.id === organisationId)
-				) {
-					this.setOrganisationItem(savedOrganisation)
-				}
+				const savedOrganisation = data.organisation || data
+				applySavedOrganisation(this, { organisationId, savedOrganisation })
 
 				// Refresh the full list to get updated stats
 				await this.refreshOrganisationList()
