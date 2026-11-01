@@ -66,16 +66,35 @@ export function listPageQuery(options, current) {
  * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 export async function getListPage(url, failure) {
+	return requestJson(url, { method: 'GET', failure })
+}
+
+/**
+ * Send a JSON request with the Nextcloud request token and read the answer.
+ *
+ * @param {string} url The request URL.
+ * @param {{method: string, body?: object, failure: string}} request The
+ *     method, an optional body to send as JSON, and the error text used when
+ *     the server gives none.
+ * @return {Promise<object>} The parsed answer.
+ * @throws {Error} The server's error text, or `failure`, when the answer is not ok.
+ *
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+export async function requestJson(url, request) {
 	const response = await fetch(url, {
-		method: 'GET',
+		method: request.method,
 		headers: {
 			'Content-Type': 'application/json',
 			requesttoken: OC.requestToken,
 		},
+		...(request.body === undefined
+			? {}
+			: { body: JSON.stringify(request.body) }),
 	})
 	const data = await response.json()
 	if (!response.ok) {
-		throw new Error(data.error || failure)
+		throw new Error(data.error || request.failure)
 	}
 	return data
 }

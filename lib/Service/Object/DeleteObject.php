@@ -191,11 +191,6 @@ class DeleteObject {
 	 * @throws Exception If there is an error during deletion.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Soft delete with audit trail requires multiple conditional paths
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple decision paths for soft delete, cache invalidation,
-	 *                                               and audit trail operations
-	 *
-	 * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -207,14 +202,42 @@ class DeleteObject {
 		?Register $register = null,
 		?Schema $schema = null,
 	): bool {
-		// Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
-		// Handle array input - find object with context (searches across all magic tables).
-		// NOTE: the ObjectEntity branch MUST be evaluated first. Reading $object['id']
-		// on an ObjectEntity raises a fatal \Error ("Cannot use object of type ... as
-		// array") because ObjectEntity does not implement ArrayAccess; that \Error is
-		// not an \Exception and previously escaped every catch up the stack, surfacing
-		// as an HTML 500 to API clients (DELETE on magic-table objects).
-		// @psalm-suppress UndefinedInterfaceMethod.
+		$identifier = $this->deletionIdentifier(object: $object);
+
+		// PERF: callers that already resolved the object AND its register/schema
+		// context (deleteObject() always has both after resolveDeletionContext())
+		// pass them in, skipping a full cross-magic-table re-scan per delete.
+		$given = null;
+		if ($object instanceof ObjectEntity === true && $register !== null && $schema !== null) {
+			$given = new DeletionTarget(object: $object, register: $register, schema: $schema);
+		}
+
+		$target = ($given ?? $this->lookUpDeletionTarget(object: $object, identifier: $identifier));
+
+		if ($permanent === true) {
+			$this->deletePermanently(target: $target);
+			return true;
+		}
+
+		$this->softDelete(target: $target, cascadeContext: $cascadeContext);
+		return true;
+	}//end delete()
+
+	/**
+	 * The identifier of the object handed to delete().
+	 *
+	 * The ObjectEntity branch is evaluated first: ObjectEntity does not implement
+	 * ArrayAccess, so reading `$object['id']` on it raises a fatal \Error.
+	 *
+	 * @param array|JsonSerializable $object The object to delete.
+	 *
+	 * @return string|int The identifier.
+	 *
+	 * @throws Exception When the supplied data carries no identifier.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function deletionIdentifier(array|JsonSerializable $object): string|int {
 		$identifier = null;
 		if ($object instanceof ObjectEntity) {
 			$identifier = $object->getUuid();
@@ -222,8 +245,7 @@ class DeleteObject {
 
 		if (is_array($object) === true) {
 			// BUG-OBJ-11: do not assume an 'id' key exists. Fall back to the
-			// canonical identifier shapes and fail with a clear exception rather
-			// than emitting an undefined-array-key warning and a null lookup.
+			// canonical identifier shapes.
 			$identifier = ($object['id'] ?? $object['@self']['id'] ?? $object['uuid'] ?? null);
 		}
 
@@ -231,113 +253,179 @@ class DeleteObject {
 			throw new Exception('Cannot delete object: no identifier (id/@self.id/uuid) found in the supplied data.');
 		}
 
-		// PERF: callers that already resolved the object AND its register/schema
-		// context (deleteObject() always has both after resolveDeletionContext())
-		// pass them in, skipping a full cross-magic-table re-scan per delete.
-		$objectEntity = null;
-		$registerEntity = $register;
-		$schemaEntity = $schema;
-		if ($object instanceof ObjectEntity === true && $register !== null && $schema !== null) {
+		return $identifier;
+	}//end deletionIdentifier()
+
+	/**
+	 * Find the object and its register/schema context across all sources.
+	 *
+	 * A passed ObjectEntity is kept as the object to delete; only its context is looked up,
+	 * and soft-deleted rows are included in that lookup.
+	 *
+	 * @param array|JsonSerializable $object     The object to delete.
+	 * @param string|int             $identifier Its identifier.
+	 *
+	 * @return DeletionTarget The object with its register and schema.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function lookUpDeletionTarget(array|JsonSerializable $object, string|int $identifier): DeletionTarget {
+		$context = $this->objectEntityMapper->findAcrossAllSources(
+			identifier: $identifier,
+			includeDeleted: ($object instanceof ObjectEntity),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$objectEntity = $context['object'];
+		if ($object instanceof ObjectEntity === true) {
 			$objectEntity = $object;
 		}
 
-		if ($objectEntity === null) {
-			$includeDeleted = ($object instanceof ObjectEntity);
-			$context = $this->objectEntityMapper->findAcrossAllSources(
-				identifier: $identifier,
-				includeDeleted: $includeDeleted,
-				_rbac: false,
-				_multitenancy: false
-			);
-			$objectEntity = $context['object'];
-			if ($object instanceof ObjectEntity === true) {
-				$objectEntity = $object;
-			}
+		return new DeletionTarget(object: $objectEntity, register: $context['register'], schema: $context['schema']);
+	}//end lookUpDeletionTarget()
 
-			$registerEntity = $context['register'];
-			$schemaEntity = $context['schema'];
+	/**
+	 * Physically remove an object, its bound folder and its cached queries (archival destruction).
+	 *
+	 * BUG-OBJ-2: the bound Nextcloud folder is destroyed BEFORE the record is removed, so the
+	 * object still resolves its folder binding. A removed draft leaves one audit-trail entry
+	 * without its content (decision 226); every other permanent delete is recorded by the
+	 * workflow that asked for it.
+	 *
+	 * @param DeletionTarget $target The object to remove.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function deletePermanently(DeletionTarget $target): void {
+		$objectEntity = $target->object;
+		$this->logger->info(
+			message: '[DeleteObject] Permanent deletion requested (archival destruction)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $objectEntity->getUuid(),
+			]
+		);
+
+		$this->deleteObjectFolder(objectEntity: $objectEntity);
+
+		$this->objectEntityMapper->deleteObjectEntity(
+			entity: $objectEntity,
+			register: $target->register,
+			schema: $target->schema,
+			hardDelete: true
+		);
+
+		if ($objectEntity->isDraft() === true) {
+			(new DraftRemovalRecord(auditTrail: $this->auditTrailMapper, logger: $this->logger))->write(
+				draft: $objectEntity,
+				register: $target->register,
+				schema: $target->schema
+			);
 		}
 
-		// **PERMANENT DELETE**: Physical removal from database (archival destruction workflow).
-		if ($permanent === true) {
-			$this->logger->info(
-				message: '[DeleteObject] Permanent deletion requested (archival destruction)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $objectEntity->getUuid(),
-				]
-			);
+		$this->cacheHandler->invalidateForObjectChange(
+			registerId: $target->registerCacheId(),
+			schemaId: $target->schemaCacheId(),
+			operation: 'permanent_delete'
+		);
+	}//end deletePermanently()
 
-			// BUG-OBJ-2: permanent deletion must also destroy the Nextcloud folder/files
-			// bound to the object. Without this every permanently-deleted object leaks its
-			// NC folder forever (storage bloat) and — for the archival `vernietigd`
-			// destruction workflow — the file contents survive on disk, which is a
-			// compliance issue. Folder cleanup runs BEFORE the DB record is removed so the
-			// object still resolves its folder binding.
-			$this->deleteObjectFolder(objectEntity: $objectEntity);
+	/**
+	 * Mark an object deleted for the session user, then invalidate caches and audit the delete.
+	 *
+	 * Soft delete intentionally LEAVES the bound Nextcloud folder in place so the object and its
+	 * attachments can be restored (BUG-OBJ-2).
+	 *
+	 * @param DeletionTarget            $target         The object to mark deleted.
+	 * @param array<string, mixed>|null $cascadeContext Referential-integrity cascade metadata, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function softDelete(DeletionTarget $target, ?array $cascadeContext): void {
+		$objectEntity = $target->object;
+		$deletionData = $this->deletionMetadata(target: $target);
 
-			$this->objectEntityMapper->deleteObjectEntity(
-				entity: $objectEntity,
-				register: $registerEntity,
-				schema: $schemaEntity,
-				hardDelete: true
-			);
-			$result = true;
+		// PERF: the pre-delete snapshot is the update's old entity, which skips the
+		// mapper's internal pre-update re-find.
+		$preDeleteState = clone $objectEntity;
 
-			// A removed draft leaves one audit-trail entry: who, when, where,
-			// which object, and that it was a draft. Never its content
-			// (decision 226). Every other permanent delete is recorded by the
-			// workflow that asked for it.
-			if ($objectEntity->isDraft() === true) {
-				(new DraftRemovalRecord(auditTrail: $this->auditTrailMapper, logger: $this->logger))->write(
-					draft: $objectEntity,
-					register: $registerEntity,
-					schema: $schemaEntity
-				);
-			}
+		$objectEntity->setDeleted($deletionData);
 
-			// Cache invalidation for permanent delete.
-			$registerIdForCache = null;
-			if (is_numeric($objectEntity->getRegister()) === true) {
-				$registerIdForCache = (int)$objectEntity->getRegister();
-			}
+		// @psalm-suppress InvalidArgument - ObjectEntity extends Entity.
+		$this->objectEntityMapper->update(
+			entity: $objectEntity,
+			register: $target->register,
+			schema: $target->schema,
+			oldEntity: $preDeleteState
+		);
 
-			$schemaIdForCache = null;
-			if (is_numeric($objectEntity->getSchema()) === true) {
-				$schemaIdForCache = (int)$objectEntity->getSchema();
-			}
+		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.update');
 
+		try {
 			$this->cacheHandler->invalidateForObjectChange(
-				registerId: $registerIdForCache,
-				schemaId: $schemaIdForCache,
-				operation: 'permanent_delete'
+				object: $objectEntity,
+				operation: 'soft_delete',
+				registerId: $target->registerCacheId(),
+				schemaId: $target->schemaCacheId()
 			);
+		} catch (\Exception $e) {
+			// Soft deletion succeeds even if cache invalidation fails.
+		}
 
-			return $result;
-		}//end if
+		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.cache');
 
-		// **SOFT DELETE**: Mark object as deleted instead of removing from database.
-		// Set deletion metadata with user, timestamp, and organization information.
+		if ($this->isAuditTrailsEnabled() === true) {
+			$auditAction = 'delete';
+			if ($cascadeContext !== null) {
+				$auditAction = $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete';
+			}
+
+			// The cascade context is folded into the audit trail's initial INSERT by the mapper.
+			$this->auditTrailMapper->createAuditTrail(
+				old: $objectEntity,
+				new: null,
+				action: $auditAction,
+				cascadeContext: $cascadeContext
+			);
+		}
+
+		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.audit');
+	}//end softDelete()
+
+	/**
+	 * The deleted metadata of a soft delete: the session user, the moment, the user's active
+	 * organisation and, when a window service is wired, the stated recovery window.
+	 *
+	 * @param DeletionTarget $target The object being deleted.
+	 *
+	 * @return array<string, mixed> The deleted metadata.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function deletionMetadata(DeletionTarget $target): array {
 		$user = $this->userSession->getUser();
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
 
-		// Get the active organization from session at time of deletion for audit trail.
+		// The active organisation of the deleting user. Error is caught too, so a missing
+		// database never aborts the delete.
 		$activeOrganisation = null;
 		if ($user !== null) {
 			try {
 				$activeOrganisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
 			} catch (\Throwable $e) {
-				// If we can't get the active organisation, log and continue with null.
-				// Catches Error too so a null DB in tests doesn't abort the whole delete path.
 				$this->logger->warning(
 					message: '[DeleteObject] Failed to get active organisation during delete',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 				);
-				$activeOrganisation = null;
 			}
 		}
 
@@ -347,116 +435,22 @@ class DeleteObject {
 		$deletionData = [
 			'deletedBy' => $userId,
 			'deletedAt' => $deletedAt->format(DateTime::ATOM),
-			'objectId' => $objectEntity->getUuid(),
+			'objectId' => $target->object->getUuid(),
 			'organisation' => $activeOrganisation,
 		];
 
-		// THE WINDOW IS STATED, NOT ONLY COMPUTED. This path wrote no purge
-		// date at all, so the only object that ever carried one came through
-		// ObjectEntity::delete(). Nobody could read how long they had because
-		// nothing had written it down.
-		if ($this->windowService !== null) {
-			$deletionData = array_merge(
-				$deletionData,
-				$this->windowService->openWindow(
-					schema: $schemaEntity,
-					deletedAt: DateTimeImmutable::createFromMutable($deletedAt)
-				)
-			);
+		if ($this->windowService === null) {
+			return $deletionData;
 		}
 
-		// PERF: snapshot the pre-delete state once and hand it to the mapper as
-		// the update's old entity — this skips the mapper's internal pre-update
-		// re-find (the entity was freshly fetched by every caller of this method).
-		$preDeleteState = clone $objectEntity;
-
-		$objectEntity->setDeleted($deletionData);
-
-		// BUG-OBJ-2: soft delete intentionally LEAVES the bound Nextcloud folder/files
-		// in place so the object (and its attachments) can be restored. The folder is
-		// only destroyed on permanent delete (above). TODO: if product wants soft-deleted
-		// attachments moved to the trash for recoverability, trash the folder here.
-		//
-		// Update the object in database (soft delete - keeps record with deleted metadata).
-		// Pass register/schema context for magic mapper routing.
-		// @psalm-suppress InvalidArgument - ObjectEntity extends Entity.
-		// update() is declared non-nullable and throws on failure, so the old
-		// `!== null` test and the `if ($result === true)` guard below it were
-		// both always true: reaching the next line IS the success case.
-		$this->objectEntityMapper->update(
-			entity: $objectEntity,
-			register: $registerEntity,
-			schema: $schemaEntity,
-			oldEntity: $preDeleteState
+		return array_merge(
+			$deletionData,
+			$this->windowService->openWindow(
+				schema: $target->schema,
+				deletedAt: DateTimeImmutable::createFromMutable($deletedAt)
+			)
 		);
-		$result = true;
-
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.update');
-
-		/*
-		 * **CACHE INVALIDATION**: Clear collection and facet caches so
-		 * soft-deleted objects disappear from regular queries.
-		 *
-		 * ObjectEntity has getRegister() and getSchema() methods that return
-		 * string|null. Convert to int|null for invalidateForObjectChange which
-		 * expects ?int.
-		 *
-		 * @var ObjectEntity $objectEntity
-		 */
-
-		$registerId = $objectEntity->getRegister();
-		$schemaId = $objectEntity->getSchema();
-
-		// Convert register ID to int if numeric.
-		$registerIdInt = null;
-		if ($registerId !== null && is_numeric($registerId) === true) {
-			$registerIdInt = (int)$registerId;
-		}
-
-		// Convert schema ID to int if numeric.
-		$schemaIdInt = null;
-		if ($schemaId !== null && is_numeric($schemaId) === true) {
-			$schemaIdInt = (int)$schemaId;
-		}
-
-		try {
-			$this->cacheHandler->invalidateForObjectChange(
-				object: $objectEntity,
-				operation: 'soft_delete',
-				registerId: $registerIdInt,
-				schemaId: $schemaIdInt
-			);
-		} catch (\Exception $e) {
-			// Gracefully handle cache invalidation errors.
-			// Soft deletion should succeed even if cache invalidation fails.
-		}
-
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.cache');
-
-		// Create audit trail for delete if audit trails are enabled.
-		if ($this->isAuditTrailsEnabled() === true) {
-			// Determine the audit action based on cascade context.
-			$auditAction = 'delete';
-			if ($cascadeContext !== null) {
-				$auditAction = $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete';
-			}
-
-			// PERF: cascade context (referential-integrity tagging) is folded into
-			// the initial INSERT by the mapper. Previously this issued a second
-			// UPDATE per cascade-tagged row, which also invalidated the hash-chain
-			// seal computed over the freshly-inserted row.
-			$this->auditTrailMapper->createAuditTrail(
-				old: $objectEntity,
-				new: null,
-				action: $auditAction,
-				cascadeContext: $cascadeContext
-			);
-		}//end if
-
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.audit');
-
-		return $result;
-	}//end delete()
+	}//end deletionMetadata()
 
 	/**
 	 * Delete the Nextcloud folder bound to an object (BUG-OBJ-2).

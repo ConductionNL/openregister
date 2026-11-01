@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IUser;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
@@ -37,15 +35,15 @@ interface ObjectExporterInterface {
 	 * derived from the schema's properties. Mirrors the BOM convention used
 	 * by the export pipeline so Excel opens the file with the correct encoding.
 	 *
-	 * @param Register|null $register Optional register context
-	 * @param Schema $schema Schema whose property keys become the header row
+	 * @param RegisterInterface|null $register Optional register context
+	 * @param SchemaInterface $schema Schema whose property keys become the header row
 	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
 	 *
 	 * @return string CSV content with a UTF-8 BOM prefix and a single header row
 	 */
 	public function buildTemplateCsv(
-		?Register $register,
-		Schema $schema,
+		?RegisterInterface $register,
+		SchemaInterface $schema,
 		?IUser $currentUser = null,
 	): string;
 
@@ -56,15 +54,15 @@ interface ObjectExporterInterface {
 	 * schema's properties (the same headers `exportToExcel` would emit), with no
 	 * data rows. The returned spreadsheet can be written to either XLSX or CSV.
 	 *
-	 * @param Register|null $register Optional register context (used for translation column expansion)
-	 * @param Schema $schema Schema whose property keys become the header row
+	 * @param RegisterInterface|null $register Optional register context (used for translation column expansion)
+	 * @param SchemaInterface $schema Schema whose property keys become the header row
 	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
 	 *
 	 * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
 	 */
 	public function buildTemplateSpreadsheet(
-		?Register $register,
-		Schema $schema,
+		?RegisterInterface $register,
+		SchemaInterface $schema,
 		?IUser $currentUser = null,
 	): Spreadsheet;
 
@@ -76,19 +74,19 @@ interface ObjectExporterInterface {
 	 * have to name a guess. Every other format counts off its own
 	 * bytes, which is one query cheaper and cannot drift from the file.
 	 *
-	 * @param Register|null $register Optional register to export.
-	 * @param Schema|null   $schema   Optional schema to export.
+	 * @param RegisterInterface|null $register Optional register to export.
+	 * @param SchemaInterface|null   $schema   Optional schema to export.
 	 * @param array         $filters  Optional filters to apply.
 	 *
 	 * @return int The object count this export would write.
 	 */
-	public function countExportRows(?Register $register = null, ?Schema $schema = null, array $filters = []): int;
+	public function countExportRows(?RegisterInterface $register = null, ?SchemaInterface $schema = null, array $filters = []): int;
 
 	/**
 	 * Export data to CSV format
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
@@ -97,8 +95,8 @@ interface ObjectExporterInterface {
 	 * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
 	 */
 	public function exportToCsv(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): string;
@@ -106,16 +104,16 @@ interface ObjectExporterInterface {
 	/**
 	 * Export data to Excel format
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
 	 * @return Spreadsheet
 	 */
 	public function exportToExcel(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): Spreadsheet;
@@ -129,8 +127,8 @@ interface ObjectExporterInterface {
 	 * metadata block. The result is a JSON array re-importable via
 	 * `ImportService::importFromJson()`, which upserts by `@self.id`.
 	 *
-	 * @param Register|null $register Register context (required)
-	 * @param Schema|null $schema Schema whose objects are exported (required)
+	 * @param RegisterInterface|null $register Register context (required)
+	 * @param SchemaInterface|null $schema Schema whose objects are exported (required)
 	 * @param array $filters Optional `@self.*` metadata filters
 	 *
 	 * @return string Pretty-printed JSON array of objects
@@ -138,8 +136,8 @@ interface ObjectExporterInterface {
 	 * @throws \InvalidArgumentException When no schema is given (JSON export is single-schema, like CSV)
 	 */
 	public function exportToJson(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 	): string;
 
@@ -155,8 +153,8 @@ interface ObjectExporterInterface {
 	 * per schema is rendered (the PDF analogue of `exportToExcel()`'s
 	 * one-sheet-per-schema behaviour).
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
@@ -166,8 +164,8 @@ interface ObjectExporterInterface {
 	 * @throws \OCA\OpenRegister\Exception\OfficeServerRequiredException When no office server converts to PDF.
 	 */
 	public function exportToPdf(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): string;

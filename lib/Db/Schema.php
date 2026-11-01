@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
@@ -127,7 +128,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class Schema extends Entity implements JsonSerializable {
+class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 	/**
 	 * Unique identifier for the schema

@@ -4,8 +4,13 @@
  */
 
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
+import {
+	loadRelations,
+	postAndRefetch,
+	pruneRelations,
+	relationUrl,
+} from './relationCache.js'
 
 /**
  * Store wrapping the per-object contact-link endpoints.
@@ -37,15 +42,7 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		_url(register, schema, id, suffix = '') {
-			return generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/contacts'
-					+ suffix,
-				{
-					register,
-					schema,
-					id,
-				},
-			)
+			return relationUrl('contacts', { register, schema, id, suffix })
 		},
 
 		/**
@@ -55,37 +52,12 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		async fetch(register, schema, id) {
-			const k = `${register}:${schema}:${id}`
-			this.loading = { ...this.loading, [k]: true }
-			this.errors = { ...this.errors, [k]: null }
-			this.contactsUnavailable = false
-
-			try {
-				const response = await axios.get(this._url(register, schema, id))
-				// ContactsController#index returns either {results,...} or a flat array;
-				// we normalise to an array.
-				let list = response.data?.results || response.data || []
-				if (!Array.isArray(list)) {
-					list = []
-				}
-
-				this.byObject = { ...this.byObject, [k]: list }
-				return list
-			} catch (err) {
-				if (err.response?.status === 501) {
-					this.contactsUnavailable = true
-					this.byObject = { ...this.byObject, [k]: [] }
-					return []
-				}
-
-				this.errors = {
-					...this.errors,
-					[k]: err.response?.data?.error || err.message || '',
-				}
-				throw err
-			} finally {
-				this.loading = { ...this.loading, [k]: false }
-			}
+			return loadRelations(this, {
+				url: this._url(register, schema, id),
+				key: `${register}:${schema}:${id}`,
+				flag: 'contactsUnavailable',
+				arraysOnly: true,
+			})
 		},
 
 		/**
@@ -96,12 +68,11 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		async createOrLink(register, schema, id, payload) {
-			const response = await axios.post(
-				this._url(register, schema, id),
+			return postAndRefetch(this, {
+				url: this._url(register, schema, id),
 				payload,
-			)
-			await this.fetch(register, schema, id)
-			return response.data
+				object: [register, schema, id],
+			})
 		},
 
 		/**
@@ -120,12 +91,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 					'/' + encodeURIComponent(contactUid),
 				),
 			)
-			const k = `${register}:${schema}:${id}`
-			const next = (this.byObject[k] || []).filter(
-				(c) => (c.uid || c.contactUid || c.id) !== contactUid,
-			)
-			this.byObject = { ...this.byObject, [k]: next }
-			return next
+			return pruneRelations(this, {
+				key: `${register}:${schema}:${id}`,
+				keep: (c) => (c.uid || c.contactUid || c.id) !== contactUid,
+			})
 		},
 
 		/**

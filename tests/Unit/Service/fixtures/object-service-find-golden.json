@@ -1,0 +1,1937 @@
+{
+    "no scope, found": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "register and schema entities": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "register only": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "schema only": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "string refs": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "schemaMapper.findInIds": "10",
+                "in": [
+                    10,
+                    11
+                ]
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "render false": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": false
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "flags passed through": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [
+                    "a",
+                    "b"
+                ],
+                "files": true,
+                "rbac": false,
+                "multitenancy": false,
+                "audit": false
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": false,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [
+                    "a",
+                    "b"
+                ],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "rbac off, multitenancy on": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": false,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": false,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": false,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "scoped miss, uuid falls back": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 11,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "scoped miss, schema only": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 11,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "scoped miss, slug rethrows": {
+        "results": [
+            {
+                "exception": [
+                    "OCP\\AppFramework\\Db\\DoesNotExistException",
+                    "not found: my-slug"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "my-slug",
+                "register": 1,
+                "schema": 11,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": []
+        }
+    },
+    "unscoped miss rethrows": {
+        "results": [
+            {
+                "exception": [
+                    "OCP\\AppFramework\\Db\\DoesNotExistException",
+                    "not found: 0b3f2c1a-1111-4222-8333-944455556666"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": []
+        }
+    },
+    "fallback miss rethrows": {
+        "results": [
+            {
+                "exception": [
+                    "OCP\\AppFramework\\Db\\DoesNotExistException",
+                    "not found: 0b3f2c1a-1111-4222-8333-944455556666"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 11,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": []
+        }
+    },
+    "repeat uses the uuid cache": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            },
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 11,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "cached scope that misses": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            },
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-000000000000",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-000000000000"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-000000000000"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-000000000000",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "cached scope, fallback misses": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            },
+            {
+                "exception": [
+                    "OCP\\AppFramework\\Db\\DoesNotExistException",
+                    "not found: 0b3f2c1a-1111-4222-8333-944455556666"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": []
+        }
+    },
+    "register only, scoped miss": {
+        "results": [
+            {
+                "exception": [
+                    "OCP\\AppFramework\\Db\\DoesNotExistException",
+                    "not found: 0b3f2c1a-1111-4222-8333-944455556666"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": []
+        }
+    },
+    "slug is not cached": {
+        "results": [
+            {
+                "returned": "my-slug",
+                "rendered": true
+            },
+            {
+                "returned": "my-slug",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "my-slug",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "my-slug"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "my-slug"
+            },
+            {
+                "render": "my-slug",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "get": "my-slug",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "my-slug"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "my-slug"
+            },
+            {
+                "render": "my-slug",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": []
+        }
+    },
+    "read denied": {
+        "results": [
+            {
+                "exception": [
+                    "Exception",
+                    "read denied"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "read hook fails": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "log": "debug",
+                "message": "[AVG] processing-log read hook skipped",
+                "context": {
+                    "exception": "no read history"
+                }
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "object without register": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": null,
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": null,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "object with null register": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": null,
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": null,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "prior context restored": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": 2,
+            "schema": 20,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "prior context restored on throw": {
+        "results": [
+            {
+                "exception": [
+                    "Exception",
+                    "read denied"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": 2,
+            "schema": 20,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "string schema leaves no pending ref": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "then setRegister": "2"
+            },
+            {
+                "registerMapper.find": "2"
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            },
+            "pendingRef": null,
+            "afterSetRegister": {
+                "register": 2,
+                "schema": null
+            }
+        }
+    },
+    "cached null register, call names one": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            },
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": null,
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "pending ref is not inherited": {
+        "results": [
+            {
+                "returned": "0b3f2c1a-1111-4222-8333-944455556666",
+                "rendered": true
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "schemaMapper.find": "20"
+            },
+            [
+                "setup done"
+            ],
+            {
+                "get": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "render": "0b3f2c1a-1111-4222-8333-944455556666",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": 20,
+            "cache": {
+                "0b3f2c1a-1111-4222-8333-944455556666": {
+                    "register": 1,
+                    "schema": 10
+                }
+            }
+        }
+    },
+    "integer id": {
+        "results": [
+            {
+                "exception": [
+                    "TypeError",
+                    "MockObject::find(): Argument #1 ($id) must be of type string, int given"
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ]
+        ],
+        "after": {
+            "register": null,
+            "schema": null,
+            "cache": []
+        }
+    }
+}
