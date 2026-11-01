@@ -120,6 +120,21 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 		$this->compare($this->dataName(), $actual);
 	}
 
+	public function testRetryFailsClosedWithoutTheSessionCollaborators(): void {
+		$logMapper = $this->createMock(WebhookLogMapper::class);
+		$logMapper->expects($this->never())->method('find');
+		$controller = new WebhooksController(
+			'openregister',
+			$this->createMock(IRequest::class),
+			$this->createMock(WebhookMapper::class),
+			$logMapper,
+			$this->createMock(WebhookService::class),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$this->assertSame(403, $controller->retry(11)->getStatus());
+	}
+
 	/**
 	 * @param array<string, mixed> $fields
 	 */
