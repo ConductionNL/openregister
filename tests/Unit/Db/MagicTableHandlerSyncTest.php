@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TableSyncColumns
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
