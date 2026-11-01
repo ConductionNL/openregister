@@ -16,11 +16,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\StoredEntity;
-use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
-use OCA\OpenRegister\Kernel\Contracts\WebhookInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -29,7 +27,6 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Register::class)]
 #[UsesClass(Schema::class)]
-#[UsesClass(Webhook::class)]
 class StoredEntityTest extends TestCase {
 
 	/**
@@ -63,7 +60,6 @@ class StoredEntityTest extends TestCase {
 		$this->assertNull(StoredEntity::schema(schema: null));
 		$this->assertNull(StoredEntity::register(register: null));
 		$this->assertNull(StoredEntity::object(object: null));
-		$this->assertNull(StoredEntity::webhook(webhook: null));
 	}//end testNullStaysNull()
 
 	/**
@@ -89,17 +85,15 @@ class StoredEntityTest extends TestCase {
 	}//end testAForeignRegisterIsRefused()
 
 	/**
-	 * Stored ObjectEntity and Webhook rows come back as the same objects.
+	 * A stored ObjectEntity row comes back as the same object.
 	 *
 	 * @return void
 	 */
-	public function testAStoredObjectAndWebhookAreReturnedAsIs(): void {
-		$object  = new ObjectEntity();
-		$webhook = new Webhook();
+	public function testAStoredObjectIsReturnedAsIs(): void {
+		$object = new ObjectEntity();
 
 		$this->assertSame(expected: $object, actual: StoredEntity::object(object: $object));
-		$this->assertSame(expected: $webhook, actual: StoredEntity::webhook(webhook: $webhook));
-	}//end testAStoredObjectAndWebhookAreReturnedAsIs()
+	}//end testAStoredObjectIsReturnedAsIs()
 
 	/**
 	 * Another ObjectRowInterface implementation is refused.
@@ -111,15 +105,4 @@ class StoredEntityTest extends TestCase {
 
 		StoredEntity::object(object: $this->createMock(ObjectRowInterface::class));
 	}//end testAForeignObjectIsRefused()
-
-	/**
-	 * Another WebhookInterface implementation is refused.
-	 *
-	 * @return void
-	 */
-	public function testAForeignWebhookIsRefused(): void {
-		$this->expectException(InvalidArgumentException::class);
-
-		StoredEntity::webhook(webhook: $this->createMock(WebhookInterface::class));
-	}//end testAForeignWebhookIsRefused()
 }//end class
