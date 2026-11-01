@@ -300,6 +300,7 @@ class ObjectGrantsReport {
 		$sharer = (string)$share->getSharedBy();
 		$row['sharedBy'] = ['id' => $sharer, 'displayName' => $this->userManager->getDisplayName($sharer)];
 		$row['expiresAt'] = $share->getExpirationDate()?->format('c');
+		$row['sharedAt'] = $share->getShareTime()?->format('c');
 
 		return $row;
 	}//end shareRow()
@@ -327,6 +328,7 @@ class ObjectGrantsReport {
 			'sharedBy' => null,
 			'inheritedFrom' => null,
 			'expiresAt' => null,
+			'sharedAt' => null,
 		];
 	}//end row()
 

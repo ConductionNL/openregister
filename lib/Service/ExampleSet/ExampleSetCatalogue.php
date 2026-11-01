@@ -370,6 +370,8 @@ class ExampleSetCatalogue {
 			'auditEntries'    => $this->keyedRows(file: $file, declared: (array) ($fragment['auditEntries'] ?? []), noun: 'audit entry'),
 			'timelineEntries' => $this->keyedRows(file: $file, declared: (array) ($fragment['timelineEntries'] ?? []), noun: 'timeline entry'),
 			'emailLinks'      => $this->keyedRows(file: $file, declared: (array) ($fragment['emailLinks'] ?? []), noun: 'email link'),
+			'accessLinks'     => $this->keyedRows(file: $file, declared: (array) ($fragment['accessLinks'] ?? []), noun: 'access link'),
+			'grants'          => $this->keyedRows(file: $file, declared: (array) ($fragment['grants'] ?? []), noun: 'grant'),
 			'archival'        => $this->archival(app: $app, file: $file, declared: (array) ($fragment['archival'] ?? [])),
 		];
 	}//end fragment()

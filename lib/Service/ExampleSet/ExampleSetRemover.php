@@ -121,6 +121,8 @@ class ExampleSetRemover {
 				'notes'             => 0,
 				'readStates'        => 0,
 				'flows'             => 0,
+				'accessLinks'       => 0,
+				'grants'            => 0,
 				'memberships'       => 0,
 				'groups'            => 0,
 				'accounts'          => 0,

@@ -43,6 +43,11 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  */
 class ExampleSetChanges {
 	/**
+	 * The prefix of a recorded fingerprint: the record keeps an access link's address only as its hash.
+	 */
+	private const SECRET = 'example-set-secret:sha256:';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ExampleSetStore  $store  Register access.
@@ -163,7 +168,7 @@ class ExampleSetChanges {
 				'path' => (string) $path,
 				'had'  => $held['found'],
 				'old'  => $held['value'],
-				'new'  => $value,
+				'new'  => $this->recorded(change: $change, path: (string) $path, value: $value),
 				'from' => $this->paths->firstMissing(row: $row, path: (string) $path),
 			];
 		}
@@ -273,12 +278,16 @@ class ExampleSetChanges {
 		}
 
 		foreach ($entry['set'] as $index => $set) {
-			if (array_key_exists((string) $set['path'], $again) === true) {
-				$entry['set'][$index]['new'] = $again[(string) $set['path']];
+			$path = (string) $set['path'];
+			if (array_key_exists($path, $again) === true) {
+				$entry['set'][$index]['new'] = $this->recorded(change: $change, path: $path, value: $again[$path]);
 			}
 		}
 
-		$entry['set'] = array_merge($entry['set'], $fresh);
+		foreach ($fresh as $row) {
+			$row['new']     = $this->recorded(change: $change, path: (string) $row['path'], value: $row['new']);
+			$entry['set'][] = $row;
+		}
 
 		return ['error' => '', 'entry' => $entry, 'wrote' => true];
 	}//end follow()
@@ -399,6 +408,10 @@ class ExampleSetChanges {
 	 * @return bool
 	 */
 	private function sameAs(mixed $stored, mixed $value): bool {
+		if ($this->isFingerprint(value: $value) === true) {
+			return is_string($stored) === true && hash_equals($value, self::SECRET.hash('sha256', $stored));
+		}
+
 		$read = $stored;
 		if (is_string($stored) === true) {
 			$decoded = json_decode($stored, true);
@@ -511,8 +524,48 @@ class ExampleSetChanges {
 	 * @return bool
 	 */
 	private function stillHolds(array $held, mixed $written): bool {
+		if ($this->isFingerprint(value: $written) === true) {
+			return $held['found'] === true && is_string($held['value']) === true
+				&& hash_equals($written, self::SECRET.hash('sha256', $held['value']));
+		}
+
 		return $held['found'] === true && $this->proof->lostPaths(declared: $written, stored: $held['value']) === [];
 	}//end stillHolds()
+
+	/**
+	 * Whether a recorded value is the fingerprint of an access link's address.
+	 *
+	 * @param mixed $value A recorded value.
+	 *
+	 * @return bool
+	 */
+	private function isFingerprint(mixed $value): bool {
+		return is_string($value) === true && str_starts_with($value, self::SECRET) === true;
+	}//end isFingerprint()
+
+	/**
+	 * The value the record keeps for a field a change wrote: a value filled from an access link's address
+	 * (`{{accessLink:key.url}}`) as a fingerprint, since the address carries the link's secret anchor; any other
+	 * value as it is.
+	 *
+	 * @param array<string, mixed> $change The declared change.
+	 * @param string               $path   The field's path.
+	 * @param mixed                $value  The value written.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
+	 */
+	private function recorded(array $change, string $path, mixed $value): mixed {
+		$declared = ($change['set'][$path] ?? null);
+		if (is_string($value) === false || is_string($declared) === false
+			|| preg_match('/\{\{\s*accessLink:[^}]*\.url\s*\}\}/', $declared) !== 1
+		) {
+			return $value;
+		}
+
+		return self::SECRET.hash('sha256', $value);
+	}//end recorded()
 
 	/**
 	 * Put back what a change replaced and take out what it appended, while the object still holds what the change wrote.

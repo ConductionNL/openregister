@@ -12,6 +12,8 @@
  * - `{{view:key.uuid}}` the uuid of a saved view the same fragment declares (user preferences only);
  * - `{{task:key.uuid}}` the uuid of a task the same fragment declares (the parts written after its tasks: notes, read states);
  * - `{{flow:key.uuid}}` the uuid of a flow the same fragment declares (changes and the engine parts, all written after its flows);
+ * - `{{accessLink:key.id|uuid|url}}` an access link the same fragment declares (changes and the engine parts, all
+ *   written after its links);
  * - `{{lookup:name}}` the id a lookup by business key found;
  * - `{{account:key.field}}` a field of a service account a fragment declares;
  * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
@@ -305,6 +307,7 @@ class ExampleSetValues {
 			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
 			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
 			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $rest),
+			'accessLink' => $this->pathIn(entries: (array) ($context['accessLinks'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
 			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),

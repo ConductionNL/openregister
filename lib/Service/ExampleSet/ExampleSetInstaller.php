@@ -148,7 +148,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				$files[$object['key']]   = $this->plannedFileIds(record: $record, app: $fragment['app'], object: $object);
 			}//end foreach
 
-			$context  = (['objects' => $objects, 'flows' => $this->values->flowsOf(fragment: $fragment, record: null)] + $base);
+			$context  = [
+				'objects'     => $objects,
+				'flows'       => $this->values->flowsOf(fragment: $fragment, record: null),
+				'accessLinks' => ($this->engineRows ?? new ExampleSetEngineKinds())->accessLinksOf(fragment: $fragment, record: null),
+			] + $base;
 			$refusals = array_merge(
 				$refusals,
 				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
@@ -433,12 +437,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		// A refresh updates the flows too, so it is known before they are written.
 		$context['refresh'] = (($plan['refresh'] ?? false) === true);
 
-		// Before the changes, so a change can quote a flow (`{{flow:key.uuid}}`).
-		if ($this->engineRows?->installFlows(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+		// Before the changes, so a change can quote a flow or an access link (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
+		if ($this->engineRows?->installBeforeChanges(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 
-		$context['flows'] = $this->values->flowsOf(fragment: $fragment, record: $record);
+		$context['flows']       = $this->values->flowsOf(fragment: $fragment, record: $record);
+		$context['accessLinks'] = ($this->engineRows?->accessLinksOf(fragment: $fragment, record: $record) ?? []);
 		$report           = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
