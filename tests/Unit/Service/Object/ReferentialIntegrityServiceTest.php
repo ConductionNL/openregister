@@ -28,6 +28,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -1273,7 +1275,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		// Invoke walkDeletionGraph directly at depth=10 (MAX_DEPTH).
 		$obj = $this->createObjectEntity('deep-uuid', '1', '1', ['selfRef' => 'x']);
-		$visited = [];
+		$walk = new DeletionGraphWalk();
 
 		$this->logger->expects($this->once())
 			->method('warning')
@@ -1286,12 +1288,8 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$method = $ref->getMethod('walkDeletionGraph');
 		$method->setAccessible(true);
 
-		$result = $method->invokeArgs($this->service, [
-			$obj,
-			&$visited,
-			[],
-			10,
-		]);
+		$method->invoke($this->service, new DeletionGraphNode(object: $obj, walk: $walk, chain: [], depth: 10));
+		$result = $walk->toAnalysis();
 
 		$this->assertTrue($result->deletable);
 		$this->assertEmpty($result->cascadeTargets);

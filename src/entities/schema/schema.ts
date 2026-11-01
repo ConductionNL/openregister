@@ -2,19 +2,53 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TSchema } from './schema.types'
 
 import { z } from 'zod'
+import { COPY, withFallbacks } from '../withFallbacks.js'
+
+const FALLBACKS = {
+	id: '',
+	title: '',
+	version: '',
+	description: '',
+	summary: '',
+	required: [],
+	properties: COPY,
+	archive: {},
+	updated: '',
+	created: '',
+	slug: '',
+	configuration: {
+		objectNameField: '',
+		objectDescriptionField: '',
+		objectSummaryField: '',
+		objectImageField: '',
+		allowFiles: false,
+		allowedTags: [],
+		linkedTypes: [],
+		unique: false,
+		facetCacheTtl: 0,
+	},
+	hardValidation: false,
+	maxDepth: 0,
+	authorization: {},
+	allOf: COPY,
+	oneOf: COPY,
+	anyOf: COPY,
+	stats: COPY,
+	draft: null,
+}
 
 export class Schema implements TSchema {
-	public id: string
-	public title: string
-	public version: string
-	public description: string
-	public summary: string
-	public required: string[]
+	public id!: string
+	public title!: string
+	public version!: string
+	public description!: string
+	public summary!: string
+	public required!: string[]
 	public properties: Record<string, any>
-	public archive: Record<string, any>
-	public updated: string
-	public created: string
-	public slug: string
+	public archive!: Record<string, any>
+	public updated!: string
+	public created!: string
+	public slug!: string
 	public configuration?: {
 		objectNameField?: string
 		objectDescriptionField?: string
@@ -27,53 +61,25 @@ export class Schema implements TSchema {
 		facetCacheTtl?: number
 	}
 
-	public hardValidation: boolean
-	public maxDepth: number
+	public hardValidation!: boolean
+	public maxDepth!: number
 	public authorization?: Record<string, string[]>
 	public allOf?: string[]
 	public oneOf?: string[]
 	public anyOf?: string[]
 	public stats?: TSchema['stats']
-	public draft: TSchema['draft']
+	public draft!: TSchema['draft']
 
 	/**
 	 * @param schema
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(schema: TSchema) {
-		this.id = schema.id || ''
-		this.title = schema.title || ''
-		this.version = schema.version || ''
-		this.description = schema.description || ''
-		this.summary = schema.summary || ''
-		this.required = schema.required || []
+		Object.assign(this, withFallbacks(schema, FALLBACKS))
 		// Convert properties array to object if needed (backend sometimes returns array when empty)
 		this.properties = Array.isArray(schema.properties)
 			? {}
 			: schema.properties || {}
-		this.archive = schema.archive || {}
-		this.updated = schema.updated || ''
-		this.created = schema.created || ''
-		this.slug = schema.slug || ''
-		this.configuration = schema.configuration || {
-			objectNameField: '',
-			objectDescriptionField: '',
-			objectSummaryField: '',
-			objectImageField: '',
-			allowFiles: false,
-			allowedTags: [],
-			linkedTypes: [],
-			unique: false,
-			facetCacheTtl: 0,
-		}
-		this.hardValidation = schema.hardValidation || false
-		this.maxDepth = schema.maxDepth || 0
-		this.authorization = schema.authorization || {}
-		this.allOf = schema.allOf
-		this.oneOf = schema.oneOf
-		this.anyOf = schema.anyOf
-		this.stats = schema.stats
-		this.draft = schema.draft || null
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {

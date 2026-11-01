@@ -55,6 +55,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
  * @uses \OCA\OpenRegister\Service\Object\ReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 

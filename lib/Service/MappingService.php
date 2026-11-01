@@ -320,60 +320,91 @@ class MappingService {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function executeMapping(Mapping $mapping, array $input, bool $list = false): array {
-		// Check for list.
 		if ($list === true) {
-			$listResult = [];
-			$extraValues = [];
-
-			// Allow extra(input)values to be passed down for mapping while dealing with a list.
-			if (array_key_exists('listInput', $input) === true) {
-				$extraValues = $input;
-				$input = $input['listInput'];
-				unset($extraValues['listInput'], $extraValues['value']);
-			}
-
-			foreach ($input as $key => $value) {
-				// Mapping function expects an array for $input, make sure we always pass an array.
-				if (is_array($value) === false || empty($extraValues) === false) {
-					$value = array_merge((array)$value, ['value' => $value], $extraValues);
-				}
-
-				$listResult[$key] = $this->executeMapping(mapping: $mapping, input: $value);
-			}
-
-			return $listResult;
-		}//end if
-
-		$originalInput = $input;
-		$input = $this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;');
-
-		// Determine pass through.
-		// Let's get the dot array based on https://github.com/adbario/php-dot-notation.
-		$dotArray = new Dot();
-		if ($mapping->getPassThrough() === true) {
-			$dotArray = new Dot($input);
+			return $this->executeListMapping(mapping: $mapping, input: $input);
 		}
 
-		$dotInput = new Dot($input);
+		// Pass-through starts the output from the input, keys with dots encoded.
+		$dotArray = new Dot();
+		if ($mapping->getPassThrough() === true) {
+			$dotArray = new Dot($this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;'));
+		}
 
-		// Let's do the actual mapping.
+		foreach ($this->mappedValues(mapping: $mapping, input: $input) as $key => $value) {
+			$dotArray->set($key, $value);
+		}
+
+		$this->applyUnsets(mapping: $mapping, dotArray: $dotArray);
+		$this->applyCasts(mapping: $mapping, dotArray: $dotArray);
+
+		$output = $this->encodeArrayKeys(array: $dotArray->all(), toReplace: '&#46;', replacement: '.');
+
+		return $this->unwrapRootValue(output: $output);
+	}//end executeMapping()
+
+	/**
+	 * Map every item of a list, passing the extra values of a `listInput` wrapper down to each item.
+	 *
+	 * @param Mapping $mapping The mapping recipe.
+	 * @param array   $input   The list, or a `listInput` wrapper with extra values.
+	 *
+	 * @return array The mapped items, keyed as in the list.
+	 *
+	 * @throws Exception When mapping an item fails
+	 */
+	private function executeListMapping(Mapping $mapping, array $input): array {
+		$listResult  = [];
+		$extraValues = [];
+
+		if (array_key_exists('listInput', $input) === true) {
+			$extraValues = $input;
+			$input       = $input['listInput'];
+			unset($extraValues['listInput'], $extraValues['value']);
+		}
+
+		foreach ($input as $key => $value) {
+			// Mapping function expects an array for $input, make sure we always pass an array.
+			if (is_array($value) === false || empty($extraValues) === false) {
+				$value = array_merge((array)$value, ['value' => $value], $extraValues);
+			}
+
+			$listResult[$key] = $this->executeMapping(mapping: $mapping, input: $value);
+		}
+
+		return $listResult;
+	}//end executeListMapping()
+
+	/**
+	 * The value of every mapping rule, in rule order.
+	 *
+	 * A rule whose value is a path in the input takes the value found there; an
+	 * array value is used as it is; any other value is rendered as a Twig
+	 * template against the input.
+	 *
+	 * @param Mapping $mapping The mapping recipe.
+	 * @param array   $input   The input of the mapping.
+	 *
+	 * @return array<int|string, mixed> Output key => value.
+	 *
+	 * @throws Exception When a template fails to render
+	 */
+	private function mappedValues(Mapping $mapping, array $input): array {
+		$dotInput = new Dot($this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;'));
+		$values   = [];
+
 		foreach ($mapping->getMapping() as $key => $value) {
-			// If the value exists in the input dot take it from there.
 			if ($dotInput->has($value) === true) {
-				$dotArray->set($key, $dotInput->get($value));
+				$values[$key] = $dotInput->get($value);
 				continue;
 			}
 
-			// Render the value from twig.
 			if (is_array($value) === true) {
-				$dotArray->set($key, $value);
+				$values[$key] = $value;
 				continue;
 			}
 
 			try {
-				$template = $this->getCachedTemplate(templateString: (string)$value);
-				$rendered = $template->render($originalInput);
-				$dotArray->set($key, html_entity_decode($rendered));
+				$values[$key] = html_entity_decode($this->getCachedTemplate(templateString: (string)$value)->render($input));
 			} catch (Throwable $e) {
 				$mappingName = $mapping->getName() ?? 'Unknown';
 				throw new Exception(
@@ -382,20 +413,39 @@ class MappingService {
 			}
 		}//end foreach
 
-		// Unset unwanted keys.
-		$unsets = $mapping->getUnset();
-		foreach ($unsets as $unset) {
+		return $values;
+	}//end mappedValues()
+
+	/**
+	 * Remove the mapping's unset keys from the output.
+	 *
+	 * @param Mapping $mapping  The mapping recipe.
+	 * @param Dot     $dotArray The output being built.
+	 *
+	 * @return void
+	 */
+	private function applyUnsets(Mapping $mapping, Dot $dotArray): void {
+		foreach ($mapping->getUnset() as $unset) {
 			if ($dotArray->has($unset) === false) {
 				continue;
 			}
 
 			$dotArray->delete($unset);
 		}
+	}//end applyUnsets()
 
-		// Cast values to a specific type.
-		$casts = $mapping->getCast();
-
-		foreach ($casts as $key => $cast) {
+	/**
+	 * Apply the mapping's casts to the output keys that exist.
+	 *
+	 * A cast is a list or a comma-separated string; each cast in it applies in order.
+	 *
+	 * @param Mapping $mapping  The mapping recipe.
+	 * @param Dot     $dotArray The output being built.
+	 *
+	 * @return void
+	 */
+	private function applyCasts(Mapping $mapping, Dot $dotArray): void {
+		foreach ($mapping->getCast() as $key => $cast) {
 			if ($dotArray->has($key) === false) {
 				continue;
 			}
@@ -404,43 +454,38 @@ class MappingService {
 				$cast = explode(',', (string)$cast);
 			}
 
-			// No `$cast === false` bail-out: after the branch above $cast is
-			// always an array (explode() cannot return false), so it never fired.
-
 			foreach ($cast as $singleCast) {
 				$this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
 			}
 		}
+	}//end applyCasts()
 
-		// Back to array.
-		$output = $dotArray->all();
-
-		$output = $this->encodeArrayKeys(array: $output, toReplace: '&#46;', replacement: '.');
-
-		// Handle root level object writing.
+	/**
+	 * Write a root-level value: an output holding only `#` becomes that value.
+	 *
+	 * A null root becomes an empty array, a scalar root a one-item list.
+	 *
+	 * @param array $output The mapped output.
+	 *
+	 * @return array The output to return.
+	 */
+	private function unwrapRootValue(array $output): array {
 		$keys = array_keys($output);
-		if (count($keys) === 1 && $keys[0] === '#') {
-			$rootValue = $output['#'];
-			if ($rootValue === null) {
-				$output = [];
-			} elseif (is_array($rootValue) === true) {
-				$output = $rootValue;
-			}
-
-			if ($rootValue !== null && is_array($rootValue) === false) {
-				$output = [$rootValue];
-			}
+		if (count($keys) !== 1 || $keys[0] !== '#') {
+			return $output;
 		}
 
-		// Ensure output is always an array — default null to [], wrap scalars.
-		if ($output === null) {
-			$output = [];
+		$rootValue = $output['#'];
+		if ($rootValue === null) {
+			return [];
 		}
 
-		// No scalar-wrapping branch: after the null default above, $output is
-		// always an array, so `is_array() === false` could never be entered.
-		return $output;
-	}//end executeMapping()
+		if (is_array($rootValue) === true) {
+			return $rootValue;
+		}
+
+		return [$rootValue];
+	}//end unwrapRootValue()
 
 	/**
 	 * Handles a single cast operation.

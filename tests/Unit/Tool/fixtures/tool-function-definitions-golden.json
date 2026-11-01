@@ -1,0 +1,588 @@
+{
+    "OCA\\OpenRegister\\Tool\\AgentTool": [
+        {
+            "name": "list_agents",
+            "subject": "agent",
+            "action": "list",
+            "description": "List all agents accessible to current user. Returns name, type, status with privacy settings respected.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 50)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of results to skip for pagination (default: 0)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_agent",
+            "subject": "agent",
+            "action": "get",
+            "description": "Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "UUID of the agent to retrieve"
+                    }
+                },
+                "required": [
+                    "uuid"
+                ]
+            }
+        },
+        {
+            "name": "create_agent",
+            "subject": "agent",
+            "action": "create",
+            "description": "Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the agent (required)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of what the agent does"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Type of agent (e.g., \"assistant\", \"support\", \"analyzer\")"
+                    },
+                    "systemPrompt": {
+                        "type": "string",
+                        "description": "System prompt that defines the agent's behavior and personality"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "name": "update_agent",
+            "subject": "agent",
+            "action": "update",
+            "description": "Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "UUID of the agent to update"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "New name for the agent"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New description"
+                    },
+                    "systemPrompt": {
+                        "type": "string",
+                        "description": "New system prompt"
+                    }
+                },
+                "required": [
+                    "uuid"
+                ]
+            }
+        },
+        {
+            "name": "delete_agent",
+            "subject": "agent",
+            "action": "delete",
+            "description": "Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "UUID of the agent to delete"
+                    }
+                },
+                "required": [
+                    "uuid"
+                ]
+            }
+        }
+    ],
+    "OCA\\OpenRegister\\Tool\\ApplicationTool": [
+        {
+            "name": "list_applications",
+            "subject": "application",
+            "action": "list",
+            "description": "List all accessible applications with basic information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 50)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of results to skip for pagination (default: 0)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_application",
+            "subject": "application",
+            "action": "get",
+            "description": "Get detailed application information by UUID.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "UUID of the application to retrieve"
+                    }
+                },
+                "required": [
+                    "uuid"
+                ]
+            }
+        },
+        {
+            "name": "create_application",
+            "subject": "application",
+            "action": "create",
+            "description": "Create a new application with unique name.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the application (required)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of what the application does"
+                    },
+                    "domain": {
+                        "type": "string",
+                        "description": "Domain or URL where the application is hosted"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "name": "update_application",
+            "subject": "application",
+            "action": "update",
+            "description": "Update application (owner/update permission required). Provide UUID and fields to update.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "UUID of the application to update"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "New name for the application"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New description"
+                    },
+                    "domain": {
+                        "type": "string",
+                        "description": "New domain or URL"
+                    }
+                },
+                "required": [
+                    "uuid"
+                ]
+            }
+        },
+        {
+            "name": "delete_application",
+            "subject": "application",
+            "action": "delete",
+            "description": "Permanently delete application (owner/delete permission required). Cannot be undone.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "UUID of the application to delete"
+                    }
+                },
+                "required": [
+                    "uuid"
+                ]
+            }
+        }
+    ],
+    "OCA\\OpenRegister\\Tool\\ObjectsTool": [
+        {
+            "name": "search_objects",
+            "subject": "object",
+            "action": "search",
+            "description": "Search for objects with optional filters",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query text (optional)"
+                    },
+                    "register": {
+                        "type": "string",
+                        "description": "Filter by register ID (optional)"
+                    },
+                    "schema": {
+                        "type": "string",
+                        "description": "Filter by schema ID (optional)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default: 20)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of results to skip (default: 0)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_object",
+            "subject": "object",
+            "action": "get",
+            "description": "Get details about a specific object by ID or UUID",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The object ID or UUID to retrieve"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        },
+        {
+            "name": "create_object",
+            "subject": "object",
+            "action": "create",
+            "description": "Create a new object with data",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "register": {
+                        "type": "string",
+                        "description": "The register ID where the object should be created"
+                    },
+                    "schema": {
+                        "type": "string",
+                        "description": "The schema ID that defines the object structure"
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "The object data conforming to the schema"
+                    }
+                },
+                "required": [
+                    "register",
+                    "schema",
+                    "data"
+                ]
+            }
+        },
+        {
+            "name": "update_object",
+            "subject": "object",
+            "action": "update",
+            "description": "Update an existing object",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The object ID to update"
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "The updated object data (partial updates supported)"
+                    }
+                },
+                "required": [
+                    "id",
+                    "data"
+                ]
+            }
+        },
+        {
+            "name": "delete_object",
+            "subject": "object",
+            "action": "delete",
+            "description": "Delete an object by ID",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The object ID to delete"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        }
+    ],
+    "OCA\\OpenRegister\\Tool\\RegisterTool": [
+        {
+            "name": "list_registers",
+            "subject": "register",
+            "action": "list",
+            "description": "Get a list of all accessible registers",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of registers to return (default: 100)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of registers to skip for pagination (default: 0)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_register",
+            "subject": "register",
+            "action": "get",
+            "description": "Get details about a specific register by ID or slug",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The register ID or slug to retrieve"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        },
+        {
+            "name": "create_register",
+            "subject": "register",
+            "action": "create",
+            "description": "Create a new register",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "The title of the register"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A description of what this register is for"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "description": "URL-friendly identifier (optional, generated from title if not provided)"
+                    }
+                },
+                "required": [
+                    "title"
+                ]
+            }
+        },
+        {
+            "name": "update_register",
+            "subject": "register",
+            "action": "update",
+            "description": "Update an existing register",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The register ID to update"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "New title for the register"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New description for the register"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        },
+        {
+            "name": "delete_register",
+            "subject": "register",
+            "action": "delete",
+            "description": "Delete a register (only if it has no objects)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The register ID to delete"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        }
+    ],
+    "OCA\\OpenRegister\\Tool\\SchemaTool": [
+        {
+            "name": "list_schemas",
+            "subject": "schema",
+            "action": "list",
+            "description": "Get a list of all accessible schemas",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of schemas to return (default: 100)"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Number of schemas to skip for pagination (default: 0)"
+                    },
+                    "register": {
+                        "type": "string",
+                        "description": "Filter schemas by register ID (optional)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_schema",
+            "subject": "schema",
+            "action": "get",
+            "description": "Get details about a specific schema by ID",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The schema ID to retrieve"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        },
+        {
+            "name": "create_schema",
+            "subject": "schema",
+            "action": "create",
+            "description": "Create a new schema with properties definition",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "The title of the schema"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A description of what this schema represents"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "JSON Schema properties definition"
+                    },
+                    "required": {
+                        "type": "array",
+                        "description": "Array of required property names"
+                    }
+                },
+                "required": [
+                    "title",
+                    "properties"
+                ]
+            }
+        },
+        {
+            "name": "update_schema",
+            "subject": "schema",
+            "action": "update",
+            "description": "Update an existing schema",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The schema ID to update"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "New title for the schema"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New description for the schema"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Updated JSON Schema properties definition"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        },
+        {
+            "name": "delete_schema",
+            "subject": "schema",
+            "action": "delete",
+            "description": "Delete a schema (only if it has no objects)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The schema ID to delete"
+                    }
+                },
+                "required": [
+                    "id"
+                ]
+            }
+        }
+    ]
+}

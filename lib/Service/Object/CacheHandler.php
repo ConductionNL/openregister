@@ -1624,11 +1624,6 @@ class CacheHandler implements ObjectNameCacheInterface {
 	 * @psalm-param    array<string|int> $identifiers
 	 * @psalm-return   array<string, string>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * Bulk name retrieval with multiple cache layers requires extensive handling.
-	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function getMultipleObjectNames(array $identifiers): array {
@@ -1638,146 +1633,21 @@ class CacheHandler implements ObjectNameCacheInterface {
 
 		$this->beginNameScope();
 
-		// Every name found, cached or loaded, becomes a candidate. Who may see it
-		// is decided once, at the end, by visibleNames(): the object read path
-		// for an object, the organisation scope for an organisation. An entry
-		// whose source is unknown is a MISS, so the database can establish it.
-		$candidates = [];
-		$missingIdentifiers = [];
+		// Who may see a candidate is decided once, at the end, by visibleNames():
+		// the object read path for an object, the organisation scope for an
+		// organisation. An entry whose source is unknown is a MISS, so the
+		// database can establish it.
+		$run = $this->collectCachedNames(identifiers: $identifiers);
+		$this->collectDistributedNames(run: $run);
 
-		foreach ($identifiers as $identifier) {
-			$key = (string)$identifier;
-			if (($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
-				$candidates[$key] = $this->nameCache[$key];
-				$this->stats['name_hits']++;
-				continue;
-			}
-
-			$missingIdentifiers[] = $key;
+		if (empty($run->missing) === false) {
+			$this->loadNamesFromDatabase(run: $run);
 		}
-
-		// Check distributed cache for missing identifiers.
-		if (empty($missingIdentifiers) === false && $this->nameDistributedCache !== null) {
-			$decided = [];
-			foreach ($missingIdentifiers as $key) {
-				try {
-					$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
-					if ($envelope === null) {
-						continue;
-					}
-
-					$this->nameCache[$key] = $envelope['n'];
-					$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
-					$candidates[$key] = $envelope['n'];
-					$decided[] = $key;
-					$this->stats['name_hits']++;
-				} catch (\Exception $e) {
-					// Continue processing other identifiers.
-				}//end try
-			}
-
-			$missingIdentifiers = array_values(array_diff($missingIdentifiers, $decided));
-		}//end if
-
-		// Load remaining missing names from database.
-		if (empty($missingIdentifiers) === false) {
-			$this->stats['name_misses'] += count($missingIdentifiers);
-
-			try {
-				// STEP 1: Try to find organisations first (they take priority).
-				// An organisation's own tenancy is itself.
-				$organisations = $this->organisationMapper->findMultipleByUuid($missingIdentifiers);
-				foreach ($organisations as $organisation) {
-					$name = $organisation->getName() ?? $organisation->getUuid();
-					$key = $organisation->getUuid();
-
-					$this->setObjectName(
-						identifier: $key,
-						name: $name,
-						organisation: $key,
-						source: self::NAME_SOURCE_ORGANISATION
-					);
-					$candidates[$key] = $name;
-
-					$missingIdentifiers = array_diff($missingIdentifiers, [$key]);
-				}
-
-				// STEP 2: Try to find remaining identifiers as objects across magic tables.
-				if (empty($missingIdentifiers) === false) {
-					$objects = $this->getObjectMapper()->findMultiple($missingIdentifiers);
-					foreach ($objects as $object) {
-						$source = self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema());
-						// Without its table there is no read rule to ask: leave it for
-						// STEP 3, which reads the table directly.
-						if ($source === null) {
-							continue;
-						}
-
-						$name = $object->getName() ?? $object->getUuid();
-						$uuid = $object->getUuid();
-						$objectOrganisation = $object->getOrganisation();
-
-						$this->setObjectName(identifier: $uuid, name: $name, organisation: $objectOrganisation, source: $source);
-
-						// Also cache with the original identifier if it differs from the UUID.
-						foreach ($missingIdentifiers as $originalId) {
-							if ((string)$originalId === $uuid
-								|| (string)$originalId === (string)$object->getId()
-								|| (string)$originalId === $object->getSlug()
-								|| (string)$originalId === $object->getUri()
-							) {
-								if ((string)$originalId !== $uuid) {
-									$this->setObjectName(
-										identifier: $originalId,
-										name: $name,
-										organisation: $objectOrganisation,
-										source: $source
-									);
-									$missingIdentifiers = array_diff($missingIdentifiers, [$originalId]);
-								}
-
-								break;
-							}
-						}
-
-						$candidates[$uuid] = $name;
-						$missingIdentifiers = array_diff($missingIdentifiers, [$uuid]);
-					}//end foreach
-				}//end if
-
-				// STEP 3: Batch load any still-missing identifiers from magic tables,
-				// one IN query per table instead of N+1 lookups.
-				if (empty($missingIdentifiers) === false) {
-					$batchResults = $this->batchLoadNamesFromMagicTables(uuids: $missingIdentifiers);
-					foreach ($batchResults as $uuid => $entry) {
-						$this->setObjectName(
-							identifier: $uuid,
-							name: $entry['name'],
-							organisation: $entry['organisation'],
-							source: ($entry['source'] ?? null)
-						);
-						if (($entry['source'] ?? null) !== null) {
-							$candidates[$uuid] = $entry['name'];
-						}
-					}
-				}
-			} catch (\Exception $e) {
-				$this->logger->error(
-					message: '[CacheHandler] Failed to bulk load names from database',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifiers' => count($missingIdentifiers),
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end if
 
 		// Only UUID -> name mappings are returned (database ids are excluded),
 		// and only those this caller may see.
 		$uuidCandidates = array_filter(
-			$candidates,
+			$run->candidates,
 			fn ($key): bool => str_contains((string)$key, '-'),
 			ARRAY_FILTER_USE_KEY
 		);
@@ -1789,14 +1659,242 @@ class CacheHandler implements ObjectNameCacheInterface {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'requested' => count($identifiers),
-				'total_found' => count($candidates),
+				'total_found' => count($run->candidates),
 				'uuid_results_returned' => count($uuidResults),
-				'db_loads' => count($missingIdentifiers),
+				'db_loads' => count($run->missing),
 			]
 		);
 
 		return $uuidResults;
 	}//end getMultipleObjectNames()
+
+	/**
+	 * Start a name lookup with the names the in-memory cache already holds with a known source.
+	 *
+	 * @param array<string|int> $identifiers The identifiers asked for.
+	 *
+	 * @return NameLookupRun The run, with every other identifier missing.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function collectCachedNames(array $identifiers): NameLookupRun {
+		$run = new NameLookupRun();
+		foreach ($identifiers as $identifier) {
+			$key = (string)$identifier;
+			if (($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
+				$run->candidates[$key] = $this->nameCache[$key];
+				$this->stats['name_hits']++;
+				continue;
+			}
+
+			$run->missing[] = $key;
+		}
+
+		return $run;
+	}//end collectCachedNames()
+
+	/**
+	 * Take the missing names the distributed cache holds as a valid envelope.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function collectDistributedNames(NameLookupRun $run): void {
+		if (empty($run->missing) === true || $this->nameDistributedCache === null) {
+			return;
+		}
+
+		$decided = [];
+		foreach ($run->missing as $key) {
+			try {
+				$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
+				if ($envelope === null) {
+					continue;
+				}
+
+				$this->nameCache[$key] = $envelope['n'];
+				$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
+				$run->candidates[$key] = $envelope['n'];
+				$decided[] = $key;
+				$this->stats['name_hits']++;
+			} catch (\Exception $e) {
+				// Continue processing other identifiers.
+			}//end try
+		}
+
+		$run->missing = array_values(array_diff($run->missing, $decided));
+	}//end collectDistributedNames()
+
+	/**
+	 * Load the still-missing names: organisations first, then objects, then magic-table rows.
+	 *
+	 * A load failure is logged and leaves the names found so far.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadNamesFromDatabase(NameLookupRun $run): void {
+		$this->stats['name_misses'] += count($run->missing);
+
+		try {
+			$this->loadOrganisationNames(run: $run);
+
+			if (empty($run->missing) === false) {
+				$this->loadObjectNames(run: $run);
+			}
+
+			if (empty($run->missing) === false) {
+				$this->loadMagicTableNames(run: $run);
+			}
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[CacheHandler] Failed to bulk load names from database',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifiers' => count($run->missing),
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end loadNamesFromDatabase()
+
+	/**
+	 * Load missing identifiers that are organisations; they take priority. An organisation's own tenancy is itself.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadOrganisationNames(NameLookupRun $run): void {
+		$organisations = $this->organisationMapper->findMultipleByUuid($run->missing);
+		foreach ($organisations as $organisation) {
+			$name = $organisation->getName() ?? $organisation->getUuid();
+			$key = $organisation->getUuid();
+
+			$this->setObjectName(
+				identifier: $key,
+				name: $name,
+				organisation: $key,
+				source: self::NAME_SOURCE_ORGANISATION
+			);
+			$run->candidates[$key] = $name;
+
+			$run->missing = array_diff($run->missing, [$key]);
+		}
+	}//end loadOrganisationNames()
+
+	/**
+	 * Load missing identifiers as objects across magic tables.
+	 *
+	 * An object without a known table has no read rule to ask, so it is left for the magic-table load.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadObjectNames(NameLookupRun $run): void {
+		$objects = $this->getObjectMapper()->findMultiple($run->missing);
+		foreach ($objects as $object) {
+			$source = self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema());
+			if ($source === null) {
+				continue;
+			}
+
+			$name = $object->getName() ?? $object->getUuid();
+			$uuid = $object->getUuid();
+
+			$this->setObjectName(identifier: $uuid, name: $name, organisation: $object->getOrganisation(), source: $source);
+			$this->cacheUnderRequestedIdentifier(run: $run, object: $object);
+
+			$run->candidates[$uuid] = $name;
+			$run->missing = array_diff($run->missing, [$uuid]);
+		}
+	}//end loadObjectNames()
+
+	/**
+	 * Also cache a loaded object's name under the identifier it was asked by, when that is not its uuid.
+	 *
+	 * @param NameLookupRun $run    The lookup.
+	 * @param ObjectEntity  $object The loaded object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function cacheUnderRequestedIdentifier(NameLookupRun $run, ObjectEntity $object): void {
+		$uuid = $object->getUuid();
+		foreach ($run->missing as $originalId) {
+			if ($this->identifiesObject(identifier: (string)$originalId, object: $object) === false) {
+				continue;
+			}
+
+			if ((string)$originalId !== $uuid) {
+				$this->setObjectName(
+					identifier: $originalId,
+					name: ($object->getName() ?? $uuid),
+					organisation: $object->getOrganisation(),
+					source: self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema())
+				);
+				$run->missing = array_diff($run->missing, [$originalId]);
+			}
+
+			break;
+		}
+	}//end cacheUnderRequestedIdentifier()
+
+	/**
+	 * Whether an identifier names an object: its uuid, database id, slug or uri.
+	 *
+	 * @param string       $identifier The requested identifier.
+	 * @param ObjectEntity $object     The object.
+	 *
+	 * @return bool True when the identifier names the object.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function identifiesObject(string $identifier, ObjectEntity $object): bool {
+		return $identifier === $object->getUuid()
+			|| $identifier === (string)$object->getId()
+			|| $identifier === $object->getSlug()
+			|| $identifier === $object->getUri();
+	}//end identifiesObject()
+
+	/**
+	 * Load the still-missing names from the magic tables, one IN query per table instead of N+1 lookups.
+	 *
+	 * A row without a known source is cached but never becomes a candidate.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadMagicTableNames(NameLookupRun $run): void {
+		$batchResults = $this->batchLoadNamesFromMagicTables(uuids: $run->missing);
+		foreach ($batchResults as $uuid => $entry) {
+			$this->setObjectName(
+				identifier: $uuid,
+				name: $entry['name'],
+				organisation: $entry['organisation'],
+				source: ($entry['source'] ?? null)
+			);
+			if (($entry['source'] ?? null) !== null) {
+				$run->candidates[$uuid] = $entry['name'];
+			}
+		}
+	}//end loadMagicTableNames()
 
 	/**
 	 * Get all object names with cache warmup

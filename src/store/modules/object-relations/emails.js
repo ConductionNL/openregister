@@ -4,8 +4,8 @@
  */
 
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
+import { loadRelations, pruneRelations, relationUrl } from './relationCache.js'
 
 /**
  * Store wrapping the per-object email-link endpoints.
@@ -46,15 +46,7 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * @spec exclude private URL-builder helper (no client state)
 		 */
 		_url(register, schema, id, suffix = '') {
-			return generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails'
-					+ suffix,
-				{
-					register,
-					schema,
-					id,
-				},
-			)
+			return relationUrl('emails', { register, schema, id, suffix })
 		},
 
 		/**
@@ -67,31 +59,11 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetch(register, schema, id) {
-			const k = `${register}:${schema}:${id}`
-			this.loading = { ...this.loading, [k]: true }
-			this.errors = { ...this.errors, [k]: null }
-			this.mailUnavailable = false
-
-			try {
-				const response = await axios.get(this._url(register, schema, id))
-				const list = response.data?.results || response.data || []
-				this.byObject = { ...this.byObject, [k]: list }
-				return list
-			} catch (err) {
-				if (err.response?.status === 501) {
-					this.mailUnavailable = true
-					this.byObject = { ...this.byObject, [k]: [] }
-					return []
-				}
-
-				this.errors = {
-					...this.errors,
-					[k]: err.response?.data?.error || err.message || '',
-				}
-				throw err
-			} finally {
-				this.loading = { ...this.loading, [k]: false }
-			}
+			return loadRelations(this, {
+				url: this._url(register, schema, id),
+				key: `${register}:${schema}:${id}`,
+				flag: 'mailUnavailable',
+			})
 		},
 
 		/**
@@ -108,10 +80,10 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 			await axios.delete(
 				this._url(register, schema, id, '/' + encodeURIComponent(emailId)),
 			)
-			const k = `${register}:${schema}:${id}`
-			const next = (this.byObject[k] || []).filter((e) => e.id !== emailId)
-			this.byObject = { ...this.byObject, [k]: next }
-			return next
+			return pruneRelations(this, {
+				key: `${register}:${schema}:${id}`,
+				keep: (e) => e.id !== emailId,
+			})
 		},
 
 		/**
