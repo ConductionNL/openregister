@@ -738,6 +738,99 @@ function setOwn(target, key, value) {
 }
 
 /**
+ * The problem with one lookup or yes/no table row's result, if any.
+ *
+ * @param {object} row The table row.
+ * @param {string} type The transform type.
+ * @return {string|null} A readable message, or null.
+ */
+function mapCellError(row, type) {
+	if (!cellIsValid(row)) {
+		return t('openregister', 'The result for "{key}" is not valid JSON.', {
+			key: row.key,
+		})
+	}
+	if (type === 'bool-map' && !isBooleanCell(row)) {
+		return t('openregister', 'Choose yes or no as the result for "{key}".', {
+			key: row.key,
+		})
+	}
+	return null
+}
+
+/**
+ * The problem with a table's value for other values, if any.
+ *
+ * @param {object} draft The lookup or yes/no transform draft.
+ * @return {string|null} A readable message, or null.
+ */
+function mapDefaultError(draft) {
+	if (draft.defaultMode !== 'value') {
+		return null
+	}
+	if (!cellIsValid(draft.defaultCell)) {
+		return t('openregister', 'The value for other values is not valid JSON.')
+	}
+	if (draft.type === 'bool-map' && !isBooleanCell(draft.defaultCell)) {
+		return t(
+			'openregister',
+			'Choose yes or no for values that are not in the table.',
+		)
+	}
+	return null
+}
+
+/**
+ * Problems in a lookup or yes/no table.
+ *
+ * @param {object} draft The transform draft.
+ * @return {Array<string>} Readable messages.
+ */
+function mapTableErrors(draft) {
+	const errors = []
+	if (draft.mapRows.length === 0) {
+		errors.push(t('openregister', 'Add at least one value to the table.'))
+	}
+	const keys = new Set()
+	for (const row of draft.mapRows) {
+		if (keys.has(row.key)) {
+			errors.push(
+				t('openregister', 'The value "{key}" is in the table twice.', {
+					key: row.key,
+				}),
+			)
+		}
+		keys.add(row.key)
+		const cellError = mapCellError(row, draft.type)
+		if (cellError) {
+			errors.push(cellError)
+		}
+	}
+	const defaultError = mapDefaultError(draft)
+	if (defaultError) {
+		errors.push(defaultError)
+	}
+	return errors
+}
+
+/**
+ * Problems in a join of columns.
+ *
+ * @param {object} draft The concat transform draft.
+ * @return {Array<string>} Readable messages.
+ */
+function concatErrors(draft) {
+	const errors = []
+	if (draft.fields.length === 0) {
+		errors.push(t('openregister', 'Add at least one column to join.'))
+	}
+	if (draft.fields.some((field) => field === '')) {
+		errors.push(t('openregister', 'A column to join has no name.'))
+	}
+	return errors
+}
+
+/**
  * Problems in one transform draft that would make the server refuse the pack.
  *
  * @param {object} draft The transform draft.
@@ -746,82 +839,26 @@ function setOwn(target, key, value) {
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
 export function validateTransform(draft) {
-	const errors = []
 	if (draft.type === 'lookup' || draft.type === 'bool-map') {
-		if (draft.mapRows.length === 0) {
-			errors.push(t('openregister', 'Add at least one value to the table.'))
-		}
-		const keys = new Set()
-		for (const row of draft.mapRows) {
-			if (keys.has(row.key)) {
-				errors.push(
-					t('openregister', 'The value "{key}" is in the table twice.', {
-						key: row.key,
-					}),
-				)
-			}
-			keys.add(row.key)
-			if (!cellIsValid(row)) {
-				errors.push(
-					t('openregister', 'The result for "{key}" is not valid JSON.', {
-						key: row.key,
-					}),
-				)
-			} else if (draft.type === 'bool-map' && !isBooleanCell(row)) {
-				errors.push(
-					t(
-						'openregister',
-						'Choose yes or no as the result for "{key}".',
-						{
-							key: row.key,
-						},
-					),
-				)
-			}
-		}
-		if (draft.defaultMode === 'value' && !cellIsValid(draft.defaultCell)) {
-			errors.push(
-				t('openregister', 'The value for other values is not valid JSON.'),
-			)
-		} else if (
-			draft.type === 'bool-map'
-			&& draft.defaultMode === 'value'
-			&& !isBooleanCell(draft.defaultCell)
-		) {
-			errors.push(
-				t(
-					'openregister',
-					'Choose yes or no for values that are not in the table.',
-				),
-			)
-		}
+		return mapTableErrors(draft)
 	}
 	if (draft.type === 'concat') {
-		if (draft.fields.length === 0) {
-			errors.push(t('openregister', 'Add at least one column to join.'))
-		}
-		if (draft.fields.some((field) => field === '')) {
-			errors.push(t('openregister', 'A column to join has no name.'))
-		}
+		return concatErrors(draft)
 	}
 	if (draft.type === 'const' && !cellIsValid(draft.valueCell)) {
-		errors.push(t('openregister', 'The fixed value is not valid JSON.'))
+		return [t('openregister', 'The fixed value is not valid JSON.')]
 	}
-	return errors
+	return []
 }
 
 /**
- * Problems in the draft that would make the server refuse the pack.
- *
- * Mirrors PackDefinitionValidator so most mistakes show before a save; the
- * server stays the authority and its 422 is shown as well.
+ * Problems in the pack's own fields: slug, name, version, source format,
+ * id column and whether it maps anything.
  *
  * @param {object} draft The draft.
- * @return {Array<string>} Readable messages; empty when the draft can be saved.
- *
- * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+ * @return {Array<string>} Readable messages.
  */
-export function validateDraft(draft) {
+function packFieldErrors(draft) {
 	const errors = []
 	if (!SLUG_PATTERN.test(draft.slug)) {
 		errors.push(
@@ -851,31 +888,52 @@ export function validateDraft(draft) {
 	if (draft.rows.length === 0) {
 		errors.push(t('openregister', 'Add at least one field mapping.'))
 	}
-	draft.rows.forEach((row, index) => {
-		const number = index + 1
-		if (row.source === '') {
+	return errors
+}
+
+/**
+ * Problems in one field mapping row.
+ *
+ * @param {object} row The mapping row.
+ * @param {number} index Its position, from 0.
+ * @return {Array<string>} Readable messages.
+ */
+function mappingRowErrors(row, index) {
+	const errors = []
+	const number = index + 1
+	if (row.source === '') {
+		errors.push(
+			t('openregister', 'Row {number} has no source column.', { number }),
+		)
+	}
+	if (row.target === '') {
+		errors.push(
+			t('openregister', 'Row {number} has no target field.', { number }),
+		)
+	}
+	if (row.transform) {
+		for (const message of validateTransform(row.transform)) {
 			errors.push(
-				t('openregister', 'Row {number} has no source column.', { number }),
+				t('openregister', 'Row {number}: {message}', {
+					number,
+					message,
+				}),
 			)
 		}
-		if (row.target === '') {
-			errors.push(
-				t('openregister', 'Row {number} has no target field.', { number }),
-			)
-		}
-		if (row.transform) {
-			for (const message of validateTransform(row.transform)) {
-				errors.push(
-					t('openregister', 'Row {number}: {message}', {
-						number,
-						message,
-					}),
-				)
-			}
-		}
-	})
+	}
+	return errors
+}
+
+/**
+ * Problems in the pack defaults.
+ *
+ * @param {Array<object>} defaults The default rows.
+ * @return {Array<string>} Readable messages.
+ */
+function defaultErrors(defaults) {
+	const errors = []
 	const defaultKeys = new Set()
-	for (const row of draft.defaults) {
+	for (const row of defaults) {
 		if (row.key === '') {
 			errors.push(t('openregister', 'A default value has no target field.'))
 		} else if (defaultKeys.has(row.key)) {
@@ -894,6 +952,26 @@ export function validateDraft(draft) {
 			)
 		}
 	}
+	return errors
+}
+
+/**
+ * Problems in the draft that would make the server refuse the pack.
+ *
+ * Mirrors PackDefinitionValidator so most mistakes show before a save; the
+ * server stays the authority and its 422 is shown as well.
+ *
+ * @param {object} draft The draft.
+ * @return {Array<string>} Readable messages; empty when the draft can be saved.
+ *
+ * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+ */
+export function validateDraft(draft) {
+	const errors = [
+		...packFieldErrors(draft),
+		...draft.rows.flatMap((row, index) => mappingRowErrors(row, index)),
+		...defaultErrors(draft.defaults),
+	]
 	const invalidSkips = parseSkipRows(draft.skipRows).invalid
 	if (invalidSkips.length > 0) {
 		errors.push(
