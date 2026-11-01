@@ -345,6 +345,66 @@ export function withTransformType(draft, type) {
 }
 
 /**
+ * The date formats to store. A cleared format is left out, so the engine's
+ * default applies: it would store every date as '' for an empty
+ * targetFormat. A format stored as '' stays as it is.
+ *
+ * @param {object} draft The transform draft.
+ * @param {object} base The stored transform block.
+ * @return {object} The format values.
+ */
+function dateValues(draft, base) {
+	const values = {}
+	for (const key of ['sourceFormat', 'targetFormat']) {
+		if (draft[key] !== '' || base[key] === '') {
+			values[key] = draft[key]
+		}
+	}
+	return values
+}
+
+/**
+ * The table and the value for other values of a lookup or yes/no table.
+ *
+ * @param {object} draft The transform draft.
+ * @return {object} The map and, unless other values are an error, the default.
+ */
+function mapValues(draft) {
+	const values = { map: objectFromEntryRows(draft.mapRows) }
+	if (draft.defaultMode === 'empty') {
+		values.default = null
+	} else if (draft.defaultMode === 'value') {
+		values.default = valueFromCell(draft.defaultCell)
+	}
+	return values
+}
+
+/**
+ * The joined columns and, unless it is the default space and none is
+ * stored, the separator.
+ *
+ * @param {object} draft The transform draft.
+ * @param {object} base The stored transform block.
+ * @return {object} The fields and the separator.
+ */
+function concatValues(draft, base) {
+	const values = { fields: draft.fields.slice() }
+	if (draft.separator !== ' ' || has(base, 'separator')) {
+		values.separator = draft.separator
+	}
+	return values
+}
+
+/** The values each transform type stores besides its type. */
+const TRANSFORM_VALUES = {
+	date: dateValues,
+	lookup: mapValues,
+	'bool-map': mapValues,
+	concat: concatValues,
+	const: (draft) => ({ value: valueFromCell(draft.valueCell) }),
+}
+
+/**
  * The stored form of a transform draft.
  *
  * @param {object} draft The transform draft.
@@ -360,34 +420,8 @@ export function transformPayload(draft) {
 		// A type this editor does not know: keep the stored block as it is.
 		return { ...clone(base), type }
 	}
-	const values = { type }
-	if (type === 'date') {
-		// A cleared format is left out, so the engine's default applies: it
-		// would store every date as '' for an empty targetFormat. A format
-		// stored as '' stays as it is.
-		for (const key of ['sourceFormat', 'targetFormat']) {
-			if (draft[key] !== '' || base[key] === '') {
-				values[key] = draft[key]
-			}
-		}
-	}
-	if (type === 'lookup' || type === 'bool-map') {
-		values.map = objectFromEntryRows(draft.mapRows)
-		if (draft.defaultMode === 'empty') {
-			values.default = null
-		} else if (draft.defaultMode === 'value') {
-			values.default = valueFromCell(draft.defaultCell)
-		}
-	}
-	if (type === 'concat') {
-		values.fields = draft.fields.slice()
-		if (draft.separator !== ' ' || has(base, 'separator')) {
-			values.separator = draft.separator
-		}
-	}
-	if (type === 'const') {
-		values.value = valueFromCell(draft.valueCell)
-	}
+	const valuesOf = TRANSFORM_VALUES[type]
+	const values = { type, ...(valuesOf ? valuesOf(draft, base) : {}) }
 	return ordered(base, values, TRANSFORM_KEYS)
 }
 
@@ -531,6 +565,35 @@ export function draftFromStored(definition) {
 }
 
 /**
+ * The defaults to store when the draft maps none but the stored pack has
+ * them: the stored empty shape (PHP stores an empty object as []), else an
+ * empty object.
+ *
+ * @param {unknown} stored The stored defaults.
+ * @return {object|Array} The defaults to store.
+ */
+function storedEmptyDefaults(stored) {
+	const keepable = isPlainObject(stored) || Array.isArray(stored)
+	return keepable && Object.keys(stored).length === 0 ? clone(stored) : {}
+}
+
+/**
+ * The idStrategy block to store.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} The block, with the stored keys the editor does not model.
+ */
+function idStrategyPayload(draft, base) {
+	const idBase = isPlainObject(base.idStrategy) ? base.idStrategy : {}
+	const idValues = { type: draft.idStrategyType }
+	if (draft.idStrategyType === 'sourceField' || has(idBase, 'field')) {
+		idValues.field = draft.idStrategyField
+	}
+	return ordered(idBase, idValues, ID_STRATEGY_KEYS)
+}
+
+/**
  * The stored definition a draft stands for, in the stored key order.
  *
  * @param {object} draft The draft.
@@ -551,24 +614,13 @@ export function payloadFromDraft(draft) {
 	if (draft.defaults.length > 0) {
 		values.defaults = objectFromEntryRows(draft.defaults)
 	} else if (has(base, 'defaults')) {
-		// Nothing to map, so keep the stored shape: PHP stores an empty object as [].
-		values.defaults =
-			isPlainObject(base.defaults) || Array.isArray(base.defaults)
-				? Object.keys(base.defaults).length === 0
-					? clone(base.defaults)
-					: {}
-				: {}
+		values.defaults = storedEmptyDefaults(base.defaults)
 	}
 	const skip = parseSkipRows(draft.skipRows).rows
 	if (skip.length > 0 || has(base, 'skipRows')) {
 		values.skipRows = skip
 	}
-	const idBase = isPlainObject(base.idStrategy) ? base.idStrategy : {}
-	const idValues = { type: draft.idStrategyType }
-	if (draft.idStrategyType === 'sourceField' || has(idBase, 'field')) {
-		idValues.field = draft.idStrategyField
-	}
-	values.idStrategy = ordered(idBase, idValues, ID_STRATEGY_KEYS)
+	values.idStrategy = idStrategyPayload(draft, base)
 	return ordered(base, values, TOP_LEVEL_KEYS)
 }
 
@@ -988,6 +1040,54 @@ export function validateDraft(draft) {
 }
 
 /**
+ * What a lookup or yes/no table does with a value that is not in it.
+ *
+ * @param {object} draft The transform draft.
+ * @return {string|undefined} The readable phrase.
+ */
+function unmappedText(draft) {
+	if (draft.defaultMode === 'empty') {
+		// A yes/no table stores its default as true or false.
+		return draft.type === 'bool-map'
+			? t('openregister', 'other values are stored as false')
+			: t('openregister', 'other values stay empty')
+	}
+	return {
+		none: t('openregister', 'other values are an error'),
+		value: t('openregister', 'other values get a default'),
+	}[draft.defaultMode]
+}
+
+/** The description of each transform type the editor knows. */
+const TRANSFORM_SUMMARIES = {
+	trim: () => t('openregister', 'Trim spaces'),
+	date: (draft) =>
+		t('openregister', 'Date {from} to {to}', {
+			from: draft.sourceFormat || t('openregister', 'any format'),
+			to: draft.targetFormat || 'Y-m-d',
+		}),
+	lookup: (draft) =>
+		t('openregister', 'Lookup table, values: {count}, {unmapped}', {
+			count: draft.mapRows.length,
+			unmapped: unmappedText(draft),
+		}),
+	'bool-map': (draft) =>
+		t('openregister', 'Yes/no table, values: {count}, {unmapped}', {
+			count: draft.mapRows.length,
+			unmapped: unmappedText(draft),
+		}),
+	concat: (draft) =>
+		t('openregister', 'Joined with {fields}, separated by "{separator}"', {
+			fields: draft.fields.join(', '),
+			separator: draft.separator,
+		}),
+	const: (draft) =>
+		t('openregister', 'Fixed value {value}', {
+			value: draft.valueCell.text,
+		}),
+}
+
+/**
  * A short, readable description of a transform for the mapping table.
  *
  * @param {object|null} draft The transform draft, or null for none.
@@ -999,49 +1099,13 @@ export function transformSummary(draft) {
 	if (!draft || draft.type === '') {
 		return t('openregister', 'Copied as is')
 	}
-	const unmapped = {
-		none: t('openregister', 'other values are an error'),
-		// A yes/no table stores its default as true or false.
-		empty:
-			draft.type === 'bool-map'
-				? t('openregister', 'other values are stored as false')
-				: t('openregister', 'other values stay empty'),
-		value: t('openregister', 'other values get a default'),
-	}[draft.defaultMode]
-	switch (draft.type) {
-		case 'trim':
-			return t('openregister', 'Trim spaces')
-		case 'date':
-			return t('openregister', 'Date {from} to {to}', {
-				from: draft.sourceFormat || t('openregister', 'any format'),
-				to: draft.targetFormat || 'Y-m-d',
-			})
-		case 'lookup':
-			return t('openregister', 'Lookup table, values: {count}, {unmapped}', {
-				count: draft.mapRows.length,
-				unmapped,
-			})
-		case 'bool-map':
-			return t('openregister', 'Yes/no table, values: {count}, {unmapped}', {
-				count: draft.mapRows.length,
-				unmapped,
-			})
-		case 'concat':
-			return t(
-				'openregister',
-				'Joined with {fields}, separated by "{separator}"',
-				{
-					fields: draft.fields.join(', '),
-					separator: draft.separator,
-				},
-			)
-		case 'const':
-			return t('openregister', 'Fixed value {value}', {
-				value: draft.valueCell.text,
-			})
-		default:
-			return t('openregister', 'Transform "{type}" (kept as stored)', {
-				type: draft.type,
-			})
+	const summary = has(TRANSFORM_SUMMARIES, draft.type)
+		? TRANSFORM_SUMMARIES[draft.type]
+		: null
+	if (summary) {
+		return summary(draft)
 	}
+	return t('openregister', 'Transform "{type}" (kept as stored)', {
+		type: draft.type,
+	})
 }
