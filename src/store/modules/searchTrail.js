@@ -6,6 +6,7 @@ import {
 	getListPage,
 	listPageQuery,
 	listPagination,
+	requestJson,
 } from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -280,22 +281,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				if (options.from) query.append('from', options.from)
 				if (options.to) query.append('to', options.to)
 				const suffix = query.toString() ? `?${query.toString()}` : ''
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/statistics${suffix}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
-					},
+					{ method: 'GET', failure: 'Failed to fetch statistics' },
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch statistics')
-				}
 
 				this.setStatistics(data)
 				return data
@@ -319,22 +308,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.popularTermsLoading = true
 
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/popular-terms?limit=${limit}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
-					},
+					{ method: 'GET', failure: 'Failed to fetch popular terms' },
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch popular terms')
-				}
 
 				this.setPopularTerms(data)
 				return data
@@ -358,22 +335,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.activityLoading = true
 
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/activity?interval=${period}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
-					},
+					{ method: 'GET', failure: 'Failed to fetch activity data' },
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch activity data')
-				}
 
 				this.setActivity({ [period]: data })
 				return data
@@ -394,24 +359,13 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchRegisterSchemaStats() {
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/register-schema-stats`,
 					{
 						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
+						failure: 'Failed to fetch register schema statistics',
 					},
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(
-						data.error || 'Failed to fetch register schema statistics',
-					)
-				}
 
 				this.setRegisterSchemaStats(data)
 				return data
@@ -430,24 +384,13 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchUserAgentStats() {
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/user-agent-stats`,
 					{
 						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
+						failure: 'Failed to fetch user agent statistics',
 					},
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(
-						data.error || 'Failed to fetch user agent statistics',
-					)
-				}
 
 				this.setUserAgentStats(data)
 				return data
@@ -467,20 +410,11 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async cleanupSearchTrails(days = 30) {
 			try {
-				const response = await fetch(`${apiUrl}/search-trails/cleanup`, {
+				const data = await requestJson(`${apiUrl}/search-trails/cleanup`, {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-					body: JSON.stringify({ days }),
+					body: { days },
+					failure: 'Failed to cleanup search trails',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to cleanup search trails')
-				}
 
 				return data
 			} catch (error) {
