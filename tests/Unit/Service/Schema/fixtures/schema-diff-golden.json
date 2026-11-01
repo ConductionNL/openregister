@@ -547,6 +547,24 @@
         "breaking": false,
         "next": "1.4.2"
     },
+    "format same value other type": {
+        "changes": [
+            {
+                "property": "a",
+                "kind": "constraint_tightened",
+                "old": {
+                    "format": "1"
+                },
+                "new": {
+                    "format": 1
+                }
+            }
+        ],
+        "classification": "breaking",
+        "bump": "major",
+        "breaking": true,
+        "next": "2.0.0"
+    },
     "identical": {
         "changes": [],
         "classification": "none",

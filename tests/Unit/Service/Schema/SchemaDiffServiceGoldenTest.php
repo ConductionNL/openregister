@@ -22,6 +22,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Schema\SchemaDiffService
  * @covers \OCA\OpenRegister\Service\Schema\SchemaDiffRun
+ * @covers \OCA\OpenRegister\Service\Schema\PropertyDefinitionPair
  * @uses   \OCA\OpenRegister\Service\Schema\SchemaChangeSet
  */
 class SchemaDiffServiceGoldenTest extends TestCase {
@@ -84,6 +85,7 @@ class SchemaDiffServiceGoldenTest extends TestCase {
 			'format introduced' => [self::def(['a' => $str]), self::def(['a' => $str + ['format' => 'date']]), []],
 			'format removed' => [self::def(['a' => $str + ['format' => 'date']]), self::def(['a' => $str]), []],
 			'pattern and format both null' => [self::def(['a' => $str + ['pattern' => null, 'format' => null]]), self::def(['a' => $str + ['pattern' => null, 'format' => null]]), []],
+			'format same value other type' => [self::def(['a' => $str + ['format' => '1']]), self::def(['a' => $str + ['format' => 1]]), []],
 			'pattern null to absent' => [self::def(['a' => $str + ['pattern' => null]]), self::def(['a' => $str]), []],
 			'bound null to absent' => [self::def(['a' => $str + ['minLength' => null]]), self::def(['a' => $str]), []],
 			'bound absent to null' => [self::def(['a' => $str]), self::def(['a' => $str + ['maxLength' => null]]), []],
