@@ -26,6 +26,10 @@ use DateTime;
 use OCA\OpenRegister\Controller\ExportRunsController;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Db\ExportRun;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\StreamResponse;
+use OCP\Files\File;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -140,4 +144,57 @@ class ExportRunsControllerTest extends TestCase {
 
 		$this->assertSame(401, $this->controller([], null)->index()->getStatus());
 	}//end testAnAnonymousCallerIsRefused()
+
+	/**
+	 * A download streams the run's file and counts once on the run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-downloads-are-counted-on-the-run
+	 */
+	public function testADownloadStreamsTheFileAndCountsOnTheRun(): void {
+		$this->rights->method('seesEveryExportRun')->with('alice')->willReturn(false);
+		$file = $this->createMock(File::class);
+		$file->method('fopen')->willReturn(fopen('php://memory', 'r'));
+		$file->method('getName')->willReturn('weekly-cases.csv');
+		$file->method('getMimetype')->willReturn('text/csv');
+		$this->runs->expects($this->once())->method('openForDownload')->with('run-1', 'alice', false)
+			->willReturn(['status' => 200, 'run' => new ExportRun(), 'file' => $file]);
+		$this->runs->expects($this->once())->method('countDownload')->with('run-1');
+
+		$response = $this->controller([])->download(uuid: 'run-1');
+
+		$this->assertInstanceOf(StreamResponse::class, $response);
+		$this->assertStringContainsString('weekly-cases.csv', (string)($response->getHeaders()['Content-Disposition'] ?? ''));
+	}//end testADownloadStreamsTheFileAndCountsOnTheRun()
+
+	/**
+	 * A refused or expired download counts nothing and says why.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-exports-area-lists-the-runs
+	 */
+	public function testAnExpiredDownloadCountsNothing(): void {
+		$this->runs->method('openForDownload')->willReturn(['status' => 410, 'error' => 'This export has expired.']);
+		$this->runs->expects($this->never())->method('countDownload');
+
+		$response = $this->controller([])->download(uuid: 'run-1');
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(410, $response->getStatus());
+	}//end testAnExpiredDownloadCountsNothing()
+
+	/**
+	 * Nobody signed in, nothing served.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-exports-area-lists-the-runs
+	 */
+	public function testAnAnonymousDownloadIsRefused(): void {
+		$this->runs->expects($this->never())->method('openForDownload');
+
+		$this->assertSame(401, $this->controller([], null)->download(uuid: 'run-1')->getStatus());
+	}//end testAnAnonymousDownloadIsRefused()
 }//end class
