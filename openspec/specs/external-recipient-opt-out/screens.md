@@ -1,1 +1,0 @@
-- No screen: opt-out questions and unsubscribe links on outbound mail, decided on the server.

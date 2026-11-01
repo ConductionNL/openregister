@@ -1,3 +1,0 @@
-uri,notation,prefLabel_nl,definition,broaderUri
-https://example.org/vocab/csv-scheme/x,X,Waarde X,Definition of X,
-https://example.org/vocab/csv-scheme/y,Y,Waarde Y,Definition of Y,https://example.org/vocab/csv-scheme/x
