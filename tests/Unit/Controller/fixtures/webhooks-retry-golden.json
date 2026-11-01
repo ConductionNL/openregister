@@ -389,6 +389,69 @@
             "message": "Webhook retry delivered successfully"
         }
     },
+    "scalar json body": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "scalar json empty string body": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "scalar json zero body": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
     "stored payload": {
         "calls": [
             {

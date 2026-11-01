@@ -1462,7 +1462,7 @@ class WebhooksController extends Controller {
 	private function retryPayload(WebhookLog $log): array {
 		if ($log->getRequestBody() !== null) {
 			$decoded = json_decode($log->getRequestBody() ?? '{}', true);
-			if ($decoded !== null) {
+			if (is_array($decoded) === true) {
 				return $decoded;
 			}
 
