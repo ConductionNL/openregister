@@ -41,6 +41,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalRecord
  * @covers \OCA\OpenRegister\Service\Object\DeleteObject
+ * @uses \OCA\OpenRegister\Service\Object\DeletionTarget
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
