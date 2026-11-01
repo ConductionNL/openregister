@@ -394,137 +394,28 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with database info
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
 	public function getDatabaseInfo(): JSONResponse {
 		try {
-			// Check if refresh is requested or if we should use cached data.
-			$refresh = filter_var(
-				$this->request->getParam('refresh', false),
-				FILTER_VALIDATE_BOOLEAN
-			);
-
-			// Try to get cached database info if not refreshing.
-			if ($refresh === false) {
-				$cachedInfo = $this->config->getValueString('openregister', 'databaseInfo', '');
-				if (empty($cachedInfo) === false) {
-					$cached = json_decode($cachedInfo, true);
-					if ($cached !== null && isset($cached['database']) === true) {
-						$cached['fromCache'] = true;
-						return new JSONResponse(data: $cached);
-					}
-				}
+			$cached = $this->cachedDatabaseInfo();
+			if ($cached !== null) {
+				return new JSONResponse(data: $cached);
 			}
 
-			// Get database platform information.
-			// Note: getDatabasePlatform() returns a platform instance, but we avoid type hinting it.
-			$platform = $this->db->getDatabasePlatform();
-			// Get platform name as string.
-			$platformName = 'unknown';
-			if (method_exists($platform, 'getName') === true) {
-				$platformName = $platform->getName();
-			}
-
-			// Determine database type and version.
-			$dbType = 'Unknown';
-			$dbVersion = 'Unknown';
-			$vectorSupport = false;
-			$recommendedPlugin = null;
-			$performanceNote = null;
-			$extensions = [];
-
-			if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
-				// Check if it's MariaDB or MySQL.
-				try {
-					$stmt = $this->db->prepare('SELECT VERSION()');
-					$result = $stmt->execute();
-					$version = $result->fetchOne();
-
-					$dbType = 'MySQL';
-					if (stripos($version, 'MariaDB') !== false) {
-						$dbType = 'MariaDB';
-					}
-
-					preg_match('/\d+\.\d+\.\d+/', $version, $matches);
-					$dbVersion = $matches[0] ?? $version;
-				} catch (Exception $e) {
-					$dbType = 'MySQL/MariaDB';
-					$dbVersion = 'Unknown';
-				}
-
-				// MariaDB/MySQL do not support native vector operations.
-				$vectorSupport = false;
-				$recommendedPlugin = 'pgvector for PostgreSQL';
-				$performanceNote = 'Current: Similarity calculated in PHP (slow).'
-					. ' Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
-			} elseif (strpos($platformName, 'postgres') !== false) {
-				$dbType = 'PostgreSQL';
-
-				try {
-					$stmt = $this->db->prepare('SELECT VERSION()');
-					$result = $stmt->execute();
-					$version = $result->fetchOne();
-					preg_match('/PostgreSQL (\d+\.\d+)/', $version, $matches);
-					$dbVersion = $matches[1] ?? 'Unknown';
-				} catch (Exception $e) {
-					$dbVersion = 'Unknown';
-				}
-
-				// Fetch all installed PostgreSQL extensions.
-				try {
-					$stmt = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
-					$result = $stmt->execute();
-					while (is_array($row = $result->fetch()) === true) {
-						$extensions[] = [
-							'name' => $row['extname'],
-							'version' => $row['extversion'],
-						];
-					}
-				} catch (Exception $e) {
-					$this->logger->warning(
-						message: '[SettingsController] Failed to fetch PostgreSQL extensions',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-					);
-				}
-
-				// Check if pgvector extension is installed.
-				$hasVector = false;
-				foreach ($extensions as $ext) {
-					if ($ext['name'] === 'vector') {
-						$hasVector = true;
-						break;
-					}
-				}
-
-				$vectorSupport = false;
-				$recommendedPlugin = 'pgvector (not installed)';
-				$performanceNote = 'Install pgvector extension: CREATE EXTENSION vector;';
-				if ($hasVector === true) {
-					$vectorSupport = true;
-					$recommendedPlugin = 'pgvector (installed)';
-					$performanceNote = 'Optimal: Using database-level vector operations for fast semantic search.';
-				}
-			} elseif (strpos($platformName, 'sqlite') !== false) {
-				$dbType = 'SQLite';
-				$vectorSupport = false;
-				$recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';
-				$performanceNote = 'SQLite not recommended for production vector search.';
-			}//end if
+			$platformName = $this->databasePlatformName();
+			$profile = $this->databaseProfile(platformName: $platformName);
 
 			// Build the database info array.
 			$databaseInfo = [
-				'type' => $dbType,
-				'version' => $dbVersion,
+				'type' => $profile['type'],
+				'version' => $profile['version'],
 				'platform' => $platformName,
-				'vectorSupport' => $vectorSupport,
-				'recommendedPlugin' => $recommendedPlugin,
-				'performanceNote' => $performanceNote,
-				'extensions' => $extensions,
-				'hybridSearch' => $this->getHybridSearchDiagnostics(isPostgres: $dbType === 'PostgreSQL'),
+				'vectorSupport' => $profile['vectorSupport'],
+				'recommendedPlugin' => $profile['recommendedPlugin'],
+				'performanceNote' => $profile['performanceNote'],
+				'extensions' => $profile['extensions'],
+				'hybridSearch' => $this->getHybridSearchDiagnostics(isPostgres: $profile['type'] === 'PostgreSQL'),
 				'lastUpdated' => (new DateTime())->format('c'),
 			];
 
@@ -563,6 +454,188 @@ class SettingsController extends Controller {
 			);
 		}//end try
 	}//end getDatabaseInfo()
+
+	/**
+	 * The cached database info, unless the caller asked for a refresh.
+	 *
+	 * @return array<string, mixed>|null The cached response data marked as from cache, or null.
+	 */
+	private function cachedDatabaseInfo(): ?array {
+		$refresh = filter_var(
+			$this->request->getParam('refresh', false),
+			FILTER_VALIDATE_BOOLEAN
+		);
+		if ($refresh === true) {
+			return null;
+		}
+
+		$cachedInfo = $this->config->getValueString('openregister', 'databaseInfo', '');
+		if (empty($cachedInfo) === true) {
+			return null;
+		}
+
+		$cached = json_decode($cachedInfo, true);
+		if ($cached === null || isset($cached['database']) === false) {
+			return null;
+		}
+
+		$cached['fromCache'] = true;
+		return $cached;
+	}//end cachedDatabaseInfo()
+
+	/**
+	 * The name of the active database platform.
+	 *
+	 * The platform instance from getDatabasePlatform() is deliberately not type hinted.
+	 *
+	 * @return string The platform name, or 'unknown'.
+	 */
+	private function databasePlatformName(): string {
+		$platform = $this->db->getDatabasePlatform();
+		if (method_exists($platform, 'getName') === true) {
+			return $platform->getName();
+		}
+
+		return 'unknown';
+	}//end databasePlatformName()
+
+	/**
+	 * The database type, version, extensions and vector-search advice for a platform.
+	 *
+	 * @param string $platformName The active platform's name.
+	 *
+	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string|null,
+	 *     performanceNote: string|null, extensions: list<array{name: mixed, version: mixed}>}
+	 */
+	private function databaseProfile(string $platformName): array {
+		if (strpos($platformName, 'mysql') !== false || strpos($platformName, 'mariadb') !== false) {
+			return $this->mysqlProfile();
+		}
+
+		if (strpos($platformName, 'postgres') !== false) {
+			return $this->postgresProfile();
+		}
+
+		$profile = [
+			'type' => 'Unknown',
+			'version' => 'Unknown',
+			'vectorSupport' => false,
+			'recommendedPlugin' => null,
+			'performanceNote' => null,
+			'extensions' => [],
+		];
+		if (strpos($platformName, 'sqlite') !== false) {
+			$profile['type'] = 'SQLite';
+			$profile['recommendedPlugin'] = 'sqlite-vss or migrate to PostgreSQL';
+			$profile['performanceNote'] = 'SQLite not recommended for production vector search.';
+		}
+
+		return $profile;
+	}//end databaseProfile()
+
+	/**
+	 * The profile of a MySQL or MariaDB server, which has no native vector operations.
+	 *
+	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string,
+	 *     performanceNote: string, extensions: list<array{name: mixed, version: mixed}>}
+	 */
+	private function mysqlProfile(): array {
+		$profile = [
+			'type' => 'MySQL/MariaDB',
+			'version' => 'Unknown',
+			'vectorSupport' => false,
+			'recommendedPlugin' => 'pgvector for PostgreSQL',
+			'performanceNote' => 'Current: Similarity calculated in PHP (slow).'
+				. ' Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.',
+			'extensions' => [],
+		];
+
+		try {
+			$version = $this->serverVersion();
+
+			$profile['type'] = 'MySQL';
+			if (stripos($version, 'MariaDB') !== false) {
+				$profile['type'] = 'MariaDB';
+			}
+
+			preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+			$profile['version'] = $matches[0] ?? $version;
+		} catch (Exception $e) {
+			// Reported as MySQL/MariaDB of unknown version.
+		}
+
+		return $profile;
+	}//end mysqlProfile()
+
+	/**
+	 * The profile of a PostgreSQL server, with its installed extensions and pgvector status.
+	 *
+	 * @return array{type: string, version: string, vectorSupport: bool, recommendedPlugin: string,
+	 *     performanceNote: string, extensions: list<array{name: mixed, version: mixed}>}
+	 */
+	private function postgresProfile(): array {
+		$version = 'Unknown';
+		try {
+			preg_match('/PostgreSQL (\d+\.\d+)/', $this->serverVersion(), $matches);
+			$version = $matches[1] ?? 'Unknown';
+		} catch (Exception $e) {
+			// Reported as an unknown version.
+		}
+
+		$extensions = $this->postgresExtensions();
+		$profile = [
+			'type' => 'PostgreSQL',
+			'version' => $version,
+			'vectorSupport' => false,
+			'recommendedPlugin' => 'pgvector (not installed)',
+			'performanceNote' => 'Install pgvector extension: CREATE EXTENSION vector;',
+			'extensions' => $extensions,
+		];
+		if (in_array('vector', array_column($extensions, 'name'), true) === true) {
+			$profile['vectorSupport'] = true;
+			$profile['recommendedPlugin'] = 'pgvector (installed)';
+			$profile['performanceNote'] = 'Optimal: Using database-level vector operations for fast semantic search.';
+		}
+
+		return $profile;
+	}//end postgresProfile()
+
+	/**
+	 * The database server's version string.
+	 *
+	 * @return mixed The result of SELECT VERSION().
+	 */
+	private function serverVersion() {
+		$stmt = $this->db->prepare('SELECT VERSION()');
+		$result = $stmt->execute();
+		return $result->fetchOne();
+	}//end serverVersion()
+
+	/**
+	 * The installed PostgreSQL extensions; empty when the catalog cannot be read.
+	 *
+	 * @return list<array{name: mixed, version: mixed}>
+	 */
+	private function postgresExtensions(): array {
+		$extensions = [];
+		try {
+			$stmt = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
+			$result = $stmt->execute();
+			while (is_array($row = $result->fetch()) === true) {
+				$extensions[] = [
+					'name' => $row['extname'],
+					'version' => $row['extversion'],
+				];
+			}
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[SettingsController] Failed to fetch PostgreSQL extensions',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+		}
+
+		return $extensions;
+	}//end postgresExtensions()
 
 	/**
 	 * Refresh database information
@@ -757,8 +830,6 @@ class SettingsController extends Controller {
 	 *     type: 'NO TYPE'|mixed, object_json: mixed}>}},
 	 *     array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
 	 *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
 	 *              information-disclosure risk).
@@ -789,143 +860,15 @@ class SettingsController extends Controller {
 			$objectService->setRegister($register);
 			$objectService->setSchema('organisation');
 
-			$results = [];
-
-			// Test 1: Get all organizations.
-			$query1 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-			];
-			$result1 = $objectService->searchObjectsPaginated($query1);
-			$results['all_organizations'] = [
-				'count' => count($result1['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-							'object_data' => $objectData,
-						];
-					},
-					$result1['results']
+			$results = [
+				'all_organizations' => $this->organisationsOfType(objectService: $objectService, types: []),
+				'type_samenwerking' => $this->organisationsOfType(objectService: $objectService, types: ['samenwerking']),
+				'type_community' => $this->organisationsOfType(objectService: $objectService, types: ['community']),
+				'type_both' => $this->organisationsOfType(
+					objectService: $objectService,
+					types: ['samenwerking', 'community']
 				),
-			];
-
-			// Test 2: Try type filtering with samenwerking.
-			$query2 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-				'type' => ['samenwerking'],
-			];
-			$result2 = $objectService->searchObjectsPaginated($query2);
-			$results['type_samenwerking'] = [
-				'count' => count($result2['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array with type.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-						];
-					},
-					$result2['results']
-				),
-			];
-
-			// Test 3: Try type filtering with community.
-			$query3 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-				'type' => ['community'],
-			];
-			$result3 = $objectService->searchObjectsPaginated($query3);
-			$results['type_community'] = [
-				'count' => count($result3['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array with type.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-						];
-					},
-					$result3['results']
-				),
-			];
-
-			// Test 4: Try type filtering with both types.
-			$query4 = [
-				'_limit' => 10,
-				'_page' => 1,
-				'_source' => 'database',
-				'type' => ['samenwerking', 'community'],
-			];
-			$result4 = $objectService->searchObjectsPaginated($query4);
-			$results['type_both'] = [
-				'count' => count($result4['results']),
-				'organizations' => array_map(
-					// Maps ObjectEntity to simplified array with type.
-					function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-						$objectData = $org->getObject();
-						return [
-							'id' => $org->getId(),
-							'name' => $org->getName(),
-							'type' => $objectData['type'] ?? 'NO TYPE',
-						];
-					},
-					$result4['results']
-				),
-			];
-
-			// Test 5: Direct database query to check type field.
-			$connection = $this->container->get(\OCP\IDBConnection::class);
-			$qb = $connection->getQueryBuilder();
-			$qb->select('o.id', 'o.name', 'o.object')
-				->from('openregister_objects', 'o')
-				->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
-				->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
-
-			// NC's IResult does not expose Doctrine's fetchAllAssociative() on
-			// every supported server (absent on NC 32) — iterate fetch() instead
-			// (see RegisterMapper::getAllRegisterIdsWithSchema / MarkerLookupTrait).
-			$stmt = $qb->executeQuery();
-			$rows = [];
-			// Same reason as above, and here it matters more: a fetch() that
-			// answers NULL never satisfies `!== false`, so the loop would spin
-			// forever appending nulls rather than ending.
-			$row = $stmt->fetch();
-			while (is_array($row) === true) {
-				$rows[] = $row;
-				$row = $stmt->fetch();
-			}
-
-			$stmt->closeCursor();
-
-			$results['direct_database_query'] = [
-				'count' => count($rows),
-				'organizations' => array_map(
-					// Maps row to simplified array with type from JSON.
-					function (array $row): array {
-						$objectData = json_decode($row['object'], true);
-						return [
-							'id' => $row['id'],
-							'name' => $row['name'],
-							'type' => $objectData['type'] ?? 'NO TYPE',
-							'object_json' => $row['object'],
-						];
-					},
-					$rows
-				),
+				'direct_database_query' => $this->organisationsByNameInDatabase(),
 			];
 
 			return new JSONResponse(data: $results);
@@ -939,4 +882,78 @@ class SettingsController extends Controller {
 			);
 		}//end try
 	}//end debugTypeFiltering()
+
+	/**
+	 * Search the organisation schema in the database, optionally filtered on type.
+	 *
+	 * The unfiltered search also returns each organisation's object data.
+	 *
+	 * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service, set to the organisation schema.
+	 * @param list<string>  $types         The types to filter on; empty for no filter.
+	 *
+	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
+	 */
+	private function organisationsOfType(\OCA\OpenRegister\Service\ObjectService $objectService, array $types): array {
+		$query = [
+			'_limit' => 10,
+			'_page' => 1,
+			'_source' => 'database',
+		];
+		if ($types !== []) {
+			$query['type'] = $types;
+		}
+
+		$found = $objectService->searchObjectsPaginated($query);
+		$organisations = [];
+		foreach ($found['results'] as $org) {
+			$objectData = $org->getObject();
+			$summary = [
+				'id' => $org->getId(),
+				'name' => $org->getName(),
+				'type' => $objectData['type'] ?? 'NO TYPE',
+			];
+			if ($types === []) {
+				$summary['object_data'] = $objectData;
+			}
+
+			$organisations[] = $summary;
+		}
+
+		return ['count' => count($found['results']), 'organizations' => $organisations];
+	}//end organisationsOfType()
+
+	/**
+	 * Read the objects named like Samenwerking or Community straight from the objects table.
+	 *
+	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
+	 */
+	private function organisationsByNameInDatabase(): array {
+		$connection = $this->container->get(\OCP\IDBConnection::class);
+		$qb = $connection->getQueryBuilder();
+		$qb->select('o.id', 'o.name', 'o.object')
+			->from('openregister_objects', 'o')
+			->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
+			->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
+
+		// NC's IResult does not expose Doctrine's fetchAllAssociative() on every
+		// supported server (absent on NC 32), and a fetch() that answers NULL never
+		// satisfies `!== false`, so the loop ends on anything that is not a row.
+		$stmt = $qb->executeQuery();
+		$organisations = [];
+		$row = $stmt->fetch();
+		while (is_array($row) === true) {
+			$objectData = json_decode($row['object'], true);
+			$organisations[] = [
+				'id' => $row['id'],
+				'name' => $row['name'],
+				'type' => $objectData['type'] ?? 'NO TYPE',
+				'object_json' => $row['object'],
+			];
+			$row = $stmt->fetch();
+		}
+
+		$stmt->closeCursor();
+
+		return ['count' => count($organisations), 'organizations' => $organisations];
+	}//end organisationsByNameInDatabase()
 }//end class
