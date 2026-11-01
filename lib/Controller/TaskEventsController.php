@@ -24,7 +24,7 @@
  * create, link, unlink, destroy. It is deliberately NOT index/create/
  * update/destroy, because there is no event UPDATE anywhere behind the
  * object leaf either. Neither `CalendarLinkService` nor
- * {@see \OCA\OpenRegister\Service\CalendarEventService} has a method that
+ * {@see \OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface} has a method that
  * rewrites a VEVENT, so an `update` verb here would have to grow its own
  * event handling, which is the one thing this controller must not do. The
  * pair that DOES exist, `link` and `unlink`, is what a task page needs
@@ -63,7 +63,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCP\AppFramework\Controller;
@@ -103,7 +103,7 @@ class TaskEventsController extends Controller {
 	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param CalendarLinkService $links The link-table layer, uuid-anchored.
-	 * @param CalendarEventService $events The VEVENT layer, for the legacy
+	 * @param ObjectCalendarEventsInterface $events The VEVENT layer, for the legacy
 	 *                                     X-OPENREGISTER-* strip on destroy.
 	 * @param IUserSession $userSession Names the acting identity.
 	 *
@@ -115,7 +115,7 @@ class TaskEventsController extends Controller {
 		private readonly TaskManagerInterface $tasks,
 		private readonly TaskAuthorizationService $authorization,
 		private readonly CalendarLinkService $links,
-		private readonly CalendarEventService $events,
+		private readonly ObjectCalendarEventsInterface $events,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);

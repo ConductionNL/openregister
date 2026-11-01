@@ -34,7 +34,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -54,14 +54,14 @@ class DeckLinksController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param DeckLinkService $deckLinkService Backing service.
 	 * @param ObjectService $objectService OR object resolver.
-	 * @param SettingsService $settingsService Settings service for sticky default.
+	 * @param AppSettingsInterface $settingsService Settings service for sticky default.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly DeckLinkService $deckLinkService,
 		private readonly ObjectService $objectService,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

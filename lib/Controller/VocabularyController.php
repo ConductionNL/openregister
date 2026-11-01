@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
-use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -68,21 +68,21 @@ class VocabularyController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const REGISTER = VocabularyImportService::REGISTER;
+	private const REGISTER = VocabularyImporterInterface::REGISTER;
 
 	/**
 	 * ConceptScheme schema slug.
 	 *
 	 * @var string
 	 */
-	private const SCHEMA_SCHEME = VocabularyImportService::SCHEMA_SCHEME;
+	private const SCHEMA_SCHEME = VocabularyImporterInterface::SCHEMA_SCHEME;
 
 	/**
 	 * Concept schema slug.
 	 *
 	 * @var string
 	 */
-	private const SCHEMA_CONCEPT = VocabularyImportService::SCHEMA_CONCEPT;
+	private const SCHEMA_CONCEPT = VocabularyImporterInterface::SCHEMA_CONCEPT;
 
 	/**
 	 * Upper bound on concepts fetched for a scheme's in-memory label-search

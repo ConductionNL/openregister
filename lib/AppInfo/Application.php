@@ -54,7 +54,6 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
 use OCA\OpenRegister\Service\ServiceRegistrar;
-use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;

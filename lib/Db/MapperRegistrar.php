@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -109,7 +109,7 @@ final class MapperRegistrar {
 					userManager: $container->get('OCP\IUserManager'),
 					appConfig: $container->get('OCP\IAppConfig'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					settingsService: $container->get(SettingsService::class),
+					settingsService: $container->get(AppSettingsInterface::class),
 					container: $container
 				);
 			}

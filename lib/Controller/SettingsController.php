@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -143,7 +143,7 @@ class SettingsController extends Controller {
 	 * @param IDBConnection $db The database connection.
 	 * @param ContainerInterface $container The container.
 	 * @param IAppManager $appManager The app manager.
-	 * @param SettingsService $settingsService The settings service.
+	 * @param AppSettingsInterface $settingsService The settings service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IL10N|null $l10n The localization service.
 	 *
@@ -156,7 +156,7 @@ class SettingsController extends Controller {
 		private readonly IDBConnection $db,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IL10N $l10n = null,
 	) {
