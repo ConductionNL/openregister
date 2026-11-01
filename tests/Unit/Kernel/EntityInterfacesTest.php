@@ -18,11 +18,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
@@ -43,6 +45,7 @@ class EntityInterfacesTest extends TestCase {
 	private const ENTITY_ONLY = [
 		Schema::class   => ['getManagedByConfiguration', 'hydrate', 'validateProperties'],
 		Register::class => ['getManagedByConfiguration'],
+		ObjectEntity::class => ['getManagedByConfiguration'],
 	];
 
 	/**
@@ -57,6 +60,7 @@ class EntityInterfacesTest extends TestCase {
 			'ScheduledReport' => [ScheduledReport::class, ScheduledReportInterface::class],
 			'Schema'          => [Schema::class, SchemaInterface::class],
 			'Register'        => [Register::class, RegisterInterface::class],
+			'ObjectEntity'    => [ObjectEntity::class, ObjectRowInterface::class],
 		];
 	}//end entities()
 

@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
@@ -39,6 +41,8 @@ use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
@@ -76,7 +80,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
  */
-class AnnotationNotificationDispatcher {
+class AnnotationNotificationDispatcher implements ObjectNotificationDispatcherInterface {
 
 	/**
 	 * The nc-notification channel unit — injected, or lazily built.
@@ -328,7 +332,7 @@ class AnnotationNotificationDispatcher {
 	/**
 	 * Fire any notifications declared on the schema whose trigger matches.
 	 *
-	 * @param ObjectEntity $object The object the event happened on.
+	 * @param ObjectRowInterface $object The object the event happened on.
 	 * @param string $trigger 'created' | 'updated' | 'transition' | 'calculatedChange'.
 	 * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`,
 	 *                                      `_newData`, `_oldData` for calculatedChange).
@@ -349,9 +353,13 @@ class AnnotationNotificationDispatcher {
 	 * descriptive names for distinct lifecycle stages of the same template value; abbreviating would
 	 * obscure the claim-before-send ordering that prevents duplicate dispatches.
 	 *
+	 * @throws \InvalidArgumentException When an entity is not a stored row.
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
 	 */
-	public function dispatch(ObjectEntity $object, string $trigger, array $context = []): void {
+	public function dispatch(ObjectRowInterface $object, string $trigger, array $context = []): void {
+		$object = StoredEntity::object(object: $object);
+
 		$schema = $this->loadSchema(object: $object);
 		if ($schema === null) {
 			return;
@@ -371,16 +379,21 @@ class AnnotationNotificationDispatcher {
 	 * This is the single entry point for the notification pipeline: every
 	 * dispatch path (stored objects and system entities) goes through here.
 	 *
-	 * @param ObjectEntity $object The object (or virtual adapter) the event happened on.
+	 * @param ObjectRowInterface $object The object (or virtual adapter) the event happened on.
 	 * @param string $trigger 'created' | 'updated' | 'transition' | 'calculatedChange'.
 	 * @param array<string, mixed> $context Trigger-specific extras.
-	 * @param Schema $schema Pre-resolved schema carrying the rules.
+	 * @param SchemaInterface $schema Pre-resolved schema carrying the rules.
 	 *
 	 * @return void
 	 *
+	 * @throws \InvalidArgumentException When an entity is not a stored row.
+	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
 	 */
-	public function dispatchWithSchema(ObjectEntity $object, string $trigger, array $context, Schema $schema): void {
+	public function dispatchWithSchema(ObjectRowInterface $object, string $trigger, array $context, SchemaInterface $schema): void {
+		$object = StoredEntity::object(object: $object);
+		$schema = StoredEntity::schema(schema: $schema);
+
 		$notifications = $this->getAnnotation(schema: $schema);
 		if ($notifications === null) {
 			return;

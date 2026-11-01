@@ -28,6 +28,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -38,7 +39,6 @@ use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
-use OCA\OpenRegister\Service\Object\RenderObject;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -71,7 +71,7 @@ class DeletedController extends Controller {
 	 * @param AuditTrailMapper $auditTrailMapper Reads back a destruction record and records a restore
 	 * @param DeletionServiceBundle $deletion The destruction-pipeline collaborators (window, right, scope, recorder, clock)
 	 * @param DeletedObjectAuthorizer $authorizer Answers the authorization and schema-resolution questions
-	 * @param RenderObject $renderObject Strips write-only and unreadable properties before a trashed row is served
+	 * @param ObjectRendererInterface $renderObject Strips write-only and unreadable properties before a trashed row is served
 	 *
 	 * @return void
 	 */
@@ -84,7 +84,7 @@ class DeletedController extends Controller {
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly DeletionServiceBundle $deletion,
 		private readonly DeletedObjectAuthorizer $authorizer,
-		private readonly RenderObject $renderObject,
+		private readonly ObjectRendererInterface $renderObject,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

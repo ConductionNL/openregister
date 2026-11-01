@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
@@ -44,7 +45,6 @@ use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -69,7 +69,7 @@ class DsarCaseController extends Controller {
 	 * @param ObjectService $objectService RBAC + tenant scoped object store (case creation).
 	 * @param CaseObjectAccessor $accessor RBAC-scoped case load helper.
 	 * @param CaseAccessControl $accessControl Case-level access-control check (fail closed).
-	 * @param TransitionEngine $transitionEngine Lifecycle transition driver (runs the guard on save).
+	 * @param ObjectTransitionInterface $transitionEngine Lifecycle transition driver (runs the guard on save).
 	 * @param EvidenceHarvestService $harvestService Evidence-collection service.
 	 * @param RedactionWriteService $redactionService Field-level redaction write path.
 	 * @param ExportBundleService $bundleService Export-bundle + dossier service.
@@ -84,7 +84,7 @@ class DsarCaseController extends Controller {
 		private readonly ObjectService $objectService,
 		private readonly CaseObjectAccessor $accessor,
 		private readonly CaseAccessControl $accessControl,
-		private readonly TransitionEngine $transitionEngine,
+		private readonly ObjectTransitionInterface $transitionEngine,
 		private readonly EvidenceHarvestService $harvestService,
 		private readonly RedactionWriteService $redactionService,
 		private readonly ExportBundleService $bundleService,

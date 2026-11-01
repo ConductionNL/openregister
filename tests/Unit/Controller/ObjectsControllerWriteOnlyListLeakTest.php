@@ -297,7 +297,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		// The REAL RenderObject — the whole point of this test. Mocking it here is what
 		// let #460 hide behind a green suite.
 		$renderObject = $this->realRenderObject();
-		$this->registerService(RenderObject::class, fn () => $renderObject);
+		$this->registerService(\OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface::class, fn () => $renderObject);
 
 		$controller = new ObjectsController(
 			'openregister',

@@ -84,7 +84,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// them by registering its own.
 		$defaultRenderHandler = $this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class);
 		$defaultRenderHandler->method('renderEntities')->willReturnArgument(0);
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, fn () => $defaultRenderHandler);
+		$this->registerService(\OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface::class, fn () => $defaultRenderHandler);
 		$this->registerService(OrganisationService::class, fn () => $this->createMock(OrganisationService::class));
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
@@ -395,7 +395,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// RenderObject::redactWriteOnlyFromRows (openregister#380 leak fix), so
 		// the container must resolve a RenderObject here as well.
 		$renderHandler = $this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+		$this->registerService(\OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface::class, function () use ($renderHandler) {
 			return $renderHandler;
 		});
 
@@ -451,7 +451,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			['uuid' => 'magic-ext', 'title' => 'Extended', 'relation' => ['uuid' => 'rel-1']],
 		]);
 
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+		$this->registerService(\OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface::class, function () use ($renderHandler) {
 			return $renderHandler;
 		});
 
@@ -863,7 +863,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// renderEntities returns ObjectEntity instances (not arrays) when extend is used.
 		$renderHandler->method('renderEntities')->willReturn([$objEntity]);
 
-		$this->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+		$this->registerService(\OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface::class, function () use ($renderHandler) {
 			return $renderHandler;
 		});
 

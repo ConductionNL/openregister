@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
@@ -38,7 +39,6 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\Notification\SystemEntityChange;
 use OCA\OpenRegister\Service\Notification\SystemEntityObjectAdapter;
 use OCA\OpenRegister\Service\Notification\SystemSchemaRules;
@@ -61,14 +61,14 @@ class SystemEntityNotificationListener implements IEventListener {
 	/**
 	 * Wire the dispatcher and the system-schema rule registry.
 	 *
-	 * @param AnnotationNotificationDispatcher $dispatcher Dispatcher used to fire notifications.
+	 * @param ObjectNotificationDispatcherInterface $dispatcher Dispatcher used to fire notifications.
 	 * @param SystemSchemaRules $rules Registry of declared system-schema rules.
 	 * @param SystemEntityChange $change Whether an update changed more than bookkeeping.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly ObjectNotificationDispatcherInterface $dispatcher,
 		private readonly SystemSchemaRules $rules,
 		private readonly SystemEntityChange $change = new SystemEntityChange(),
 	) {

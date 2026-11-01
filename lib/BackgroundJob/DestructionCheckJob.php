@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\RecordState;
@@ -143,7 +144,7 @@ class DestructionCheckJob extends TimedJob {
 				return;
 			}
 
-			$saveObject = $this->container->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
+			$saveObject = $this->container->get(ObjectSaverInterface::class);
 			$savedList = $saveObject->saveObject(
 				$settings['destructionListRegister'],
 				$settings['destructionListSchema'],

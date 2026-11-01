@@ -12,9 +12,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRowInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -22,6 +24,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(StoredEntity::class)]
+#[UsesClass(ObjectEntity::class)]
 #[UsesClass(Register::class)]
 #[UsesClass(Schema::class)]
 class StoredEntityTest extends TestCase {
@@ -56,6 +59,7 @@ class StoredEntityTest extends TestCase {
 	public function testNullStaysNull(): void {
 		$this->assertNull(StoredEntity::schema(schema: null));
 		$this->assertNull(StoredEntity::register(register: null));
+		$this->assertNull(StoredEntity::object(object: null));
 	}//end testNullStaysNull()
 
 	/**
@@ -79,4 +83,26 @@ class StoredEntityTest extends TestCase {
 
 		StoredEntity::register(register: $this->createMock(RegisterInterface::class));
 	}//end testAForeignRegisterIsRefused()
+
+	/**
+	 * A stored ObjectEntity row comes back as the same object.
+	 *
+	 * @return void
+	 */
+	public function testAStoredObjectIsReturnedAsIs(): void {
+		$object = new ObjectEntity();
+
+		$this->assertSame(expected: $object, actual: StoredEntity::object(object: $object));
+	}//end testAStoredObjectIsReturnedAsIs()
+
+	/**
+	 * Another ObjectRowInterface implementation is refused.
+	 *
+	 * @return void
+	 */
+	public function testAForeignObjectIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+
+		StoredEntity::object(object: $this->createMock(ObjectRowInterface::class));
+	}//end testAForeignObjectIsRefused()
 }//end class

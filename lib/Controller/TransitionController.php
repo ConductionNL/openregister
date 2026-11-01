@@ -26,12 +26,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectTransitionInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -44,12 +44,12 @@ class TransitionController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param TransitionEngine $engine The transition engine.
+	 * @param ObjectTransitionInterface $engine The transition engine.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TransitionEngine $engine,
+		private readonly ObjectTransitionInterface $engine,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

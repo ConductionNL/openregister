@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRendererInterface;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -93,7 +94,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class RenderObject {
+class RenderObject implements ObjectRendererInterface {
 
 	/**
 	 * Cache of registers indexed by ID

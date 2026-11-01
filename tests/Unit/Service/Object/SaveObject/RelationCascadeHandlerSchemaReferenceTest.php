@@ -28,6 +28,7 @@ use Psr\Log\NullLogger;
  * Resolving a schema reference, with and without the caller's RBAC and tenancy.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler::resolveSchemaReference
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  * @uses \OCA\OpenRegister\Db\Schema
  */
 class RelationCascadeHandlerSchemaReferenceTest extends TestCase {

@@ -32,6 +32,8 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSaverInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -51,6 +53,8 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -152,7 +156,7 @@ use Twig\Loader\ArrayLoader;
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
  */
-class SaveObject {
+class SaveObject implements ObjectSaverInterface {
 	private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
 
 	/**
@@ -3059,8 +3063,8 @@ class SaveObject {
 	/**
 	 * Saves an object.
 	 *
-	 * @param Register|int|string|null $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
+	 * @param RegisterInterface|int|string|null $register The register containing the object.
+	 * @param SchemaInterface|int|string $schema The schema to validate against.
 	 * @param array $data The object data to save.
 	 * @param string|null $uuid The UUID of the object to update (if updating).
 	 * @param int|null $folderId The folder ID to set on the object (optional).
@@ -3082,6 +3086,7 @@ class SaveObject {
 	 * @throws ObjectExistsException When $failIfExists is true and the identifier is already taken.
 	 * @throws DuplicateBlockedException When the schema declares `onCreate: "block"`, the candidate
 	 *         strongly matches a stored object, and the caller may not override.
+	 * @throws \InvalidArgumentException When an entity is not a stored row.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
@@ -3089,8 +3094,8 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function saveObject(
-		Register|int|string|null $register,
-		Schema|int|string $schema,
+		RegisterInterface|int|string|null $register,
+		SchemaInterface|int|string $schema,
 		array $data,
 		?string $uuid = null,
 		?int $folderId = null,
@@ -3106,6 +3111,14 @@ class SaveObject {
 		bool $_dedupOverride = false,
 		?string $_owner = null,
 	): ObjectEntity {
+		if ($register instanceof RegisterInterface) {
+			$register = StoredEntity::register(register: $register);
+		}
+
+		if ($schema instanceof SchemaInterface) {
+			$schema = StoredEntity::schema(schema: $schema);
+		}
+
 		// Extract UUID and @self metadata from data.
 		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
 			data: $data,

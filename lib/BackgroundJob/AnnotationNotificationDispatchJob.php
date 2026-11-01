@@ -40,10 +40,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
@@ -65,7 +65,7 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 	 * @param OrganisationService $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher doing the real work.
+	 * @param ObjectNotificationDispatcherInterface $dispatcher Notification dispatcher doing the real work.
 	 *
 	 * @return void
 	 */
@@ -76,7 +76,7 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 		OrganisationService $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly ObjectNotificationDispatcherInterface $dispatcher,
 	) {
 		parent::__construct(
 			time: $time,

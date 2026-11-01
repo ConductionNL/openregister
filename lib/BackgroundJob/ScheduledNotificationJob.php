@@ -35,12 +35,12 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNotificationDispatcherInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -91,7 +91,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 * @param ITimeFactory $time Nextcloud time factory.
 	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
 	 * @param MagicMapper $objectMapper Magic object mapper.
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher.
+	 * @param ObjectNotificationDispatcherInterface $dispatcher Notification dispatcher.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param ICacheFactory $cacheFactory Distributed cache factory.
 	 * @param ScheduledFilterEvaluator $filterEvaluator Operator-aware filter evaluator.
@@ -104,7 +104,7 @@ final class ScheduledNotificationJob extends TimedJob {
 		ITimeFactory $time,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly MagicMapper $objectMapper,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly ObjectNotificationDispatcherInterface $dispatcher,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
 		private readonly ScheduledFilterEvaluator $filterEvaluator,
