@@ -48,6 +48,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Db\Schema;
+use OCP\DB\IPreparedStatement;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -335,12 +337,14 @@ class MagicFacetHandler {
 
 				if ($type === 'terms') {
 					$facets['@self'][$field] = $this->getTermsFacet(
-						tableName: $tableName,
-						field: self::METADATA_PREFIX . $field,
-						baseQuery: $baseQuery,
-						isMetadata: true,
-						register: $register,
-						schema: $schema
+						facet: new TableTermsFacet(
+							tableName: $tableName,
+							field: self::METADATA_PREFIX . $field,
+							baseQuery: $baseQuery,
+							isMetadata: true,
+							register: $register,
+							schema: $schema
+						)
 					);
 				} elseif ($type === 'date_histogram') {
 					$interval = $config['interval'] ?? 'month';
@@ -385,12 +389,14 @@ class MagicFacetHandler {
 
 			if ($type === 'terms') {
 				$facets[$field] = $this->getTermsFacet(
-					tableName: $tableName,
-					field: $columnName,
-					baseQuery: $baseQuery,
-					isMetadata: false,
-					register: $register,
-					schema: $schema
+					facet: new TableTermsFacet(
+						tableName: $tableName,
+						field: $columnName,
+						baseQuery: $baseQuery,
+						isMetadata: false,
+						register: $register,
+						schema: $schema
+					)
 				);
 			} elseif ($type === 'date_histogram') {
 				$interval = $config['interval'] ?? 'month';
@@ -761,9 +767,20 @@ class MagicFacetHandler {
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute();
 
+		return $this->splitTermsRows(rows: $stmt);
+	}//end fetchTermsRows()
+
+	/**
+	 * Read facet rows and split off the NULL group.
+	 *
+	 * @param IResult|IPreparedStatement $rows The executed facet query.
+	 *
+	 * @return array{0: array<int, array{key: mixed, count: int}>, 1: int} The value buckets and the missing count.
+	 */
+	private function splitTermsRows(IResult|IPreparedStatement $rows): array {
 		$rawBuckets = [];
 		$missingCount = 0;
-		while (($row = $stmt->fetch()) !== false) {
+		while (($row = $rows->fetch()) !== false) {
 			if ($row['facet_value'] === null) {
 				$missingCount = (int)$row['doc_count'];
 				continue;
@@ -776,7 +793,7 @@ class MagicFacetHandler {
 		}
 
 		return [$rawBuckets, $missingCount];
-	}//end fetchTermsRows()
+	}//end splitTermsRows()
 
 	/**
 	 * The labelled buckets of a terms union.
@@ -828,16 +845,7 @@ class MagicFacetHandler {
 	 * @return array<string, string> Labels keyed by UUID.
 	 */
 	private function termsUnionLabelMap(TermsFacetUnion $facet, array $normalizedBuckets): array {
-		$uuidsToResolve = [];
-		foreach ($normalizedBuckets as $bucket) {
-			$key = $bucket['key'];
-			if (is_string($key) === true
-				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
-			) {
-				$uuidsToResolve[] = $key;
-			}
-		}
-
+		$uuidsToResolve = $this->uuidKeys(buckets: $normalizedBuckets);
 		if (empty($uuidsToResolve) === true || $facet->isMetadata === true
 			|| $this->anyHoldsObjectReferences(tableConfigs: $facet->tableConfigs, column: $facet->field) === false
 		) {
@@ -1350,164 +1358,151 @@ class MagicFacetHandler {
 	/**
 	 * Get terms facet for a field in a magic mapper table.
 	 *
-	 * Returns unique values and their counts for categorical fields.
-	 * Uses simple GROUP BY and PHP post-processing for array values.
+	 * Returns unique values and their counts for categorical fields, cached per
+	 * table, field, filters and metadata flag for the rest of the request.
 	 *
-	 * @param string $tableName The table name.
-	 * @param string $field The field/column name.
-	 * @param array $baseQuery Base query filters to apply.
-	 * @param bool $isMetadata Whether this is a metadata field.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param TableTermsFacet $facet The table, column and filters of the facet.
 	 *
 	 * @return array Facet result with type and buckets.
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
-	private function getTermsFacet(
-		string $tableName,
-		string $field,
-		array $baseQuery,
-		bool $isMetadata,
-		Register $register,
-		Schema $schema,
-	): array {
-		// Create cache key.
-		$cacheKey = md5(json_encode(value: [$tableName, $field, $baseQuery, $isMetadata]));
+	private function getTermsFacet(TableTermsFacet $facet): array {
+		$cacheKey = md5(json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
 		if (isset($this->facetCache[$cacheKey]) === true) {
 			return $this->facetCache[$cacheKey];
 		}
 
-		// Check if column exists in table before querying.
-		if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
+		$result = $this->emptyTermsFacet();
+		if ($this->columnExists(tableName: $facet->tableName, columnName: $facet->field) === false) {
 			$this->logger->debug(
 				message: '[MagicFacetHandler] Column does not exist for facet',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $tableName, 'field' => $field]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $facet->tableName, 'field' => $facet->field]
 			);
-			$result = [
-				'type' => 'terms',
-				'buckets' => [],
-				'missing' => ['results' => 0],
-			];
-			$this->facetCache[$cacheKey] = $result;
-			return $result;
+		} else {
+			$result = $this->countTableTerms(facet: $facet);
 		}
 
-		// Use shared query builder from MagicSearchHandler (single source of truth for filters).
-		// Simple GROUP BY - array values will be post-processed in PHP.
-		// Fallback: Build query manually (legacy behavior).
-		//
-		// The NULL group is no longer excluded. Grouping over it is what makes
-		// the missing-value bucket cost nothing: it is counted by the same query
-		// and inside the same access scope as every value bucket, never by a
-		// second pass over the result set (ADR-009).
-		$columnRef = $field;
+		$this->facetCache[$cacheKey] = $result;
+		return $result;
+	}//end getTermsFacet()
+
+	/**
+	 * Run a single-table terms facet and label its buckets.
+	 *
+	 * Array values are split in PHP afterwards. The NULL group is kept: it is
+	 * the missing-value bucket, counted by the same query and inside the same
+	 * access scope as every value bucket (ADR-009).
+	 *
+	 * @param TableTermsFacet $facet The table, column and filters of the facet.
+	 *
+	 * @return array Facet result with type, buckets and missing count.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 */
+	private function countTableTerms(TableTermsFacet $facet): array {
+		[$rawBuckets, $missingCount] = $this->splitTermsRows(rows: $this->tableTermsQuery(facet: $facet)->executeQuery());
+
+		// Split JSON array values into individual values and merge their counts.
+		$normalizedBuckets = $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets);
+
+		return [
+			'type' => 'terms',
+			'buckets' => $this->labelTableTermsBuckets(facet: $facet, normalizedBuckets: $normalizedBuckets),
+			'missing' => ['results' => $missingCount],
+		];
+	}//end countTableTerms()
+
+	/**
+	 * The grouped query of a single-table terms facet.
+	 *
+	 * With a search handler the facet groups the handler's filtered query, the
+	 * single source of truth for filters; otherwise the query built here, with
+	 * the base filters applied, is used.
+	 *
+	 * @param TableTermsFacet $facet The table, column and filters of the facet.
+	 *
+	 * @return IQueryBuilder The query, grouped per value.
+	 */
+	private function tableTermsQuery(TableTermsFacet $facet): IQueryBuilder {
+		$field = $facet->field;
 		$queryBuilder = $this->db->getQueryBuilder();
 		$queryBuilder->selectAlias($field, 'facet_value')
 			->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-			->from($tableName)
+			->from($facet->tableName)
 			->groupBy($field);
-		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
-
-		// Apply base filters.
+		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $field);
 		$this->applyBaseFilters(
 			queryBuilder: $queryBuilder,
-			baseQuery: $baseQuery,
-			tableName: $tableName,
-			schema: $schema
+			baseQuery: $facet->baseQuery,
+			tableName: $facet->tableName,
+			schema: $facet->schema
 		);
 
-		if ($this->searchHandler !== null) {
-			// 🔴 THE REGISTER IS PASSED SO `_related` NARROWS THE COUNTS TOO.
-			// A facet count that ignores a filter the list honours is worse than
-			// no count: the user filters cases down to the ones carrying a
-			// property, and the facet beside the result still describes every
-			// case in the register. Nothing looks broken, the numbers are just
-			// answers to a different question.
-			$queryBuilder = $this->searchHandler->buildFilteredQuery(
-				query: $baseQuery,
-				schema: $schema,
-				tableName: $tableName,
-				registerId: $register->getId()
-			);
-			$columnRef = "t.{$field}";
-
-			// Add facet-specific SELECT and GROUP BY.
-			$queryBuilder->selectAlias($columnRef, 'facet_value')
-				->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-				->groupBy($columnRef);
-			$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
-		}//end if
-
-		$result = $queryBuilder->executeQuery();
-
-		// Collect raw buckets from database, peeling off the NULL group.
-		$rawBuckets = [];
-		$missingCount = 0;
-		while (($row = $result->fetch()) !== false) {
-			if ($row['facet_value'] === null) {
-				$missingCount = (int)$row['doc_count'];
-				continue;
-			}
-
-			$rawBuckets[] = [
-				'key' => $row['facet_value'],
-				'count' => (int)$row['doc_count'],
-			];
+		if ($this->searchHandler === null) {
+			return $queryBuilder;
 		}
 
-		// PHP POST-PROCESSING: Normalize array values.
-		// This splits JSON array values into individual values and merges counts.
-		$normalizedBuckets = $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets);
+		// 🔴 THE REGISTER IS PASSED SO `_related` NARROWS THE COUNTS TOO.
+		// A facet count that ignores a filter the list honours is worse than
+		// no count: the user filters cases down to the ones carrying a
+		// property, and the facet beside the result still describes every
+		// case in the register. Nothing looks broken, the numbers are just
+		// answers to a different question.
+		$queryBuilder = $this->searchHandler->buildFilteredQuery(
+			query: $facet->baseQuery,
+			schema: $facet->schema,
+			tableName: $facet->tableName,
+			registerId: $facet->register->getId()
+		);
+		$columnRef = "t.{$field}";
+		$queryBuilder->selectAlias($columnRef, 'facet_value')
+			->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
+			->groupBy($columnRef);
+		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
 
-		// Collect UUIDs for label resolution.
-		$uuidsToResolve = [];
-		foreach ($normalizedBuckets as $bucket) {
-			$key = $bucket['key'];
-			if (is_string($key) === true
-				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
-			) {
-				$uuidsToResolve[] = $key;
-			}
-		}
+		return $queryBuilder;
+	}//end tableTermsQuery()
 
-		$objectReferences = $isMetadata === true
-			|| $this->holdsObjectReferences(schema: $schema, column: $field) === true;
-		if ($objectReferences === false) {
-			$uuidsToResolve = [];
-		}
-
-		// Batch resolve all UUID labels at once (after normalization).
-		$labelMap = [];
-		if (empty($uuidsToResolve) === false && $isMetadata === false) {
-			$labelMap = $this->batchResolveUuidLabels(
-				uuids: $uuidsToResolve,
-				field: $field,
-				schema: $schema,
-				register: $register
-			);
-		}
-
-		// Build final buckets with labels.
+	/**
+	 * The labelled buckets of a single-table terms facet.
+	 *
+	 * @param TableTermsFacet $facet             The table, column and filters of the facet.
+	 * @param array           $normalizedBuckets Buckets of ['key' => value, 'count' => int].
+	 *
+	 * @return array<int, array{key: mixed, results: int, label: string}> The buckets.
+	 */
+	private function labelTableTermsBuckets(TableTermsFacet $facet, array $normalizedBuckets): array {
+		$objectReferences = $facet->isMetadata === true
+			|| $this->holdsObjectReferences(schema: $facet->schema, column: $facet->field) === true;
 		$batchKeys = [];
-		if ($isMetadata === false) {
-			$batchKeys = array_flip($uuidsToResolve);
+		if ($objectReferences === true && $facet->isMetadata === false) {
+			$batchKeys = array_flip($this->uuidKeys(buckets: $normalizedBuckets));
+		}
+
+		$labelMap = [];
+		if (empty($batchKeys) === false) {
+			$labelMap = $this->batchResolveUuidLabels(
+				uuids: array_keys($batchKeys),
+				field: $facet->field,
+				schema: $facet->schema,
+				register: $facet->register
+			);
 		}
 
 		$buckets = [];
 		foreach ($normalizedBuckets as $bucket) {
 			$key = $bucket['key'];
-
 			$label = (string)$key;
 			if ($objectReferences === true) {
 				$label = $this->resolveBucketLabel(
 					key: $key,
 					labelMap: $labelMap,
 					batchResolved: is_string($key) === true && isset($batchKeys[$key]) === true,
-					field: $field,
-					isMetadata: $isMetadata,
-					register: $register,
-					schema: $schema
+					field: $facet->field,
+					isMetadata: $facet->isMetadata,
+					register: $facet->register,
+					schema: $facet->schema
 				);
 			}
 
@@ -1518,17 +1513,29 @@ class MagicFacetHandler {
 			];
 		}//end foreach
 
-		$result = [
-			'type' => 'terms',
-			'buckets' => $buckets,
-			'missing' => ['results' => $missingCount],
-		];
+		return $buckets;
+	}//end labelTableTermsBuckets()
 
-		// Cache the result.
-		$this->facetCache[$cacheKey] = $result;
+	/**
+	 * The bucket keys that are UUIDs, in bucket order.
+	 *
+	 * @param array $buckets Buckets of ['key' => value, 'count' => int].
+	 *
+	 * @return array<int, string> The UUID keys.
+	 */
+	private function uuidKeys(array $buckets): array {
+		$uuids = [];
+		foreach ($buckets as $bucket) {
+			$key = $bucket['key'];
+			if (is_string($key) === true
+				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
+			) {
+				$uuids[] = $key;
+			}
+		}
 
-		return $result;
-	}//end getTermsFacet()
+		return $uuids;
+	}//end uuidKeys()
 
 	/**
 	 * Whether the values of a faceted column can be OpenRegister object references.
