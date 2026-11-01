@@ -270,10 +270,20 @@ function messageFor(failure) {
 		return failure.known[failure.code]
 	}
 	if (failure.code !== '' && failure.code !== 'migration-pack-error') {
-		return typeof failure.body.message === 'string'
-			&& failure.body.message !== ''
-			? failure.body.message
-			: failure.fallback
+		return serverMessage(failure.body, failure.fallback)
 	}
 	return failure.fallback
+}
+
+/**
+ * The server's own message of an API error body, or the fallback.
+ *
+ * @param {object} body The error body.
+ * @param {string} fallback The message when the server sent none.
+ * @return {string} The message.
+ */
+function serverMessage(body, fallback) {
+	return typeof body.message === 'string' && body.message !== ''
+		? body.message
+		: fallback
 }
