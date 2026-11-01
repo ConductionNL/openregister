@@ -652,4 +652,67 @@ class ChatControllerTest extends TestCase {
 
 		$this->assertEquals(200, $result->getStatus());
 	}
+
+	// ── sendMessage — context snapshot and the 503 message ──
+
+	public function testSendMessagePassesAnArrayContextToTheChatService(): void {
+		$conv = new Conversation();
+		$conv->setId(1);
+		$conv->setUserId('testuser');
+
+		$this->request->method('getParam')
+			->willReturnMap([
+				['conversation', null, 'conv-uuid'],
+				['agentUuid', null, ''],
+				['message', null, 'Hello'],
+				['views', null, null],
+				['tools', null, null],
+				['includeObjects', null, true],
+				['includeFiles', null, true],
+				['numSourcesFiles', null, 5],
+				['numSourcesObjects', null, 5],
+				['context', null, ['register' => 'r1', 'objectId' => 'o1']],
+			]);
+
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$captured = null;
+		$this->chatService->method('processMessage')
+			->willReturnCallback(function (...$args) use (&$captured) {
+				$captured = $args;
+				return ['response' => 'Hi'];
+			});
+
+		$result = $this->controller->sendMessage();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame(['register' => 'r1', 'objectId' => 'o1'], $captured[6] ?? ($captured['context'] ?? null));
+	}
+
+	public function testSendMessageReportsAnUnconfiguredAiServiceAs503(): void {
+		$conv = new Conversation();
+		$conv->setId(1);
+		$conv->setUserId('testuser');
+
+		$this->request->method('getParam')
+			->willReturnMap([
+				['conversation', null, 'conv-uuid'],
+				['agentUuid', null, ''],
+				['message', null, 'Hello'],
+				['views', null, null],
+				['tools', null, null],
+				['includeObjects', null, true],
+				['includeFiles', null, true],
+				['numSourcesFiles', null, 5],
+				['numSourcesObjects', null, 5],
+			]);
+
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->chatService->method('processMessage')
+			->willThrowException(new \Exception('No LLM configured', 503));
+
+		$result = $this->controller->sendMessage();
+
+		$this->assertEquals(503, $result->getStatus());
+		$this->assertSame('AI service not configured', $result->getData()['error']);
+	}
 }

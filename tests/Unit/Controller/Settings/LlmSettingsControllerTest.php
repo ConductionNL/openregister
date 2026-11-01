@@ -229,13 +229,15 @@ class LlmSettingsControllerTest extends TestCase {
 	}
 
 	/**
-	 * testChat success/failure paths cannot be unit tested due to a named parameter
-	 * mismatch bug in LlmSettingsController::testChat() — it calls
-	 * chatService->testChat(testMessage: ...) but the real signature is $_testMessage.
-	 * The Error is caught by the controller's catch block, so we test that path.
+	 * The controller passes the request values to ChatService::testChat() by
+	 * the service's own parameter names, so the call reaches the service.
 	 */
-	public function testTestChatNamedParamBugHitsExceptionPath(): void {
+	public function testTestChatPassesTheRequestToChatService(): void {
 		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Service\ChatService::class);
+		$chatServiceMock->expects($this->once())
+			->method('testChat')
+			->with('openai', ['apiKey' => 'key'], 'Hi')
+			->willReturn(['success' => true, 'message' => 'ok']);
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -247,13 +249,42 @@ class LlmSettingsControllerTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ChatService')
 			->willReturn($chatServiceMock);
 
-		// The controller call with testMessage: named param triggers an Error
-		// which is NOT caught by catch (Exception) — it's an Error, so it propagates
-		// Actually in PHP 8 this is an \Error not \Exception.
-		// The controller catch block only catches Exception, so the Error propagates.
-		// Let's verify this throws.
-		$this->expectException(\Error::class);
-		$this->controller->testChat();
+		$result = $this->controller->testChat();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(['success' => true, 'message' => 'ok'], $result->getData());
+	}
+
+	/**
+	 * The status follows the chat test result: 200 on success, 400 otherwise.
+	 *
+	 * The container answers an object with ChatService's parameter names,
+	 * so the result handling runs.
+	 */
+	public function testTestChatStatusFollowsTheResult(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['provider', null, 'openai'],
+				['config', [], ['apiKey' => 'key']],
+				['testMessage', 'Hello! Please respond with a brief greeting.', 'Hi'],
+			]);
+		$chat = new class {
+			/** @var list<bool> */
+			public array $answers = [true, false];
+
+			public function testChat(string $provider, array $config, string $_testMessage): array {
+				return ['success' => array_shift($this->answers), 'provider' => $provider, 'message' => $_testMessage];
+			}
+		};
+		$this->container->method('get')->willReturn($chat);
+
+		$ok = $this->controller->testChat();
+		$this->assertSame(200, $ok->getStatus());
+		$this->assertSame(['success' => true, 'provider' => 'openai', 'message' => 'Hi'], $ok->getData());
+
+		$failed = $this->controller->testChat();
+		$this->assertSame(400, $failed->getStatus());
+		$this->assertFalse($failed->getData()['success']);
 	}
 
 	public function testTestChatException(): void {

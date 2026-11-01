@@ -63,6 +63,9 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -1086,194 +1089,45 @@ class ObjectService implements ObjectServiceInterface
         bool $_render=true,
         bool $_audit=true
     ): ?ObjectEntity {
-        // Resolve the call's register / schema, isolating it from any
-        // stale `currentRegister` / `currentSchema` state left over from
-        // a previous call on this service instance. When the caller
-        // omits either argument we want MagicMapper's cross-table search
-        // to resolve the object — NOT a previous caller's leftover
-        // schema (openbuild#75 / openregister#1520: TransitionController
-        // was 500-ing because `objectService->find(id: $uuid)` from
-        // `TransitionEngine::transition()` inherited a stale schema and
-        // hit the wrong magic table).
-        // BUG-OBJ-13 (openregister#1520): find() is a read operation and
-        // MUST NOT leave the shared `currentRegister` / `currentSchema`
-        // instance state mutated for the next caller. We snapshot the
-        // previous context here and restore it in a `finally` below, so any
-        // re-anchoring done for this call's rendering / RBAC is local to
-        // this invocation only.
+        // BUG-OBJ-13 (openregister#1520): find() is a read operation and MUST NOT
+        // leave the shared `currentRegister` / `currentSchema` instance state
+        // mutated for the next caller. The previous context is snapshotted here
+        // and restored in the `finally` below, so any re-anchoring done for this
+        // call's rendering / RBAC is local to this invocation only. A caller that
+        // omits register/schema gets MagicMapper's cross-table search, never a
+        // previous caller's leftover schema.
         $previousRegister = $this->currentRegister;
         $previousSchema   = $this->currentSchema;
 
-        // ...AND THE PENDING REF, WHICH IS THE OTHER HALF OF THAT ISOLATION.
-        //
-        // `setSchema()` remembers its RAW ref so a later `setRegister()` can
-        // re-resolve it inside the register the caller names — that is what
-        // makes the two setters order-independent. But the ref is instance
-        // state on a SHARED service, and the very next thing this method does
-        // is call `setRegister()`. A ref left behind by an unrelated earlier
-        // caller therefore gets re-resolved inside THIS call's register, and
-        // the call dies on a schema it never mentioned.
-        //
-        // Measured on the dev instance: every `openconnector` object read
-        // failed with `Schema slug "application" is not carried by register
-        // "openconnector"` while the caller had asked for `synchronization`.
-        // The name in that error belonged to a previous caller.
-        //
-        // The `finally` below already clears this on the way OUT. Clearing it
-        // on the way IN is the same rule applied at the other end: find()
-        // supplies its own scope through its arguments and must never inherit
-        // a pending one.
+        // The pending schema ref is the other half of that isolation: setSchema()
+        // remembers its raw ref so a later setRegister() can re-resolve it, and the
+        // next thing this method does is call setRegister(). A ref left behind by an
+        // unrelated earlier caller would be re-resolved inside THIS call's register
+        // and fail on a schema this call never mentioned. find() supplies its own
+        // scope through its arguments, so it never inherits a pending one.
         $this->discardPendingSchemaRef();
 
         try {
-            $callRegister = null;
-            $callSchema   = null;
-            if ($register !== null) {
-                $this->setRegister(register: $register);
-                $callRegister = $this->currentRegister;
-            }
+            $request = new ObjectFindRequest(
+                id: $id,
+                extend: $_extend,
+                files: $files,
+                rbac: $_rbac,
+                multitenancy: $_multitenancy,
+                audit: $_audit
+            );
+            $scope   = $this->cachedFindScope(
+                id: $id,
+                scope: $this->callFindScope(register: $register, schema: $schema)
+            );
 
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-                $callSchema = $this->currentSchema;
-            }
+            [$object, $scope] = $this->retrieveForFind(request: $request, scope: $scope);
 
-            // Request-scoped uuid → (register, schema) cache: when this uuid was
-            // already resolved earlier in this request, target its true context
-            // directly. This avoids re-missing the scoped lookup (and re-running
-            // the cross-table fallback below) for every repeated relation
-            // resolution of the same uuid under a stale URL scope.
-            if (is_string($id) === true && isset($this->uuidScopeCache[$id]) === true) {
-                $cachedScope = $this->uuidScopeCache[$id];
-                if ($cachedScope['register'] !== null) {
-                    $this->setRegister(register: $cachedScope['register']);
-                    $callRegister = $this->currentRegister;
-                }
-
-                $this->setSchema(schema: $cachedScope['schema']);
-                $callSchema = $this->currentSchema;
-            }
-
-            // Retrieve the object — when both call args are null, MagicMapper
-            // falls back to its `findAcrossAllMagicTables` path.
-            try {
-                $object = $this->getHandler->find(
-                    id: $id,
-                    register: $callRegister,
-                    schema: $callSchema,
-                    _extend: $_extend,
-                    files: $files,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy,
-                    _audit: $_audit
-                );
-            } catch (OcpDoesNotExistException $e) {
-                // Cross-schema fallback for relation name-resolution.
-                //
-                // Relations reference their target by a globally-unique UUID, but
-                // the URL/context schema can be stale or point at a sibling schema
-                // (e.g. objects/larpingapp/25/<uuid> where the object actually
-                // lives in schema 1470). A schema-scoped lookup only inspects one
-                // magic table, so it 404s even though the object exists in the
-                // register. When the identifier is a UUID (collision-free, unlike a
-                // slug or numeric id) we retry across all magic tables and, on a
-                // hit, RE-ANCHOR the call's register/schema to the resolved object
-                // so RBAC + rendering use the object's true context, not the stale
-                // one supplied by the caller.
-                // A cached scope that no longer resolves (object deleted or
-                // moved mid-request) must not pin future lookups to it.
-                if (is_string($id) === true) {
-                    unset($this->uuidScopeCache[$id]);
-                }
-
-                $canFallBack = (($callSchema !== null || $callRegister !== null)
-                    && is_string($id) === true
-                    && $this->isUuidFormat(value: $id) === true);
-                if ($canFallBack === false) {
-                    throw $e;
-                }
-
-                // Keep the caller's REGISTER while dropping only the schema.
-                // This fallback exists for a stale-or-sibling SCHEMA inside a
-                // register the caller correctly named — not for "look everywhere".
-                // Dropping the register too turned every legitimate miss into an
-                // instance-wide union across all 2,728 magic tables: 690 KB of
-                // SQL, ~3.4s of PLANNING alone. Measured 2026-07-29, that single
-                // widened fallback was ~1.9s of a ~3.0s object create, because
-                // the flow-resolver registry asks every resolver in turn and each
-                // non-owning one answered "not mine" the expensive way.
-                $object = $this->getHandler->find(
-                    id: $id,
-                    register: $callRegister,
-                    schema: null,
-                    _extend: $_extend,
-                    files: $files,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy,
-                    _audit: $_audit
-                );
-
-                // Force re-anchoring below to the resolved object's real context.
-                $callSchema   = null;
-                $callRegister = null;
-            }//end try
-
-            // If the object is not found, return null (@psalm-suppress TypeDoesNotContainNull).
-            if ($object === null) {
-                return null;
-            }
-
-            // When the caller did NOT specify register/schema we just did a
-            // cross-table find. Re-anchor `currentSchema` / `currentRegister`
-            // to the freshly-resolved object so the downstream rendering /
-            // RBAC code points at the right context — never at the stale
-            // leftover from a previous call. This mutation is undone by the
-            // `finally` block before returning to the caller.
-            //
-            // These ids come off the OBJECT ROW, which is ground truth: the row
-            // physically lives in `oc_openregister_table_<register>_<schema>`, so
-            // the pair is consistent by construction. They must therefore NOT be
-            // re-scoped against `register->getSchemas()` the way a caller-supplied
-            // route ref is — a register whose linkage list has gone stale would
-            // otherwise make an object that demonstrably exists unreadable, which
-            // is a worse failure than the cross-app read the scoping prevents.
-            // Hence the direct assignment instead of setSchema()/setRegister().
-            if ($callSchema === null) {
-                $this->currentSchema    = $this->schemaMapper->find(
-                    id: $object->getSchema(),
-                    _rbac: false,
-                    _multitenancy: false
-                );
-                $this->currentSchemaRef = null;
-            }
-
-            if ($callRegister === null) {
-                $registerRef = $object->getRegister();
-                if ($registerRef !== null && $registerRef !== '') {
-                    $this->currentRegister = $this->registerMapper->find(
-                        id: $registerRef,
-                        _rbac: false,
-                        _multitenancy: false
-                    );
-                }
-            }
-
-            // Remember this uuid's resolved (register, schema) for the rest of
-            // the request so repeated lookups skip the scoped-miss + cross-table
-            // fallback dance entirely. Only uuids are cached: they are globally
-            // unique, unlike slugs or numeric per-table ids.
-            if (is_string($id) === true
-                && $this->isUuidFormat(value: $id) === true
-                && $this->currentSchema !== null
-            ) {
-                $this->uuidScopeCache[$id] = [
-                    'register' => $this->currentRegister,
-                    'schema'   => $this->currentSchema,
-                ];
-            }
+            $this->anchorToFoundObject(object: $object, scope: $scope);
+            $this->rememberUuidScope(id: $id);
 
             // Check user has permission to read this specific object (includes object owner check).
-            // Publication visibility is now handled by RBAC conditional rules with $now variable.
+            // Publication visibility is handled by RBAC conditional rules with $now variable.
             $this->checkPermission(
                 schema: $this->currentSchema,
                 action: 'read',
@@ -1283,43 +1137,16 @@ class ObjectService implements ObjectServiceInterface
                 object: $object
             );
 
-            // Skip rendering when the caller is the render site itself. The read
-            // path stays intact above — retrieval, cross-schema fallback,
-            // permission check — but the (expensive) render pass with its
-            // writeOnly redaction runs exactly once, in the caller, instead of
-            // twice. Used by ObjectsController::show().
+            // The caller is the render site itself (ObjectsController::show()): the
+            // read path above still ran, but the expensive render pass runs once,
+            // in the caller.
             if ($_render === false) {
                 // AVG / GDPR per-access read logging still applies to the read.
                 $this->logProcessingRead(object: $object);
                 return $object;
             }
 
-            // Render the object before returning.
-            $registers = null;
-            if ($this->currentRegister !== null) {
-                $registers = [$this->currentRegister->getId() => $this->currentRegister];
-            }
-
-            // Always use the current schema (either provided or derived from object).
-            if ($this->currentSchema === null) {
-                throw new RuntimeException('Schema must be set before rendering entity.');
-            }
-
-            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
-
-            // AVG / GDPR per-access read logging (verwerkingenlogging).
-            // Fail-soft and gated on the schema's `x-openregister-processing`
-            // opt-in inside ProcessingLogService — never blocks the read.
-            $this->logProcessingRead(object: $object);
-
-            return $this->renderHandler->renderEntity(
-                entity: $object,
-                _extend: $_extend,
-                registers: $registers,
-                schemas: $schemas,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
+            return $this->renderFoundObject(object: $object, request: $request);
         } finally {
             // BUG-OBJ-13: restore the caller's context so find() has no
             // observable side-effect on shared instance state.
@@ -1331,6 +1158,256 @@ class ObjectService implements ObjectServiceInterface
             $this->currentSchemaRef = null;
         }//end try
     }//end find()
+
+    /**
+     * The register and schema a find() call names, resolved through the setters.
+     *
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     *
+     * @return ObjectFindScope The call's scope; an omitted argument stays null.
+     *
+     * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
+     */
+    private function callFindScope(
+        Register | string | int | null $register,
+        Schema | string | int | null $schema
+    ): ObjectFindScope {
+        $callRegister = null;
+        $callSchema   = null;
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+            $callRegister = $this->currentRegister;
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+            $callSchema = $this->currentSchema;
+        }
+
+        return new ObjectFindScope(register: $callRegister, schema: $callSchema);
+    }//end callFindScope()
+
+    /**
+     * The scope a uuid already resolved to earlier in this request, or the call's own scope.
+     *
+     * Targeting the uuid's true context directly avoids re-missing the scoped lookup (and
+     * re-running the cross-table fallback) for every repeated relation resolution of the same
+     * uuid under a stale URL scope.
+     *
+     * @param int|string      $id    The object ID or UUID.
+     * @param ObjectFindScope $scope The call's own scope.
+     *
+     * @return ObjectFindScope The scope to retrieve in.
+     *
+     * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
+     */
+    private function cachedFindScope(int | string $id, ObjectFindScope $scope): ObjectFindScope
+    {
+        if (is_string($id) === false || isset($this->uuidScopeCache[$id]) === false) {
+            return $scope;
+        }
+
+        $cachedScope  = $this->uuidScopeCache[$id];
+        $callRegister = $scope->register;
+        if ($cachedScope['register'] !== null) {
+            $this->setRegister(register: $cachedScope['register']);
+            $callRegister = $this->currentRegister;
+        }
+
+        $this->setSchema(schema: $cachedScope['schema']);
+
+        return new ObjectFindScope(register: $callRegister, schema: $this->currentSchema);
+    }//end cachedFindScope()
+
+    /**
+     * Retrieve the object, retrying without the schema when a uuid misses inside a stale or sibling schema.
+     *
+     * When the retry is taken, the returned scope is empty so the caller re-anchors to the
+     * resolved object's own register and schema.
+     *
+     * @param ObjectFindRequest $request The find() call.
+     * @param ObjectFindScope   $scope   The scope to retrieve in.
+     *
+     * @return array{0: ObjectEntity, 1: ObjectFindScope} The object and the scope it was found in.
+     *
+     * @throws OcpDoesNotExistException When the object is not found and no retry applies, or the retry misses too.
+     *
+     * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
+     */
+    private function retrieveForFind(ObjectFindRequest $request, ObjectFindScope $scope): array
+    {
+        try {
+            return [$this->getForFind(request: $request, scope: $scope), $scope];
+        } catch (OcpDoesNotExistException $e) {
+            // A cached scope that no longer resolves (object deleted or moved
+            // mid-request) must not pin future lookups to it.
+            if (is_string($request->id) === true) {
+                unset($this->uuidScopeCache[$request->id]);
+            }
+
+            if ($this->mayRetryWithoutSchema(request: $request, scope: $scope) === false) {
+                throw $e;
+            }
+
+            // Keep the caller's REGISTER while dropping only the schema. Dropping the
+            // register too turns every legitimate miss into an instance-wide union
+            // across all magic tables (measured 2026-07-29: ~1.9s of a ~3.0s create).
+            $object = $this->getForFind(
+                request: $request,
+                scope: new ObjectFindScope(register: $scope->register, schema: null)
+            );
+
+            return [$object, new ObjectFindScope(register: null, schema: null)];
+        }//end try
+    }//end retrieveForFind()
+
+    /**
+     * Whether a scoped miss may be retried without the schema.
+     *
+     * Relations reference their target by a globally-unique UUID while the URL or context
+     * schema can be stale or a sibling, so only a scoped lookup for a UUID (collision-free,
+     * unlike a slug or numeric id) is retried.
+     *
+     * @param ObjectFindRequest $request The find() call.
+     * @param ObjectFindScope   $scope   The scope that missed.
+     *
+     * @return bool True when the retry applies.
+     *
+     * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
+     */
+    private function mayRetryWithoutSchema(ObjectFindRequest $request, ObjectFindScope $scope): bool
+    {
+        return (($scope->schema !== null || $scope->register !== null)
+            && is_string($request->id) === true
+            && $this->isUuidFormat(value: $request->id) === true);
+    }//end mayRetryWithoutSchema()
+
+    /**
+     * One get-handler lookup for a find() call; both scope parts null means MagicMapper's cross-table search.
+     *
+     * @param ObjectFindRequest $request The find() call.
+     * @param ObjectFindScope   $scope   The scope to look in.
+     *
+     * @return ObjectEntity The object.
+     *
+     * @throws OcpDoesNotExistException When the object is not found in that scope.
+     *
+     * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
+     */
+    private function getForFind(ObjectFindRequest $request, ObjectFindScope $scope): ObjectEntity
+    {
+        return $this->getHandler->find(
+            id: $request->id,
+            register: $scope->register,
+            schema: $scope->schema,
+            _extend: $request->extend,
+            files: $request->files,
+            _rbac: $request->rbac,
+            _multitenancy: $request->multitenancy,
+            _audit: $request->audit
+        );
+    }//end getForFind()
+
+    /**
+     * Point the current schema / register at the found object's own context where the scope left it open.
+     *
+     * The ids come off the OBJECT ROW, which is ground truth: the row physically lives in
+     * `oc_openregister_table_<register>_<schema>`. They are therefore NOT re-scoped against
+     * `register->getSchemas()` the way a caller-supplied ref is, because a stale linkage list
+     * would make an object that demonstrably exists unreadable. Hence the direct assignment
+     * instead of setSchema()/setRegister(). find() undoes this in its `finally`.
+     *
+     * @param ObjectEntity    $object The found object.
+     * @param ObjectFindScope $scope  The scope it was found in.
+     *
+     * @return void
+     *
+     * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
+     */
+    private function anchorToFoundObject(ObjectEntity $object, ObjectFindScope $scope): void
+    {
+        if ($scope->schema === null) {
+            $this->currentSchema    = $this->schemaMapper->find(
+                id: $object->getSchema(),
+                _rbac: false,
+                _multitenancy: false
+            );
+            $this->currentSchemaRef = null;
+        }
+
+        $registerRef = $object->getRegister();
+        if ($scope->register === null && $registerRef !== null && $registerRef !== '') {
+            $this->currentRegister = $this->registerMapper->find(
+                id: $registerRef,
+                _rbac: false,
+                _multitenancy: false
+            );
+        }
+    }//end anchorToFoundObject()
+
+    /**
+     * Remember a uuid's resolved register and schema for the rest of the request.
+     *
+     * Only uuids are cached: they are globally unique, unlike slugs or numeric per-table ids.
+     *
+     * @param int|string $id The object ID or UUID.
+     *
+     * @return void
+     *
+     * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
+     */
+    private function rememberUuidScope(int | string $id): void
+    {
+        if (is_string($id) === true
+            && $this->isUuidFormat(value: $id) === true
+            && $this->currentSchema !== null
+        ) {
+            $this->uuidScopeCache[$id] = [
+                'register' => $this->currentRegister,
+                'schema'   => $this->currentSchema,
+            ];
+        }
+    }//end rememberUuidScope()
+
+    /**
+     * Log the processing read and render the found object in its current register and schema.
+     *
+     * @param ObjectEntity      $object  The found object.
+     * @param ObjectFindRequest $request The find() call.
+     *
+     * @return ObjectEntity The rendered object.
+     *
+     * @throws RuntimeException When no schema is set.
+     *
+     * @spec exclude Part of the find() facade; render behaviour owned by files-render-extension.
+     */
+    private function renderFoundObject(ObjectEntity $object, ObjectFindRequest $request): ObjectEntity
+    {
+        $registers = null;
+        if ($this->currentRegister !== null) {
+            $registers = [$this->currentRegister->getId() => $this->currentRegister];
+        }
+
+        if ($this->currentSchema === null) {
+            throw new RuntimeException('Schema must be set before rendering entity.');
+        }
+
+        $schemas = [$this->currentSchema->getId() => $this->currentSchema];
+
+        // AVG / GDPR per-access read logging (verwerkingenlogging). Fail-soft and
+        // gated on the schema's `x-openregister-processing` opt-in.
+        $this->logProcessingRead(object: $object);
+
+        return $this->renderHandler->renderEntity(
+            entity: $object,
+            _extend: $request->extend,
+            registers: $registers,
+            schemas: $schemas,
+            _rbac: $request->rbac,
+            _multitenancy: $request->multitenancy
+        );
+    }//end renderFoundObject()
 
     /**
      * Record an AVG processing-log entry for a single object read.
@@ -3104,8 +3181,6 @@ class ObjectService implements ObjectServiceInterface
      * @throws \Exception If user does not have delete permission.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
@@ -3129,171 +3204,49 @@ class ObjectService implements ObjectServiceInterface
             $this->discardPendingSchemaRef();
             // Explicit acting user for the permission check; null keeps today's
             // session-resolved behaviour for every existing caller.
-            $actingUserId = $currentUser?->getUID();
+            $request = new ObjectDeleteRequest(
+                uuid: $uuid,
+                rbac: $_rbac,
+                multitenancy: $_multitenancy,
+                retentionSweep: $_retentionSweep,
+                currentUser: $currentUser,
+                scoped: ($register !== null && $schema !== null)
+            );
 
-            // Resolve the explicit scope (if any) onto the service's currentRegister
-            // / currentSchema so downstream context (permission checks, audit-trail
-            // recording) sees the API-supplied scope, not a stale leftover from a
-            // previous call on this service instance.
-            $hasScope = ($register !== null && $schema !== null);
-            if ($register !== null) {
-                $this->setRegister(register: $register);
-            }
-
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
+            $this->applyDeleteScope(register: $register, schema: $schema);
 
             // A schema served by an object source keeps no rows in a magic table,
-            // so the MagicMapper lookups below can only miss, and a scoped miss is
-            // rethrown as "not found" before the delete handler's provider
-            // dispatch runs. That made every DELETE on such a schema a 404: a
-            // writable database source could not delete, and the organisation
-            // projection never gave its own refusal.
+            // so the MagicMapper lookups below can only miss, and a scoped miss
+            // would be rethrown as "not found" before the delete handler's
+            // provider dispatch runs.
             $sourcedSchema = null;
             if ($this->currentSchema !== null && $this->currentSchema->getObjectSource() !== null) {
                 $sourcedSchema = $this->currentSchema;
             }
 
-            // Reject deletion of transferred objects (archiefstatus = overgebracht).
-            // Looked up with the caller's flags, so the guard sees the object the
-            // delete handler below would touch; with the session scope it missed
-            // an object outside it and let a `_multitenancy: false` delete through.
-            // An external row has no retention block, so a sourced schema skips it.
-            if ($sourcedSchema === null) {
-                $this->rejectIfTransferred(uuid: $uuid, _rbac: $_rbac, _multitenancy: $_multitenancy);
-            }
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
-
-            // A view-backed type holds no objects of its own to delete.
-            $this->rejectIfViewBacked(operation: 'delete');
-
-            // Reject DELETE operations on append-only schemas.
-            if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-                $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-                throw new AppendOnlyException(
-                    schemaIdentifier: $schemaSlug,
-                    operation: 'delete'
-                );
-            }
-
-            // Reject DELETE operations on archival-annotated schemas unless this
-            // call originates from the retention sweep cron (which alone sets
-            // $_retentionSweep true). User-driven deletes get a structured 403.
-            //
-            // A DRAFT IS NOT YET A RECORD (decisions 180 and 216). It holds
-            // unsent input, nothing refers to it, and it was never received,
-            // so the archival term of its schema has not started. Without
-            // this an archival schema kept every abandoned draft for ever: its
-            // owner could not discard it and the draft cleanup could not
-            // remove it. Only a STORED draft passes, and a saved object can
-            // never go back to draft (DraftStatusPolicy), so no record can be
-            // turned into one to get past this gate.
-            if ($this->currentSchema !== null
-                && $this->isDeletableDraft(uuid: $uuid, retentionSweep: $_retentionSweep, _rbac: $_rbac, _multitenancy: $_multitenancy) === false
-            ) {
-                $this->rejectIfArchivalImmutable(
-                    schema: $this->currentSchema,
-                    retentionSweep: $_retentionSweep
-                );
-            }
+            $this->rejectRefusedDelete(request: $request, sourcedSchema: $sourcedSchema);
 
             if ($sourcedSchema !== null) {
                 return $this->deleteFromObjectSource(
                     schema: $sourcedSchema,
                     uuid: $uuid,
-                    actingUserId: $actingUserId,
+                    actingUserId: $request->actingUserId(),
                     _rbac: $_rbac,
                     _multitenancy: $_multitenancy,
-                    hasScope: $hasScope
+                    hasScope: $request->scoped
                 );
             }
 
-            // Find the object to get its owner for permission check (include soft-deleted objects).
-            // When the caller supplied both register + schema, the lookup is scoped
-            // to a single magic table — a UUID in a different scope raises
-            // DoesNotExistException and never reaches the delete handler.
-            $scopedRegister = null;
-            $scopedSchema   = null;
-            if ($hasScope === true) {
-                $scopedRegister = $this->currentRegister;
-                $scopedSchema   = $this->currentSchema;
+            $objectToDelete = $this->resolvePermittedDeleteTarget(request: $request);
+
+            // A draft is removed for good, with its files: a tombstone of
+            // unsent input serves nobody, and on an archival schema the
+            // purge would refuse it for ever (decisions 180 and 216).
+            if ($objectToDelete !== null && $objectToDelete->isDraft() === true) {
+                $permanent = true;
             }
 
-            $objectToDelete = null;
-            try {
-                // With the caller's flags. The delete handler honours them, so a
-                // lookup that ignored them applied the session's RBAC and tenant
-                // scope to a caller that had turned them off, answered "not
-                // found" for an object that exists, and the handler never ran.
-                $objectToDelete = $this->objectMapper->find(
-                    identifier: $uuid,
-                    register: $scopedRegister,
-                    schema: $scopedSchema,
-                    includeDeleted: true,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
-                );
-
-                // If no schema was provided but we have an object, derive the schema from the object.
-                if ($this->currentSchema === null) {
-                    $this->setSchema(schema: $objectToDelete->getSchema());
-                }
-
-                \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
-
-                // Check user has permission to delete this specific object.
-                $this->checkPermission(
-                    schema: $this->currentSchema,
-                    action: 'delete',
-                    userId: $actingUserId,
-                    objectOwner: $objectToDelete->getOwner(),
-                    _rbac: $_rbac,
-                    object: $objectToDelete
-                );
-
-                \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
-
-                // A draft is removed for good, with its files: a tombstone of
-                // unsent input serves nobody, and on an archival schema the
-                // purge would refuse it for ever (decisions 180 and 216).
-                if ($objectToDelete->isDraft() === true) {
-                    $permanent = true;
-                }
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Scoped lookup is authoritative: if the caller asked for a
-                // specific (register, schema) and the UUID is not in that scope,
-                // re-throw so the failure mode is "404 not in scope" instead of
-                // "silently look at another magic table" (the #1638 bug).
-                if ($hasScope === true) {
-                    throw $e;
-                }
-
-                // Unscoped path: object doesn't exist anywhere, no permission check
-                // needed but let deleteHandler raise its own consistent error path.
-                if ($this->currentSchema !== null) {
-                    $this->checkPermission(
-                        schema: $this->currentSchema,
-                        action: 'delete',
-                        userId: $actingUserId,
-                        objectOwner: null,
-                        _rbac: $_rbac
-                    );
-                }
-            }//end try
-
-            // Somebody else's draft is not the caller's to delete, whatever the
-            // read lookup above let through. Answered as not found, like the
-            // save path (refuseSomebodyElsesDraft), so it is not announced.
-            $deleter = ($currentUser ?? $this->userSession->getUser());
-            if ($_rbac === true && $objectToDelete !== null && $this->currentSchema !== null
-                && $this->draftKeptFromCaller(object: $objectToDelete, schema: $this->currentSchema, user: $deleter) === true
-            ) {
-                throw new OcpDoesNotExistException('Object not found');
-            }
+            $this->refuseDeletingSomebodyElsesDraft(request: $request, object: $objectToDelete);
 
             return $this->deleteHandler->deleteObject(
                 register: $this->currentRegister,
@@ -3302,13 +3255,191 @@ class ObjectService implements ObjectServiceInterface
                 originalObjectId: null,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
-                scoped: $hasScope,
+                scoped: $request->scoped,
                 permanent: $permanent
             );
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end deleteObject()
+
+    /**
+     * Resolve a delete call's register and schema onto the current context.
+     *
+     * Downstream context (permission checks, audit-trail recording) then sees the
+     * API-supplied scope, not a stale leftover from a previous call on this service.
+     *
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function applyDeleteScope(
+        Register | string | int | null $register,
+        Schema | string | int | null $schema
+    ): void {
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
+    }//end applyDeleteScope()
+
+    /**
+     * Refuse a delete the object or its schema does not allow, before anything is looked up for it.
+     *
+     * In order: a transferred object (looked up with the caller's flags; an external row has
+     * no retention block, so a sourced schema skips it), a view-backed type, an append-only
+     * schema, and an archival schema unless the retention sweep calls or the object is a
+     * stored draft (a draft is not yet a record, decisions 180 and 216).
+     *
+     * @param ObjectDeleteRequest $request       The delete call.
+     * @param Schema|null         $sourcedSchema The current schema when an object source serves it.
+     *
+     * @return void
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object is transferred.
+     * @throws AppendOnlyException When the schema is append-only.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function rejectRefusedDelete(ObjectDeleteRequest $request, ?Schema $sourcedSchema): void
+    {
+        if ($sourcedSchema === null) {
+            $this->rejectIfTransferred(uuid: $request->uuid, _rbac: $request->rbac, _multitenancy: $request->multitenancy);
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
+
+        $this->rejectIfViewBacked(operation: 'delete');
+
+        if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
+            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+            throw new AppendOnlyException(
+                schemaIdentifier: $schemaSlug,
+                operation: 'delete'
+            );
+        }
+
+        if ($this->currentSchema !== null
+            && $this->isDeletableDraft(
+                uuid: $request->uuid,
+                retentionSweep: $request->retentionSweep,
+                _rbac: $request->rbac,
+                _multitenancy: $request->multitenancy
+            ) === false
+        ) {
+            $this->rejectIfArchivalImmutable(
+                schema: $this->currentSchema,
+                retentionSweep: $request->retentionSweep
+            );
+        }
+    }//end rejectRefusedDelete()
+
+    /**
+     * Find the object to delete (soft-deleted rows included) and check the acting user may delete it.
+     *
+     * The lookup uses the caller's flags, which the delete handler honours too. When the caller
+     * supplied register and schema the lookup is scoped to that one table and a miss is
+     * authoritative (#1638). An unscoped miss checks the schema's delete right without an owner
+     * and leaves the not-found answer to the delete handler.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     *
+     * @return ObjectEntity|null The object, or null after an unscoped miss.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When a scoped lookup misses.
+     * @throws \Exception When the acting user may not delete.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function resolvePermittedDeleteTarget(ObjectDeleteRequest $request): ?ObjectEntity
+    {
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($request->scoped === true) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
+        try {
+            $objectToDelete = $this->objectMapper->find(
+                identifier: $request->uuid,
+                register: $scopedRegister,
+                schema: $scopedSchema,
+                includeDeleted: true,
+                _rbac: $request->rbac,
+                _multitenancy: $request->multitenancy
+            );
+
+            // If no schema was provided, derive it from the object.
+            if ($this->currentSchema === null) {
+                $this->setSchema(schema: $objectToDelete->getSchema());
+            }
+
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
+
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'delete',
+                userId: $request->actingUserId(),
+                objectOwner: $objectToDelete->getOwner(),
+                _rbac: $request->rbac,
+                object: $objectToDelete
+            );
+
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
+
+            return $objectToDelete;
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            if ($request->scoped === true) {
+                throw $e;
+            }
+
+            if ($this->currentSchema !== null) {
+                $this->checkPermission(
+                    schema: $this->currentSchema,
+                    action: 'delete',
+                    userId: $request->actingUserId(),
+                    objectOwner: null,
+                    _rbac: $request->rbac
+                );
+            }
+
+            return null;
+        }//end try
+    }//end resolvePermittedDeleteTarget()
+
+    /**
+     * Answer "not found" when the object is somebody else's draft, whatever the lookup let through.
+     *
+     * Like the save path (refuseSomebodyElsesDraft) it is not announced. The deleter is the
+     * explicit acting user, or else the session user.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     * @param ObjectEntity|null   $object  The object to delete, or null after an unscoped miss.
+     *
+     * @return void
+     *
+     * @throws OcpDoesNotExistException When the draft is kept from the deleter.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function refuseDeletingSomebodyElsesDraft(ObjectDeleteRequest $request, ?ObjectEntity $object): void
+    {
+        $deleter = ($request->currentUser ?? $this->userSession->getUser());
+        if ($request->rbac === true && $object !== null && $this->currentSchema !== null
+            && $this->draftKeptFromCaller(object: $object, schema: $this->currentSchema, user: $deleter) === true
+        ) {
+            throw new OcpDoesNotExistException('Object not found');
+        }
+    }//end refuseDeletingSomebodyElsesDraft()
 
     /**
      * Hand a delete on an object-source schema to the delete handler's provider dispatch.
