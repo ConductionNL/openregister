@@ -40,7 +40,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
@@ -60,6 +62,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\AccessReviewGate
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessHistory
@@ -173,8 +176,13 @@ class ObjectPermissionsControllerTest extends TestCase {
 			request: $this->createMock(originalClassName: IRequest::class),
 			objectService: $objectService,
 			report: $report,
-			userSession: $userSession,
-			groupManager: $groupManager,
+			gate: new AccessReviewGate(
+				objectService: $objectService,
+				report: $report,
+				userSession: $userSession,
+				groupManager: $groupManager,
+				grantManage: $this->createMock(originalClassName: GrantManageGuard::class)
+			),
 			logger: ($logger ?? new NullLogger())
 		);
 	}//end controllerFor()
