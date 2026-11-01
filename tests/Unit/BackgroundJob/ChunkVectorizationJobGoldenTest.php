@@ -32,6 +32,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob
  * @covers \OCA\OpenRegister\BackgroundJob\ChunkVectorizationBatch
+ * @uses   \OCA\OpenRegister\Db\Chunk
  */
 class ChunkVectorizationJobGoldenTest extends TestCase
 {
