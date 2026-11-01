@@ -209,11 +209,6 @@
       <code><![CDATA[$organisationUuid]]></code>
     </UnusedParam>
   </file>
-  <file src="lib/Service/Schema/SchemaDiffService.php">
-    <UnusedParam>
-      <code><![CDATA[$hasOtherChange]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Service/TaskService.php">
     <UndefinedPropertyAssignment>
       <code><![CDATA[$vtodo->COMPLETED]]></code>
