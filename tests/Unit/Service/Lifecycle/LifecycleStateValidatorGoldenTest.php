@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleStateValidator
+ * @uses   \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleScope
  */
 class LifecycleStateValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/lifecycle-states-golden.json';
@@ -126,7 +127,11 @@ class LifecycleStateValidatorGoldenTest extends TestCase {
 	}//end cases()
 
 	/**
-	 * @param array<string, mixed> $case
+	 * Compare the validator's errors for one case with the recording.
+	 *
+	 * @param array<string, mixed> $case The case: a states annotation, or inputs with states and transitions.
+	 *
+	 * @return void
 	 */
 	#[DataProvider('cases')]
 	public function testMatchesGolden(array $case): void {
