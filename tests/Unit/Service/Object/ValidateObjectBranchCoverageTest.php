@@ -254,12 +254,8 @@ class ValidateObjectBranchCoverageTest extends TestCase {
 
 	public function testTransformSchemaForValidationNoProperties(): void {
 		$schema = (object)['type' => 'string'];
-		[$resultSchema, $resultObj] = $this->invokePrivate(
-			'transformSchemaForValidation',
-			[$schema, ['key' => 'value'], 'my-slug']
-		);
+		$resultSchema = $this->invokePrivate('transformSchemaForValidation', [$schema, 'my-slug']);
 		$this->assertSame('string', $resultSchema->type);
-		$this->assertSame('value', $resultObj['key']);
 	}
 
 	// =========================================================================

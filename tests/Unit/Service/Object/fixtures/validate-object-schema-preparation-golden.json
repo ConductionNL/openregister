@@ -1,0 +1,825 @@
+{
+    "transform: no properties": {
+        "type": "object",
+        "$id": "x"
+    },
+    "transform: no self reference": {
+        "properties": {
+            "a": {
+                "type": "string"
+            },
+            "b": {
+                "type": "integer"
+            }
+        }
+    },
+    "transform: null id kept": {
+        "$id": null,
+        "properties": {
+            "a": {
+                "type": "string"
+            }
+        }
+    },
+    "transform: related-object, object config": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "description": "UUID reference to a related object (self-reference)"
+            }
+        }
+    },
+    "transform: related-object, inversedBy": {
+        "properties": {
+            "parent": {
+                "inversedBy": "children",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "oneOf": [
+                    {
+                        "type": "null",
+                        "description": "No related object (inversedBy - managed by other side)"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                        "description": "UUID reference to a related object"
+                    },
+                    {
+                        "type": "object",
+                        "description": "Nested object that will be created separately"
+                    }
+                ]
+            }
+        }
+    },
+    "transform: related-schema, inversedBy no type": {
+        "properties": {
+            "parent": {
+                "inversedBy": "children",
+                "objectConfiguration": {
+                    "handling": "related-schema"
+                },
+                "oneOf": [
+                    {
+                        "type": "null",
+                        "description": "No related object (inversedBy - managed by other side)"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                        "description": "UUID reference to a related object"
+                    },
+                    {
+                        "type": "object",
+                        "description": "Nested object that will be created separately"
+                    }
+                ]
+            }
+        }
+    },
+    "transform: related-object, array type": {
+        "properties": {
+            "parents": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "items": {
+                    "$ref": "#/components/schemas/item"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object (self-reference)"
+            }
+        }
+    },
+    "transform: related-object, assoc config": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object (self-reference)"
+            }
+        }
+    },
+    "transform: inversedBy, assoc config": {
+        "properties": {
+            "parent": {
+                "inversedBy": "children",
+                "objectConfiguration": {
+                    "handling": "related-schema"
+                },
+                "oneOf": [
+                    {
+                        "type": "null",
+                        "description": "No related object (inversedBy - managed by other side)"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                        "description": "UUID reference to a related object"
+                    },
+                    {
+                        "type": "object",
+                        "description": "Nested object that will be created separately"
+                    }
+                ]
+            }
+        }
+    },
+    "transform: nested-object, assoc config": {
+        "properties": {
+            "parent": {
+                "type": "object",
+                "objectConfiguration": {
+                    "handling": "nested-object"
+                }
+            }
+        }
+    },
+    "transform: assoc config without handling": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "other": "related-object"
+                }
+            }
+        }
+    },
+    "transform: string with self items": {
+        "properties": {
+            "kids": {
+                "type": "string",
+                "items": {
+                    "$ref": "#/components/schemas/item"
+                }
+            }
+        }
+    },
+    "transform: self ref, assoc items": {
+        "properties": {
+            "kids": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object"
+                }
+            }
+        }
+    },
+    "transform: inversedBy, string type": {
+        "properties": {
+            "parent": {
+                "inversedBy": "children",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "oneOf": [
+                    {
+                        "type": "null",
+                        "description": "No related object (inversedBy - managed by other side)"
+                    },
+                    {
+                        "type": "string",
+                        "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                        "description": "UUID reference to a related object"
+                    },
+                    {
+                        "type": "object",
+                        "description": "Nested object that will be created separately"
+                    }
+                ]
+            }
+        }
+    },
+    "transform: nested-object handling": {
+        "properties": {
+            "parent": {
+                "type": "object",
+                "objectConfiguration": {
+                    "handling": "nested-object"
+                },
+                "properties": {
+                    "n": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    },
+    "transform: config without handling": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "other": 1
+                }
+            }
+        }
+    },
+    "transform: config null handling": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": null
+                }
+            }
+        }
+    },
+    "transform: no config, string": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "format": "uuid"
+            }
+        }
+    },
+    "transform: self items, inversedBy": {
+        "properties": {
+            "kids": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object (self-reference)"
+                }
+            }
+        }
+    },
+    "transform: self items": {
+        "properties": {
+            "kids": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object (self-reference)"
+                }
+            }
+        }
+    },
+    "transform: self items, untyped": {
+        "properties": {
+            "kids": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object (self-reference)"
+                }
+            }
+        }
+    },
+    "transform: other items": {
+        "properties": {
+            "kids": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object"
+                }
+            }
+        }
+    },
+    "transform: items without self ref on array": {
+        "properties": {
+            "kids": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object"
+                }
+            }
+        }
+    },
+    "transform: self ref, array without items": {
+        "properties": {
+            "kids": {
+                "type": "array"
+            }
+        }
+    },
+    "transform: self ref, items as list": {
+        "properties": {
+            "kids": {
+                "type": "array",
+                "items": [
+                    {
+                        "$ref": "#/components/schemas/item"
+                    }
+                ]
+            }
+        }
+    },
+    "transform: self ref, object items no type": {
+        "properties": {
+            "kids": {
+                "items": {
+                    "$ref": "#/components/schemas/item"
+                }
+            }
+        }
+    },
+    "transform: object ref id": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object (self-reference)"
+            }
+        }
+    },
+    "transform: ref with query": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object (self-reference)"
+            }
+        }
+    },
+    "transform: other ref with config": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object"
+            }
+        }
+    },
+    "transform: empty slug matches empty tail": {
+        "properties": {
+            "parent": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object (self-reference)"
+            }
+        }
+    },
+    "transform: two self references": {
+        "properties": {
+            "a": {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object (self-reference)"
+            },
+            "b": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object (self-reference)"
+                }
+            },
+            "c": {
+                "type": "string"
+            }
+        }
+    },
+    "transform: non-object property": {
+        "threw": "TypeError"
+    },
+    "transform: properties as list": {
+        "properties": [
+            {
+                "type": "string",
+                "objectConfiguration": {
+                    "handling": "related-object"
+                },
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object (self-reference)"
+            }
+        ]
+    },
+    "prepare: no schema entity": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "parent": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object"
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: self reference": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "parent": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object (self-reference)"
+                },
+                "kids": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string",
+                        "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                        "description": "UUID reference to a related object (self-reference)"
+                    }
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: no properties": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "a"
+            ]
+        },
+        "computed": [],
+        "required": [
+            "a"
+        ]
+    },
+    "prepare: empty required": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "a": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: computed and calculation": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "c"
+            ],
+            "properties": {
+                "a": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "b": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "c": {
+                    "type": "string"
+                },
+                "d": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [
+            "a",
+            "b",
+            "d"
+        ],
+        "required": [
+            "c"
+        ]
+    },
+    "prepare: computed, not required": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "c"
+            ],
+            "properties": {
+                "a": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "c": {
+                    "type": "string"
+                }
+            }
+        },
+        "computed": [
+            "a"
+        ],
+        "required": [
+            "c"
+        ]
+    },
+    "prepare: computed, no required list": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "a": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [
+            "a"
+        ],
+        "required": []
+    },
+    "prepare: computed, required not a list": {
+        "threw": "TypeError"
+    },
+    "prepare: only computed required": {
+        "schemaObject": {
+            "type": "object",
+            "required": [],
+            "properties": {
+                "a": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [
+            "a"
+        ],
+        "required": []
+    },
+    "prepare: enum without null": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "e": {
+                    "type": "string",
+                    "enum": [
+                        "a",
+                        "b"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: enum with null": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "e": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "enum": [
+                        "a",
+                        null
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: enum not a list": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "e": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "enum": "a"
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: type list": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "t": {
+                    "type": [
+                        "string",
+                        "integer",
+                        "null"
+                    ]
+                },
+                "u": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: required keeps its type": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "r"
+            ],
+            "properties": {
+                "r": {
+                    "type": "string"
+                },
+                "o": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": [
+            "r"
+        ]
+    },
+    "prepare: untyped and odd types": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "n": {
+                    "description": "none"
+                },
+                "x": {
+                    "type": 5
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: translatable": {
+        "schemaObject": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "title": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "maxLength": 9
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string",
+                                "maxLength": 9
+                            }
+                        }
+                    ]
+                },
+                "body": {
+                    "anyOf": [
+                        {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "note": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "translatable": "yes"
+                }
+            }
+        },
+        "computed": [],
+        "required": [
+            "title"
+        ]
+    },
+    "prepare: nested nullable": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "o": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "p": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "nullable": true
+                        },
+                        "q": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "l": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "c": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "nullable": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: metadata stripped": {
+        "schemaObject": {
+            "type": "object",
+            "properties": {
+                "m": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "computed": [],
+        "required": []
+    },
+    "prepare: properties as list": {
+        "threw": "Error"
+    }
+}
