@@ -128,6 +128,8 @@ class EnsureTaskKeyUniqueIndex implements IRepairStep {
 	/**
 	 * The number of non-null keys carried by more than one task, counted as the migration counts them.
 	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-key-is-unique
+	 *
 	 * @return int
 	 */
 	protected function sharedKeys(): int {

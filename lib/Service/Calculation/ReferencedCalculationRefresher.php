@@ -154,6 +154,8 @@ class ReferencedCalculationRefresher {
 	/**
 	 * The cascade depth of the refresh running now; 0 outside a refresh.
 	 *
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 *
 	 * @return integer
 	 */
 	public function depth(): int {
