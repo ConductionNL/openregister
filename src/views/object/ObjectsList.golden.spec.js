@@ -1,5 +1,5 @@
-import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import ObjectsList from './ObjectsList.vue'
+import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 
 // The live collection subscription: what it asks the store and the state it keeps.
 
@@ -64,7 +64,12 @@ const STORES = {
 	unknownScoped: { types: [], register: { id: 1 }, schema: { id: 2 } },
 	unknownNoRegister: { types: [], register: null, schema: { id: 2 } },
 	unknownNoSchema: { types: [], register: { id: 1 }, schema: {} },
-	registerThrows: { types: [], register: { id: 1 }, schema: { id: 2 }, throws: true },
+	registerThrows: {
+		types: [],
+		register: { id: 1 },
+		schema: { id: 2 },
+		throws: true,
+	},
 }
 
 /**
@@ -109,16 +114,28 @@ describe('ObjectsList.syncLiveSubscription', () => {
 	for (const type of ['r1-s1', '']) {
 		for (const [stateName, state] of Object.entries(STATES)) {
 			for (const [storeName, store] of Object.entries(STORES)) {
-				for (const [subName, subscribe] of Object.entries({ ...SUBSCRIBES, missing: null })) {
+				for (const [subName, subscribe] of Object.entries({
+					...SUBSCRIBES,
+					missing: null,
+				})) {
 					it(`type "${type}", ${stateName}, ${storeName}, subscribe ${subName}`, async () => {
 						const ctx = context(state)
 						const log = arrange({ type, store, subscribe, ctx })
 						await ctx.syncLiveSubscription()
 						const live = {}
-						for (const key of ['liveHandle', 'liveType', 'livePendingType', 'liveEpoch']) {
+						for (const key of [
+							'liveHandle',
+							'liveType',
+							'livePendingType',
+							'liveEpoch',
+						]) {
 							live[key] = ctx[key]
 						}
-						expect({ log, live, warn: warn.mock.calls }).toMatchSnapshot()
+						expect({
+							log,
+							live,
+							warn: warn.mock.calls,
+						}).toMatchSnapshot()
 					})
 				}
 			}
