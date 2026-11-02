@@ -67,7 +67,7 @@ describe('DeleteSchema.initDialog', () => {
 	for (const [registersName, registers] of Object.entries(REGISTERS)) {
 		for (const [statsName, stats] of Object.entries(STATS)) {
 			for (const [collectionName, collection] of Object.entries(COLLECTIONS)) {
-				for (const schemaItem of [{ id: 7 }, null]) {
+				for (const schemaItem of [{ id: 7 }, { id: 9 }, null]) {
 					it(`opens with registers ${registersName}, stats ${statsName}, collections ${collectionName}, schema ${schemaItem?.id}`, async () => {
 						let filters = {}
 						registerStore.refreshRegisterList = async () => {

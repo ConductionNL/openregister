@@ -17,6 +17,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, col
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -35,6 +52,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, col
 `;
 
 exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections perRegister, schema 9 1`] = `
 {
   "log": [
     [
@@ -85,6 +119,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, col
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -103,6 +154,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, col
 `;
 
 exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections perRegister, schema 9 1`] = `
 {
   "log": [
     [
@@ -153,6 +221,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats rejects, colle
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -171,6 +256,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats rejects, colle
 `;
 
 exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections perRegister, schema 9 1`] = `
 {
   "log": [
     [
@@ -221,6 +323,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats textCount, col
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -239,6 +358,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats textCount, col
 `;
 
 exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections perRegister, schema 9 1`] = `
 {
   "log": [
     [
@@ -289,6 +425,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats three, collect
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers none, stats three, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -307,6 +460,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats three, collect
 `;
 
 exports[`DeleteSchema.initDialog opens with registers none, stats three, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections perRegister, schema 9 1`] = `
 {
   "log": [
     [
@@ -357,6 +527,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats zero, collecti
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -375,6 +562,23 @@ exports[`DeleteSchema.initDialog opens with registers none, stats zero, collecti
 `;
 
 exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections perRegister, schema 9 1`] = `
 {
   "log": [
     [
@@ -429,6 +633,27 @@ exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, col
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -460,6 +685,27 @@ exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, col
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
@@ -526,6 +772,44 @@ exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, col
       {
         "register": 3,
         "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
         "search": "",
       },
     ],
@@ -623,6 +907,51 @@ exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, col
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "id": "o2",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -677,6 +1006,44 @@ exports[`DeleteSchema.initDialog opens with registers with, stats rejects, colle
       {
         "register": 3,
         "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
         "search": "",
       },
     ],
@@ -774,6 +1141,51 @@ exports[`DeleteSchema.initDialog opens with registers with, stats rejects, colle
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "id": "o2",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -805,6 +1217,28 @@ exports[`DeleteSchema.initDialog opens with registers with, stats textCount, col
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
@@ -862,6 +1296,28 @@ exports[`DeleteSchema.initDialog opens with registers with, stats textCount, col
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -893,6 +1349,36 @@ exports[`DeleteSchema.initDialog opens with registers with, stats three, collect
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
@@ -966,6 +1452,36 @@ exports[`DeleteSchema.initDialog opens with registers with, stats three, collect
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers with, stats three, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -997,6 +1513,27 @@ exports[`DeleteSchema.initDialog opens with registers with, stats zero, collecti
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
@@ -1052,6 +1589,27 @@ exports[`DeleteSchema.initDialog opens with registers with, stats zero, collecti
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -1083,6 +1641,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, 
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
@@ -1138,6 +1717,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, 
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -1169,6 +1769,32 @@ exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, 
     [
       "getSchemaStats",
       7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
     [
       "console.warn",
@@ -1234,6 +1860,32 @@ exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, 
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -1265,6 +1917,32 @@ exports[`DeleteSchema.initDialog opens with registers without, stats rejects, co
     [
       "getSchemaStats",
       7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
     [
       "console.warn",
@@ -1330,6 +2008,32 @@ exports[`DeleteSchema.initDialog opens with registers without, stats rejects, co
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -1361,6 +2065,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats textCount, 
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
@@ -1416,6 +2141,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats textCount, 
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -1447,6 +2193,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats three, coll
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
@@ -1502,6 +2269,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats three, coll
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers without, stats three, collections perRegister, schema undefined 1`] = `
 {
   "log": [
@@ -1545,6 +2333,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats zero, colle
 }
 `;
 
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
 exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections empty, schema undefined 1`] = `
 {
   "log": [
@@ -1576,6 +2385,27 @@ exports[`DeleteSchema.initDialog opens with registers without, stats zero, colle
     [
       "getSchemaStats",
       7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
     ],
   ],
   "objects": [
