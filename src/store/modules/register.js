@@ -3,6 +3,8 @@ import { Register } from '../../entities/index.js'
 import {
 	getJson,
 	importAnswer,
+	itemTarget,
+	loggedRequest,
 	objectAnswer,
 	sendJson,
 	withoutReadOnly,
@@ -156,6 +158,65 @@ async function beat(state) {
 	}
 }
 
+/**
+ * The URL of one register, or of the list for a new one.
+ *
+ * @param {object} registerItem The register.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL of the registers API passthrough.
+ */
+function registerUrl(registerItem) {
+	return registerItem.id
+		? `/index.php/apps/openregister/api/registers/${registerItem.id}`
+		: '/index.php/apps/openregister/api/registers'
+}
+
+/**
+ * The register an import goes into: the active one.
+ *
+ * @param {object} store The register store.
+ * @param {File} file The file to import.
+ * @return {string|number} The register id.
+ * @throws {Error} When there is no file or no active register.
+ * @spec exclude Client-side precondition of POST /api/registers/{id}/import.
+ */
+function importTargetId(store, file) {
+	if (!file) {
+		throw new Error('No file to import')
+	}
+	const registerId = store.registerItem?.id
+	if (!registerId) {
+		throw new Error('No register selected for import')
+	}
+	return registerId
+}
+
+/**
+ * Post an import, then refresh the register list in the background, so the
+ * import completes without waiting for the list.
+ *
+ * @param {object} store The register store.
+ * @param {{endpoint: string, formData: FormData}} request The import request.
+ * @return {Promise<object>} The import answer.
+ * @spec exclude Thin API passthrough — POST /api/registers/{id}/import.
+ */
+function importAndRefresh(store, request) {
+	return loggedRequest({
+		log: (error) =>
+			console.error('RegisterStore: Error importing register:', error),
+		run: async () => {
+			const result = await postImport(request)
+			store.refreshRegisterList().catch((error) => {
+				console.error(
+					'RegisterStore: Error refreshing register list:',
+					error,
+				)
+			})
+			return result
+		},
+	})
+}
+
 // Module-scoped single-flight token for refreshRegisterList. The endpoint is
 // expensive (~5-16s with _extend=schemas + @self.stats on dev envs with 100+
 // registers), and every sidebar mount + AppInitializationService both call
@@ -294,27 +355,21 @@ export const useRegisterStore = defineStore('register', {
 			if (!registerItem.id) {
 				throw new Error('No register item to delete')
 			}
-
-			const endpoint = `/index.php/apps/openregister/api/registers/${registerItem.id}`
-
-			try {
-				const response = await fetch(endpoint, {
-					method: 'DELETE',
-				})
-
-				const responseData = await objectAnswer(response)
-
-				this.refreshRegisterList()
-				this.setRegisterItem(null)
-
-				return { response, data: responseData }
-			} catch (error) {
-				console.error('Error deleting register:', error)
-				throw new Error(`Failed to delete register: ${error.message}`, {
-					cause: error,
-				})
-			}
+			return loggedRequest({
+				failure: 'Failed to delete register',
+				log: (error) => console.error('Error deleting register:', error),
+				run: async () => {
+					const response = await fetch(registerUrl(registerItem), {
+						method: 'DELETE',
+					})
+					const responseData = await objectAnswer(response)
+					this.refreshRegisterList()
+					this.setRegisterItem(null)
+					return { response, data: responseData }
+				},
+			})
 		},
+
 		// Create or save a register from store
 		/**
 		 * @param registerItem
@@ -324,37 +379,23 @@ export const useRegisterStore = defineStore('register', {
 			if (!registerItem) {
 				throw new Error('No register item to save')
 			}
-
-			const isNewRegister = !registerItem.id
-			const endpoint = isNewRegister
-				? '/index.php/apps/openregister/api/registers'
-				: `/index.php/apps/openregister/api/registers/${registerItem.id}`
-			const method = isNewRegister ? 'POST' : 'PUT'
-
+			const endpoint = registerUrl(registerItem)
+			const method = registerItem.id ? 'PUT' : 'POST'
 			// Clean the data before sending - remove read-only fields
-			const cleanedData = this.cleanRegisterForSave(registerItem)
-
-			try {
-				const response = await sendJson(endpoint, {
-					method,
-					body: cleanedData,
-				})
-
-				const responseData = await objectAnswer(response)
-
-				const data = new Register(responseData)
-
-				this.setRegisterItem(data)
-				this.refreshRegisterList()
-
-				return { response, data }
-			} catch (error) {
-				console.error('Error saving register:', error)
-				throw new Error(`Failed to save register: ${error.message}`, {
-					cause: error,
-				})
-			}
+			const body = this.cleanRegisterForSave(registerItem)
+			return loggedRequest({
+				failure: 'Failed to save register',
+				log: (error) => console.error('Error saving register:', error),
+				run: async () => {
+					const response = await sendJson(endpoint, { method, body })
+					const data = new Register(await objectAnswer(response))
+					this.setRegisterItem(data)
+					this.refreshRegisterList()
+					return { response, data }
+				},
+			})
 		},
+
 		// Clean register data for saving - remove read-only fields
 		/**
 		 * @param registerItem
@@ -372,24 +413,17 @@ export const useRegisterStore = defineStore('register', {
 			if (!register) {
 				throw new Error('No register item to upload')
 			}
-
-			const isNewRegister = !this.registerItem
-			const endpoint = isNewRegister
-				? '/index.php/apps/openregister/api/registers/upload'
-				: `/index.php/apps/openregister/api/registers/upload/${this.registerItem.id}`
-			const method = isNewRegister ? 'POST' : 'PUT'
-
+			const { endpoint, method } = itemTarget(
+				'/index.php/apps/openregister/api/registers/upload',
+				this.registerItem,
+			)
 			const response = await sendJson(endpoint, { method, body: register })
-
-			const responseData = await objectAnswer(response)
-
-			const data = new Register(responseData)
-
+			const data = new Register(await objectAnswer(response))
 			this.setRegisterItem(data)
 			this.refreshRegisterList()
-
 			return { response, data }
 		},
+
 		/**
 		 * Start a heartbeat mechanism to prevent gateway timeouts during long imports
 		 *
@@ -434,43 +468,18 @@ export const useRegisterStore = defineStore('register', {
 		 * @spec exclude Thin API passthrough — POST /api/registers/{id}/import; observable contract owned by data-import-export (the heartbeat it spins up is spec'd separately under frontend-client-state-orchestration REQ-001).
 		 */
 		async importRegister(file, heartbeatCallback = null) {
-			if (!file) {
-				throw new Error('No file to import')
-			}
-
-			const registerId = this.registerItem?.id
-			if (!registerId) {
-				throw new Error('No register selected for import')
-			}
-
+			const registerId = importTargetId(this, file)
 			const schemaId = await csvImportSchemaId(file)
 			const request = importRequest(file, { registerId, schemaId })
-
-			// Start heartbeat to prevent gateway timeouts for large imports
-			// Use 15-second intervals for better timeout prevention
+			// Heartbeats every 15 seconds keep large imports past the gateway timeout.
 			const heartbeat = this.startImportHeartbeat(15000, heartbeatCallback)
-
 			try {
-				const result = await postImport(request)
-
-				// Start the register refresh in the background without waiting for it to complete
-				// This way the import can complete and the loading state can be turned off
-				this.refreshRegisterList().catch((error) => {
-					console.error(
-						'RegisterStore: Error refreshing register list:',
-						error,
-					)
-				})
-
-				return result
-			} catch (error) {
-				console.error('RegisterStore: Error importing register:', error)
-				throw error // Pass through the original error message
+				return await importAndRefresh(this, request)
 			} finally {
-				// Always stop the heartbeat when import completes (success or error)
 				heartbeat.stop()
 			}
 		},
+
 		/**
 		 * @spec exclude Pure client UI-state mutator — resets the active register and error. No backend contract.
 		 */
