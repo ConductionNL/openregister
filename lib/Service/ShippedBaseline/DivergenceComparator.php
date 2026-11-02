@@ -236,7 +236,7 @@ class DivergenceComparator {
 	}//end stateOf()
 
 	/**
-	 * Whether two part values are the same, absence included.
+	 * Whether two part values are the same, absence included; an empty array counts as absent.
 	 *
 	 * @param mixed $a One value.
 	 * @param mixed $b The other.
@@ -245,7 +245,11 @@ class DivergenceComparator {
 	 */
 	private function identical(mixed $a, mixed $b): bool {
 		if ($a === self::ABSENT || $b === self::ABSENT) {
-			return ($a === $b);
+			// An empty map is no map: a schema read back with no authorization
+			// answers `[]` where the shipped definition simply has no key. Read
+			// as a local change it kept the instance's empty block over the one
+			// a later release ships (destruction-lists 1.0.0 -> 1.1.0).
+			return ($a === $b || $a === [] || $b === []);
 		}
 
 		return $this->parts->same(a: $a, b: $b);

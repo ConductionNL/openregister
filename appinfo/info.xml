@@ -412,6 +412,11 @@ Vrij en open source onder de EUPL-licentie.
 			     1,664 tables, measured 2026-10-06). Last, after every step that
 			     creates tasks. Idempotent. -->
 			<step>OCA\OpenRegister\Repair\BackfillTaskSubjectLocation</step>
+			<!-- Version1Date20261024120000 leaves the task_key unique index out
+			     when stored keys collide, and a migration never runs twice; this
+			     step adds it on a later upgrade or `occ maintenance:repair` once
+			     the keys are distinct. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\EnsureTaskKeyUniqueIndex</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
