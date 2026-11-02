@@ -1386,7 +1386,7 @@
   },
   "src/store/settings.js": {
     "no-console": {
-      "count": 43
+      "count": 4
     }
   },
   "src/user-dashboard.js": {
