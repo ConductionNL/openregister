@@ -181,7 +181,8 @@ abstract class ExampleSetEngineRows {
 	 * @param string               $key  The row's key in the fragment.
 	 * @param array<string, mixed> $data The filled fields.
 	 *
-	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
+	 * @return array{error: string, entry: array{uuid: string, runs?: array<string, string>, waitsOn?: array<string, string>}|null}
+	 *         The record entry (a flow's also names its keyed runs), or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
