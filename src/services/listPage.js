@@ -217,6 +217,9 @@ export async function getJson(endpoint) {
 		method: 'GET',
 	})
 	return response.json()
+}
+
+/**
  * Send one JSON request for a store: raise the store's loading flag while it
  * runs, hand the answer to `keep`, and log a failure before rethrowing it.
  *
