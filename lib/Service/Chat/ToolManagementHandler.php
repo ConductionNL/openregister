@@ -147,20 +147,7 @@ class ToolManagementHandler {
 			// 3. An "openbuild" -> "openbuild.{x}" fallback handled by
 			// the McpProviderBridge — that bridge exposes every
 			// function under one appId-level registration.
-			$candidates = [$toolId];
-			if (strpos($toolId, '.') === false) {
-				$candidates[] = 'openregister.' . $toolId;
-			}
-
-			$tool = null;
-			$fullToolId = $toolId;
-			foreach ($candidates as $candidate) {
-				$tool = $this->toolRegistry->getTool($candidate);
-				if ($tool !== null) {
-					$fullToolId = $candidate;
-					break;
-				}
-			}
+			[$tool, $fullToolId] = $this->resolveTool(toolId: $toolId);
 
 			if ($tool !== null) {
 				$tool->setAgent($agent);
@@ -189,6 +176,31 @@ class ToolManagementHandler {
 
 		return $tools;
 	}//end getAgentTools()
+
+	/**
+	 * Find a tool by its stored id, then by its openregister-prefixed form.
+	 *
+	 * @param string $toolId The id as the agent stores it
+	 *
+	 * @return array{0: mixed, 1: string} The tool or null, and the id that resolved
+	 *
+	 * @spec exclude throwaway gate test, never merged
+	 */
+	private function resolveTool(string $toolId): array {
+		$candidates = [$toolId];
+		if (strpos($toolId, '.') === false) {
+			$candidates[] = 'openregister.' . $toolId;
+		}
+
+		foreach ($candidates as $candidate) {
+			$tool = $this->toolRegistry->getTool($candidate);
+			if ($tool !== null) {
+				return [$tool, $candidate];
+			}
+		}
+
+		return [null, $toolId];
+	}//end resolveTool()
 
 	/**
 	 * Convert tools to OpenAI function format
