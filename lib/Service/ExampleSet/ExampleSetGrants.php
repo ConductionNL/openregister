@@ -182,8 +182,9 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @param string               $key  The grant's key in the fragment (unused).
 	 * @param array<string, mixed> $data The filled grant fields.
 	 *
-	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (the share's id, its object and the
-	 *                                                                 fields held() matches), or why the grant failed.
+	 * @return array{error: string, entry: array{id: string, object: string, node: int|null, sharedBy: string,
+	 *         sharedWith: string, shareType: int|null}|null}
+	 *         The record entry (the share's id, its object and the fields held() matches), or why the grant failed.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
 	 *
