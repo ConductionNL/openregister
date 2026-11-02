@@ -2887,7 +2887,19 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// caller's own drafts out of the schema's lists by default.
 		// `autoShare` is the schema-level default FilePropertyHandler reads for
 		// every file property.
-		$boolFields = ['allowFiles', 'autoShare', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
+		// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
+		// runs the save events per row.
+		$boolFields = [
+			'allowFiles',
+			'autoShare',
+			'defaultAutoShare',
+			'exportable',
+			'staging',
+			'additionalProperties',
+			'draftsVisible',
+			'draftsListed',
+			'fireEventsOnBulkWrites',
+		];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI

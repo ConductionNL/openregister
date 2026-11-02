@@ -72,9 +72,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -193,9 +191,8 @@ class SaveObjects {
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
-	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
-	 * @param PropertyRbacHandler|null $propertyRbac Applies property authorization per row, as SaveObject does.
-	 *                                               Null only in legacy fixtures.
+	 * @param BulkRowRules|null $rowRules The decision-table rules, property authorization and save events a
+	 *                                    bulk row goes through. Null only in legacy fixtures.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -212,8 +209,7 @@ class SaveObjects {
 		private readonly ?ValidateObject $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
-		private readonly ?DecisionTableBulkGuard $decisionTables = null,
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly ?BulkRowRules $rowRules = null,
 	) {
 
 	}//end __construct()
@@ -793,10 +789,11 @@ class SaveObjects {
 			return [$row, $this->schemalessRowRefusal(run: $run)];
 		}
 
+		$run->rowRegister = $this->resolveSafeguardRowRegister(object: $row, defaultRegister: $run->defaultRegister);
 		[$run->rowUuid, $run->rowAction, $run->rowExisting] = $this->resolveSafeguardActionForRow(
 			object: $row,
 			rowSchema: $run->rowSchema,
-			rowRegister: $this->resolveSafeguardRowRegister(object: $row, defaultRegister: $run->defaultRegister),
+			rowRegister: $run->rowRegister,
 			existingByUuid: $run->existingByUuid
 		);
 
@@ -831,7 +828,8 @@ class SaveObjects {
 
 	/**
 	 * A row with a resolved schema and action through the remaining gates, in order: the
-	 * draft rule, appendOnly, the permission, property authorization, then validation.
+	 * draft rule, appendOnly, the permission, property authorization, validation, then
+	 * the pre-save event where the bulk-write events are on.
 	 *
 	 * @param array            $row The row
 	 * @param BulkSafeguardRun $run The safeguard pass
@@ -859,7 +857,13 @@ class SaveObjects {
 			}
 		}
 
-		return [$row, $this->validationRefusal(row: $row, run: $run)];
+		$refusal = $this->validationRefusal(row: $row, run: $run);
+		$events = $this->rowRules?->bulkWriteEvents;
+		if ($refusal !== null || $events?->appliesTo(schema: $run->rowSchema, register: $run->rowRegister) !== true) {
+			return [$row, $refusal];
+		}
+
+		return $events->screen(row: $row, run: $run);
 	}//end screenResolvedRow()
 
 	/**
@@ -989,7 +993,8 @@ class SaveObjects {
 			return [$object, null];
 		}
 
-		if ($this->propertyRbac === null) {
+		$propertyRbac = $this->rowRules?->propertyRbac;
+		if ($propertyRbac === null) {
 			if ($schema->hasPropertyAuthorization() === true) {
 				return [$object, 'Property authorization is unavailable, so a row of a schema with property rules cannot be checked'];
 			}
@@ -1001,7 +1006,7 @@ class SaveObjects {
 		unset($incoming['@self']);
 		$stored = ($existing?->getObject() ?? []);
 
-		$unauthorized = $this->propertyRbac->getUnauthorizedProperties(
+		$unauthorized = $propertyRbac->getUnauthorizedProperties(
 			schema: $schema,
 			object: $stored,
 			incomingData: $incoming,
@@ -1015,12 +1020,12 @@ class SaveObjects {
 			return [$object, null];
 		}
 
-		$omitted = $this->propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
+		$omitted = $propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
 		if ($omitted === []) {
 			return [$object, null];
 		}
 
-		return [$this->propertyRbac->restoreWriteOnlyValues(prepared: $object, stored: $stored, omittedPaths: $omitted), null];
+		return [$propertyRbac->restoreWriteOnlyValues(prepared: $object, stored: $stored, omittedPaths: $omitted), null];
 	}//end applyPropertyAuthorization()
 
 	/**
@@ -1110,8 +1115,11 @@ class SaveObjects {
 	/**
 	 * Determine which register applies to a single bulk row.
 	 *
-	 * Mirrors {@see resolveSafeguardRowSchema()}: `@self.register` wins for
-	 * mixed-register batches, otherwise the call-level default applies.
+	 * The call-level register wins when the caller named one, because the writer
+	 * stores every row of such a call in that register's table
+	 * (MagicMapper::ultraFastBulkSave()). Screening a row against the register its
+	 * `@self.register` names would judge another table than the one written.
+	 * Only without a call-level register does `@self.register` decide.
 	 *
 	 * @param array $object Raw row data.
 	 * @param Register|null $defaultRegister Call-level default register.
@@ -1119,23 +1127,28 @@ class SaveObjects {
 	 * @return Register|null Resolved register, or null when unresolvable.
 	 */
 	private function resolveSafeguardRowRegister(array $object, ?Register $defaultRegister): ?Register {
+		if ($defaultRegister !== null) {
+			return $defaultRegister;
+		}
+
 		$selfRegister = $object['@self']['register'] ?? null;
 		if ($selfRegister !== null && $selfRegister !== '') {
 			try {
 				return $this->loadRegisterWithCache(registerId: $selfRegister);
 			} catch (\Throwable $e) {
-				// Fall through to default.
+				// Unresolvable: no register.
 			}
 		}
 
-		return $defaultRegister;
+		return null;
 	}//end resolveSafeguardRowRegister()
 
 	/**
 	 * Determine which schema applies to a single bulk row.
 	 *
-	 * Looks at `@self.schema` first (mixed-schema mode), then falls back to
-	 * the call-level default.
+	 * The call-level schema wins when the caller named one, for the same reason as
+	 * the register: the writer stores the call's rows in that schema's table.
+	 * `@self.schema` decides only in mixed-schema mode.
 	 *
 	 * @param array $object Raw row data.
 	 * @param Schema|null $defaultSchema Call-level default schema.
@@ -1143,16 +1156,20 @@ class SaveObjects {
 	 * @return Schema|null Resolved schema, or null when unresolvable.
 	 */
 	private function resolveSafeguardRowSchema(array $object, ?Schema $defaultSchema): ?Schema {
+		if ($defaultSchema !== null) {
+			return $defaultSchema;
+		}
+
 		$selfSchema = $object['@self']['schema'] ?? null;
 		if ($selfSchema !== null && $selfSchema !== '') {
 			try {
 				return $this->loadSchemaWithCache(schemaId: $selfSchema);
 			} catch (\Throwable $e) {
-				// Fall through to default.
+				// Unresolvable: no schema.
 			}
 		}
 
-		return $defaultSchema;
+		return null;
 	}//end resolveSafeguardRowSchema()
 
 	/**
@@ -1926,24 +1943,7 @@ class SaveObjects {
 		bool $_audit = true,
 	): array {
 		$startTime = microtime(true);
-
-		$result = [
-			'saved' => [],
-			'updated' => [],
-			'unchanged' => [],
-			// Ensure consistent result structure.
-			'invalid' => [],
-			'errors' => [],
-			'statistics' => [
-				'saved' => 0,
-				'updated' => 0,
-				'unchanged' => 0,
-				// Ensure consistent statistics structure.
-				'invalid' => 0,
-				'errors' => 0,
-				// Also add errors counter.
-			],
-		];
+		$result    = $this->emptyChunkResult();
 
 		// Per-phase timings. A bulk save that is slower than the single-object
 		// path it replaces is indistinguishable from one that is faster unless
@@ -1979,6 +1979,11 @@ class SaveObjects {
 			return $result;
 		}
 
+		$eventTargets = $this->bulkEventTargets(
+			transformedObjects: $transformedObjects,
+			context: ['events' => $_events, 'schemas' => $schemaCache, 'register' => $register, 'schema' => $schema]
+		);
+
 		// STEP 2: Persist transformed objects to database.
 		$phaseStart = microtime(true);
 		// The pre-update rows the persist step fetches exist for ONE purpose:
@@ -1995,7 +2000,7 @@ class SaveObjects {
 			transformedObjects: $transformedObjects,
 			register: $register,
 			schema: $schema,
-			needsPreUpdateState: ($_events === true || $_audit === true)
+			needsPreUpdateState: ($_events === true || $_audit === true || $eventTargets !== [])
 		);
 		$phaseMs['persist'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
@@ -2017,6 +2022,7 @@ class SaveObjects {
 		// statement) instead of one INSERT (plus hash-chain queries) per object.
 		$phaseStart = microtime(true);
 		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events, _audit: $_audit);
+		$this->emitTargetedEvents(sideEffects: $sideEffects, targets: $eventTargets);
 		$phaseMs['sideEffects'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		$endTime = microtime(true);
@@ -2028,6 +2034,154 @@ class SaveObjects {
 
 		return $result;
 	}//end processObjectsChunk()
+
+	/**
+	 * The "registerId/schemaId" pairs of a chunk whose bulk-write events are on.
+	 *
+	 * The pair is the table the row is written to: the caller's register and schema
+	 * first, the row's own only where the caller named none. That is the rule the row
+	 * screen follows, and the pair the stored objects carry afterwards.
+	 *
+	 * @param array $transformedObjects The chunk, after the guards.
+	 * @param array $context            `events`: whether the caller asked for events on every object
+	 *                                  (then no targets are needed); `schemas`: the schema cache;
+	 *                                  `register` and `schema`: what the caller passed.
+	 *
+	 * @return array<string, true>
+	 *
+	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
+	 */
+	private function bulkEventTargets(array $transformedObjects, array $context): array {
+		if ($this->rowRules?->bulkWriteEvents === null || $context['events'] === true) {
+			return [];
+		}
+
+		$context['register'] = $this->callEntity(target: $context['register'], kind: Register::class);
+		$context['schema']   = $this->callEntity(target: $context['schema'], kind: Schema::class);
+		$targets = [];
+		$asked   = [];
+		foreach ($transformedObjects as $objData) {
+			$schema   = ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
+			$register = ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null)));
+			$key      = ((string)($register?->getId() ?? ($objData['register'] ?? ''))) . '/' . ((string)$schema?->getId());
+			if (isset($asked[$key]) === true || $schema instanceof Schema === false) {
+				continue;
+			}
+
+			$asked[$key] = true;
+			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $schema, register: $register) === true) {
+				$targets[$key] = true;
+			}
+		}//end foreach
+
+		return $targets;
+	}//end bulkEventTargets()
+
+	/**
+	 * The register or schema the caller named, loaded; null when it named none or it does not load.
+	 *
+	 * @param Register|Schema|string|int|null $target What the caller passed.
+	 * @param class-string                    $kind   Register::class or Schema::class.
+	 *
+	 * @return Register|Schema|null
+	 */
+	private function callEntity(Register|Schema|string|int|null $target, string $kind): Register|Schema|null {
+		if ($target instanceof $kind) {
+			return $target;
+		}
+
+		if ($target === null || $target === 0 || $target === '0' || $target === '' || is_object($target) === true) {
+			return null;
+		}
+
+		try {
+			if ($kind === Register::class) {
+				return $this->loadRegisterWithCache(registerId: $target);
+			}
+
+			return $this->loadSchemaWithCache(schemaId: $target);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end callEntity()
+
+	/**
+	 * The register a chunk row names, from the register cache the preparation step filled.
+	 *
+	 * @param mixed $registerId The row's register id.
+	 *
+	 * @return Register|null Null when it does not load.
+	 */
+	private function eventRegister(mixed $registerId): ?Register {
+		try {
+			return $this->loadRegisterWithCache(registerId: $registerId);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end eventRegister()
+
+	/**
+	 * Dispatch the post-save events of the objects whose register and schema have the bulk-write events on.
+	 *
+	 * The audit trail was already written for the whole chunk, so this pass dispatches only.
+	 *
+	 * @param array               $sideEffects As buildChunkResults() returns them.
+	 * @param array<string, true> $targets     The "registerId/schemaId" pairs.
+	 *
+	 * @return void
+	 */
+	private function emitTargetedEvents(array $sideEffects, array $targets): void {
+		if ($targets === []) {
+			return;
+		}
+
+		$this->emitChunkSideEffects(
+			sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $targets),
+			_events: true,
+			_audit: false
+		);
+	}//end emitTargetedEvents()
+
+	/**
+	 * A chunk's result before anything is processed.
+	 *
+	 * @return array
+	 */
+	private function emptyChunkResult(): array {
+		return [
+			'saved' => [],
+			'updated' => [],
+			'unchanged' => [],
+			'invalid' => [],
+			'errors' => [],
+			'statistics' => [
+				'saved' => 0,
+				'updated' => 0,
+				'unchanged' => 0,
+				'invalid' => 0,
+				'errors' => 0,
+			],
+		];
+	}//end emptyChunkResult()
+
+	/**
+	 * The side effects of the objects whose register and schema are among the targets.
+	 *
+	 * @param array               $sideEffects As buildChunkResults() returns them.
+	 * @param array<string, true> $targets     The "registerId/schemaId" pairs.
+	 *
+	 * @return array{created: list<ObjectEntity>, updated: list<array{old: ObjectEntity|null, new: ObjectEntity}>}
+	 */
+	private function sideEffectsWithin(array $sideEffects, array $targets): array {
+		$inTargets = static fn (ObjectEntity $entity): bool => isset($targets[$entity->getRegister() . '/' . $entity->getSchema()]);
+
+		return [
+			'created' => array_values(array_filter(($sideEffects['created'] ?? []), $inTargets)),
+			'updated' => array_values(
+				array_filter(($sideEffects['updated'] ?? []), static fn (array $pair): bool => $inTargets($pair['new']))
+			),
+		];
+	}//end sideEffectsWithin()
 
 	/**
 	 * Enforce per-object RBAC and schema validation before persistence (BUG-OBJ-1).
@@ -3481,11 +3635,11 @@ class SaveObjects {
 		Schema|string|int|null $schema,
 		array &$result
 	): array {
-		if ($this->decisionTables === null) {
+		if ($this->rowRules?->decisionTables === null) {
 			return $objects;
 		}
 
-		foreach ($this->decisionTables->refusals(objects: $objects, register: $register, schema: $schema) as $position => $reason) {
+		foreach ($this->rowRules->decisionTables->refusals(objects: $objects, register: $register, schema: $schema) as $position => $reason) {
 			$index = null;
 			if (is_int($position) === true) {
 				$index = $position;
