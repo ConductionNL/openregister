@@ -105,6 +105,13 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	private bool $taken = false;
 
 	/**
+	 * Run once inside the next ObjectCreatingEvent, before it is recorded.
+	 *
+	 * @var callable|null
+	 */
+	private $onCreating = null;
+
+	/**
 	 * The mapper with its table I/O stubbed.
 	 *
 	 * @param bool $taken Whether the uuid is already in the table.
@@ -119,6 +126,12 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$events = $this->createMock(IEventDispatcher::class);
 		$events->method('dispatchTyped')->willReturnCallback(
 			function (object $event): void {
+				if ($event instanceof ObjectCreatingEvent && $this->onCreating !== null) {
+					$hook             = $this->onCreating;
+					$this->onCreating = null;
+					$hook();
+				}
+
 				if ($event instanceof ObjectUpdatingEvent && (($event->getNewObject()->getObject()['status'] ?? null) === 'in-deliberation')) {
 					$event->setErrors(['message' => self::REFUSAL]);
 					$event->stopPropagation();
@@ -325,4 +338,38 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
 	}//end testAnInsertAfterALostOneAnnouncesACreateAgain()
+	public function testANestedLostInsertDoesNotTurnTheOuterCreateIntoAnUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+		$this->onCreating = function () use ($mapper, $register, $schema): void {
+			$this->taken = true;
+			$mapper->insert(entity: $this->entity('inner'), register: $register, schema: $schema);
+			$this->taken = false;
+		};
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame(
+			[ObjectCreatingEvent::class, ObjectUpdatingEvent::class, ObjectUpdatedEvent::class, ObjectCreatingEvent::class, ObjectCreatedEvent::class],
+			$this->eventClasses()
+		);
+	}//end testANestedLostInsertDoesNotTurnTheOuterCreateIntoAnUpdate()
+
+	public function testAStoppedUpdateLeavesNoReplacedRowBehind(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		try {
+			$mapper->insert(entity: $this->entity('in-deliberation'), register: $register, schema: $schema);
+		} catch (HookStoppedException $e) {
+			// The refusal is the point of the first insert.
+		}
+
+		$this->taken      = false;
+		$this->dispatched = [];
+		$mapper->insertObjectEntity(entity: $this->entity('closed'), register: $register, schema: $schema);
+		$this->dispatched = [];
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
+	}//end testAStoppedUpdateLeavesNoReplacedRowBehind()
 }//end class

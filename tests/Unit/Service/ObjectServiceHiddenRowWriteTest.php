@@ -127,11 +127,25 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 	private array $saves = [];
 
 	/**
-	 * The permission checks, as [action, owner, rbac].
+	 * The permission checks, as [action, userId, owner, rbac, the uuid of the object judged].
 	 *
-	 * @var list<array{0: string, 1: ?string, 2: bool}>
+	 * @var list<array{0: string, 1: ?string, 2: ?string, 3: bool, 4: ?string}>
 	 */
 	private array $checks = [];
+
+	/**
+	 * The lookups past the read rule, as [rbac, multitenancy].
+	 *
+	 * @var list<array{0: bool, 1: bool}>
+	 */
+	private array $lookups = [];
+
+	/**
+	 * Whether update is refused unless the acting user owns the object.
+	 *
+	 * @var bool
+	 */
+	private bool $updateNeedsOwner = false;
 
 	/**
 	 * Set up fresh service + mocks before each test.
@@ -270,16 +284,18 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 	 */
 	private function hiddenFromTheCaller(?string $status, bool $exists = true): void {
 		$this->objectMapper->method('find')->willReturnCallback(
-			static function (
+			function (
 				string|int $identifier,
 				?Register $register = null,
 				?Schema $schema = null,
 				bool $includeDeleted = false,
 				bool $_rbac = true,
+				bool $_multitenancy = true,
 			) use (
 				$status,
 				$exists
 			): ObjectEntity {
+				$this->lookups[] = [$_rbac, $_multitenancy];
 				if ($exists === false || $_rbac === true) {
 					throw new DoesNotExistException('Object not found in magic table');
 				}
@@ -313,8 +329,11 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$this->checks = [];
 		$handler = $this->createMock(PermissionHandler::class);
 		$handler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true): void {
-				$this->checks[] = [$action, $objectOwner, $_rbac];
+			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): void {
+				$this->checks[] = [$action, $userId, $objectOwner, $_rbac, $object?->getUuid()];
+				if ($this->updateNeedsOwner === true && $action === 'update' && ($userId ?? 'mallory') !== $objectOwner) {
+					throw new NotAuthorizedException(message: 'no update');
+				}
 			}
 		);
 		return $handler;
@@ -339,14 +358,31 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		);
 	}//end saveOver()
 
-	public function testAStoredRowTheCallerCannotSeeIsJudgedAsAnUpdate(): void {
+	public function testAStoredRowTheCallerCannotSeeMustPassCreateAndUpdate(): void {
 		$this->signedIn('mallory');
 		$this->hiddenFromTheCaller(status: null);
 
 		$this->saveOver(rbac: true);
 
-		$this->assertSame([['update', 'agent', true]], $this->checks);
-	}//end testAStoredRowTheCallerCannotSeeIsJudgedAsAnUpdate()
+		$this->assertSame([['create', null, null, true, null], ['update', null, 'agent', true, 'draft-1']], $this->checks);
+		$this->assertContains([false, false], $this->lookups);
+		$this->assertNotContains([false, true], $this->lookups);
+	}//end testAStoredRowTheCallerCannotSeeMustPassCreateAndUpdate()
+
+	public function testAStoredRowTheCallerMayNotUpdateIsNotWritten(): void {
+		$this->signedIn('mallory');
+		$this->hiddenFromTheCaller(status: null);
+		$this->updateNeedsOwner = true;
+
+		try {
+			$this->saveOver(rbac: true);
+			$this->fail('The update rule should have refused the write.');
+		} catch (NotAuthorizedException $e) {
+			$this->assertSame('no update', $e->getMessage());
+		}
+
+		$this->assertSame([], $this->saves);
+	}//end testAStoredRowTheCallerMayNotUpdateIsNotWritten()
 
 	public function testANewUuidIsJudgedAsACreate(): void {
 		$this->signedIn('mallory');
@@ -354,7 +390,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 
 		$this->saveOver(rbac: true);
 
-		$this->assertSame([['create', null, true]], $this->checks);
+		$this->assertSame([['create', null, null, true, null]], $this->checks);
 	}//end testANewUuidIsJudgedAsACreate()
 
 	public function testWithRbacOffTheStoredRowIsNotLookedUp(): void {
@@ -363,7 +399,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 
 		$this->saveOver(rbac: false);
 
-		$this->assertSame([['create', null, false]], $this->checks);
+		$this->assertSame([['create', null, null, false, null]], $this->checks);
 	}//end testWithRbacOffTheStoredRowIsNotLookedUp()
 
 	public function testSomebodyElsesDraftIsStillRefused(): void {

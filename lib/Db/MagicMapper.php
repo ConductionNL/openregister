@@ -8702,6 +8702,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function writeClaimingIdentifier(ObjectEntity $entity, array $write): array {
+		// Reset here, after the creating listeners ran, so an insert nested in one of them cannot leave its flag behind.
+		$this->replacedByLastInsert = null;
 		$insertedId = null;
 		try {
 			$uuid = $this->saveObjectToRegisterSchemaTable(
@@ -8747,14 +8749,15 @@ class MagicMapper extends AbstractObjectMapper {
 			$stored = $this->convertRowToObjectEntity(row: $row, _register: $target['register'], _schema: $target['schema']);
 		}
 
-		$this->replacedByLastInsert = ($stored ?? clone $entity);
-
-		return (string)$this->updateObjectEntity(
+		$updated = $this->updateObjectEntity(
 			entity: $entity,
 			register: $target['register'],
 			schema: $target['schema'],
 			oldEntity: $stored
-		)->getUuid();
+		);
+
+		$this->replacedByLastInsert = ($stored ?? clone $entity);
+		return (string)$updated->getUuid();
 	}//end updateTakenIdentifier()
 
 	/**
@@ -10932,7 +10935,6 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:pre');
-		$this->replacedByLastInsert = null;
 		$insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema, failIfExists: $failIfExists);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:DB-INSERT');
 
@@ -10957,13 +10959,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/changes/insert-race-follow-ups/specs/object-lifecycle/spec.md#requirement-a-create-written-as-an-update-is-announced-as-an-update
 	 */
 	private function announceInsert(ObjectEntity $inserted, array $target): void {
+		$replaced = $this->replacedByLastInsert;
+		$this->replacedByLastInsert = null;
 		if ($this->suppressLifecycleEvents() === true) {
 			return;
 		}
 
 		$gate = new ObjectEventGate(events: $this->eventDispatcher);
-		if ($this->replacedByLastInsert !== null) {
-			$gate->updated(new: $inserted, old: $this->replacedByLastInsert);
+		if ($replaced !== null) {
+			$gate->updated(new: $inserted, old: $replaced);
 			return;
 		}
 

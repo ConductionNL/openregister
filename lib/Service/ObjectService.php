@@ -2388,20 +2388,8 @@ class ObjectService implements ObjectServiceInterface
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Not found FOR THIS CALLER: new, or stored and hidden from them.
             $hidden = $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
-            if ($hidden !== null) {
-                // Stored but hidden: the write lands on that row, so it is an update of it.
-                $this->checkPermission(
-                    schema: $this->currentSchema,
-                    action: 'update',
-                    userId: null,
-                    objectOwner: $hidden->getOwner(),
-                    _rbac: $_rbac,
-                    object: $hidden
-                );
-                return;
-            }
 
-            // Object not found, this is a CREATE operation with specific UUID.
+            // Object not found for this caller: a CREATE operation with specific UUID.
             $this->checkPermission(
                 schema: $this->currentSchema,
                 action: 'create',
@@ -2410,6 +2398,18 @@ class ObjectService implements ObjectServiceInterface
                 _rbac: $_rbac,
                 object: $incoming
             );
+
+            // Stored but hidden: the write lands on that row, so it must also pass the update rule against it.
+            if ($hidden !== null) {
+                $this->checkPermission(
+                    schema: $this->currentSchema,
+                    action: 'update',
+                    userId: null,
+                    objectOwner: $hidden->getOwner(),
+                    _rbac: $_rbac,
+                    object: $hidden
+                );
+            }
         }//end try
     }//end checkSavePermissions()
 

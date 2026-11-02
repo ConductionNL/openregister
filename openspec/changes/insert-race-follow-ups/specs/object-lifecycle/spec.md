@@ -18,23 +18,23 @@ row as the old object, and SHALL NOT dispatch `ObjectCreatedEvent` for it.
 #### Scenario: a create that wins
 
 - **WHEN** a create claims a free identifier
-- **THEN** the events are `ObjectCreatingEvent` and `ObjectCreatedEvent`, also after an earlier insert on the same mapper replaced a row
-- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testAWonInsertAnnouncesACreate` and `testAnInsertAfterALostOneAnnouncesACreateAgain`}
+- **THEN** the events are `ObjectCreatingEvent` and `ObjectCreatedEvent`, also after an earlier insert on the same mapper replaced a row, and also when a listener on its creating event ran an insert that replaced a row
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testAWonInsertAnnouncesACreate`, `testAnInsertAfterALostOneAnnouncesACreateAgain` and `testANestedLostInsertDoesNotTurnTheOuterCreateIntoAnUpdate`}
 
 ### Requirement: A save over a stored row the caller cannot see is judged as an update of it
 
 When a save with RBAC on names a uuid that is stored but hidden from the
-caller, the system SHALL judge it by the schema's update rule against the
-stored row (its owner and the row), not by the create rule. A uuid that is
-not stored SHALL be judged by the create rule. With RBAC off the stored row
-SHALL NOT be looked up.
+caller, the system SHALL require both the schema's create rule on the
+incoming data and the update rule against the stored row (its owner and the
+row). A uuid that is not stored SHALL be judged by the create rule alone.
+With RBAC off the stored row SHALL NOT be looked up.
 
 #### Scenario: a caller writes over a row they cannot read
 
 - **GIVEN** an object owned by `agent` that `mallory` cannot read
 - **WHEN** `mallory` saves to its uuid
-- **THEN** the save is checked with action `update` against owner `agent`
-- @e2e exclude {covered by `ObjectServiceHiddenRowWriteTest::testAStoredRowTheCallerCannotSeeIsJudgedAsAnUpdate`}
+- **THEN** the save is checked with action `create` on the incoming data and with action `update` against owner `agent` and the stored row, and is refused when either refuses
+- @e2e exclude {covered by `ObjectServiceHiddenRowWriteTest::testAStoredRowTheCallerCannotSeeMustPassCreateAndUpdate` and `testAStoredRowTheCallerMayNotUpdateIsNotWritten`}
 
 ### Requirement: A seed object is inserted once
 
