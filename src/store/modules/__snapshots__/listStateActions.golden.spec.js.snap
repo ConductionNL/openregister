@@ -1,0 +1,441 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`list store state setters golden application sets pagination and filters 1`] = `
+[
+  [
+    "initial",
+    {
+      "limit": 20,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "page only",
+    {
+      "limit": 20,
+      "page": 3,
+    },
+    [],
+  ],
+  [
+    "page and size",
+    {
+      "limit": 50,
+      "page": 2,
+    },
+    [],
+  ],
+  [
+    "nothing",
+    {
+      "limit": 20,
+      "page": "(undefined)",
+    },
+    [],
+  ],
+  [
+    "null size",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "x",
+    },
+  ],
+  [
+    "merged filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+  [
+    "new object",
+    true,
+  ],
+  [
+    "empty filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+]
+`;
+
+exports[`list store state setters golden configuration sets pagination and filters 1`] = `
+[
+  [
+    "initial",
+    {
+      "limit": 20,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "page only",
+    {
+      "limit": 14,
+      "page": 3,
+    },
+    [],
+  ],
+  [
+    "page and size",
+    {
+      "limit": 50,
+      "page": 2,
+    },
+    [],
+  ],
+  [
+    "nothing",
+    {
+      "limit": 14,
+      "page": "(undefined)",
+    },
+    [],
+  ],
+  [
+    "null size",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "x",
+    },
+  ],
+  [
+    "merged filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+  [
+    "new object",
+    true,
+  ],
+  [
+    "empty filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+]
+`;
+
+exports[`list store state setters golden organisation sets pagination and filters 1`] = `
+[
+  [
+    "initial",
+    {
+      "limit": 20,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "page only",
+    {
+      "limit": 14,
+      "page": 3,
+    },
+    [],
+  ],
+  [
+    "page and size",
+    {
+      "limit": 50,
+      "page": 2,
+    },
+    [],
+  ],
+  [
+    "nothing",
+    {
+      "limit": 14,
+      "page": "(undefined)",
+    },
+    [],
+  ],
+  [
+    "null size",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "x",
+    },
+  ],
+  [
+    "merged filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+  [
+    "new object",
+    true,
+  ],
+  [
+    "empty filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+]
+`;
+
+exports[`list store state setters golden register sets pagination and filters 1`] = `
+[
+  [
+    "initial",
+    {
+      "limit": 20,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "page only",
+    {
+      "limit": 14,
+      "page": 3,
+    },
+    [],
+  ],
+  [
+    "page and size",
+    {
+      "limit": 50,
+      "page": 2,
+    },
+    [],
+  ],
+  [
+    "nothing",
+    {
+      "limit": 14,
+      "page": "(undefined)",
+    },
+    [],
+  ],
+  [
+    "null size",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "x",
+    },
+  ],
+  [
+    "merged filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+  [
+    "new object",
+    true,
+  ],
+  [
+    "empty filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+]
+`;
+
+exports[`list store state setters golden schema sets pagination and filters 1`] = `
+[
+  [
+    "initial",
+    {
+      "limit": 20,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "page only",
+    {
+      "limit": 14,
+      "page": 3,
+    },
+    [],
+  ],
+  [
+    "page and size",
+    {
+      "limit": 50,
+      "page": 2,
+    },
+    [],
+  ],
+  [
+    "nothing",
+    {
+      "limit": 14,
+      "page": "(undefined)",
+    },
+    [],
+  ],
+  [
+    "null size",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    [],
+  ],
+  [
+    "filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "x",
+    },
+  ],
+  [
+    "merged filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+  [
+    "new object",
+    true,
+  ],
+  [
+    "empty filters",
+    {
+      "limit": null,
+      "page": 1,
+    },
+    {
+      "a": 1,
+      "b": "(undefined)",
+      "c": [
+        1,
+      ],
+    },
+  ],
+]
+`;
