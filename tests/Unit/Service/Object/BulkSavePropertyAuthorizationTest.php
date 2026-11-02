@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -100,12 +101,14 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			groupManager: $groups,
 			permissionHandler: $permissions,
-			propertyRbac: new PropertyRbacHandler(
-				$session,
-				$groups,
-				$this->createMock(ConditionMatcher::class),
-				$this->createMock(LoggerInterface::class),
-				self::stateFieldRuleResolver($session, $groups)
+			rowRules: new BulkRowRules(
+				propertyRbac: new PropertyRbacHandler(
+					$session,
+					$groups,
+					$this->createMock(ConditionMatcher::class),
+					$this->createMock(LoggerInterface::class),
+					self::stateFieldRuleResolver($session, $groups)
+				)
 			),
 		);
 

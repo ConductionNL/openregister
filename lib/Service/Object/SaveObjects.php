@@ -72,9 +72,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -193,11 +191,8 @@ class SaveObjects {
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
-	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
-	 * @param PropertyRbacHandler|null $propertyRbac Applies property authorization per row, as SaveObject does.
-	 *                                               Null only in legacy fixtures.
-	 * @param BulkWriteEvents|null $bulkWriteEvents Runs the save events per row where they are switched on.
-	 *                                              Null only in legacy fixtures.
+	 * @param BulkRowRules|null $rowRules The decision-table rules, property authorization and save events a
+	 *                                    bulk row goes through. Null only in legacy fixtures.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -214,9 +209,7 @@ class SaveObjects {
 		private readonly ?ValidateObject $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
-		private readonly ?DecisionTableBulkGuard $decisionTables = null,
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
-		private readonly ?BulkWriteEvents $bulkWriteEvents = null,
+		private readonly ?BulkRowRules $rowRules = null,
 	) {
 
 	}//end __construct()
@@ -865,11 +858,12 @@ class SaveObjects {
 		}
 
 		$refusal = $this->validationRefusal(row: $row, run: $run);
-		if ($refusal !== null || $this->bulkWriteEvents?->appliesTo(schema: $run->rowSchema, register: $run->rowRegister) !== true) {
+		$events = $this->rowRules?->bulkWriteEvents;
+		if ($refusal !== null || $events?->appliesTo(schema: $run->rowSchema, register: $run->rowRegister) !== true) {
 			return [$row, $refusal];
 		}
 
-		return $this->bulkWriteEvents->screen(row: $row, run: $run);
+		return $events->screen(row: $row, run: $run);
 	}//end screenResolvedRow()
 
 	/**
@@ -994,7 +988,8 @@ class SaveObjects {
 	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
 		// A system operation (cron, runAsSystem, the example-set installer) is trusted here as
 		// PermissionHandler::hasPermission trusts it for the object rule.
-		if ($this->propertyRbac === null || SystemOperationContext::isActive() === true) {
+		$propertyRbac = $this->rowRules?->propertyRbac;
+		if ($propertyRbac === null || SystemOperationContext::isActive() === true) {
 			return [$object, null];
 		}
 
@@ -1002,7 +997,7 @@ class SaveObjects {
 		unset($incoming['@self']);
 		$stored = ($existing?->getObject() ?? []);
 
-		$unauthorized = $this->propertyRbac->getUnauthorizedProperties(
+		$unauthorized = $propertyRbac->getUnauthorizedProperties(
 			schema: $schema,
 			object: $stored,
 			incomingData: $incoming,
@@ -1016,12 +1011,12 @@ class SaveObjects {
 			return [$object, null];
 		}
 
-		$omitted = $this->propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
+		$omitted = $propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
 		if ($omitted === []) {
 			return [$object, null];
 		}
 
-		return [$this->propertyRbac->restoreWriteOnlyValues(prepared: $object, stored: $stored, omittedPaths: $omitted), null];
+		return [$propertyRbac->restoreWriteOnlyValues(prepared: $object, stored: $stored, omittedPaths: $omitted), null];
 	}//end applyPropertyAuthorization()
 
 	/**
@@ -1939,24 +1934,7 @@ class SaveObjects {
 		bool $_audit = true,
 	): array {
 		$startTime = microtime(true);
-
-		$result = [
-			'saved' => [],
-			'updated' => [],
-			'unchanged' => [],
-			// Ensure consistent result structure.
-			'invalid' => [],
-			'errors' => [],
-			'statistics' => [
-				'saved' => 0,
-				'updated' => 0,
-				'unchanged' => 0,
-				// Ensure consistent statistics structure.
-				'invalid' => 0,
-				'errors' => 0,
-				// Also add errors counter.
-			],
-		];
+		$result    = $this->emptyChunkResult();
 
 		// Per-phase timings. A bulk save that is slower than the single-object
 		// path it replaces is indistinguishable from one that is faster unless
@@ -1992,19 +1970,10 @@ class SaveObjects {
 			return $result;
 		}
 
-		// The register/schema pairs of this chunk whose bulk-write events are on, when
-		// the caller did not ask for events on every object.
-		$eventTargets = [];
-		if ($_events === false) {
-			$eventTargets = $this->bulkEventTargets(
-				transformedObjects: $transformedObjects,
-				context: [
-					'schemas' => $schemaCache,
-					'register' => $this->callEntity(target: $register, kind: Register::class),
-					'schema' => $this->callEntity(target: $schema, kind: Schema::class),
-				]
-			);
-		}
+		$eventTargets = $this->bulkEventTargets(
+			transformedObjects: $transformedObjects,
+			context: ['events' => $_events, 'schemas' => $schemaCache, 'register' => $register, 'schema' => $schema]
+		);
 
 		// STEP 2: Persist transformed objects to database.
 		$phaseStart = microtime(true);
@@ -2044,14 +2013,7 @@ class SaveObjects {
 		// statement) instead of one INSERT (plus hash-chain queries) per object.
 		$phaseStart = microtime(true);
 		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events, _audit: $_audit);
-		if ($eventTargets !== []) {
-			$this->emitChunkSideEffects(
-				sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $eventTargets),
-				_events: true,
-				_audit: false
-			);
-		}
-
+		$this->emitTargetedEvents(sideEffects: $sideEffects, targets: $eventTargets);
 		$phaseMs['sideEffects'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		$endTime = microtime(true);
@@ -2072,18 +2034,21 @@ class SaveObjects {
 	 * screen follows, and the pair the stored objects carry afterwards.
 	 *
 	 * @param array $transformedObjects The chunk, after the guards.
-	 * @param array $context            `schemas`: the schema cache; `register` and `schema`: what the
-	 *                                  caller named, loaded, or null.
+	 * @param array $context            `events`: whether the caller asked for events on every object
+	 *                                  (then no targets are needed); `schemas`: the schema cache;
+	 *                                  `register` and `schema`: what the caller passed.
 	 *
 	 * @return array<string, true>
 	 *
 	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
 	 */
 	private function bulkEventTargets(array $transformedObjects, array $context): array {
-		if ($this->bulkWriteEvents === null) {
+		if ($this->rowRules?->bulkWriteEvents === null || $context['events'] === true) {
 			return [];
 		}
 
+		$context['register'] = $this->callEntity(target: $context['register'], kind: Register::class);
+		$context['schema']   = $this->callEntity(target: $context['schema'], kind: Schema::class);
 		$targets = [];
 		$asked   = [];
 		foreach ($transformedObjects as $objData) {
@@ -2095,7 +2060,7 @@ class SaveObjects {
 			}
 
 			$asked[$key] = true;
-			if ($this->bulkWriteEvents->appliesTo(schema: $schema, register: $register) === true) {
+			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $schema, register: $register) === true) {
 				$targets[$key] = true;
 			}
 		}//end foreach
@@ -2145,6 +2110,50 @@ class SaveObjects {
 			return null;
 		}
 	}//end eventRegister()
+
+	/**
+	 * Dispatch the post-save events of the objects whose register and schema have the bulk-write events on.
+	 *
+	 * The audit trail was already written for the whole chunk, so this pass dispatches only.
+	 *
+	 * @param array               $sideEffects As buildChunkResults() returns them.
+	 * @param array<string, true> $targets     The "registerId/schemaId" pairs.
+	 *
+	 * @return void
+	 */
+	private function emitTargetedEvents(array $sideEffects, array $targets): void {
+		if ($targets === []) {
+			return;
+		}
+
+		$this->emitChunkSideEffects(
+			sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $targets),
+			_events: true,
+			_audit: false
+		);
+	}//end emitTargetedEvents()
+
+	/**
+	 * A chunk's result before anything is processed.
+	 *
+	 * @return array
+	 */
+	private function emptyChunkResult(): array {
+		return [
+			'saved' => [],
+			'updated' => [],
+			'unchanged' => [],
+			'invalid' => [],
+			'errors' => [],
+			'statistics' => [
+				'saved' => 0,
+				'updated' => 0,
+				'unchanged' => 0,
+				'invalid' => 0,
+				'errors' => 0,
+			],
+		];
+	}//end emptyChunkResult()
 
 	/**
 	 * The side effects of the objects whose register and schema are among the targets.
@@ -3617,11 +3626,11 @@ class SaveObjects {
 		Schema|string|int|null $schema,
 		array &$result
 	): array {
-		if ($this->decisionTables === null) {
+		if ($this->rowRules?->decisionTables === null) {
 			return $objects;
 		}
 
-		foreach ($this->decisionTables->refusals(objects: $objects, register: $register, schema: $schema) as $position => $reason) {
+		foreach ($this->rowRules->decisionTables->refusals(objects: $objects, register: $register, schema: $schema) as $position => $reason) {
 			$index = null;
 			if (is_int($position) === true) {
 				$index = $position;

@@ -31,6 +31,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\BulkWriteEvents;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -57,6 +58,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowRules
  * @uses \OCA\OpenRegister\Service\Object\BulkSafeguardRun
  * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
@@ -191,7 +194,7 @@ class BulkWriteEventsTest extends TestCase {
 			permissionHandler: $this->permissionHandler,
 			eventDispatcher: $dispatcher,
 			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			bulkWriteEvents: $this->policy($dispatcher)
+			rowRules: new BulkRowRules(bulkWriteEvents: $this->policy($dispatcher))
 		);
 	}//end saveObjects()
 
