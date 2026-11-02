@@ -489,8 +489,8 @@ import {
 /**
  * Leave a statistic as the API reports it.
  *
- * @param {*} value The statistic
- * @return {*} The same value
+ * @param {number} value The statistic
+ * @return {number} The same value
  */
 const asIs = (value) => value
 

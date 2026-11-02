@@ -27,7 +27,7 @@ export function addScopeIds(filters, scope) {
  * Add the values of picked options as one comma-separated string.
  *
  * @param {object} filters The filters being built.
- * @param {[string, *]} pair The filter key and the picked options.
+ * @param {[string, Array<{value: string}>]} pair The filter key and the picked options.
  *
  * @spec exclude Sidebar filter-state to store-filter plumbing; no backend contract.
  */
@@ -41,7 +41,7 @@ export function addJoinedValues(filters, [key, picked]) {
  * Add each value that is set, as it is.
  *
  * @param {object} filters The filters being built.
- * @param {Array<[string, *]>} pairs Filter keys and their values.
+ * @param {Array<[string, string|number|boolean|null]>} pairs Filter keys and their values.
  *
  * @spec exclude Sidebar filter-state to store-filter plumbing; no backend contract.
  */
