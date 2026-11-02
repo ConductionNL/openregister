@@ -8489,6 +8489,21 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end callerQualifiesForAction()
 
 	/**
+	 * Whether a `public` read rule lifts the organisation filter for the current caller.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the `public` rule may lift the organisation filter.
+	 *
+	 * @see MagicRbacHandler::publicReadLiftsOrganisationFilter()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 */
+	public function publicReadLiftsOrganisationFilter(Schema $schema): bool {
+		return $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema);
+	}//end publicReadLiftsOrganisationFilter()
+
+	/**
 	 * Whether a default list read waives the organisation boundary for this
 	 * caller because RBAC governs the rows instead.
 	 *

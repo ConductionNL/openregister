@@ -158,6 +158,40 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 	}//end testScenariosMatchTheGolden()
 
 	/**
+	 * A public read rule keeps multitenancy on for a caller it does not lift
+	 * the organisation filter for, and drops it for one it does.
+	 *
+	 * @return void
+	 */
+	public function testPublicReadDropsMultitenancyOnlyWhenItLiftsTheOrganisationFilter(): void {
+		$kept = $this->runScenario(['schema' => ['read' => ['public', 'authenticated']], 'query' => [], 'liftsPublic' => false]);
+		$this->assertTrue($this->databaseMultitenancy(scenario: $kept));
+
+		$dropped = $this->runScenario(['schema' => ['read' => ['public', 'authenticated']], 'query' => [], 'liftsPublic' => true]);
+		$this->assertFalse($this->databaseMultitenancy(scenario: $dropped));
+
+		$group = $this->runScenario(['schema' => ['read' => ['authenticated']], 'query' => [], 'liftsPublic' => true]);
+		$this->assertTrue($this->databaseMultitenancy(scenario: $group));
+	}//end testPublicReadDropsMultitenancyOnlyWhenItLiftsTheOrganisationFilter()
+
+	/**
+	 * The multitenancy flag the database search of a scenario received.
+	 *
+	 * @param array<string, mixed> $scenario A recorded scenario.
+	 *
+	 * @return bool|null The flag, null when the database search did not run.
+	 */
+	private function databaseMultitenancy(array $scenario): ?bool {
+		foreach ($scenario['calls'] as $call) {
+			if (array_key_exists('database', $call) === true) {
+				return $call['multitenancy'];
+			}
+		}
+
+		return null;
+	}//end databaseMultitenancy()
+
+	/**
 	 * Run one searchObjectsPaginated() call on a fresh service and record what happened.
 	 *
 	 * @param array<string, mixed> $setup The scenario.
@@ -288,6 +322,11 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 			}
 		);
 
+		$objectMapper = $this->createMock(MagicMapper::class);
+		$objectMapper->method('publicReadLiftsOrganisationFilter')->willReturnCallback(
+			fn (Schema $schema): bool => ($this->setup['liftsPublic'] ?? true)
+		);
+
 		$objectSourceRegistry = $this->createMock(ObjectSourceRegistry::class);
 		$objectSourceRegistry->method('get')->willReturnCallback(
 			function (string $provider) {
@@ -333,7 +372,7 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 			registerMapper: $this->createMock(RegisterMapper::class),
 			schemaMapper: $this->createMock(SchemaMapper::class),
 			viewMapper: $this->createMock(ViewMapper::class),
-			objectMapper: $this->createMock(MagicMapper::class),
+			objectMapper: $objectMapper,
 			fileService: $this->createMock(FileService::class),
 			userSession: $userSession,
 			searchTrailService: $this->createMock(SearchTrailService::class),

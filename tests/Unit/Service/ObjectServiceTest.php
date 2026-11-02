@@ -2483,6 +2483,7 @@ class ObjectServiceTest extends TestCase {
 		$publicSchema->setId(3);
 		$publicSchema->setAuthorization(['read' => ['public']]);
 		$this->setProperty('currentSchema', $publicSchema);
+		$this->objectEntityMapper->method('publicReadLiftsOrganisationFilter')->willReturn(true);
 
 		// The effective multitenancy passed to queryHandler should be false.
 		$this->queryHandler->expects($this->once())
