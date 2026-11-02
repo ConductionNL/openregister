@@ -38,6 +38,35 @@ function emptyStatistics() {
 }
 
 /**
+ * A reader of one count of the statistics answer; a missing count is 0.
+ *
+ * @param {string} field The answer field.
+ * @return {function(object): number} The reader.
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+ */
+function count(field) {
+	return (stats) => stats[field] || 0
+}
+
+// The store's statistics keys, in order, with how each is read from the answer.
+const STATISTIC_FIELDS = [
+	['total', count('total_searches')],
+	['totalResults', count('total_results')],
+	['averageResultsPerSearch', count('avg_results_per_search')],
+	['averageExecutionTime', count('avg_response_time')],
+	['successRate', (stats) => (stats.success_rate ? stats.success_rate / 100 : 0)],
+	['uniqueSearchTerms', count('unique_search_terms')],
+	['uniqueUsers', count('unique_users')],
+	['uniqueOrganizations', count('unique_organizations')],
+	['avgSearchesPerSession', count('avg_searches_per_session')],
+	['avgObjectViewsPerSession', count('avg_object_views_per_session')],
+	[
+		'queryComplexity',
+		(stats) => stats.query_complexity || { simple: 0, medium: 0, complex: 0 },
+	],
+]
+
+/**
  * Store for managing search trail logs
  * Provides functionality for retrieving, filtering, and managing search trail entries
  */
@@ -129,23 +158,9 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setStatistics(stats) {
-			this.statistics = {
-				total: stats.total_searches || 0,
-				totalResults: stats.total_results || 0,
-				averageResultsPerSearch: stats.avg_results_per_search || 0,
-				averageExecutionTime: stats.avg_response_time || 0,
-				successRate: stats.success_rate ? stats.success_rate / 100 : 0,
-				uniqueSearchTerms: stats.unique_search_terms || 0,
-				uniqueUsers: stats.unique_users || 0,
-				uniqueOrganizations: stats.unique_organizations || 0,
-				avgSearchesPerSession: stats.avg_searches_per_session || 0,
-				avgObjectViewsPerSession: stats.avg_object_views_per_session || 0,
-				queryComplexity: stats.query_complexity || {
-					simple: 0,
-					medium: 0,
-					complex: 0,
-				},
-			}
+			this.statistics = Object.fromEntries(
+				STATISTIC_FIELDS.map(([key, read]) => [key, read(stats)]),
+			)
 		},
 
 		/**

@@ -30,6 +30,29 @@ function baseSettings() {
 }
 
 /**
+ * A maximum length the analysis measured, or null when it measured none (0 or less).
+ *
+ * @param {number|null|undefined} length The measured length.
+ * @return {number|null}
+ * @spec exclude client-side defaults for the schema explorer's property configuration
+ */
+function measuredMaxLength(length) {
+	return length > 0 ? length : null
+}
+
+/**
+ * A minimum length the analysis measured, or null when it measured none
+ * (null or the integer sentinel).
+ *
+ * @param {number|null|undefined} length The measured length.
+ * @return {number|null}
+ * @spec exclude client-side defaults for the schema explorer's property configuration
+ */
+function measuredMinLength(length) {
+	return length !== null && length < Number.MAX_SAFE_INTEGER ? length : null
+}
+
+/**
  * The configuration an exploration seeds for a suggested property. Lengths
  * the analysis could not measure (zero, null or the integer sentinel) stay null.
  *
@@ -44,12 +67,8 @@ export function suggestedPropertyConfig(suggestion) {
 		title: suggestion.property_name,
 		displayTitle: suggestion.property_name,
 		format: suggestion.detected_format || '',
-		maxLength: suggestion.max_length > 0 ? suggestion.max_length : null,
-		minLength:
-			suggestion.min_length !== null
-			&& suggestion.min_length < Number.MAX_SAFE_INTEGER
-				? suggestion.min_length
-				: null,
+		maxLength: measuredMaxLength(suggestion.max_length),
+		minLength: measuredMinLength(suggestion.min_length),
 		description: suggestion.description || '',
 		example: '',
 		order: 0,
