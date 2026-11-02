@@ -182,6 +182,25 @@ class TaskSequenceServiceTest extends TestCase {
 		self::assertSame(['directors'], $this->imported[0]['candidateGroups']);
 	}//end testAResolvedTierIsFrozenOntoTheSequence()
 
+	public function testADeclaredApprovingSetIsCopiedOntoEveryPositionTask(): void {
+		$template = $this->template();
+		$template['approvingOutcomes'] = ['approved'];
+
+		$this->service->provision(template: $template, anchorObjectUuid: 'obj-1', requesterId: 'alice');
+
+		self::assertCount(3, $this->imported);
+		foreach ($this->imported as $payload) {
+			self::assertSame(['approved'], $payload['templateSnapshot']['approvingOutcomes']);
+		}
+		self::assertSame('managers', $this->imported[1]['templateSnapshot']['role']);
+	}//end testADeclaredApprovingSetIsCopiedOntoEveryPositionTask()
+
+	public function testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged(): void {
+		$this->service->provision(template: $this->template(), anchorObjectUuid: 'obj-1', requesterId: 'alice');
+
+		self::assertSame(['order' => 1, 'role' => 'clerks'], $this->imported[0]['templateSnapshot']);
+	}//end testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged()
+
 	public function testAnApprovingDecisionEnablesTheNextPositionInTheSameCall(): void {
 		$sequence = $this->runningSequence();
 		$this->taskReader->method('findBySequence')->willReturn(

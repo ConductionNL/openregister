@@ -218,6 +218,25 @@ final class TaskState {
 	}//end approvingSet()
 
 	/**
+	 * The approving set a declaration resolves to: its usable entries, or the
+	 * default set when it has none.
+	 *
+	 * @param mixed $declared The declared `approvingOutcomes` value.
+	 *
+	 * @return array<int, string> The approving set, never empty.
+	 *
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 */
+	public static function approvingSetOrDefault(mixed $declared): array {
+		$declaredSet = self::approvingSet(declared: $declared);
+		if ($declaredSet === []) {
+			return self::APPROVING_OUTCOMES;
+		}
+
+		return $declaredSet;
+	}//end approvingSetOrDefault()
+
+	/**
 	 * The published mapping, for documentation surfaces and tests.
 	 *
 	 * @return array<string, array{0: string, 1: string|null}> value => [state, outcome].
