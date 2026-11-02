@@ -2219,49 +2219,79 @@ export default {
 			this.error = null
 
 			try {
-				let dataToSave
-				if (this.activeTab === 1) {
-					if (!this.jsonData.trim()) {
-						throw new Error('JSON data cannot be empty')
-					}
-					try {
-						dataToSave = JSON.parse(this.jsonData)
-					} catch (e) {
-						throw new Error('Invalid JSON format: ' + e.message, {
-							cause: e,
-						})
-					}
-				} else {
-					dataToSave = this.formData
-				}
-
-				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
-				objectStore.registerObjectType(
-					type,
-					this.currentSchema.id,
-					this.currentRegister.id,
-				)
-				const data = await objectStore.saveObject(type, dataToSave)
-				if (data) objectStore.setObjectItem(data)
-				await objectStore.refreshObjectList({
-					register: this.currentRegister.id,
-					schema: this.currentSchema.id,
-				})
-				objectStore.refetchSearchCollection()
-				this.success = !!data
-				if (this.success) {
-					// Re-initialize data to refresh jsonData with the newly created object
-					this.initializeData()
-					setTimeout(() => {
-						this.success = null
-					}, 2000)
-				}
+				this.markSaved(await this.storeObject(this.objectPayload()))
 			} catch (e) {
 				this.error = e.message || 'Failed to save object'
 				this.success = false
 			} finally {
 				this.isSaving = false
 			}
+		},
+
+		/**
+		 * Show whether the save returned an object. After a save the form is
+		 * re-initialised from the saved object and the notice clears after 2
+		 * seconds.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @param {object|null} data The saved object
+		 * @return {void}
+		 */
+		markSaved(data) {
+			this.success = !!data
+			if (this.success) {
+				this.initializeData()
+				setTimeout(() => {
+					this.success = null
+				}, 2000)
+			}
+		},
+
+		/**
+		 * The object to save: the parsed JSON on the JSON tab, the form data
+		 * otherwise.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @return {object} The object to save
+		 * @throws {Error} When the JSON is empty or does not parse
+		 */
+		objectPayload() {
+			if (this.activeTab !== 1) {
+				return this.formData
+			}
+			if (!this.jsonData.trim()) {
+				throw new Error('JSON data cannot be empty')
+			}
+			try {
+				return JSON.parse(this.jsonData)
+			} catch (e) {
+				throw new Error('Invalid JSON format: ' + e.message, { cause: e })
+			}
+		},
+
+		/**
+		 * Save the object under the current register and schema, select the
+		 * saved object and refresh the lists that show it.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @param {object} dataToSave The object to save
+		 * @return {Promise<object|null>} The saved object
+		 */
+		async storeObject(dataToSave) {
+			const type = `${this.currentRegister.id}-${this.currentSchema.id}`
+			objectStore.registerObjectType(
+				type,
+				this.currentSchema.id,
+				this.currentRegister.id,
+			)
+			const data = await objectStore.saveObject(type, dataToSave)
+			if (data) objectStore.setObjectItem(data)
+			await objectStore.refreshObjectList({
+				register: this.currentRegister.id,
+				schema: this.currentSchema.id,
+			})
+			objectStore.refetchSearchCollection()
+			return data
 		},
 
 		/**
