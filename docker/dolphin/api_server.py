@@ -103,7 +103,7 @@ def _request_image():
         return Image.open(io.BytesIO(file_bytes))
     if request.json and 'image_base64' in request.json:
         image_data = base64.b64decode(request.json['image_base64'])
-        return Image.open(io.BytesIO(file_bytes))
+        return Image.open(io.BytesIO(image_data))
     return None
 
 def _document_result(parsed_result, generated_text):
