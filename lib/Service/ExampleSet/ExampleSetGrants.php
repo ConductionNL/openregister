@@ -182,8 +182,8 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @param string               $key  The grant's key in the fragment (unused).
 	 * @param array<string, mixed> $data The filled grant fields.
 	 *
-	 * @return array{error: string, entry: array{id: string, object: string, node: int|null, sharedBy: string,
-	 *         sharedWith: string, shareType: int|null}|null}
+	 * @return array{error: string, entry: array{id: string, object: string, node: int, sharedBy: string,
+	 *         sharedWith: string, shareType: int}|null}
 	 *         The record entry (the share's id, its object and the fields held() matches), or why the grant failed.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
@@ -214,26 +214,19 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['id' => (string) $grant['id'], 'object' => $uuid] + $this->fieldsOf(id: (string) $grant['id'])];
+		// The identity of the share grant() created, so lost() and revert() can tell it from another share later.
+		return [
+			'error' => '',
+			'entry' => [
+				'id'         => (string) $grant['id'],
+				'object'     => $uuid,
+				'node'       => (int) $grant['nodeId'],
+				'sharedBy'   => (string) $grant['sharedBy'],
+				'sharedWith' => (string) $grant['sharedWith'],
+				'shareType'  => (int) $grant['shareType'],
+			],
+		];
 	}//end write()
-
-	/**
-	 * The fields of a share that make it the set's: its folder, who shared it, with whom and how. A share that cannot
-	 * be read back gets no folder, so it is never taken for the set's.
-	 *
-	 * @param string $id The share's full id.
-	 *
-	 * @return array{node: int|null, sharedBy: string, sharedWith: string, shareType: int|null}
-	 */
-	private function fieldsOf(string $id): array {
-		try {
-			$share = $this->shares()->getShareById($id);
-		} catch (Throwable) {
-			return ['node' => null, 'sharedBy' => '', 'sharedWith' => '', 'shareType' => null];
-		}
-
-		return $this->identity(share: $share);
-	}//end fieldsOf()
 
 	/**
 	 * The fields that make a share the one the set made.
@@ -301,12 +294,18 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 *
 	 * @param array<string, mixed> $entry A record entry from write().
 	 *
-	 * @return string `removed` (also when it was already gone) or `failed`.
+	 * @return string `removed` (also when it was already gone) or `failed` (also for an entry without the share's
+	 *                identity, so the share it names is reported rather than taken for gone).
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		if ($this->actingAs()->refusal() !== '') {
+			return 'failed';
+		}
+
+		// An entry without the share's identity cannot be matched; the share it names may stay, so it is not removed.
+		if (isset($entry['node']) === false) {
 			return 'failed';
 		}
 

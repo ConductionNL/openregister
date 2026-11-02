@@ -189,5 +189,9 @@ caller and core created the share; a live caller passes no `sharedAt` and nothin
 - **Where an address may be quoted.** `{{accessLink:<key>.url}}` is accepted only as the text of a change's `set`
   field, where the record keeps the written value as a fingerprint. Anywhere else (a list or map value, a `where`,
   `append`, app config, user preferences, objects or another part) the check refuses it. `id` and `uuid` may be
-  quoted anywhere.
+  quoted anywhere. Set authors must not copy a stored address on through an object field (`{{object:<key>.accessLinkUrl}}`):
+  that value is not fingerprinted, and the check cannot tell it from any other field.
+- **A grant's identity** (folder, sharer, principal, share type) is taken from the share `grant()` created and
+  returns, not read back afterwards. An entry without it is never taken for gone: revert answers `failed`, so the
+  share it names is reported.
 - **Expiry before the install day** is refused by the check; the link service refuses a past expiry again at mint.

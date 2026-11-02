@@ -90,6 +90,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	/** @var array<int, string> The accounts the sharing guard looked up, in order. */
 	private array $groupsAskedFor = [];
 
+	/** @var bool Whether the share manager fails to read shares back. */
+	private bool $unreadable = false;
+
 	/** @var int The shares created so far. */
 	private int $sharesMade = 0;
 
@@ -592,6 +595,63 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	}//end testAGroupGrantGoesOnlyToAGroupTheSetCreated()
 
 	/**
+	 * A declared group that another writer makes after the check, before the set would create it, is not the set's:
+	 * the install binds group grants to the groups it recorded as created, and drops the grant.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function testAGroupThatAppearsAfterTheCheckGetsNoGrant(): void {
+		$this->accounts->unseenGroups = ['demo-staff'];
+		$this->caseWith(grants: [$this->staffGrant()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue(condition: $this->accounts->groupExists(gid: 'demo-staff'), message: 'the group is on the instance now');
+		$this->assertNotContains(needle: 'demo-staff', haystack: $this->record->read(set: 'demo')['groups']);
+		$this->assertSame(expected: 'failed', actual: $report['grants']['alpha/grant-staff']);
+		$this->assertStringContainsString(needle: 'grant "grant-staff": shareWith "demo-staff" is no group of the set', haystack: implode("\n", $report['dropped']));
+		$this->assertSame(expected: [], actual: $this->shares);
+	}//end testAGroupThatAppearsAfterTheCheckGetsNoGrant()
+
+	/**
+	 * A grant's record entry carries the identity of the share grant() created, even when the share cannot be read
+	 * back; an entry without that identity is reported as not removed and its share stays.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function testAGrantKeepsTheIdentityOfTheShareItMade(): void {
+		$this->unreadable = true;
+		$this->caseWith(grants: [$this->staffGrant()]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$entry = $this->record->read(set: 'demo')['grants']['alpha/grant-staff'];
+		$this->assertSame(expected: [55, 'esra.demir', 'demo-staff', IShare::TYPE_GROUP], actual: [$entry['node'], $entry['sharedBy'], $entry['sharedWith'], $entry['shareType']]);
+		$this->unreadable = false;
+
+		$id    = array_keys($this->shares)[0];
+		$grants = new \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants(container: $this->container());
+		$bare  = ['id' => $id, 'object' => $entry['object']];
+		$this->assertTrue(condition: $grants->lost(entry: $bare));
+		$this->assertSame(expected: 'failed', actual: $grants->revert(entry: $bare));
+		$this->assertArrayHasKey(key: $id, array: $this->shares, message: 'the share an entry without identity names stays');
+	}//end testAGrantKeepsTheIdentityOfTheShareItMade()
+
+	/**
+	 * A container over $services.
+	 *
+	 * @return \Psr\Container\ContainerInterface
+	 */
+	private function container(): \Psr\Container\ContainerInterface {
+		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
+		$container->method('get')->willReturnCallback(fn (string $id): object => $this->services[$id]);
+		return $container;
+	}//end container()
+
+	/**
 	 * A change that names Sanne's link on the share record, with the given `set`.
 	 *
 	 * @param array<string, mixed> $set The fields.
@@ -821,7 +881,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			return $share;
 		});
 		$manager->method('getShareById')->willReturnCallback(function (string $id): IShare {
-			if (isset($this->shares[$id]) === false) {
+			if (isset($this->shares[$id]) === false || $this->unreadable === true) {
 				throw new ShareNotFound();
 			}
 

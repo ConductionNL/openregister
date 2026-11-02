@@ -356,7 +356,12 @@ class ObjectSharingService {
 		// to be able to answer, whoever the caller was admitted as.
 		$this->auditor?->recordGrant(object: $object, grant: $grant, admittedAs: $admittedAs);
 
-		return $grant;
+		// The created share's identity, so a caller that keeps the grant can later tell it from another share.
+		return $grant + [
+			'nodeId' => (int)$created->getNodeId(),
+			'sharedBy' => (string)$created->getSharedBy(),
+			'shareType' => (int)$created->getShareType(),
+		];
 	}//end grant()
 
 	/**
