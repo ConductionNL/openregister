@@ -98,6 +98,13 @@ use UnexpectedValueException;
 class TaskService implements TaskManagerInterface {
 
 	/**
+	 * The fields only the task sequence sets, through {@see import()}.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SEQUENCE_FIELDS = ['sequenceUuid', 'sequencePosition', 'legacyStepId'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TaskMapper $tasks The task table.
@@ -208,6 +215,8 @@ class TaskService implements TaskManagerInterface {
 	 * This is the HTTP path: unless the actor is an administrator, the
 	 * requester is pinned to the actor and a terminal creation state is
 	 * refused. In-process callers that need either use {@see import()}.
+	 * Sequence fields are refused for every caller: only the task sequence
+	 * sets them, through {@see import()}.
 	 *
 	 * @param array<string, mixed> $data The task fields, canonical or legacy.
 	 * @param string|null $actor The creating identity.
@@ -223,8 +232,11 @@ class TaskService implements TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 * @spec openspec/changes/sequence-fields-are-set-by-the-sequence-service-only/specs/flow-approval-consolidation/spec.md#requirement-only-the-task-sequence-sets-a-tasks-sequence-fields
 	 */
 	public function create(array $data, ?string $actor): Task {
+		$this->refuseSequenceFields(data: $data);
+
 		// Located first, so the access guard below reads the subject from its
 		// own table instead of searching every magic table for it. A refusal
 		// reads the same either way: location says where, never whether.
@@ -270,6 +282,37 @@ class TaskService implements TaskManagerInterface {
 
 		return $this->import(data: $data, actor: $actor, mayReadBlocker: $mayReadBlocker);
 	}//end create()
+
+	/**
+	 * Refuse a sequence field on the create path, naming it.
+	 *
+	 * @param array<string, mixed> $data The task fields.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException When a sequence field carries a value.
+	 *
+	 * @spec openspec/changes/sequence-fields-are-set-by-the-sequence-service-only/specs/flow-approval-consolidation/spec.md#requirement-only-the-task-sequence-sets-a-tasks-sequence-fields
+	 */
+	private function refuseSequenceFields(array $data): void {
+		$given = [];
+		foreach (self::SEQUENCE_FIELDS as $field) {
+			if (($data[$field] ?? null) !== null) {
+				$given[] = $field;
+			}
+		}
+
+		$snapshot = ($data['templateSnapshot'] ?? null);
+		if (is_array($snapshot) === true && array_key_exists('approvingOutcomes', $snapshot) === true) {
+			$given[] = 'templateSnapshot.approvingOutcomes';
+		}
+
+		if ($given !== []) {
+			throw new TaskValidationException(
+				message: sprintf("Field '%s' is set by the task sequence only and cannot be given when creating a task.", $given[0])
+			);
+		}
+	}//end refuseSequenceFields()
 
 	/**
 	 * Create a task on the TRUSTED path: migrations and in-process callers

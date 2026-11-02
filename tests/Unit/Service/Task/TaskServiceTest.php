@@ -763,6 +763,74 @@ class TaskServiceTest extends TestCase {
 	}//end testAnAdministratorMayNameARequesterOnCreate()
 
 	/**
+	 * Sequence fields a caller of create() may not set, per caller kind.
+	 *
+	 * @return array<string, array{0: string, 1: mixed, 2: bool, 3: string}>
+	 */
+	public static function sequenceFields(): array {
+		return [
+			'sequence uuid, user' => ['sequenceUuid', 'seq-1', false, 'sequenceUuid'],
+			'sequence position, user' => ['sequencePosition', 2, false, 'sequencePosition'],
+			'legacy step, user' => ['legacyStepId', 7, false, 'legacyStepId'],
+			'approving set in the snapshot, user' => ['templateSnapshot', ['approvingOutcomes' => ['anything']], false, 'templateSnapshot.approvingOutcomes'],
+			'sequence uuid, administrator' => ['sequenceUuid', 'seq-1', true, 'sequenceUuid'],
+			'sequence position, administrator' => ['sequencePosition', 0, true, 'sequencePosition'],
+			'approving set in the snapshot, administrator' => ['templateSnapshot', ['approvingOutcomes' => []], true, 'templateSnapshot.approvingOutcomes'],
+		];
+	}//end sequenceFields()
+
+	/**
+	 * A sequence field is set by the task sequence only: create() refuses it,
+	 * naming the field, before anything is written.
+	 *
+	 * @param string $key   The payload key.
+	 * @param mixed  $value Its value.
+	 * @param bool   $admin Whether the caller is an administrator.
+	 * @param string $named The field the refusal names.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider sequenceFields
+	 */
+	public function testCreateRefusesASequenceField(string $key, mixed $value, bool $admin, string $named): void {
+		$this->authorization->method('isAdministrator')->willReturn($admin);
+		$this->tasks->expects($this->never())->method('insert');
+
+		$this->expectException(TaskValidationException::class);
+		$this->expectExceptionMessage("'".$named."'");
+		$this->service()->create(data: ['title' => 'forged step', 'state' => 'enabled', $key => $value], actor: 'mallory');
+	}//end testCreateRefusesASequenceField()
+
+	/**
+	 * A sequence field sent as null sets nothing and is not refused.
+	 *
+	 * @return void
+	 */
+	public function testCreateAcceptsANullSequenceField(): void {
+		$this->authorization->method('isAdministrator')->willReturn(false);
+
+		$created = $this->service()->create(data: ['title' => 't', 'sequenceUuid' => null, 'sequencePosition' => null], actor: 'mallory');
+
+		$this->assertNull($created->getSequenceUuid());
+	}//end testCreateAcceptsANullSequenceField()
+
+	/**
+	 * The trusted path the task sequence uses still carries sequence fields.
+	 *
+	 * @return void
+	 */
+	public function testImportStillCarriesSequenceFields(): void {
+		$created = $this->service()->import(
+			data: ['title' => 'step', 'sequenceUuid' => 'seq-1', 'sequencePosition' => 2, 'templateSnapshot' => ['order' => 2]],
+			actor: 'task-sequence:seq-1'
+		);
+
+		$this->assertSame('seq-1', $created->getSequenceUuid());
+		$this->assertSame(2, $created->getSequencePosition());
+		$this->assertSame(['order' => 2], $created->getTemplateSnapshot());
+	}//end testImportStillCarriesSequenceFields()
+
+	/**
 	 * A delegation needs a delegate, not only a mandate.
 	 *
 	 * @return void
