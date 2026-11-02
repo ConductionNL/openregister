@@ -39,6 +39,14 @@ export function enumOptions(property) {
 	return []
 }
 
+// The editors a property without translations can get, first match wins.
+const EDITOR_RULES = [
+	['file', (property) => property.type === 'file'],
+	['select', (property) => enumOptions(property).length > 0],
+	['switch', (property) => property.type === 'boolean'],
+	['date', isDateString],
+]
+
 /**
  * The editor kind for a property: `switch`, `date`, `select`, `file`,
  * `translation` or `text`.
@@ -53,23 +61,39 @@ export function enumOptions(property) {
  */
 export function editorFor(property, languages = []) {
 	if (!property) return 'text'
-	if (
+	if (isTranslated(property, languages)) return 'translation'
+	const rule = EDITOR_RULES.find(([, applies]) => applies(property))
+	return rule ? rule[0] : 'text'
+}
+
+/**
+ * Whether a property gets one input per register language.
+ *
+ * @param {object} property The schema property.
+ * @param {Array<string>} languages The register's languages.
+ * @return {boolean}
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+ */
+function isTranslated(property, languages) {
+	return (
 		property.translatable === true
 		&& Array.isArray(languages)
 		&& languages.length > 0
-	) {
-		return 'translation'
-	}
-	if (property.type === 'file') return 'file'
-	if (enumOptions(property).length > 0) return 'select'
-	if (property.type === 'boolean') return 'switch'
-	if (
+	)
+}
+
+/**
+ * Whether a property is a string holding a date, a time or both.
+ *
+ * @param {object} property The schema property.
+ * @return {boolean}
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+ */
+function isDateString(property) {
+	return (
 		property.type === 'string'
 		&& ['date', 'time', 'date-time'].includes(property.format)
-	) {
-		return 'date'
-	}
-	return 'text'
+	)
 }
 
 /**
@@ -83,20 +107,54 @@ export function editorFor(property, languages = []) {
  * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
  */
 export function isInlineEditable(property, value = null) {
-	if (!property) return false
-	if (property.const !== undefined || property.readOnly === true) return false
-	if (property.translatable === true) return false
-	if (!['string', 'number', 'integer'].includes(property.type)) return false
-	if (editorFor(property) === 'date') return false
-	if (
+	if (!property || isFixed(property)) return false
+	return isInlineKind(property) && !lockedByValue(property, value)
+}
+
+/**
+ * Whether a property is constant, read-only or translatable.
+ *
+ * @param {object} property The schema property.
+ * @return {boolean}
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+ */
+function isFixed(property) {
+	return (
+		property.const !== undefined
+		|| property.readOnly === true
+		|| property.translatable === true
+	)
+}
+
+/**
+ * Whether a property is scalar text, a number or a choice list, and no date.
+ *
+ * @param {object} property The schema property.
+ * @return {boolean}
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+ */
+function isInlineKind(property) {
+	return (
+		['string', 'number', 'integer'].includes(property.type)
+		&& editorFor(property) !== 'date'
+	)
+}
+
+/**
+ * Whether an immutable property already holds a value.
+ *
+ * @param {object} property The schema property.
+ * @param {unknown} value The cell's current value.
+ * @return {boolean}
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+ */
+function lockedByValue(property, value) {
+	return (
 		property.immutable === true
 		&& value !== null
 		&& value !== undefined
 		&& value !== ''
-	) {
-		return false
-	}
-	return true
+	)
 }
 
 /**
