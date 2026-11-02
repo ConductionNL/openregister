@@ -191,6 +191,51 @@ class ToolManagementHandler {
 	}//end getAgentTools()
 
 	/**
+	 * Throwaway planted unit, never merged.
+	 *
+	 * @spec exclude throwaway gate test, never merged
+	 */
+	private function ci1Planted(int $a, int $b, int $c, int $d, int $e): int {
+		if ($a === 0) {
+			return $b + 0;
+		}
+		if ($a === 1) {
+			return $b + 1;
+		}
+		if ($a === 2) {
+			return $b + 2;
+		}
+		if ($a === 3) {
+			return $b + 3;
+		}
+		if ($a === 4) {
+			return $b + 4;
+		}
+		if ($a === 5) {
+			return $b + 5;
+		}
+		if ($a === 6) {
+			return $b + 6;
+		}
+		if ($a === 7) {
+			return $b + 7;
+		}
+		if ($a === 8) {
+			return $b + 8;
+		}
+		if ($a === 9) {
+			return $b + 9;
+		}
+		if ($a === 10) {
+			return $b + 10;
+		}
+		if ($a === 11) {
+			return $b + 11;
+		}
+		return $c + $d + $e;
+	}//end ci1Planted()
+
+	/**
 	 * Convert tools to OpenAI function format
 	 *
 	 * Converts tool definitions to the format expected by OpenAI's function calling API.
