@@ -1329,6 +1329,39 @@ import {
 	isValidPropertyValue,
 } from '../../services/propertyValues.js'
 
+/**
+ * A metadata value, or 'Not set' when it is empty.
+ *
+ * @param {string|number} value The value
+ * @return {string|number} The value or 'Not set'
+ */
+function orNotSet(value) {
+	return value || 'Not set'
+}
+
+/**
+ * A metadata timestamp in local time, or 'Not set' when it is empty.
+ *
+ * @param {string} value The timestamp
+ * @return {string} The local time or 'Not set'
+ */
+function localTimeOrNotSet(value) {
+	return value ? new Date(value).toLocaleString() : 'Not set'
+}
+
+/**
+ * The validation state of a record's metadata.
+ *
+ * @param {object} self The record's metadata
+ * @return {string} 'Valid', 'Invalid' or 'Not validated'
+ */
+function validationText(self) {
+	if (self?.validation === null) {
+		return 'Not validated'
+	}
+	return self.validation ? 'Valid' : 'Invalid'
+}
+
 const BLANK_VALUES = {
 	string: () => '',
 	number: () => 0,
@@ -1696,64 +1729,20 @@ export default {
 			// Use formData instead of objectStore.objectItem to reflect real-time changes
 			const obj = this.formData || objectStore?.objectItem
 			if (!obj) return []
+			const self = obj['@self']
 
-			const metadata = []
-
-			// ID with copy action
-			metadata.push(['ID', obj.id || 'Not set', true])
-
-			// Register
-			metadata.push(['Register', this.registerTitle || 'Not set', false])
-
-			// Schema
-			metadata.push(['Schema', this.schemaTitle || 'Not set', false])
-
-			// Version
-			metadata.push(['Version', obj['@self']?.version || 'Not set', false])
-
-			// Created
-			metadata.push([
-				'Created',
-				obj['@self']?.created
-					? new Date(obj['@self'].created).toLocaleString()
-					: 'Not set',
-				false,
-			])
-
-			// Updated
-			metadata.push([
-				'Updated',
-				obj['@self']?.updated
-					? new Date(obj['@self'].updated).toLocaleString()
-					: 'Not set',
-				false,
-			])
-
-			// Validation
-			let validationText = 'Not validated'
-			if (obj['@self']?.validation !== null) {
-				validationText = obj['@self'].validation ? 'Valid' : 'Invalid'
-			}
-			metadata.push(['Validation', validationText, false])
-
-			// Owner
-			metadata.push(['Owner', obj['@self']?.owner || 'Not set', false])
-
-			// Application
-			metadata.push([
-				'Application',
-				obj['@self']?.application || 'Not set',
-				false,
-			])
-
-			// Organisation
-			metadata.push([
-				'Organisation',
-				obj['@self']?.organisation || 'Not set',
-				false,
-			])
-
-			return metadata
+			return [
+				['ID', orNotSet(obj.id), true],
+				['Register', orNotSet(this.registerTitle), false],
+				['Schema', orNotSet(this.schemaTitle), false],
+				['Version', orNotSet(self?.version), false],
+				['Created', localTimeOrNotSet(self?.created), false],
+				['Updated', localTimeOrNotSet(self?.updated), false],
+				['Validation', validationText(self), false],
+				['Owner', orNotSet(self?.owner), false],
+				['Application', orNotSet(self?.application), false],
+				['Organisation', orNotSet(self?.organisation), false],
+			]
 		},
 
 		isNewObject() {
