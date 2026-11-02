@@ -37,34 +37,7 @@ const SELF_FALLBACKS = {
  * Entity class representing an Object with validation
  */
 export class ObjectEntity implements TObject {
-	'@self': {
-		id: string
-		name: string | null
-		description: string | null
-		uuid: string
-		uri: string
-		version: string | null
-		register: string
-		schema: string
-		schemaVersion: string | null
-		relations: string | Array<unknown> | null
-		files: string | Array<unknown> | null
-		folder: string | null
-		textRepresentation: string | null
-		locked: Array<unknown> | null
-		owner: string | null
-		authorization: Array<unknown> | null
-		application: string | null
-		organisation: string | null
-		groups: Array<unknown> | null
-		validation: Array<unknown> | null
-		deleted: Array<unknown> | null
-		geo: Array<unknown> | null
-		retention: Array<unknown> | null
-		size: string | null
-		updated: string
-		created: string
-	};
+	'@self': TObject['@self'];
 
 	[key: string]: unknown
 
