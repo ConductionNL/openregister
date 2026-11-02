@@ -22,6 +22,104 @@ import { listStateActions, listStateFields } from './listState.js'
 // cache.
 let inFlightSchemaRefresh = null
 
+/**
+ * The object count the loaded schema list already holds for a schema, if any.
+ *
+ * @param {Array<object>} schemas The loaded schemas.
+ * @param {string|number} schemaId The schema.
+ * @return {number|undefined} The count, or undefined when the list has none.
+ * @spec exclude Client-side read of cached schema statistics.
+ */
+function knownObjectCount(schemas, schemaId) {
+	const schemaIdStr = String(schemaId)
+	const existingSchema = schemas.find((s) => String(s.id) === schemaIdStr)
+	return existingSchema?.stats?.objects?.total
+}
+
+/**
+ * A schema's object count from the objects count API, or null when that API
+ * fails or refuses.
+ *
+ * @param {string|number} schemaId The schema.
+ * @return {Promise<number|null>} The count, or null.
+ * @spec exclude Thin API passthrough — GET /api/objects/count.
+ */
+async function countFromObjectsApi(schemaId) {
+	try {
+		const countResponse = await fetch(
+			`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`,
+		)
+		if (!countResponse.ok) {
+			return null
+		}
+		const countData = await countResponse.json()
+		return countData.count || countData.total || 0
+	} catch (countError) {
+		return null
+	}
+}
+
+/**
+ * A schema's object count from its stats endpoint; 0 when it refuses.
+ *
+ * @param {string|number} schemaId The schema.
+ * @return {Promise<number>} The count.
+ * @spec exclude Thin API passthrough — GET /api/schemas/{id}/stats.
+ */
+async function countFromSchemaStats(schemaId) {
+	const statsResponse = await fetch(
+		`/index.php/apps/openregister/api/schemas/${schemaId}/stats`,
+	)
+	if (!statsResponse.ok) {
+		return 0
+	}
+	// The stats endpoint returns objectCount and objects_count
+	const stats = await statsResponse.json()
+	return stats.objectCount || stats.objects_count || 0
+}
+
+/**
+ * A copy of a schema without the fields the server sets or only the draft
+ * routes write; a new schema's empty id is left out so the save is a create.
+ *
+ * @param {object} schemaItem The schema.
+ * @return {object} The copy.
+ * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+ */
+function withoutServerSchemaFields(schemaItem) {
+	const cleaned = { ...schemaItem }
+	delete cleaned.updated
+	delete cleaned.created
+	delete cleaned.stats
+	delete cleaned.archive
+	delete cleaned.version // Backend determines version
+	delete cleaned.draft // Only the draft routes write it
+	if (!cleaned.id) {
+		delete cleaned.id
+	}
+	return cleaned
+}
+
+/**
+ * Turn a schema's top-level `required` list into `required: true` on each
+ * listed property, and drop the list.
+ *
+ * @param {object} cleaned The schema copy to change.
+ * @return {void}
+ * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+ */
+function moveRequiredToProperties(cleaned) {
+	if (!Array.isArray(cleaned.required) || !cleaned.properties) {
+		return
+	}
+	cleaned.required.forEach((propertyName) => {
+		if (cleaned.properties[propertyName]) {
+			cleaned.properties[propertyName].required = true
+		}
+	})
+	delete cleaned.required
+}
+
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
 		schemaItem: false,
@@ -316,22 +414,7 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude pure request-payload shaping helper (no client state)
 		 */
 		cleanSchemaForSave(schemaItem) {
-			const cleaned = { ...schemaItem }
-
-			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.updated
-			delete cleaned.created
-			delete cleaned.stats
-			delete cleaned.archive
-			delete cleaned.version // Backend determines version
-			delete cleaned.draft // Only the draft routes write it
-
-			// New schemas have id: '' — omit it entirely so the backend unambiguously
-			// treats the request as a create rather than an update with an empty id.
-			if (!cleaned.id) {
-				delete cleaned.id
-			}
-
+			const cleaned = withoutServerSchemaFields(schemaItem)
 			// Keep configuration object intact - backend should handle it
 			// Ensure configuration object exists with default values if not present
 			if (!cleaned.configuration) {
@@ -340,26 +423,10 @@ export const useSchemaStore = defineStore('schema', {
 					objectDescriptionField: '',
 				}
 			}
-
-			// Convert required array to individual property required fields
-			if (
-				cleaned.required
-				&& Array.isArray(cleaned.required)
-				&& cleaned.properties
-			) {
-				// Set required: true on properties that are in the required array
-				cleaned.required.forEach((propertyName) => {
-					if (cleaned.properties[propertyName]) {
-						cleaned.properties[propertyName].required = true
-					}
-				})
-
-				// Remove the top-level required array since we don't follow JSON Schema standard
-				delete cleaned.required
-			}
-
+			moveRequiredToProperties(cleaned)
 			return cleaned
 		},
+
 		/**
 		 * Upload a schema from store.
 		 *
@@ -518,44 +585,14 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		async getObjectCount(schemaId) {
 			try {
-				// Convert schemaId to string for comparison
-				const schemaIdStr = String(schemaId)
-
-				// First check if we already have stats for this schema
-				const existingSchema = this.schemas.find(
-					(s) => String(s.id) === schemaIdStr,
+				const known = knownObjectCount(this.schemas, schemaId)
+				if (known !== undefined) {
+					return known
+				}
+				return (
+					(await countFromObjectsApi(schemaId))
+					?? (await countFromSchemaStats(schemaId))
 				)
-				if (existingSchema?.stats?.objects?.total !== undefined) {
-					return existingSchema.stats.objects.total
-				}
-
-				// Try using the objects API to count objects for this schema
-				try {
-					const countResponse = await fetch(
-						`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`,
-					)
-					if (countResponse.ok) {
-						const countData = await countResponse.json()
-						const count = countData.count || countData.total || 0
-						return count
-					}
-				} catch (countError) {
-					// Objects count API failed; fall back to the stats endpoint below.
-				}
-
-				// Fallback to stats endpoint
-				const statsResponse = await fetch(
-					`/index.php/apps/openregister/api/schemas/${schemaId}/stats`,
-				)
-
-				if (statsResponse.ok) {
-					const stats = await statsResponse.json()
-					// The stats endpoint returns objectCount and objects_count
-					const count = stats.objectCount || stats.objects_count || 0
-					return count
-				} else {
-					return 0
-				}
 			} catch (error) {
 				return 0
 			}
