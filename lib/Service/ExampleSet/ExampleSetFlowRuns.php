@@ -196,8 +196,9 @@ class ExampleSetFlowRuns {
 	 * @param array<int, array<string, mixed>> $runs    The filled runs.
 	 * @param callable(): string               $newUuid Makes a fresh uuid.
 	 *
-	 * @return array<string, array<string, string>> `runs` (run key to uuid) and `waitsOn` (waiting run uuid to step),
-	 *                                               each present only when it holds something.
+	 * @return array{runs?: array<string, string>, waitsOn?: array<string, string>} `runs` (run key to uuid) and
+	 *                                                                             `waitsOn` (waiting run uuid to step),
+	 *                                                                             each present only when it holds something.
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
