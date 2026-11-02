@@ -1294,7 +1294,7 @@
   },
   "src/store/modules/dashboard.js": {
     "no-console": {
-      "count": 9
+      "count": 3
     }
   },
   "src/store/modules/deleted.js": {
@@ -1386,7 +1386,7 @@
   },
   "src/store/settings.js": {
     "no-console": {
-      "count": 43
+      "count": 4
     }
   },
   "src/user-dashboard.js": {

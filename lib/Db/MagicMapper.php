@@ -4436,7 +4436,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return string The UUID of the saved object — the identity callers actually use
 	 */
-	private function saveObjectToRegisterSchemaTable(
+	protected function saveObjectToRegisterSchemaTable(
 		array $objectData,
 		Register $register,
 		Schema $schema,
@@ -4571,20 +4571,29 @@ class MagicMapper extends AbstractObjectMapper {
 			);
 			return $uuid;
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MagicMapper] Failed to save object to register+schema table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-
+			$this->logFailedSave(error: $e, where: ['uuid' => $uuid, 'tableName' => $tableName]);
 			throw $e;
 		}//end try
 	}//end saveObjectToRegisterSchemaTable()
+
+	/**
+	 * Log a failed table write. A taken identifier is an answer for the caller, not a failure, so it is not logged.
+	 *
+	 * @param Exception                              $error The exception the write threw.
+	 * @param array{uuid: string, tableName: string} $where The row's uuid and its table.
+	 *
+	 * @return void
+	 */
+	private function logFailedSave(Exception $error, array $where): void {
+		if ($error instanceof ObjectExistsException) {
+			return;
+		}
+
+		$this->logger->error(
+			message: '[MagicMapper] Failed to save object to register+schema table',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage()] + $where
+		);
+	}//end logFailedSave()
 
 	/**
 	 * What the last single-object write actually did.
@@ -5385,7 +5394,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array|null Object data or null if not found
 	 */
-	private function findObjectInRegisterSchemaTable(string $uuid, string $tableName): ?array {
+	protected function findObjectInRegisterSchemaTable(string $uuid, string $tableName): ?array {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('*')
@@ -9110,14 +9119,9 @@ class MagicMapper extends AbstractObjectMapper {
 		$objectArray = $entity->jsonSerialize();
 
 		// Save to table, learning the generated `_id` from the INSERT itself.
-		$insertedId = null;
-		$uuid = $this->saveObjectToRegisterSchemaTable(
-			objectData: $objectArray,
-			register: $register,
-			schema: $schema,
-			tableName: $tableName,
-			failIfExists: $failIfExists,
-			insertedId: $insertedId
+		[$uuid, $insertedId] = $this->writeClaimingIdentifier(
+			entity: $entity,
+			write: ['data' => $objectArray, 'register' => $register, 'schema' => $schema, 'table' => $tableName, 'failIfExists' => $failIfExists]
 		);
 
 		// Update entity UUID if it was generated.
@@ -9171,6 +9175,76 @@ class MagicMapper extends AbstractObjectMapper {
 		// Do NOT dispatch ObjectCreatedEvent here.
 		return $entity;
 	}//end insertObjectEntity()
+
+	/**
+	 * Write a create, claiming its identifier.
+	 *
+	 * When the identifier is already taken, the caller that asked to fail gets
+	 * ObjectExistsException; any other caller's upsert intent is carried out by
+	 * updateTakenIdentifier(), so the update guard runs before the row changes.
+	 *
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $write  `data` (the serialised object), `register`, `schema`, `table` and `failIfExists`.
+	 *
+	 * @return array{0: string, 1: int|null} The uuid written, and the generated `_id` when this call inserted.
+	 *
+	 * @throws ObjectExistsException When the identifier is taken and the caller asked to fail.
+	 *
+	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
+	 */
+	private function writeClaimingIdentifier(ObjectEntity $entity, array $write): array {
+		$insertedId = null;
+		try {
+			$uuid = $this->saveObjectToRegisterSchemaTable(
+				objectData: $write['data'],
+				register: $write['register'],
+				schema: $write['schema'],
+				tableName: $write['table'],
+				failIfExists: true,
+				insertedId: $insertedId
+			);
+		} catch (ObjectExistsException $e) {
+			if ($write['failIfExists'] === true) {
+				throw $e;
+			}
+
+			$uuid = $this->updateTakenIdentifier(entity: $entity, target: $write);
+		}
+
+		return [$uuid, $insertedId];
+	}//end writeClaimingIdentifier()
+
+	/**
+	 * Write a create whose identifier is already taken as an update of the stored row.
+	 *
+	 * The stored row is read raw (a soft-deleted row counts too, as it did for the
+	 * upsert) and passed as the old object, so ObjectUpdatingEvent and its guards see
+	 * the real transition. A stopped event throws HookStoppedException and the row
+	 * stays as stored.
+	 *
+	 * @param ObjectEntity                                           $entity The object being created.
+	 * @param array{register: Register, schema: Schema, table: string} $target Where it is written.
+	 *
+	 * @return string The uuid written.
+	 *
+	 * @throws HookStoppedException When a listener stops the update.
+	 *
+	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
+	 */
+	private function updateTakenIdentifier(ObjectEntity $entity, array $target): string {
+		$stored = null;
+		$row    = $this->findObjectInRegisterSchemaTable(uuid: (string)$entity->getUuid(), tableName: $target['table']);
+		if ($row !== null) {
+			$stored = $this->convertRowToObjectEntity(row: $row, _register: $target['register'], _schema: $target['schema']);
+		}
+
+		return (string)$this->updateObjectEntity(
+			entity: $entity,
+			register: $target['register'],
+			schema: $target['schema'],
+			oldEntity: $stored
+		)->getUuid();
+	}//end updateTakenIdentifier()
 
 	/**
 	 * Update ObjectEntity in register+schema table.
