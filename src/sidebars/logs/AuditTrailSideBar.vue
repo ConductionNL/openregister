@@ -258,6 +258,11 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import eventBus from '../../eventBus.js'
 import { addDateRange, addScope } from '../../services/routeQuery.js'
+import {
+	addJoinedValues,
+	addPresent,
+	addScopeIds,
+} from '../../services/trailFilters.js'
 
 export default {
 	name: 'AuditTrailSideBar',
@@ -842,30 +847,17 @@ export default {
 		 */
 		applyFiltersToStore() {
 			const filters = {}
-			if (
-				Array.isArray(this.selectedActions)
-				&& this.selectedActions.length > 0
-			) {
-				const actions = this.selectedActions.slice()
-				if (actions.length > 0) {
-					filters.action = actions.map((a) => a.value).join(',')
-				}
-			}
-			if (registerStore.registerItem) {
-				filters.register = registerStore.registerItem.id.toString()
-			}
-			if (schemaStore.schemaItem) {
-				filters.schema = schemaStore.schemaItem.id.toString()
-			}
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				const users = this.selectedUsers.slice()
-				if (users.length > 0) {
-					filters.user = users.map((u) => u.value).join(',')
-				}
-			}
-			if (this.dateFrom) filters.dateFrom = this.dateFrom
-			if (this.dateTo) filters.dateTo = this.dateTo
-			if (this.objectFilter) filters.object = this.objectFilter
+			addJoinedValues(filters, ['action', this.selectedActions])
+			addScopeIds(filters, {
+				register: registerStore.registerItem,
+				schema: schemaStore.schemaItem,
+			})
+			addJoinedValues(filters, ['user', this.selectedUsers])
+			addPresent(filters, [
+				['dateFrom', this.dateFrom],
+				['dateTo', this.dateTo],
+				['object', this.objectFilter],
+			])
 			if (this.showOnlyWithChanges) filters.onlyWithChanges = true
 
 			auditTrailStore.setAuditTrailFilters(filters)
