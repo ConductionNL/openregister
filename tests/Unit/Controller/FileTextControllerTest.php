@@ -565,7 +565,6 @@ class FileTextControllerTest extends TestCase {
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$userSession,
 			$rootFolder,
