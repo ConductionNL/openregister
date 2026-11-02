@@ -38,6 +38,12 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  */
 class ExampleSetEngineKinds {
 	/**
+	 * The parts written after a fragment's objects and before its changes, so a change may quote one
+	 * (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
+	 */
+	public const BEFORE_CHANGES = ['flows', 'accessLinks', 'grants'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ExampleSetTasks|null $tasks Writes the tasks a fragment puts on its objects; null refuses them.
@@ -57,6 +63,8 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetAuditEntries|null $auditEntries Writes the history a fragment gives its objects; null refuses it.
 	 * @param ExampleSetTimelineEntries|null $timelineEntries Writes the timeline a fragment gives its objects; null refuses it.
 	 * @param ExampleSetEmailLinks|null $emailLinks Writes the mail a fragment links to its objects; null refuses it.
+	 * @param ExampleSetAccessLinks|null $accessLinks Mints the access links a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetGrants|null $grants Makes the grants a fragment puts on its objects; null refuses them.
 	 *
 	 * @return void
 	 *
@@ -80,6 +88,8 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetAuditEntries $auditEntries=null,
 		private readonly ?ExampleSetTimelineEntries $timelineEntries=null,
 		private readonly ?ExampleSetEmailLinks $emailLinks=null,
+		private readonly ?ExampleSetAccessLinks $accessLinks=null,
+		private readonly ?ExampleSetGrants $grants=null,
 	) {
 	}//end __construct()
 
@@ -96,7 +106,7 @@ class ExampleSetEngineKinds {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function check(array $fragment, array $context, array $users, ExampleSetValues $values): array {
-		$refusals = [];
+		$refusals = $this->addressRefusals(fragment: $fragment);
 		$context['tasks'] = $values->tasksOf(fragment: $fragment, record: null);
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
 			if ($rows === null) {
@@ -114,6 +124,61 @@ class ExampleSetEngineKinds {
 	}//end check()
 
 	/**
+	 * Where a fragment quotes an access link's address (`{{accessLink:key.url}}`) other than as the text of a change's
+	 * `set` field: only there does the record keep it as a fingerprint, so anywhere else it is refused.
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 *
+	 * @return array<int, string> One refusal per part that quotes it elsewhere.
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
+	 */
+	private function addressRefusals(array $fragment): array {
+		$parts = array_diff_key($fragment, ['app' => true, 'file' => true, 'dir' => true, 'changes' => true]);
+		foreach ((array) ($fragment['changes'] ?? []) as $index => $change) {
+			$parts['changes'][$index] = array_diff_key((array) $change, ['set' => true]);
+			foreach ((array) ($change['set'] ?? []) as $path => $value) {
+				if (is_string($value) === false) {
+					$parts['changes'][$index]['set'][$path] = $value;
+				}
+			}
+		}
+
+		$refusals = [];
+		foreach ($parts as $part => $declared) {
+			if ($this->quotesAddress(value: $declared) === true) {
+				$refusals[] = $fragment['file'].': '.$part.' quotes an access link address ({{accessLink:key.url}}); '
+					.'only a change may, as the text of a set field';
+			}
+		}
+
+		return $refusals;
+	}//end addressRefusals()
+
+	/**
+	 * Whether a declared value holds `{{accessLink:key.url}}` anywhere inside it.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return bool
+	 */
+	private function quotesAddress(mixed $value): bool {
+		if (is_string($value) === true) {
+			return preg_match('/\{\{\s*accessLink:[^}]*\.url\s*\}\}/', $value) === 1;
+		}
+
+		if (is_array($value) === true) {
+			foreach ($value as $key => $item) {
+				if ($this->quotesAddress(value: $key) === true || $this->quotesAddress(value: $item) === true) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}//end quotesAddress()
+
+	/**
 	 * Write the tasks and views of one fragment that the record does not hold.
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
@@ -129,8 +194,8 @@ class ExampleSetEngineKinds {
 	public function install(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$changed = false;
 		foreach ($this->kinds() as $part => [$rows]) {
-			// The flows are written earlier, by installFlows(), so a change may quote one.
-			if ($part === 'flows') {
+			// Written earlier, by installBeforeChanges(), so a change may quote one.
+			if (in_array($part, self::BEFORE_CHANGES, true) === true) {
 				continue;
 			}
 
@@ -148,22 +213,46 @@ class ExampleSetEngineKinds {
 	}//end install()
 
 	/**
-	 * Write the flows of one fragment that the record does not hold, before its changes, so a change may quote
-	 * one (`{{flow:key.uuid}}`).
+	 * Write the flows, access links and grants of one fragment that the record does not hold, before its changes, so
+	 * a change may quote one (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
 	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report; gains `flows`.
-	 * @param array<string, mixed> $record   The record; gains the flows written.
+	 * @param array<string, mixed> $report   The report; gains `flows`, `accessLinks` and `grants`.
+	 * @param array<string, mixed> $record   The record; gains the rows written.
 	 * @param ExampleSetValues     $values   Fills placeholders.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
 	 */
-	public function installFlows(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
-		return $this->flows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true;
-	}//end installFlows()
+	public function installBeforeChanges(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
+		$changed = false;
+		$kinds   = $this->kinds();
+		foreach (self::BEFORE_CHANGES as $part) {
+			if ($kinds[$part][0]?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true) {
+				$changed = true;
+			}
+		}
+
+		return $changed;
+	}//end installBeforeChanges()
+
+	/**
+	 * The access links a fragment declares, by key, for `{{accessLink:key.id|uuid|url}}`: as minted, or stand-ins
+	 * for the check (`$record` null).
+	 *
+	 * @param array<string, mixed>      $fragment The fragment.
+	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
+	 *
+	 * @return array<string, array{id: int, uuid: string, url: string}> None when this OpenRegister cannot mint links.
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
+	 */
+	public function accessLinksOf(array $fragment, ?array $record): array {
+		return ($this->accessLinks?->placeholders(fragment: $fragment, record: $record) ?? []);
+	}//end accessLinksOf()
 
 	/**
 	 * Read back the tasks and views the record holds.
@@ -243,6 +332,8 @@ class ExampleSetEngineKinds {
 			'auditEntries' => [$this->auditEntries, 'audit entry'],
 			'timelineEntries' => [$this->timelineEntries, 'timeline entry'],
 			'emailLinks' => [$this->emailLinks, 'email link'],
+			'accessLinks' => [$this->accessLinks, 'access link'],
+			'grants'     => [$this->grants, 'grant'],
 		];
 	}//end kinds()
 }//end class

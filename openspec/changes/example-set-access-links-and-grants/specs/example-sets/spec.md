@@ -24,7 +24,7 @@ The check SHALL refuse a row with any other field, without an expiry, with an ex
 A fragment MAY declare `grants`. Each row SHALL name `key`, `object`, `type` (`user` or `group`), `shareWith` and `sharedBy`, and MAY give `permissions`, `verbs`, `sharedAt` and `expiresAt`. `shareWith` SHALL be an account or group the set creates or adopts, and `sharedBy` an account the set creates or adopts. Install SHALL share the object's folder with that principal through OpenRegister's object sharing service, acting as `sharedBy`, with the declared share time and expiry, and SHALL record the share. When the sharing service refuses the account, the row SHALL be reported as not written with the refusal's reason. A second install SHALL write nothing and SHALL report a held share that is gone as missing. Remove SHALL delete the shares the record holds, and only those.
 
 #### Scenario: Juridische zaken, shared by Pieter
-- **GIVEN** a fragment declares a grant of the Lindelaan Woo case to the group Juridische zaken, shared by Pieter Jansen 26 days before the install day, ending 14 days after it
+- **GIVEN** a fragment declares a grant of the Lindelaan Woo case to the group Juridische zaken, shared by Pieter Jansen 11 days before the install day ("6 okt" on the board), ending 14 days after it
 - **WHEN** the set is installed
 - **THEN** the case's grants list SHALL hold a `shared` row for Juridische zaken with `sharedBy` Pieter Jansen, that share time and that expiry
 

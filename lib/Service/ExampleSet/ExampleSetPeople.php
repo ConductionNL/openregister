@@ -663,6 +663,28 @@ class ExampleSetPeople {
 	}//end serviceAccounts()
 
 	/**
+	 * The groups this set created, or will create because the instance lacks them: a group that was there before the
+	 * set is not the set's.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $record The record.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function groupsOfSet(array $plan, array $record): array {
+		$gids = array_values(array_filter((array) ($record['groups'] ?? []), 'is_string'));
+		foreach (array_keys($this->declaredGroups(plan: $plan)) as $gid) {
+			if (in_array((string) $gid, $gids, true) === false && $this->accounts->groupExists(gid: (string) $gid) === false) {
+				$gids[] = (string) $gid;
+			}
+		}
+
+		return $gids;
+	}//end groupsOfSet()
+
+	/**
 	 * Every account id the set declares: its cast members' and its service accounts'.
 	 *
 	 * These are the accounts an install writes before any object, so an object
