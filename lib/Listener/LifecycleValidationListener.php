@@ -286,30 +286,51 @@ class LifecycleValidationListener implements IEventListener {
 			return;
 		}
 
-		$requires = ($spec['requires'] ?? null);
-		if (is_string($requires) === true && $requires !== '') {
-			$result = $this->runGuard(
-				requires: $requires,
-				context: new LifecycleGuardContext(
-					object: $newData,
-					stored: $oldData,
-					action: (string)$action,
-					userId: ($this->userSession->getUser()?->getUID() ?? '')
-				)
-			);
-			if ($result->isAllowed() === false) {
-				$this->reject(
-					event: $event,
-					error: [
-						'code' => 'lifecycle-guard-denied',
-						'field' => $field,
-						'action' => $action,
-						'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
-					]
-				);
-			}
+		$guardRefusal = $this->guardRefusal(
+			spec: $spec,
+			transition: ['field' => $field, 'action' => (string)$action, 'object' => $newData, 'stored' => $oldData]
+		);
+		if ($guardRefusal !== null) {
+			$this->reject(event: $event, error: $guardRefusal);
 		}
 	}//end handle()
+
+	/**
+	 * The refusal of the transition's `requires` guard, or null when it allows or there is none.
+	 *
+	 * @param array<string, mixed> $spec       The matched transition.
+	 * @param array<string, mixed> $transition `field`, `action`, the incoming `object` and the `stored` object.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-transition-guard-can-judge-the-stored-object
+	 */
+	private function guardRefusal(array $spec, array $transition): ?array {
+		$requires = ($spec['requires'] ?? null);
+		if (is_string($requires) === false || $requires === '') {
+			return null;
+		}
+
+		$result = $this->runGuard(
+			requires: $requires,
+			context: new LifecycleGuardContext(
+				object: $transition['object'],
+				stored: $transition['stored'],
+				action: $transition['action'],
+				userId: ($this->userSession->getUser()?->getUID() ?? '')
+			)
+		);
+		if ($result->isAllowed() === true) {
+			return null;
+		}
+
+		return [
+			'code' => 'lifecycle-guard-denied',
+			'field' => $transition['field'],
+			'action' => $transition['action'],
+			'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
+		];
+	}//end guardRefusal()
 
 	/**
 	 * Run a transition's guard: with the stored object when it asks for it, else on the incoming data.
