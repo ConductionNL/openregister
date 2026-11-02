@@ -45,7 +45,7 @@ const FULL = {
 	message: 'Done',
 	error: 'Server error',
 	rbac: { enabled: true },
-	multitenancy: { enabled: true },
+	multitenancy: { enabled: false, mode: 'strict' },
 	flow: { retentionDays: 7 },
 	data: { model: 'nested' },
 	availableGroups: { admin: 'Admins' },

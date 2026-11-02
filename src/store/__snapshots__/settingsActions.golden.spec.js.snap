@@ -755,7 +755,8 @@ exports[`settings store actions golden clearAllCaches([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -827,7 +828,8 @@ exports[`settings store actions golden clearAllCaches([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -1094,7 +1096,8 @@ exports[`settings store actions golden clearAllCaches([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -1160,7 +1163,8 @@ exports[`settings store actions golden clearAllCaches([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -1250,7 +1254,8 @@ exports[`settings store actions golden clearAllCaches([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -1322,7 +1327,8 @@ exports[`settings store actions golden clearAllCaches([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -1753,7 +1759,8 @@ exports[`settings store actions golden clearAppStoreCache(["apps"]): full answer
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -1995,7 +2002,8 @@ exports[`settings store actions golden clearAppStoreCache(["apps"]): same cache 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -2060,7 +2068,8 @@ exports[`settings store actions golden clearAppStoreCache(["apps"]): shrunk cach
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -2193,7 +2202,8 @@ exports[`settings store actions golden clearAppStoreCache([]): full answer 1`] =
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -2435,7 +2445,8 @@ exports[`settings store actions golden clearAppStoreCache([]): same cache 1`] = 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -2500,7 +2511,8 @@ exports[`settings store actions golden clearAppStoreCache([]): shrunk cache 1`] 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -2708,7 +2720,8 @@ exports[`settings store actions golden clearCache(["names"]): full answer 1`] = 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -2988,7 +3001,8 @@ exports[`settings store actions golden clearCache(["names"]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -3105,7 +3119,8 @@ exports[`settings store actions golden clearCache(["names"]): shrunk cache 1`] =
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -3338,7 +3353,8 @@ exports[`settings store actions golden clearCache([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -3618,7 +3634,8 @@ exports[`settings store actions golden clearCache([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -3735,7 +3752,8 @@ exports[`settings store actions golden clearCache([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -4008,7 +4026,8 @@ exports[`settings store actions golden clearSpecificCache(["names"]): full answe
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -4080,7 +4099,8 @@ exports[`settings store actions golden clearSpecificCache(["names"]): full answe
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -4347,7 +4367,8 @@ exports[`settings store actions golden clearSpecificCache(["names"]): same cache
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -4413,7 +4434,8 @@ exports[`settings store actions golden clearSpecificCache(["names"]): same cache
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -4503,7 +4525,8 @@ exports[`settings store actions golden clearSpecificCache(["names"]): shrunk cac
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -4575,7 +4598,8 @@ exports[`settings store actions golden clearSpecificCache(["names"]): shrunk cac
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -4817,7 +4841,8 @@ exports[`settings store actions golden confirmRebase([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -5074,7 +5099,8 @@ exports[`settings store actions golden confirmRebase([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -5170,7 +5196,8 @@ exports[`settings store actions golden confirmRebase([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -5297,7 +5324,8 @@ exports[`settings store actions golden discoverFiles([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -5494,7 +5522,8 @@ exports[`settings store actions golden discoverFiles([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -5551,7 +5580,8 @@ exports[`settings store actions golden discoverFiles([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -5654,7 +5684,8 @@ exports[`settings store actions golden getAnonymisationBackendState([]): full an
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -5825,7 +5856,8 @@ exports[`settings store actions golden getAnonymisationBackendState([]): same ca
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -5879,7 +5911,8 @@ exports[`settings store actions golden getAnonymisationBackendState([]): shrunk 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -5979,7 +6012,8 @@ exports[`settings store actions golden getChatStats([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -6158,7 +6192,8 @@ exports[`settings store actions golden getChatStats([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -6212,7 +6247,8 @@ exports[`settings store actions golden getChatStats([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -6624,7 +6660,8 @@ exports[`settings store actions golden getFileSettings([]): full answer 1`] = `
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -6690,7 +6727,8 @@ exports[`settings store actions golden getFileSettings([]): full answer 1`] = `
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -6974,7 +7012,8 @@ exports[`settings store actions golden getFileSettings([]): same cache 1`] = `
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -7034,7 +7073,8 @@ exports[`settings store actions golden getFileSettings([]): same cache 1`] = `
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -7095,7 +7135,8 @@ exports[`settings store actions golden getFileSettings([]): shrunk cache 1`] = `
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -7161,7 +7202,8 @@ exports[`settings store actions golden getFileSettings([]): shrunk cache 1`] = `
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -7293,7 +7335,8 @@ exports[`settings store actions golden getLlmSettings([]): full answer 1`] = `
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -7353,7 +7396,8 @@ exports[`settings store actions golden getLlmSettings([]): full answer 1`] = `
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -7595,7 +7639,8 @@ exports[`settings store actions golden getLlmSettings([]): same cache 1`] = `
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "providerId": "none",
       "rbac": {
@@ -7649,7 +7694,8 @@ exports[`settings store actions golden getLlmSettings([]): same cache 1`] = `
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "providerId": "none",
       "rbac": {
@@ -7704,7 +7750,8 @@ exports[`settings store actions golden getLlmSettings([]): shrunk cache 1`] = `
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -7764,7 +7811,8 @@ exports[`settings store actions golden getLlmSettings([]): shrunk cache 1`] = `
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -7859,7 +7907,8 @@ exports[`settings store actions golden getLlmUsageStats([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -8030,7 +8079,8 @@ exports[`settings store actions golden getLlmUsageStats([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -8084,7 +8134,8 @@ exports[`settings store actions golden getLlmUsageStats([]): shrunk cache 1`] = 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -8190,7 +8241,8 @@ exports[`settings store actions golden getVectorStats([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -8242,7 +8294,8 @@ exports[`settings store actions golden getVectorStats([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -8446,7 +8499,8 @@ exports[`settings store actions golden getVectorStats([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -8492,7 +8546,8 @@ exports[`settings store actions golden getVectorStats([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -8537,7 +8592,8 @@ exports[`settings store actions golden getVectorStats([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -8589,7 +8645,8 @@ exports[`settings store actions golden getVectorStats([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -8947,7 +9004,8 @@ exports[`settings store actions golden loadCacheStats([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -9294,7 +9352,8 @@ exports[`settings store actions golden loadCacheStats([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -9402,7 +9461,8 @@ exports[`settings store actions golden loadCacheStats([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -9765,7 +9825,8 @@ exports[`settings store actions golden loadMassValidateMemoryPrediction([]): ful
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -9968,7 +10029,8 @@ exports[`settings store actions golden loadMassValidateMemoryPrediction([]): sam
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -10025,7 +10087,8 @@ exports[`settings store actions golden loadMassValidateMemoryPrediction([]): shr
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -10134,7 +10197,8 @@ exports[`settings store actions golden loadMassValidateMemoryPrediction([25]): f
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -10337,7 +10401,8 @@ exports[`settings store actions golden loadMassValidateMemoryPrediction([25]): s
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -10394,7 +10459,8 @@ exports[`settings store actions golden loadMassValidateMemoryPrediction([25]): s
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -10482,7 +10548,8 @@ exports[`settings store actions golden loadMultitenancySettings([]): full answer
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
     "tenantOptions": [
       {
@@ -10619,7 +10686,8 @@ exports[`settings store actions golden loadMultitenancySettings([]): same cache 
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
     "tenantOptions": [
       {
@@ -10651,7 +10719,8 @@ exports[`settings store actions golden loadMultitenancySettings([]): shrunk cach
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
     "tenantOptions": [
       {
@@ -11021,7 +11090,8 @@ exports[`settings store actions golden loadRetentionSettings([]): full answer 1`
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -11225,7 +11295,8 @@ exports[`settings store actions golden loadRetentionSettings([]): same cache 1`]
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "objectArchiveRetention": 31536000000,
       "objectDeleteRetention": 63072000000,
@@ -11290,7 +11361,8 @@ exports[`settings store actions golden loadRetentionSettings([]): shrunk cache 1
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -11440,7 +11512,8 @@ exports[`settings store actions golden loadSettings([]): full answer 1`] = `
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
     "rbacOptions": {
       "adminOverride": true,
@@ -11480,7 +11553,8 @@ exports[`settings store actions golden loadSettings([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -11542,7 +11616,8 @@ exports[`settings store actions golden loadSettings([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -11851,7 +11926,8 @@ exports[`settings store actions golden loadSettings([]): same cache 1`] = `
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
     "rbacOptions": {
       "adminOverride": true,
@@ -11891,7 +11967,8 @@ exports[`settings store actions golden loadSettings([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "objectArchiveRetention": 31536000000,
       "objectDeleteRetention": 63072000000,
@@ -11947,7 +12024,8 @@ exports[`settings store actions golden loadSettings([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -12001,7 +12079,8 @@ exports[`settings store actions golden loadSettings([]): shrunk cache 1`] = `
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
     "rbacOptions": {
       "adminOverride": true,
@@ -12041,7 +12120,8 @@ exports[`settings store actions golden loadSettings([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -12103,7 +12183,8 @@ exports[`settings store actions golden loadSettings([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -12275,7 +12356,8 @@ exports[`settings store actions golden loadStats([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -12556,7 +12638,8 @@ exports[`settings store actions golden loadStats([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -12642,7 +12725,8 @@ exports[`settings store actions golden loadStats([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -12783,7 +12867,8 @@ exports[`settings store actions golden loadVersionInfo([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -12978,7 +13063,8 @@ exports[`settings store actions golden loadVersionInfo([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -13038,7 +13124,8 @@ exports[`settings store actions golden loadVersionInfo([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -13135,7 +13222,8 @@ exports[`settings store actions golden loadWarmupInterval([]): full answer 1`] =
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -13321,7 +13409,8 @@ exports[`settings store actions golden loadWarmupInterval([]): same cache 1`] = 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -13380,7 +13469,8 @@ exports[`settings store actions golden loadWarmupInterval([]): shrunk cache 1`] 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -13501,7 +13591,8 @@ exports[`settings store actions golden patchLlmSettings([{"enabled":true,"model"
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -13731,7 +13822,8 @@ exports[`settings store actions golden patchLlmSettings([{"enabled":true,"model"
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -13804,7 +13896,8 @@ exports[`settings store actions golden patchLlmSettings([{"enabled":true,"model"
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -13929,7 +14022,8 @@ exports[`settings store actions golden patchLlmSettings([{"enabled":true}]): ful
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -14137,7 +14231,8 @@ exports[`settings store actions golden patchLlmSettings([{"enabled":true}]): sam
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -14205,7 +14300,8 @@ exports[`settings store actions golden patchLlmSettings([{"enabled":true}]): shr
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -14333,7 +14429,8 @@ exports[`settings store actions golden patchLlmSettings([{"model":"x"}]): full a
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -14557,7 +14654,8 @@ exports[`settings store actions golden patchLlmSettings([{"model":"x"}]): same c
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -14629,7 +14727,8 @@ exports[`settings store actions golden patchLlmSettings([{"model":"x"}]): shrunk
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -14847,7 +14946,8 @@ exports[`settings store actions golden performClearCache([]): full answer 1`] = 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -15138,7 +15238,8 @@ exports[`settings store actions golden performClearCache([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -15256,7 +15357,8 @@ exports[`settings store actions golden performClearCache([]): shrunk cache 1`] =
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -15476,7 +15578,8 @@ exports[`settings store actions golden rebase([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -15537,7 +15640,8 @@ exports[`settings store actions golden rebase([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -15763,7 +15867,8 @@ exports[`settings store actions golden rebase([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -15818,7 +15923,8 @@ exports[`settings store actions golden rebase([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -15892,7 +15998,8 @@ exports[`settings store actions golden rebase([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -15953,7 +16060,8 @@ exports[`settings store actions golden rebase([]): shrunk cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -16105,7 +16213,8 @@ exports[`settings store actions golden saveFileSettings([{"maxSize":1}]): full a
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -16178,7 +16287,8 @@ exports[`settings store actions golden saveFileSettings([{"maxSize":1}]): full a
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -16413,7 +16523,8 @@ exports[`settings store actions golden saveFileSettings([{"maxSize":1}]): same c
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -16480,7 +16591,8 @@ exports[`settings store actions golden saveFileSettings([{"maxSize":1}]): same c
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -16525,7 +16637,8 @@ exports[`settings store actions golden saveFileSettings([{"maxSize":1}]): shrunk
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -16598,7 +16711,8 @@ exports[`settings store actions golden saveFileSettings([{"maxSize":1}]): shrunk
       "maxFileSize": 100,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -16715,7 +16829,8 @@ exports[`settings store actions golden saveLlmSettings([{"model":"x"}]): full an
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -16780,7 +16895,8 @@ exports[`settings store actions golden saveLlmSettings([{"model":"x"}]): full an
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -17005,7 +17121,8 @@ exports[`settings store actions golden saveLlmSettings([{"model":"x"}]): same ca
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -17064,7 +17181,8 @@ exports[`settings store actions golden saveLlmSettings([{"model":"x"}]): same ca
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "providerId": "none",
       "rbac": {
@@ -17111,7 +17229,8 @@ exports[`settings store actions golden saveLlmSettings([{"model":"x"}]): shrunk 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -17176,7 +17295,8 @@ exports[`settings store actions golden saveLlmSettings([{"model":"x"}]): shrunk 
       "message": "Done",
       "model": null,
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -17287,7 +17407,8 @@ exports[`settings store actions golden saveSettings([{"multitenancy":{"b":2}}]):
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -17322,7 +17443,8 @@ exports[`settings store actions golden saveSettings([{"multitenancy":{"b":2}}]):
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
   },
   "whileRunning": {
@@ -17533,7 +17655,8 @@ exports[`settings store actions golden saveSettings([{"multitenancy":{"b":2}}]):
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -17562,7 +17685,8 @@ exports[`settings store actions golden saveSettings([{"multitenancy":{"b":2}}]):
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
   },
   "whileRunning": {
@@ -17603,7 +17727,8 @@ exports[`settings store actions golden saveSettings([{"multitenancy":{"b":2}}]):
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -17638,7 +17763,8 @@ exports[`settings store actions golden saveSettings([{"multitenancy":{"b":2}}]):
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
   },
   "whileRunning": {
@@ -17737,7 +17863,8 @@ exports[`settings store actions golden saveSettings([{"other":4}]): full answer 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -17962,7 +18089,8 @@ exports[`settings store actions golden saveSettings([{"other":4}]): same cache 1
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -18025,7 +18153,8 @@ exports[`settings store actions golden saveSettings([{"other":4}]): shrunk cache
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -18152,7 +18281,8 @@ exports[`settings store actions golden saveSettings([{"rbac":{"a":1}}]): full an
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -18399,7 +18529,8 @@ exports[`settings store actions golden saveSettings([{"rbac":{"a":1}}]): same ca
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -18470,7 +18601,8 @@ exports[`settings store actions golden saveSettings([{"rbac":{"a":1}}]): shrunk 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -18618,7 +18750,8 @@ exports[`settings store actions golden saveSettings([{"retention":{"c":3}}]): fu
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -18680,7 +18813,8 @@ exports[`settings store actions golden saveSettings([{"retention":{"c":3}}]): fu
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -18937,7 +19071,8 @@ exports[`settings store actions golden saveSettings([{"retention":{"c":3}}]): sa
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -18993,7 +19128,8 @@ exports[`settings store actions golden saveSettings([{"retention":{"c":3}}]): sa
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "objectArchiveRetention": 31536000000,
       "objectDeleteRetention": 63072000000,
@@ -19046,7 +19182,8 @@ exports[`settings store actions golden saveSettings([{"retention":{"c":3}}]): sh
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -19108,7 +19245,8 @@ exports[`settings store actions golden saveSettings([{"retention":{"c":3}}]): sh
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -19225,7 +19363,8 @@ exports[`settings store actions golden saveWarmupInterval([120]): full answer 1`
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -19457,7 +19596,8 @@ exports[`settings store actions golden saveWarmupInterval([120]): same cache 1`]
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -19522,7 +19662,8 @@ exports[`settings store actions golden saveWarmupInterval([120]): shrunk cache 1
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -19639,7 +19780,8 @@ exports[`settings store actions golden testAnonymisationBackend(["regex"]): full
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -19838,7 +19980,8 @@ exports[`settings store actions golden testAnonymisationBackend(["regex"]): same
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -19895,7 +20038,8 @@ exports[`settings store actions golden testAnonymisationBackend(["regex"]): shru
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -20004,7 +20148,8 @@ exports[`settings store actions golden testDolphinConnection([{"url":"d"}]): ful
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -20199,7 +20344,8 @@ exports[`settings store actions golden testDolphinConnection([{"url":"d"}]): sam
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -20256,7 +20402,8 @@ exports[`settings store actions golden testDolphinConnection([{"url":"d"}]): shr
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -20365,7 +20512,8 @@ exports[`settings store actions golden testLlmConnection([{"provider":"p"}]): fu
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -20554,7 +20702,8 @@ exports[`settings store actions golden testLlmConnection([{"provider":"p"}]): sa
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -20611,7 +20760,8 @@ exports[`settings store actions golden testLlmConnection([{"provider":"p"}]): sh
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -20720,7 +20870,8 @@ exports[`settings store actions golden testOpenAnonymiserConnection([{"url":"o"}
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -20915,7 +21066,8 @@ exports[`settings store actions golden testOpenAnonymiserConnection([{"url":"o"}
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -20972,7 +21124,8 @@ exports[`settings store actions golden testOpenAnonymiserConnection([{"url":"o"}
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -21081,7 +21234,8 @@ exports[`settings store actions golden testPresidioConnection([{"url":"p"}]): fu
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -21276,7 +21430,8 @@ exports[`settings store actions golden testPresidioConnection([{"url":"p"}]): sa
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -21333,7 +21488,8 @@ exports[`settings store actions golden testPresidioConnection([{"url":"p"}]): sh
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -21442,7 +21598,8 @@ exports[`settings store actions golden triggerFileExtraction(["failed"]): full a
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -21639,7 +21796,8 @@ exports[`settings store actions golden triggerFileExtraction(["failed"]): same c
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -21696,7 +21854,8 @@ exports[`settings store actions golden triggerFileExtraction(["failed"]): shrunk
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -21805,7 +21964,8 @@ exports[`settings store actions golden triggerFileExtraction([]): full answer 1`
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -22002,7 +22162,8 @@ exports[`settings store actions golden triggerFileExtraction([]): same cache 1`]
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -22059,7 +22220,8 @@ exports[`settings store actions golden triggerFileExtraction([]): shrunk cache 1
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -22184,7 +22346,8 @@ exports[`settings store actions golden updateFlowSettings([{"retentionDays":3}])
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -22428,7 +22591,8 @@ exports[`settings store actions golden updateFlowSettings([{"retentionDays":3}])
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -22500,7 +22664,8 @@ exports[`settings store actions golden updateFlowSettings([{"retentionDays":3}])
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -22636,7 +22801,8 @@ exports[`settings store actions golden updateMultitenancySettings([{"enabled":fa
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -22671,7 +22837,8 @@ exports[`settings store actions golden updateMultitenancySettings([{"enabled":fa
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
   },
   "whileRunning": {
@@ -22868,7 +23035,8 @@ exports[`settings store actions golden updateMultitenancySettings([{"enabled":fa
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -22897,7 +23065,8 @@ exports[`settings store actions golden updateMultitenancySettings([{"enabled":fa
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
   },
   "whileRunning": {
@@ -22938,7 +23107,8 @@ exports[`settings store actions golden updateMultitenancySettings([{"enabled":fa
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -22973,7 +23143,8 @@ exports[`settings store actions golden updateMultitenancySettings([{"enabled":fa
       "adminOverride": true,
       "defaultObjectTenant": "",
       "defaultUserTenant": "",
-      "enabled": true,
+      "enabled": false,
+      "mode": "strict",
     },
   },
   "whileRunning": {
@@ -23072,7 +23243,8 @@ exports[`settings store actions golden updateRbacSettings([{"enabled":false}]): 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -23305,7 +23477,8 @@ exports[`settings store actions golden updateRbacSettings([{"enabled":false}]): 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -23376,7 +23549,8 @@ exports[`settings store actions golden updateRbacSettings([{"enabled":false}]): 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -23524,7 +23698,8 @@ exports[`settings store actions golden updateRetentionSettings([{"objectArchiveR
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -23586,7 +23761,8 @@ exports[`settings store actions golden updateRetentionSettings([{"objectArchiveR
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -23829,7 +24005,8 @@ exports[`settings store actions golden updateRetentionSettings([{"objectArchiveR
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -23885,7 +24062,8 @@ exports[`settings store actions golden updateRetentionSettings([{"objectArchiveR
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "objectArchiveRetention": 31536000000,
       "objectDeleteRetention": 63072000000,
@@ -23938,7 +24116,8 @@ exports[`settings store actions golden updateRetentionSettings([{"objectArchiveR
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -24000,7 +24179,8 @@ exports[`settings store actions golden updateRetentionSettings([{"objectArchiveR
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -24226,7 +24406,8 @@ exports[`settings store actions golden warmupNamesCache([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 2,
@@ -24293,7 +24474,8 @@ exports[`settings store actions golden warmupNamesCache([]): full answer 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -24653,7 +24835,8 @@ exports[`settings store actions golden warmupNamesCache([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "rbac": {
         "enabled": true,
@@ -24714,7 +24897,8 @@ exports[`settings store actions golden warmupNamesCache([]): same cache 1`] = `
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
@@ -24804,7 +24988,8 @@ exports[`settings store actions golden warmupNamesCache([]): shrunk cache 1`] = 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "new_cache": {
         "distributed_name_cache_size": 0,
@@ -24871,7 +25056,8 @@ exports[`settings store actions golden warmupNamesCache([]): shrunk cache 1`] = 
       "loaded_names": 3,
       "message": "Done",
       "multitenancy": {
-        "enabled": true,
+        "enabled": false,
+        "mode": "strict",
       },
       "names": {
         "cache_size": 0,
