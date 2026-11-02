@@ -27,7 +27,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
@@ -62,7 +64,13 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @uses \OCA\OpenRegister\Exception\HookStoppedException
  * @uses \OCA\OpenRegister\Exception\ObjectExistsException
@@ -90,6 +98,13 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	private array $writes = [];
 
 	/**
+	 * Whether the uuid is already in the table.
+	 *
+	 * @var bool
+	 */
+	private bool $taken = false;
+
+	/**
 	 * The mapper with its table I/O stubbed.
 	 *
 	 * @param bool $taken Whether the uuid is already in the table.
@@ -99,6 +114,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	private function mapper(bool $taken): MagicMapper&MockObject {
 		$this->dispatched = [];
 		$this->writes     = [];
+		$this->taken      = $taken;
 
 		$events = $this->createMock(IEventDispatcher::class);
 		$events->method('dispatchTyped')->willReturnCallback(
@@ -143,13 +159,13 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$mapper->method('ensureTableForRegisterSchema')->willReturn(true);
 		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_3_7');
 		$mapper->method('saveObjectToRegisterSchemaTable')->willReturnCallback(
-			function (array $objectData, Register $register, Schema $schema, string $tableName, bool $failIfExists = false, ?int &$insertedId = null) use ($taken): string {
+			function (array $objectData, Register $register, Schema $schema, string $tableName, bool $failIfExists = false, ?int &$insertedId = null): string {
 				$this->writes[] = $failIfExists;
-				if ($taken === true && $failIfExists === true) {
+				if ($this->taken === true && $failIfExists === true) {
 					throw new ObjectExistsException(message: 'taken', uuid: self::UUID);
 				}
 
-				if ($taken === false) {
+				if ($this->taken === false) {
 					$insertedId = 41;
 				}
 
@@ -276,4 +292,37 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$this->assertSame(41, $saved->getId());
 		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
 	}//end testAnInsertThatWinsWritesOnce()
+	public function testALostInsertAnnouncesAnUpdateNotACreate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectUpdatingEvent::class, ObjectUpdatedEvent::class], $this->eventClasses());
+		$updated = $this->dispatched[2];
+		$this->assertInstanceOf(ObjectUpdatedEvent::class, $updated);
+		$this->assertSame('open', $updated->getOldObject()?->getObject()['status']);
+		$this->assertSame('closed', $updated->getNewObject()->getObject()['status']);
+	}//end testALostInsertAnnouncesAnUpdateNotACreate()
+
+	public function testAWonInsertAnnouncesACreate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
+	}//end testAWonInsertAnnouncesACreate()
+
+	public function testAnInsertAfterALostOneAnnouncesACreateAgain(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$mapper->insertObjectEntity(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->taken      = false;
+		$this->dispatched = [];
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
+	}//end testAnInsertAfterALostOneAnnouncesACreateAgain()
 }//end class

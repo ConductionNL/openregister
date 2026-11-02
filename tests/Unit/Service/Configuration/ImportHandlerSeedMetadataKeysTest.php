@@ -61,6 +61,13 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
 
+	/**
+	 * How often the plain object mapper was asked to insert.
+	 *
+	 * @var int
+	 */
+	private int $plainInserts = 0;
+
 	/** @var array<int, ObjectEntity> Every entity handed to the routing mapper's insert(). */
 	private array $inserted = [];
 
@@ -128,6 +135,13 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	/**
 	 * The idempotency lookup still uses the seed's top-level uuid.
 	 */
+	public function testARoutingMapperWritesTheSeedOnce(): void {
+		$this->importSeed(schema: $this->makeSchema(['naam' => ['type' => 'string']]));
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertSame(0, $this->plainInserts);
+	}//end testARoutingMapperWritesTheSeedOnce()
+
 	public function testTheLookupStillUsesTheSeedUuid(): void {
 		$schema = $this->makeSchema(['naam' => ['type' => 'string']]);
 
@@ -170,7 +184,12 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		);
 
 		$plainMapper = $this->createMock(MagicMapper::class);
-		$plainMapper->method('insert')->willReturnArgument(0);
+		$plainMapper->method('insert')->willReturnCallback(
+			function (ObjectEntity $entity): ObjectEntity {
+				$this->plainInserts++;
+				return $entity;
+			}
+		);
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$handler = new ImportHandler(

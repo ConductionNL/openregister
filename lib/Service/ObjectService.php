@@ -2387,7 +2387,19 @@ class ObjectService implements ObjectServiceInterface
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Not found FOR THIS CALLER: new, or stored and hidden from them.
-            $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
+            $hidden = $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
+            if ($hidden !== null) {
+                // Stored but hidden: the write lands on that row, so it is an update of it.
+                $this->checkPermission(
+                    schema: $this->currentSchema,
+                    action: 'update',
+                    userId: null,
+                    objectOwner: $hidden->getOwner(),
+                    _rbac: $_rbac,
+                    object: $hidden
+                );
+                return;
+            }
 
             // Object not found, this is a CREATE operation with specific UUID.
             $this->checkPermission(
@@ -2419,16 +2431,16 @@ class ObjectService implements ObjectServiceInterface
      * @param string $uuid  The uuid the caller's own lookup did not find.
      * @param bool   $_rbac Whether the write is judged for the signed-in caller.
      *
-     * @return void
+     * @return ObjectEntity|null The stored row the caller cannot read, null when there is none or RBAC is off.
      *
      * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the uuid is a draft kept from the caller.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
      */
-    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): void
+    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): ?ObjectEntity
     {
         if ($_rbac === false || $this->currentSchema === null) {
-            return;
+            return null;
         }
 
         try {
@@ -2440,7 +2452,7 @@ class ObjectService implements ObjectServiceInterface
                 _multitenancy: false
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException) {
-            return;
+            return null;
         }
 
         $user = $this->userSession->getUser();
@@ -2453,6 +2465,8 @@ class ObjectService implements ObjectServiceInterface
         if ($kept === true) {
             throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
         }
+
+        return $stored;
     }//end refuseSomebodyElsesDraft()
 
     /**
