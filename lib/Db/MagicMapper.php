@@ -8805,17 +8805,24 @@ class MagicMapper extends AbstractObjectMapper {
 	 * the real transition. A stopped event throws HookStoppedException and the row
 	 * stays as stored.
 	 *
-	 * @param ObjectEntity                                           $entity The object being created.
-	 * @param array{register: Register, schema: Schema, table: string} $target Where it is written.
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $target Where it is written (`register`, `schema`, `table`), and the creating
+	 *                             `refusal` when the create was refused: then the row must still be live.
 	 *
 	 * @return string The uuid written.
 	 *
-	 * @throws HookStoppedException When a listener stops the update.
+	 * @throws HookStoppedException When a listener stops the update, or the refused create's row is no longer live.
 	 *
 	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function updateTakenIdentifier(ObjectEntity $entity, array $target): string {
 		$stored = $this->storedRowOf(entity: $entity, target: $target);
+
+		// A refused create may only update a row that is still live when it is written.
+		$refusal = ($target['refusal'] ?? null);
+		if ($refusal !== null && ($stored === null || empty($stored->getDeleted()) === false)) {
+			throw $refusal;
+		}
 
 		$updated = $this->updateObjectEntity(
 			entity: $entity,

@@ -237,12 +237,12 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 			fn (): ?array => ($this->rowQueue !== [] ? array_shift($this->rowQueue) : ($this->taken === true ? ['_id' => 5, '_uuid' => self::UUID] : null))
 		);
 		$mapper->method('convertRowToObjectEntity')->willReturnCallback(
-			function (): ObjectEntity {
+			function (array $row): ObjectEntity {
 				$stored = new ObjectEntity();
 				$stored->setId(5);
 				$stored->setUuid(self::UUID);
 				$stored->setObject(['status' => 'open']);
-				if ($this->storedDeleted === true) {
+				if ($this->storedDeleted === true || empty($row['_deleted']) === false) {
 					$stored->setDeleted(['deletedBy' => 'agent']);
 				}
 
@@ -537,5 +537,34 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 		$this->assertSame([], $this->writes);
 	}//end testARefusedCreateIsNotWrittenWhenItsRowGoesAway()
+
+	public function testARefusedCreateIsNotWrittenWhenItsRowIsDeletedBeforeTheUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->rowQueue = [
+			['_id' => 5, '_uuid' => self::UUID],
+			['_id' => 5, '_uuid' => self::UUID, '_deleted' => ['deletedBy' => 'agent']],
+		];
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create must not write over a row deleted before the update.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+	}//end testARefusedCreateIsNotWrittenWhenItsRowIsDeletedBeforeTheUpdate()
+
+	public function testALostClaimStillUpdatesASoftDeletedRow(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->storedDeleted = true;
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([true, false], $this->writes);
+	}//end testALostClaimStillUpdatesASoftDeletedRow()
 
 }//end class
