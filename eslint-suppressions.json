@@ -1376,7 +1376,7 @@
       "count": 2
     },
     "no-console": {
-      "count": 7
+      "count": 1
     }
   },
   "src/store/modules/webhook.js": {
