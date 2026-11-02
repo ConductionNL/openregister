@@ -16,19 +16,24 @@ jest.mock('vue-material-design-icons/InformationOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/PlayCircle.vue', () => ({}))
 
 /**
- * A bare modal context that records what it emits.
+ * A bare modal context with the component's methods that records what it emits.
  *
+ * @param {object} component The modal component
  * @param {object} state The modal state
  * @return {object} The context
  */
-function context(state) {
+function context(component, state) {
 	const emitted = []
-	return {
+	const ctx = {
 		...state,
 		emitted,
 		t: (app, text, vars) => (vars ? `${text} ${JSON.stringify(vars)}` : text),
 		$emit: (name) => emitted.push(name),
 	}
+	for (const [name, method] of Object.entries(component.methods)) {
+		ctx[name] = method.bind(ctx)
+	}
+	return ctx
 }
 
 /**
@@ -110,8 +115,11 @@ describe('FileVectorizationModal.startVectorization', () => {
 	afterEach(() => jest.restoreAllMocks())
 
 	it('refuses when there are no chunks', async () => {
-		const ctx = context({ ...FILE_STATE, stats: { chunksToProcess: 0 } })
-		await FileVectorizationModal.methods.startVectorization.call(ctx)
+		const ctx = context(FileVectorizationModal, {
+			...FILE_STATE,
+			stats: { chunksToProcess: 0 },
+		})
+		await ctx.startVectorization()
 		expect(recorded(ctx)).toMatchSnapshot()
 	})
 
@@ -119,12 +127,15 @@ describe('FileVectorizationModal.startVectorization', () => {
 		for (const [name, answer] of Object.entries(FILE_ANSWERS)) {
 			it(`answers ${name}, all types ${allTypes}`, async () => {
 				let during
-				const ctx = context({ ...FILE_STATE, vectorizeAllTypes: allTypes })
+				const ctx = context(FileVectorizationModal, {
+					...FILE_STATE,
+					vectorizeAllTypes: allTypes,
+				})
 				axios.post.mockImplementation(() => {
 					during = JSON.stringify(recorded(ctx).state)
 					return answer()
 				})
-				await FileVectorizationModal.methods.startVectorization.call(ctx)
+				await ctx.startVectorization()
 				expect({ during, ...recorded(ctx) }).toMatchSnapshot()
 			})
 		}
@@ -191,7 +202,10 @@ describe('ObjectVectorizationModal.startVectorization', () => {
 	for (const [setupName, setup] of Object.entries(SETUPS)) {
 		for (const [runName, run] of Object.entries(OBJECT_RUNS)) {
 			it(`runs ${runName} with ${setupName}`, async () => {
-				const ctx = context({ ...OBJECT_STATE, ...setup })
+				const ctx = context(ObjectVectorizationModal, {
+					...OBJECT_STATE,
+					...setup,
+				})
 				let call = 0
 				const during = []
 				axios.post.mockImplementation(() => {
@@ -200,19 +214,19 @@ describe('ObjectVectorizationModal.startVectorization', () => {
 					call++
 					return answer()
 				})
-				await ObjectVectorizationModal.methods.startVectorization.call(ctx)
+				await ctx.startVectorization()
 				expect({ during, ...recorded(ctx) }).toMatchSnapshot()
 			})
 		}
 	}
 
 	it('stops when processing is switched off between batches', async () => {
-		const ctx = context({ ...OBJECT_STATE })
+		const ctx = context(ObjectVectorizationModal, { ...OBJECT_STATE })
 		axios.post.mockImplementation(() => {
 			ctx.processing = false
 			return batch({ processed: 1, vectorized: 1 })
 		})
-		await ObjectVectorizationModal.methods.startVectorization.call(ctx)
+		await ctx.startVectorization()
 		expect(recorded(ctx)).toMatchSnapshot()
 	})
 })
