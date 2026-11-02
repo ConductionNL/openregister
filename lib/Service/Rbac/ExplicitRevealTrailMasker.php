@@ -74,21 +74,78 @@ class ExplicitRevealTrailMasker {
 				$row = $entry->jsonSerialize();
 			}
 
-			if (is_array($row) === false || is_array($row['changed'] ?? null) === false) {
+			if (is_array($row) === false) {
 				continue;
 			}
 
-			$schema = $this->schemaOf(id: $row['schema'] ?? null);
-			if (ExplicitReveal::explicitProperties(schema: $schema) === []) {
+			// A raw database row carries `changed` as its JSON text.
+			$encoded = is_string($row['changed'] ?? null);
+			$changed = $row['changed'] ?? null;
+			if ($encoded === true) {
+				$changed = json_decode($changed, true);
+			}
+
+			if (is_array($changed) === false) {
 				continue;
 			}
 
-			$row['changed'] = ExplicitReveal::maskChanges(schema: $schema, changed: $row['changed']);
+			$masked = $this->maskChanged(schemaId: ($row['schema'] ?? null), changed: $changed);
+			if ($masked === null) {
+				continue;
+			}
+
+			$row['changed'] = $masked;
+			if ($encoded === true) {
+				$row['changed'] = json_encode($masked);
+			}
+
 			$entries[$key] = $row;
 		}
 
 		return $entries;
 	}//end mask()
+
+	/**
+	 * One change set, masked by its schema; null when the schema has no
+	 * explicit-reveal property (the entry is left as it is).
+	 *
+	 * @param mixed                $schemaId The entry's schema id.
+	 * @param array<string, mixed> $changed  The change set.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function maskChanged(mixed $schemaId, array $changed): ?array {
+		$schema = $this->schemaOf(id: $schemaId);
+		if ($schema === null) {
+			// No schema named, or one that can no longer be read (deleted,
+			// bad id): which values were explicit-reveal is unknown, so
+			// mask them all.
+			return self::maskEveryChange(changed: $changed);
+		}
+
+		if (ExplicitReveal::explicitProperties(schema: $schema) === []) {
+			return null;
+		}
+
+		return ExplicitReveal::maskChanges(schema: $schema, changed: $changed);
+	}//end maskChanged()
+
+	/**
+	 * Mask every value of a change set: `{prop: {old, new}}` or `{prop: value}`.
+	 *
+	 * @param array<string, mixed> $changed The change set.
+	 *
+	 * @return array<string, mixed> The change set, masked.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private static function maskEveryChange(array $changed): array {
+		foreach ($changed as $name => $change) {
+			$changed[$name] = ExplicitRevealChangeMask::maskChange(change: $change);
+		}
+
+		return $changed;
+	}//end maskEveryChange()
 
 	/**
 	 * The schema with this id, read once.

@@ -121,7 +121,7 @@ class FilesControllerFileVerbsTest extends TestCase {
 	 *
 	 * @return FilesController
 	 */
-	private function controllerAs(string $uid, array $groups): FilesController {
+	private function controllerAs(string $uid, array $groups, ?IEventDispatcher $dispatcher = null): FilesController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$user->method('getDisplayName')->willReturn(ucfirst($uid));
@@ -153,7 +153,7 @@ class FilesControllerFileVerbsTest extends TestCase {
 			$appConfig,
 			$logger,
 			$this->createMock(ContainerInterface::class),
-			null,
+			$dispatcher,
 			null,
 			null,
 			new DenyResolver(new DenyEntryMatcher()),
@@ -229,6 +229,89 @@ class FilesControllerFileVerbsTest extends TestCase {
 		$this->assertNotSame(403, $controller->create(register: '7', schema: '42', id: self::OBJECT_UUID)->getStatus(), 'addFiles is enough to add');
 		$this->assertSame(403, $controller->delete(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 1)->getStatus(), 'adding is not deleting');
 	}//end testAddingWithoutUpdateOnTheObject()
+
+	public function testAnExpiredFileVerbRowKeepsTheFilesClosed(): void {
+		// staff reads the object; legal read its files until yesterday.
+		$this->schema->setProperties(['department' => ['type' => 'string']]);
+		$this->schema->setAuthorization([
+			'read' => ['staff', 'legal'],
+			'matrix' => [
+				'field' => 'department',
+				'userSource' => ['groups' => true],
+				'rows' => [
+					[
+						'value' => '*',
+						'group' => 'legal',
+						'actions' => ['readFiles'],
+						'until' => (new \DateTimeImmutable('-1 day'))->format(DATE_ATOM),
+					],
+				],
+			],
+		]);
+		$this->fileService->expects($this->never())->method('getFiles');
+
+		$response = $this->controllerAs('medewerker', ['staff'])
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID);
+
+		$this->assertSame(404, $response->getStatus(), 'an expired file grant is no grant, not the object rule');
+	}//end testAnExpiredFileVerbRowKeepsTheFilesClosed()
+
+	public function testAFailingProviderKeepsItsFilesClosed(): void {
+		$this->schema->setProperties(['department' => ['type' => 'string']]);
+		$this->schema->setAuthorization([
+			'read' => ['staff'],
+			'matrix' => [
+				'field' => 'department',
+				'userSource' => ['groups' => true],
+				'rowsFrom' => 'dossiq.case-type-rights',
+				'fileVerbs' => true,
+			],
+		]);
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('provider down'));
+		$this->fileService->expects($this->never())->method('getFiles');
+
+		$response = $this->controllerAs('medewerker', ['staff'], $dispatcher)
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID);
+
+		$this->assertSame(404, $response->getStatus(), 'a provider that fails takes its grants away, not the file regime');
+	}//end testAFailingProviderKeepsItsFilesClosed()
+
+	/**
+	 * The file regime of a rowsFrom schema whose provider fails, by the declared fileVerbs.
+	 *
+	 * @param mixed $fileVerbs The declared fileVerbs, or the string 'absent'.
+	 *
+	 * @return int The status of a file list by an object reader.
+	 */
+	private function fileListWithAFailingProvider(mixed $fileVerbs): int {
+		$matrix = ['field' => 'department', 'userSource' => ['groups' => true], 'rowsFrom' => 'dossiq.case-type-rights'];
+		if ($fileVerbs !== 'absent') {
+			$matrix['fileVerbs'] = $fileVerbs;
+		}
+
+		$this->schema->setProperties(['department' => ['type' => 'string']]);
+		$this->schema->setAuthorization(['read' => ['staff'], 'matrix' => $matrix]);
+		$this->fileService->method('getFiles')->willReturn([]);
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('provider down'));
+
+		return $this->controllerAs('medewerker', ['staff'], $dispatcher)
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID)
+			->getStatus();
+	}//end fileListWithAFailingProvider()
+
+	public function testARowsFromSchemaWithoutFileVerbsKeepsItsFilesClosedWhenTheProviderFails(): void {
+		$this->assertSame(404, $this->fileListWithAFailingProvider(fileVerbs: 'absent'));
+	}//end testARowsFromSchemaWithoutFileVerbsKeepsItsFilesClosedWhenTheProviderFails()
+
+	public function testANonBooleanFileVerbsOptsIn(): void {
+		$this->assertSame(404, $this->fileListWithAFailingProvider(fileVerbs: 'true'));
+	}//end testANonBooleanFileVerbsOptsIn()
+
+	public function testAnExplicitOptOutKeepsTheObjectRule(): void {
+		$this->assertSame(200, $this->fileListWithAFailingProvider(fileVerbs: false));
+	}//end testAnExplicitOptOutKeepsTheObjectRule()
 
 	public function testDeleteFilesDeletes(): void {
 		$this->fileService->method('deleteFile')->willReturn(true);

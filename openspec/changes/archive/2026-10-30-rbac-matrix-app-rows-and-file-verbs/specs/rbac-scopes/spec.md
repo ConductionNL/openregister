@@ -36,7 +36,7 @@ A matrix user source SHALL accept `{groups: true}`, making the caller's own valu
 
 ### Requirement: An app contributes matrix rows at check time
 
-A matrix SHALL accept `rowsFrom`, a provider id. At check time OpenRegister SHALL dispatch `MatrixRowsRequestedEvent` once per request and schema and compile the rows listeners add beside the declared rows, through the same validator. A listener failure SHALL contribute no rows.
+A matrix SHALL accept `rowsFrom`, a provider id. At check time OpenRegister SHALL dispatch `MatrixRowsRequestedEvent` once per request and schema and compile the rows listeners add beside the declared rows, through the same validator. A listener failure SHALL contribute no rows. A listener SHALL name its app when it adds rows (`addRows(rows, appId)`); only rows from the app that owns the provider id (the part before the first dot) SHALL be kept, and a provider row granting `public`, `authenticated` or `admin` SHALL be dropped and logged.
 
 #### Scenario: a provider row admits, a failing provider admits nobody
 

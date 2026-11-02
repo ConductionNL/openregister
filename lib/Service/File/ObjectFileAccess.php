@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
@@ -75,6 +77,15 @@ class ObjectFileAccess {
 	 * @var array<int, string>
 	 */
 	public const FILE_VERBS = [self::READ_FILES, self::ADD_FILES, self::DELETE_FILES];
+
+	/**
+	 * The matrix key that declares whether a schema is in the file-verb regime
+	 * through its matrix. A `rowsFrom` matrix is in it unless this is false,
+	 * so a provider that fails cannot take the regime away with its rows.
+	 *
+	 * @var string
+	 */
+	public const MATRIX_FILE_VERBS = 'fileVerbs';
 
 	/**
 	 * Constructor.
@@ -278,7 +289,20 @@ class ObjectFileAccess {
 	}//end mayUseFiles()
 
 	/**
-	 * Whether the object's effective block names a file verb; null when it cannot be read.
+	 * Whether the object's schema has opted into file verbs; null when it cannot be read.
+	 *
+	 * 🔴 DECIDED FROM THE DECLARED BLOCK AS WELL AS THE COMPILED ONE. A matrix
+	 * row past its `until`, and provider rows that did not arrive (the listener
+	 * threw or answered nothing), compile to nothing. Read from the compiled
+	 * block alone, a schema whose only file-verb rows were such rows would fall
+	 * out of the file regime and back to the object rule, opening its files to
+	 * every object reader the moment a grant expired. An expired or failed
+	 * source compiles to no grant, never to no regime.
+	 *
+	 * Opted in when the compiled or the declared block names a file verb, when
+	 * a declared matrix row names one in its actions (expired or not), when the
+	 * matrix declares `fileVerbs` other than false, or when it names a
+	 * `rowsFrom` provider and does not declare `fileVerbs: false`.
 	 *
 	 * @param Schema       $schema The object's schema.
 	 * @param ObjectEntity $object The object.
@@ -288,13 +312,108 @@ class ObjectFileAccess {
 	private function namesFileVerbs(Schema $schema, ObjectEntity $object): ?bool {
 		try {
 			$authorization = $this->permissionHandler->resolveAuthorization(schema: $schema, object: $object);
+			$declared      = $this->permissionHandler->resolveDeclaredAuthorization(schema: $schema, object: $object);
 		} catch (Throwable $e) {
 			return null;
 		}
 
-		return is_array($authorization) === true
-			&& array_intersect(self::FILE_VERBS, array_keys($authorization)) !== [];
+		return self::blockNamesFileVerbs(block: $authorization) === true
+			|| self::blockNamesFileVerbs(block: $declared) === true
+			|| self::matrixNamesFileVerbs(block: $declared) === true;
 	}//end namesFileVerbs()
+
+	/**
+	 * Whether an authorization block names a file verb as one of its actions.
+	 *
+	 * @param mixed $block The block.
+	 *
+	 * @return bool
+	 */
+	private static function blockNamesFileVerbs(mixed $block): bool {
+		return is_array($block) === true
+			&& array_intersect(self::FILE_VERBS, array_keys($block)) !== [];
+	}//end blockNamesFileVerbs()
+
+	/**
+	 * Whether a block's declared matrix opts into file verbs: an explicit
+	 * `fileVerbs: true`, or any declared row (expired or not) naming one.
+	 *
+	 * @param mixed $block The declared block.
+	 *
+	 * @return bool
+	 */
+	private static function matrixNamesFileVerbs(mixed $block): bool {
+		if (is_array($block) === false) {
+			return false;
+		}
+
+		$matrix = ($block[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return false;
+		}
+
+		$declared = self::fileVerbsDeclared(matrix: $matrix);
+		if ($declared !== null) {
+			return $declared;
+		}
+
+		return self::rowsNameFileVerbs(rows: ($matrix['rows'] ?? []));
+	}//end matrixNamesFileVerbs()
+
+	/**
+	 * What the matrix itself declares about the file regime, or null to ask its rows.
+	 *
+	 * A provider's rows may carry file verbs, and a provider that fails
+	 * answers nothing: a `rowsFrom` matrix is therefore in the file regime
+	 * unless the schema opts out with `fileVerbs: false`. Any other value of
+	 * `fileVerbs` (true, "true", 1: the validator refuses the non-booleans)
+	 * opts in. Fail closed: a doubt is no file access.
+	 *
+	 * @param array<string, mixed> $matrix The declared matrix.
+	 *
+	 * @return bool|null True when in the regime; null when the rows decide.
+	 */
+	private static function fileVerbsDeclared(array $matrix): ?bool {
+		if (array_key_exists(self::MATRIX_FILE_VERBS, $matrix) === true) {
+			if ($matrix[self::MATRIX_FILE_VERBS] !== false) {
+				return true;
+			}
+
+			return null;
+		}
+
+		if (is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true) {
+			return true;
+		}
+
+		return null;
+	}//end fileVerbsDeclared()
+
+	/**
+	 * Whether any declared row (expired or not) names a file verb.
+	 *
+	 * @param mixed $rows The declared rows.
+	 *
+	 * @return bool
+	 */
+	private static function rowsNameFileVerbs(mixed $rows): bool {
+		if (is_array($rows) === false) {
+			return false;
+		}
+
+		foreach ($rows as $row) {
+			$actions = [];
+			if (is_array($row) === true) {
+				$actions = ($row['actions'] ?? []);
+			}
+
+			if (is_array($actions) === true && array_intersect(self::FILE_VERBS, $actions) !== []) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end rowsNameFileVerbs()
 
 	/**
 	 * The object's schema, or null when it cannot be found.

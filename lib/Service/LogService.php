@@ -24,10 +24,12 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use InvalidArgumentException;
+use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use SimpleXMLElement;
 
 /**
@@ -87,6 +89,13 @@ class LogService {
 	private readonly SchemaMapper $schemaMapper;
 
 	/**
+	 * Masks explicit-reveal values in the change sets this service hands out.
+	 *
+	 * @var ExplicitRevealTrailMasker
+	 */
+	private readonly ExplicitRevealTrailMasker $revealMasker;
+
+	/**
 	 * Constructor for LogService
 	 *
 	 * Initializes the LogService with required mapper dependencies for handling
@@ -109,6 +118,7 @@ class LogService {
 		$this->unifiedObjectMapper = $unifiedObjectMapper;
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;
+		$this->revealMasker = new ExplicitRevealTrailMasker(schemaMapper: $schemaMapper);
 	}//end __construct()
 
 	/**
@@ -315,6 +325,20 @@ class LogService {
 	}//end getLog()
 
 	/**
+	 * Audit entries with their explicit-reveal values masked, for every reader
+	 * including administrators (the change sets of a single entry or an export).
+	 *
+	 * @param array<int, mixed> $entries Audit entries (AuditTrail entities or arrays).
+	 *
+	 * @return array<int, mixed> The entries; a masked one as an array.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	public function maskExplicitReveal(array $entries): array {
+		return $this->revealMasker->mask(entries: $entries);
+	}//end maskExplicitReveal()
+
+	/**
 	 * Export audit trail logs with specified format and filters
 	 *
 	 * @param string $format Export format: 'csv', 'json', 'xml', 'txt'
@@ -413,8 +437,11 @@ class LogService {
 		$includeMetadata = $config['includeMetadata'] ?? false;
 
 		$exportData = [];
-		foreach ($logs as $log) {
-			$logData = $log->jsonSerialize();
+		foreach ($this->maskExplicitReveal(entries: $logs) as $log) {
+			$logData = $log;
+			if ($log instanceof JsonSerializable) {
+				$logData = $log->jsonSerialize();
+			}
 
 			// Always include basic fields.
 			$exportRow = [
