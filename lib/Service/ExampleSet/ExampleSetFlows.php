@@ -202,8 +202,8 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 * @param string               $key  The flow's key in the fragment (unused).
 	 * @param array<string, mixed> $data The filled fields.
 	 *
-	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (the flow's uuid, and its
-	 *                                                                 keyed runs), or why the write failed.
+	 * @return array{error: string, entry: array{uuid: string, runs: array<string, string>, waitsOn: array<string, string>}|null}
+	 *         The record entry (the flow's uuid, and its keyed runs), or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
