@@ -42,10 +42,12 @@ const STATES = {
 	otherLive: { liveHandle: 'h-old', liveType: 'r2-s2' },
 	samePending: { livePendingType: 'r1-s1' },
 	otherPending: { livePendingType: 'r2-s2', liveType: 'r2-s2' },
+	staleType: { liveType: 'r1-s1' },
 }
 
 const SUBSCRIBES = {
 	resolves: () => Promise.resolve('h-new'),
+	seesState: (ctx) => Promise.resolve(`h-${ctx.livePendingType}-${ctx.liveType}`),
 	rejectsError: () => Promise.reject(new Error('down')),
 	rejectsPlain: () => Promise.reject('plain'),
 	rejectsNull: () => Promise.reject(null),
