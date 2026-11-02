@@ -9,6 +9,21 @@ import {
 const apiUrl = '/index.php/apps/openregister/api'
 
 /**
+ * The statistics with every count at 0.
+ *
+ * @return {object} Every count at 0.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyStatistics() {
+	return {
+		totalDeleted: 0,
+		deletedToday: 0,
+		deletedThisWeek: 0,
+		oldestDays: 0,
+	}
+}
+
+/**
  * Store for managing deleted objects
  */
 export const useDeletedStore = defineStore('deleted', {
@@ -23,21 +38,10 @@ export const useDeletedStore = defineStore('deleted', {
 		deletedItem: null,
 
 		// Pagination
-		deletedPagination: {
-			total: 0,
-			page: 1,
-			pages: 1,
-			limit: 20,
-			offset: 0,
-		},
+		deletedPagination: listPagination({}, 20),
 
 		// Statistics
-		statistics: {
-			totalDeleted: 0,
-			deletedToday: 0,
-			deletedThisWeek: 0,
-			oldestDays: 0,
-		},
+		statistics: emptyStatistics(),
 
 		// Top deleters
 		topDeleters: [],
@@ -343,19 +347,8 @@ export const useDeletedStore = defineStore('deleted', {
 		clearDeletedStore() {
 			this.deletedList = []
 			this.deletedItem = null
-			this.deletedPagination = {
-				total: 0,
-				page: 1,
-				pages: 1,
-				limit: 20,
-				offset: 0,
-			}
-			this.statistics = {
-				totalDeleted: 0,
-				deletedToday: 0,
-				deletedThisWeek: 0,
-				oldestDays: 0,
-			}
+			this.deletedPagination = listPagination({}, 20)
+			this.statistics = emptyStatistics()
 			this.topDeleters = []
 			this.deletedFilters = {}
 			this.deletedSearch = ''
