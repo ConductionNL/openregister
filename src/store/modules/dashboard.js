@@ -98,6 +98,43 @@ async function getPanel(panel) {
 	}
 }
 
+/**
+ * The register list filter of the dashboard: the active register and schema,
+ * where set. The stores are looked up now; their ids are read when the
+ * returned function runs.
+ *
+ * @return {function(): object} The parameters, read on call.
+ * @spec exclude Client-side scope of GET /api/dashboard.
+ */
+function registerListScope() {
+	const registerStore = useRegisterStore()
+	const schemaStore = useSchemaStore()
+	return () => {
+		const params = {}
+		if (registerStore.registerItem?.id)
+			params.registerId = registerStore.registerItem.id
+		if (schemaStore.schemaItem?.id) params.schemaId = schemaStore.schemaItem.id
+		return params
+	}
+}
+
+/**
+ * Load the dashboard register list into the store.
+ *
+ * @param {object} store The dashboard store.
+ * @param {function(): object} params The register and schema filter, read on call.
+ * @return {Promise<Array<object>>} The registers.
+ * @spec exclude API passthrough to GET /api/dashboard (register list)
+ */
+async function loadRegisters(store, params) {
+	const response = await axios.get(
+		generateUrl('/apps/openregister/api/dashboard'),
+		{ params: params() },
+	)
+	store.registers = response.data.registers
+	return store.registers
+}
+
 export const useDashboardStore = defineStore('dashboard', {
 	state: initialState,
 
@@ -332,22 +369,11 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard (register list)
 		 */
 		async fetchRegisters() {
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
+			const params = registerListScope()
 			try {
 				this.loading = true
 				this.error = null
-				const params = {}
-				if (registerStore.registerItem?.id)
-					params.registerId = registerStore.registerItem.id
-				if (schemaStore.schemaItem?.id)
-					params.schemaId = schemaStore.schemaItem.id
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/dashboard'),
-					{ params },
-				)
-				this.registers = response.data.registers
-				return this.registers
+				return await loadRegisters(this, params)
 			} catch (error) {
 				console.error('Error fetching registers:', error)
 				this.error = error.message || 'Failed to fetch registers'
