@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -42,6 +43,8 @@ use Throwable;
  * two answers to one question, they would drift, and the wider one would be the
  * one that discloses.
  *
+ * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules and SystemOperationContext are process-wide.
+ *
  * @spec openspec/changes/aggregate-paths-ask-permission/specs/rbac-scopes/spec.md
  */
 class AggregateVisibility {
@@ -51,10 +54,12 @@ class AggregateVisibility {
 	 *
 	 * @param PropertyRbacHandler|null $rbac   The one thing that decides property reads.
 	 * @param LoggerInterface|null     $logger The logger.
+	 * @param ExplicitReveal|null      $reveal The request's trusted-code state; without it only a system operation is trusted.
 	 */
 	public function __construct(
 		private readonly ?PropertyRbacHandler $rbac = null,
 		private readonly ?LoggerInterface $logger = null,
+		private readonly ?ExplicitReveal $reveal = null,
 	) {
 	}//end __construct()
 
@@ -126,6 +131,59 @@ class AggregateVisibility {
 	}//end maySummarise()
 
 	/**
+	 * Whether this property is explicit-reveal and the caller is not trusted
+	 * code: its values leave OpenRegister only as their mask.
+	 *
+	 * @param Schema|null $schema   The schema the property belongs to.
+	 * @param string      $property The property name.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	public function isMaskedExplicit(?Schema $schema, string $property): bool {
+		if ($schema === null) {
+			return false;
+		}
+
+		$definition = (($schema->getProperties() ?? [])[$property] ?? null);
+		if (ExplicitReveal::isExplicit(definition: $definition) === false) {
+			return false;
+		}
+
+		$trusted = ($this->reveal?->isTrusted() ?? SystemOperationContext::isActive());
+
+		return $trusted === false;
+	}//end isMaskedExplicit()
+
+	/**
+	 * Whether the VALUES of this property may be summarised: grouped on (a
+	 * bucket key is a value), taken a min or max of, or drawn as a heading.
+	 *
+	 * 🔴 AN EXPLICIT-REVEAL PROPERTY IS WITHHELD FOR EVERY READER, administrators
+	 * included, even when its read rule admits them. Its value is shown only
+	 * through the single-object reveal, which is recorded; a bucket key would be
+	 * the same value with no record. `maySummarise()` stays the read-rule answer
+	 * because the OpenAPI and GraphQL descriptions ask it whether the property
+	 * may be NAMED, and a masked property may be named.
+	 *
+	 * @param Schema|null $schema   The schema the property belongs to.
+	 * @param string      $property The property name.
+	 *
+	 * @return bool Whether its values may be summarised.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	public function maySummariseValues(?Schema $schema, string $property): bool {
+		if ($this->isMaskedExplicit(schema: $schema, property: $property) === true) {
+			$this->warn(property: $property, reason: 'the property is shown only on an explicit reveal');
+			return false;
+		}
+
+		return $this->maySummarise(schema: $schema, property: $property);
+	}//end maySummariseValues()
+
+	/**
 	 * Split a set of fields into the ones that may be summarised and the rest.
 	 *
 	 * 🔴 THE WITHHELD NAMES COME BACK, AND THAT IS THE POINT OF RETURNING A
@@ -146,7 +204,7 @@ class AggregateVisibility {
 		$withheld = [];
 
 		foreach ($fields as $field) {
-			if ($this->maySummarise(schema: $schema, property: (string)$field) === true) {
+			if ($this->maySummariseValues(schema: $schema, property: (string)$field) === true) {
 				$allowed[] = (string)$field;
 				continue;
 			}

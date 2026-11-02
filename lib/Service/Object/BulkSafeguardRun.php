@@ -93,6 +93,13 @@ final class BulkSafeguardRun {
 	public ?Schema $rowSchema = null;
 
 	/**
+	 * The current row's register, when it resolves.
+	 *
+	 * @var Register|null
+	 */
+	public ?Register $rowRegister = null;
+
+	/**
 	 * The current row's uuid, when it names one.
 	 *
 	 * @var mixed

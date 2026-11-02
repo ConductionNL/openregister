@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -52,6 +53,11 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 	private const UUID = '11111111-1111-1111-1111-111111111111';
 
 	private SaveObjects $handler;
+
+	/**
+	 * The same handler built without its property authorization handler.
+	 */
+	private SaveObjects $unguarded;
 
 	private Schema $schema;
 
@@ -90,6 +96,18 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 		$mapper->method('find')->willReturn($existing);
 		$mapper->method('findObjectsByUuidsInRegisterSchema')->willReturn([self::UUID => $existing]);
 
+		$this->unguarded = new SaveObjects(
+			objectEntityMapper: $mapper,
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			registerMapper: $this->createMock(RegisterMapper::class),
+			saveHandler: $this->createMock(SaveObject::class),
+			userSession: $session,
+			organisationService: $this->createMock(OrganisationService::class),
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $groups,
+			permissionHandler: $permissions,
+		);
+
 		$this->handler = new SaveObjects(
 			objectEntityMapper: $mapper,
 			schemaMapper: $this->createMock(SchemaMapper::class),
@@ -100,12 +118,14 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			groupManager: $groups,
 			permissionHandler: $permissions,
-			propertyRbac: new PropertyRbacHandler(
-				$session,
-				$groups,
-				$this->createMock(ConditionMatcher::class),
-				$this->createMock(LoggerInterface::class),
-				self::stateFieldRuleResolver($session, $groups)
+			rowRules: new BulkRowRules(
+				propertyRbac: new PropertyRbacHandler(
+					$session,
+					$groups,
+					$this->createMock(ConditionMatcher::class),
+					$this->createMock(LoggerInterface::class),
+					self::stateFieldRuleResolver($session, $groups)
+				)
 			),
 		);
 
@@ -160,6 +180,19 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 
 		$this->assertCount(1, $passed);
 	}//end testAnUnchangedProtectedValuePasses()
+
+	public function testWithoutThePropertyHandlerAGovernedRowIsRefused(): void {
+		$this->handler = $this->unguarded;
+
+		$result = [];
+		$passed = $this->safeguard(
+			rows: [['@self' => ['uuid' => self::UUID], 'title' => 'Offerte', 'restricted' => false]],
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertStringContainsString('Property authorization is unavailable', $result['invalid'][0]['error']);
+	}//end testWithoutThePropertyHandlerAGovernedRowIsRefused()
 
 	public function testASystemOperationWritesAProtectedPropertyAsTheObjectRuleLetsIt(): void {
 		$result = [];

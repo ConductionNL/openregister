@@ -47,6 +47,13 @@ use Psr\Log\LoggerInterface;
 class MatrixRowsFromApps {
 
 	/**
+	 * Groups a provider row may not grant to: they would open the schema to
+	 * everybody (public, authenticated) or name the group that already bypasses.
+	 * A schema author who means that declares the row in the schema itself.
+	 */
+	public const RESERVED_GROUPS = ['public', 'authenticated', 'admin'];
+
+	/**
 	 * Rows per schema and provider, for the rest of the request.
 	 *
 	 * @var array<string, array<int, array<string, mixed>>>
@@ -124,12 +131,13 @@ class MatrixRowsFromApps {
 	}//end rowsFor()
 
 	/**
-	 * Dispatch the request; any failure is no rows.
+	 * Dispatch the request; any failure is no rows. Only rows added by the app
+	 * that owns the provider id are kept.
 	 *
 	 * @param Schema $schema   The schema.
 	 * @param string $provider The provider id.
 	 *
-	 * @return array<int, array<string, mixed>> The rows listeners added.
+	 * @return array<int, array<string, mixed>> The rows the owning app added.
 	 */
 	private function ask(Schema $schema, string $provider): array {
 		if ($this->dispatcher === null) {
@@ -147,8 +155,40 @@ class MatrixRowsFromApps {
 			return [];
 		}
 
-		return $event->getRows();
+		$owner = self::owningApp(provider: $provider);
+		$kept  = [];
+		foreach ($event->getRows() as $index => $row) {
+			$appId = $event->answeredBy(index: $index);
+			if ($appId === '' || $appId !== $owner) {
+				$this->logger->warning(
+					message: '[MatrixRowsFromApps] A provider row from an app that does not own the provider was dropped',
+					context: ['provider' => $provider, 'answeredBy' => $appId]
+				);
+				continue;
+			}
+
+			$kept[] = $row;
+		}
+
+		return $kept;
 	}//end ask()
+
+	/**
+	 * The app that owns a provider id: the part before the first dot (`dossiq`
+	 * in `dossiq.case-type-rights`), or the whole id when it has none.
+	 *
+	 * @param string $provider The provider id.
+	 *
+	 * @return string The app id.
+	 */
+	private static function owningApp(string $provider): string {
+		$dot = strpos($provider, '.');
+		if ($dot === false) {
+			return $provider;
+		}
+
+		return substr($provider, 0, $dot);
+	}//end owningApp()
 
 	/**
 	 * The rows that read, each one that does not logged with its findings.
@@ -163,6 +203,19 @@ class MatrixRowsFromApps {
 	private function readable(array $rows, array $properties, string $field, string $provider): array {
 		$kept = [];
 		foreach ($rows as $row) {
+			$group = '';
+			if (is_string($row['group'] ?? null) === true) {
+				$group = strtolower(trim($row['group']));
+			}
+
+			if (in_array($group, self::RESERVED_GROUPS, true) === true) {
+				$this->logger->warning(
+					message: '[MatrixRowsFromApps] A provider row granting a reserved group was dropped',
+					context: ['provider' => $provider, 'group' => $group]
+				);
+				continue;
+			}
+
 			$findings = $this->validator->findingsForRow(row: $row, properties: $properties, field: $field);
 			if ($findings !== []) {
 				$this->logger->warning(

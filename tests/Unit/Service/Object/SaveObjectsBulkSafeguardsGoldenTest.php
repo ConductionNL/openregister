@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -98,6 +99,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'schema unresolvable, admin no rbac' => ['schema' => 404, 'user' => 'admin', 'rbac' => false, 'rows' => [$create]],
 			'row names its own schema'          => ['rows' => [['@self' => ['schema' => 8], 'title' => 'x']], 'deny' => ['create:7']],
 			'row names an unknown schema'       => ['rows' => [['@self' => ['schema' => 404], 'title' => 'x']]],
+			'mixed batch row names its schema'  => ['schema' => null, 'rows' => [['@self' => ['schema' => 8], 'title' => 'x']], 'deny' => ['create:7']],
 			'register by id'                    => ['register' => 10, 'rows' => [$update]],
 			'register unresolvable'             => ['register' => 404, 'rows' => [$update]],
 			'register zero'                     => ['register' => 0, 'rows' => [$update]],
@@ -275,7 +277,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 		}
 
 		if (isset($case['propertyRbac']) === true) {
-			$args['propertyRbac'] = $this->propertyRbac(mode: $case['propertyRbac']);
+			$args['rowRules'] = new BulkRowRules(propertyRbac: $this->propertyRbac(mode: $case['propertyRbac']));
 		}
 
 		return new SaveObjects(...$args);
