@@ -974,7 +974,8 @@ class SaveObjects {
 	 *
 	 * A value the caller may not write is refused (unchanged values pass, as in a PATCH). On an
 	 * update, a stored property the row omits and the caller may not read or update is carried
-	 * forward, so leaving it out cannot clear it. A system operation is not narrowed.
+	 * forward, so leaving it out cannot clear it. A system operation is not narrowed. Without the
+	 * property handler a row of a schema that has property rules is refused, never written unchecked.
 	 *
 	 * @param array<string, mixed> $object   The row, business fields at the top and `@self` beside them.
 	 * @param Schema               $schema   The row's schema.
@@ -988,8 +989,16 @@ class SaveObjects {
 	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
 		// A system operation (cron, runAsSystem, the example-set installer) is trusted here as
 		// PermissionHandler::hasPermission trusts it for the object rule.
+		if (SystemOperationContext::isActive() === true) {
+			return [$object, null];
+		}
+
 		$propertyRbac = $this->rowRules?->propertyRbac;
-		if ($propertyRbac === null || SystemOperationContext::isActive() === true) {
+		if ($propertyRbac === null) {
+			if ($schema->hasPropertyAuthorization() === true) {
+				return [$object, 'Property authorization is unavailable, so a row of a schema with property rules cannot be checked'];
+			}
+
 			return [$object, null];
 		}
 

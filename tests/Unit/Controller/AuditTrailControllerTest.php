@@ -46,6 +46,8 @@ class AuditTrailControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->pageQuery = $this->createMock(AuditTrailPageQuery::class);
 		$this->jobList = $this->createMock(IJobList::class);
+		// The masking of explicit-reveal values has its own test; here it passes the entries through.
+		$this->logService->method('maskExplicitReveal')->willReturnArgument(0);
 
 		// Default: an authenticated admin so the requireAdmin() gate on
 		// export()/clearAll() lets the happy-path assertions through. Tests

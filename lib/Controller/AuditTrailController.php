@@ -535,7 +535,9 @@ class AuditTrailController extends Controller {
 
 		try {
 			$log = $this->logService->getLog($id);
-			return new JSONResponse(data: $log);
+			// The single entry shows explicit-reveal values masked, like the lists.
+			$masked = $this->logService->maskExplicitReveal(entries: [$log]);
+			return new JSONResponse(data: $masked[0]);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
 		}
@@ -637,10 +639,11 @@ class AuditTrailController extends Controller {
 				config: $params
 			);
 
-			// Return paginated results. An administrator always sees read entries.
+			// Return paginated results. An administrator always sees read entries,
+			// and explicit-reveal values masked, like every other reader.
 			return new JSONResponse(
 				data: [
-					'results' => $logs,
+					'results' => $this->logService->maskExplicitReveal(entries: $logs),
 					'total' => $total,
 					'page' => $params['page'],
 					'pages' => ceil($total / $params['limit']),
@@ -1068,6 +1071,15 @@ class AuditTrailController extends Controller {
 
 		try {
 			$results = $this->auditTrailMapper->findByIdentifier($identifier);
+			// Explicit-reveal values leave masked here as on every trail route.
+			// Who may call this and the search it runs are issue #5148.
+			// The mapper answers raw rows grouped by schema id, `changed` as JSON text.
+			foreach ($results as $schemaId => $rows) {
+				if (is_array($rows) === true) {
+					$results[$schemaId] = $this->logService->maskExplicitReveal(entries: $rows);
+				}
+			}
+
 			return new JSONResponse(data: $results);
 		} catch (\Exception $e) {
 			return new JSONResponse(

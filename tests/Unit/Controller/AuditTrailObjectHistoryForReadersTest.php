@@ -73,6 +73,8 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->request->method('getParams')->willReturn([]);
 		$this->logService = $this->createMock(LogService::class);
+		// Explicit-reveal masking has its own test; here it passes the entries through.
+		$this->logService->method('maskExplicitReveal')->willReturnArgument(0);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->readAccess = $this->createMock(ObjectReadAccess::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
