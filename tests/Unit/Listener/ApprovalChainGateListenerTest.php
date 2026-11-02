@@ -56,6 +56,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
  */
 class ApprovalChainGateListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
@@ -244,6 +245,47 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame('approval-chain-pending', $event->getErrors()['code']);
 	}//end testARejectedSequenceIsKeptAndANewOneOpens()
+
+	public function testAnUndecidedSequenceIsKeptAndANewOneOpens(): void {
+		$this->gatedSchema();
+		$event = $this->event('test-commitment', 'draft', 'submitted');
+
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_UNDECIDED));
+		$this->sequenceService->expects($this->once())->method('provision');
+
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('approval-chain-pending', $event->getErrors()['code']);
+	}//end testAnUndecidedSequenceIsKeptAndANewOneOpens()
+
+	public function testADeclaredApprovingSetIsCompiledTrimmedAndLowercased(): void {
+		$schema = $this->gatedSchema();
+		$config = $schema->getConfiguration();
+		$config['x-openregister-approval-chains']['submit-approval']['approvingOutcomes'] = [' Approved ', '', 7, 'SIGNED'];
+		$schema->setConfiguration($config);
+
+		$template = (new ApprovalChainAnnotationInstaller(logger: $this->createMock(LoggerInterface::class)))
+			->compile(schema: $schema, chainKey: 'submit-approval');
+
+		$this->assertSame(['approved', 'signed'], $template['approvingOutcomes']);
+	}//end testADeclaredApprovingSetIsCompiledTrimmedAndLowercased()
+
+	public function testAChainWithoutAUsableApprovingSetCompilesWithoutTheKey(): void {
+		$installer = new ApprovalChainAnnotationInstaller(logger: $this->createMock(LoggerInterface::class));
+		$schema = $this->gatedSchema();
+
+		$this->assertArrayNotHasKey('approvingOutcomes', $installer->compile(schema: $schema, chainKey: 'submit-approval'));
+
+		$config = $schema->getConfiguration();
+		$config['x-openregister-approval-chains']['submit-approval']['approvingOutcomes'] = ['  ', ''];
+		$schema->setConfiguration($config);
+		$this->assertArrayNotHasKey('approvingOutcomes', $installer->compile(schema: $schema, chainKey: 'submit-approval'));
+
+		$config['x-openregister-approval-chains']['submit-approval']['approvingOutcomes'] = 'approved';
+		$schema->setConfiguration($config);
+		$this->assertArrayNotHasKey('approvingOutcomes', $installer->compile(schema: $schema, chainKey: 'submit-approval'));
+	}//end testAChainWithoutAUsableApprovingSetCompilesWithoutTheKey()
 
 	public function testHighAmountObjectFreezesTheHigherTier(): void {
 		$this->gatedSchema();
