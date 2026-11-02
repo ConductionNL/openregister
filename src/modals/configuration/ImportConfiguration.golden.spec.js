@@ -122,6 +122,8 @@ const RESULTS = {
 	githubNoRef: { repository: 'owner/repo/extra', path: 'c.json' },
 	gitlab: { namespace: 'ns', project: 'p', path: 'g.json', ref: 'feature' },
 	gitlabNoRef: { namespace: 'ns', project: 'p', path: 'g.json', ref: '' },
+	both: { repository: 'o/r', namespace: 'ns', project: 'p', path: 'x.json' },
+	neither: { path: 'y.json' },
 }
 
 const FAILURES = {
