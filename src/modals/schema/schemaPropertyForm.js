@@ -151,12 +151,42 @@ function emptyObjectConfiguration() {
  */
 export function emptyPropertyDefinition() {
 	return {
+		...emptyPropertyText(),
+		...emptyPropertyDisplay(),
+		...emptyPropertyLimits(),
+		...emptyPropertyRelation(),
+		items: emptyItemsDefinition(),
+		objectConfiguration: emptyObjectConfiguration(),
+		fileConfiguration: emptyFileConfiguration(),
+		oneOf: [],
+	}
+}
+
+/**
+ * The descriptive fields of a new property.
+ *
+ * @spec openspec/specs/entity-management-modals/spec.md
+ * @return {object}
+ */
+function emptyPropertyText() {
+	return {
 		description: '',
 		title: '',
 		type: 'string',
 		format: '',
 		pattern: '',
 		default: '',
+	}
+}
+
+/**
+ * The behaviour and display fields of a new property.
+ *
+ * @spec openspec/specs/entity-management-modals/spec.md
+ * @return {object}
+ */
+function emptyPropertyDisplay() {
+	return {
 		behavior: '',
 		required: false,
 		deprecated: false,
@@ -164,6 +194,36 @@ export function emptyPropertyDefinition() {
 		hideOnCollection: false,
 		facetable: true,
 		order: 0,
+	}
+}
+
+/**
+ * The item definition of a new array property.
+ *
+ * @spec openspec/specs/entity-management-modals/spec.md
+ * @return {object}
+ */
+function emptyItemsDefinition() {
+	return {
+		cascadeDelete: false,
+		$ref: '',
+		type: '',
+		inversedBy: '',
+		register: '',
+		writeBack: false,
+		removeAfterWriteBack: false,
+		objectConfiguration: emptyObjectConfiguration(),
+	}
+}
+
+/**
+ * The length, number and array limits of a new property.
+ *
+ * @spec openspec/specs/entity-management-modals/spec.md
+ * @return {object}
+ */
+function emptyPropertyLimits() {
+	return {
 		minLength: 0,
 		maxLength: 0,
 		example: '',
@@ -175,32 +235,38 @@ export function emptyPropertyDefinition() {
 		exclusiveMax: false,
 		minItems: 0,
 		maxItems: 0,
+	}
+}
+
+/**
+ * The relation fields of a new property.
+ *
+ * @spec openspec/specs/entity-management-modals/spec.md
+ * @return {object}
+ */
+function emptyPropertyRelation() {
+	return {
 		cascadeDelete: false,
 		inversedBy: '',
 		$ref: '',
 		register: '',
 		writeBack: false,
 		removeAfterWriteBack: false,
-		items: {
-			cascadeDelete: false,
-			$ref: '',
-			type: '',
-			inversedBy: '',
-			register: '',
-			writeBack: false,
-			removeAfterWriteBack: false,
-			objectConfiguration: emptyObjectConfiguration(),
-		},
+	}
+}
 
-		objectConfiguration: emptyObjectConfiguration(),
-		fileConfiguration: {
-			handling: 'ignore',
-			allowedMimeTypes: [],
-			location: '',
-			maxSize: 0,
-		},
-
-		oneOf: [],
+/**
+ * The file configuration of a new property.
+ *
+ * @spec openspec/specs/entity-management-modals/spec.md
+ * @return {object}
+ */
+function emptyFileConfiguration() {
+	return {
+		handling: 'ignore',
+		allowedMimeTypes: [],
+		location: '',
+		maxSize: 0,
 	}
 }
 
