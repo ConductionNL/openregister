@@ -761,6 +761,51 @@ const LINKED_ENTITY_SELECTIONS = [
 	},
 ]
 
+/**
+ * Whether a store list is missing or empty.
+ *
+ * @param {Array|null} list The list
+ * @return {boolean} True when there is nothing in it
+ */
+function isEmptyList(list) {
+	return !list || list.length === 0
+}
+
+/**
+ * A blank configuration with the defaults a new one starts from.
+ *
+ * @return {object} The configuration
+ */
+function newConfiguration() {
+	return {
+		title: '',
+		description: null,
+		type: 'default',
+		app: '',
+		version: '1.0.0', // Default semantic version
+		application: '',
+		owner: '',
+		organisation: null,
+		registers: [],
+		schemas: [],
+		objects: [],
+		sources: [],
+		agents: [],
+		views: [],
+		// Management tab defaults
+		sourceType: 'local',
+		isLocal: true, // New configurations are local by default
+		sourceUrl: null,
+		localVersion: '1.0.0',
+		remoteVersion: null,
+		autoUpdate: false,
+		notificationGroups: [],
+		githubRepo: null,
+		githubBranch: 'main',
+		githubPath: null,
+	}
+}
+
 export default {
 	name: 'EditConfiguration',
 	components: {
@@ -905,16 +950,10 @@ export default {
 	async created() {
 		// Organisations and applications are now hot-loaded at app startup
 		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
-		if (
-			!organisationStore.organisationList
-			|| organisationStore.organisationList.length === 0
-		) {
+		if (isEmptyList(organisationStore.organisationList)) {
 			organisationStore.refreshOrganisationList()
 		}
-		if (
-			!applicationStore.applicationList
-			|| applicationStore.applicationList.length === 0
-		) {
+		if (isEmptyList(applicationStore.applicationList)) {
 			applicationStore.refreshApplicationList()
 		}
 
@@ -928,44 +967,8 @@ export default {
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
-			configurationStore.configurationItem = {
-				title: '',
-				description: null,
-				type: 'default',
-				app: '',
-				version: '1.0.0', // Default semantic version
-				application: '',
-				owner: '',
-				organisation: null,
-				registers: [],
-				schemas: [],
-				objects: [],
-				sources: [],
-				agents: [],
-				views: [],
-				// Management tab defaults
-				sourceType: 'local',
-				isLocal: true, // New configurations are local by default
-				sourceUrl: null,
-				localVersion: '1.0.0',
-				remoteVersion: null,
-				autoUpdate: false,
-				notificationGroups: [],
-				githubRepo: null,
-				githubBranch: 'main',
-				githubPath: null,
-			}
-			this.selectedRegisters = []
-			this.selectedSchemas = []
-			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedApplication = null
-			this.selectedType = this.typeOptions[0] // 'default'
-			// Management tab defaults
-			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
-			this.selectedNotificationGroups = []
+			configurationStore.configurationItem = newConfiguration()
+			this.resetSelections()
 		} else {
 			// Load existing selections
 			this.loadExistingSelections()
@@ -1244,6 +1247,26 @@ export default {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.githubPath = value
+		},
+
+		/**
+		 * Empty every selection for a new configuration.
+		 *
+		 * @spec exclude Resets local select-model refs when the modal opens on a new configuration; modal init plumbing.
+		 * @return {void}
+		 */
+		resetSelections() {
+			this.selectedRegisters = []
+			this.selectedSchemas = []
+			this.selectedObjects = []
+			this.selectedSources = []
+			this.selectedAgents = []
+			this.selectedViews = []
+			this.selectedApplication = null
+			this.selectedType = this.typeOptions[0] // 'default'
+			// Management tab defaults
+			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
+			this.selectedNotificationGroups = []
 		},
 
 		/**

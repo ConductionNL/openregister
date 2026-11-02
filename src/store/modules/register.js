@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { Register } from '../../entities/index.js'
+import { objectAnswer } from '../../services/listPage.js'
+import { listStateActions } from './listState.js'
 
 /**
  * The schema a CSV import goes into: the selected schema, for a .csv file only.
@@ -146,27 +148,7 @@ export const useRegisterStore = defineStore('register', {
 				(registerItem) => new Register(registerItem),
 			)
 		},
-		/**
-		 * Set pagination details
-		 *
-		 * @param {number} page - The current page number for pagination
-		 * @param {number} limit - The number of items to display per page
-		 *
-		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
-		 */
-		setPagination(page, limit = 14) {
-			this.pagination = { page, limit }
-		},
-		/**
-		 * Set query filters for register list
-		 *
-		 * @param {object} filters - The filter criteria to apply to the register list
-		 *
-		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
-		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-		},
+		...listStateActions(14),
 		/**
 		 * @spec exclude Thin API passthrough — GET /api/registers list; observable contract owned by the register lifecycle backend capability.
 		 */
@@ -251,15 +233,7 @@ export const useRegisterStore = defineStore('register', {
 					method: 'DELETE',
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
+				const responseData = await objectAnswer(response)
 
 				this.refreshRegisterList()
 				this.setRegisterItem(null)
@@ -300,15 +274,7 @@ export const useRegisterStore = defineStore('register', {
 					body: JSON.stringify(cleanedData),
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
+				const responseData = await objectAnswer(response)
 
 				const data = new Register(responseData)
 
@@ -363,15 +329,7 @@ export const useRegisterStore = defineStore('register', {
 				body: JSON.stringify(register),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			const data = new Register(responseData)
 
