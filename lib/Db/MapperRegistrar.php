@@ -20,8 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -56,7 +58,12 @@ final class MapperRegistrar {
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig'),
-					logger: $container->get('Psr\Log\LoggerInterface')
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					// Lazy: resolving the validator here closes the cycle
+					// ObjectActionValidator → … → RegisterMapper → SchemaMapper.
+					// Omitting it silently skipped the admin-only `elevate`
+					// rule and the bound-flow checks (openregister#5143).
+					objectActions: static fn (): ObjectActionValidator => $container->get(ObjectActionValidator::class)
 				);
 			}
 		);
@@ -90,7 +97,10 @@ final class MapperRegistrar {
 					organisationMapper: $container->get(OrganisationMapper::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
-					appConfig: $container->get('OCP\IAppConfig')
+					appConfig: $container->get('OCP\IAppConfig'),
+					// Without it webhook CRUD never invalidates the interception
+					// flag WebhookService caches.
+					interceptionCache: $container->get(WebhookInterceptionCache::class)
 				);
 			}
 		);
