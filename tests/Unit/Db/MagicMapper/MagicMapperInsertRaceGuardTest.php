@@ -114,6 +114,20 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	private array $writtenData = [];
 
 	/**
+	 * Whether the stored row is soft-deleted.
+	 *
+	 * @var bool
+	 */
+	private bool $storedDeleted = false;
+
+	/**
+	 * Raw rows the next table reads answer with, before falling back to $taken.
+	 *
+	 * @var list<array<string, mixed>|null>
+	 */
+	private array $rowQueue = [];
+
+	/**
 	 * Run once inside the next ObjectCreatingEvent, before it is recorded.
 	 *
 	 * @var callable|null
@@ -138,6 +152,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$this->dispatched = [];
 		$this->writes     = [];
 		$this->taken      = $taken;
+		$this->rowQueue   = [];
 
 		$events = $this->createMock(IEventDispatcher::class);
 		$events->method('dispatchTyped')->willReturnCallback(
@@ -159,6 +174,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 				}
 
 				if ($event instanceof ObjectCreatingEvent && (($event->getObject()->getObject()['status'] ?? null) === 'archived')) {
+					$event->setModifiedData(['number' => 'from-a-refused-create']);
 					$event->setErrors(['message' => self::NOT_INITIAL]);
 					$event->stopPropagation();
 				}
@@ -218,14 +234,18 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 			}
 		);
 		$mapper->method('findObjectInRegisterSchemaTable')->willReturnCallback(
-			fn (): ?array => ($this->taken === true ? ['_id' => 5, '_uuid' => self::UUID] : null)
+			fn (): ?array => ($this->rowQueue !== [] ? array_shift($this->rowQueue) : ($this->taken === true ? ['_id' => 5, '_uuid' => self::UUID] : null))
 		);
 		$mapper->method('convertRowToObjectEntity')->willReturnCallback(
-			static function (): ObjectEntity {
+			function (): ObjectEntity {
 				$stored = new ObjectEntity();
 				$stored->setId(5);
 				$stored->setUuid(self::UUID);
 				$stored->setObject(['status' => 'open']);
+				if ($this->storedDeleted === true) {
+					$stored->setDeleted(['deletedBy' => 'agent']);
+				}
+
 				return $stored;
 			}
 		);
@@ -474,5 +494,48 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 		$this->assertSame('N-1', ($this->writtenData[0]['number'] ?? $this->writtenData[0]['object']['number'] ?? null));
 	}//end testWhatACreatingHookSetsIsWritten()
+
+	public function testARefusedCreateOverASoftDeletedRowStaysRefused(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->storedDeleted = true;
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create must not bring a soft-deleted object back.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+	}//end testARefusedCreateOverASoftDeletedRowStaysRefused()
+
+	public function testWhatARefusedCreatingHookSetsIsNotWritten(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->writtenData = [];
+
+		$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+
+		$this->assertCount(1, $this->writtenData);
+		$this->assertArrayNotHasKey('number', $this->writtenData[0]);
+		$this->assertArrayNotHasKey('number', ($this->writtenData[0]['object'] ?? []));
+	}//end testWhatARefusedCreatingHookSetsIsNotWritten()
+
+	public function testARefusedCreateIsNotWrittenWhenItsRowGoesAway(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->rowQueue = [['_id' => 5, '_uuid' => self::UUID], null];
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create whose row went away must not be written.');
+		} catch (\Throwable $e) {
+			$this->assertNotInstanceOf(\PHPUnit\Framework\AssertionFailedError::class, $e);
+		}
+
+		$this->assertSame([], $this->writes);
+	}//end testARefusedCreateIsNotWrittenWhenItsRowGoesAway()
 
 }//end class

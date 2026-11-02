@@ -5,10 +5,11 @@
 ### Requirement: A refused create over a taken identifier is judged as an update
 
 When a creating hook refuses a create, the caller did not ask to fail on a
-taken identifier, and the identifier is already stored, the system SHALL
-write it as an update of the stored row through `ObjectUpdatingEvent`, so
-the update guards decide. When the identifier is free, or the caller asked
-to fail, the system SHALL throw the creating refusal and write nothing.
+taken identifier, and the identifier names a live stored row, the system
+SHALL write it as an update of that row through `ObjectUpdatingEvent`, so
+the update guards decide. When the identifier is free, names a soft-deleted
+row, or the caller asked to fail, the system SHALL throw the creating refusal
+and write nothing. Data a refusing hook set SHALL NOT be written.
 
 #### Scenario: a client re-posts an existing object in a later state
 
@@ -22,3 +23,11 @@ to fail, the system SHALL throw the creating refusal and write nothing.
 - **WHEN** the same create targets an identifier that is not stored
 - **THEN** it is refused with the creating hook's message and nothing is written
 - @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOfAFreeIdentifierStaysRefused` and `testARefusedClaimStaysRefused`}
+
+#### Scenario: a refused create over a soft-deleted object
+
+- **GIVEN** a soft-deleted object and a creating hook that refuses the create
+- **WHEN** a create with the same identifier is written
+- **THEN** it is refused with the creating hook's message, the object stays deleted, and nothing is written
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOverASoftDeletedRowStaysRefused`}
+

@@ -8750,11 +8750,12 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end runCreatingHooks()
 
 	/**
-	 * A create its creating hooks refused: an update when its identifier is taken, else the refusal.
+	 * A create its creating hooks refused: an update when its identifier names a live row, else the refusal.
 	 *
 	 * The refusal judged a create. When the caller did not ask to fail on a taken
-	 * identifier and the row exists, the write is an update of that row, so the
-	 * update guards judge it instead.
+	 * identifier and a live row exists, the write is an update of that row, so the
+	 * update guards judge it instead. A soft-deleted row keeps the refusal: writing
+	 * over it would bring the object back without the create rules.
 	 *
 	 * @param ObjectEntity $entity The object being created.
 	 * @param array        $write  `table`, `register`, `schema`, `failIfExists` and the `refusal`.
@@ -8766,14 +8767,35 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
 	 */
 	private function updateRefusedCreate(ObjectEntity $entity, array $write): string {
-		if ($write['failIfExists'] === true
-			|| $this->findObjectInRegisterSchemaTable(uuid: (string)$entity->getUuid(), tableName: $write['table']) === null
-		) {
+		$stored = null;
+		if ($write['failIfExists'] === false) {
+			$stored = $this->storedRowOf(entity: $entity, target: $write);
+		}
+
+		if ($stored === null || empty($stored->getDeleted()) === false) {
 			throw $write['refusal'];
 		}
 
+		// The row is read again right before the write in updateTakenIdentifier(), so a row that went away in between is not written.
 		return $this->updateTakenIdentifier(entity: $entity, target: $write);
 	}//end updateRefusedCreate()
+
+	/**
+	 * The stored row a create's identifier names, read raw (a soft-deleted row counts too), or null.
+	 *
+	 * @param ObjectEntity                                           $entity The object being created.
+	 * @param array{register: Register, schema: Schema, table: string} $target Where it is written.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function storedRowOf(ObjectEntity $entity, array $target): ?ObjectEntity {
+		$row = $this->findObjectInRegisterSchemaTable(uuid: (string)$entity->getUuid(), tableName: $target['table']);
+		if ($row === null) {
+			return null;
+		}
+
+		return $this->convertRowToObjectEntity(row: $row, _register: $target['register'], _schema: $target['schema']);
+	}//end storedRowOf()
 
 	/**
 	 * Write a create whose identifier is already taken as an update of the stored row.
@@ -8793,11 +8815,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function updateTakenIdentifier(ObjectEntity $entity, array $target): string {
-		$stored = null;
-		$row    = $this->findObjectInRegisterSchemaTable(uuid: (string)$entity->getUuid(), tableName: $target['table']);
-		if ($row !== null) {
-			$stored = $this->convertRowToObjectEntity(row: $row, _register: $target['register'], _schema: $target['schema']);
-		}
+		$stored = $this->storedRowOf(entity: $entity, target: $target);
 
 		$updated = $this->updateObjectEntity(
 			entity: $entity,

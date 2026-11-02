@@ -16,12 +16,16 @@ that only applies to new objects. The clearest case is the initial-state
 check from #5400: a client that re-posts an existing object in a later state.
 
 Now the creating refusal is held until the write knows what it is. When the
-caller did not ask to fail on a taken identifier and the row exists, the
+caller did not ask to fail on a taken identifier and a live row exists, the
 write goes through the update path: `ObjectUpdatingEvent` with the stored
 row as the old object, and the update guards decide. Otherwise the creating
 refusal is thrown, as before.
 
 ## What stays the same
+
+- A refused create over a soft-deleted object stays refused. Writing over it
+  would bring the object back without the create-only rules (quota, an exam
+  attempt gate and the like).
 
 - A refused create of a free identifier is refused with the same message.
 - A claim (`failIfExists: true`) that a creating hook refused is refused with
