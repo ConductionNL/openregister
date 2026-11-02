@@ -937,6 +937,74 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	}//end testPreferenceGateSkipsRecipientWithOffOverride()
 
 	/**
+	 * An opt-in e-mail reaches only the recipient who switched it on; the
+	 * other still gets the Nextcloud notification and no mail.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 */
+	public function testOptInEmailReachesOnlyWhoSwitchedItOn(): void {
+		$schema = $this->schemaWithNotification(
+			[
+				'r1' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['nc-notification'],
+					'optInChannels' => ['email'],
+					'recipients' => [['kind' => 'users', 'users' => ['jan', 'piet']]],
+					'subject' => 'demo',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValue')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => $default ?? 'http://localhost'
+		);
+		$config->method('getUserValue')->willReturnCallback(
+			static function (string $uid, string $app, string $key, mixed $default = '') {
+				if ($uid === 'jan' && $key === 'notification_pref/s/r1') {
+					return '{"enabled":true,"channels":["nc-notification","email"]}';
+				}
+				return $default;
+			}
+		);
+
+		$this->userManager->method('get')->willReturnCallback(
+			function (string $uid) {
+				$user = $this->createMock(IUser::class);
+				$user->method('getEMailAddress')->willReturn($uid . '@zuiddrecht.example');
+				$user->method('getDisplayName')->willReturn($uid);
+				return $user;
+			}
+		);
+		$mailedTo = [];
+		$this->mailer->method('createMessage')->willReturnCallback(
+			function () use (&$mailedTo) {
+				$message = $this->createMock(\OCP\Mail\IMessage::class);
+				$message->method('setTo')->willReturnCallback(
+					function (array $to) use ($message, &$mailedTo) {
+						$mailedTo = array_merge($mailedTo, array_keys($to));
+						return $message;
+					}
+				);
+				$message->method('setSubject')->willReturnSelf();
+				$message->method('setPlainBody')->willReturnSelf();
+				return $message;
+			}
+		);
+
+		$delivered = [];
+		$this->expectNotificationManagerCalls($delivered);
+
+		$prefs = new NotificationPreferenceService($config, $this->schemaMapper, $this->logger);
+		$dispatcher = $this->makeDispatcher(config: $config, preferenceService: $prefs);
+		$dispatcher->dispatch($this->object($schema), 'updated');
+
+		$this->assertSame(['jan', 'piet'], $delivered);
+		$this->assertSame(['jan@zuiddrecht.example'], $mailedTo);
+	}//end testOptInEmailReachesOnlyWhoSwitchedItOn()
+
+	/**
 	 * Build an `updated` rule carrying a field-change `condition`.
 	 *
 	 * @param array<string, mixed> $condition The condition sub-document.

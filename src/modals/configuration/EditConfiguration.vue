@@ -743,6 +743,24 @@ import Database from 'vue-material-design-icons/Database.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 
+/**
+ * The entities a configuration links to: its key and API path, the selection
+ * it fills and the loading flag shown while it is fetched.
+ */
+const LINKED_ENTITY_SELECTIONS = [
+	{ key: 'registers', target: 'selectedRegisters', loading: 'loadingRegisters' },
+	{ key: 'schemas', target: 'selectedSchemas', loading: 'loadingSchemas' },
+	{ key: 'objects', target: 'selectedObjects', loading: 'loadingObjects' },
+	{ key: 'sources', target: 'selectedSources', loading: 'loadingSources' },
+	{ key: 'agents', target: 'selectedAgents', loading: 'loadingAgents' },
+	{ key: 'views', target: 'selectedViews', loading: 'loadingViews' },
+	{
+		key: 'applications',
+		target: 'selectedManagedApplications',
+		loading: 'loadingApplications',
+	},
+]
+
 export default {
 	name: 'EditConfiguration',
 	components: {
@@ -1233,192 +1251,72 @@ export default {
 		 */
 		async loadExistingSelections() {
 			const item = configurationStore.configurationItem
-			if (item) {
-				// Load selected application (from already loaded list)
-				if (item.application) {
-					this.selectedApplication =
-						applicationStore.applicationList.find(
-							(a) => a.uuid === item.application,
-						) || null
-				}
-				// Organisation is automatically set by backend based on active organisation
+			if (!item) {
+				return
+			}
+			this.loadSettingsSelections(item)
+			for (const link of LINKED_ENTITY_SELECTIONS) {
+				await this.loadLinkedSelection(item, link)
+			}
+		},
 
-				// Load Settings tab selections
-				if (item.type) {
-					this.selectedType =
-						this.typeOptions.find((t) => t.value === item.type)
-						|| this.typeOptions[0] // Default to 'default'
-				} else {
-					this.selectedType = this.typeOptions[0] // Default to 'default'
-				}
+		/**
+		 * @param {object} item The configuration being edited.
+		 * @spec exclude Hydrates the settings and management select-models from a configurationItem; modal init plumbing.
+		 */
+		loadSettingsSelections(item) {
+			if (item.application) {
+				this.selectedApplication =
+					applicationStore.applicationList.find(
+						(a) => a.uuid === item.application,
+					) || null
+			}
+			// Organisation is automatically set by backend based on active organisation
 
-				// Load Management tab selections
-				if (item.sourceType) {
-					this.selectedSourceType =
-						this.sourceTypeOptions.find(
-							(st) => st.value === item.sourceType,
-						) || null
-				}
-				if (
-					item.notificationGroups
-					&& Array.isArray(item.notificationGroups)
-				) {
-					this.selectedNotificationGroups = item.notificationGroups
-						.map((groupValue) =>
-							this.notificationGroupOptions.find(
-								(g) => g.value === groupValue,
-							),
-						)
-						.filter(Boolean)
-				}
+			this.selectedType =
+				(item.type && this.typeOptions.find((t) => t.value === item.type))
+				|| this.typeOptions[0] // Default to 'default'
 
-				// Load selected registers by fetching them individually
-				if (
-					item.registers
-					&& Array.isArray(item.registers)
-					&& item.registers.length > 0
-				) {
-					this.loadingRegisters = true
-					try {
-						const promises = item.registers.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/registers/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedRegisters = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected registers:', error)
-					} finally {
-						this.loadingRegisters = false
-					}
-				}
+			if (item.sourceType) {
+				this.selectedSourceType =
+					this.sourceTypeOptions.find((st) => st.value === item.sourceType)
+					|| null
+			}
+			if (Array.isArray(item.notificationGroups)) {
+				this.selectedNotificationGroups = item.notificationGroups
+					.map((groupValue) =>
+						this.notificationGroupOptions.find(
+							(g) => g.value === groupValue,
+						),
+					)
+					.filter(Boolean)
+			}
+		},
 
-				// Load selected schemas by fetching them individually
-				if (
-					item.schemas
-					&& Array.isArray(item.schemas)
-					&& item.schemas.length > 0
-				) {
-					this.loadingSchemas = true
-					try {
-						const promises = item.schemas.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/schemas/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedSchemas = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected schemas:', error)
-					} finally {
-						this.loadingSchemas = false
-					}
-				}
-
-				// Load selected objects by fetching them individually
-				if (
-					item.objects
-					&& Array.isArray(item.objects)
-					&& item.objects.length > 0
-				) {
-					this.loadingObjects = true
-					try {
-						const promises = item.objects.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/objects/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedObjects = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected objects:', error)
-					} finally {
-						this.loadingObjects = false
-					}
-				}
-
-				// Load selected sources by fetching them individually
-				if (
-					item.sources
-					&& Array.isArray(item.sources)
-					&& item.sources.length > 0
-				) {
-					this.loadingSources = true
-					try {
-						const promises = item.sources.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/sources/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedSources = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected sources:', error)
-					} finally {
-						this.loadingSources = false
-					}
-				}
-
-				// Load selected agents by fetching them individually
-				if (
-					item.agents
-					&& Array.isArray(item.agents)
-					&& item.agents.length > 0
-				) {
-					this.loadingAgents = true
-					try {
-						const promises = item.agents.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/agents/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedAgents = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected agents:', error)
-					} finally {
-						this.loadingAgents = false
-					}
-				}
-
-				// Load selected views by fetching them individually
-				if (
-					item.views
-					&& Array.isArray(item.views)
-					&& item.views.length > 0
-				) {
-					this.loadingViews = true
-					try {
-						const promises = item.views.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/views/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedViews = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected views:', error)
-					} finally {
-						this.loadingViews = false
-					}
-				}
-
-				// Load selected managed applications by fetching them individually
-				if (
-					item.applications
-					&& Array.isArray(item.applications)
-					&& item.applications.length > 0
-				) {
-					this.loadingApplications = true
-					try {
-						const promises = item.applications.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/applications/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedManagedApplications =
-							await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected applications:', error)
-					} finally {
-						this.loadingApplications = false
-					}
-				}
+		/**
+		 * Fetch the entities a configuration links to, one by one, into their selection.
+		 *
+		 * @param {object} item The configuration being edited.
+		 * @param {object} link An entry of LINKED_ENTITY_SELECTIONS.
+		 * @spec exclude Hydrates one linked-entity select-model from a configurationItem; modal init plumbing.
+		 */
+		async loadLinkedSelection(item, link) {
+			const ids = item[link.key]
+			if (!Array.isArray(ids) || ids.length === 0) {
+				return
+			}
+			this[link.loading] = true
+			try {
+				const promises = ids.map((id) =>
+					fetch(`/index.php/apps/openregister/api/${link.key}/${id}`).then(
+						(r) => r.json(),
+					),
+				)
+				this[link.target] = await Promise.all(promises)
+			} catch (error) {
+				console.error(`Error loading selected ${link.key}:`, error)
+			} finally {
+				this[link.loading] = false
 			}
 		},
 

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -183,7 +184,7 @@ class FlowRunCommit {
 
 			// The run row: marking, place items, firings + 1, derived status.
 			$locked->setMarking($marking);
-			$locked->setPlaceItems($placeItems);
+			$locked->setPlaceItems($this->storedPlaceItems(run: $locked, placeItems: $placeItems));
 			$locked->setFirings(((int)($locked->getFirings() ?? 0) + 1));
 			$locked->setUpdated($now);
 
@@ -687,6 +688,34 @@ class FlowRunCommit {
 		);
 		$this->steps->insert($step);
 	}//end insertStep()
+
+	/**
+	 * The per-place items as stored: a writeOnly action input held under the
+	 * run's inputsRef is redacted at `json.inputs.<name>` and wherever a string
+	 * equals it whole (a copy; four or more characters), so a resume reads the
+	 * subject, timestamps and counters it stored. The walk
+	 * carries on with the values this request still holds.
+	 *
+	 * @param FlowRun              $run        The locked run row.
+	 * @param array<string, mixed> $placeItems The per-place items.
+	 *
+	 * @return array<string, mixed> The items to store.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped secret holder.
+	 */
+	private function storedPlaceItems(FlowRun $run, array $placeItems): array {
+		$ref = (($run->getContext() ?? [])[ObjectActionSecrets::CONTEXT_KEY] ?? null);
+
+		foreach ($placeItems as $place => $items) {
+			if (is_array($items) === true) {
+				$items = ObjectActionSecrets::redactItems(items: $items, ref: $ref);
+				// A whole-string copy a later step made, e.g. `json.code`.
+				$placeItems[$place] = ObjectActionSecrets::redactCopies(data: $items, ref: $ref);
+			}
+		}
+
+		return $placeItems;
+	}//end storedPlaceItems()
 
 	/**
 	 * Copy the committed row's values onto the caller's entity and reset its

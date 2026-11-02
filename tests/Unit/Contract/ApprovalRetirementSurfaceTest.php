@@ -105,7 +105,8 @@ class ApprovalRetirementSurfaceTest extends TestCase {
 	}//end testTheRetiredRoutesAreGoneAndTheSignalRouteExists()
 
 	public function testNoListenerRegistrationForARetiredEventSurvives(): void {
-		$application = (string)file_get_contents(self::ROOT . '/lib/AppInfo/Application.php');
+		$application = (string)file_get_contents(self::ROOT . '/lib/AppInfo/Application.php')
+			. (string)file_get_contents(self::ROOT . '/lib/Listener/ListenerRegistrar.php');
 
 		self::assertStringNotContainsString('ApprovalStepInitiatedEvent', $application);
 		self::assertStringNotContainsString('ApprovalStepApprovedEvent', $application);

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -58,12 +59,13 @@ use RuntimeException;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Cache operations require many utility methods
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API for comprehensive cache management
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Public API for comprehensive cache management
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache invalidation and warming logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Cache handler requires multiple dependencies for comprehensive caching
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class CacheHandler {
+class CacheHandler implements ObjectNameCacheInterface {
 
 	/**
 	 * In-memory cache of objects indexed by ID/UUID
@@ -118,7 +120,7 @@ class CacheHandler {
 	 * therefore never served (fail closed).
 	 *
 	 * @var array<int|string, string|null> Keyed identically to $nameCache — see
-	 *      the key-coercion note there.
+	 *                                     the key-coercion note there.
 	 */
 	private array $nameOrganisations = [];
 
@@ -605,9 +607,9 @@ class CacheHandler {
 	/**
 	 * Record the owning organisation and the source of a cached name.
 	 *
-	 * @param string      $key          The name-cache key (object id or uuid)
+	 * @param string $key The name-cache key (object id or uuid)
 	 * @param string|null $organisation The owning organisation UUID, or null when unknown
-	 * @param string|null $source       NAME_SOURCE_ORGANISATION, "<register>:<schema>", or null when unknown
+	 * @param string|null $source NAME_SOURCE_ORGANISATION, "<register>:<schema>", or null when unknown
 	 *
 	 * @return void
 	 *
@@ -627,7 +629,7 @@ class CacheHandler {
 	 * The name source of an object: "<registerId>:<schemaId>", the table its read rule lives on.
 	 *
 	 * @param mixed $register The object's register id
-	 * @param mixed $schema   The object's schema id
+	 * @param mixed $schema The object's schema id
 	 *
 	 * @return string|null The source, or null when either id is missing
 	 *
@@ -649,9 +651,9 @@ class CacheHandler {
 	 * unchanged is deliberate: every existing invalidation site removes
 	 * `name_<identifier>` and keeps working untouched.
 	 *
-	 * @param string      $name         The cached name
+	 * @param string $name The cached name
 	 * @param string|null $organisation The owning organisation UUID
-	 * @param string|null $source       The name source (see $nameSources)
+	 * @param string|null $source The name source (see $nameSources)
 	 *
 	 * @return array{n: string, o: string|null, s: string|null} The envelope stored in the distributed cache
 	 *
@@ -769,7 +771,13 @@ class CacheHandler {
 	 * This method loads multiple objects in a single database query and caches them
 	 * all, significantly improving performance for operations that access many objects.
 	 *
+	 * With a register, the identifiers are looked up in that register's tables
+	 * first and only the ones not found there in every table. A reference
+	 * nearly always points into its own register, and one lookup across every
+	 * magic table is a UNION over all of them (1.7k tables: 1.5-3.6 s).
+	 *
 	 * @param array $identifiers Array of object IDs/UUIDs to preload
+	 * @param int|null $registerId The register to look in first, or null for every table.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -783,7 +791,7 @@ class CacheHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function preloadObjects(array $identifiers): array {
+	public function preloadObjects(array $identifiers, ?int $registerId = null): array {
 		if (empty($identifiers) === true) {
 			return [];
 		}
@@ -807,7 +815,7 @@ class CacheHandler {
 
 		// Bulk load from database.
 		try {
-			$objects = $this->getObjectMapper()->findMultiple($identifiersToLoad);
+			$objects = $this->findForPreload(identifiers: array_values($identifiersToLoad), registerId: $registerId);
 
 			// Cache all loaded objects.
 			foreach ($objects as $object) {
@@ -830,6 +838,40 @@ class CacheHandler {
 			return [];
 		}//end try
 	}//end preloadObjects()
+
+	/**
+	 * Load objects by identifier, from one register's tables first when given.
+	 *
+	 * @param array<int|string> $identifiers The identifiers to load.
+	 * @param int|null $registerId The register to look in first.
+	 *
+	 * @return ObjectEntity[] The objects found.
+	 */
+	private function findForPreload(array $identifiers, ?int $registerId): array {
+		$mapper = $this->getObjectMapper();
+		if ($registerId === null) {
+			return $mapper->findMultiple($identifiers);
+		}
+
+		$objects = $mapper->findMultipleAcrossAllMagicTables(uuids: $identifiers, registerIdScope: $registerId);
+		$found = [];
+		foreach ($objects as $object) {
+			$found[(string)$object->getUuid()] = true;
+			$found[(string)$object->getId()] = true;
+		}
+
+		$missing = array_values(
+			array_filter(
+				$identifiers,
+				fn ($id) => isset($found[(string)$id]) === false
+			)
+		);
+		if ($missing === []) {
+			return $objects;
+		}
+
+		return array_merge($objects, $mapper->findMultiple($missing));
+	}//end findForPreload()
 
 	/**
 	 * Cache an object with memory management
@@ -1365,9 +1407,9 @@ class CacheHandler {
 	 * @param string $name Object name to cache
 	 * @param int $ttl Cache TTL in seconds (default: 24 hours)
 	 * @param string|null $organisation Owning organisation UUID (SEC-CTRL-2 step 2)
-	 * @param string|null $source       Where the name came from: NAME_SOURCE_ORGANISATION or
-	 *                                  "<registerId>:<schemaId>" (see objectNameSource()). Without
-	 *                                  one the entry is never served; the next lookup resolves it again.
+	 * @param string|null $source Where the name came from: NAME_SOURCE_ORGANISATION or
+	 *                            "<registerId>:<schemaId>" (see objectNameSource()). Without
+	 *                            one the entry is never served; the next lookup resolves it again.
 	 *
 	 * @return void
 	 *
@@ -2032,7 +2074,7 @@ class CacheHandler {
 	 * @param array $uuids Array of UUIDs to look up.
 	 *
 	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
-	 *         name, owning organisation and name source.
+	 *                                                                                            name, owning organisation and name source.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Table discovery, schema bulk-load
@@ -2148,12 +2190,12 @@ class CacheHandler {
 	/**
 	 * Query a single magic table for names by UUIDs.
 	 *
-	 * @param string      $tableName The table name (with oc_ prefix).
-	 * @param array       $uuids     Array of UUIDs to look up.
-	 * @param string|null $source    The table's name source, "<registerId>:<schemaId>".
+	 * @param string $tableName The table name (with oc_ prefix).
+	 * @param array $uuids Array of UUIDs to look up.
+	 * @param string|null $source The table's name source, "<registerId>:<schemaId>".
 	 *
 	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
-	 *         name, owning organisation and name source.
+	 *                                                                                            name, owning organisation and name source.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */

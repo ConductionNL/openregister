@@ -35,7 +35,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -68,6 +68,7 @@ use Psr\Log\NullLogger;
  * Task 4.2: the role grant and the grant that arrives from outside the block.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema

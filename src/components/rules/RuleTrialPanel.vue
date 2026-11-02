@@ -167,7 +167,7 @@ export default {
 		 *
 		 * @return {string} The placeholder.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		samplePlaceholder() {
 			return '{\n  "ontvangstdatum": "2026-01-01",\n  "bedrag": 900\n}'
@@ -178,7 +178,7 @@ export default {
 		 *
 		 * @return {boolean} True when there is a write to show.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		hasWrites() {
 			return this.result?.writes && Object.keys(this.result.writes).length > 0
@@ -191,7 +191,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		ruleId() {
 			this.result = null
@@ -205,7 +205,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		draft() {
 			this.result = null
@@ -222,7 +222,7 @@ export default {
 		 *
 		 * @return {string} The rendered value.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		renderValue(value) {
 			if (value === null || value === undefined) {
@@ -243,7 +243,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		async run() {
 			this.error = ''

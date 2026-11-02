@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class DependentValueTableTest extends TestCase {
 
@@ -85,7 +85,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASoundTableIsAccepted(): void {
 		$this->assertSame([], $this->codesFor($this->properties()));
@@ -96,7 +96,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAValueOutsideTheTableIsRefusedNamingBothProperties(): void {
 		$violations = (new DependentValueTable())->violations(
@@ -117,7 +117,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAValueInsideTheTableIsAllowed(): void {
 		$this->assertSame(
@@ -138,7 +138,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAPartialWriteIsJudgedAgainstTheStoredControllingValue(): void {
 		$violations = (new DependentValueTable())->violations(
@@ -159,7 +159,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnlistedControllingValueConstrainsNothing(): void {
 		$this->assertSame(
@@ -176,7 +176,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testATableNamingAnUnknownPropertyIsRefusedAtSchemaSave(): void {
 		$codes = $this->codesFor(
@@ -191,7 +191,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheUnknownPropertyRefusalNamesIt(): void {
 		$errors = (new DependentValueValidator())->validate(
@@ -206,7 +206,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnknownControllingValueIsRefusedAtSchemaSave(): void {
 		$codes = $this->codesFor(
@@ -221,7 +221,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAListedValueThePropertyCannotTakeIsRefused(): void {
 		$codes = $this->codesFor(
@@ -236,7 +236,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAPropertyCannotControlItself(): void {
 		$codes = $this->codesFor(
@@ -251,7 +251,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAMalformedTableIsRefused(): void {
 		$this->assertContains(DependentValueValidator::CODE_MALFORMED, $this->codesFor($this->properties(['controlledBy' => 'zaaktype'])));
@@ -263,7 +263,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaWithNoTableIsUntouched(): void {
 		$properties = ['zaaktype' => ['type' => 'string'], 'resultaat' => ['type' => 'string']];
@@ -280,7 +280,7 @@ class DependentValueTableTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnAbsentDependentValueIsNotRefused(): void {
 		$this->assertSame(

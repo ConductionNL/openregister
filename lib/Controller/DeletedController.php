@@ -187,7 +187,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return array<int, array<string, mixed>> The rows with their window.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function withWindows(array $objects): array {
 		$rows = [];
@@ -383,7 +383,7 @@ class DeletedController extends Controller {
 	 * @return JSONResponse JSON response with restore result
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function restore(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -465,7 +465,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function recordRestore(ObjectEntity $object, mixed $window): void {
 		$user = $this->userSession->getUser();
@@ -816,7 +816,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return JSONResponse The preview, the window and both clocks.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destructionPreview(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -876,7 +876,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return JSONResponse The destruction records, newest first.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destructionRecord(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {

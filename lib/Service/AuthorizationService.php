@@ -175,7 +175,7 @@ class AuthorizationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function claimConsumerToken(ResolvedConsumer $consumer, string $mechanism, ?string $reference): void {
 		if ($this->tokenContext === null) {

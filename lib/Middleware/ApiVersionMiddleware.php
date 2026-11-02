@@ -46,7 +46,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -123,7 +123,7 @@ class ApiVersionMiddleware extends Middleware {
 	 * contract fixes this signature; the decision is made from the request path,
 	 * not from the controller, for the reason given in the class docblock.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function beforeController($controller, $methodName): void {
 		if ($this->isApiRequest() === false) {
@@ -162,7 +162,7 @@ class ApiVersionMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Fixed by the Middleware contract.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function afterException($controller, $methodName, Exception $exception): Response {
 		if ($exception instanceof ApiVersionRefusedException) {
@@ -184,7 +184,7 @@ class ApiVersionMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Fixed by the Middleware contract.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
 		if ($this->isApiRequest() === false) {

@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\ContactLinkMapper;
 /**
  * Evaluates the declared effect of every indicator on every party of an object.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+ * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
  */
 class PartyIndicatorGuard {
 
@@ -76,7 +76,7 @@ class PartyIndicatorGuard {
 	 * @return array<int, array<string, string|null>> One entry per indicator, each
 	 *         carrying `party`, `partyKind`, `role`, `key`, `label`, `effect` and `note`.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function indicatorsForObject(string $objectUuid): array {
 		$found = [];
@@ -96,7 +96,7 @@ class PartyIndicatorGuard {
 	 *
 	 * @return array<int, string> The object uuids, each once.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function objectsOfParty(string $partyUuid): array {
 		$uuids = [];
@@ -119,7 +119,7 @@ class PartyIndicatorGuard {
 	 *
 	 * @throws Exception 403 naming the indicator and the party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function assertPublicationAllowed(string $objectUuid): void {
 		foreach ($this->indicatorsForObject(objectUuid: $objectUuid) as $indicator) {
@@ -149,7 +149,7 @@ class PartyIndicatorGuard {
 	 *
 	 * @return string|null The refusing indicator's label.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function sendRefusalFor(string $partyUuid): ?string {
 		$party = $this->parties->find(partyUuid: $partyUuid);

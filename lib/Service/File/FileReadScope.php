@@ -54,6 +54,7 @@ class FileReadScope {
 	 * @param LoggerInterface $logger      Logs a lookup that failed, at debug level.
 	 * @param FileService|null      $fileService      Finds an object's file in the openregister account's home.
 	 * @param ObjectFileAccess|null $objectFileAccess The object read rule for an object's file.
+	 * @param FileRestrictionGuard|null $restrictions Refuses a restricted file the caller is not admitted to.
 	 *
 	 * @return void
 	 */
@@ -63,6 +64,7 @@ class FileReadScope {
 		private readonly LoggerInterface $logger,
 		private readonly ?FileService $fileService = null,
 		private readonly ?ObjectFileAccess $objectFileAccess = null,
+		private readonly ?FileRestrictionGuard $restrictions = null,
 	) {
 	}//end __construct()
 
@@ -171,6 +173,10 @@ class FileReadScope {
 	 * @return bool True when the caller can open it.
 	 */
 	private function mayRead(Folder $userFolder, int $fileId): bool {
+		if ($this->restrictions !== null && $this->restrictions->mayRead(fileId: $fileId) === false) {
+			return false;
+		}
+
 		try {
 			// An object's file is answered by the object's read rule: it sits
 			// in the openregister account's home, never in the caller's tree.

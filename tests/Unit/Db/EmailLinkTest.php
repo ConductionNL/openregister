@@ -34,15 +34,72 @@ class EmailLinkTest extends TestCase {
 		$this->assertStringContainsString('2026-03-25', $json['linkedAt']);
 	}
 
+	/**
+	 * The sender's display name and the link's details read from the metadata
+	 * (direction, recipient, attachments, how it was linked, its archive copy),
+	 * flat beside the fields; the metadata string keeps its shape and unknown
+	 * keys stay out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md
+	 */
+	public function testJsonSerializeCarriesSenderNameAndDetails(): void {
+		$link = new EmailLink();
+		$link->setSenderName('Sanne de Vries');
+		$link->setMetadata((string) json_encode([
+			'source'          => 'example-set:portaliq/x',
+			'direction'       => 'inbound',
+			'attachmentCount' => 1,
+			'linkedVia'       => 'mailbox',
+			'archivedAs'      => 'pdf',
+			'mailboxName'     => 'het Woo-postvak',
+			'other'           => 'kept out',
+		]));
+
+		$json = $link->jsonSerialize();
+
+		$this->assertSame(expected: 'Sanne de Vries', actual: $json['senderName']);
+		$this->assertSame(
+			expected: [
+				'direction'       => 'inbound',
+				'recipientName'   => null,
+				'attachmentCount' => 1,
+				'linkedVia'       => 'mailbox',
+				'archivedAs'      => 'pdf',
+				'mailboxName'     => 'het Woo-postvak',
+			],
+			actual: $json['details']
+		);
+		$this->assertIsString(actual: $json['metadata']);
+	}
+
+	/**
+	 * An empty link serialises with nulls, and every detail key present.
+	 *
+	 * @return void
+	 */
 	public function testJsonSerializeHandlesNulls(): void {
 		$link = new EmailLink();
 
 		$json = $link->jsonSerialize();
 
-		$this->assertNull($json['objectUuid']);
-		$this->assertNull($json['mailDate']);
-		$this->assertNull($json['linkedAt']);
-		$this->assertNull($json['subject']);
+		$this->assertNull(actual: $json['objectUuid']);
+		$this->assertNull(actual: $json['mailDate']);
+		$this->assertNull(actual: $json['linkedAt']);
+		$this->assertNull(actual: $json['subject']);
+		$this->assertNull(actual: $json['senderName']);
+		$this->assertSame(
+			expected: [
+				'direction'       => null,
+				'recipientName'   => null,
+				'attachmentCount' => null,
+				'linkedVia'       => null,
+				'archivedAs'      => null,
+				'mailboxName'     => null,
+			],
+			actual: $json['details']
+		);
 	}
 
 	public function testSettersAndGetters(): void {

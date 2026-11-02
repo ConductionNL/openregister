@@ -213,6 +213,20 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(2, $response->getData()['total']);
 	}//end testAHandlerGroupMemberListsTheIntakesAttachments()
 
+	public function testTheListIsTheReadableObjectsNotTheRawIdentifiers(): void {
+		// #4037: the route id may be a slug, unique within register + schema only.
+		// The files listed are those of the object the read check resolved there,
+		// never a cross-table lookup of the raw id that another schema's object could win.
+		$this->fileService->expects($this->once())
+			->method('getFiles')
+			->with($this->identicalTo($this->object), false)
+			->willReturn([$this->createMock(File::class)]);
+		$response = $this->controllerAs('behandelaar', ['openformulieren-behandelaars'])
+			->index(register: '7', schema: '42', id: 'hello-world');
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(1, $response->getData()['total']);
+	}//end testTheListIsTheReadableObjectsNotTheRawIdentifiers()
+
 	public function testANonMemberGets404AndNoFileList(): void {
 		$this->fileService->expects($this->never())->method('getFiles');
 

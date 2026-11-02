@@ -68,7 +68,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Integration\LeafBundle;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
@@ -137,7 +137,7 @@ class LeafScriptListener implements IEventListener {
 
 		try {
 			$currentApp = $this->currentAppId();
-			if ($currentApp === null || $currentApp === Application::APP_ID) {
+			if ($currentApp === null || $currentApp === AppIdentity::APP_ID) {
 				return;
 			}
 
@@ -174,7 +174,7 @@ class LeafScriptListener implements IEventListener {
 	 * @spec openspec/specs/integration-registry/spec.md#requirement-a-leafs-client-half-must-be-loaded-on-consuming-pages
 	 */
 	public function leafAppsFor(string $currentApp): array {
-		if ($currentApp === '' || $currentApp === Application::APP_ID) {
+		if ($currentApp === '' || $currentApp === AppIdentity::APP_ID) {
 			return [];
 		}
 

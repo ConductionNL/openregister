@@ -130,7 +130,7 @@ class SettingsServiceTest extends TestCase {
 		$this->objectRetentionHandler = $this->createMock(ObjectRetentionHandler::class);
 		$this->cacheSettingsHandler = $this->createMock(CacheSettingsHandler::class);
 		$this->validationOperationsHandler = $this->createMock(ValidationOperationsHandler::class);
-		$this->searchBackendHandler = $this->createMock(SearchBackendHandler::class);
+		$this->searchBackendHandler = new SearchBackendHandler();
 		$this->llmSettingsHandler = $this->createMock(LlmSettingsHandler::class);
 		$this->fileSettingsHandler = $this->createMock(FileSettingsHandler::class);
 
@@ -820,36 +820,6 @@ class SettingsServiceTest extends TestCase {
 		$this->assertSame($expected, $result);
 	}
 
-	// ===== SEARCH BACKEND CONFIG TESTS =====.
-
-	/**
-	 * Test updateSearchBackendConfig delegates to searchBackendHandler with database backend
-	 */
-	public function testUpdateSearchBackendConfig(): void {
-		$expected = ['active' => 'database', 'available' => ['database']];
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('database')
-			->willReturn($expected);
-
-		$result = $this->settingsService->updateSearchBackendConfig(data: ['backend' => 'database']);
-		$this->assertSame($expected, $result);
-	}
-
-	/**
-	 * Test updateSearchBackendConfig with 'active' key
-	 */
-	public function testUpdateSearchBackendConfigWithActiveKey(): void {
-		$expected = ['active' => 'database', 'available' => ['database']];
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('database')
-			->willReturn($expected);
-
-		$result = $this->settingsService->updateSearchBackendConfig(data: ['active' => 'database']);
-		$this->assertSame($expected, $result);
-	}
-
 	// ===== DATABASE INFO / POSTGRES EXTENSION TESTS =====.
 
 	/**
@@ -1349,23 +1319,6 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test updateSearchBackendConfig passes 'database' to handler when explicitly requested
-	 *
-	 * The production default when no key is present is 'solr' (legacy); passing
-	 * ['backend' => 'database'] explicitly exercises the database-only path.
-	 */
-	public function testUpdateSearchBackendConfigDefaultsDatabase(): void {
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('database')
-			->willReturn(['active' => 'database', 'available' => ['database']]);
-
-		$result = $this->settingsService->updateSearchBackendConfig(data: ['backend' => 'database']);
-		$this->assertSame('database', $result['active']);
-		$this->assertSame(['database'], $result['available']);
-	}
-
-	/**
 	 * Test getPostgresExtensions with extensions but no name keys
 	 */
 	public function testGetPostgresExtensionsWithMalformedData(): void {
@@ -1605,25 +1558,6 @@ class SettingsServiceTest extends TestCase {
 		$this->assertSame([], $result);
 	}
 
-	// ===== SEARCH BACKEND CONFIG EDGE CASES =====.
-
-	/**
-	 * Test updateSearchBackendConfig prefers 'backend' over 'active' key
-	 */
-	public function testUpdateSearchBackendConfigBackendPrecedence(): void {
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('elasticsearch')
-			->willReturn(['active' => 'elasticsearch']);
-
-		// When both 'backend' and 'active' are present, 'backend' takes precedence.
-		$result = $this->settingsService->updateSearchBackendConfig(
-			['backend' => 'elasticsearch', 'active' => 'solr']
-		);
-
-		$this->assertSame('elasticsearch', $result['active']);
-	}
-
 	// ===== GET STATS OUTER EXCEPTION =====.
 
 	/**
@@ -1846,7 +1780,6 @@ class SettingsServiceTest extends TestCase {
 
 		$this->assertInstanceOf(SettingsService::class, $service);
 
-		// getSearchBackendConfig reads appConfig which we stubbed to return database config.
 		$result = $service->getSearchBackendConfig();
 		$this->assertSame('database', $result['active']);
 		$this->assertSame(['database'], $result['available']);

@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\IConfig;
  * config closes the whole server including the settings pages, which is the
  * exact lock-out D-6 exists to avoid.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
 class MaintenanceModeService {
 
@@ -116,7 +116,7 @@ class MaintenanceModeService {
 	 *
 	 * @return bool True while the mode holds.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function holds(): bool {
 		return $this->config->getAppValue(self::APP_ID, self::SETTING_ENABLED, 'no') === 'yes';
@@ -128,7 +128,7 @@ class MaintenanceModeService {
 	 *
 	 * @return string The administered message, or the shipped one.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function message(): string {
 		$message = $this->config->getAppValue(self::APP_ID, self::SETTING_MESSAGE, '');
@@ -146,7 +146,7 @@ class MaintenanceModeService {
 	 *
 	 * @return array<string, mixed> Whether it holds, the message, who and when.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function state(): array {
 		$since = $this->config->getAppValue(self::APP_ID, self::SETTING_SINCE, '');
@@ -178,7 +178,7 @@ class MaintenanceModeService {
 	 *
 	 * @return array<string, mixed> The mode now in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function enter(string $actor, ?string $message = null): array {
 		if ($message !== null && trim($message) !== '') {
@@ -207,7 +207,7 @@ class MaintenanceModeService {
 	 *
 	 * @return array<string, mixed> The mode now in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function leave(string $actor): array {
 		$this->config->setAppValue(self::APP_ID, self::SETTING_ENABLED, 'no');

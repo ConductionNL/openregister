@@ -3894,6 +3894,117 @@
           }
         ],
         "submittedAt": "2026-04-03T11:15:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "destruction-lists",
+          "schema": "destructionList",
+          "slug": "destructionlist-voorbeeld-title-1-1"
+        },
+        "status": "in_review",
+        "title": "Voorbeeld Title 1",
+        "createdBy": "Voorbeeld Createdby 1",
+        "createdAt": "Voorbeeld Createdat 1",
+        "objectCount": 1,
+        "objects": [
+          {
+            "uuid": "Voorbeeld Uuid 1",
+            "title": "Voorbeeld Title 1",
+            "schema": 1,
+            "register": 1,
+            "archiefactiedatum": "Voorbeeld Archiefactiedatum 1",
+            "classification": "Voorbeeld Classification 1",
+            "reviewer": "Voorbeeld Reviewer 1",
+            "assignedAt": "Voorbeeld Assignedat 1"
+          }
+        ],
+        "excluded": [
+          {}
+        ],
+        "approvals": [
+          {}
+        ],
+        "rejections": [
+          {}
+        ],
+        "decisions": [
+          {}
+        ],
+        "certificateUuid": "Voorbeeld Certificateuuid 1"
+      },
+      {
+        "@self": {
+          "register": "destruction-lists",
+          "schema": "destructionList",
+          "slug": "destructionlist-voorbeeld-title-2-2"
+        },
+        "status": "awaiting_second_approval",
+        "title": "Voorbeeld Title 2",
+        "createdBy": "Voorbeeld Createdby 2",
+        "createdAt": "Voorbeeld Createdat 2",
+        "objectCount": 2,
+        "objects": [
+          {
+            "uuid": "Voorbeeld Uuid 2",
+            "title": "Voorbeeld Title 2",
+            "schema": 2,
+            "register": 2,
+            "archiefactiedatum": "Voorbeeld Archiefactiedatum 2",
+            "classification": "Voorbeeld Classification 2",
+            "reviewer": "Voorbeeld Reviewer 2",
+            "assignedAt": "Voorbeeld Assignedat 2"
+          }
+        ],
+        "excluded": [
+          {}
+        ],
+        "approvals": [
+          {}
+        ],
+        "rejections": [
+          {}
+        ],
+        "decisions": [
+          {}
+        ],
+        "certificateUuid": "Voorbeeld Certificateuuid 2"
+      },
+      {
+        "@self": {
+          "register": "destruction-lists",
+          "schema": "destructionList",
+          "slug": "destructionlist-voorbeeld-title-3-3"
+        },
+        "status": "approved",
+        "title": "Voorbeeld Title 3",
+        "createdBy": "Voorbeeld Createdby 3",
+        "createdAt": "Voorbeeld Createdat 3",
+        "objectCount": 3,
+        "objects": [
+          {
+            "uuid": "Voorbeeld Uuid 3",
+            "title": "Voorbeeld Title 3",
+            "schema": 3,
+            "register": 3,
+            "archiefactiedatum": "Voorbeeld Archiefactiedatum 3",
+            "classification": "Voorbeeld Classification 3",
+            "reviewer": "Voorbeeld Reviewer 3",
+            "assignedAt": "Voorbeeld Assignedat 3"
+          }
+        ],
+        "excluded": [
+          {}
+        ],
+        "approvals": [
+          {}
+        ],
+        "rejections": [
+          {}
+        ],
+        "decisions": [
+          {}
+        ],
+        "certificateUuid": "Voorbeeld Certificateuuid 3"
       }
     ]
   }

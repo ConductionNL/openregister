@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
@@ -267,9 +268,6 @@ class ObjectService implements ObjectServiceInterface
      */
     private ?NotSuppliedHandler $notSuppliedHandler = null;
 
-    // **REMOVED**: Distributed caching mechanisms removed since SOLR is now our index.
-    // **REMOVED**: Cache TTL constants removed since SOLR is now our index.
-
     /**
      * Constructor for ObjectService.
      *
@@ -389,7 +387,6 @@ class ObjectService implements ObjectServiceInterface
     ) {
         // REFACTORED: Removed ExportHandler and VectorizationHandler to break circular deps.
         // Handlers should not depend on services - using ExportService, ImportService, VectorizationService.
-        // **REMOVED**: Cache initialization removed since SOLR is now our index.
         $this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
             registerMapper: $registerMapper,
             schemaMapper: $schemaMapper
@@ -1350,7 +1347,7 @@ class ObjectService implements ObjectServiceInterface
      * @return void
      *
      * @spec openspec/specs/avg-verwerkingsregister/spec.md
-     * @spec openspec/changes/read-history-on-audit-trail/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
      */
     private function logProcessingRead(ObjectEntity $object): void
     {
@@ -1748,353 +1745,25 @@ class ObjectService implements ObjectServiceInterface
         $result    = null;
 
         try {
-            $this->discardPendingSchemaRef();
-            // Bound the folder-access revalidation cache to this single save call
-            // (not the whole FileService/request lifetime), so a cascade save that
-            // moves or trashes a folder mid-request can't be waved through on a
-            // stale "accessible" verdict from an earlier write.
-            $this->fileService->resetFolderAccessRevalidationCache();
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('start');
-
-            // Set register/schema context.
-            $this->setContextFromParameters(
-                register: $register,
-                schema: $schema
-            );
-
-            // Extract UUID and convert ObjectEntity to array if needed.
-            [$object, $uuid] = $this->extractUuidAndNormalizeObject(
+            $result = $this->saveWithinScope(
                 object: $object,
-                uuid: $uuid
+                options: [
+                    'extend'         => $extend,
+                    'register'       => $register,
+                    'schema'         => $schema,
+                    'uuid'           => $uuid,
+                    '_rbac'          => $_rbac,
+                    '_multitenancy'  => $_multitenancy,
+                    'silent'         => $silent,
+                    '_validation'    => $_validation,
+                    'uploadedFiles'  => $uploadedFiles,
+                    'currentUser'    => $currentUser,
+                    'failIfExists'   => $failIfExists,
+                    '_unowned'       => $_unowned,
+                    '_dedupOverride' => $_dedupOverride,
+                    '_owner'         => $_owner,
+                ]
             );
-
-            // Check permissions for CREATE or UPDATE operation.
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
-
-            $this->checkSavePermissions(
-                uuid: $uuid,
-                _rbac: $_rbac,
-                object: $object
-            );
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
-
-            // A type backed by a saved view lists the view's rows; nothing is
-            // written to it (modelling-query-backed-type). 405, like append-only.
-            $viewWrite = 'update';
-            if ($uuid === null) {
-                $viewWrite = 'create';
-            }
-
-            $this->rejectIfViewBacked(operation: $viewWrite);
-
-            // Reject updates to transferred objects (archiefstatus = overgebracht).
-            if ($uuid !== null) {
-                $this->rejectIfTransferred(uuid: $uuid);
-            }
-
-            // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
-            //
-            // Carrying a uuid is not the same as updating. A caller may choose
-            // the identifier of a new object (an `id` in the body becomes the
-            // uuid above), and xAPI requires exactly that: a statement is stored
-            // under its own id. Treating every uuid as an update refused every
-            // such insert. So the question is whether the object EXISTS.
-            if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-                if ($this->appendOnlyTargetExists(uuid: $uuid) === true) {
-                    $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-                    throw new AppendOnlyException(
-                        schemaIdentifier: $schemaSlug,
-                        operation: 'update'
-                    );
-                }
-
-                // Not there now does not mean not there at write time. Make the
-                // write insert-only all the way down, so a concurrent insert of
-                // the same uuid loses at the `_uuid` unique constraint with a
-                // 409 (MagicMapper) instead of being applied as an update.
-                $failIfExists = true;
-            }
-
-            // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
-            $uuidWasNull = ($uuid === null);
-
-            // Handle cascading relations while preserving context.
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions');
-
-            [$object, $uuid] = $this->handleCascadingWithContextPreservation(
-                object: $object,
-                uuid: $uuid
-            );
-
-            // If UUID was null and is now set, mark it as auto-generated in object data.
-            // This allows SaveObject to distinguish between user-provided UUIDs (UPDATE)
-            // and auto-generated UUIDs (CREATE).
-            if ($uuidWasNull === true && $uuid !== null) {
-                // Store flag in @self to indicate this is a CREATE operation.
-                if (isset($object['@self']) === false || is_array($object['@self']) === false) {
-                    $object['@self'] = [];
-                }
-
-                $object['@self']['_autoGeneratedUuid'] = true;
-                $this->logger->debug(
-                    message: '[ObjectService] UUID auto-generated by CascadingHandler, marking as CREATE operation',
-                    context: [
-                        'file'     => __FILE__,
-                        'line'     => __LINE__,
-                        'uuid'     => $uuid,
-                        'register' => $this->currentRegister?->getId(),
-                        'schema'   => $this->currentSchema?->getId(),
-                    ]
-                );
-            }
-
-            // BUG-OBJ-4: applyAlwaysDefaults() and validateObjectIfRequired()
-            // both dereference $this->currentSchema (non-nullable param /
-            // ->getHardValidation()). If the schema could not be resolved from
-            // the request we would otherwise emit a raw TypeError 500 here.
-            // Throw a structured ValidationException instead, which the
-            // controllers translate into a clean 400 via handleValidationException().
-            if ($this->currentSchema === null) {
-                throw new ValidationException(
-                    message: 'Schema could not be resolved for this object; provide a valid register/schema.'
-                );
-            }
-
-            // Apply "always" defaults BEFORE validation.
-            // This ensures computed/derived properties (e.g., dienstType from type) are set
-            // before validation runs, allowing them to override invalid incoming values.
-            $object = $this->saveHandler->applyAlwaysDefaults(
-                schema: $this->currentSchema,
-                data: $object
-            );
-
-            // Evaluate expression defaults, CREATE only, before validation.
-            // A property that is both required and derived can never be created
-            // if its value arrives after the validator has looked. The refusal
-            // names the property, because "validation failed" about a value the
-            // caller never sent is the least actionable message there is.
-            if ($uuidWasNull === true) {
-                $object = $this->saveHandler->applyExpressionDefaults(
-                    schema: $this->currentSchema,
-                    data: $object
-                );
-            }
-
-            // Normalize date values BEFORE validation.
-            // Accepts datetime input (e.g. "2024-01-15T10:30:00+02:00") for date fields
-            // and casts it to date-only (e.g. "2024-01-15") so Opis validation passes.
-            $object = $this->normalizeDateValues(object: $object);
-
-            // Auto-seed a graph-lifecycle field from the parent on CREATE only,
-            // BEFORE validation, so a required `$ref` lifecycle field passes on a
-            // seeded create. $uuidWasNull is the create signal (updates always
-            // carry a UUID); the seed itself is empty-field-only and fail-soft, so
-            // it never overwrites a client-supplied value. See the object-lifecycle
-            // spec: fk-graph-lifecycle-transitions.
-            if ($uuidWasNull === true) {
-                $object = $this->saveHandler->seedLifecycleFieldOnCreate(
-                    schema: $this->currentSchema,
-                    data: $object
-                );
-            }
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
-
-            // The declared bounds hold on every write, hard validation or not.
-            // Ordered before the validator so a caller who sent four rows into
-            // a group of three reads that sentence rather than a JSON-pointer
-            // complaint about the same array.
-            $this->enforceDeclaredShapes(object: $object);
-
-            // Validate if hard validation is enabled.
-            $updateUuid = $uuid;
-            if ($uuidWasNull === true) {
-                $updateUuid = null;
-            }
-
-            $this->validateObjectIfRequired(object: $object, uuid: $updateUuid);
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
-
-            // Wave-12 Fix 1: enforce JSON-Schema `readOnly: true` on UPDATE.
-            // Skipped on CREATE (no prior value to violate). Loads the existing
-            // object exactly once so the check is data-driven, not metadata-only.
-            $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
-
-            // A lens is resolved at read and never stored, so a value sent for
-            // one is refused on CREATE as well as UPDATE. Writing through a
-            // lens is writing to somebody else's record by accident (D-2).
-            $this->enforceLensesAreReadOnly(object: $object);
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
-
-            // Ensure folder exists for the object.
-            $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
-
-            // Clear request-scoped caches before starting a new top-level save operation.
-            // This ensures cascade operations benefit from caching while avoiding stale data.
-            $this->saveHandler->clearAllCaches();
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
-
-            // Delegate to SaveObject handler for actual save operation.
-            $savedObject = $this->saveHandler->saveObject(
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                data: $object,
-                uuid: $uuid,
-                folderId: $folderId,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                persist: true,
-                silent: $silent,
-                _validation: $_validation,
-                uploadedFiles: $uploadedFiles,
-                currentUser: $currentUser,
-                failIfExists: $failIfExists,
-                _unowned: $_unowned,
-                _dedupOverride: $_dedupOverride,
-                _owner: $_owner
-            );
-
-            // Invalidate contact matching cache for objects with email properties.
-            // BUG-OBJ-9: invalidate against the SAVED object's data (final UUID +
-            // applied defaults), not the pre-save input array, so an email value
-            // injected by a default/computed property is also invalidated.
-            try {
-                // Through the injected app container, never `\OC::$server`: outside a
-                // booted Nextcloud the global container autowires this app's
-                // services from scratch and recurses through a MagicMapper ->
-                // SettingsService -> ValidationOperationsHandler -> ValidateObject
-                // cycle until memory runs out (19 GB on 2026-09-08).
-                $contactMatchingService = $this->container->get(
-                    \OCA\OpenRegister\Service\ContactMatchingService::class
-                );
-                $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
-            } catch (\Throwable $e) {
-                // BUG-OBJ-9 / BUG-OBJ-14: contact-match cache invalidation is a
-                // non-essential post-save side-effect and must NEVER fail the save.
-                // Catch \Throwable (the invalidation path can raise a runtime Error,
-                // e.g. an unavailable SystemTag subsystem, not just a container
-                // exception) but log it with object context so the miss stays
-                // visible instead of being silently swallowed.
-                $this->logger->warning(
-                    message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'exception' => $e->getMessage(),
-                        'uuid'      => $savedObject->getUuid(),
-                        'register'  => $this->currentRegister?->getId(),
-                        'schema'    => $this->currentSchema?->getId(),
-                    ]
-                );
-            }//end try
-
-            // Invalidate Smart Picker / reference-provider preview caches for the
-            // saved object, so an edit is reflected the next time the object is
-            // resolved as a reference (mail-smart-picker spec: "Cache invalidation
-            // on object update"). Every canonical URL shape OpenRegister itself
-            // recognises comes from ObjectPreviewFormatter::buildCanonicalUrls() —
-            // the SAME pattern list matchReference()/getCachePrefix() use — so
-            // this can never invalidate a different set of shapes than the ones
-            // the providers actually match against (design.md D4). Best-effort:
-            // never fails the save.
-            try {
-                // Same rule as the contact-match block above: the injected app
-                // container, never `\OC::$server`.
-                $container = $this->container;
-                $referenceManager = $container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
-                $formatter = $container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
-                $deepLinkRegistry = $container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
-
-                $invalidationRegisterId = (int)$this->currentRegister?->getId();
-                $invalidationSchemaId = (int)$this->currentSchema?->getId();
-                $invalidationUuid = (string)$savedObject->getUuid();
-
-                $invalidatedPrefixes = [];
-                foreach (
-                    $formatter->buildCanonicalUrls(
-                        registerId: $invalidationRegisterId,
-                        schemaId: $invalidationSchemaId,
-                        uuid: $invalidationUuid
-                    ) as $canonicalUrl
-                ) {
-                    $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
-                    if (isset($invalidatedPrefixes[$prefix]) === false) {
-                        $referenceManager->invalidateCache(cachePrefix: $prefix);
-                        $invalidatedPrefixes[$prefix] = true;
-                    }
-                }
-
-                // Flat data shape deep link URL templates resolve placeholders
-                // against — same shape ObjectPreviewFormatter::buildReference()
-                // and ObjectSearchResultFormatter::format() build for the same
-                // purpose: the object's own fields plus the identity triple.
-                $deepLinkObjectData = array_merge(
-                    $savedObject->getObject(),
-                    [
-                        'uuid' => $invalidationUuid,
-                        'register' => $invalidationRegisterId,
-                        'schema' => $invalidationSchemaId,
-                    ]
-                );
-
-                $deepLinkUrl = $deepLinkRegistry->resolveUrl(
-                    registerId: $invalidationRegisterId,
-                    schemaId: $invalidationSchemaId,
-                    objectData: $deepLinkObjectData
-                );
-                if ($deepLinkUrl !== null) {
-                    $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
-                }
-            } catch (\Throwable $e) {
-                // Smart Picker cache invalidation is a non-essential post-save
-                // side-effect and must NEVER fail the save. Catch \Throwable (the
-                // reference manager or an unavailable formatter service can raise
-                // a runtime Error, not just a container exception) but log it with
-                // object context so the miss stays visible instead of being
-                // silently swallowed.
-                $this->logger->warning(
-                    message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'exception' => $e->getMessage(),
-                        'uuid'      => $savedObject->getUuid(),
-                        'register'  => $this->currentRegister?->getId(),
-                        'schema'    => $this->currentSchema?->getId(),
-                    ]
-                );
-            }//end try
-
-            // Lazy folder creation: intentionally do NOT create a file-storage
-            // folder here. An object only needs a folder once a file is attached;
-            // the folder is created on demand on the first upload
-            // (CreateFileHandler → getObjectFolder, which creates-if-missing). This
-            // avoids cluttering the Files tree with an empty folder per object and
-            // avoids binding system/seed-created objects to a folder a later editor
-            // can't access (the folder_access_denied case).
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('persist+events');
-
-            // Render and return the saved object.
-            $renderedObject = $this->renderHandler->renderEntity(
-                entity: $savedObject,
-                _extend: $extend ?? [],
-                registers: null,
-                schemas: null,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-            \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
-            \OCA\OpenRegister\Service\WritePhaseProbe::flush();
-
-            // Assigned rather than returned: the boundary below may apply an
-            // automatic transition whose entity is the one the caller must see.
-            $result = $renderedObject;
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
 
@@ -2114,6 +1783,366 @@ class ObjectService implements ObjectServiceInterface
 
         return $this->autoTransitions->preferAutomatic(saved: $result, applied: $automatic);
     }//end saveObject()
+
+    /**
+     * Run one save inside the scope saveObject() opened: check, prepare, persist, invalidate, render.
+     *
+     * @param array|ObjectEntity $object  The object data or entity to save.
+     * @param array              $options The saveObject() arguments other than the object, by name.
+     *
+     * @return ObjectEntity The saved and rendered object
+     *
+     * @throws Exception If there is an error during save
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) WritePhaseProbe marks are static timing probes
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function saveWithinScope(array | ObjectEntity $object, array $options): ObjectEntity
+    {
+        $this->discardPendingSchemaRef();
+        // Bound the folder-access revalidation cache to this single save call
+        // (not the whole FileService/request lifetime), so a cascade save that
+        // moves or trashes a folder mid-request can't be waved through on a
+        // stale "accessible" verdict from an earlier write.
+        $this->fileService->resetFolderAccessRevalidationCache();
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('start');
+
+        $this->setContextFromParameters(register: $options['register'], schema: $options['schema']);
+        [$object, $uuid] = $this->extractUuidAndNormalizeObject(object: $object, uuid: $options['uuid']);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
+        $this->checkSavePermissions(uuid: $uuid, _rbac: $options['_rbac'], object: $object);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
+
+        $options['failIfExists'] = $this->guardWriteTarget(uuid: $uuid, failIfExists: $options['failIfExists']);
+
+        // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
+        $uuidWasNull = ($uuid === null);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions');
+        [$object, $uuid] = $this->handleCascadingWithContextPreservation(object: $object, uuid: $uuid);
+        if ($uuidWasNull === true && $uuid !== null) {
+            $object = $this->markAutoGeneratedUuid(object: $object, uuid: $uuid);
+        }
+
+        $object = $this->prepareObjectForSave(object: $object, write: ['uuid' => $uuid, 'isCreate' => $uuidWasNull]);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
+        $options['folderId'] = $this->ensureObjectFolder(uuid: $uuid, currentUser: $options['currentUser']);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
+
+        // Clear request-scoped caches before starting a new top-level save operation.
+        // This ensures cascade operations benefit from caching while avoiding stale data.
+        $this->saveHandler->clearAllCaches();
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
+
+        $savedObject = $this->persistObject(object: $object, options: ['uuid' => $uuid] + $options);
+        $this->invalidateContactMatchCache(savedObject: $savedObject);
+        $this->invalidateReferenceCaches(savedObject: $savedObject);
+
+        // Lazy folder creation: no file-storage folder is created here. The
+        // folder is created on demand on the first upload, which keeps empty
+        // folders out of the Files tree and system-created objects out of
+        // folders a later editor cannot access.
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('persist+events');
+
+        $renderedObject = $this->renderHandler->renderEntity(
+            entity: $savedObject,
+            _extend: $options['extend'] ?? [],
+            registers: null,
+            schemas: null,
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy']
+        );
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
+        \OCA\OpenRegister\Service\WritePhaseProbe::flush();
+
+        return $renderedObject;
+    }//end saveWithinScope()
+
+    /**
+     * Refuse a write the target does not take, and say whether the write must insert only.
+     *
+     * A type backed by a saved view lists the view's rows and takes no write
+     * (405, like append-only). A transferred object (archiefstatus overgebracht)
+     * is read-only. On an append-only schema an existing object refuses the
+     * update; a uuid that does not exist yet is an insert with a caller-chosen
+     * id (xAPI stores a statement under its own id), made insert-only all the
+     * way down so a concurrent insert of the same uuid loses at the `_uuid`
+     * unique constraint with a 409 instead of being applied as an update.
+     *
+     * @param string|null $uuid         The uuid being written, or null for a create.
+     * @param bool        $failIfExists Whether the caller asked for an insert-only write.
+     *
+     * @return bool Whether the write must insert only.
+     *
+     * @throws Exception When the target refuses the write.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function guardWriteTarget(?string $uuid, bool $failIfExists): bool
+    {
+        $viewWrite = 'update';
+        if ($uuid === null) {
+            $viewWrite = 'create';
+        }
+
+        $this->rejectIfViewBacked(operation: $viewWrite);
+        if ($uuid === null) {
+            return $failIfExists;
+        }
+
+        $this->rejectIfTransferred(uuid: $uuid);
+        if ($this->currentSchema === null || $this->currentSchema->isAppendOnly() === false) {
+            return $failIfExists;
+        }
+
+        if ($this->appendOnlyTargetExists(uuid: $uuid) === true) {
+            throw new AppendOnlyException(
+                schemaIdentifier: ($this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId()),
+                operation: 'update'
+            );
+        }
+
+        return true;
+    }//end guardWriteTarget()
+
+    /**
+     * Mark a uuid the cascading handler generated, so SaveObject treats the write as a CREATE.
+     *
+     * SaveObject tells a user-provided uuid (UPDATE) from an auto-generated one
+     * (CREATE) by this flag in @self.
+     *
+     * @param array  $object The object data.
+     * @param string $uuid   The generated uuid.
+     *
+     * @return array The object data with the flag in @self.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function markAutoGeneratedUuid(array $object, string $uuid): array
+    {
+        if (isset($object['@self']) === false || is_array($object['@self']) === false) {
+            $object['@self'] = [];
+        }
+
+        $object['@self']['_autoGeneratedUuid'] = true;
+        $this->logger->debug(
+            message: '[ObjectService] UUID auto-generated by CascadingHandler, marking as CREATE operation',
+            context: [
+                'file'     => __FILE__,
+                'line'     => __LINE__,
+                'uuid'     => $uuid,
+                'register' => $this->currentRegister?->getId(),
+                'schema'   => $this->currentSchema?->getId(),
+            ]
+        );
+        return $object;
+    }//end markAutoGeneratedUuid()
+
+    /**
+     * Apply defaults and run every check that comes before the write.
+     *
+     * Defaults come before validation, so a computed or derived property can
+     * override an invalid incoming value, and a property that is both required
+     * and derived can be created. Expression defaults and the lifecycle seed
+     * apply on CREATE only. Dates are normalised (a datetime for a date field is
+     * cast to the date) so validation passes. An update that sends back the mask
+     * of an explicit-reveal value keeps the stored value. The declared bounds
+     * hold on every write, before the validator, so the caller reads that
+     * sentence rather than a JSON-pointer complaint. After validation, readOnly
+     * holds on UPDATE and a lens takes no value on any write.
+     *
+     * @param array $object The object data.
+     * @param array $write  The uuid and whether the write is a create.
+     *
+     * @return array The object data ready to save.
+     *
+     * @throws ValidationException When the schema is not resolved or a check fails.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function prepareObjectForSave(array $object, array $write): array
+    {
+        // A schema that could not be resolved from the request is a structured
+        // 400 here, not a raw TypeError 500 in the steps below.
+        if ($this->currentSchema === null) {
+            throw new ValidationException(
+                message: 'Schema could not be resolved for this object; provide a valid register/schema.'
+            );
+        }
+
+        $object = $this->saveHandler->applyAlwaysDefaults(schema: $this->currentSchema, data: $object);
+        if ($write['isCreate'] === true) {
+            $object = $this->saveHandler->applyExpressionDefaults(schema: $this->currentSchema, data: $object);
+        }
+
+        $object = $this->normalizeDateValues(object: $object);
+        if ($write['isCreate'] === true) {
+            $object = $this->saveHandler->seedLifecycleFieldOnCreate(schema: $this->currentSchema, data: $object);
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
+        if ($write['isCreate'] === false) {
+            $object = $this->restoreMaskedReveals(object: $object, uuid: $write['uuid']);
+        }
+
+        $this->enforceDeclaredShapes(object: $object);
+
+        $updateUuid = $write['uuid'];
+        if ($write['isCreate'] === true) {
+            $updateUuid = null;
+        }
+
+        $this->validateObjectIfRequired(object: $object, uuid: $updateUuid);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
+
+        $this->enforceReadOnlyOnUpdate(object: $object, uuid: $write['uuid']);
+        $this->enforceLensesAreReadOnly(object: $object);
+        return $object;
+    }//end prepareObjectForSave()
+
+    /**
+     * Hand the prepared object to the SaveObject handler.
+     *
+     * @param array $object  The prepared object data.
+     * @param array $options The save options with the uuid and the folder id.
+     *
+     * @return ObjectEntity The saved object.
+     *
+     * @throws Exception If the handler cannot save the object.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function persistObject(array $object, array $options): ObjectEntity
+    {
+        return $this->saveHandler->saveObject(
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            data: $object,
+            uuid: $options['uuid'],
+            folderId: $options['folderId'],
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy'],
+            persist: true,
+            silent: $options['silent'],
+            _validation: $options['_validation'],
+            uploadedFiles: $options['uploadedFiles'],
+            currentUser: $options['currentUser'],
+            failIfExists: $options['failIfExists'],
+            _unowned: $options['_unowned'],
+            _dedupOverride: $options['_dedupOverride'],
+            _owner: $options['_owner']
+        );
+    }//end persistObject()
+
+    /**
+     * Invalidate the contact matching cache against the SAVED object's data.
+     *
+     * The saved data carries the final uuid and applied defaults, so an email
+     * value injected by a default is invalidated too. Resolved through the
+     * injected app container, never `\OC::$server`: outside a booted Nextcloud
+     * the global container autowires this app's services from scratch and
+     * recurses until memory runs out. A non-essential side effect: a failure
+     * (also a runtime Error) is logged with the object's context and never
+     * fails the save.
+     *
+     * @param ObjectEntity $savedObject The saved object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function invalidateContactMatchCache(ObjectEntity $savedObject): void
+    {
+        try {
+            $contactMatchingService = $this->container->get(
+                \OCA\OpenRegister\Service\ContactMatchingService::class
+            );
+            $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e->getMessage(),
+                    'uuid'      => $savedObject->getUuid(),
+                    'register'  => $this->currentRegister?->getId(),
+                    'schema'    => $this->currentSchema?->getId(),
+                ]
+            );
+        }//end try
+    }//end invalidateContactMatchCache()
+
+    /**
+     * Invalidate the Smart Picker and reference-provider preview caches of the saved object.
+     *
+     * Every canonical URL shape comes from ObjectPreviewFormatter::buildCanonicalUrls(),
+     * the same pattern list the providers match against, and each cache prefix
+     * is invalidated once; the object's deep link is invalidated too. The
+     * deep link data is the object's own fields plus the identity triple, as
+     * the preview and search formatters build it. A non-essential side effect:
+     * a failure is logged with the object's context and never fails the save.
+     *
+     * @param ObjectEntity $savedObject The saved object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function invalidateReferenceCaches(ObjectEntity $savedObject): void
+    {
+        try {
+            $referenceManager = $this->container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
+            $formatter        = $this->container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
+            $deepLinkRegistry = $this->container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+
+            $invalidationRegisterId = (int) $this->currentRegister?->getId();
+            $invalidationSchemaId   = (int) $this->currentSchema?->getId();
+            $invalidationUuid       = (string) $savedObject->getUuid();
+
+            $invalidatedPrefixes = [];
+            $canonicalUrls       = $formatter->buildCanonicalUrls(
+                registerId: $invalidationRegisterId,
+                schemaId: $invalidationSchemaId,
+                uuid: $invalidationUuid
+            );
+            foreach ($canonicalUrls as $canonicalUrl) {
+                $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
+                if (isset($invalidatedPrefixes[$prefix]) === false) {
+                    $referenceManager->invalidateCache(cachePrefix: $prefix);
+                    $invalidatedPrefixes[$prefix] = true;
+                }
+            }
+
+            $deepLinkUrl = $deepLinkRegistry->resolveUrl(
+                registerId: $invalidationRegisterId,
+                schemaId: $invalidationSchemaId,
+                objectData: array_merge(
+                    $savedObject->getObject(),
+                    ['uuid' => $invalidationUuid, 'register' => $invalidationRegisterId, 'schema' => $invalidationSchemaId]
+                )
+            );
+            if ($deepLinkUrl !== null) {
+                $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e->getMessage(),
+                    'uuid'      => $savedObject->getUuid(),
+                    'register'  => $this->currentRegister?->getId(),
+                    'schema'    => $this->currentSchema?->getId(),
+                ]
+            );
+        }//end try
+    }//end invalidateReferenceCaches()
 
     /**
      * Set register and schema context from parameters.
@@ -2508,11 +2537,42 @@ class ObjectService implements ObjectServiceInterface
     }//end existingForDraftCheck()
 
     /**
+     * Put stored explicit-reveal values back where an update sends their mask.
+     *
+     * @param array       $object The update payload.
+     * @param string|null $uuid   The object's uuid.
+     *
+     * @return array The payload.
+     *
+     * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+     */
+    private function restoreMaskedReveals(array $object, ?string $uuid): array
+    {
+        if ($uuid === null || $this->currentSchema === null || ExplicitReveal::explicitProperties(schema: $this->currentSchema) === []) {
+            return $object;
+        }
+
+        try {
+            $existing = $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable) {
+            return $object;
+        }
+
+        return ExplicitReveal::restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
+    }//end restoreMaskedReveals()
+
+    /**
      * The repeating-group validator, constructed on first use.
      *
      * @return RepeatingGroupValidator The validator.
      *
-     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     private function repeatingGroups(): RepeatingGroupValidator
     {
@@ -2528,7 +2588,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @return NotSuppliedHandler The handler.
      *
-     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     private function notSupplied(): NotSuppliedHandler
     {
@@ -2557,7 +2617,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @throws ValidationException When a group or the not-supplied record is refused.
      *
-     * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     private function enforceDeclaredShapes(array $object): void
     {
@@ -2616,7 +2676,8 @@ class ObjectService implements ObjectServiceInterface
      * that differs from what is stored, `immutable` accepts the first value
      * and refuses every later change.
      *
-     * No-op on CREATE (uuid === null). On UPDATE:
+     * No-op on CREATE (uuid === null). `readOnly` is not enforced inside a
+     * SystemOperationContext; `immutable` is. On UPDATE:
      *  1. Strip `@self` from the incoming payload (it is not a user-controllable
      *     business field — readOnly applies to schema properties, not metadata).
      *  2. Load the previously-stored business data via the magic mapper.
@@ -2636,6 +2697,8 @@ class ObjectService implements ObjectServiceInterface
      * @return void
      *
      * @throws ValidationException When one or more readOnly properties were mutated.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-system-operation-may-stamp-a-readonly-property
      */
     private function enforceReadOnlyOnUpdate(array $object, ?string $uuid): void
     {
@@ -2653,11 +2716,17 @@ class ObjectService implements ObjectServiceInterface
         $candidate = $object;
         unset($candidate['@self']);
 
-        $violations = $this->validateHandler->validateReadOnlyConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
-            schema: $this->currentSchema
-        );
+        // `readOnly` means a client may not write the field; a trusted system
+        // operation is what stamps it, so it is not refused there. `immutable`
+        // below still holds for everyone.
+        $violations = [];
+        if (SystemOperationContext::isActive() === false) {
+            $violations = $this->validateHandler->validateReadOnlyConstraints(
+                incomingObject: $candidate,
+                existingObject: $existingData,
+                schema: $this->currentSchema
+            );
+        }
 
         // `immutable: true` is checked here rather than in a second private
         // method so it reuses the record this one already loaded. Two methods
@@ -2790,7 +2859,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @throws ValidationException When the payload names one or more lens properties.
      *
-     * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enforceLensesAreReadOnly(array $object): void
     {
@@ -3949,10 +4018,7 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Search objects with pagination and comprehensive faceting support
      *
-     * **SEARCH ENGINE**: This method uses Solr as the primary search engine when available,
-     * falling back to database search only when Solr is disabled or when using relation-based
-     * searches (ids/uses parameters). If Solr fails, the method will throw an exception
-     * rather than falling back to database search.
+     * **SEARCH ENGINE**: This method searches the database (magic tables).
      *
      * **PERFORMANCE OPTIMIZATION**: This method intelligently determines which operations
      * are needed based on the query parameters and only executes the required operations.
@@ -4055,7 +4121,7 @@ class ObjectService implements ObjectServiceInterface
      * @phpstan-return array<string, mixed>
      *
      * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \Exception If Solr search fails and cannot be recovered
+     * @throws \Exception If the search fails and cannot be recovered
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex search routing requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)      Many search options create many execution paths
@@ -4697,7 +4763,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @return PermissionHandler The permission handler.
      *
-     * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function getPermissionHandler(): PermissionHandler
     {
@@ -5550,10 +5616,8 @@ class ObjectService implements ObjectServiceInterface
 
         // EVERY REQUESTED UUID MUST LAND IN EXACTLY ONE OUTCOME BUCKET.
         // A UUID the filter removes is a row the caller asked to delete and
-        // still believes it deleted. These used to vanish here: the endpoint
-        // reported `requested_count: 1, deleted_count: 0, skipped_count: 0`,
-        // which names no failure for a caller to act on. Report them as
-        // skipped, with the reason, so `requested = deleted + skipped` holds.
+        // still believes it deleted: report it as skipped, with the reason,
+        // so `requested = deleted + skipped` holds.
         $skippedReasons = [];
         foreach (array_diff($uuids, $filteredUuids) as $refusedUuid) {
             $skippedReasons[$refusedUuid] = [
@@ -5564,275 +5628,354 @@ class ObjectService implements ObjectServiceInterface
 
         // PERF: resolve the scope AND the entity of every UUID with ONE batched
         // cross-table lookup instead of a full magic-table scan per UUID. The
-        // batch matches on the uuid column only; identifiers in other shapes
-        // (numeric ids, slugs, URIs) fall back to the legacy per-uuid lookup.
-        $preResolvedObjects = $this->batchResolveDeleteScopes(uuids: $filteredUuids);
+        // register and schema caches materialise each distinct pair at most once.
+        $run = [
+            '_rbac'          => $_rbac,
+            '_multitenancy'  => $_multitenancy,
+            'preResolved'    => $this->batchResolveDeleteScopes(uuids: $filteredUuids),
+            'registerCache'  => [],
+            'schemaCache'    => [],
+            'deleted'        => [],
+            'skipped'        => array_keys($skippedReasons),
+            'skippedReasons' => $skippedReasons,
+            'cascadeCount'   => 0,
+            'pairs'          => [],
+        ];
 
-        // Request-local caches so each distinct (register, schema) pair is
-        // materialised as entities at most once for the whole bulk operation.
-        $registerEntityCache = [];
-        $schemaEntityCache   = [];
-
-        // Process each object individually through the delete handler so that
-        // referential integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT)
-        // are enforced per object. Skips objects that fail (e.g., RESTRICT blocks).
-        $deletedObjectIds  = [];
-        $skippedUuids      = array_keys($skippedReasons);
-        $totalCascadeCount = 0;
-        // BUG-OBJ-5: collect the distinct (registerId, schemaId) pairs of the
-        // objects we actually delete so we can invalidate the per-schema query
-        // cache for each of them. A bulk delete may span multiple registers /
-        // schemas (cross-table), and CacheHandler::clearSchemaRelatedCaches()
-        // only clears the distributed query cache when schemaId !== null —
-        // passing null/null below left those caches stale.
-        $invalidationPairs = [];
+        // Each object goes through the delete handler on its own, so referential
+        // integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT) are enforced
+        // per object, and a refused object does not abort the rest.
         foreach ($filteredUuids as $uuid) {
-            try {
-                // BUG-OBJ-5: resolve the object's register/schema BEFORE deleting
-                // it (the delete handler returns only a bool). Prefer the batch
-                // resolution above; fall back to a per-uuid mapper find (no read
-                // audit trail) that also matches non-uuid identifier shapes. Both
-                // include already-soft-deleted rows so a delete of a trashed
-                // object still yields its scope.
-                $deletedRegisterId = null;
-                $deletedSchemaId   = null;
-                $rowEntity         = null;
-                $preResolved       = ($preResolvedObjects[$uuid] ?? null);
-                if ($preResolved !== null) {
-                    $deletedRegisterId = $preResolved->getRegister();
-                    $deletedSchemaId   = $preResolved->getSchema();
-                    $rowEntity         = $preResolved;
-                }
+            $this->deleteBulkRow(uuid: $uuid, run: $run);
+        }
 
-                if ($preResolved === null) {
-                    try {
-                        $preDeleteObject   = $this->objectMapper->find(
-                            identifier: $uuid,
-                            register: $this->currentRegister,
-                            schema: $this->currentSchema,
-                            includeDeleted: true,
-                            _rbac: $_rbac,
-                            _multitenancy: $_multitenancy
-                        );
-                        $deletedRegisterId = $preDeleteObject->getRegister();
-                        $deletedSchemaId   = $preDeleteObject->getSchema();
-                        $rowEntity         = $preDeleteObject;
-                    } catch (\Throwable $resolveError) {
-                        // BUG-OBJ-14: scope resolution failed (object already gone or
-                        // not visible) — log and fall back to a broad invalidation.
-                        $this->logger->warning(
-                            message: '[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation',
-                            context: [
-                                'uuid'  => $uuid,
-                                'error' => $resolveError->getMessage(),
-                            ]
-                        );
-                    }//end try
-                }//end if
-
-                // PERF: hand the batch-resolved entity + its concrete scope to the
-                // delete handler so it skips its own per-object cross-table re-find.
-                // When scope entities cannot be materialised, keep the legacy call.
-                $handlerRegister    = $this->currentRegister;
-                $handlerSchema      = $this->currentSchema;
-                $handlerPreResolved = null;
-                if ($preResolved !== null) {
-                    $scopeEntities = $this->loadDeleteScopeEntities(
-                        registerId: $deletedRegisterId,
-                        schemaId: $deletedSchemaId,
-                        registerCache: $registerEntityCache,
-                        schemaCache: $schemaEntityCache
-                    );
-                    if ($scopeEntities !== null) {
-                        [$handlerRegister, $handlerSchema] = $scopeEntities;
-                        $handlerPreResolved = $preResolved;
-                    }
-                }
-
-                // ARCHIVAL IMMUTABILITY, ON THE THIRD DOOR.
-                // This loop calls the delete HANDLER directly, so it never went
-                // through deleteObject()'s gate: a schema declaring
-                // `x-openregister-archival` — refused with 403 by
-                // `DELETE /api/objects/...`, and by the purge route since
-                // openregister#3428 — was destroyed here without a word.
-                //
-                // The question is asked of the ROW's OWN schema, not of the
-                // route's. A bulk delete spans magic tables, so gating on the
-                // scope the controller happened to set would check somebody
-                // else's annotation. A row whose schema cannot be resolved is
-                // refused rather than deleted: an unresolvable schema is not
-                // evidence that a row is deletable. The refusal is per row, so
-                // the rest of the batch still runs.
-                $gateSchema = $this->loadRowSchema(
-                    schemaId: $deletedSchemaId,
-                    schemaCache: $schemaEntityCache
-                );
-                if ($gateSchema === null) {
-                    $skippedUuids[]        = $uuid;
-                    $skippedReasons[$uuid] = [
-                        'error'   => 'SCHEMA_UNRESOLVED',
-                        'message' => 'The schema of this object could not be resolved, '
-                            .'so its archival status could not be established.',
-                    ];
-                    continue;
-                }
-
-                // THE DRAFT RULES, ON THE THIRD DOOR TOO (decisions 180 and 216).
-                // The permission filter above already leaves another user's draft
-                // out; this asks again per row, with the row's own schema, so the
-                // loop does not lean on that one gate. A draft is then removed for
-                // good, with its files and its one `draft.removed` audit entry, and
-                // it is not an archival record, so the archival gate does not
-                // apply to it: both exactly as deleteObject() has them.
-                $rowIsDraft = ($rowEntity !== null && $rowEntity->isDraft() === true);
-                if ($rowIsDraft === true && $_rbac === true
-                    && $this->draftKeptFromCaller(object: $rowEntity, schema: $gateSchema, user: $this->userSession->getUser()) === true
-                ) {
-                    $skippedUuids[]        = $uuid;
-                    $skippedReasons[$uuid] = [
-                        'error'   => 'OBJECT_NOT_PERMITTED',
-                        'message' => 'Object is not visible to this user, or does not exist.',
-                    ];
-                    continue;
-                }
-
-                if ($rowIsDraft === false) {
-                    try {
-                        $this->rejectIfArchivalImmutable(schema: $gateSchema, retentionSweep: false);
-                    } catch (ArchivalImmutableException $archivalRefusal) {
-                        $skippedUuids[]        = $uuid;
-                        $skippedReasons[$uuid] = $archivalRefusal->toResponseBody();
-                        continue;
-                    }
-                }
-
-                $result = $this->deleteHandler->deleteObject(
-                    register: $handlerRegister,
-                    schema: $handlerSchema,
-                    uuid: $uuid,
-                    originalObjectId: null,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy,
-                    preResolved: $handlerPreResolved,
-                    permanent: $rowIsDraft
-                );
-                if ($result === true) {
-                    $deletedObjectIds[] = $uuid;
-                    // BUG-OBJ-10: read the cascade count EXACTLY ONCE per
-                    // successful delete. The handler resets lastCascadeCount to 0
-                    // at the start of every root delete (originalObjectId === null,
-                    // which is always the case here), so each read reflects only
-                    // this object's cascade and accumulates correctly.
-                    $totalCascadeCount += $this->deleteHandler->getLastCascadeCount();
-
-                    // BUG-OBJ-5: record the distinct scope pair for invalidation.
-                    // CacheHandler expects int ids; entity getters return string ids.
-                    if ($deletedSchemaId !== null && $deletedSchemaId !== '') {
-                        $registerIdInt = null;
-                        if ($deletedRegisterId !== null && $deletedRegisterId !== '') {
-                            $registerIdInt = (int) $deletedRegisterId;
-                        }
-
-                        $schemaIdInt = (int) $deletedSchemaId;
-                        $pairKey     = ($registerIdInt ?? 'null').':'.$schemaIdInt;
-                        $invalidationPairs[$pairKey] = [
-                            'registerId' => $registerIdInt,
-                            'schemaId'   => $schemaIdInt,
-                        ];
-                    }
-                }//end if
-
-                if ($result !== true) {
-                    // The handler reports some refusals by RETURN VALUE rather
-                    // than by throwing — a read-only object source declines this
-                    // way, and so does its own catch when the inner delete
-                    // fails. Without this branch the UUID left the loop in
-                    // neither bucket and the caller was told nothing at all.
-                    $this->logger->warning(
-                        message: '[ObjectService] Bulk delete handler refused object',
-                        context: ['uuid' => $uuid]
-                    );
-                    $skippedUuids[]        = $uuid;
-                    $skippedReasons[$uuid] = [
-                        'error'   => 'DELETE_REFUSED',
-                        'message' => 'The delete handler did not delete this object.',
-                    ];
-                }
-            } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
-                // RESTRICT blocks should not abort the entire bulk operation.
-                // Log and skip this object, continue with the rest.
-                $this->logger->info(
-                    message: '[ObjectService] Bulk delete skipped object due to RESTRICT constraint',
-                    context: [
-                        'uuid'     => $uuid,
-                        'blockers' => count($e->getAnalysis()->blockers),
-                    ]
-                );
-                $skippedUuids[]        = $uuid;
-                $skippedReasons[$uuid] = [
-                    'error'   => 'REFERENTIAL_INTEGRITY_RESTRICT',
-                    'message' => $e->getMessage(),
-                ];
-            } catch (\Exception $e) {
-                // Other failures (transaction rollback, etc.) are logged and skipped.
-                $this->logger->warning(
-                    message: '[ObjectService] Bulk delete failed for object',
-                    context: [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
-                );
-                $skippedUuids[]        = $uuid;
-                $skippedReasons[$uuid] = [
-                    'error'   => 'DELETE_FAILED',
-                    'message' => $e->getMessage(),
-                ];
-            }//end try
-        }//end foreach
-
-        // Invalidate collection caches after bulk delete operations.
-        // BUG-OBJ-5: invalidate per distinct (register, schema) pair gathered
-        // from the deleted objects, so CacheHandler::clearSchemaRelatedCaches()
-        // actually clears the per-schema distributed query cache (it no-ops when
-        // schemaId is null). Falls back to a broad null/null invalidation only
-        // when no scope could be resolved for any deleted object.
-        if (empty($deletedObjectIds) === false) {
-            $pairsToInvalidate = $invalidationPairs;
-            if (empty($pairsToInvalidate) === true) {
-                $pairsToInvalidate = [['registerId' => null, 'schemaId' => null]];
-            }
-
-            foreach ($pairsToInvalidate as $pair) {
-                try {
-                    $this->cacheHandler->invalidateForObjectChange(
-                        object: null,
-                        operation: 'bulk_delete',
-                        registerId: $pair['registerId'],
-                        schemaId: $pair['schemaId']
-                    );
-                } catch (\Exception $e) {
-                    // BUG-OBJ-14: log with register/schema context instead of
-                    // silently swallowing the invalidation failure.
-                    $this->logger->warning(
-                        message: '[ObjectService] Bulk delete cache invalidation failed',
-                        context: [
-                            'error'        => $e->getMessage(),
-                            'deletedCount' => count($deletedObjectIds),
-                            'registerId'   => $pair['registerId'],
-                            'schemaId'     => $pair['schemaId'],
-                        ]
-                    );
-                }
-            }//end foreach
-        }//end if
+        $this->invalidateBulkDeleteCaches(run: $run);
 
         return [
-            'deleted_uuids'   => $deletedObjectIds,
-            'skipped_uuids'   => $skippedUuids,
-            'skipped_reasons' => $skippedReasons,
-            'cascade_count'   => $totalCascadeCount,
+            'deleted_uuids'   => $run['deleted'],
+            'skipped_uuids'   => $run['skipped'],
+            'skipped_reasons' => $run['skippedReasons'],
+            'cascade_count'   => $run['cascadeCount'],
         ];
     }//end deleteObjects()
+
+    /**
+     * Delete one row of a bulk delete, recording it as deleted or skipped with a reason.
+     *
+     * @param mixed $uuid The requested identifier, as the caller passed it.
+     * @param array      $run  The bulk delete run: flags, pre-resolved rows, caches and outcome buckets.
+     *
+     * @return void
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function deleteBulkRow(mixed $uuid, array &$run): void
+    {
+        $reason = $this->bulkDeleteOutcome(uuid: $uuid, run: $run);
+        if ($reason !== null) {
+            $run['skipped'][]             = $uuid;
+            $run['skippedReasons'][$uuid] = $reason;
+        }
+    }//end deleteBulkRow()
+
+    /**
+     * Delete one row of a bulk delete and say why it was skipped, if it was.
+     *
+     * @param mixed $uuid The requested identifier, as the caller passed it.
+     * @param array      $run  The bulk delete run.
+     *
+     * @return array|null The skip reason, or null when the row was deleted.
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function bulkDeleteOutcome(mixed $uuid, array &$run): ?array
+    {
+        try {
+            $scope   = $this->resolveBulkDeleteScope(uuid: $uuid, run: $run);
+            $refusal = $this->bulkDeleteRefusal(scope: $scope, run: $run);
+            if ($refusal !== null) {
+                return $refusal;
+            }
+
+            $result = $this->deleteHandler->deleteObject(
+                register: $scope['register'],
+                schema: $scope['schema'],
+                uuid: $uuid,
+                originalObjectId: null,
+                _rbac: $run['_rbac'],
+                _multitenancy: $run['_multitenancy'],
+                preResolved: $scope['preResolved'],
+                permanent: $scope['draft']
+            );
+            if ($result === true) {
+                $this->recordBulkDeleted(scope: $scope, run: $run);
+                return null;
+            }
+
+            // The handler reports some refusals by RETURN VALUE rather than by
+            // throwing: a read-only object source declines this way, and so does
+            // its own catch when the inner delete fails.
+            $this->logger->warning(
+                message: '[ObjectService] Bulk delete handler refused object',
+                context: ['uuid' => $uuid]
+            );
+            return [
+                'error'   => 'DELETE_REFUSED',
+                'message' => 'The delete handler did not delete this object.',
+            ];
+        } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
+            // RESTRICT blocks should not abort the entire bulk operation.
+            $this->logger->info(
+                message: '[ObjectService] Bulk delete skipped object due to RESTRICT constraint',
+                context: [
+                    'uuid'     => $uuid,
+                    'blockers' => count($e->getAnalysis()->blockers),
+                ]
+            );
+            return [
+                'error'   => 'REFERENTIAL_INTEGRITY_RESTRICT',
+                'message' => $e->getMessage(),
+            ];
+        } catch (\Exception $e) {
+            // Other failures (transaction rollback, etc.) are logged and skipped.
+            $this->logger->warning(
+                message: '[ObjectService] Bulk delete failed for object',
+                context: [
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [
+                'error'   => 'DELETE_FAILED',
+                'message' => $e->getMessage(),
+            ];
+        }//end try
+    }//end bulkDeleteOutcome()
+
+    /**
+     * Resolve a bulk-delete row's register, schema and entity before deleting it.
+     *
+     * The delete handler returns only a bool, so the scope is read first: from
+     * the batch resolution, or else from a per-uuid mapper find (no read audit
+     * trail) that also matches non-uuid identifier shapes. Both include
+     * soft-deleted rows. A batch-resolved row hands its entity and concrete
+     * scope to the handler, so it skips its own cross-table re-find; when the
+     * scope entities cannot be materialised the current scope is used.
+     *
+     * @param mixed $uuid The requested identifier, as the caller passed it.
+     * @param array      $run  The bulk delete run.
+     *
+     * @return array The scope: uuid, registerId, schemaId, row, the register and schema for the
+     *               handler, the pre-resolved entity it may reuse, and whether the row is a draft.
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function resolveBulkDeleteScope(mixed $uuid, array &$run): array
+    {
+        $scope = [
+            'uuid'        => $uuid,
+            'registerId'  => null,
+            'schemaId'    => null,
+            'row'         => ($run['preResolved'][$uuid] ?? null),
+            'register'    => $this->currentRegister,
+            'schema'      => $this->currentSchema,
+            'preResolved' => null,
+        ];
+        if ($scope['row'] === null) {
+            $scope = $this->findBulkDeleteRow(scope: $scope, run: $run);
+        }
+
+        if ($scope['row'] !== null) {
+            $scope['registerId'] = $scope['row']->getRegister();
+            $scope['schemaId']   = $scope['row']->getSchema();
+        }
+
+        if (isset($run['preResolved'][$uuid]) === true) {
+            $scopeEntities = $this->loadDeleteScopeEntities(
+                registerId: $scope['registerId'],
+                schemaId: $scope['schemaId'],
+                registerCache: $run['registerCache'],
+                schemaCache: $run['schemaCache']
+            );
+            if ($scopeEntities !== null) {
+                [$scope['register'], $scope['schema']] = $scopeEntities;
+                $scope['preResolved'] = $scope['row'];
+            }
+        }
+
+        $scope['draft'] = ($scope['row'] !== null && $scope['row']->isDraft() === true);
+        return $scope;
+    }//end resolveBulkDeleteScope()
+
+    /**
+     * Find a bulk-delete row the batch resolution missed, with the caller's flags.
+     *
+     * A row that cannot be found (already gone or not visible) is logged and
+     * keeps no scope.
+     *
+     * @param array $scope The row's scope so far.
+     * @param array $run   The bulk delete run.
+     *
+     * @return array The scope with the found row, if any.
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function findBulkDeleteRow(array $scope, array $run): array
+    {
+        try {
+            $scope['row'] = $this->objectMapper->find(
+                identifier: $scope['uuid'],
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                includeDeleted: true,
+                _rbac: $run['_rbac'],
+                _multitenancy: $run['_multitenancy']
+            );
+        } catch (\Throwable $resolveError) {
+            $this->logger->warning(
+                message: '[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation',
+                context: [
+                    'uuid'  => $scope['uuid'],
+                    'error' => $resolveError->getMessage(),
+                ]
+            );
+        }
+
+        return $scope;
+    }//end findBulkDeleteRow()
+
+    /**
+     * Why a bulk-delete row may not be deleted, or null when it may.
+     *
+     * The bulk loop calls the delete handler directly, so it asks deleteObject()'s
+     * questions itself, of the ROW's OWN schema (a bulk delete spans magic tables):
+     * a row whose schema cannot be resolved is refused, another user's draft is
+     * refused (decisions 180 and 216), and a non-draft row on an archival schema
+     * is refused. A draft is removed for good and is not an archival record.
+     *
+     * @param array $scope The row's scope.
+     * @param array $run   The bulk delete run.
+     *
+     * @return array|null The skip reason, or null when the row may be deleted.
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function bulkDeleteRefusal(array $scope, array &$run): ?array
+    {
+        $gateSchema = $this->loadRowSchema(
+            schemaId: $scope['schemaId'],
+            schemaCache: $run['schemaCache']
+        );
+        if ($gateSchema === null) {
+            return [
+                'error'   => 'SCHEMA_UNRESOLVED',
+                'message' => 'The schema of this object could not be resolved, '
+                    .'so its archival status could not be established.',
+            ];
+        }
+
+        if ($scope['draft'] === true && $run['_rbac'] === true
+            && $this->draftKeptFromCaller(object: $scope['row'], schema: $gateSchema, user: $this->userSession->getUser()) === true
+        ) {
+            return [
+                'error'   => 'OBJECT_NOT_PERMITTED',
+                'message' => 'Object is not visible to this user, or does not exist.',
+            ];
+        }
+
+        if ($scope['draft'] === true) {
+            return null;
+        }
+
+        try {
+            $this->rejectIfArchivalImmutable(schema: $gateSchema, retentionSweep: false);
+        } catch (ArchivalImmutableException $archivalRefusal) {
+            return $archivalRefusal->toResponseBody();
+        }
+
+        return null;
+    }//end bulkDeleteRefusal()
+
+    /**
+     * Record a deleted bulk-delete row, its cascade count and its scope pair for cache invalidation.
+     *
+     * The handler resets its cascade count at the start of every root delete,
+     * so it is read exactly once per successful delete. CacheHandler expects
+     * int ids; entity getters return string ids.
+     *
+     * @param array $scope The deleted row's scope.
+     * @param array $run   The bulk delete run.
+     *
+     * @return void
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function recordBulkDeleted(array $scope, array &$run): void
+    {
+        $run['deleted'][]     = $scope['uuid'];
+        $run['cascadeCount'] += $this->deleteHandler->getLastCascadeCount();
+        if ($scope['schemaId'] === null || $scope['schemaId'] === '') {
+            return;
+        }
+
+        $registerIdInt = null;
+        if ($scope['registerId'] !== null && $scope['registerId'] !== '') {
+            $registerIdInt = (int) $scope['registerId'];
+        }
+
+        $schemaIdInt = (int) $scope['schemaId'];
+        $run['pairs'][($registerIdInt ?? 'null').':'.$schemaIdInt] = [
+            'registerId' => $registerIdInt,
+            'schemaId'   => $schemaIdInt,
+        ];
+    }//end recordBulkDeleted()
+
+    /**
+     * Invalidate the collection caches of every (register, schema) pair a bulk delete touched.
+     *
+     * CacheHandler::clearSchemaRelatedCaches() only clears the per-schema query
+     * cache when schemaId is not null, so the pairs come from the deleted rows;
+     * a broad null/null invalidation is the fallback when no pair was resolved.
+     * A failed invalidation is logged with its scope, not swallowed.
+     *
+     * @param array $run The bulk delete run.
+     *
+     * @return void
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function invalidateBulkDeleteCaches(array $run): void
+    {
+        if (empty($run['deleted']) === true) {
+            return;
+        }
+
+        $pairsToInvalidate = $run['pairs'];
+        if (empty($pairsToInvalidate) === true) {
+            $pairsToInvalidate = [['registerId' => null, 'schemaId' => null]];
+        }
+
+        foreach ($pairsToInvalidate as $pair) {
+            try {
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_delete',
+                    registerId: $pair['registerId'],
+                    schemaId: $pair['schemaId']
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectService] Bulk delete cache invalidation failed',
+                    context: [
+                        'error'        => $e->getMessage(),
+                        'deletedCount' => count($run['deleted']),
+                        'registerId'   => $pair['registerId'],
+                        'schemaId'     => $pair['schemaId'],
+                    ]
+                );
+            }
+        }//end foreach
+    }//end invalidateBulkDeleteCaches()
 
     /**
      * Batch-resolve the entities (and thus register/schema scopes) for a set of UUIDs.
@@ -6062,8 +6205,6 @@ class ObjectService implements ObjectServiceInterface
         );
     }//end deleteObjectsByRegister()
 
-    // **REMOVED**: clearResponseCache method removed since SOLR is now our index.
-    // **REMOVED**: generateCacheKey method removed since SOLR is now our index.
     // =========================================================================
     // NEW HANDLER DELEGATION METHODS
     // =========================================================================
@@ -6178,23 +6319,6 @@ class ObjectService implements ObjectServiceInterface
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
     }//end getVectorizationStatistics()
-
-    /**
-     * Get count of objects available for vectorization
-     *
-     * @param array|null $_schemas Optional schema filters
-     *
-     * @return never Object count
-     *
-     * @throws \Exception If count fails
-     *
-     * @spec exclude Deprecated throwing stub; disabled pending VectorizationService circular-dependency refactor.
-     */
-    public function getVectorizationCount(?array $_schemas=null)
-    {
-        // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
-        throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
-    }//end getVectorizationCount()
 
     // =========================================================================
     // CRUD HANDLER DELEGATION METHODS

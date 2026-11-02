@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+ * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
  */
 
 declare(strict_types=1);
@@ -359,7 +359,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per event, event name first.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function listAll(): array {
 		$rows = [];
@@ -389,7 +389,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return array<int, string> The event names, in inventory order.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function gaps(): array {
 		$missing = [];
@@ -409,7 +409,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return boolean True when the event is in the inventory.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function knows(string $event): bool {
 		return array_key_exists($event, $this->events);
@@ -425,7 +425,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return boolean True when an edit is stored for this event.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function hasEdit(string $event): bool {
 		return ($this->editedTemplate(event: $event) !== null);
@@ -438,7 +438,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return array<string, array{subject: string, body: string}>|null The per-locale template, or null when there is none.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function templateFor(string $event): ?array {
 		return ($this->editedTemplate(event: $event) ?? $this->shipped[$event] ?? null);
@@ -458,7 +458,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return array{subject: string, body: string}|null The rendered text, or null when the event has no template.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function render(string $event, ?string $locale, array $variables = []): ?array {
 		$template = $this->templateFor(event: $event);
@@ -494,7 +494,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @throws InvalidArgumentException When the event is not one the platform raises.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function edit(string $event, ?array $template): void {
 		if ($this->knows(event: $event) === false) {

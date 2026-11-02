@@ -67,7 +67,7 @@ use Throwable;
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn
  *
- * @psalm-suppress UnusedClass - Instantiated by Application::registerMcpToolProviders()
+ * @psalm-suppress UnusedClass - Instantiated by McpProviderDiscovery::register()
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) One IMcpToolProvider implementation: the ABI's id/verb contract, the
  *      two collision rules (hand-written > derived, first-definition > duplicate) and the JSON-Schema sanitiser are one
@@ -390,7 +390,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return array<string, mixed> Serialized object.
 	 *
 	 * @throws InvalidArgumentException If `id` is missing.
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */

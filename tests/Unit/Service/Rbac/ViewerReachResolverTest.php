@@ -226,7 +226,7 @@ class ViewerReachResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
 	 */
 	public function testUserSharesAreCheckedAgainstTheUserManager(): void {
 		$users = $this->createMock(IUserManager::class);

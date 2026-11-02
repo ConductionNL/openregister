@@ -70,6 +70,92 @@ class ExampleSetInstanceTest extends TestCase {
 		$this->assertSame(['uuid' => 'org-new', 'created' => true, 'error' => ''], $result);
 	}
 
+	/**
+	 * A partner organisation is written with its type and contact e-mail, so case sharing lists it.
+	 *
+	 * @return void
+	 */
+	public function testAPartnerIsCreatedWithItsTypeAndContact(): void {
+		$this->mapper->method('findBySlug')->willThrowException(new DoesNotExistException('none'));
+		$written = null;
+		$this->mapper->expects($this->once())->method('insert')->willReturnCallback(
+			static function (Organisation $entity) use (&$written): Organisation {
+				$written = $entity;
+				$entity->setUuid('org-partner');
+				return $entity;
+			}
+		);
+
+		$this->instance()->ensure(declared: ['name' => 'Omgevingsdienst', 'slug' => 'odzhz', 'description' => '', 'type' => 'partner', 'contactEmail' => 'info@odzhz.example']);
+
+		$this->assertSame(expected: ['partner', 'info@odzhz.example'], actual: [$written->getType(), $written->getContactEmail()]);
+	}
+
+	/**
+	 * An organisation the set made before its quota was declared gains the declared quota where it has none.
+	 *
+	 * @return void
+	 */
+	public function testAnOrganisationTheSetMadeGainsItsDeclaredQuota(): void {
+		$found = new Organisation();
+		$found->setUuid('org-waterland');
+		$found->setUserQuota(80);
+		$this->mapper->method('findBySlug')->willReturn($found);
+		$written = null;
+		$this->mapper->expects($this->once())->method('update')->willReturnCallback(
+			static function (Organisation $entity) use (&$written): Organisation {
+				$written = $entity;
+				return $entity;
+			}
+		);
+
+		$declared = [
+			'name'        => 'Gemeente Waterland',
+			'slug'        => 'waterland',
+			'description' => '',
+			'quota'       => ['users' => 50, 'objects' => 5000, 'objectsSchema' => 'case'],
+		];
+		$result   = $this->instance()->ensure(declared: $declared, made: ['org-waterland']);
+
+		$this->assertSame(expected: ['uuid' => 'org-waterland', 'created' => false, 'error' => ''], actual: $result);
+		$this->assertSame(expected: [80, 5000, 'case'], actual: [$written->getUserQuota(), $written->getObjectQuota(), $written->getObjectQuotaSchema()]);
+	}
+
+	/**
+	 * An organisation the set did not make keeps its quota, also where it has none: none can mean unlimited.
+	 *
+	 * @return void
+	 */
+	public function testAnOrganisationTheSetDidNotMakeKeepsItsQuota(): void {
+		$found = new Organisation();
+		$found->setUuid('org-tenant');
+		$this->mapper->method('findBySlug')->willReturn($found);
+		$this->mapper->expects($this->never())->method('update');
+
+		$declared = ['name' => 'Gemeente Waterland', 'slug' => 'waterland', 'description' => '', 'quota' => ['users' => 50]];
+		$result   = $this->instance()->ensure(declared: $declared, made: ['org-other']);
+
+		$this->assertSame(expected: ['uuid' => 'org-tenant', 'created' => false, 'error' => ''], actual: $result);
+	}
+
+	/**
+	 * A quota write that fails is answered as an error and the organisation is still found.
+	 *
+	 * @return void
+	 */
+	public function testAQuotaWriteThatFailsIsAnError(): void {
+		$found = new Organisation();
+		$found->setUuid('org-waterland');
+		$this->mapper->method('findBySlug')->willReturn($found);
+		$this->mapper->method('update')->willThrowException(new RuntimeException('database is gone'));
+
+		$declared = ['name' => 'Gemeente Waterland', 'slug' => 'waterland', 'description' => '', 'quota' => ['users' => 50]];
+		$result   = $this->instance()->ensure(declared: $declared, made: ['org-waterland']);
+
+		$error = 'its quota could not be written: database is gone';
+		$this->assertSame(expected: ['uuid' => 'org-waterland', 'created' => false, 'error' => $error], actual: $result);
+	}
+
 	public function testALookupThatFailsIsNotReadAsGoneAndNothingIsForgotten(): void {
 		$this->mapper->method('findByUuid')->willThrowException(new RuntimeException('database is gone'));
 		$this->mapper->expects($this->never())->method('delete');

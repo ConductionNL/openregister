@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -128,7 +128,7 @@ final class ObjectDateDeclaration {
 	 *
 	 * @throws CalendarDateKindException When the declaration cannot be used.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public static function fromArray(string $property, mixed $config): self {
 		if (is_array($config) === false) {
@@ -185,7 +185,7 @@ final class ObjectDateDeclaration {
 	 *
 	 * @throws CalendarDateKindException When any declaration cannot be used.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public static function allFromConfig(array $calendarConfig): array {
 		$dates = ($calendarConfig['dates'] ?? null);

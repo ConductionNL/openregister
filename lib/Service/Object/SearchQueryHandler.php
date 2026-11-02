@@ -197,7 +197,7 @@ class SearchQueryHandler {
 	 *
 	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	private function applyWatchingLens(array $query): array {
 		// Never trust a resolved key from the outside: a caller must not hand
@@ -305,7 +305,7 @@ class SearchQueryHandler {
 	 *
 	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-the-recent-lens-says-why-it-is-empty
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-the-recent-lens-says-why-it-is-empty
 	 */
 	private function applyRecentLens(array $query): array {
 		unset($query['_recentFor'], $query['_recentViews'], $query['_recentLens']);

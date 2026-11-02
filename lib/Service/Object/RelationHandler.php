@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -789,6 +790,10 @@ class RelationHandler {
 				'limit' => $limit,
 				'offset' => $offset,
 			];
+		} catch (MultipleObjectsReturnedException $e) {
+			// A slug two objects of the register and schema hold is an answer the
+			// caller must see (409, #4037), not an empty relation list.
+			throw $e;
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to get uses',
@@ -1207,6 +1212,10 @@ class RelationHandler {
 				'limit' => $limit,
 				'offset' => $offset,
 			];
+		} catch (MultipleObjectsReturnedException $e) {
+			// A slug two objects of the register and schema hold is an answer the
+			// caller must see (409, #4037), not an empty relation list.
+			throw $e;
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to get used by',

@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class UniqueConstraintEvaluator {
 	 *
 	 * @return array<int,array{name:string,properties:array<int,string>,action:string}>
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function constraints(?array $configuration, bool $includeLegacy = false): array {
 		if ($configuration === null) {
@@ -207,7 +207,7 @@ class UniqueConstraintEvaluator {
 	 *
 	 * @return array<string,mixed>|null The filters, or null when the constraint does not apply.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function filtersFor(array $constraint, array $object): ?array {
 		$filters = [];
@@ -240,7 +240,7 @@ class UniqueConstraintEvaluator {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function describeBreach(array $constraint, array $object, ?string $conflictingId): string {
 		$pairs = [];

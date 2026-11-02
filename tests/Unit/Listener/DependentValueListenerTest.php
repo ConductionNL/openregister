@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Tests\Unit\Listener
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class DependentValueListenerTest extends TestCase {
 
@@ -107,7 +107,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testACreateOutsideTheTableIsRefused(): void {
 		$event = new ObjectCreatingEvent($this->entity(['zaaktype' => 'bezwaar', 'resultaat' => 'verleend']));
@@ -124,7 +124,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testACreateInsideTheTableProceeds(): void {
 		$event = new ObjectCreatingEvent($this->entity(['zaaktype' => 'bezwaar', 'resultaat' => 'gegrond']));
@@ -140,7 +140,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUpdateIsJudgedAgainstTheStoredControllingValue(): void {
 		$event = new ObjectUpdatingEvent(
@@ -158,7 +158,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaWithNoTableIsUntouched(): void {
 		$event = new ObjectCreatingEvent($this->entity(['zaaktype' => 'klacht', 'resultaat' => 'verleend']));
@@ -176,7 +176,7 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheGuardFailingDoesNotStopTheSave(): void {
 		$mapper = $this->createMock(originalClassName: SchemaMapper::class);
@@ -205,10 +205,10 @@ class DependentValueListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheListenerIsSubscribedToBothWriteEvents(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/ListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(

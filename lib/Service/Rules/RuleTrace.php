@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use JsonSerializable;
  * The operand is null on a `fired` verdict and on a rule with no condition at
  * all, because in neither case did an operand decide anything.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleTrace implements JsonSerializable {
 
@@ -80,7 +80,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return string One of the RuleVocabulary VERDICT_ constants.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getVerdict(): string {
 		return $this->verdict;
@@ -91,7 +91,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return string|null The operand path, or null when nothing decided against the rule.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getOperand(): ?string {
 		return $this->operand;
@@ -102,7 +102,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return string|null The rendered value, or null when no operand decided.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getOperandValue(): ?string {
 		return $this->operandValue;
@@ -113,7 +113,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return string|null The message, or null when the verdict says it all.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getMessage(): ?string {
 		return $this->message;
@@ -126,7 +126,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return self The trace.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function fired(?string $message = null): self {
 		return new self(verdict: RuleVocabulary::VERDICT_FIRED, message: $message);
@@ -139,7 +139,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return self The trace.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function errored(string $message): self {
 		return new self(verdict: RuleVocabulary::VERDICT_ERROR, message: $message);
@@ -155,7 +155,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return string The rendered value.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function renderValue(mixed $value): string {
 		if (is_bool($value) === true) {
@@ -190,7 +190,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return string The JSON, or the word.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private static function encode(mixed $value): string {
 		$json = json_encode($value);
@@ -206,7 +206,7 @@ final class RuleTrace implements JsonSerializable {
 	 *
 	 * @return array{verdict: string, operand: string|null, operandValue: string|null, message: string|null} The trace.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
  */
 
 declare(strict_types=1);

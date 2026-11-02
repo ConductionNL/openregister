@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Support;
  * emptiness through this class, so the endpoints that count a list and the
  * one that lists it cannot disagree about what "empty" means.
  *
- * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 final class NullFilter {
 
@@ -68,7 +68,7 @@ final class NullFilter {
 	 *
 	 * @return bool True when the caller asked for IS NULL.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public static function isNullOperatorAsksForNull(mixed $value): bool {
 		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
@@ -86,7 +86,7 @@ final class NullFilter {
 	 *
 	 * @return bool|null True for "must be empty", false for "must be filled", null otherwise.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public static function nullCheck(mixed $criterion): ?bool {
 		if ($criterion === self::IS_NULL) {
@@ -119,7 +119,7 @@ final class NullFilter {
 	 *
 	 * @return array{0: mixed, 1: bool} The criterion without the modifier, and whether NULL is admitted.
 	 *
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public static function splitOrNull(mixed $criterion): array {
 		if (is_array($criterion) === false || array_key_exists(self::OR_NULL_MODIFIER, $criterion) === false) {
@@ -144,7 +144,7 @@ final class NullFilter {
 	 *
 	 * @return list<string|\Stringable> The conditions to AND into the query.
 	 *
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public static function conditionsFor(mixed $criterion, string $column, callable $build): array {
 		[$criterion, $orNull] = self::splitOrNull(criterion: $criterion);
@@ -169,7 +169,7 @@ final class NullFilter {
 	 *
 	 * @template T of string|\Stringable
 	 *
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public static function admitNull(array $conditions, string $column, bool $orNull): array {
 		if ($orNull === false || $conditions === []) {

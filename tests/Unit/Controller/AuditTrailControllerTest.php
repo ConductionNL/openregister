@@ -46,6 +46,8 @@ class AuditTrailControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->pageQuery = $this->createMock(AuditTrailPageQuery::class);
 		$this->jobList = $this->createMock(IJobList::class);
+		// The masking of explicit-reveal values has its own test; here it passes the entries through.
+		$this->logService->method('maskExplicitReveal')->willReturnArgument(0);
 
 		// Default: an authenticated admin so the requireAdmin() gate on
 		// export()/clearAll() lets the happy-path assertions through. Tests
@@ -134,6 +136,20 @@ class AuditTrailControllerTest extends TestCase {
 		$result = $this->controller->objects('reg1', 'schema1', 'obj1');
 
 		$this->assertEquals(404, $result->getStatus());
+	}
+
+	public function testObjectsReturns409ForAnAmbiguousIdentifier(): void {
+		// #4037: a slug two objects of the register and schema hold answers 409 like the
+		// object routes, and names neither object.
+		$this->request->method('getParams')->willReturn([]);
+		$this->logService->method('getLogs')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two objects'));
+
+		$result = $this->controller->objects('28', '68', 'dubbel');
+
+		$this->assertEquals(409, $result->getStatus());
+		$this->assertEquals('ambiguous-identifier', $result->getData()['error']);
+		$this->assertEquals('Identifier "dubbel" matches more than one object in this register and schema', $result->getData()['message']);
 	}
 
 	public function testExportSuccess(): void {

@@ -79,7 +79,7 @@ class FileSharingHandler {
 	 * @psalm-return   string
 	 * @phpstan-return string
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function getShareLink(IShare $share): string {
 		return $this->shareUrls->shareLink(token: $share->getToken());

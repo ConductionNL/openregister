@@ -76,6 +76,14 @@ emitting schema never names a concrete target property.
 - **WHEN** a schema declares `implements` for a kind but its `handoffContract` binding omits a mandatory field of that kind's contract
 - **THEN** schema-save validation SHALL reject the schema with a `handoff-contract-incomplete` error listing the missing fields
 
+#### Scenario: A case handoff can name the case type
+
+@e2e exclude contract field set — covered by PHPUnit tests/Unit/Service/Handoff/HandoffKindContractsTest.php
+
+- **GIVEN** the `ns#Case` contract lists `caseType` as an optional field, next to `requester` and `priority`
+- **WHEN** an emitting schema maps a source property to `caseType` and the implementer binds `caseType` to its own case-type property
+- **THEN** the created case SHALL carry that case type, and an implementer that does not bind `caseType` SHALL still accept the handoff
+
 ### Requirement: HandoffService executes conversions on top of SemanticTypeResolver
 
 OpenRegister SHALL provide a `HandoffService` that executes a declared

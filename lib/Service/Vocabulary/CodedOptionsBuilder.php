@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -74,7 +74,7 @@ class CodedOptionsBuilder {
 	 *
 	 * @return array<int,array<string,mixed>> The options.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function options(
 		CodedPropertyDeclaration $declaration,
@@ -192,7 +192,7 @@ class CodedOptionsBuilder {
 	 *
 	 * @return array<int,array<string,mixed>> The roots of the tree.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function tree(
 		CodedPropertyDeclaration $declaration,

@@ -70,6 +70,33 @@ final class MacroActionBinding {
 	}//end __construct()
 
 	/**
+	 * Whether the binding names a stored flow by uuid, rather than a flow its
+	 * schema declares by name (`x-openregister-flows`).
+	 *
+	 * @param string $flow The binding's `flow`.
+	 *
+	 * @return bool True for a uuid.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	public static function namesUuid(string $flow): bool {
+		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $flow) === 1;
+	}//end namesUuid()
+
+	/**
+	 * This binding with its flow resolved to a stored flow's uuid.
+	 *
+	 * @param string $flowUuid The stored flow's uuid.
+	 *
+	 * @return self The resolved binding.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	public function resolvedTo(string $flowUuid): self {
+		return new self(action: $this->action, flow: $flowUuid);
+	}//end resolvedTo()
+
+	/**
 	 * The macro bindings a schema configuration declares.
 	 *
 	 * Only well-formed bindings are returned. A malformed one is a REFUSAL, not
@@ -87,10 +114,10 @@ final class MacroActionBinding {
 	public static function parse(array $configuration): array {
 		$bindings = [];
 		foreach (self::declarations(configuration: $configuration) as $action => $definition) {
-			$macro = ($definition['macro'] ?? false);
+			$macro = ($definition['macro'] ?? null);
 			$flow = ($definition['flow'] ?? null);
 
-			if ($macro !== true || is_string($flow) === false || trim($flow) === '') {
+			if ($macro === false || is_string($flow) === false || trim($flow) === '') {
 				continue;
 			}
 
@@ -208,10 +235,10 @@ final class MacroActionBinding {
 			$refusals[] = sprintf('Action "%s": "macro" is true but no "flow" is named.', $action);
 		}
 
-		// The mirror: a flow nothing will ever run. Saved quietly, it reads as
-		// a bound macro to anyone looking at the schema afterwards.
-		if ($hasFlow === true && $isMacro === false) {
-			$refusals[] = sprintf('Action "%s": "flow" is named but "macro" is not true.', $action);
+		// A named flow is the action's body on its own (object-actions D-1);
+		// only an explicit `macro: false` beside it contradicts itself.
+		if ($hasFlow === true && ($definition['macro'] ?? null) === false) {
+			$refusals[] = sprintf('Action "%s": "flow" is named but "macro" is false.', $action);
 		}
 
 		return $refusals;

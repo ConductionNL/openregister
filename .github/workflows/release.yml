@@ -14,31 +14,55 @@ on:
 jobs:
   unstable:
     if: github.ref == 'refs/heads/development'
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: unstable
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+      # One line: the shared workflow splices this into its rsync command.
+      # .mailmap maps contributors to personal addresses; git needs it, an
+      # installed app does not. sigrid.yaml (analysis scope) and
+      # ARCHITECTURE.md (contributor docs) are repository tooling.
+      extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit
 
   beta:
     if: github.ref == 'refs/heads/beta'
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: beta
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+      # One line: the shared workflow splices this into its rsync command.
+      # .mailmap maps contributors to personal addresses; git needs it, an
+      # installed app does not. sigrid.yaml (analysis scope) and
+      # ARCHITECTURE.md (contributor docs) are repository tooling.
+      extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit
 
   stable:
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: stable
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+      # One line: the shared workflow splices this into its rsync command.
+      # .mailmap maps contributors to personal addresses; git needs it, an
+      # installed app does not. sigrid.yaml (analysis scope) and
+      # ARCHITECTURE.md (contributor docs) are repository tooling.
+      extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit
 

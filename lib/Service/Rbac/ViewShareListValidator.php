@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/saved-view-user-shares/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Validates a `sharedWith` list of `{group, mode}` and `{user, mode}` entries.
  *
- * @spec openspec/changes/saved-view-user-shares/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
  */
 class ViewShareListValidator {
 
@@ -42,7 +42,7 @@ class ViewShareListValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings; empty when the list may be stored.
 	 *
-	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
 	 */
 	public function findings(mixed $sharedWith, array $exists): array {
 		if ($sharedWith === null || $sharedWith === []) {

@@ -21,7 +21,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -42,9 +42,9 @@ class UserSettingsController extends Controller {
 	/**
 	 * GitHub service instance.
 	 *
-	 * @var GitHubHandler The GitHub service instance.
+	 * @var GitHubClientInterface The GitHub service instance.
 	 */
-	private GitHubHandler $gitHubService;
+	private GitHubClientInterface $gitHubService;
 
 	/**
 	 * User session instance.
@@ -65,14 +65,14 @@ class UserSettingsController extends Controller {
 	 *
 	 * @param string $appName The app name
 	 * @param IRequest $request The request object
-	 * @param GitHubHandler $gitHubService GitHub service
+	 * @param GitHubClientInterface $gitHubService GitHub service
 	 * @param IUserSession $userSession User session
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		GitHubHandler $gitHubService,
+		GitHubClientInterface $gitHubService,
 		IUserSession $userSession,
 		LoggerInterface $logger,
 	) {

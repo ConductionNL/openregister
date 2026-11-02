@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCP\BackgroundJob\TimedJob;
  * that an administrator disabled must not run, and putting that check in each
  * subclass is putting it in the place it can be left out.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+ * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
 abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 
@@ -70,7 +70,7 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	final protected function run($argument): void {
 		if ($this->schedule->mayRun(jobClass: static::class, moment: new DateTime()) === false) {
@@ -97,7 +97,7 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	abstract protected function runRecorded(mixed $argument): void;
 }//end class

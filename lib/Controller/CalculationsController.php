@@ -82,7 +82,7 @@ class CalculationsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function operators(): JSONResponse {
 		return new JSONResponse(
@@ -112,7 +112,7 @@ class CalculationsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function evaluate(): JSONResponse {
 		$declaration = $this->request->getParam('calculation');

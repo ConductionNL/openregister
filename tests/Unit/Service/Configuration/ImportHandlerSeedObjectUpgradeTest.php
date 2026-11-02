@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -134,15 +134,16 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * The instance holds the Woo case type at version 1, with no handling and no flow.
+	 * The instance holds the Woo case type: at version 1 with no handling and no flow, or as shipped.
 	 *
 	 * @param string $storedVersion The stored `@self.version`.
+	 * @param bool   $asShipped     Whether the stored content is what the release ships.
 	 *
 	 * @return void
 	 */
-	private function instanceHoldsCaseType(string $storedVersion): void {
+	private function instanceHoldsCaseType(string $storedVersion, bool $asShipped = false): void {
 		$this->objectService->method('searchObjects')->willReturnCallback(
-			static function (array $query) use ($storedVersion): array {
+			static function (array $query) use ($storedVersion, $asShipped): array {
 				if (($query['@self']['slug'] ?? '') !== 'woo-verzoek') {
 					return [];
 				}
@@ -151,7 +152,8 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 					'@self' => ['id' => self::CASE_TYPE_UUID, 'version' => $storedVersion, 'slug' => 'woo-verzoek'],
 					'id' => self::CASE_TYPE_UUID,
 					'title' => 'Woo-verzoek',
-					'handling' => null,
+					'handling' => ($asShipped === true) ? ['defaultGroup' => 'behandelaars'] : null,
+					'workflowDefinition' => ($asShipped === true) ? self::FLOW_UUID : null,
 				]];
 			}
 		);
@@ -328,7 +330,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 * @return void
 	 */
 	public function testASeedStoredBeforeTheLedgerExistedIsRememberedAtTheShippedVersion(): void {
-		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
 		$this->saves(static fn (int $attempt): ?\Throwable => null);
 
 		$result = $this->importDossiq(shippedVersion: '1.4.7');
@@ -343,7 +345,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEditedSeedIsLeftAloneWhileTheShippedVersionHasNotMoved(): void {
-		$this->instanceHoldsCaseType(storedVersion: '1.4.9');
+		$this->instanceHoldsCaseType(storedVersion: '1.4.9', asShipped: true);
 		$this->configWrites['imported_seed_versions_dossiq'] = (string)json_encode(['23/165/woo-verzoek' => '1.4.7']);
 		$this->saves(static fn (int $attempt): ?\Throwable => null);
 
@@ -359,7 +361,7 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	 * @return void
 	 */
 	public function testASeedAtTheSameVersionIsLeftAlone(): void {
-		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
 		$this->saves(static fn (int $attempt): ?\Throwable => null);
 
 		$result = $this->importDossiq(shippedVersion: '1.4.7');
@@ -367,4 +369,77 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 		$this->assertSame([['slug' => 'woo-verzoek-flow', 'uuid' => self::FLOW_UUID, 'written' => true]], $this->saves);
 		$this->assertSame(1, $result['unchanged']['objects']);
 	}//end testASeedAtTheSameVersionIsLeftAlone()
+
+	/**
+	 * A seed stored before the import kept a content hash, at an unchanged version, gains the shipped fields it lacks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testASeedThatLacksAShippedFieldGainsIt(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
+		$this->saves(static fn (int $attempt): ?\Throwable => null);
+
+		$result = $this->importDossiq(shippedVersion: '1.4.7');
+
+		$this->assertContains(['slug' => 'woo-verzoek', 'uuid' => self::CASE_TYPE_UUID, 'written' => true], $this->saves);
+		$this->assertSame(0, $result['unchanged']['objects']);
+		$this->assertArrayHasKey('23/165/woo-verzoek', json_decode($this->configWrites['imported_seed_hashes_dossiq'], true));
+	}//end testASeedThatLacksAShippedFieldGainsIt()
+
+	/**
+	 * Shipped content that differs from what was last shipped arrives without a version bump.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testChangedShippedContentArrivesAtAnUnchangedVersion(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
+		$this->configWrites['imported_seed_hashes_dossiq'] = (string)json_encode(['23/165/woo-verzoek' => 'the content shipped before']);
+		$this->saves(static fn (int $attempt): ?\Throwable => null);
+
+		$result = $this->importDossiq(shippedVersion: '1.4.7');
+
+		$this->assertContains(['slug' => 'woo-verzoek', 'uuid' => self::CASE_TYPE_UUID, 'written' => true], $this->saves);
+		$this->assertSame(0, $result['unchanged']['objects']);
+	}//end testChangedShippedContentArrivesAtAnUnchangedVersion()
+
+	/**
+	 * Shipped content equal to what was last shipped leaves the stored seed, edits included, alone.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testUnchangedShippedContentIsNotWrittenAgain(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7', asShipped: true);
+		$this->saves(static fn (int $attempt): ?\Throwable => null);
+		$this->importDossiq(shippedVersion: '1.4.7');
+		unset($this->configWrites['imported_config_dossiq_hash']);
+		$this->saves = [];
+
+		$result = $this->importDossiq(shippedVersion: '1.4.7');
+
+		$this->assertNotContains(['slug' => 'woo-verzoek', 'uuid' => self::CASE_TYPE_UUID, 'written' => true], $this->saves);
+		$this->assertSame(1, $result['unchanged']['objects']);
+	}//end testUnchangedShippedContentIsNotWrittenAgain()
+
+	/**
+	 * A seed whose write fails is not remembered at the shipped content, so the next import tries it again.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testAFailedWriteIsNotRememberedAsShipped(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
+		$this->saves(static fn (int $attempt): ?\Throwable => new \OCA\OpenRegister\Exception\ValidationException('refused'));
+
+		$this->importDossiq(shippedVersion: '1.4.7');
+
+		$hashes = json_decode(($this->configWrites['imported_seed_hashes_dossiq'] ?? '{}'), true);
+		$this->assertArrayNotHasKey('23/165/woo-verzoek', $hashes);
+	}//end testAFailedWriteIsNotRememberedAsShipped()
 }//end class

@@ -258,6 +258,39 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 	}//end testANewerVersionWithTheSameDefinitionRecordsNothing()
 
 	/**
+	 * An import at a higher version replaces a stored property's definition:
+	 * a location stored as `type: geo`, which no JSON Schema validator accepts,
+	 * becomes the shipped `{"type": "object", "format": "geo:point"}`.
+	 *
+	 * @return void
+	 */
+	public function testAHigherVersionReplacesAStoredProperty(): void {
+		$stored = $this->schema(
+			id: 31,
+			version: '1.0.0',
+			properties: ['name' => ['type' => 'string'], 'location' => ['type' => 'geo']],
+			required: []
+		);
+		$this->schemaMapper->method('find')->willReturn($stored);
+		$this->changelogMapper->method('createFromArray')->willReturn(new SchemaChangelog());
+
+		$this->handler->importSchema(
+			data: [
+				'slug' => 'case',
+				'title' => 'Case',
+				'version' => '1.0.1',
+				'properties' => ['name' => ['type' => 'string'], 'location' => ['type' => 'object', 'format' => 'geo:point']],
+				'required' => [],
+			],
+			slugsAndIdsMap: []
+		);
+
+		$location = $this->written['properties']['location'];
+		$this->assertSame(expected: ['object', 'geo:point'], actual: [$location['type'], $location['format']]);
+		$this->assertSame(expected: '1.0.1', actual: $this->written['version']);
+	}//end testAHigherVersionReplacesAStoredProperty()
+
+	/**
 	 * Pass 2 of a configuration import keeps the version Pass 1 bumped to (#4163).
 	 *
 	 * importFromJson() imports every schema twice: Pass 1 classifies and bumps,

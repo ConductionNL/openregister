@@ -306,7 +306,7 @@ class MagicTableHandler {
 	 *
 	 * @return bool True if specialized table exists, false if should use generic storage
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function existsTableForRegisterSchema(Register $register, Schema $schema): bool {
 		$registerId = $register->getId();
@@ -354,7 +354,7 @@ class MagicTableHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	private function ensureMetadataColumns(Register $register, Schema $schema): void {
 		if ($this->metadataColumns === null) {

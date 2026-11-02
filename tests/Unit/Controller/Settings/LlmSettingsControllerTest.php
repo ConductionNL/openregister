@@ -416,14 +416,6 @@ class LlmSettingsControllerTest extends TestCase {
 		$this->assertFalse($result->getData()['success']);
 	}
 
-	public function testGetVectorStatsContainsTimestamp(): void {
-		$this->markTestSkipped(
-			'LlmSettingsController::getVectorStats() was removed; '
-			. 'vector stats now live on a dedicated endpoint. Test kept '
-			. 'as a marker until the replacement controller is finalised.'
-		);
-	}
-
 	public function testPatchLLMSettingsWithAllModelConfigs(): void {
 		// patchLLMSettings delegates to updateLLMSettings — test end-to-end with all configs.
 		$this->request->method('getParams')->willReturn([
@@ -485,11 +477,47 @@ class LlmSettingsControllerTest extends TestCase {
 	}
 
 	public function testGetVectorStatsSuccess(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+		$stats = [
+			'total_vectors' => 100,
+			'by_type' => ['object' => 70, 'file' => 30],
+			'by_model' => ['text-embedding-3-small' => 60, 'nomic-embed-text' => 40],
+			'object_vectors' => 70,
+			'file_vectors' => 30,
+		];
+		$this->vectorizationService->expects($this->once())
+			->method('getVectorStats')
+			->willReturn($stats);
+
+		$result = $this->controller->getVectorStats();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame(array_merge(['success' => true], $stats), $result->getData());
 	}
 
 	public function testGetVectorStatsException(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+		$this->vectorizationService->method('getVectorStats')
+			->willThrowException(new \Exception('DB error'));
+
+		$result = $this->controller->getVectorStats();
+		$data = $result->getData();
+
+		$this->assertEquals(500, $result->getStatus());
+		$this->assertFalse($data['success']);
+		$this->assertSame('DB error', $data['error']);
+		$this->assertArrayNotHasKey('trace', $data);
+	}
+
+	public function testGetVectorStatsRouteIsRegistered(): void {
+		$routes = require __DIR__ . '/../../../../appinfo/routes.php';
+		$matches = array_filter(
+			$routes['routes'],
+			static fn (array $route): bool => $route['url'] === '/api/vectors/stats'
+		);
+
+		$this->assertCount(1, $matches);
+		$route = array_values($matches)[0];
+		$this->assertSame('Settings\\LlmSettings#getVectorStats', $route['name']);
+		$this->assertSame('GET', $route['verb']);
 	}
 
 	// =========================================================================

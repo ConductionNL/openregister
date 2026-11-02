@@ -41,6 +41,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  */
 class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -63,7 +67,7 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	public function testARegisterAndASchemaAreWrittenAsTheirIdsAndProvedAsKept(): void {
 		$this->catalog([
@@ -85,7 +89,7 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	public function testARegisterOrSchemaTheInstanceDoesNotHaveRefusesTheSet(): void {
 		$this->catalog(['registers' => ['{{register:nope}}'], 'schemas' => ['{{schema:publication/nope}}']]);
@@ -99,7 +103,7 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	public function testARegisterTheSetImportsHasItsIdInTheCheck(): void {
 		$this->store->registerExists      = fn (string $slug): bool => $this->registers->exists(slug: $slug);

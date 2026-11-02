@@ -100,7 +100,7 @@ class SchemaMigrationController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function conversions(): JSONResponse {
 		if ($this->conversions === null) {
@@ -127,7 +127,7 @@ class SchemaMigrationController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function previewConversion(int $id): JSONResponse {
 		if ($this->conversions === null || $this->objectReader->canReadValues() === false) {

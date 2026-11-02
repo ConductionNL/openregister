@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -104,7 +104,7 @@ class ApiCallRecorder {
 	 *
 	 * @return bool True when calls are recorded.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function isEnabled(): bool {
 		try {
@@ -120,7 +120,7 @@ class ApiCallRecorder {
 	 *
 	 * @return string The Nextcloud uid, or the empty string for anonymous.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function principal(): string {
 		try {
@@ -147,7 +147,7 @@ class ApiCallRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function record(
 		string $principal,
@@ -184,7 +184,7 @@ class ApiCallRecorder {
 	 *
 	 * @return string The route pattern.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public static function routeOf(string $path): string {
 		$withoutQuery = strtok($path, '?');

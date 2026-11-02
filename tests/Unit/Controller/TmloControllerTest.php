@@ -376,7 +376,7 @@ class TmloControllerTest extends TestCase {
 	 * case, deleting the gate call from the controller leaves every other test
 	 * in this file green.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 *
 	 * @return void
 	 */

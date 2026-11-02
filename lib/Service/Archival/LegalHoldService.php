@@ -90,6 +90,7 @@ class LegalHoldService {
 	 * @param IUserSession $userSession User session service.
 	 * @param IJobList $jobList Background job list for bulk operations.
 	 * @param LoggerInterface $logger Logger for error and info messages.
+	 * @param RetentionRowScanner|null $scanner Walks every table a retention decision can live in, for the list of held records.
 	 */
 	public function __construct(
 		MagicMapper $objectMapper,
@@ -97,6 +98,7 @@ class LegalHoldService {
 		IUserSession $userSession,
 		IJobList $jobList,
 		LoggerInterface $logger,
+		private readonly ?RetentionRowScanner $scanner=null,
 	) {
 		$this->objectMapper = $objectMapper;
 		$this->auditTrailMapper = $auditTrailMapper;
@@ -257,6 +259,39 @@ class LegalHoldService {
 			]
 		);
 	}//end bulkPlaceHold()
+
+	/**
+	 * The records that carry an active legal hold, with their active holds.
+	 *
+	 * Walks every retention source (the magic tables and the legacy blob
+	 * table) and keeps the records whose hold is active; a released hold is
+	 * not listed. A scan stopped at its cap says so in `truncated`.
+	 *
+	 * @return array{results: array<int, array<string, mixed>>, total: int, truncated: bool}
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function listActiveHolds(): array {
+		if ($this->scanner === null) {
+			return ['results' => [], 'total' => 0, 'truncated' => false];
+		}
+
+		$scan   = $this->scanner->scan(accept: static fn (ObjectEntity $object): bool => $object->hasActiveLegalHold());
+		$ledger = new LegalHoldLedger();
+
+		$results = [];
+		foreach ($scan['objects'] as $object) {
+			$results[] = [
+				'id'       => $object->getUuid(),
+				'register' => $object->getRegister(),
+				'schema'   => $object->getSchema(),
+				'name'     => $object->getName(),
+				'holds'    => $ledger->activeHolds(retention: ($object->getRetention() ?? [])),
+			];
+		}
+
+		return ['results' => $results, 'total' => count($results), 'truncated' => $scan['truncated']];
+	}//end listActiveHolds()
 
 	/**
 	 * Get the current authenticated user ID.

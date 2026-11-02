@@ -93,9 +93,10 @@ class LeafRegistry {
 		private IntegrationRegistry $integrationRegistry,
 		private IAppManager $appManager,
 		private LoggerInterface $logger,
-		// LAST AND NULLABLE so every existing construction keeps working; the
-		// container always supplies it. Built from the app manager this class
-		// already holds when it is absent, so the answer is never a second one.
+		// LAST AND NULLABLE so every existing construction keeps working.
+		// IntegrationRegistrar's factory does not pass it: LeafBundle is
+		// stateless and only reads the app manager, so the one built here from
+		// the app manager this class already holds gives the same answer.
 		private ?LeafBundle $leafBundleService = null,
 	) {
 		$this->leafBundle = ($leafBundleService ?? new LeafBundle($appManager));

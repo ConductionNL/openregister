@@ -55,7 +55,7 @@ final class PermissionBit {
 	 *
 	 * @return integer|null The bit, or null when the action has none.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public static function forAction(string $action): ?int {
 		$bits = [

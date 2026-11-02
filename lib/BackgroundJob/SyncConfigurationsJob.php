@@ -28,7 +28,7 @@ use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -64,9 +64,9 @@ class SyncConfigurationsJob extends TimedJob {
 	/**
 	 * GitHub service instance.
 	 *
-	 * @var GitHubHandler The GitHub service instance.
+	 * @var GitHubClientInterface The GitHub service instance.
 	 */
-	private GitHubHandler $githubService;
+	private GitHubClientInterface $githubService;
 
 	/**
 	 * GitLab service instance.
@@ -95,7 +95,7 @@ class SyncConfigurationsJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory for job scheduling
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper
 	 * @param ConfigurationService $configurationService Configuration service
-	 * @param GitHubHandler $githubService GitHub service
+	 * @param GitHubClientInterface $githubService GitHub service
 	 * @param GitLabHandler $gitlabService GitLab service
 	 * @param Client $httpClient HTTP client
 	 * @param LoggerInterface $logger Logger
@@ -106,7 +106,7 @@ class SyncConfigurationsJob extends TimedJob {
 		ITimeFactory $time,
 		ConfigurationMapper $configurationMapper,
 		ConfigurationService $configurationService,
-		GitHubHandler $githubService,
+		GitHubClientInterface $githubService,
 		GitLabHandler $gitlabService,
 		Client $httpClient,
 		LoggerInterface $logger,

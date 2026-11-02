@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -86,7 +86,7 @@ class ExternalLinkResolver {
 	 *
 	 * @return array<int, array<string, string>> The offered links, each with a title and a url.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	public function resolve(array $declarations, array $object): array {
 		$links = [];
@@ -112,7 +112,7 @@ class ExternalLinkResolver {
 	 *
 	 * @return array<int, string> The placeholder paths, in order of first appearance.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public static function placeholdersIn(string $template): array {
 		$matched = [];

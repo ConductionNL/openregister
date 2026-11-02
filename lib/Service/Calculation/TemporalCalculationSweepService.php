@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -73,6 +74,7 @@ class TemporalCalculationSweepService {
 	 * @param ObjectService $objectService The normal object write path (events + audit).
 	 * @param LoggerInterface $logger Structured logging.
 	 * @param LifecycleDeclarationForms $finalForm Owns the shape rules for `initial` and `final`.
+	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -83,6 +85,7 @@ class TemporalCalculationSweepService {
 		private readonly ObjectService $objectService,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleDeclarationForms $finalForm = new LifecycleDeclarationForms(),
+		private readonly SchemaTypeConverter $types = new SchemaTypeConverter(),
 	) {
 
 	}//end __construct()
@@ -224,8 +227,9 @@ class TemporalCalculationSweepService {
 				// rules fire exactly on the crossing. System sweep: RBAC and
 				// tenancy scoping are bypassed deliberately (no user session);
 				// the write is still audited through the normal path.
+				// The read decodes JSON held in a `type: string` property; hand it back as stored.
 				$this->objectService->saveObject(
-					object: $data,
+					object: $this->types->restoreStringTypedValues(data: $data, properties: ($schema->getProperties() ?? [])),
 					register: $register,
 					schema: $schema,
 					uuid: (string)$object->getUuid(),

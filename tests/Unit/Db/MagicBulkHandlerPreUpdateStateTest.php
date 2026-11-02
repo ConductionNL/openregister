@@ -44,9 +44,10 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 	 *
 	 * @param string $class The class holding the method.
 	 * @param string $method The method that must carry the flag.
+	 * @param int $position The slot the flag was appended at.
 	 */
 	#[\PHPUnit\Framework\Attributes\DataProvider('plumbedMethods')]
-	public function testTheFlagIsCarriedAndDefaultsToTheSafeValue(string $class, string $method): void {
+	public function testTheFlagIsCarriedAndDefaultsToTheSafeValue(string $class, string $method, int $position): void {
 		$parameters = (new ReflectionMethod($class, $method))->getParameters();
 
 		$found = null;
@@ -64,25 +65,34 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 		);
 
 		// APPENDED, not inserted. A named argument needs the parameter to exist;
-		// a positional caller needs every earlier slot to stay where it was.
+		// a positional caller needs every earlier slot to stay where it was. So
+		// the flag keeps the slot it was appended at, and anything appended
+		// after it (executeUpsertChunk's freezeSlug, #4037) must be optional,
+		// so a positional caller that stops at the flag still works.
 		$this->assertSame(
-			(count($parameters) - 1),
+			$position,
 			$found->getPosition(),
-			"$class::$method must append the flag last, or every positional caller shifts."
+			"$class::$method moved the flag, so every positional caller shifts."
 		);
+		foreach (array_slice($parameters, ($position + 1)) as $later) {
+			$this->assertTrue(
+				$later->isDefaultValueAvailable(),
+				"$class::$method appended \${$later->getName()} after the flag without a default."
+			);
+		}
 	}
 
 	/**
-	 * @return array<string, array{0: string, 1: string}>
+	 * @return array<string, array{0: string, 1: string, 2: int}>
 	 */
 	public static function plumbedMethods(): array {
 		return [
-			'handler bulkUpsert' => [MagicBulkHandler::class, 'bulkUpsert'],
-			'handler executeUpsertChunk' => [MagicBulkHandler::class, 'executeUpsertChunk'],
-			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert'],
-			'mapper ultraFastBulkSave' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSave'],
-			'mapper ultraFastBulkSaveSingleSchema' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSaveSingleSchema'],
-			'saveObjects persistChunk' => [\OCA\OpenRegister\Service\Object\SaveObjects::class, 'persistChunk'],
+			'handler bulkUpsert' => [MagicBulkHandler::class, 'bulkUpsert', 4],
+			'handler executeUpsertChunk' => [MagicBulkHandler::class, 'executeUpsertChunk', 3],
+			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert', 4],
+			'mapper ultraFastBulkSave' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSave', 4],
+			'mapper ultraFastBulkSaveSingleSchema' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSaveSingleSchema', 4],
+			'saveObjects persistChunk' => [\OCA\OpenRegister\Service\Object\SaveObjects::class, 'persistChunk', 3],
 		];
 	}
 

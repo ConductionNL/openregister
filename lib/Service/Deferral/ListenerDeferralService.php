@@ -169,7 +169,7 @@ class ListenerDeferralService {
 	 *
 	 * @return int The limit in characters.
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function getArgumentLimit(): int {
 		if ($this->argumentLimit !== null) {
@@ -310,7 +310,7 @@ class ListenerDeferralService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	private function flushBuffer(string $jobClass): void {
 		$entries = ($this->buffers[$jobClass]['entries'] ?? []);

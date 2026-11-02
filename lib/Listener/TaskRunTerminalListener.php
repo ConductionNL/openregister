@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -51,11 +51,11 @@ class TaskRunTerminalListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The task lifecycle.
+	 * @param TaskManagerInterface $tasks The task lifecycle.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
+		private readonly TaskManagerInterface $tasks,
 		private readonly LoggerInterface $logger,
 	) {
 

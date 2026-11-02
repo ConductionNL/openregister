@@ -152,6 +152,30 @@ class MagicTableHandlerTest extends TestCase {
 	}//end testSyncCalledWhenColumnMissing()
 
 	/**
+	 * A plain first use of a table never ALTERs a narrow number column: that
+	 * would put one ALTER per table under live traffic after an upgrade. The
+	 * upgrade step and the reconcile command widen it.
+	 */
+	public function testFirstUseDoesNotWidenANarrowNumberColumn(): void {
+		$columnMap = [
+			'_uuid' => ['name' => '_uuid', 'type' => 'string', 'nullable' => false, 'default' => null],
+			'weight' => ['name' => 'weight', 'type' => 'decimal', 'precision' => 20, 'scale' => 6, 'nullable' => true, 'default' => null],
+		];
+		$existing = $columnMap;
+		$existing['weight'] = ['name' => 'weight', 'type' => 'numeric', 'precision' => 10, 'scale' => 2, 'nullable' => true, 'default' => null];
+
+		$this->magicMapper->method('hasRegisterSchemaChanged')->willReturn(false);
+		$this->magicMapper->method('buildTableColumnsFromSchema')->willReturn($columnMap);
+		$this->magicMapper->method('getExistingTableColumns')->willReturn($existing);
+		$this->magicMapper->method('findDecimalColumnsNeedingWiden')->willReturn(['weight']);
+
+		$this->magicMapper->expects($this->never())->method('widenDecimalColumns');
+		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
+
+		$this->assertTrue($this->handler->ensureTableForRegisterSchema(register: $this->register, schema: $this->schema));
+	}//end testFirstUseDoesNotWidenANarrowNumberColumn()
+
+	/**
 	 * Fast path: when the verified flag is set, neither buildTableColumnsFromSchema
 	 * nor getExistingTableColumns should be called — zero information_schema I/O.
 	 */

@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the export profile table and let a schedule name a profile.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class Version1Date20260915203000 extends SimpleMigrationStep {
 	/**
@@ -57,7 +57,7 @@ class Version1Date20260915203000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

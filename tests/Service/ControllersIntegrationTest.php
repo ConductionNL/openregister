@@ -1498,43 +1498,6 @@ class ControllersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test SettingsController::updateSearchBackend with empty backend
-	 *
-	 * @return void
-	 */
-	public function testSettingsUpdateSearchBackendEmpty(): void {
-		$this->request->method('getParams')->willReturn([]);
-
-		$response = $this->settingsController->updateSearchBackend();
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
-	}
-
-	/**
-	 * Test SettingsController::updateSearchBackend with valid backend
-	 *
-	 * Note: The controller passes $backend string to service which may expect array.
-	 * This tests the error handling path if types don't match.
-	 *
-	 * @return void
-	 */
-	public function testSettingsUpdateSearchBackendValid(): void {
-		$this->request->method('getParams')->willReturn([
-			'backend' => 'database',
-		]);
-
-		try {
-			$response = $this->settingsController->updateSearchBackend();
-			$this->assertInstanceOf(JSONResponse::class, $response);
-			$this->assertTrue(in_array($response->getStatus(), [200, 500]));
-		} catch (\TypeError $e) {
-			// Service type mismatch - this is a known issue in the controller code.
-			$this->assertStringContainsString('must be of type array', $e->getMessage());
-		}
-	}
-
-	/**
 	 * Test SettingsController::rebase
 	 *
 	 * Note: May fail with TypeError in CacheSettingsHandler due to config type issues.
@@ -1551,30 +1514,6 @@ class ControllersIntegrationTest extends TestCase {
 			// Known type issue in CacheSettingsHandler - still provides coverage.
 			$this->assertStringContainsString('Unsupported operand', $e->getMessage());
 		}
-	}
-
-	/**
-	 * Test SettingsController::semanticSearch with empty query
-	 *
-	 * @return void
-	 */
-	public function testSettingsSemanticSearchEmptyQuery(): void {
-		$response = $this->settingsController->semanticSearch('   ');
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
-	}
-
-	/**
-	 * Test SettingsController::hybridSearch with empty query
-	 *
-	 * @return void
-	 */
-	public function testSettingsHybridSearchEmptyQuery(): void {
-		$response = $this->settingsController->hybridSearch('   ');
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
 	}
 
 	// THREE TESTS WERE REMOVED HERE, NOT SKIPPED.

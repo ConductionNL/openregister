@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleRunSummaryMapper extends QBMapper {
 
@@ -73,7 +73,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @return RuleRunSummary|null The summary, or null when the rule has never run.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findByRule(string $ruleId): ?RuleRunSummary {
 		$qb = $this->db->getQueryBuilder();
@@ -100,7 +100,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @return array<string, RuleRunSummary> Summaries keyed by rule id.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findBySchema(string $schemaSlug): array {
 		$qb = $this->db->getQueryBuilder();
@@ -135,7 +135,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @return array<int, RuleRunSummary> The summaries.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function findHoldingAnError(int $limit = 50): array {
 		$qb = $this->db->getQueryBuilder();
@@ -176,7 +176,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *
 	 * @return RuleRunSummary The stored summary, written or not.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function record(
 		string $ruleId,
@@ -232,7 +232,7 @@ class RuleRunSummaryMapper extends QBMapper {
 	 *   that always writes from the one that may be throttled; splitting it would be two
 	 *   methods with the same body and one line different.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $moment, bool $isError): bool {
 		if ($summary->getId() === null || $isError === true) {

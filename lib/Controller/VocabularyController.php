@@ -137,7 +137,7 @@ class VocabularyController extends Controller {
 	 *
 	 * @return JSONResponse The options, or a 404 when the schema or property is unknown.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -396,7 +396,7 @@ class VocabularyController extends Controller {
 	 * @param string $schemeUriOrUuid The scheme's source uri (or its OpenRegister uuid).
 	 *
 	 * @return string|null The scheme's uuid, or null when unresolvable.
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */

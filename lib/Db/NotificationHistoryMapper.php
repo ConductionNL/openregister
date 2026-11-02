@@ -224,7 +224,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return array<string, int> Status to count, for the statuses in use.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function countByStatus(?DateTime $since = null): array {
 		$qb = $this->db->getQueryBuilder();

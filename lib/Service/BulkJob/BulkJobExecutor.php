@@ -101,7 +101,7 @@ class BulkJobExecutor {
 	 *
 	 * @throws BulkJobRefusedException When the guard refuses the selection.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertGuards(BulkActionInterface $action, array $objects): void {
 		if (in_array(BulkActionInterface::GUARD_HOMOGENEITY, $action->getGuards(), true) === false) {
@@ -147,7 +147,7 @@ class BulkJobExecutor {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag marks the member
 	 * rows a grown query selection added, which the report has to name.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function writePreviewMembers(
 		BulkJob $job,
@@ -191,7 +191,7 @@ class BulkJobExecutor {
 	 *
 	 * @return bool True when members remain.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function processBatch(BulkJob $job, int $batchSize): bool {
 		$action = null;
@@ -242,7 +242,7 @@ class BulkJobExecutor {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function refreshCounts(BulkJob $job): void {
 		$counts = $this->memberMapper->countByOutcome(jobId: (int)$job->getId());

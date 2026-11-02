@@ -58,7 +58,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Gdpr\Export
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class SubjectExportService {
 	/**
@@ -99,7 +99,7 @@ class SubjectExportService {
 	 *
 	 * @return SubjectExport The recorded request.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport {
 		$export = $this->mapper->createFromArray(
@@ -126,7 +126,7 @@ class SubjectExportService {
 	 *
 	 * @return SubjectExport|null The export as it now stands, or null when it is gone.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function assemble(string $uuid): ?SubjectExport {
 		try {
@@ -173,7 +173,7 @@ class SubjectExportService {
 	 *
 	 * @return SubjectExport|null The export, or null when absent or not theirs.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function load(string $uuid): ?SubjectExport {
 		try {
@@ -203,7 +203,7 @@ class SubjectExportService {
 	 *
 	 * @return string|null The machine readable export, or null when refused.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function download(string $uuid, ?DateTime $now = null): ?string {
 		$export = $this->load(uuid: $uuid);

@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,7 +48,7 @@ class PreferencesController extends Controller {
 		private readonly IConfig $config,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -61,6 +61,8 @@ class PreferencesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function getPreference(string $key): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -75,7 +77,7 @@ class PreferencesController extends Controller {
 
 		$value = $this->config->getUserValue(
 			userId: $user->getUID(),
-			appName: Application::APP_ID,
+			appName: AppIdentity::APP_ID,
 			key: 'pref_' . $safeKey,
 			default: ''
 		);
@@ -98,6 +100,8 @@ class PreferencesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function setPreference(string $key, string $value = ''): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -113,7 +117,7 @@ class PreferencesController extends Controller {
 		if ($value === '') {
 			$this->config->deleteUserValue(
 				userId: $user->getUID(),
-				appName: Application::APP_ID,
+				appName: AppIdentity::APP_ID,
 				key: 'pref_' . $safeKey
 			);
 			return new JSONResponse(data: ['value' => null]);
@@ -121,7 +125,7 @@ class PreferencesController extends Controller {
 
 		$this->config->setUserValue(
 			userId: $user->getUID(),
-			appName: Application::APP_ID,
+			appName: AppIdentity::APP_ID,
 			key: 'pref_' . $safeKey,
 			value: $value
 		);

@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -54,6 +54,7 @@ use Psr\Log\NullLogger;
  * Tasks 8.1, 8.2 and 8.4, decided rather than described.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext

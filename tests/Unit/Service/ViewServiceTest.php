@@ -473,7 +473,7 @@ class ViewServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-delete-owner-only/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
 	 */
 	public function testDeleteThrowsForPublicViewOfOtherUser(): void {
 		$view = $this->createView(id: 1, owner: 'user1', isPublic: true);
@@ -490,7 +490,7 @@ class ViewServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-delete-owner-only/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
 	 */
 	public function testDeleteByAdministratorRemovesViewOfOtherUser(): void {
 		$view = $this->createView(id: 1, owner: 'user1', isPublic: false);

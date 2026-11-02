@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -87,12 +88,14 @@ class MoveObject {
 	 * @param ValidateObject   $validator Validation against a schema.
 	 * @param AuditTrailMapper $audit    The audit trail.
 	 * @param LoggerInterface  $logger   The logger.
+	 * @param ObjectSlugHandler|null $slugHandler Re-checks the slug in the target (#4037).
 	 */
 	public function __construct(
 		private readonly MagicMapper $objects,
 		private readonly ValidateObject $validator,
 		private readonly AuditTrailMapper $audit,
 		private readonly LoggerInterface $logger,
+		private readonly ?ObjectSlugHandler $slugHandler=null,
 	) {
 	}//end __construct()
 
@@ -199,7 +202,9 @@ class MoveObject {
 
 		// WRITE FIRST. See the class docblock: a failure here leaves the object
 		// exactly where it was, which is the recoverable half.
+		$sourceSlug = $object->getSlug();
 		try {
+			$this->decideTargetSlug(object: $object, targetRegister: $targetRegister, targetSchema: $targetSchema);
 			$object->setRegister((string)$targetRegister->getId());
 			$object->setSchema((string)$targetSchema->getId());
 			$this->objects->updateObjectEntity(
@@ -213,6 +218,7 @@ class MoveObject {
 			// somewhere it does not.
 			$object->setRegister((string)$sourceRegister->getId());
 			$object->setSchema((string)$sourceSchema->getId());
+			$object->setSlug($sourceSlug);
 
 			return $this->refusal(
 				uuid: $uuid,
@@ -262,6 +268,26 @@ class MoveObject {
 			'errors' => $errors,
 		];
 	}//end move()
+
+	/**
+	 * Give the object the slug it may hold in the target (#4037).
+	 *
+	 * The slug was decided in the source; the target may already have a live
+	 * holder of it, so it is checked there as a save would.
+	 *
+	 * @param ObjectEntity $object         The object being moved.
+	 * @param Register     $targetRegister Where it is going.
+	 * @param Schema       $targetSchema   Where it is going.
+	 *
+	 * @return void
+	 */
+	private function decideTargetSlug(ObjectEntity $object, Register $targetRegister, Schema $targetSchema): void {
+		if ($this->slugHandler === null) {
+			return;
+		}
+
+		$object->setSlug($this->slugHandler->slugForMove(entity: $object, register: $targetRegister, schema: $targetSchema));
+	}//end decideTargetSlug()
 
 	/**
 	 * One validation error, as a sentence naming the property where it can.

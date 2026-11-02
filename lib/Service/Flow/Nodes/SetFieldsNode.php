@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -45,7 +46,7 @@ use UnexpectedValueException;
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *

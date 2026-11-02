@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -106,7 +106,7 @@ final class ExportGateTest extends TestCase {
 	 * recorded: an audit trail that also logs the exports that were allowed to
 	 * proceed as refusals cannot be read.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 *
 	 * @return void
 	 */
@@ -119,7 +119,7 @@ final class ExportGateTest extends TestCase {
 	 * A refusal reaches the caller with the right service's own status and
 	 * body, naming the verb.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 *
 	 * @return void
 	 */
@@ -143,7 +143,7 @@ final class ExportGateTest extends TestCase {
 	/**
 	 * The refusal is recorded, naming the export that was refused and where.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md#requirement-every-export-is-recorded-on-the-audit-trail-req-exp-004
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-every-export-is-recorded-on-the-audit-trail-req-exp-004
 	 *
 	 * @return void
 	 */
@@ -169,7 +169,7 @@ final class ExportGateTest extends TestCase {
 	 * A 500 and a 403 are acted on very differently by whoever meets them, and
 	 * the control here is the refusal, not the record of it.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md#requirement-every-export-is-recorded-on-the-audit-trail-req-exp-004
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-every-export-is-recorded-on-the-audit-trail-req-exp-004
 	 *
 	 * @return void
 	 */
@@ -193,7 +193,7 @@ final class ExportGateTest extends TestCase {
 	 * which refuses an unreadable rule. The gate must not answer "allowed"
 	 * just because it has nothing to ask about.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 *
 	 * @return void
 	 */
