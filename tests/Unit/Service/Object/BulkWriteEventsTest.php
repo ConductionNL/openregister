@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -70,6 +71,8 @@ class BulkWriteEventsTest extends TestCase {
 	private const CONFLICT = 'Panel member has a conflict of interest';
 
 	private MagicMapper&MockObject $objectMapper;
+
+	private RegisterMapper&MockObject $registerMapper;
 
 	private IAppConfig&MockObject $appConfig;
 
@@ -107,6 +110,7 @@ class BulkWriteEventsTest extends TestCase {
 
 		$this->objectMapper        = $this->createMock(MagicMapper::class);
 		$this->appConfig           = $this->createMock(IAppConfig::class);
+		$this->registerMapper      = $this->createMock(RegisterMapper::class);
 		$this->userSession         = $this->createMock(IUserSession::class);
 		$this->groupManager        = $this->createMock(IGroupManager::class);
 		$this->permissionHandler   = $this->createMock(PermissionHandler::class);
@@ -178,7 +182,7 @@ class BulkWriteEventsTest extends TestCase {
 		return new SaveObjects(
 			objectEntityMapper: $this->objectMapper,
 			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
+			registerMapper: $this->registerMapper,
 			saveHandler: $this->createMock(SaveObject::class),
 			userSession: $this->userSession,
 			organisationService: $this->organisationService,
@@ -251,16 +255,23 @@ class BulkWriteEventsTest extends TestCase {
 	 */
 	private function writerAnswers(string $verdict): void {
 		$this->objectMapper->method('ultraFastBulkSave')->willReturnCallback(
-			function (array $insertObjects) use ($verdict): array {
+			function (array $insertObjects, array $_updateObjects = [], ?Register $_register = null, ?Schema $_schema = null, bool $needsPreUpdateState = true) use ($verdict): array {
 				$this->written = array_merge($this->written, $insertObjects);
 				return array_map(
-					static fn (array $row): array => [
-						'_uuid' => $row['uuid'],
-						'_register' => 3,
-						'_schema' => 7,
-						'title' => ($row['object']['title'] ?? null),
-						'object_status' => $verdict,
-					],
+					static function (array $row) use ($verdict, $needsPreUpdateState): array {
+						$out = [
+							'_uuid' => $row['uuid'],
+							'_register' => 3,
+							'_schema' => 7,
+							'title' => ($row['object']['title'] ?? null),
+							'object_status' => $verdict,
+						];
+						if ($verdict === 'updated' && $needsPreUpdateState === true) {
+							$out['_pre_update_row'] = ['_uuid' => $row['uuid'], '_register' => 3, '_schema' => 7, 'title' => 'stored ' . $row['uuid']];
+						}
+
+						return $out;
+					},
 					$insertObjects
 				);
 			}
@@ -276,6 +287,21 @@ class BulkWriteEventsTest extends TestCase {
 			}
 		);
 	}//end writerAnswers()
+
+	/**
+	 * Let the register mapper answer for register 3 (the route's) and register 9 (another one).
+	 *
+	 * @param array $otherConfiguration Register 9's configuration.
+	 *
+	 * @return void
+	 */
+	private function twoRegisters(array $otherConfiguration): void {
+		$other = $this->register($otherConfiguration);
+		$other->setId(9);
+		$this->registerMapper->method('find')->willReturnCallback(
+			fn (mixed $id): Register => ((string)$id === '9' ? $other : $this->register())
+		);
+	}//end twoRegisters()
 
 	/**
 	 * A listener that refuses a move into deliberation, the way an app guard does.
@@ -297,8 +323,8 @@ class BulkWriteEventsTest extends TestCase {
 	 * @return list<array<string, mixed>>
 	 */
 	private function twoUpdates(): array {
-		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturn(
-			[
+		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturnCallback(
+			fn (Register $register): array => ((string)$register->getId() !== '3') ? [] : [
 				'u-1' => $this->stored(uuid: 'u-1', status: 'open'),
 				'u-2' => $this->stored(uuid: 'u-2', status: 'open'),
 			]
@@ -424,6 +450,108 @@ class BulkWriteEventsTest extends TestCase {
 		$this->assertCount(1, $updated);
 		$this->assertSame('u-2', $updated[0]->getNewObject()->getUuid());
 	}//end testAStoppedUpdateRefusesOnlyThatRow()
+
+	public function testTheUpdatedEventCarriesTheStoredObject(): void {
+		$rows = $this->twoUpdates();
+		$this->writerAnswers('updated');
+
+		$this->saveObjects($this->dispatcher())->saveObjects(
+			objects: $rows,
+			register: $this->register(),
+			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true]),
+			_audit: false
+		);
+
+		$updated = $this->eventsOf(ObjectUpdatedEvent::class);
+		$this->assertCount(2, $updated);
+		$this->assertSame('stored u-1', $updated[0]->getOldObject()?->getObject()['title']);
+		$this->assertSame('one', $updated[0]->getNewObject()->getObject()['title']);
+	}//end testTheUpdatedEventCarriesTheStoredObject()
+
+	public function testARowNamingAnotherRegisterIsScreenedAgainstTheRoute(): void {
+		$rows = $this->twoUpdates();
+		$rows[0]['@self']['register'] = '9';
+		$this->twoRegisters([]);
+		$this->writerAnswers('updated');
+
+		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
+			objects: $rows,
+			register: $this->register(),
+			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+		);
+
+		$this->assertSame(['u-2'], $this->writtenUuids());
+		$this->assertSame(self::CONFLICT, $result['invalid'][0]['error']);
+		$this->assertSame([], $this->eventsOf(ObjectCreatingEvent::class));
+		$this->assertSame('open', $this->eventsOf(ObjectUpdatingEvent::class)[0]->getOldObject()?->getObject()['status']);
+	}//end testARowNamingAnotherRegisterIsScreenedAgainstTheRoute()
+
+	public function testAnotherRegistersSettingDoesNotDecide(): void {
+		$rows = $this->twoUpdates();
+		$rows[0]['@self']['register'] = '9';
+		$this->twoRegisters([BulkWriteEvents::CONFIG_KEY => false]);
+		$this->writerAnswers('updated');
+
+		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
+			objects: $rows,
+			register: $this->register([BulkWriteEvents::CONFIG_KEY => true]),
+			schema: $this->schema()
+		);
+
+		$this->assertSame(['u-2'], $this->writtenUuids());
+		$this->assertSame(self::CONFLICT, $result['invalid'][0]['error']);
+	}//end testAnotherRegistersSettingDoesNotDecide()
+
+	public function testARowNamingTheRouteRegisterIsUnchanged(): void {
+		$rows = $this->twoUpdates();
+		$rows[0]['@self']['register'] = '3';
+		$this->twoRegisters([]);
+		$this->writerAnswers('updated');
+
+		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
+			objects: $rows,
+			register: $this->register(),
+			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+		);
+
+		$this->assertSame(['u-2'], $this->writtenUuids());
+		$this->assertSame(self::CONFLICT, $result['invalid'][0]['error']);
+		$this->assertCount(2, $this->eventsOf(ObjectUpdatingEvent::class));
+	}//end testARowNamingTheRouteRegisterIsUnchanged()
+
+	public function testCallerEventsAndTheSettingDispatchOnce(): void {
+		$rows = $this->twoUpdates();
+		$this->writerAnswers('updated');
+
+		$this->saveObjects($this->dispatcher())->saveObjects(
+			objects: $rows,
+			register: $this->register(),
+			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true]),
+			_events: true
+		);
+
+		$this->assertCount(2, $this->eventsOf(ObjectUpdatingEvent::class));
+		$this->assertCount(2, $this->eventsOf(ObjectUpdatedEvent::class));
+	}//end testCallerEventsAndTheSettingDispatchOnce()
+
+	public function testASystemOperationRunsTheGuardButWithholdsTheUpdatedEvents(): void {
+		$rows = $this->twoUpdates();
+		$this->writerAnswers('updated');
+		$service = $this->saveObjects($this->dispatcher($this->deliberationGuard()));
+
+		$result = SystemOperationContext::run(
+			fn (): array => $service->saveObjects(
+				objects: $rows,
+				register: $this->register(),
+				schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+			)
+		);
+
+		$this->assertSame(['u-2'], $this->writtenUuids());
+		$this->assertSame(self::CONFLICT, $result['invalid'][0]['error']);
+		$this->assertCount(2, $this->eventsOf(ObjectUpdatingEvent::class));
+		$this->assertSame([], $this->eventsOf(ObjectUpdatedEvent::class));
+	}//end testASystemOperationRunsTheGuardButWithholdsTheUpdatedEvents()
 
 	public function testALifecycleSchemaRunsTheGuardWithoutASetting(): void {
 		$rows = $this->twoUpdates();

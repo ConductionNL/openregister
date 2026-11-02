@@ -98,6 +98,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'schema unresolvable, admin no rbac' => ['schema' => 404, 'user' => 'admin', 'rbac' => false, 'rows' => [$create]],
 			'row names its own schema'          => ['rows' => [['@self' => ['schema' => 8], 'title' => 'x']], 'deny' => ['create:7']],
 			'row names an unknown schema'       => ['rows' => [['@self' => ['schema' => 404], 'title' => 'x']]],
+			'mixed batch row names its schema'  => ['schema' => null, 'rows' => [['@self' => ['schema' => 8], 'title' => 'x']], 'deny' => ['create:7']],
 			'register by id'                    => ['register' => 10, 'rows' => [$update]],
 			'register unresolvable'             => ['register' => 404, 'rows' => [$update]],
 			'register zero'                     => ['register' => 0, 'rows' => [$update]],

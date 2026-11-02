@@ -1111,8 +1111,11 @@ class SaveObjects {
 	/**
 	 * Determine which register applies to a single bulk row.
 	 *
-	 * Mirrors {@see resolveSafeguardRowSchema()}: `@self.register` wins for
-	 * mixed-register batches, otherwise the call-level default applies.
+	 * The call-level register wins when the caller named one, because the writer
+	 * stores every row of such a call in that register's table
+	 * (MagicMapper::ultraFastBulkSave()). Screening a row against the register its
+	 * `@self.register` names would judge another table than the one written.
+	 * Only without a call-level register does `@self.register` decide.
 	 *
 	 * @param array $object Raw row data.
 	 * @param Register|null $defaultRegister Call-level default register.
@@ -1120,23 +1123,28 @@ class SaveObjects {
 	 * @return Register|null Resolved register, or null when unresolvable.
 	 */
 	private function resolveSafeguardRowRegister(array $object, ?Register $defaultRegister): ?Register {
+		if ($defaultRegister !== null) {
+			return $defaultRegister;
+		}
+
 		$selfRegister = $object['@self']['register'] ?? null;
 		if ($selfRegister !== null && $selfRegister !== '') {
 			try {
 				return $this->loadRegisterWithCache(registerId: $selfRegister);
 			} catch (\Throwable $e) {
-				// Fall through to default.
+				// Unresolvable: no register.
 			}
 		}
 
-		return $defaultRegister;
+		return null;
 	}//end resolveSafeguardRowRegister()
 
 	/**
 	 * Determine which schema applies to a single bulk row.
 	 *
-	 * Looks at `@self.schema` first (mixed-schema mode), then falls back to
-	 * the call-level default.
+	 * The call-level schema wins when the caller named one, for the same reason as
+	 * the register: the writer stores the call's rows in that schema's table.
+	 * `@self.schema` decides only in mixed-schema mode.
 	 *
 	 * @param array $object Raw row data.
 	 * @param Schema|null $defaultSchema Call-level default schema.
@@ -1144,16 +1152,20 @@ class SaveObjects {
 	 * @return Schema|null Resolved schema, or null when unresolvable.
 	 */
 	private function resolveSafeguardRowSchema(array $object, ?Schema $defaultSchema): ?Schema {
+		if ($defaultSchema !== null) {
+			return $defaultSchema;
+		}
+
 		$selfSchema = $object['@self']['schema'] ?? null;
 		if ($selfSchema !== null && $selfSchema !== '') {
 			try {
 				return $this->loadSchemaWithCache(schemaId: $selfSchema);
 			} catch (\Throwable $e) {
-				// Fall through to default.
+				// Unresolvable: no schema.
 			}
 		}
 
-		return $defaultSchema;
+		return null;
 	}//end resolveSafeguardRowSchema()
 
 	/**

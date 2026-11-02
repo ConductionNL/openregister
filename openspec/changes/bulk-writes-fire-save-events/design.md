@@ -84,7 +84,32 @@ dispatches for those objects only, through the same `emitChunkSideEffects()`
 rows are fetched when such a pair exists, so an updated event carries the
 real old object. `SystemOperationContext` still withholds these events.
 
-## D-6: what is left out
+## D-6: the row is screened where it is written
+
+`MagicMapper::ultraFastBulkSave()` writes every row of a call that names a
+register into that register's table, and with a named schema into that
+schema's table. The row screen used to read `@self.register` and
+`@self.schema` first. A row naming another register was then looked up in the
+wrong table, judged a create, and checked against the other register's
+permissions and setting, while the writer overwrote the stored row in the
+route's table. The screen now takes the caller's register and schema first,
+like the writer. `@self` decides only in mixed-schema mode.
+
+Refusing such a row was the other option. It was not taken: exported data
+carries `@self.register` and `@self.schema` from its source instance, and a
+re-import into another register would then be refused row by row. Screening
+against the target keeps those imports working and judges the table that is
+actually written.
+
+## D-7: known limits
+
+- The pre-save events run in the row screen, before the chunk's own guards
+  (`enforceChunkGuards()`) and before the chunk's database transaction. A
+  listener's side effect (a number issued, a refusal recorded) stays when a
+  later guard drops the row or the chunk rolls back. The single save has the
+  same order for its own checks after the event.
+
+## D-8: what is left out
 
 - `appendObjectsRaw()` writes through `MagicMapper::bulkUpsert()` and stays
   raw. Its caller takes the authorisation responsibility by contract.

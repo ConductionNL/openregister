@@ -74,3 +74,29 @@ preview and the flow `ObjectWriteNode`.
 - **WHEN** the caller sends the same batch
 - **THEN** both rows are written and no pre-save event is dispatched
 - @e2e exclude {covered by `BulkWriteEventsTest::testEventsOffWritesEveryRow`}
+
+### Requirement: A bulk row is screened against the register and schema it is written to
+
+When the caller of `SaveObjects::saveObjects()` names a register, every row
+SHALL be screened against that register, whatever its `@self.register` says,
+because the writer stores the row in that register's table. The same SHALL
+hold for a schema the caller names. `@self.register` and `@self.schema` SHALL
+decide only when the caller names none (mixed-schema mode). The create or
+update decision, the permission, appendOnly and draft checks, and the
+bulk-write events setting SHALL all use the register and schema the row is
+written to.
+
+#### Scenario: a row names another register for a stored object
+
+- **GIVEN** a stored object in register 3, a route naming register 3, and a guard on its update
+- **WHEN** a bulk row for that object carries `@self.register: 9`
+- **THEN** the row is screened as an update in register 3, the guard refuses it, and nothing is written
+- @e2e exclude {needs an app guard listener; covered by `BulkWriteEventsTest::testARowNamingAnotherRegisterIsScreenedAgainstTheRoute` and `testAnotherRegistersSettingDoesNotDecide`}
+
+#### Scenario: a row names its own schema in a call that names another
+
+- **GIVEN** a call naming schema 7, and a caller who may not create in schema 7
+- **WHEN** a row carries `@self.schema: 8`
+- **THEN** the row is refused for schema 7, the schema it would be written to
+- @e2e exclude {covered by the `row names its own schema` case of `SaveObjectsBulkSafeguardsGoldenTest`; the `mixed batch row names its schema` case pins that `@self.schema` still decides without a call schema}
+
