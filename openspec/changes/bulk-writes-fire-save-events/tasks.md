@@ -21,4 +21,4 @@
 
 ## 4. Follow-up
 
-- [ ] 4.1 The insert-race fallback in `MagicMapper` runs `ObjectUpdatingEvent` (design D-8), as its own change.
+- [x] 4.1 The insert-race fallback in `MagicMapper` runs `ObjectUpdatingEvent` (design D-8): change `insert-race-runs-update-guard`.
