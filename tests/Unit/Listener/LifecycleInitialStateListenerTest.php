@@ -409,4 +409,17 @@ class LifecycleInitialStateListenerTest extends TestCase {
 
 	}//end testAHistoricImportKeepsTheState()
 
+	public function testAMapOfCreateStatesAllowsNothingExtra(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open', 'createStates' => ['first' => 'published']]])
+		);
+
+		$event = new ObjectCreatingEvent($this->object(['status' => 'published']));
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors()['allowed']);
+
+	}//end testAMapOfCreateStatesAllowsNothingExtra()
+
 }//end class
