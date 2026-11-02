@@ -11,6 +11,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
+import { objectAnswer } from '../../services/listPage.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
 // register store — AppInitializationService and every search/dashboard
@@ -412,15 +413,7 @@ export const useSchemaStore = defineStore('schema', {
 				body: JSON.stringify(schema),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			const data = new Schema(responseData)
 

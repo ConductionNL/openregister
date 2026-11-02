@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { Register } from '../../entities/index.js'
+import { objectAnswer } from '../../services/listPage.js'
 
 /**
  * The schema a CSV import goes into: the selected schema, for a .csv file only.
@@ -251,15 +252,7 @@ export const useRegisterStore = defineStore('register', {
 					method: 'DELETE',
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
+				const responseData = await objectAnswer(response)
 
 				this.refreshRegisterList()
 				this.setRegisterItem(null)
@@ -300,15 +293,7 @@ export const useRegisterStore = defineStore('register', {
 					body: JSON.stringify(cleanedData),
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
+				const responseData = await objectAnswer(response)
 
 				const data = new Register(responseData)
 
@@ -363,15 +348,7 @@ export const useRegisterStore = defineStore('register', {
 				body: JSON.stringify(register),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			const data = new Register(responseData)
 
