@@ -120,12 +120,12 @@ export default {
 		 */
 		hasActiveFilters() {
 			return (
-				auditTrailStore.filters
-				&& Object.keys(auditTrailStore.filters).some(
+				auditTrailStore.auditTrailFilters
+				&& Object.keys(auditTrailStore.auditTrailFilters).some(
 					(key) =>
-						auditTrailStore.filters[key] !== null
-						&& auditTrailStore.filters[key] !== undefined
-						&& auditTrailStore.filters[key] !== '',
+						auditTrailStore.auditTrailFilters[key] !== null
+						&& auditTrailStore.auditTrailFilters[key] !== undefined
+						&& auditTrailStore.auditTrailFilters[key] !== '',
 				)
 			)
 		},
@@ -134,9 +134,9 @@ export default {
 		 * @spec exclude UI display helper — returns only the non-empty filters for display.
 		 */
 		displayFilters() {
-			if (!auditTrailStore.filters) return {}
+			if (!auditTrailStore.auditTrailFilters) return {}
 			return Object.fromEntries(
-				Object.entries(auditTrailStore.filters).filter(
+				Object.entries(auditTrailStore.auditTrailFilters).filter(
 					([_key, value]) =>
 						value !== null && value !== undefined && value !== '',
 				),
@@ -148,7 +148,7 @@ export default {
 		'navigationStore.dialog': function (newVal) {
 			if (newVal === 'clearAuditTrails') {
 				// Update filtered count when dialog opens
-				this.filteredCount = auditTrailStore.auditTrailCount
+				this.filteredCount = auditTrailStore.auditTrailPagination.total
 			}
 		},
 	},
