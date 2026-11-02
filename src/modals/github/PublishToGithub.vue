@@ -345,34 +345,40 @@ export default {
 					'Failed to load repositories',
 				)
 				this.repositories = data.repositories || []
-
-				// Pre-select the GitHub repo the entity was already published to
-				if (this.preselectPublished && this.entity?.githubRepo) {
-					const existingRepo = this.repositories.find(
-						(r) => r.full_name === this.entity.githubRepo,
-					)
-					if (existingRepo) {
-						this.selectedRepository = existingRepo.full_name
-						// Load branches for this repo
-						await this.loadBranches(
-							existingRepo.owner,
-							existingRepo.name,
-						)
-						// Pre-select existing branch
-						if (this.entity?.githubBranch) {
-							this.selectedBranch = this.entity.githubBranch
-						}
-						// Pre-fill path
-						if (this.entity?.githubPath) {
-							this.filePath = this.entity.githubPath
-						}
-					}
-				}
+				await this.restorePublishedTarget()
 			} catch (e) {
 				this.error = e.message || 'Failed to load repositories'
 				console.error('Failed to load repositories:', e)
 			} finally {
 				this.loadingRepositories = false
+			}
+		},
+
+		/**
+		 * When the form preselects the published target: select the repository
+		 * the entity was already published to, load its branches, and restore
+		 * the published branch and path.
+		 *
+		 * @spec exclude Modal data-load plumbing — restores the GitHub target the entity was published to.
+		 * @return {Promise<void>}
+		 */
+		async restorePublishedTarget() {
+			if (!this.preselectPublished || !this.entity?.githubRepo) {
+				return
+			}
+			const existingRepo = this.repositories.find(
+				(r) => r.full_name === this.entity.githubRepo,
+			)
+			if (!existingRepo) {
+				return
+			}
+			this.selectedRepository = existingRepo.full_name
+			await this.loadBranches(existingRepo.owner, existingRepo.name)
+			if (this.entity?.githubBranch) {
+				this.selectedBranch = this.entity.githubBranch
+			}
+			if (this.entity?.githubPath) {
+				this.filePath = this.entity.githubPath
 			}
 		},
 
