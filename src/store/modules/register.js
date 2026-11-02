@@ -415,6 +415,9 @@ export const useRegisterStore = defineStore('register', {
 				stop() {
 					clearInterval(heartbeatInterval)
 				},
+				/**
+				 * @spec openspec/specs/frontend-store-client-state/spec.md
+				 */
 				getStatus() {
 					return {
 						healthy: state.healthy,
