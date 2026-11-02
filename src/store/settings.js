@@ -767,12 +767,6 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
-		 * Update Retention settings
-		 *
-		 * @param {object} retentionData - The retention settings to save
-		 * @spec exclude API passthrough to PUT /api/settings/retention
-		 */
-		/**
 		 * Load the flow-engine instance policy.
 		 *
 		 * Reads the whole settings envelope, because the flow block is served by
@@ -821,6 +815,12 @@ export const useSettingsStore = defineStore('settings', {
 			})
 		},
 
+		/**
+		 * Update Retention settings
+		 *
+		 * @param {object} retentionData - The retention settings to save
+		 * @spec exclude API passthrough to PUT /api/settings/retention
+		 */
 		async updateRetentionSettings(retentionData) {
 			return writeSettings(this, {
 				flag: 'saving',
