@@ -234,7 +234,7 @@ class ComputedFieldHandler {
 	 *
 	 * @return array<string,mixed> The data with the scores written.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function applyConceptScores(array $data, Schema $schema): array {
 		if ($this->codedValues === null) {

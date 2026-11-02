@@ -21,13 +21,14 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -37,7 +38,7 @@ use Throwable;
 /**
  * Refreshes the marked example sets once a day.
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
 class ExampleSetDailyRefreshJob extends TimedJob {
 	/**
@@ -66,12 +67,14 @@ class ExampleSetDailyRefreshJob extends TimedJob {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's job contract.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetActingAs::inBackgroundJob() is the process-wide frame a cron run opens.
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	protected function run(mixed $argument): void {
 		try {
-			$report = $this->daily->run();
+			// A refresh may act as a cast account (a set's grants), also when cron runs inside a web request.
+			$report = ExampleSetActingAs::inBackgroundJob(run: fn (): array => $this->daily->run());
 		} catch (Throwable $e) {
 			$this->logger->error('[ExampleSetDailyRefreshJob] The daily refresh failed', ['exception' => $e->getMessage()]);
 			return;

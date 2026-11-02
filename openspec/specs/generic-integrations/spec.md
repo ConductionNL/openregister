@@ -7,8 +7,10 @@ status: done
 ## Purpose
 
 @e2e exclude Nextcloud shares provider backend — covered by PHPUnit
-TBD - created by archiving change integration-shares. Update Purpose after archive.
+Integrations are the items an object links to outside OpenRegister: shares, mails, calendar items, Deck cards, Talk conversations and more. Each integration registers through one provider contract. The object page, widgets and the API then list, link and unlink them the same way, with the object's own permissions applied.
+
 ## Requirements
+
 ### Requirement: Shares Provider Registration
 
 `SharesProvider` SHALL be registered with id='shares', group='core', requiredApp=null (NC core), storage='query-time'.
@@ -965,3 +967,11 @@ The change SHALL preserve the public API of `CnObjectSidebar` and the existing `
 - **THEN** the schema MUST save without error
 - **AND** subsequent renders MUST honour the narrower whitelist
 
+### Requirement: A consuming app reads an object's linked emails through a published contract
+
+OpenRegister SHALL publish `EmailLinkReaderInterface`. Its `getLinkedEmails(objectUuid, cursor, limit)` SHALL return the emails linked to the object, newest mail first, as `items`, `total` and `nextCursor`. The container SHALL answer the interface with the email link service. The read applies no object rights; the caller SHALL check access to the object before it reads.
+
+#### Scenario: a client's linked mail in pipelinq
+- **GIVEN** a mail "Subsidieformulier en de lijst met documenten" linked to Buurtvereniging Oost
+- **WHEN** pipelinq asks the reader for that client's linked emails
+- **THEN** it gets the mail with its subject, sender and mail date

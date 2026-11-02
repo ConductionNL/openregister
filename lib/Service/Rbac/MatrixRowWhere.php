@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Reads a matrix row's `where`.
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class MatrixRowWhere {
 
@@ -47,7 +47,7 @@ class MatrixRowWhere {
 	 *
 	 * @return array<string, mixed>|null The conditions, or null to drop the row.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function conditionsOf(array $row, string $field): ?array {
 		$where = ($row['where'] ?? []);
@@ -84,7 +84,7 @@ class MatrixRowWhere {
 	 *
 	 * @return string|int|float|bool|array{'$in': array<int, string|int|float|bool>}|null The condition.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function condition(mixed $value): string|int|float|bool|array|null {
 		if (is_scalar($value) === true) {

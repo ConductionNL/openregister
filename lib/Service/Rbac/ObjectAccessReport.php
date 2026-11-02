@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 /**
  * Assembles an object's access set and its history.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class ObjectAccessReport {
 
@@ -83,7 +83,7 @@ class ObjectAccessReport {
 	 *
 	 * @return array<string, mixed> The access set.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function setFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef): array {
 		$register = $this->register(reference: $registerRef);
@@ -119,7 +119,7 @@ class ObjectAccessReport {
 	 *
 	 * @throws \Throwable When the trail cannot be read.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function historyFor(ObjectEntity $object, ?string $moment): array {
 		$entries = $this->auditTrailMapper->findForObjectByAction(
@@ -147,7 +147,7 @@ class ObjectAccessReport {
 	 *
 	 * @return Schema|null The schema.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function schema(mixed $reference): ?Schema {
 		try {

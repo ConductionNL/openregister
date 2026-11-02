@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCP\IConfig;
  * that reported a next due time while disabled would be a console lying about
  * an instance it is the only window onto.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+ * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
 class JobScheduleService {
 
@@ -81,7 +81,7 @@ class JobScheduleService {
 	 *
 	 * @return array<string, mixed> The schedule as the console row carries it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function describe(string $jobClass, int $lastRun = 0): array {
 		$schedule = $this->read(jobClass: $jobClass);
@@ -115,7 +115,7 @@ class JobScheduleService {
 	 *
 	 * @return array<string, mixed> The schedule now in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function administer(
 		string $jobClass,
@@ -165,7 +165,7 @@ class JobScheduleService {
 	 *
 	 * @return bool True when the schedule allows it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function mayRun(string $jobClass, DateTime $moment): bool {
 		$schedule = $this->read(jobClass: $jobClass);

@@ -83,7 +83,7 @@ final class DeletionWindow {
 	 *
 	 * @return DateTimeImmutable The destroyable-from date.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destroyableFrom(): DateTimeImmutable {
 		return $this->destroyableFrom;
@@ -94,7 +94,7 @@ final class DeletionWindow {
 	 *
 	 * @return int Days remaining, zero once the window has lapsed.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function daysRemaining(): int {
 		return $this->daysRemaining;
@@ -105,7 +105,7 @@ final class DeletionWindow {
 	 *
 	 * @return int Retention in days.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function retentionDays(): int {
 		return $this->retentionDays;
@@ -117,7 +117,7 @@ final class DeletionWindow {
 	 *
 	 * @return string One of the SOURCE_* constants.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function source(): string {
 		return $this->source;
@@ -128,7 +128,7 @@ final class DeletionWindow {
 	 *
 	 * @return bool True once the destroyable-from date has passed.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function hasLapsed(): bool {
 		return $this->daysRemaining === 0;
@@ -139,7 +139,7 @@ final class DeletionWindow {
 	 *
 	 * @return array<string, mixed> The published shape.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function toArray(): array {
 		return [

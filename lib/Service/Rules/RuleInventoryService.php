@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
  *   rule is declared plus the summary store; each collaborator is one of those places and
  *   folding any of them away would mean this class reading the tables itself.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleInventoryService {
 
@@ -103,7 +103,7 @@ final class RuleInventoryService {
 	 *
 	 * @return array<int, RuleDescriptor> The descriptors, in the order the pipeline evaluates them.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function describe(Schema $schema): array {
 		$slug = (string)($schema->getSlug() ?? '');
@@ -142,8 +142,8 @@ final class RuleInventoryService {
 	 *
 	 * @return array<int, array<string, mixed>> The inventory rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function inventory(
 		Schema $schema,
@@ -198,7 +198,7 @@ final class RuleInventoryService {
 	 *
 	 * @return RuleDescriptor|null The descriptor, or null when the schema declares no such rule.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function find(Schema $schema, string $ruleId): ?RuleDescriptor {
 		foreach ($this->describe(schema: $schema) as $descriptor) {
@@ -219,7 +219,7 @@ final class RuleInventoryService {
 	 *
 	 * @return array<int, RuleDescriptor> The descriptors.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function calculations(string $slug, array $configuration, array $properties): array {
 		$annotation = ($configuration['x-openregister-calculations'] ?? []);
@@ -267,7 +267,7 @@ final class RuleInventoryService {
 	 *
 	 * @return array<int, RuleDescriptor> The descriptors.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function stateFieldRules(string $slug, array $configuration): array {
 		$states = ($configuration['x-openregister-lifecycle']['states'] ?? []);
@@ -310,7 +310,7 @@ final class RuleInventoryService {
 	 *
 	 * @return array<int, RuleDescriptor> The descriptors.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function lifecycleConditions(string $slug, array $configuration): array {
 		$transitions = ($configuration['x-openregister-lifecycle']['transitions'] ?? []);
@@ -352,7 +352,7 @@ final class RuleInventoryService {
 	 *
 	 * @return array<int, RuleDescriptor> The descriptors.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function flows(string $slug): array {
 		$byFlow = [];
@@ -400,7 +400,7 @@ final class RuleInventoryService {
 	 *
 	 * @return int|null The ceiling, or null when none is declared.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function ceilingOf(array $declaration): ?int {
 		$ceiling = ($declaration['maxObjects'] ?? null);
@@ -420,7 +420,7 @@ final class RuleInventoryService {
 	 *
 	 * @return array{property: string, value: string}|null The scope, or null when the trigger node declares none.
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function flowScopeOf(string $flowUuid, string $schemaSlug): ?array {
 		$graph = $this->published?->graphOf(flowId: $flowUuid);

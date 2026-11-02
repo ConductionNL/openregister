@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);

@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
  * one class rather than four private methods on the service that also does
  * the writing.
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 class BulkJobGuards {
 
@@ -52,7 +52,7 @@ class BulkJobGuards {
 	 *
 	 * @param integer $undoCeiling How much undo data one job may store, in bytes.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function __construct(
 		private readonly int $undoCeiling,
@@ -76,7 +76,7 @@ class BulkJobGuards {
 	 *
 	 * @throws InvalidArgumentException When either is missing.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertScope(?int $registerId, ?int $schemaId): void {
 		if ($registerId !== null && $schemaId !== null) {
@@ -99,7 +99,7 @@ class BulkJobGuards {
 	 *
 	 * @throws BulkJobRefusedException When the selection is too large.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertCeiling(int $count, int $ceiling): void {
 		if ($count <= $ceiling) {
@@ -175,7 +175,7 @@ class BulkJobGuards {
 	 *
 	 * @throws BulkJobRefusedException When the reason is missing.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertJustification(BulkActionInterface $action, BulkJob $job): void {
 		if ($action->requiresJustification() === false) {

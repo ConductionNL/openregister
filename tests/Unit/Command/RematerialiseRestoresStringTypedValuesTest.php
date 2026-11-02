@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/resave-restores-string-typed-values/specs/computed-fields/spec.md
+ * @spec openspec/specs/computed-fields/spec.md
  */
 
 declare(strict_types=1);

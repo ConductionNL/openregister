@@ -1,0 +1,1424 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`contacts relations store golden a second fetch clears the unavailable flag and the error 1`] = `
+{
+  "after": {
+    "byObject": {
+      "r:s:1": [],
+      "r:s:2": [
+        {
+          "id": 3,
+        },
+      ],
+    },
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": null,
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+  },
+  "between": {
+    "byObject": {
+      "r:s:1": [],
+    },
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": "m",
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: 501 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "contactsUnavailable": true,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: empty 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: flat list 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 2,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: message only 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+    },
+  },
+  "state": {
+    "byObject": {},
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": "m",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: nothing 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "thrown": {},
+  },
+  "state": {
+    "byObject": {},
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": "",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: object without results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 1,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 1,
+        },
+      ],
+    },
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden fetch: server error text 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+      "response": {
+        "data": {
+          "error": "srv",
+        },
+        "status": 500,
+      },
+    },
+  },
+  "state": {
+    "byObject": {},
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": "srv",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`contacts relations store golden get and _url 1`] = `
+{
+  "hit": [
+    {
+      "id": 1,
+    },
+  ],
+  "miss": [],
+  "suffixed": "/apps/openregister/api/objects/<r>/<s>/<7>/contacts/x",
+  "url": "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+}
+`;
+
+exports[`contacts relations store golden unlink deletes and prunes the cached list 1`] = `
+{
+  "delete": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts/a",
+    ],
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<8>/contacts/a%20b%2Fc",
+    ],
+  ],
+  "missing": [],
+  "pruned": [
+    {
+      "contactUid": "a",
+      "deckRef": "a",
+      "id": "a",
+      "ref": "b",
+      "uid": "b",
+    },
+    {
+      "id": "keep",
+    },
+  ],
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "contactUid": "a",
+          "deckRef": "a",
+          "id": "a",
+          "ref": "b",
+          "uid": "b",
+        },
+        {
+          "id": "keep",
+        },
+      ],
+      "r:s:8": [],
+    },
+    "contactsUnavailable": false,
+    "errors": {},
+    "loading": {},
+  },
+}
+`;
+
+exports[`contacts relations store golden writers post, refetch and return the answer 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/contacts",
+      {
+        "title": "createOrLink",
+      },
+    ],
+  ],
+  "results": [
+    {
+      "created": true,
+    },
+  ],
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 4,
+        },
+      ],
+    },
+    "contactsUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden a second fetch clears the unavailable flag and the error 1`] = `
+{
+  "after": {
+    "byObject": {
+      "r:s:1": [],
+      "r:s:2": [
+        {
+          "id": 3,
+        },
+      ],
+    },
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": null,
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+  },
+  "between": {
+    "byObject": {
+      "r:s:1": [],
+    },
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": "m",
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: 501 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "deckUnavailable": true,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: empty 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: flat list 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 2,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: message only 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+    },
+  },
+  "state": {
+    "byObject": {},
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": "m",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: nothing 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "thrown": {},
+  },
+  "state": {
+    "byObject": {},
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": "",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: object without results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 1,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 1,
+        },
+      ],
+    },
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden fetch: server error text 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+      "response": {
+        "data": {
+          "error": "srv",
+        },
+        "status": 500,
+      },
+    },
+  },
+  "state": {
+    "byObject": {},
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": "srv",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`deck relations store golden get and _url 1`] = `
+{
+  "hit": [
+    {
+      "id": 1,
+    },
+  ],
+  "miss": [],
+  "suffixed": "/apps/openregister/api/objects/<r>/<s>/<7>/deck/x",
+  "url": "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+}
+`;
+
+exports[`deck relations store golden unlink deletes and prunes the cached list 1`] = `
+{
+  "delete": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck/a",
+    ],
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<8>/deck/a%20b%2Fc",
+    ],
+  ],
+  "missing": [],
+  "pruned": [
+    {
+      "contactUid": "a",
+      "deckRef": "a",
+      "id": "a",
+      "ref": "b",
+      "uid": "b",
+    },
+    {
+      "id": "keep",
+    },
+  ],
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "contactUid": "a",
+          "deckRef": "a",
+          "id": "a",
+          "ref": "b",
+          "uid": "b",
+        },
+        {
+          "id": "keep",
+        },
+      ],
+      "r:s:8": [],
+    },
+    "deckUnavailable": false,
+    "errors": {},
+    "loading": {},
+  },
+}
+`;
+
+exports[`deck relations store golden writers post, refetch and return the answer 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/deck",
+      {
+        "title": "createOrLink",
+      },
+    ],
+  ],
+  "results": [
+    {
+      "created": true,
+    },
+  ],
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 4,
+        },
+      ],
+    },
+    "deckUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`emails relations store golden a second fetch clears the unavailable flag and the error 1`] = `
+{
+  "after": {
+    "byObject": {
+      "r:s:1": [],
+      "r:s:2": [
+        {
+          "id": 3,
+        },
+      ],
+    },
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": null,
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+    "mailUnavailable": false,
+  },
+  "between": {
+    "byObject": {
+      "r:s:1": [],
+    },
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": "m",
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: 501 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": true,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: empty 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: flat list 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 2,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: message only 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+    },
+  },
+  "state": {
+    "byObject": {},
+    "errors": {
+      "r:s:7": "m",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: nothing 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "thrown": {},
+  },
+  "state": {
+    "byObject": {},
+    "errors": {
+      "r:s:7": "",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: object without results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "returned": {
+      "total": 0,
+    },
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": {
+        "total": 0,
+      },
+    },
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 1,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 1,
+        },
+      ],
+    },
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden fetch: server error text 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+      "response": {
+        "data": {
+          "error": "srv",
+        },
+        "status": 500,
+      },
+    },
+  },
+  "state": {
+    "byObject": {},
+    "errors": {
+      "r:s:7": "srv",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden get and _url 1`] = `
+{
+  "hit": [
+    {
+      "id": 1,
+    },
+  ],
+  "miss": [],
+  "suffixed": "/apps/openregister/api/objects/<r>/<s>/<7>/emails/x",
+  "url": "/apps/openregister/api/objects/<r>/<s>/<7>/emails",
+}
+`;
+
+exports[`emails relations store golden unlink deletes and prunes the cached list 1`] = `
+{
+  "delete": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/emails/a",
+    ],
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<8>/emails/a%20b%2Fc",
+    ],
+  ],
+  "missing": [],
+  "pruned": [
+    {
+      "id": "x",
+    },
+    {
+      "contactUid": "a",
+      "deckRef": "a",
+      "id": "y",
+    },
+    {
+      "id": "keep",
+    },
+  ],
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": "x",
+        },
+        {
+          "contactUid": "a",
+          "deckRef": "a",
+          "id": "y",
+        },
+        {
+          "id": "keep",
+        },
+      ],
+      "r:s:8": [],
+    },
+    "errors": {},
+    "loading": {},
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`emails relations store golden writers post, refetch and return the answer 1`] = `
+{
+  "get": [],
+  "post": [],
+  "results": [],
+  "state": {
+    "byObject": {},
+    "errors": {},
+    "loading": {},
+    "mailUnavailable": false,
+  },
+}
+`;
+
+exports[`events relations store golden a second fetch clears the unavailable flag and the error 1`] = `
+{
+  "after": {
+    "byObject": {
+      "r:s:1": [],
+      "r:s:2": [
+        {
+          "id": 3,
+        },
+      ],
+    },
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": null,
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+  },
+  "between": {
+    "byObject": {
+      "r:s:1": [],
+    },
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:1": null,
+      "r:s:2": "m",
+    },
+    "loading": {
+      "r:s:1": false,
+      "r:s:2": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: 501 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "calendarUnavailable": true,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: empty 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "returned": [],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [],
+    },
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: flat list 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 2,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: message only 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+    },
+  },
+  "state": {
+    "byObject": {},
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": "m",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: nothing 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "thrown": {},
+  },
+  "state": {
+    "byObject": {},
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": "",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: object without results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "returned": {
+      "total": 0,
+    },
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": {
+        "total": 0,
+      },
+    },
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: results 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "returned": [
+      {
+        "id": 1,
+      },
+    ],
+  },
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 1,
+        },
+      ],
+    },
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden fetch: server error text 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "result": {
+    "thrown": {
+      "message": "m",
+      "response": {
+        "data": {
+          "error": "srv",
+        },
+        "status": 500,
+      },
+    },
+  },
+  "state": {
+    "byObject": {},
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": "srv",
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;
+
+exports[`events relations store golden get and _url 1`] = `
+{
+  "hit": [
+    {
+      "id": 1,
+    },
+  ],
+  "miss": [],
+  "suffixed": "/apps/openregister/api/objects/<r>/<s>/<7>/events/x",
+  "url": "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+}
+`;
+
+exports[`events relations store golden unlink deletes and prunes the cached list 1`] = `
+{
+  "delete": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events/a",
+    ],
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<8>/events/a%20b%2Fc",
+    ],
+  ],
+  "missing": [],
+  "pruned": [
+    {
+      "id": "x",
+    },
+    {
+      "contactUid": "a",
+      "deckRef": "a",
+      "id": "y",
+    },
+    {
+      "id": "keep",
+    },
+  ],
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": "x",
+        },
+        {
+          "contactUid": "a",
+          "deckRef": "a",
+          "id": "y",
+        },
+        {
+          "id": "keep",
+        },
+      ],
+      "r:s:8": [],
+    },
+    "calendarUnavailable": false,
+    "errors": {},
+    "loading": {},
+  },
+}
+`;
+
+exports[`events relations store golden writers post, refetch and return the answer 1`] = `
+{
+  "get": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events",
+      {
+        "title": "create",
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/<r>/<s>/<7>/events/link",
+      {
+        "title": "link",
+      },
+    ],
+  ],
+  "results": [
+    {
+      "created": true,
+    },
+    {
+      "created": true,
+    },
+  ],
+  "state": {
+    "byObject": {
+      "r:s:7": [
+        {
+          "id": 4,
+        },
+      ],
+    },
+    "calendarUnavailable": false,
+    "errors": {
+      "r:s:7": null,
+    },
+    "loading": {
+      "r:s:7": false,
+    },
+  },
+}
+`;

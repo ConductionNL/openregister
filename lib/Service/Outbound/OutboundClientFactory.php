@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class OutboundClientFactory implements IClientService {
 	 *
 	 * @return IClient The client.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function newClient(?callable $handler = null): IClient {
 		unset($handler);

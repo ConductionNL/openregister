@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ class ExampleSetObjectOwnerTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function testTheObjectIsCreatedAsTheNamedCastAccount(): void {
 		$this->decisionOwnedBy(owner: '{{cast:esra.uid}}');
@@ -60,7 +60,7 @@ class ExampleSetObjectOwnerTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function testARefreshHandsAKeptObjectToTheDeclaredOwner(): void {
 		$this->decisionOwnedBy(owner: '{{cast:esra.uid}}');
@@ -84,7 +84,7 @@ class ExampleSetObjectOwnerTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function testAnOwnerOutsideTheCastIsRefused(): void {
 		foreach (['admin', '{{cast:nobody.uid}}', '{{cast:shop.name}}'] as $owner) {

@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+ * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCA\OpenRegister\Exception\ValidationException;
  * without one; the column always holds 14 digits before the point. A value
  * the column cannot hold is refused, because the database would round it.
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+ * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
  */
 final class MagicNumberColumn {
 
@@ -57,7 +57,7 @@ final class MagicNumberColumn {
 	 *
 	 * @return array{precision: int, scale: int} The DECIMAL precision and scale.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function size(array $propertyConfig): array {
 		$scale = self::DEFAULT_SCALE;
@@ -88,7 +88,7 @@ final class MagicNumberColumn {
 	 *
 	 * @return string|null The reason, or null.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
 	public function refusal(mixed $value, int $precision, int $scale): ?string {
 		if (is_float($value) === true) {
@@ -147,7 +147,7 @@ final class MagicNumberColumn {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
 	public function assertRowFits(array $row, array $columnSizes): void {
 		foreach ($row as $columnName => $value) {
@@ -175,7 +175,7 @@ final class MagicNumberColumn {
 	 *
 	 * @return array{precision: int, scale: int}|null The widened size, or null.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function widening(array $currentColumn, int $precision, int $scale): ?array {
 		$type = strtolower((string)($currentColumn['type'] ?? ''));

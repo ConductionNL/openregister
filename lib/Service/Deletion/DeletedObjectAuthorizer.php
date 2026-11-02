@@ -152,7 +152,7 @@ class DeletedObjectAuthorizer {
 	 *
 	 * @return bool True when the caller may read it.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function userMayReadDestructionRecord(AuditTrail $record): bool {
 		$user = $this->userSession->getUser();
@@ -179,7 +179,7 @@ class DeletedObjectAuthorizer {
 	 *
 	 * @return array<int, AuditTrail> The readable ones.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function readableDestructionRecords(array $records): array {
 		return array_values(

@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ class DenyEntryMatcher {
 	 *
 	 * @return string|null The principal the entry named, or null when it names none.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function entryNames(mixed $entry, array $principals): ?string {
 		if (is_string($entry) === true) {
@@ -130,7 +130,7 @@ class DenyEntryMatcher {
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The matching denials.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function matchingDenials(array $entries, string $action, array $principals): array {
 		$matches = [];

@@ -120,7 +120,7 @@ class LifecycleTransitionResolver {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function writesDeclaredState(string $uuid): bool {
 		return $this->context->writesDeclaredState(uuid: $uuid);

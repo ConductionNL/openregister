@@ -814,7 +814,7 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> One entry per fault.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	private function validateTransports(mixed $transports, string $name): array {
 		if (is_array($transports) === false) {

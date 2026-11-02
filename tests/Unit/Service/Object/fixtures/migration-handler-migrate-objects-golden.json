@@ -1,0 +1,1465 @@
+{
+    "mixed outcomes": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 2,
+                "objectsFailed": 4,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 9
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                },
+                {
+                    "objectId": "u-reg",
+                    "objectTitle": "R",
+                    "success": false,
+                    "error": "Object u-reg does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='7', schema='2'"
+                },
+                {
+                    "objectId": "u-sch",
+                    "objectTitle": "S",
+                    "success": false,
+                    "error": "Object u-sch does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='1', schema='8'"
+                },
+                {
+                    "objectId": "u-fail",
+                    "objectTitle": "F",
+                    "success": false,
+                    "error": "update failed"
+                },
+                {
+                    "objectId": "u-nameless",
+                    "objectTitle": "u-nameless",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-nameless"
+                },
+                {
+                    "objectId": "missing",
+                    "objectTitle": null,
+                    "success": false,
+                    "error": "Object with ID missing not found"
+                }
+            ],
+            "warnings": [
+                "Some objects failed to migrate. Check details for specific errors."
+            ],
+            "errors": [
+                "Failed to migrate object u-reg: Object u-reg does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='7', schema='2'",
+                "Failed to migrate object u-sch: Object u-sch does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='1', schema='8'",
+                "Failed to migrate object u-fail: update failed",
+                "Failed to migrate object missing: Object not found"
+            ]
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok",
+                    "u-reg",
+                    "u-sch",
+                    "u-fail",
+                    "missing",
+                    12,
+                    "12"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-fail",
+                    "a": 1,
+                    "b": 2
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": []
+                }
+            ],
+            [
+                "update",
+                "u-fail",
+                "30",
+                "40",
+                {
+                    "id": "u-fail"
+                },
+                3
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-nameless",
+                    "a": 1
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": []
+                }
+            ],
+            [
+                "update",
+                "u-nameless",
+                "30",
+                "40",
+                {
+                    "id": "u-nameless"
+                },
+                3
+            ]
+        ]
+    },
+    "all migrated": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 2,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 6
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                },
+                {
+                    "objectId": "u-nameless",
+                    "objectTitle": "u-nameless",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-nameless"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok",
+                    "u-nameless"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-nameless",
+                    "a": 1
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": []
+                }
+            ],
+            [
+                "update",
+                "u-nameless",
+                "30",
+                "40",
+                {
+                    "id": "u-nameless"
+                },
+                3
+            ]
+        ]
+    },
+    "saved under another uuid": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 0,
+                "propertiesDiscarded": 1
+            },
+            "details": [
+                {
+                    "objectId": "u-new",
+                    "objectTitle": "N",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-other"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-new"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-new"
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": []
+                }
+            ],
+            [
+                "update",
+                "u-new",
+                "30",
+                "40",
+                {
+                    "id": "u-new"
+                },
+                3
+            ]
+        ]
+    },
+    "nothing found": {
+        "result": {
+            "success": false,
+            "statistics": {
+                "objectsMigrated": 0,
+                "objectsFailed": 3,
+                "propertiesMapped": 0,
+                "propertiesDiscarded": 0
+            },
+            "details": [
+                {
+                    "objectId": "a",
+                    "objectTitle": null,
+                    "success": false,
+                    "error": "Object with ID a not found"
+                },
+                {
+                    "objectId": "b",
+                    "objectTitle": null,
+                    "success": false,
+                    "error": "Object with ID b not found"
+                },
+                {
+                    "objectId": "a",
+                    "objectTitle": null,
+                    "success": false,
+                    "error": "Object with ID a not found"
+                }
+            ],
+            "warnings": [
+                "Some objects failed to migrate. Check details for specific errors."
+            ],
+            "errors": [
+                "Failed to migrate object a: Object not found",
+                "Failed to migrate object b: Object not found",
+                "Failed to migrate object a: Object not found"
+            ]
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "a",
+                    "b",
+                    "a"
+                ]
+            ]
+        ]
+    },
+    "no ids": {
+        "result": {
+            "success": false,
+            "statistics": {
+                "objectsMigrated": 0,
+                "objectsFailed": 0,
+                "propertiesMapped": 0,
+                "propertiesDiscarded": 0
+            },
+            "details": [],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                []
+            ]
+        ]
+    },
+    "all fail": {
+        "result": {
+            "success": false,
+            "statistics": {
+                "objectsMigrated": 0,
+                "objectsFailed": 1,
+                "propertiesMapped": 0,
+                "propertiesDiscarded": 0
+            },
+            "details": [
+                {
+                    "objectId": "u-reg",
+                    "objectTitle": "R",
+                    "success": false,
+                    "error": "Object u-reg does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='7', schema='2'"
+                }
+            ],
+            "warnings": [
+                "Some objects failed to migrate. Check details for specific errors."
+            ],
+            "errors": [
+                "Failed to migrate object u-reg: Object u-reg does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='7', schema='2'"
+            ]
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-reg"
+                ]
+            ]
+        ]
+    },
+    "int route": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 4
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                1,
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                2,
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                3,
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                4,
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    11
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "3",
+                "4",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ]
+        ]
+    },
+    "slug source matches by id": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 4
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "src-slug",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ]
+        ]
+    },
+    "slug source schema matches by id": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 4
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "sch-slug",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ]
+        ]
+    },
+    "found twice": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 2,
+                "objectsFailed": 0,
+                "propertiesMapped": 6,
+                "propertiesDiscarded": 8
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                },
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ]
+        ]
+    },
+    "mapping maps more than stored": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": -1
+            },
+            "details": [
+                {
+                    "objectId": "u-nameless",
+                    "objectTitle": "u-nameless",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-nameless"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-nameless"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-nameless",
+                    "a": 1
+                },
+                {
+                    "x": "a",
+                    "y": "a",
+                    "z": "a"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-nameless",
+                "30",
+                "40",
+                {
+                    "id": "u-nameless",
+                    "x": 1,
+                    "y": 1,
+                    "z": 1
+                },
+                3
+            ]
+        ]
+    },
+    "empty mapping": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 1,
+                "objectsFailed": 0,
+                "propertiesMapped": 0,
+                "propertiesDiscarded": 7
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                []
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": []
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok"
+                },
+                3
+            ]
+        ]
+    },
+    "mapping throws": {
+        "result": {
+            "success": true,
+            "statistics": {
+                "objectsMigrated": 2,
+                "objectsFailed": 0,
+                "propertiesMapped": 3,
+                "propertiesDiscarded": 6
+            },
+            "details": [
+                {
+                    "objectId": "u-ok",
+                    "objectTitle": "Ok",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-ok"
+                },
+                {
+                    "objectId": "u-nameless",
+                    "objectTitle": "u-nameless",
+                    "success": true,
+                    "error": null,
+                    "newObjectId": "u-nameless"
+                }
+            ],
+            "warnings": [],
+            "errors": []
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok",
+                    "u-nameless"
+                ]
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "keep": 1,
+                    "register": "99",
+                    "schema": "99",
+                    "_owner": "mallory",
+                    "@self": {
+                        "register": 99
+                    }
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": {
+                        "title": "T",
+                        "kept": 1,
+                        "register": "99"
+                    }
+                }
+            ],
+            [
+                "update",
+                "u-ok",
+                "30",
+                "40",
+                {
+                    "id": "u-ok",
+                    "title": "T",
+                    "kept": 1,
+                    "register": "99"
+                },
+                3
+            ],
+            [
+                "mapObjectProperties",
+                {
+                    "id": "u-nameless",
+                    "a": 1
+                },
+                {
+                    "title": "title",
+                    "kept": "keep",
+                    "gone": "absent",
+                    "register": "register"
+                }
+            ],
+            [
+                "log.debug",
+                "[MigrationHandler] Object properties mapped",
+                {
+                    "mappedData": []
+                }
+            ],
+            [
+                "update",
+                "u-nameless",
+                "30",
+                "40",
+                {
+                    "id": "u-nameless"
+                },
+                3
+            ]
+        ]
+    },
+    "source register missing": {
+        "result": {
+            "threw": "OCP\\AppFramework\\Db\\DoesNotExistException",
+            "message": "One or more registers/schemas not found"
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "none",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ]
+        ]
+    },
+    "source schema missing": {
+        "result": {
+            "threw": "OCP\\AppFramework\\Db\\DoesNotExistException",
+            "message": "One or more registers/schemas not found"
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "none",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ]
+        ]
+    },
+    "target register missing": {
+        "result": {
+            "threw": "OCP\\AppFramework\\Db\\DoesNotExistException",
+            "message": "One or more registers/schemas not found"
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "none",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ]
+        ]
+    },
+    "target schema missing": {
+        "result": {
+            "threw": "OCP\\AppFramework\\Db\\DoesNotExistException",
+            "message": "One or more registers/schemas not found"
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "none",
+                "schema"
+            ]
+        ]
+    },
+    "a load throws": {
+        "result": {
+            "threw": "Exception",
+            "message": "load failed"
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "boom",
+                "schema"
+            ]
+        ]
+    },
+    "batch load throws": {
+        "result": {
+            "threw": "Exception",
+            "message": "batch failed"
+        },
+        "calls": [
+            [
+                "normalizeEntity",
+                "1",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "2",
+                "schema"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "register"
+            ],
+            [
+                "normalizeEntity",
+                "target",
+                "schema"
+            ],
+            [
+                "findMultiple",
+                [
+                    "u-ok"
+                ]
+            ]
+        ]
+    }
+}

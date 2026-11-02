@@ -234,7 +234,7 @@ class FlowMessagingService {
 	 *
 	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function previewMessages(string $channel, array $config, array $items, array $context): array {
 		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->templating);

@@ -64,7 +64,7 @@ class LifecycleValidationListenerTest extends TestCase {
 	 *
 	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
@@ -256,7 +256,7 @@ class LifecycleValidationListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function testADeclaredStateWriteAsTheSystemSkipsTheTransitionCheck(): void {
 		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);

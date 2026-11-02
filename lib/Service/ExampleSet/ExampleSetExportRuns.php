@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Writes, proves and removes the exports a fragment declares.
  *
- * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
  */
 class ExampleSetExportRuns extends ExampleSetEngineRows {
 	/**
@@ -90,7 +90,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function part(): string {
 		return 'exportRuns';
@@ -101,7 +101,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function noun(): string {
 		return 'export';
@@ -115,7 +115,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -154,7 +154,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
 	 *
-	 * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$user = (string) $data['user'];
@@ -206,7 +206,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -226,7 +226,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-export-runs/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function revert(array $entry): string {
 		try {

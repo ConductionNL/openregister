@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -59,7 +60,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Three layers times four scopes, each with its
  * own key shape and its own fall-through; the branches are the resolution order itself.
  */
-class NotificationPreferenceService {
+class NotificationPreferenceService implements NotificationPreferencesInterface {
 	/**
 	 * App id used for the user-config namespace.
 	 */
@@ -122,7 +123,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, string> The opt-in channels.
 	 *
-	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
 	 */
 	public static function optInChannelsOf(array $spec): array {
 		$declared = (array)($spec['channels'] ?? self::DEFAULT_CHANNELS);
@@ -148,7 +149,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, string> The channels.
 	 *
-	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
 	 */
 	public static function availableChannelsOf(array $spec): array {
 		$declared = array_values((array)($spec['channels'] ?? self::DEFAULT_CHANNELS));
@@ -232,7 +233,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return string The namespaced config key (<= 64 chars).
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function scopedConfigKey(
 		string $scope,
@@ -271,7 +272,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return string The app-config key.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function groupConfigKey(
 		string $groupId,
@@ -297,7 +298,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<string, mixed>|null The decoded default, or null when none/invalid.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function getGroupDefault(
 		string $groupId,
@@ -343,7 +344,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function setGroupDefault(
 		string $groupId,
@@ -379,7 +380,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, string> The group ids.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function groupsOf(string $userId): array {
 		if ($this->groupManager === null || $this->userManager === null) {
@@ -436,7 +437,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<string, mixed>|null The decoded override, or null when none/invalid.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function getOverride(
 		string $userId,
@@ -485,7 +486,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	public function setOverride(
 		string $userId,
@@ -540,7 +541,7 @@ class NotificationPreferenceService {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The merge's inputs: the default, the party, the scope.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function resolveEffective(
 		array $schemaDefault,
@@ -655,7 +656,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array{value: array<string, mixed>, scope: string, layer: string, group: string}|null
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	private function firstGroupValue(PreferenceLookup $lookup, array $groupIds): ?array {
 		foreach ($groupIds as $groupId) {
@@ -684,7 +685,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array{value: array<string, mixed>, scope: string}|null The value and the scope it came from, or null.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	private function firstScopedValue(PreferenceLookup $lookup, \Closure $read): ?array {
 		foreach ($lookup->scopes as $scope) {
@@ -716,7 +717,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, Schema> The schemas to list.
 	 *
-	 * @spec openspec/changes/notification-preferences-one-row-per-slug/specs/notificatie-engine/spec.md#requirement-the-preference-list-names-each-rule-once
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-preference-list-names-each-rule-once
 	 */
 	private function onePerSlug(iterable $schemas): array {
 		$kept = [];
@@ -761,7 +762,7 @@ class NotificationPreferenceService {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per (schema, notification) pair.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function getEffectiveForUser(string $userId, array $scopes = []): array {
 		$entries = [];

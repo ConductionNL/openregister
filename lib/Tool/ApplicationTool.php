@@ -109,51 +109,133 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	}//end getFunctions()
 
 	/**
+	 * The function definitions that change nothing.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const READ_FUNCTIONS = [
+		[
+			'name' => 'list_applications',
+			'subject' => 'application',
+			'action' => 'list',
+			'description' => 'List all accessible applications with basic information.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of results to return (default: 50)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of results to skip for pagination (default: 0)',
+					],
+				],
+				'required' => [],
+			],
+		],
+		[
+			'name' => 'get_application',
+			'subject' => 'application',
+			'action' => 'get',
+			'description' => 'Get detailed application information by UUID.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'uuid' => [
+						'type' => 'string',
+						'description' => 'UUID of the application to retrieve',
+					],
+				],
+				'required' => ['uuid'],
+			],
+		],
+	];
+
+	/**
 	 * The application descriptors that change nothing.
 	 *
 	 * @return array<int, array<string, mixed>> The read descriptors.
 	 */
 	private static function readFunctions(): array {
-		return [
-			[
-				'name' => 'list_applications',
-				'subject' => 'application',
-				'action' => 'list',
-				'description' => 'List all accessible applications with basic information.',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results to return (default: 50)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip for pagination (default: 0)',
-						],
-					],
-					'required' => [],
-				],
-			],
-			[
-				'name' => 'get_application',
-				'subject' => 'application',
-				'action' => 'get',
-				'description' => 'Get detailed application information by UUID.',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'uuid' => [
-							'type' => 'string',
-							'description' => 'UUID of the application to retrieve',
-						],
-					],
-					'required' => ['uuid'],
-				],
-			],
-		];
-
+		return self::READ_FUNCTIONS;
 	}//end readFunctions()
+
+	/**
+	 * The function definitions that change data.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const WRITE_FUNCTIONS = [
+		[
+			'name' => 'create_application',
+			'subject' => 'application',
+			'action' => 'create',
+			'description' => 'Create a new application with unique name.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'name' => [
+						'type' => 'string',
+						'description' => 'Name of the application (required)',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'Description of what the application does',
+					],
+					'domain' => [
+						'type' => 'string',
+						'description' => 'Domain or URL where the application is hosted',
+					],
+				],
+				'required' => ['name'],
+			],
+		],
+		[
+			'name' => 'update_application',
+			'subject' => 'application',
+			'action' => 'update',
+			'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'uuid' => [
+						'type' => 'string',
+						'description' => 'UUID of the application to update',
+					],
+					'name' => [
+						'type' => 'string',
+						'description' => 'New name for the application',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'New description',
+					],
+					'domain' => [
+						'type' => 'string',
+						'description' => 'New domain or URL',
+					],
+				],
+				'required' => ['uuid'],
+			],
+		],
+		[
+			'name' => 'delete_application',
+			'subject' => 'application',
+			'action' => 'delete',
+			'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'uuid' => [
+						'type' => 'string',
+						'description' => 'UUID of the application to delete',
+					],
+				],
+				'required' => ['uuid'],
+			],
+		],
+	];
 
 	/**
 	 * The application descriptors that change state.
@@ -167,76 +249,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * @return array<int, array<string, mixed>> The write descriptors.
 	 */
 	private static function writeFunctions(): array {
-		return [
-			[
-				'name' => 'create_application',
-				'subject' => 'application',
-				'action' => 'create',
-				'description' => 'Create a new application with unique name.',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'name' => [
-							'type' => 'string',
-							'description' => 'Name of the application (required)',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'Description of what the application does',
-						],
-						'domain' => [
-							'type' => 'string',
-							'description' => 'Domain or URL where the application is hosted',
-						],
-					],
-					'required' => ['name'],
-				],
-			],
-			[
-				'name' => 'update_application',
-				'subject' => 'application',
-				'action' => 'update',
-				'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'uuid' => [
-							'type' => 'string',
-							'description' => 'UUID of the application to update',
-						],
-						'name' => [
-							'type' => 'string',
-							'description' => 'New name for the application',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'New description',
-						],
-						'domain' => [
-							'type' => 'string',
-							'description' => 'New domain or URL',
-						],
-					],
-					'required' => ['uuid'],
-				],
-			],
-			[
-				'name' => 'delete_application',
-				'subject' => 'application',
-				'action' => 'delete',
-				'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'uuid' => [
-							'type' => 'string',
-							'description' => 'UUID of the application to delete',
-						],
-					],
-					'required' => ['uuid'],
-				],
-			],
-		];
+		return self::WRITE_FUNCTIONS;
 	}//end writeFunctions()
 
 	/**

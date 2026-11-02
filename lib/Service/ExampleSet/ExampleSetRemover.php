@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+ * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  *
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) The constructor takes one collaborator per part of a set, as the installer's does.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+ * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
 class ExampleSetRemover {
 	/**
@@ -79,8 +79,8 @@ class ExampleSetRemover {
 	 *         Whether there was anything to remove, counts per kind, adopted accounts left in place, and what could
 	 *         not be removed (still in the record).
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function remove(string $set): array {
 		if ($this->lock !== null && $this->lock->hold(set: $set) === false) {
@@ -102,7 +102,7 @@ class ExampleSetRemover {
 	 * @return array{installed: bool, removed: array<string, int>, left: array<int, string>, failed: array<int, string>}
 	 *         As remove() returns it.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	private function removeHeld(string $set): array {
 		$record = $this->record->read(set: $set);
@@ -275,7 +275,7 @@ class ExampleSetRemover {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	private function deleteFiles(string $set, string $name, string $objectId, array &$record, array &$report): bool {
 		$left = [];
@@ -338,7 +338,7 @@ class ExampleSetRemover {
 	 *
 	 * @return array<string, mixed> The record without the restored entries.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	private function restoreUserPreferences(string $set, array $record, array &$report): array {
 		foreach (array_reverse($record['userPreferences'], true) as $name => $entry) {

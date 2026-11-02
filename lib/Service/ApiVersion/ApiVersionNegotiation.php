@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -107,7 +107,7 @@ class ApiVersionNegotiation {
 	 *
 	 * @return bool True when the request carried a version.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function isExplicit(): bool {
 		return ($this->source !== self::SOURCE_DEFAULT);
@@ -119,7 +119,7 @@ class ApiVersionNegotiation {
 	 *
 	 * @return bool True when the named version is unknown.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function isUnknown(): bool {
 		return ($this->requestedId !== null && $this->version === null);

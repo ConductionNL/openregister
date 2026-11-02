@@ -269,7 +269,7 @@ class LegalHoldService {
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int, truncated: bool}
 	 *
-	 * @spec openspec/changes/legal-holds-list/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function listActiveHolds(): array {
 		if ($this->scanner === null) {

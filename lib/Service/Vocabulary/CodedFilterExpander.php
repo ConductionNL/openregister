@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -85,7 +85,7 @@ class CodedFilterExpander {
 	 *
 	 * @return array<string,mixed> The filters with branch filters expanded.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function expand(array $filters, int|string|array|null $schemaRef): array {
 		if ($this->carriesBranchFilter(filters: $filters) === false) {
@@ -137,7 +137,7 @@ class CodedFilterExpander {
 	 *
 	 * @return array<int,string> The stored values, empty when the branch is unresolvable.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function valuesForBranch(
 		string $branch,

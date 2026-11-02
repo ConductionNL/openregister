@@ -452,7 +452,7 @@ class VocabularyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function testTheOptionsEndpointRefusesARequestThatNamesNeitherAPropertyNorAScheme(): void {
 		$this->params = [];
@@ -467,7 +467,7 @@ class VocabularyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function testTheOptionsEndpointAnswers404ForASchemaItCannotRead(): void {
 		$this->params = [
@@ -495,7 +495,7 @@ class VocabularyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function testTheOptionsEndpointReturnsTheListInTheLanguageItAskedFor(): void {
 		$this->params = [
@@ -538,7 +538,7 @@ class VocabularyControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function testTheOptionsEndpointReturnsTheTreeWhenTheTreeIsAsked(): void {
 		$this->params = [

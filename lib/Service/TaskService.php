@@ -42,6 +42,7 @@ use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
@@ -66,7 +67,7 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The leaf now routes projected
  * VTODOs through the write-back gate beside its own CalDAV collaborators.
  */
-class TaskService {
+class TaskService implements ObjectCalendarTasksInterface {
 
 	/**
 	 * CalDAV backend for calendar operations.

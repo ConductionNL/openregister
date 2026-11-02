@@ -196,7 +196,7 @@ class SearchIndexMaintenance {
 	 *
 	 * @return array<string, array<int, string>> Each table's index names, sorted, keyed as given.
 	 *
-	 * @spec openspec/changes/search-index-status-one-query/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function indexNamesFor(array $tableNames): array {
 		$names = [];

@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ContactLink::partyUid is the link table's own key for a party.
  *
- * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
  */
 class ExampleSetParties extends ExampleSetEngineRows {
 	/**
@@ -68,7 +68,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function part(): string {
 		return 'parties';
@@ -80,7 +80,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-parties-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
 	 */
 	public function updatesInPlace(): bool {
 		return true;
@@ -91,7 +91,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function noun(): string {
 		return 'party';
@@ -105,7 +105,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -135,7 +135,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return array{error: string, entry: array{objectUuid: string, partyUuid: string, role: string}|null} The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['objectUuid'];
@@ -166,7 +166,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -187,7 +187,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		if ($this->lost(entry: $entry) === true) {

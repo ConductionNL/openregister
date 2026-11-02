@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\RelationDetectionTrait;
 use Psr\Log\LoggerInterface;
@@ -195,11 +196,6 @@ class BulkRelationHandler {
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex post-save relation processing with multiple validations
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for relation types and writeBack operations
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete post-save relation workflow
-	 * Else branches improve readability for array vs single value handling
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function handlePostSaveInverseRelations(
@@ -211,107 +207,189 @@ class BulkRelationHandler {
 			return;
 		}
 
-		// PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries.
-		$allRelatedIds = [];
-		// Track which objects need which related objects.
-		$objectRelationsMap = [];
+		$context = new InverseRelationContext(schemaCache: $schemaCache, analysisOf: $getSchemaAnalysisCb(...));
 
-		// First pass: collect all related object IDs.
-		foreach ($savedObjects as $index => $savedObject) {
-			$schema = $schemaCache[$savedObject->getSchema()] ?? null;
-			if ($schema === null) {
-				continue;
-			}
+		// First pass: the related ids of every saved object with inverse properties.
+		$objectRelationsMap = $this->collectWriteBackIds(savedObjects: $savedObjects, context: $context);
 
-			// PERFORMANCE: Get cached comprehensive schema analysis for inverse relations.
-			$analysis = $getSchemaAnalysisCb($schema);
+		// One bulk fetch of every related object, instead of one query per id.
+		$context = $context->withTargets(
+			targets: $this->fetchWriteBackTargets(relatedIds: array_merge(...array_values($objectRelationsMap)))
+		);
 
-			if (empty($analysis['inverseProperties']) === true) {
-				continue;
-			}
-
-			$objectData = $savedObject->getObject();
-			$objectRelationsMap[$index] = [];
-
-			// Process inverse relations for this object.
-			foreach ($analysis['inverseProperties'] ?? [] as $propertyName => $inverseConfig) {
-				if (isset($objectData[$propertyName]) === false) {
-					continue;
-				}
-
-				$relatedObjectIds = [$objectData[$propertyName]];
-				if (is_array($objectData[$propertyName]) === true) {
-					$relatedObjectIds = $objectData[$propertyName];
-				}
-
-				foreach ($relatedObjectIds as $relatedId) {
-					if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
-						$allRelatedIds[] = $relatedId;
-						$objectRelationsMap[$index][] = $relatedId;
-					}
-				}
-			}
-		}//end foreach
-
-		// PERFORMANCE OPTIMIZATION: Single bulk fetch instead of N+1 queries.
-		$relatedObjectsMap = [];
-		if (empty($allRelatedIds) === false) {
-			$uniqueRelatedIds = array_unique($allRelatedIds);
-
-			try {
-				$relatedObjects = $this->objectEntityMapper->findAll(ids: $uniqueRelatedIds, includeDeleted: false);
-				foreach ($relatedObjects as $obj) {
-					$relatedObjectsMap[$obj->getUuid()] = $obj;
-				}
-			} catch (\Exception $e) {
-				// Skip inverse relations processing if bulk fetch fails.
-			}
+		// Second pass: a writeBack operation for every related object that was found.
+		$writeBackOperations = [];
+		foreach (array_keys($objectRelationsMap) as $index) {
+			$writeBackOperations = array_merge(
+				$writeBackOperations,
+				$this->writeBackOperationsFor(savedObject: $savedObjects[$index], context: $context)
+			);
 		}
 
-		// Second pass: process inverse relations with proper context.
-		$writeBackOperations = [];
-		foreach ($savedObjects as $index => $savedObject) {
-			if (isset($objectRelationsMap[$index]) === false) {
-				continue;
-			}
-
-			$schema = $schemaCache[$savedObject->getSchema()] ?? null;
-			if ($schema === null) {
-				continue;
-			}
-
-			// PERFORMANCE: Use cached schema analysis.
-			$analysis = $getSchemaAnalysisCb($schema);
-			$objectData = $savedObject->getObject();
-
-			// Build writeBack operations with full context.
-			foreach ($analysis['inverseProperties'] ?? [] as $propertyName => $inverseConfig) {
-				if (isset($objectData[$propertyName]) === false || ($inverseConfig['writeBack'] === false) === true) {
-					continue;
-				}
-
-				$relatedObjectIds = [$objectData[$propertyName]];
-				if (is_array($objectData[$propertyName]) === true) {
-					$relatedObjectIds = $objectData[$propertyName];
-				}
-
-				foreach ($relatedObjectIds as $relatedId) {
-					if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
-						$writeBackOperations[] = [
-							'targetObject' => $relatedObjectsMap[$relatedId],
-							'sourceUuid' => $savedObject->getUuid(),
-							'inverseProperty' => $inverseConfig['inverseProperty'] ?? $propertyName,
-						];
-					}
-				}
-			}//end foreach
-		}//end foreach
-
-		// Execute writeBack operations with context.
 		if (empty($writeBackOperations) === false) {
 			$this->performBulkWriteBackUpdatesWithContext(writeBackOperations: $writeBackOperations);
 		}
 	}//end handlePostSaveInverseRelations()
+
+	/**
+	 * The related ids each saved object writes back to, keyed by the saved object's index.
+	 *
+	 * Only saved objects whose schema has inverse properties get an entry, which may be empty.
+	 *
+	 * @param array                  $savedObjects The saved objects
+	 * @param InverseRelationContext $context      The schemas and their analysis
+	 *
+	 * @return array<int|string, list<mixed>> The related ids per saved object
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function collectWriteBackIds(array $savedObjects, InverseRelationContext $context): array {
+		$objectRelationsMap = [];
+		foreach ($savedObjects as $index => $savedObject) {
+			$analysis = $context->analysisOf(savedObject: $savedObject);
+			if (empty($analysis['inverseProperties']) === true) {
+				continue;
+			}
+
+			$objectRelationsMap[$index] = $this->writeBackIdsOf(
+				objectData: $savedObject->getObject(),
+				inverseProperties: $analysis['inverseProperties']
+			);
+		}
+
+		return $objectRelationsMap;
+	}//end collectWriteBackIds()
+
+	/**
+	 * The non-empty related ids of every set inverse property that has writeBack switched on.
+	 *
+	 * @param array $objectData        The saved object's data
+	 * @param array $inverseProperties The inverse property configurations by property name
+	 *
+	 * @return list<mixed> The related ids, in property order
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function writeBackIdsOf(array $objectData, array $inverseProperties): array {
+		$relatedIds = [];
+		foreach ($inverseProperties as $propertyName => $inverseConfig) {
+			if (isset($objectData[$propertyName]) === false || empty($inverseConfig['writeBack']) === true) {
+				continue;
+			}
+
+			$relatedIds = array_merge(
+				$relatedIds,
+				array_values(array_filter($this->relatedIdsIn(objectData: $objectData, propertyName: $propertyName)))
+			);
+		}
+
+		return $relatedIds;
+	}//end writeBackIdsOf()
+
+	/**
+	 * The ids a relation property holds: its list, or its single value.
+	 *
+	 * @param array      $objectData   The saved object's data
+	 * @param int|string $propertyName The relation property, which is set
+	 *
+	 * @return array The related ids
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function relatedIdsIn(array $objectData, int|string $propertyName): array {
+		if (is_array($objectData[$propertyName]) === true) {
+			return $objectData[$propertyName];
+		}
+
+		return [$objectData[$propertyName]];
+	}//end relatedIdsIn()
+
+	/**
+	 * The related objects by uuid, fetched in one query; none when the fetch fails.
+	 *
+	 * @param array $relatedIds The related ids, with repeats
+	 *
+	 * @return array<string, \OCA\OpenRegister\Db\ObjectEntity> The related objects by uuid
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function fetchWriteBackTargets(array $relatedIds): array {
+		$relatedObjectsMap = [];
+		if (empty($relatedIds) === true) {
+			return $relatedObjectsMap;
+		}
+
+		try {
+			$relatedObjects = $this->objectEntityMapper->findAll(ids: array_unique($relatedIds), includeDeleted: false);
+			foreach ($relatedObjects as $obj) {
+				$relatedObjectsMap[$obj->getUuid()] = $obj;
+			}
+		} catch (\Exception $e) {
+			// Skip inverse relations processing if bulk fetch fails.
+		}
+
+		return $relatedObjectsMap;
+	}//end fetchWriteBackTargets()
+
+	/**
+	 * The writeBack operations of one saved object: one per related object that was found.
+	 *
+	 * @param ObjectEntity           $savedObject The saved object
+	 * @param InverseRelationContext $context     The schemas, their analysis and the related objects
+	 *
+	 * @return list<array{targetObject: ObjectEntity, sourceUuid: string|null, inverseProperty: mixed}>
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function writeBackOperationsFor(ObjectEntity $savedObject, InverseRelationContext $context): array {
+		$analysis = $context->analysisOf(savedObject: $savedObject);
+		$objectData = $savedObject->getObject();
+		$operations = [];
+		foreach ($analysis['inverseProperties'] ?? [] as $propertyName => $inverseConfig) {
+			if (isset($objectData[$propertyName]) === false || ($inverseConfig['writeBack'] === false) === true) {
+				continue;
+			}
+
+			$link = new InverseLink(
+				sourceUuid: $savedObject->getUuid(),
+				inverseProperty: $inverseConfig['inverseProperty'] ?? $propertyName,
+				relatedIds: $this->relatedIdsIn(objectData: $objectData, propertyName: $propertyName)
+			);
+			$operations = array_merge($operations, $this->operationsFor(link: $link, context: $context));
+		}
+
+		return $operations;
+	}//end writeBackOperationsFor()
+
+	/**
+	 * One writeBack operation per related id whose object was found.
+	 *
+	 * @param InverseLink            $link    The saved object's relation property
+	 * @param InverseRelationContext $context The related objects by uuid
+	 *
+	 * @return list<array{targetObject: ObjectEntity, sourceUuid: string|null, inverseProperty: mixed}>
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function operationsFor(InverseLink $link, InverseRelationContext $context): array {
+		$operations = [];
+		foreach ($link->relatedIds as $relatedId) {
+			$target = null;
+			if (empty($relatedId) === false) {
+				$target = $context->target(relatedId: $relatedId);
+			}
+
+			if ($target !== null) {
+				$operations[] = [
+					'targetObject' => $target,
+					'sourceUuid' => $link->sourceUuid,
+					'inverseProperty' => $link->inverseProperty,
+				];
+			}
+		}
+
+		return $operations;
+	}//end operationsFor()
 
 	/**
 	 * Perform bulk writeBack updates with full context and actual modifications

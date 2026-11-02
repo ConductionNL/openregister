@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ class FlowDryRunController extends Controller {
 	 * read with the caller's own RBAC, so a flow or object the caller cannot
 	 * see answers 404.
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	#[NoAdminRequired]
 	public function dryRun(string $id): JSONResponse {

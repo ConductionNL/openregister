@@ -21,11 +21,12 @@ namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
 use OC\Files\AppData\Factory;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\GenericFileException;
 use OCP\Files\NotFoundException;
+use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -48,7 +49,7 @@ class CacheSettingsController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param SettingsService $settingsService Settings service.
+	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface $logger Logger.
 	 * @param Factory $appDataFactory App data factory.
 	 * @param IAppConfig $appConfig App configuration.
@@ -56,7 +57,7 @@ class CacheSettingsController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly LoggerInterface $logger,
 		private readonly Factory $appDataFactory,
 		private readonly IAppConfig $appConfig,
@@ -256,48 +257,17 @@ class CacheSettingsController extends Controller {
 
 			$appData = $this->appDataFactory->get('appstore');
 			$folder = $appData->getFolder('/');
-			$invalidatedFiles = [];
-			$errors = [];
-
-			// Define which files to invalidate based on type.
-			$filesToInvalidate = match ($type) {
-				'apps' => ['apps.json'],
-				'categories' => ['categories.json'],
-				'discover' => ['discover.json'],
-				'all' => ['apps.json', 'categories.json', 'discover.json'],
-				default => ['apps.json'],
-			};
-
-			foreach ($filesToInvalidate as $fileName) {
-				try {
-					$file = $folder->getFile($fileName);
-					$content = $file->getContent();
-					$json = json_decode($content, true);
-
-					if (is_array($json) !== true || isset($json['timestamp']) !== true) {
-						$errors[] = $fileName . ' (invalid format)';
-					}
-
-					if (is_array($json) === true && isset($json['timestamp']) === true) {
-						// Set timestamp to 0 to force cache expiration.
-						// The Fetcher checks: timestamp > (now - TTL)
-						// With timestamp=0, this will always be false, triggering a refresh.
-						$json['timestamp'] = 0;
-						$file->putContent(json_encode($json));
-						$invalidatedFiles[] = $fileName;
-					}
-				} catch (NotFoundException|GenericFileException $e) {
-					// File doesn't exist, nothing to invalidate.
-					$errors[] = $fileName . ' (not found)';
-				}//end try
-			}//end foreach
+			$result = $this->invalidateCacheFiles(
+				folder: $folder,
+				fileNames: $this->appStoreCacheFiles(type: $type)
+			);
 
 			return new JSONResponse(
 				data: [
 					'success' => true,
 					'message' => 'App store cache invalidated successfully',
-					'invalidated' => $invalidatedFiles,
-					'skipped' => $errors,
+					'invalidated' => $result['invalidated'],
+					'skipped' => $result['skipped'],
 					'note' => 'Fresh data will be fetched on the next visit to Settings > Apps',
 				],
 				statusCode: 200
@@ -332,4 +302,55 @@ class CacheSettingsController extends Controller {
 			);
 		}//end try
 	}//end clearAppStoreCache()
+
+	/**
+	 * The app store cache files that a cache type covers.
+	 *
+	 * @param mixed $type The requested cache type: apps, categories, discover or all.
+	 *
+	 * @return list<string> The file names; apps.json for an unknown type.
+	 */
+	private function appStoreCacheFiles(mixed $type): array {
+		return match ($type) {
+			'apps' => ['apps.json'],
+			'categories' => ['categories.json'],
+			'discover' => ['discover.json'],
+			'all' => ['apps.json', 'categories.json', 'discover.json'],
+			default => ['apps.json'],
+		};
+	}//end appStoreCacheFiles()
+
+	/**
+	 * Expire app store cache files by setting their timestamp to 0.
+	 *
+	 * @param ISimpleFolder $folder    The app store app data folder.
+	 * @param list<string>  $fileNames The cache files to expire.
+	 *
+	 * @return array{invalidated: list<string>, skipped: list<string>} The expired files, and the skipped ones with the reason.
+	 */
+	private function invalidateCacheFiles(ISimpleFolder $folder, array $fileNames): array {
+		$result = ['invalidated' => [], 'skipped' => []];
+		foreach ($fileNames as $fileName) {
+			try {
+				$file = $folder->getFile($fileName);
+				$json = json_decode($file->getContent(), true);
+
+				if (is_array($json) !== true || isset($json['timestamp']) !== true) {
+					$result['skipped'][] = $fileName . ' (invalid format)';
+					continue;
+				}
+
+				// The Fetcher checks: timestamp > (now - TTL). With timestamp=0
+				// that is always false, so the next request refreshes the cache.
+				$json['timestamp'] = 0;
+				$file->putContent(json_encode($json));
+				$result['invalidated'][] = $fileName;
+			} catch (NotFoundException|GenericFileException $e) {
+				// File doesn't exist, nothing to invalidate.
+				$result['skipped'][] = $fileName . ' (not found)';
+			}//end try
+		}//end foreach
+
+		return $result;
+	}//end invalidateCacheFiles()
 }//end class

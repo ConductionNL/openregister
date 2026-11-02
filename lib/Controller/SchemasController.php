@@ -631,7 +631,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse|null A 422 response when invalid, else null.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateSemanticRoles(array $data): ?JSONResponse {
 		if ($this->semanticRoles === null) {
@@ -703,7 +703,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return string The BCP-47 tag.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function negotiatedLanguage(): string {
 		$explicit = trim((string)$this->request->getParam('language', ''));
@@ -2650,7 +2650,7 @@ class SchemasController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function listPresentation(int|string $id, ListPresentationResolver $resolver): JSONResponse {
 		try {

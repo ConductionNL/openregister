@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Throwable;
  * Default-SECURE: a schema with no `manage` rule is managed by administrators only. Deliberately NOT
  * `PermissionHandler::hasPermission()`, which is default-OPEN for object data.
  *
- * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
  */
 class SchemaManageGate {
 
@@ -58,7 +58,7 @@ class SchemaManageGate {
 	 *
 	 * @return bool True for an administrator or a member of a group the schema's `manage` rule lists.
 	 *
-	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
 	public function mayManage(Schema $schema): bool {
 		return $this->allowedByManageRule(authorization: $schema->getAuthorization());
@@ -71,7 +71,7 @@ class SchemaManageGate {
 	 *
 	 * @return bool True for an administrator or a member of a group the register's `manage` rule lists.
 	 *
-	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
 	public function mayManageRegister(Register $register): bool {
 		return $this->allowedByManageRule(authorization: $register->getAuthorization());
@@ -139,7 +139,7 @@ class SchemaManageGate {
 	 *
 	 * @return string|null The first schema refused, or null when every named schema passes.
 	 *
-	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
 	public function firstUnmanageableRowSchema(array $objects): ?string {
 		$checked = [];

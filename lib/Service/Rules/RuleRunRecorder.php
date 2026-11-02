@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
  * one a double and assert what a save recorded without standing a database up
  * behind it. There is meant to be exactly one implementation in production.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleRunRecorder {
 
@@ -121,7 +121,7 @@ class RuleRunRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function record(
 		string $ruleId,
@@ -184,7 +184,7 @@ class RuleRunRecorder {
 	 *
 	 * @return bool True when evaluations write detail rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function detailEnabled(): bool {
 		$configured = trim($this->config->getValueString(self::APP_ID, self::CONFIG_ENABLED, ''));
@@ -200,7 +200,7 @@ class RuleRunRecorder {
 	 *
 	 * @return int The retention period in days, always at least one.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function retentionDays(): int {
 		$configured = trim($this->config->getValueString(self::APP_ID, self::CONFIG_RETENTION_DAYS, ''));
@@ -222,7 +222,7 @@ class RuleRunRecorder {
 	 *
 	 * @return string|null The string, cut to fit, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function cut(?string $value): ?string {
 		if ($value === null) {

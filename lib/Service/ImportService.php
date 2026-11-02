@@ -31,6 +31,7 @@ use DateTime;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
@@ -38,6 +39,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
@@ -303,8 +306,8 @@ class ImportService implements ObjectImporterInterface {
 	 * Import data from Excel file.
 	 *
 	 * @param string $filePath The path to the Excel file.
-	 * @param Register|null $register Optional register to associate with imported objects.
-	 * @param Schema|null $schema Optional schema to associate with imported objects.
+	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
+	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
 	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
 	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
 	 * @param bool $_rbac Whether to apply RBAC checks (default: true, unused).
@@ -346,13 +349,15 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function importFromExcel(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -361,6 +366,9 @@ class ImportService implements ObjectImporterInterface {
 		?IUser $currentUser = null,
 		bool $enrich = true,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 
@@ -421,7 +429,6 @@ class ImportService implements ObjectImporterInterface {
 				];
 			}
 
-			// Schedule SOLR warmup job after successful Excel import.
 			$finalResult = [
 				$sheetTitle => $sheetSummary,
 				'importJobId' => $importJobId,
@@ -437,8 +444,8 @@ class ImportService implements ObjectImporterInterface {
 	 * Import data from CSV file.
 	 *
 	 * @param string $filePath The path to the CSV file.
-	 * @param Register|null $register Optional register to associate with imported objects.
-	 * @param Schema|null $schema Optional schema to associate with imported objects.
+	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
+	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
 	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
 	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
 	 * @param bool $_rbac Whether to enforce RBAC checks (default: true, unused).
@@ -456,13 +463,15 @@ class ImportService implements ObjectImporterInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the existing importFrom* signatures; pack/dryRun extend it.
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
 	public function importFromCsv(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -473,6 +482,9 @@ class ImportService implements ObjectImporterInterface {
 		?array $pack = null,
 		bool $dryRun = false,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 
@@ -520,7 +532,6 @@ class ImportService implements ObjectImporterInterface {
 				'slug' => $schema->getSlug(),
 			];
 
-			// Schedule SOLR warmup job after successful CSV import.
 			$finalResult = [
 				$sheetTitle => $sheetSummary,
 				'importJobId' => $importJobId,
@@ -555,10 +566,10 @@ class ImportService implements ObjectImporterInterface {
 	 * an opaque exception.
 	 *
 	 * @param string $filePath Path to the uploaded JSON file
-	 * @param Register|null $register Register to import into. When null, the payload is checked for
+	 * @param RegisterInterface|null $register Register to import into. When null, the payload is checked for
 	 *                                a register-bundle envelope to auto-create it; see
 	 *                                `$registerSlug` and `@throws` below.
-	 * @param Schema|null $schema Target schema (required — JSON import is single-schema, like
+	 * @param SchemaInterface|null $schema Target schema (required — JSON import is single-schema, like
 	 *                            CSV — unless resolved from a register-bundle's own schemas)
 	 * @param bool $validation Whether to validate objects against the schema
 	 * @param bool $events Whether to dispatch object lifecycle events
@@ -594,8 +605,8 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	public function importFromJson(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -607,6 +618,9 @@ class ImportService implements ObjectImporterInterface {
 		bool $dryRun = false,
 		?string $registerSlug = null,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 		$startTime = microtime(true);

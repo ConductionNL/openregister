@@ -11,7 +11,7 @@
  * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  *
- * @spec openspec/changes/omitted-unwritable-properties-are-kept/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
+ * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * A PUT that omits a property the caller may not update keeps the stored value: leaving it out
  * must not do what sending null is refused for.
  *
- * @spec openspec/changes/omitted-unwritable-properties-are-kept/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
+ * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
  */
 class SaveObjectUnwritablePreserveTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

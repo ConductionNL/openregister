@@ -12,11 +12,28 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TView } from './view.types'
 
 import { z } from 'zod'
+import { COPY, NO_QUOTA, NO_USAGE, withFallbacks } from '../withFallbacks.js'
+
+const FALLBACKS = {
+	id: COPY,
+	uuid: '',
+	name: '',
+	description: '',
+	owner: '',
+	isPublic: false,
+	isDefault: false,
+	query: {},
+	favoredBy: [],
+	quota: NO_QUOTA,
+	usage: NO_USAGE,
+	created: '',
+	updated: '',
+}
 
 export class View implements TView {
 	public id?: number
 	public uuid?: string
-	public name: string
+	public name!: string
 	public description?: string
 	public owner?: string
 	public isPublic?: boolean
@@ -33,31 +50,7 @@ export class View implements TView {
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(view: TView) {
-		this.id = view.id
-		this.uuid = view.uuid || ''
-		this.name = view.name || ''
-		this.description = view.description || ''
-		this.owner = view.owner || ''
-		this.isPublic = view.isPublic || false
-		this.isDefault = view.isDefault || false
-		this.query = view.query || {}
-		this.favoredBy = view.favoredBy || []
-		this.quota = view.quota || {
-			storage: null,
-			bandwidth: null,
-			requests: null,
-			users: null,
-			groups: null,
-		}
-		this.usage = view.usage || {
-			storage: 0,
-			bandwidth: 0,
-			requests: 0,
-			users: 0,
-			groups: 0,
-		}
-		this.created = view.created || ''
-		this.updated = view.updated || ''
+		Object.assign(this, withFallbacks(view, FALLBACKS))
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {

@@ -17,6 +17,43 @@ import {
 } from '../api/emailLinks.js'
 
 /**
+ * Drop sender suggestions that are already linked.
+ *
+ * @param {object} senderResult The sender lookup answer.
+ * @param {Array<object>} linked The linked objects.
+ * @return {Array<object>} The suggestions not yet linked.
+ */
+function withoutLinked(senderResult, linked) {
+	const linkedUuids = new Set(linked.map((obj) => obj.objectUuid))
+	return (senderResult.results || []).filter(
+		(obj) => !linkedUuids.has(obj.objectUuid),
+	)
+}
+
+/**
+ * Whether an error means the request was cancelled.
+ *
+ * @param {Error} err The error.
+ * @return {boolean} True for an aborted or cancelled request.
+ */
+function isAbort(err) {
+	return err.name === 'AbortError' || err.name === 'CanceledError'
+}
+
+/**
+ * Classify a failed load for the error state.
+ *
+ * @param {Error} err The error.
+ * @return {string} 'server', 'timeout' or 'network'.
+ */
+function errorKind(err) {
+	if (err.response?.status >= 500) {
+		return 'server'
+	}
+	return err.code === 'ECONNABORTED' ? 'timeout' : 'network'
+}
+
+/**
  * Composable for email link data management with caching.
  *
  * @return {object} Reactive state and methods.
@@ -45,6 +82,64 @@ export function useEmailLinks() {
 	}
 
 	/**
+	 * Show a cached entry.
+	 *
+	 * @param {object} entry The cache entry with linked and suggested lists.
+	 */
+	function showCached(entry) {
+		linkedObjects.value = entry.linked
+		suggestedObjects.value = entry.suggested
+		total.value = entry.linked.length
+		suggestedTotal.value = entry.suggested.length
+		error.value = null
+	}
+
+	/**
+	 * Abort any in-flight load and start a new one.
+	 *
+	 * @return {AbortSignal} The signal of the new load.
+	 */
+	function startLoad() {
+		if (currentAbortController) {
+			currentAbortController.abort()
+		}
+		currentAbortController = new AbortController()
+		loading.value = true
+		error.value = null
+		return currentAbortController.signal
+	}
+
+	/**
+	 * Fetch linked objects and sender suggestions, show them and cache them.
+	 *
+	 * @param {object} request The accountId, messageId, sender and cache key.
+	 * @param {AbortSignal} signal The abort signal of this load.
+	 */
+	async function fetchAndCache(request, signal) {
+		const linkedResult = await fetchLinkedObjects(
+			request.accountId,
+			request.messageId,
+			signal,
+		)
+		linkedObjects.value = linkedResult.results || []
+		total.value = linkedResult.total || 0
+
+		suggestedObjects.value = request.sender
+			? withoutLinked(
+					await fetchSenderObjects(request.sender, signal),
+					linkedObjects.value,
+				)
+			: []
+		suggestedTotal.value = suggestedObjects.value.length
+
+		cache[request.key] = {
+			linked: [...linkedObjects.value],
+			suggested: [...suggestedObjects.value],
+			timestamp: Date.now(),
+		}
+	}
+
+	/**
 	 * Load linked objects and sender suggestions for an email.
 	 *
 	 * @param {number} accountId The mail account ID.
@@ -55,71 +150,20 @@ export function useEmailLinks() {
 	async function loadForMessage(accountId, messageId, sender, useCache = true) {
 		const key = cacheKey(accountId, messageId)
 
-		// Check cache
 		if (useCache && cache[key]) {
-			linkedObjects.value = cache[key].linked
-			suggestedObjects.value = cache[key].suggested
-			total.value = cache[key].linked.length
-			suggestedTotal.value = cache[key].suggested.length
-			error.value = null
-
-			// Background refresh
+			showCached(cache[key])
 			refreshInBackground(accountId, messageId, sender, key)
 			return
 		}
 
-		// Cancel any in-flight request
-		if (currentAbortController) {
-			currentAbortController.abort()
-		}
-		currentAbortController = new AbortController()
-
-		loading.value = true
-		error.value = null
-
+		const signal = startLoad()
 		try {
-			const signal = currentAbortController.signal
-
-			// Fetch linked objects
-			const linkedResult = await fetchLinkedObjects(
-				accountId,
-				messageId,
-				signal,
-			)
-			linkedObjects.value = linkedResult.results || []
-			total.value = linkedResult.total || 0
-
-			// Fetch sender suggestions if sender is provided
-			if (sender) {
-				const senderResult = await fetchSenderObjects(sender, signal)
-				const linkedUuids = new Set(
-					linkedObjects.value.map((obj) => obj.objectUuid),
-				)
-				suggestedObjects.value = (senderResult.results || []).filter(
-					(obj) => !linkedUuids.has(obj.objectUuid),
-				)
-				suggestedTotal.value = suggestedObjects.value.length
-			} else {
-				suggestedObjects.value = []
-				suggestedTotal.value = 0
-			}
-
-			// Update cache
-			cache[key] = {
-				linked: [...linkedObjects.value],
-				suggested: [...suggestedObjects.value],
-				timestamp: Date.now(),
-			}
+			await fetchAndCache({ accountId, messageId, sender, key }, signal)
 		} catch (err) {
-			if (err.name === 'AbortError' || err.name === 'CanceledError') {
+			if (isAbort(err)) {
 				return
 			}
-			error.value =
-				err.response?.status >= 500
-					? 'server'
-					: err.code === 'ECONNABORTED'
-						? 'timeout'
-						: 'network'
+			error.value = errorKind(err)
 			linkedObjects.value = []
 			suggestedObjects.value = []
 		} finally {
@@ -142,10 +186,9 @@ export function useEmailLinks() {
 
 			let newSuggested = []
 			if (sender) {
-				const senderResult = await fetchSenderObjects(sender)
-				const linkedUuids = new Set(newLinked.map((obj) => obj.objectUuid))
-				newSuggested = (senderResult.results || []).filter(
-					(obj) => !linkedUuids.has(obj.objectUuid),
+				newSuggested = withoutLinked(
+					await fetchSenderObjects(sender),
+					newLinked,
 				)
 			}
 

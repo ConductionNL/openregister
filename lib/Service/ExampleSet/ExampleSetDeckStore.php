@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\IDBConnection;
 /**
  * Finds, writes and deletes Deck boards, lists, labels and cards.
  *
- * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
  */
 class ExampleSetDeckStore {
 	/**
@@ -59,7 +59,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function available(): bool {
 		return $this->apps->isInstalled('deck');
@@ -76,7 +76,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return array{id: int, created: bool}
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function board(string $owner, string $title, string $color, array $groups): array {
 		$qb = $this->db->getQueryBuilder();
@@ -119,7 +119,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return array{id: int, created: bool}
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function stack(int $board, string $title): array {
 		$qb = $this->db->getQueryBuilder();
@@ -151,7 +151,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return array{id: int, created: bool}
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function label(int $board, string $title, string $color): array {
 		$qb = $this->db->getQueryBuilder();
@@ -183,7 +183,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return int The card id.
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function insertCard(
 		int $stack,
@@ -231,7 +231,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function cardExists(int $card): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -249,7 +249,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteCard(int $card): void {
 		$this->deleteWhere(table: 'deck_assigned_labels', column: 'card_id', id: $card);
@@ -264,7 +264,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteLabel(int $label): void {
 		$this->deleteWhere(table: 'deck_assigned_labels', column: 'label_id', id: $label);
@@ -281,7 +281,7 @@ class ExampleSetDeckStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-deck-cards/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteUnused(?int $stack, ?int $board): void {
 		if ($stack !== null && $this->count(table: 'deck_cards', column: 'stack_id', id: $stack) === 0) {

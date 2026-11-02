@@ -42,7 +42,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ use OCP\IRequest;
 /**
  * Publishes the grantable permission set and the staged deny report.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class PermissionsController extends Controller {
 
@@ -103,7 +103,7 @@ class PermissionsController extends Controller {
 	 *
 	 * @return JSONResponse The catalogue.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

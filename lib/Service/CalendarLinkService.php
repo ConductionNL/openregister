@@ -370,7 +370,7 @@ class CalendarLinkService {
 	 *
 	 * @return array<int, array{name: string, email: string, partstat: string}>
 	 *
-	 * @spec openspec/changes/linked-events-carry-attendees/specs/calendar-integration/spec.md
+	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	private function attendeesOf(CalendarLink $link): array {
 		try {

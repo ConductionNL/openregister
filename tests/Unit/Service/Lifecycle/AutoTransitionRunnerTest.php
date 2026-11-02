@@ -62,7 +62,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	 *
 	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(

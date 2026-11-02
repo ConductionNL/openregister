@@ -628,7 +628,7 @@ class FlowService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function deleteStored(Flow $flow): void {
 		$uuid = (string)$flow->getUuid();

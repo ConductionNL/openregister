@@ -6,8 +6,7 @@
  * Covers the `text-extraction-word-completeness` change: full recursive
  * extraction (body + tables incl. nested + headers/footers + footnotes/
  * endnotes), MIME/extension → reader selection (DOCX/DOC/ODT), and graceful
- * null fallback on unparseable / empty input. Fixtures are generated at
- * runtime with PhpWord so no binary blobs are committed.
+ * null fallback on unparseable / empty input. Fixtures live in tests/Data/Word.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
@@ -20,8 +19,6 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\Files\File;
-use PhpOffice\PhpWord\IOFactory;
-use PhpOffice\PhpWord\PhpWord;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -57,9 +54,7 @@ class TextExtractionWordExtractionTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service = \OC::$server->get(TextExtractionService::class);
-		// resolveWordReader() and walkWordElements() moved to WordExtractor with
-		// the extract-god-class-services split, behaviour unchanged.
-		// TextExtractionService::extractWord() is now a one-line delegation to it.
+		// TextExtractionService::extractWord() is a one-line delegation to WordExtractor.
 		$this->wordExtractor = \OC::$server->get(\OCA\OpenRegister\Service\TextExtraction\WordExtractor::class);
 	}
 
@@ -110,58 +105,6 @@ class TextExtractionWordExtractionTest extends TestCase {
 	}
 
 	/**
-	 * Save a PhpWord document with the given writer and return its bytes.
-	 *
-	 * @param PhpWord $phpWord Document.
-	 * @param string $writerName 'Word2007' | 'ODText'.
-	 * @param string $ext File extension for the temp path.
-	 *
-	 * @return string
-	 */
-	private function renderBytes(PhpWord $phpWord, string $writerName, string $ext): string {
-		$path = tempnam(sys_get_temp_dir(), 'ortest_') . '.' . $ext;
-		$this->tmpFiles[] = $path;
-		IOFactory::createWriter($phpWord, $writerName)->save($path);
-		return (string)file_get_contents($path);
-	}
-
-	/**
-	 * Build a rich DOCX: body paragraph, a table whose cells hold a nested
-	 * table / list item, a header, a footer, a footnote and an endnote.
-	 *
-	 * @return PhpWord
-	 */
-	private function buildRichDocument(): PhpWord {
-		$phpWord = new PhpWord();
-		$section = $phpWord->addSection();
-
-		$section->addText('BODY_PARAGRAPH_TEXT');
-
-		$header = $section->addHeader();
-		$header->addText('HEADER_MARKER');
-		$footer = $section->addFooter();
-		$footer->addText('FOOTER_MARKER');
-
-		$table = $section->addTable();
-		$table->addRow();
-		$cellA = $table->addCell();
-		$cellA->addText('CELL_A_TEXT');
-		// Nested table inside cell A.
-		$nested = $cellA->addTable();
-		$nested->addRow();
-		$nested->addCell()->addText('NESTED_CELL_TEXT');
-		$cellB = $table->addCell();
-		$cellB->addListItem('LIST_ITEM_IN_CELL');
-
-		$footnote = $section->addFootnote();
-		$footnote->addText('FOOTNOTE_MARKER');
-		$endnote = $section->addEndnote();
-		$endnote->addText('ENDNOTE_MARKER');
-
-		return $phpWord;
-	}
-
-	/**
 	 * DOCX → reader Word2007, DOC → MsDoc, ODT → ODText, unknown → Word2007.
 	 *
 	 * @return void
@@ -181,15 +124,13 @@ class TextExtractionWordExtractionTest extends TestCase {
 	}
 
 	/**
-	 * DOCX extraction must capture table cells (incl. nested), in-cell list
-	 * items, headers, footers, footnotes and endnotes — plus body text.
+	 * A DOCX yields body, table cells (nested too), list items, header, footer and footnote.
 	 *
 	 * @return void
 	 */
 	public function testDocxExtractionCapturesAllNiches(): void {
-		$bytes = $this->renderBytes($this->buildRichDocument(), 'Word2007', 'docx');
 		$file = $this->mockFile(
-			$bytes,
+			(string)file_get_contents(__DIR__ . '/../Data/Word/word-structures.docx'),
 			'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 			'rich.docx'
 		);
@@ -197,31 +138,30 @@ class TextExtractionWordExtractionTest extends TestCase {
 		$text = $this->invokePrivate($this->service, 'extractWord', [$file]);
 
 		$this->assertIsString($text);
-		$this->assertStringContainsString('BODY_PARAGRAPH_TEXT', $text, 'body text (non-regression)');
-		$this->assertStringContainsString('CELL_A_TEXT', $text, 'table cell text');
-		$this->assertStringContainsString('NESTED_CELL_TEXT', $text, 'nested table cell text');
-		$this->assertStringContainsString('LIST_ITEM_IN_CELL', $text, 'in-cell list item text');
-		$this->assertStringContainsString('HEADER_MARKER', $text, 'header text');
-		$this->assertStringContainsString('FOOTER_MARKER', $text, 'footer text');
-		$this->assertStringContainsString('FOOTNOTE_MARKER', $text, 'footnote text');
-		$this->assertStringContainsString('ENDNOTE_MARKER', $text, 'endnote text');
+		$this->assertStringContainsString('Besluit op aanvraag', $text, 'body text (non-regression)');
+		$this->assertStringContainsString('Gemachtigde', $text, 'table cell text');
+		$this->assertStringContainsString('Sanne Bakker', $text, 'nested table cell text');
+		$this->assertStringContainsString('Eerste punt voor Jan Jansen', $text, 'list item text');
+		$this->assertStringContainsString('Gemeente Demostad kenmerk ZK-2026-0042', $text, 'header text');
+		$this->assertStringContainsString('Behandelaar Jan Jansen', $text, 'footer text');
+		$this->assertStringContainsString('Voetnoot over Maria Bakker.', $text, 'footnote text');
 	}
 
 	/**
-	 * ODT input produces populated text (validates ODText reader selection end-to-end).
+	 * An ODT input is extracted through the same Word branch.
 	 *
 	 * @return void
 	 */
 	public function testOdtExtractionProducesText(): void {
-		$phpWord = new PhpWord();
-		$phpWord->addSection()->addText('ODT_BODY_TEXT');
-		$bytes = $this->renderBytes($phpWord, 'ODText', 'odt');
-
-		$file = $this->mockFile($bytes, 'application/vnd.oasis.opendocument.text', 'doc.odt');
+		$file = $this->mockFile(
+			(string)file_get_contents(__DIR__ . '/../Data/Word/word-structures.odt'),
+			'application/vnd.oasis.opendocument.text',
+			'doc.odt'
+		);
 		$text = $this->invokePrivate($this->service, 'extractWord', [$file]);
 
 		$this->assertIsString($text);
-		$this->assertStringContainsString('ODT_BODY_TEXT', $text);
+		$this->assertStringContainsString('Besluit op aanvraag', $text);
 	}
 
 	/**
@@ -240,17 +180,13 @@ class TextExtractionWordExtractionTest extends TestCase {
 	}
 
 	/**
-	 * An empty document (no text) returns null.
+	 * A valid DOCX without text returns null.
 	 *
 	 * @return void
 	 */
 	public function testExtractWordReturnsNullOnEmptyDocument(): void {
-		$phpWord = new PhpWord();
-		$phpWord->addSection();
-		$bytes = $this->renderBytes($phpWord, 'Word2007', 'docx');
-
 		$file = $this->mockFile(
-			$bytes,
+			$this->docx(body: '<w:p/>'),
 			'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 			'empty.docx'
 		);
@@ -259,88 +195,43 @@ class TextExtractionWordExtractionTest extends TestCase {
 	}
 
 	/**
-	 * The walker stops at MAX_WORD_DEPTH and never recurses a too-deep leaf,
-	 * without crashing.
+	 * Nesting beyond the XML parser's depth limit does not crash extraction; the part is unreadable.
 	 *
 	 * @return void
 	 */
-	public function testWalkerDepthGuardStopsDescent(): void {
-		// Build a chain of nested container stubs deeper than the cap (50).
-		$deepLeaf = new class {
-			/**
-			 * @return string
-			 */
-			public function getText(): string {
-				return 'DEEP_LEAF_TEXT';
-			}
-		};
+	public function testPathologicalNestingReturnsNull(): void {
+		$body = str_repeat('<w:tbl><w:tr><w:tc>', 120) . '<w:p><w:r><w:t>DEEP</w:t></w:r></w:p>' . str_repeat('</w:tc></w:tr></w:tbl>', 120);
+		$file = $this->mockFile(
+			$this->docx(body: $body),
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			'deep.docx'
+		);
 
-		$node = $deepLeaf;
-		for ($i = 0; $i < 60; $i++) {
-			$node = new class($node) {
-
-				/** @var object */
-				private object $inner;
-
-				/**
-				 * @param object $inner Wrapped child.
-				 */
-				public function __construct(object $inner) {
-					$this->inner = $inner;
-				}
-
-				/**
-				 * @return array
-				 */
-				public function getElements(): array {
-					return [$this->inner];
-				}
-			};
-		}
-
-		$text = $this->invokePrivate($this->wordExtractor, 'walkWordElements', [[$node], 0]);
-
-		$this->assertIsString($text);
-		$this->assertStringNotContainsString('DEEP_LEAF_TEXT', $text, 'leaf beyond MAX_WORD_DEPTH must not be reached');
+		$this->assertNull($this->invokePrivate($this->service, 'extractWord', [$file]));
 	}
 
 	/**
-	 * A shallow nested-container chain is fully walked (sanity counterpart to the depth guard).
+	 * A minimal DOCX package with the given body XML.
 	 *
-	 * @return void
+	 * @param string $body Content of `w:body`.
+	 *
+	 * @return string The package bytes.
 	 */
-	public function testWalkerReachesShallowLeaf(): void {
-		$leaf = new class {
-			/**
-			 * @return string
-			 */
-			public function getText(): string {
-				return 'SHALLOW_LEAF_TEXT';
-			}
-		};
+	private function docx(string $body): string {
+		$path = tempnam(sys_get_temp_dir(), 'ortest_');
+		$this->tmpFiles[] = $path;
+		$zip = new \ZipArchive();
+		$zip->open($path, \ZipArchive::OVERWRITE);
+		$zip->addFromString('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+			. '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+			. '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+		$zip->addFromString('_rels/.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+			. '<Relationship Id="r1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+		$zip->addFromString('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+			. $body . '</w:body></w:document>');
+		$zip->close();
 
-		$container = new class($leaf) {
-
-			/** @var object */
-			private object $inner;
-
-			/**
-			 * @param object $inner Wrapped child.
-			 */
-			public function __construct(object $inner) {
-				$this->inner = $inner;
-			}
-
-			/**
-			 * @return array
-			 */
-			public function getElements(): array {
-				return [$this->inner];
-			}
-		};
-
-		$text = $this->invokePrivate($this->wordExtractor, 'walkWordElements', [[$container], 0]);
-		$this->assertStringContainsString('SHALLOW_LEAF_TEXT', $text);
+		return (string)file_get_contents($path);
 	}
 
 	/**

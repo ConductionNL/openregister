@@ -17,7 +17,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -84,7 +84,7 @@ class AddObjectStateColumns implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
 	 */
 	public function run(IOutput $output): void {
 		try {

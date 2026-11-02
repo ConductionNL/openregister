@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rematerialise-calculation-fallback/specs/computed-fields/spec.md
+ * @spec openspec/specs/computed-fields/spec.md
  */
 
 declare(strict_types=1);

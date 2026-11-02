@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);

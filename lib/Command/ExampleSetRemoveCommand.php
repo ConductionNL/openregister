@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+ * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Remove an installed example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+ * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
 class ExampleSetRemoveCommand extends Command {
 	/**
@@ -66,7 +66,7 @@ class ExampleSetRemoveCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:example-set:remove')
@@ -82,7 +82,7 @@ class ExampleSetRemoveCommand extends Command {
 	 *
 	 * @return int 0 or 2; see the class.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$set    = trim((string) $input->getArgument('set'));

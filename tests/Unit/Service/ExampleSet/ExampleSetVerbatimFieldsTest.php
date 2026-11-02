@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-verbatim-fields/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ class ExampleSetVerbatimFieldsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-verbatim-fields/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
 	 */
 	public function testVerbatimFieldsAreWrittenAsDeclared(): void {
 		$this->template(template: ['verbatimFields' => ['subject', 'body']]);
@@ -70,7 +70,7 @@ class ExampleSetVerbatimFieldsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-verbatim-fields/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
 	 */
 	public function testEveryOtherFieldStillRefusesAnUnresolvedPlaceholder(): void {
 		$this->template();

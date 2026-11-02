@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
  */
 
 declare(strict_types=1);

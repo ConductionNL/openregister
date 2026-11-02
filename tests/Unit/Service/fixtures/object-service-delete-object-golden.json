@@ -1,0 +1,1721 @@
+{
+    "scoped": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "unscoped": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "schema only": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "register only": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "schemaMapper.findInIds": "10",
+                "in": [
+                    10,
+                    11,
+                    12,
+                    13,
+                    14
+                ]
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "string refs": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "schemaMapper.findInIds": "10",
+                "in": [
+                    10,
+                    11,
+                    12,
+                    13,
+                    14
+                ]
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "flags off": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": false,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": false,
+                "multitenancy": false,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "rbac off only": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": false,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": false,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "permanent asked": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "explicit acting user": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": "bob",
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "explicit user, session granted": {
+        "result": {
+            "exception": [
+                "Exception",
+                "delete denied for bob"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": "bob",
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "permission denied": {
+        "result": {
+            "exception": [
+                "Exception",
+                "delete denied for alice"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "transferred": {
+        "result": {
+            "exception": [
+                "OCP\\AppFramework\\Db\\DoesNotExistException",
+                "OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only."
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "append-only": {
+        "result": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\AppendOnlyException",
+                "SCHEMA_APPEND_ONLY: Schema \"schema-11\" is append-only; delete operations are not permitted."
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 11,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "archival record": {
+        "result": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ArchivalImmutableException",
+                "SCHEMA_ARCHIVAL_IMMUTABLE: Schema \"schema-12\" declares x-openregister-archival; user-driven delete operations are not permitted. Rows expire automatically via the ArchivalRetentionTask cron."
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "archival, retention sweep": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 12,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "archival, own draft": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 12,
+                "userId": null,
+                "owner": "alice",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "archival, own draft, flags off": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 12,
+                "userId": null,
+                "owner": "alice",
+                "rbac": false,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "original": null,
+                "rbac": false,
+                "multitenancy": false,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "archival, draft of another": {
+        "result": {
+            "exception": [
+                "OCP\\AppFramework\\Db\\DoesNotExistException",
+                "Object not found"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 12,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 12,
+                "userId": null,
+                "owner": "mallory",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "draft of another": {
+        "result": {
+            "exception": [
+                "OCP\\AppFramework\\Db\\DoesNotExistException",
+                "Object not found"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "mallory",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "draft of another, rbac off": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "mallory",
+                "rbac": false,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": false,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "draft of another, by admin": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": "admin",
+                "owner": "mallory",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "draft of acting user, not session": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": "bob",
+                "owner": "bob",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "own draft": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "alice",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "object source": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "checkPermission": "delete",
+                "schema": 13,
+                "userId": null,
+                "owner": null,
+                "rbac": true,
+                "object": null
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 13,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "object source, schema only": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "checkPermission": "delete",
+                "schema": 13,
+                "userId": "bob",
+                "owner": null,
+                "rbac": true,
+                "object": null
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 13,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "object source, denied": {
+        "result": {
+            "exception": [
+                "Exception",
+                "delete denied for alice"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "checkPermission": "delete",
+                "schema": 13,
+                "userId": null,
+                "owner": null,
+                "rbac": true,
+                "object": null
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "view-backed": {
+        "result": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\ReadOnlyTypeException",
+                "SCHEMA_READ_ONLY: Schema \"schema-14\" lists the rows of a saved view; delete operations are not permitted."
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ]
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "scoped miss": {
+        "result": {
+            "exception": [
+                "OCP\\AppFramework\\Db\\DoesNotExistException",
+                "Object not found"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "schema-only miss": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": null,
+                "rbac": true,
+                "object": null
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "schema-only miss, denied": {
+        "result": {
+            "exception": [
+                "Exception",
+                "delete denied for alice"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": null,
+                "rbac": true,
+                "object": null
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "schema-only miss, acting user": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": "bob",
+                "owner": null,
+                "rbac": true,
+                "object": null
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "unscoped miss": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": null
+        }
+    },
+    "prior context restored": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": true,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": 2,
+            "schema": 20
+        }
+    },
+    "prior context restored on throw": {
+        "result": {
+            "exception": [
+                "Exception",
+                "delete denied for alice"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 10,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            }
+        ],
+        "after": {
+            "register": 2,
+            "schema": 20
+        }
+    },
+    "pending ref is not inherited": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "schemaMapper.find": "20"
+            },
+            [
+                "setup done"
+            ],
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 20,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "objectMapper.find": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": null,
+                "schema": null,
+                "includeDeleted": true,
+                "rbac": true,
+                "multitenancy": true
+            },
+            {
+                "checkPermission": "delete",
+                "schema": 20,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "0b3f2c1a-1111-4222-8333-944455556666"
+            },
+            {
+                "deleteHandler": "0b3f2c1a-1111-4222-8333-944455556666",
+                "register": 1,
+                "schema": 20,
+                "original": null,
+                "rbac": true,
+                "multitenancy": true,
+                "scoped": false,
+                "preResolved": null,
+                "permanent": false
+            }
+        ],
+        "after": {
+            "register": null,
+            "schema": 20
+        }
+    }
+}

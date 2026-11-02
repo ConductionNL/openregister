@@ -1,6 +1,27 @@
 import { defineStore } from 'pinia'
+import {
+	getListPage,
+	listPageQuery,
+	listPagination,
+	requestJson,
+} from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
+
+/**
+ * The statistics with every count at 0.
+ *
+ * @return {object} Every count at 0.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyStatistics() {
+	return {
+		totalDeleted: 0,
+		deletedToday: 0,
+		deletedThisWeek: 0,
+		oldestDays: 0,
+	}
+}
 
 /**
  * Store for managing deleted objects
@@ -17,21 +38,10 @@ export const useDeletedStore = defineStore('deleted', {
 		deletedItem: null,
 
 		// Pagination
-		deletedPagination: {
-			total: 0,
-			page: 1,
-			pages: 1,
-			limit: 20,
-			offset: 0,
-		},
+		deletedPagination: listPagination({}, 20),
 
 		// Statistics
-		statistics: {
-			totalDeleted: 0,
-			deletedToday: 0,
-			deletedThisWeek: 0,
-			oldestDays: 0,
-		},
+		statistics: emptyStatistics(),
 
 		// Top deleters
 		topDeleters: [],
@@ -143,60 +153,17 @@ export const useDeletedStore = defineStore('deleted', {
 			this.deletedLoading = true
 
 			try {
-				// Build query parameters
-				const params = new URLSearchParams()
-
-				// Add pagination
-				if (options.limit) params.append('limit', options.limit)
-				if (options.offset) params.append('offset', options.offset)
-				if (options.page) params.append('page', options.page)
-
-				// Add search
-				if (options.search || this.deletedSearch) {
-					params.append('search', options.search || this.deletedSearch)
-				}
-
-				// Add filters
-				const filters = { ...this.deletedFilters, ...options.filters }
-				Object.entries(filters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						params.append(key, value)
-					}
+				const query = listPageQuery(options, {
+					search: this.deletedSearch,
+					filters: this.deletedFilters,
 				})
+				const data = await getListPage(
+					`${apiUrl}/deleted?${query}`,
+					'Failed to fetch deleted objects',
+				)
 
-				// Add sort
-				if (options.sort) {
-					Object.entries(options.sort).forEach(([field, direction]) => {
-						params.append('sort', field)
-						params.append('order', direction)
-					})
-				}
-
-				const url = `${apiUrl}/deleted?${params.toString()}`
-
-				const response = await fetch(url, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch deleted objects')
-				}
-
-				// Update store state
 				this.setDeletedList(data.results || [])
-				this.setDeletedPagination({
-					total: data.total || 0,
-					page: data.page || 1,
-					pages: data.pages || 1,
-					limit: data.limit || 20,
-					offset: data.offset || 0,
-				})
+				this.setDeletedPagination(listPagination(data, 20))
 
 				return data
 			} catch (error) {
@@ -217,19 +184,10 @@ export const useDeletedStore = defineStore('deleted', {
 			this.statisticsLoading = true
 
 			try {
-				const response = await fetch(`${apiUrl}/deleted/statistics`, {
+				const data = await requestJson(`${apiUrl}/deleted/statistics`, {
 					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to fetch statistics',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch statistics')
-				}
 
 				this.setStatistics(data)
 				return data
@@ -251,19 +209,10 @@ export const useDeletedStore = defineStore('deleted', {
 			this.topDeletersLoading = true
 
 			try {
-				const response = await fetch(`${apiUrl}/deleted/top-deleters`, {
+				const data = await requestJson(`${apiUrl}/deleted/top-deleters`, {
 					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to fetch top deleters',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch top deleters')
-				}
 
 				this.setTopDeleters(data)
 				return data
@@ -284,19 +233,10 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async restoreDeleted(id) {
 			try {
-				const response = await fetch(`${apiUrl}/deleted/${id}/restore`, {
+				const data = await requestJson(`${apiUrl}/deleted/${id}/restore`, {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to restore object',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to restore object')
-				}
 
 				// Remove from deleted list
 				this.deletedList = this.deletedList.filter((item) => item.id !== id)
@@ -317,20 +257,11 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async restoreMultiple(ids) {
 			try {
-				const response = await fetch(`${apiUrl}/deleted/restore`, {
+				const data = await requestJson(`${apiUrl}/deleted/restore`, {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-					body: JSON.stringify({ ids }),
+					body: { ids },
+					failure: 'Failed to restore objects',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to restore objects')
-				}
 
 				// Remove restored objects from list
 				this.deletedList = this.deletedList.filter(
@@ -353,21 +284,10 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async permanentlyDelete(id) {
 			try {
-				const response = await fetch(`${apiUrl}/deleted/${id}`, {
+				const data = await requestJson(`${apiUrl}/deleted/${id}`, {
 					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to permanently delete object',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(
-						data.error || 'Failed to permanently delete object',
-					)
-				}
 
 				// Remove from deleted list
 				this.deletedList = this.deletedList.filter((item) => item.id !== id)
@@ -388,22 +308,11 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async permanentlyDeleteMultiple(ids) {
 			try {
-				const response = await fetch(`${apiUrl}/deleted`, {
+				const data = await requestJson(`${apiUrl}/deleted`, {
 					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-					body: JSON.stringify({ ids }),
+					body: { ids },
+					failure: 'Failed to permanently delete objects',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(
-						data.error || 'Failed to permanently delete objects',
-					)
-				}
 
 				// Remove deleted objects from list
 				this.deletedList = this.deletedList.filter(
@@ -438,19 +347,8 @@ export const useDeletedStore = defineStore('deleted', {
 		clearDeletedStore() {
 			this.deletedList = []
 			this.deletedItem = null
-			this.deletedPagination = {
-				total: 0,
-				page: 1,
-				pages: 1,
-				limit: 20,
-				offset: 0,
-			}
-			this.statistics = {
-				totalDeleted: 0,
-				deletedToday: 0,
-				deletedThisWeek: 0,
-				oldestDays: 0,
-			}
+			this.deletedPagination = listPagination({}, 20)
+			this.statistics = emptyStatistics()
 			this.topDeleters = []
 			this.deletedFilters = {}
 			this.deletedSearch = ''

@@ -93,7 +93,7 @@ class RetentionClockService {
 	 *
 	 * @return array<string, mixed> The two clocks, the hold and any conflict.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function clocksFor(ObjectEntity $object, ?DateTimeImmutable $now = null): array {
 		$moment = ($now ?? new DateTimeImmutable());
@@ -138,7 +138,7 @@ class RetentionClockService {
 	 *
 	 * @return DestructionRefusedException|null The refusal, or null when the clocks agree.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalFor(ObjectEntity $object, ?DateTimeImmutable $now = null): ?DestructionRefusedException {
 		$clocks = $this->clocksFor(object: $object, now: $now);

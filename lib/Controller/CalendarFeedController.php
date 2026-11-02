@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -103,7 +103,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return DataDisplayResponse|JSONResponse The calendar, or 404.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -143,7 +143,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The minted token and its URL, or 400.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function mint(): JSONResponse {
@@ -174,7 +174,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The tokens.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function index(): JSONResponse {
@@ -196,7 +196,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse Empty on success, 404 when there is nothing to revoke.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function revoke(int $id): JSONResponse {
@@ -225,7 +225,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The responses, or 404 when the object is unknown or denied.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function attendeeResponses(string $id): JSONResponse {
@@ -253,7 +253,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The full response list, 400 on a refused answer, or 404.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function recordAttendeeResponse(string $id): JSONResponse {
@@ -288,7 +288,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse|null The 404 to return, or null when the read is allowed.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function requireReadableObject(string $objectUuid): ?JSONResponse {
 		if ($this->attendees->mayRead(objectUuid: $objectUuid) === false) {

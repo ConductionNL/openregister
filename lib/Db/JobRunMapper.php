@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+ * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
 class JobRunMapper extends QBMapper {
 
@@ -90,7 +90,7 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return array<int, JobRun> The rows, newest first.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function findRecent(
 		?string $jobClass = null,
@@ -124,7 +124,7 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return int The number of matching rows.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function countRecent(
 		?string $jobClass = null,
@@ -159,7 +159,7 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return JobRun|null The holding run, or null when the job is free.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function findRunning(string $jobClass): ?JobRun {
 		$qb = $this->db->getQueryBuilder();
@@ -190,7 +190,7 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return array<string, JobRun> The newest run per job class.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function lastRunPerJob(int $limit = self::MAX_LIMIT): array {
 		$newest = [];
@@ -221,7 +221,7 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return array<int, JobRun> The failures, oldest first.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function failuresSince(string $jobClass, DateTime $since): array {
 		$qb = $this->db->getQueryBuilder();

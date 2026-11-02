@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads the rules, keeps the derived grants, and recounts when a rule moves.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class DerivedGrantStore {
 
@@ -104,7 +104,7 @@ class DerivedGrantStore {
 	 *
 	 * @return array<int, mixed> The rules, or an empty list when none are declared.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function rules(): array {
 		try {
@@ -139,7 +139,7 @@ class DerivedGrantStore {
 	 *
 	 * @return array<int, array<string, mixed>> The grants.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function grantsFor(?string $userId): array {
 		if ($userId === null || $userId === '') {
@@ -158,7 +158,7 @@ class DerivedGrantStore {
 	 *
 	 * @return array<string, mixed> The claims.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function claimsFor(string $userId): array {
 		$raw = $this->config->getUserValue($userId, self::APP_ID, self::CLAIMS_KEY, '');
@@ -186,7 +186,7 @@ class DerivedGrantStore {
 	 *
 	 * @return array<int, array<string, mixed>> The grants that were stored.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function apply(string $userId, array $claims): array {
 		$derived = $this->resolver->derive(claims: $claims, rules: $this->rules());
@@ -215,7 +215,7 @@ class DerivedGrantStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function forget(string $userId): void {
 		$this->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, '[]');
@@ -227,7 +227,7 @@ class DerivedGrantStore {
 	 * @return array{users: integer, changed: integer, grantsBefore: integer, grantsAfter: integer, accounts: array<int, string>}
 	 *         What the re-run did.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function reapply(): array {
 		$accounts = $this->accountsWithClaims();

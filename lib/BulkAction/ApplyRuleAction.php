@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The action composes the inventory,
  *   the evaluator and the write path, which are the three halves of applying a rule.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class ApplyRuleAction implements BulkActionInterface {
 
@@ -93,7 +93,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return string The action id.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -104,7 +104,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getLabel(): string {
 		return 'Apply a rule';
@@ -115,7 +115,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getDescription(): string {
 		return 'Runs one declared rule over objects that already exist and writes what it derives. '
@@ -131,7 +131,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return bool True.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function requiresJustification(): bool {
 		return true;
@@ -145,7 +145,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return array<int, string> The homogeneity guard.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getGuards(): array {
 		return [self::GUARD_HOMOGENEITY];
@@ -160,7 +160,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @throws InvalidArgumentException When the rule is not named.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function validateParameters(array $parameters): void {
 		$schema = ($parameters['schema'] ?? null);
@@ -195,7 +195,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *   its only constructor: the class is immutable and its private __construct exists
 	 *   so an outcome cannot be built without saying which of the four it is.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
 		$rule = $this->ruleFor(parameters: $parameters);
@@ -253,7 +253,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) See apply().
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function write(ObjectEntity $object, array $patch, ?IUser $actor): BulkActionResult {
 		try {
@@ -287,7 +287,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return RuleDescriptor|null The rule, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function ruleFor(array $parameters): ?RuleDescriptor {
 		try {

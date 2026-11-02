@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 
 declare(strict_types=1);
@@ -39,9 +39,14 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One change lifecycle: resolve, apply, refresh, prove and revert,
  *                                                   each reading JSON-text fields the same way.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 class ExampleSetChanges {
+	/**
+	 * The prefix of a recorded fingerprint: the record keeps an access link's address only as its hash.
+	 */
+	private const SECRET = 'example-set-secret:sha256:';
+
 	/**
 	 * Constructor.
 	 *
@@ -70,8 +75,8 @@ class ExampleSetChanges {
 	 *               append: array<string, mixed>} The object, the object as the change makes it, and the filled
 	 *               `set` and `append`; or why the change cannot be made.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function resolve(array $change, array $context): array {
 		$none = ['refusal' => '', 'row' => [], 'merged' => [], 'set' => [], 'append' => []];
@@ -144,8 +149,8 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to change),
 	 *                                                                 or why the write failed.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function apply(array $change, array $resolved): array {
 		$row   = $resolved['row'];
@@ -163,7 +168,7 @@ class ExampleSetChanges {
 				'path' => (string) $path,
 				'had'  => $held['found'],
 				'old'  => $held['value'],
-				'new'  => $value,
+				'new'  => $this->recorded(change: $change, path: (string) $path, value: $value),
 				'from' => $this->paths->firstMissing(row: $row, path: (string) $path),
 			];
 		}
@@ -203,7 +208,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function writtenReferences(array $record, string $name, string $key): array {
 		$written = (array) ($record['objects'][$key]['refs'] ?? []);
@@ -232,7 +237,7 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>, wrote: bool} The entry to hold, whether a field was
 	 *                                                                         written, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
 	public function follow(array $change, array $entry, array $context, bool $refresh): array {
 		$declared        = array_map('strval', array_keys((array) ($change['set'] ?? [])));
@@ -272,13 +277,7 @@ class ExampleSetChanges {
 			return ['error' => $error, 'entry' => $entry, 'wrote' => false];
 		}
 
-		foreach ($entry['set'] as $index => $set) {
-			if (array_key_exists((string) $set['path'], $again) === true) {
-				$entry['set'][$index]['new'] = $again[(string) $set['path']];
-			}
-		}
-
-		$entry['set'] = array_merge($entry['set'], $fresh);
+		$entry['set'] = $this->withWritten(change: $change, rows: $entry['set'], again: $again, fresh: $fresh);
 
 		return ['error' => '', 'entry' => $entry, 'wrote' => true];
 	}//end follow()
@@ -350,7 +349,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
 	 */
 	private function writtenAgain(array $entry, array $resolved): array {
 		$again = [];
@@ -380,7 +379,7 @@ class ExampleSetChanges {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-gone-declarations-are-let-go/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
 	 */
 	private function undone(array $held, array $set): bool {
 		$isSet  = ($held['found'] === true && $held['value'] !== null);
@@ -399,6 +398,10 @@ class ExampleSetChanges {
 	 * @return bool
 	 */
 	private function sameAs(mixed $stored, mixed $value): bool {
+		if ($this->isFingerprint(value: $value) === true) {
+			return is_string($stored) === true && hash_equals($value, self::SECRET.hash('sha256', $stored));
+		}
+
 		$read = $stored;
 		if (is_string($stored) === true) {
 			$decoded = json_decode($stored, true);
@@ -428,7 +431,7 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>|null, left: array<int, string>} The record entry (null
 	 *         when no field had to be written), or why the write failed, and the fields left because somebody changed them.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function refresh(array $object, array $row, array $values, array $written=[]): array {
 		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
@@ -474,8 +477,8 @@ class ExampleSetChanges {
 	 *
 	 * @return array<int, string> Empty when the change is on the instance; `(gone)` when the object is.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function lost(array $entry): array {
 		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
@@ -511,8 +514,75 @@ class ExampleSetChanges {
 	 * @return bool
 	 */
 	private function stillHolds(array $held, mixed $written): bool {
+		if ($this->isFingerprint(value: $written) === true) {
+			return $held['found'] === true && is_string($held['value']) === true
+				&& hash_equals($written, self::SECRET.hash('sha256', $held['value']));
+		}
+
 		return $held['found'] === true && $this->proof->lostPaths(declared: $written, stored: $held['value']) === [];
 	}//end stillHolds()
+
+	/**
+	 * The record rows of a held change after a follow wrote fields again or for the first time, each value as the
+	 * record keeps it.
+	 *
+	 * @param array<string, mixed>             $change The declared change.
+	 * @param array<int, array<string, mixed>> $rows   The held rows.
+	 * @param array<string, mixed>             $again  The values written again, by path.
+	 * @param array<int, array<string, mixed>> $fresh  The rows of fields written for the first time.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function withWritten(array $change, array $rows, array $again, array $fresh): array {
+		foreach ($rows as $index => $set) {
+			$path = (string) $set['path'];
+			if (array_key_exists($path, $again) === true) {
+				$rows[$index]['new'] = $this->recorded(change: $change, path: $path, value: $again[$path]);
+			}
+		}
+
+		foreach ($fresh as $row) {
+			$row['new'] = $this->recorded(change: $change, path: (string) $row['path'], value: $row['new']);
+			$rows[]     = $row;
+		}
+
+		return $rows;
+	}//end withWritten()
+
+	/**
+	 * Whether a recorded value is the fingerprint of an access link's address.
+	 *
+	 * @param mixed $value A recorded value.
+	 *
+	 * @return bool
+	 */
+	private function isFingerprint(mixed $value): bool {
+		return is_string($value) === true && str_starts_with($value, self::SECRET) === true;
+	}//end isFingerprint()
+
+	/**
+	 * The value the record keeps for a field a change wrote: a value filled from an access link's address
+	 * (`{{accessLink:key.url}}`) as a fingerprint, since the address carries the link's secret anchor; any other
+	 * value as it is.
+	 *
+	 * @param array<string, mixed> $change The declared change.
+	 * @param string               $path   The field's path.
+	 * @param mixed                $value  The value written.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
+	 */
+	private function recorded(array $change, string $path, mixed $value): mixed {
+		$declared = ($change['set'][$path] ?? null);
+		if (is_string($value) === false || is_string($declared) === false
+			|| preg_match('/\{\{\s*accessLink:[^}]*\.url\s*\}\}/', $declared) !== 1
+		) {
+			return $value;
+		}
+
+		return self::SECRET.hash('sha256', $value);
+	}//end recorded()
 
 	/**
 	 * Put back what a change replaced and take out what it appended, while the object still holds what the change wrote.
@@ -528,8 +598,8 @@ class ExampleSetChanges {
 	 *                                                    too when the object could not be read),
 	 *                                                    and the paths left because somebody changed them.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function revert(array $entry): array {
 		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
@@ -598,7 +668,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function asSent(array $row, array $fields): array {
 		return $this->paths->withJsonText(row: $row, fields: $fields);
@@ -612,7 +682,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-change-keeps-text/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
 	 */
 	private function structuredText(array $change, array $row): array {
 		return array_values(

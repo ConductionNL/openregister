@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+ * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
  *
  * @deprecated Use PUT|DELETE .../watch. Removed in the release after merge-follow-and-favourites.
  */
@@ -88,7 +88,7 @@ class ObjectFavouriteController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	#[NoAdminRequired]
 	public function star(string $register, string $schema, string $id): JSONResponse {
@@ -135,7 +135,7 @@ class ObjectFavouriteController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	#[NoAdminRequired]
 	public function unstar(string $register, string $schema, string $id): JSONResponse {

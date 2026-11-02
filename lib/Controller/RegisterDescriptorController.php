@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class RegisterDescriptorController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function index(): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -137,7 +137,7 @@ class RegisterDescriptorController extends Controller {
 	 * posture the body actually enforces, which is what both gates are asking
 	 * for. Bound to OpenRegisterAdmin, the panel this endpoint serves.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function import(string $appId, string $slug): JSONResponse {

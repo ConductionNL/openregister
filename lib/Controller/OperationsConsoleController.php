@@ -33,7 +33,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use OCP\IUserSession;
 /**
  * OperationsConsoleController.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 class OperationsConsoleController extends Controller {
 
@@ -88,7 +88,7 @@ class OperationsConsoleController extends Controller {
 	 *
 	 * @return JSONResponse The window and the panes.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
@@ -102,7 +102,7 @@ class OperationsConsoleController extends Controller {
 	 *
 	 * @return JSONResponse The jobs, the registered inventory and the unobserved ones.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	#[NoCSRFRequired]
 	public function jobs(): JSONResponse {
@@ -130,7 +130,7 @@ class OperationsConsoleController extends Controller {
 	 *
 	 * @return JSONResponse The runs and the rules holding an error.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	#[NoCSRFRequired]
 	public function ruleRuns(): JSONResponse {
@@ -147,7 +147,7 @@ class OperationsConsoleController extends Controller {
 	 *
 	 * @return JSONResponse The runs and how many there are.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	#[NoCSRFRequired]
 	public function runs(): JSONResponse {
@@ -178,7 +178,7 @@ class OperationsConsoleController extends Controller {
 	 *       middleware refuses a non-administrator before this controller is
 	 *       built, and CSRF stays required on the write.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function runNow(): JSONResponse {
 		$job = $this->stringParam(name: 'job');
@@ -217,7 +217,7 @@ class OperationsConsoleController extends Controller {
 	 *       middleware refuses a non-administrator before this controller is
 	 *       built, and CSRF stays required on the write.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function schedule(): JSONResponse {
 		$job = $this->stringParam(name: 'job');
@@ -256,7 +256,7 @@ class OperationsConsoleController extends Controller {
 	 *
 	 * @return JSONResponse The alerts.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	#[NoCSRFRequired]
 	public function alerts(): JSONResponse {
@@ -275,7 +275,7 @@ class OperationsConsoleController extends Controller {
 	 *       the middleware refuses a non-administrator before this controller
 	 *       is built, and CSRF stays required on the write.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function administerAlerts(): JSONResponse {
 		return new JSONResponse(

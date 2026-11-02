@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Install or check an example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 class ExampleSetInstallCommand extends Command {
 	/**
@@ -76,7 +76,7 @@ class ExampleSetInstallCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:example-set:install')
@@ -130,7 +130,7 @@ class ExampleSetInstallCommand extends Command {
 	 *
 	 * @return int 0, 1 or 2; see the class.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		try {
@@ -190,7 +190,7 @@ class ExampleSetInstallCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	private function markDaily(string $set, InputInterface $input, OutputInterface $output): void {
 		if ($this->daily === null || ($input->getOption('daily') !== true && $input->getOption('no-daily') !== true)) {
@@ -335,8 +335,8 @@ class ExampleSetInstallCommand extends Command {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
-	 * @spec openspec/changes/example-set-refresh-skips-unchanged/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
 	 */
 	private function refreshedNote(array $counts): string {
 		if (isset($counts['refreshed']) === false && isset($counts['unchanged']) === false) {

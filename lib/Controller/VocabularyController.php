@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
-use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -68,21 +68,21 @@ class VocabularyController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const REGISTER = VocabularyImportService::REGISTER;
+	private const REGISTER = VocabularyImporterInterface::REGISTER;
 
 	/**
 	 * ConceptScheme schema slug.
 	 *
 	 * @var string
 	 */
-	private const SCHEMA_SCHEME = VocabularyImportService::SCHEMA_SCHEME;
+	private const SCHEMA_SCHEME = VocabularyImporterInterface::SCHEMA_SCHEME;
 
 	/**
 	 * Concept schema slug.
 	 *
 	 * @var string
 	 */
-	private const SCHEMA_CONCEPT = VocabularyImportService::SCHEMA_CONCEPT;
+	private const SCHEMA_CONCEPT = VocabularyImporterInterface::SCHEMA_CONCEPT;
 
 	/**
 	 * Upper bound on concepts fetched for a scheme's in-memory label-search
@@ -137,7 +137,7 @@ class VocabularyController extends Controller {
 	 *
 	 * @return JSONResponse The options, or a 404 when the schema or property is unknown.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -396,7 +396,7 @@ class VocabularyController extends Controller {
 	 * @param string $schemeUriOrUuid The scheme's source uri (or its OpenRegister uuid).
 	 *
 	 * @return string|null The scheme's uuid, or null when unresolvable.
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */

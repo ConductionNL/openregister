@@ -36,7 +36,7 @@ use Throwable;
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class SubjectExportJob extends QueuedJob {
 	/**
@@ -64,7 +64,7 @@ class SubjectExportJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	protected function run($argument): void {
 		$uuid = '';

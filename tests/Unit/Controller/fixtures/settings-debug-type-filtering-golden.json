@@ -1,0 +1,635 @@
+{
+    "testDebugTypeFilteringMatchesTheRecording every search answers its own set": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
+            },
+            {
+                "resolver.slugOrNull": [
+                    "stackiq",
+                    []
+                ]
+            },
+            {
+                "objectService.setRegister": [
+                    "voorzieningen"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "organisation"
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database"
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "samenwerking"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "community"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "samenwerking",
+                            "community"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "container.get": "OCP\\IDBConnection"
+            },
+            {
+                "connection.getQueryBuilder": []
+            },
+            {
+                "qb.select": [
+                    "o.id",
+                    "o.name",
+                    "o.object"
+                ]
+            },
+            {
+                "qb.from": [
+                    "openregister_objects",
+                    "o"
+                ]
+            },
+            {
+                "qb.createNamedParameter": [
+                    "%Samenwerking%",
+                    2,
+                    null
+                ]
+            },
+            {
+                "expr.like": [
+                    "o.name",
+                    ":p14",
+                    null
+                ]
+            },
+            {
+                "qb.where": [
+                    "like(o.name,:p14,)"
+                ]
+            },
+            {
+                "qb.createNamedParameter": [
+                    "%Community%",
+                    2,
+                    null
+                ]
+            },
+            {
+                "expr.like": [
+                    "o.name",
+                    ":p17",
+                    null
+                ]
+            },
+            {
+                "qb.orWhere": [
+                    "like(o.name,:p17,)"
+                ]
+            },
+            {
+                "qb.executeQuery": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "all_organizations": {
+                "count": 2,
+                "organizations": [
+                    {
+                        "id": 1,
+                        "name": "Alpha",
+                        "type": "samenwerking",
+                        "object_data": {
+                            "type": "samenwerking",
+                            "x": 1
+                        }
+                    },
+                    {
+                        "id": 2,
+                        "name": null,
+                        "type": "NO TYPE",
+                        "object_data": {
+                            "name": "untyped"
+                        }
+                    }
+                ]
+            },
+            "type_samenwerking": {
+                "count": 1,
+                "organizations": [
+                    {
+                        "id": 3,
+                        "name": "Beta",
+                        "type": "samenwerking"
+                    }
+                ]
+            },
+            "type_community": {
+                "count": 2,
+                "organizations": [
+                    {
+                        "id": 4,
+                        "name": "Gamma",
+                        "type": "NO TYPE"
+                    },
+                    {
+                        "id": 5,
+                        "name": "Delta",
+                        "type": "community"
+                    }
+                ]
+            },
+            "type_both": {
+                "count": 1,
+                "organizations": [
+                    {
+                        "id": 6,
+                        "name": "Eps",
+                        "type": [
+                            "a",
+                            "b"
+                        ]
+                    }
+                ]
+            },
+            "direct_database_query": {
+                "count": 3,
+                "organizations": [
+                    {
+                        "id": 7,
+                        "name": "Samenwerking A",
+                        "type": "samenwerking",
+                        "object_json": "{\"type\":\"samenwerking\"}"
+                    },
+                    {
+                        "id": "8",
+                        "name": "Community B",
+                        "type": "NO TYPE",
+                        "object_json": "{\"name\":\"b\"}"
+                    },
+                    {
+                        "id": 9,
+                        "name": "Broken",
+                        "type": "NO TYPE",
+                        "object_json": "not json"
+                    }
+                ]
+            }
+        }
+    },
+    "testDebugTypeFilteringMatchesTheRecording no results anywhere": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
+            },
+            {
+                "resolver.slugOrNull": [
+                    "stackiq",
+                    []
+                ]
+            },
+            {
+                "objectService.setRegister": [
+                    "stackiq"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "organisation"
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database"
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "samenwerking"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "community"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "samenwerking",
+                            "community"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "container.get": "OCP\\IDBConnection"
+            },
+            {
+                "connection.getQueryBuilder": []
+            },
+            {
+                "qb.select": [
+                    "o.id",
+                    "o.name",
+                    "o.object"
+                ]
+            },
+            {
+                "qb.from": [
+                    "openregister_objects",
+                    "o"
+                ]
+            },
+            {
+                "qb.createNamedParameter": [
+                    "%Samenwerking%",
+                    2,
+                    null
+                ]
+            },
+            {
+                "expr.like": [
+                    "o.name",
+                    ":p14",
+                    null
+                ]
+            },
+            {
+                "qb.where": [
+                    "like(o.name,:p14,)"
+                ]
+            },
+            {
+                "qb.createNamedParameter": [
+                    "%Community%",
+                    2,
+                    null
+                ]
+            },
+            {
+                "expr.like": [
+                    "o.name",
+                    ":p17",
+                    null
+                ]
+            },
+            {
+                "qb.orWhere": [
+                    "like(o.name,:p17,)"
+                ]
+            },
+            {
+                "qb.executeQuery": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "all_organizations": {
+                "count": 0,
+                "organizations": []
+            },
+            "type_samenwerking": {
+                "count": 0,
+                "organizations": []
+            },
+            "type_community": {
+                "count": 0,
+                "organizations": []
+            },
+            "type_both": {
+                "count": 0,
+                "organizations": []
+            },
+            "direct_database_query": {
+                "count": 0,
+                "organizations": []
+            }
+        }
+    },
+    "testDebugTypeFilteringMatchesTheRecording register absent": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
+            },
+            {
+                "resolver.slugOrNull": [
+                    "stackiq",
+                    []
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "No stackiq register on this instance under any of its known slugs."
+        }
+    },
+    "testDebugTypeFilteringMatchesTheRecording the database lookup throws": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
+            },
+            {
+                "resolver.slugOrNull": [
+                    "stackiq",
+                    []
+                ]
+            },
+            {
+                "objectService.setRegister": [
+                    "stackiq"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "organisation"
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database"
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "samenwerking"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "community"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database",
+                        "type": [
+                            "samenwerking",
+                            "community"
+                        ]
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "container.get": "OCP\\IDBConnection"
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "no connection",
+            "trace": "(trace string)"
+        }
+    },
+    "testDebugTypeFilteringMatchesTheRecording the search throws": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
+            },
+            {
+                "resolver.slugOrNull": [
+                    "stackiq",
+                    []
+                ]
+            },
+            {
+                "objectService.setRegister": [
+                    "stackiq"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "organisation"
+                ]
+            },
+            {
+                "objectService.searchObjectsPaginated": [
+                    {
+                        "_limit": 10,
+                        "_page": 1,
+                        "_source": "database"
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "search exploded",
+            "trace": "(trace string)"
+        }
+    },
+    "testDebugTypeFilteringMatchesTheRecording the slug resolver throws": {
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
+            },
+            {
+                "resolver.slugOrNull": [
+                    "stackiq",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "resolver down",
+            "trace": "(trace string)"
+        }
+    }
+}

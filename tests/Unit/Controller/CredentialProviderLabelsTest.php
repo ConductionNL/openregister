@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
+ * @spec openspec/specs/credential-broker/spec.md
  */
 
 declare(strict_types=1);

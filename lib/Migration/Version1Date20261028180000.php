@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
+ * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds `sender_name` to `openregister_email_links`.
  *
- * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
+ * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
  */
 class Version1Date20261028180000 extends SimpleMigrationStep {
 
@@ -50,7 +50,7 @@ class Version1Date20261028180000 extends SimpleMigrationStep {
 	 * @return ISchemaWrapper|null The schema.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
-	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();

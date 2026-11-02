@@ -365,7 +365,7 @@ class ViewService {
 	 * @throws Exception If deletion fails
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
-	 * @spec openspec/changes/saved-view-delete-owner-only/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
 	 */
 	public function delete(int|string $id, ViewerReach $reach): void {
 		try {

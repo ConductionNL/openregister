@@ -847,7 +847,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return array<int, string> The candidate scopes, narrowest first.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
 	private function dispatchScopes(array $spec, ObjectEntity $object, string $schemaSlug): array {
 		$scopes = [];
@@ -884,7 +884,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	private function runOutboundTransports(RuleFiring $firing): void {
 		$transports = ($firing->spec['transports'] ?? null);
@@ -931,7 +931,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string|null Why it did not land, or null when it did.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	private function runOneOutboundTransport(RuleFiring $firing, array $transport): ?string {
 		$handler = (string)($transport['handler'] ?? '');
@@ -973,7 +973,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string The event identifier.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	private function newEventId(): string {
 		try {
@@ -1704,7 +1704,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string|null Why the call did not land, or null when it did (or was deliberately skipped).
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	private function emitWebhook(RuleFiring $firing): ?string {
 		$hook = ($firing->spec['webhook'] ?? null);
@@ -2132,7 +2132,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return array<string, array<int, string>> Role name to assigned Nextcloud group ids.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
 	private function roleGroupsFor(Schema $schema): array {
 		try {
@@ -2173,7 +2173,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
 	private function recordUnresolvedRecipients(
 		string $ruleId,
@@ -3072,7 +3072,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return int How many people the party path reached.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */

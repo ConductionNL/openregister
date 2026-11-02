@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ class FlowMessagePreview {
 	 *
 	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function messages(string $channel, array $config, array $items, array $context): array {
 		$titleKey = 'title';

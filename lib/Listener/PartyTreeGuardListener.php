@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+ * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
  */
 class PartyTreeGuardListener implements IEventListener {
 
@@ -66,7 +66,7 @@ class PartyTreeGuardListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function handle(Event $event): void {
 		// The two save events are handled separately rather than through one
@@ -103,7 +103,7 @@ class PartyTreeGuardListener implements IEventListener {
 	 *
 	 * @return array<string, mixed>|null The error the event carries, or null.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	private function refusalFor(ObjectEntity $object): ?array {
 		$definition = $this->parties->definitionFor(party: $object);

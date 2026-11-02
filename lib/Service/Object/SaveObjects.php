@@ -979,7 +979,7 @@ class SaveObjects {
 	 *
 	 * @return array{0: array<string, mixed>, 1: string|null} The row to write, and a refusal or null.
 	 *
-	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
 	 */
 	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
 		// A system operation (cron, runAsSystem, the example-set installer) is trusted here as

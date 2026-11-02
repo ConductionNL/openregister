@@ -6,7 +6,7 @@
  *
  * The task key becomes unique, unless stored keys already collide.
  *
- * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
+ * @spec openspec/specs/flow-tasks/spec.md
  */
 
 declare(strict_types=1);
@@ -21,7 +21,7 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
+ * @spec openspec/specs/flow-tasks/spec.md
  */
 class Version1Date20261024120000Test extends TestCase {
 	use SchemaTableMockTrait;

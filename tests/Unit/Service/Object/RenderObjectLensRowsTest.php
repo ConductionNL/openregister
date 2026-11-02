@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/list-fast-path-resolves-lenses/specs/object-lenses/spec.md
+ * @spec openspec/specs/object-lenses/spec.md
  */
 
 declare(strict_types=1);

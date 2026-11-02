@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
  * decision already taken, which is why a tracer that throws is caught by the
  * caller and costs a trace rather than a save.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class ConditionTracer {
 
@@ -96,7 +96,7 @@ final class ConditionTracer {
 	 *   function on an immutable value object, not a collaborator: injecting the value
 	 *   object's own formatter would be a seam with exactly one possible implementation.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function trace(mixed $condition, array $document, string $verdict, ?string $message = null): RuleTrace {
 		if ($verdict === RuleVocabulary::VERDICT_FIRED || is_array($condition) === false || $condition === []) {
@@ -132,7 +132,7 @@ final class ConditionTracer {
 	 *
 	 * @return array{operand: string, value: mixed}|null The deciding operand, or null when none is nameable.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function decidingOperand(array $node, array $document): ?array {
 		if (count($node) !== 1) {
@@ -177,7 +177,7 @@ final class ConditionTracer {
 	 *
 	 * @return array{operand: string, value: mixed}|null The deciding operand, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function decidingClauseOfAnd(array $clauses, array $document): ?array {
 		foreach ($clauses as $clause) {
@@ -202,7 +202,7 @@ final class ConditionTracer {
 	 *
 	 * @return array{operand: string, value: mixed}|null The deciding operand, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function decidingClauseOfOr(array $clauses, array $document): ?array {
 		if ($clauses === []) {
@@ -219,7 +219,7 @@ final class ConditionTracer {
 	 *
 	 * @return mixed The wrapped clause.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function negated(mixed $args): mixed {
 		if (is_array($args) === true && array_is_list($args) === true && $args !== []) {
@@ -237,7 +237,7 @@ final class ConditionTracer {
 	 *
 	 * @return array{operand: string, value: mixed}|null The deciding operand, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function operandOf(mixed $node, array $document): ?array {
 		if (is_array($node) === false || $node === []) {
@@ -259,7 +259,7 @@ final class ConditionTracer {
 	 *
 	 * @return array{operand: string, value: mixed}|null The reference and its value, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function firstReference(array $args, array $document): ?array {
 		foreach ($args as $arg) {
@@ -300,7 +300,7 @@ final class ConditionTracer {
 	 *
 	 * @return string|null The path, or null when the operand names no property.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function pathOf(mixed $reference): ?string {
 		$path = $reference;
@@ -323,7 +323,7 @@ final class ConditionTracer {
 	 *
 	 * @return mixed The value at the path, or null when the path is absent.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function read(string $path, array $document): mixed {
 		$cursor = $document;

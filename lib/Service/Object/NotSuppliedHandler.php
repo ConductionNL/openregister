@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -65,7 +65,7 @@ class NotSuppliedHandler {
 	 *
 	 * @return array<string, string> Property names mapped to reason codes.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function declared(array $object): array {
 		$record = ($object[Schema::NOT_SUPPLIED_KEY] ?? null);
@@ -100,7 +100,7 @@ class NotSuppliedHandler {
 	 *
 	 * @return array<int, array{property: string, code: string, message: string}>
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function validate(array $object, Schema $schema): array {
 		if (array_key_exists(Schema::NOT_SUPPLIED_KEY, $object) === false) {
@@ -159,7 +159,7 @@ class NotSuppliedHandler {
 	 *
 	 * @return array{property: string, code: string, message: string}|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function refuseEntry(
 		string $property,
@@ -221,7 +221,7 @@ class NotSuppliedHandler {
 	 *
 	 * @return boolean Whether a value is there.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function carriesAValue(array $object, string $property): bool {
 		if (array_key_exists($property, $object) === false) {
@@ -241,7 +241,7 @@ class NotSuppliedHandler {
 	 *
 	 * @return array The body to validate.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function stripForValidation(array $object): array {
 		$declared = $this->declared(object: $object);
@@ -272,7 +272,7 @@ class NotSuppliedHandler {
 	 *
 	 * @return object The schema object to validate against.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function excuse(object $schemaObject, array $declared): object {
 		if ($declared === []) {

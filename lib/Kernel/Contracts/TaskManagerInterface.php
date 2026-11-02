@@ -164,7 +164,7 @@ interface TaskManagerInterface {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\TaskValidationException When a field is unknown or invalid.
 	 *
-	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
 	public function edit(string $uuid, array $changes, ?string $actor): TaskInterface;
 

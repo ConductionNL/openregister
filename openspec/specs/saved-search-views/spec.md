@@ -294,3 +294,95 @@ A schema that declares `x-openregister-view: {"view": "<view id or uuid>"}` SHAL
 - **WHEN** a client posts an object to it
 - **THEN** the API answers 405
 - @e2e exclude {asserted through ObjectService in tests/Unit/Service/ViewBackedTypeTest.php testCreatingAnObjectOfTheTypeIsRefusedAs405}
+
+### Requirement: Alert recipients must be able to read the view
+
+Saving a view's alert SHALL refuse a new recipient the caller may not name.
+The owner and an administrator MAY name a user the view reaches (owner,
+administrator, member of a shared group, or anyone when the view is public)
+and a group the view is shared with (or any group when public). A member with
+write access MAY name only themselves. Recipients already on the stored alert
+SHALL NOT be judged again. A refusal SHALL answer 403 with
+`field: alert.recipients` and the refused recipients, and SHALL write nothing.
+
+#### Scenario: the owner names someone who cannot read the view
+- GIVEN a private view shared with group finance
+- WHEN the owner saves an alert naming `user:reader` (in finance) and `user:stranger` (not)
+- THEN the save is refused with 403 naming `user:stranger`
+
+#### Scenario: a write member names somebody else
+- GIVEN a member with write access through group sales
+- WHEN they save an alert naming anyone other than themselves
+- THEN the save is refused with 403 naming those recipients
+
+#### Scenario: a write member changes the owner's threshold
+- GIVEN an alert the owner set up for `user:owner` and `finance`
+- WHEN a write member saves it with a new threshold and the same recipients
+- THEN the save succeeds
+
+### Requirement: Only the owner or an administrator deletes a view
+
+`DELETE /api/views/{id}` SHALL delete the view only when the caller owns it or
+administers the instance, and SHALL check this before anything is deleted. Any
+other caller, including one who may read the view because it is public or
+shared with their group, SHALL get the 404 of a missing view and the view SHALL
+remain.
+
+#### Scenario: a reader of a public view cannot delete it
+
+- **GIVEN** a public view owned by A
+- **WHEN** user B sends `DELETE /api/views/{id}`
+- **THEN** the response is 404 and the view still exists
+- @e2e exclude {guard, covered by tests/Unit/Service/ViewServiceDeleteTest.php}
+
+#### Scenario: a write member cannot delete a shared view
+
+- **GIVEN** a view owned by A shared `write` with group `desk`, and B in `desk`
+- **WHEN** B sends `DELETE /api/views/{id}`
+- **THEN** the response is 404 and the view still exists
+- @e2e exclude {guard, covered by tests/Unit/Service/ViewServiceDeleteTest.php}
+
+#### Scenario: the owner deletes
+
+- **GIVEN** a view owned by A
+- **WHEN** A sends `DELETE /api/views/{id}`
+- **THEN** the response is 204 and the view is gone
+- @e2e exclude {covered by tests/Unit/Service/ViewServiceDeleteTest.php}
+
+### Requirement: A view can be shared with users in read or write mode
+
+`sharedWith` SHALL accept entries `{user, mode}` beside `{group, mode}`. A user
+named in an entry SHALL get that mode's access when listing and reading the
+view. An entry naming both `user` and `group`, neither, a user that does not
+exist, or a user twice SHALL be refused with 400 naming the entry. Only the
+owner or an administrator changes `sharedWith`, as for groups.
+
+#### Scenario: a named user sees the view read-only
+
+- **GIVEN** a view owned by A with `sharedWith: [{ user: "fatma", mode: "read" }]`
+- **WHEN** fatma lists views
+- **THEN** the view is returned with `@self.access` `read`
+- @e2e exclude {covered by ViewShareResolver and controller unit tests}
+
+#### Scenario: a user share in write mode may update the query, not the audience
+
+- **GIVEN** the same view shared `{ user: "fatma", mode: "write" }`
+- **WHEN** fatma PATCHes `query`, then PATCHes `sharedWith`
+- **THEN** the first succeeds and the second is 403
+- @e2e exclude {guard, covered by controller unit tests}
+
+#### Scenario: an unknown user is refused
+
+- **GIVEN** the owner
+- **WHEN** the owner PATCHes `sharedWith: [{ user: "nobody", mode: "read" }]`
+- **THEN** the response is 400 naming the entry and `sharedWith` is unchanged
+- @e2e exclude {validation, covered by ViewShareResolver unit tests}
+
+### Requirement: Listing views never includes another user's private view (REQ-VIEW-LIST-01)
+Listing views SHALL return only the caller's own views, views shared with the caller or a group they belong to, and public views. This SHALL hold for an administrator too. An administrator's access to another user's view by id is not changed by this requirement.
+
+#### Scenario: an administrator's list
+- **GIVEN** user A's view with no shares and `isPublic` false
+- **WHEN** user B, who is in the admin group, lists views
+- **THEN** A's view is absent from the list
+- @e2e exclude {list query, covered by tests/Unit/Db/ViewMapperListsOnlyReachableViewsTest.php}

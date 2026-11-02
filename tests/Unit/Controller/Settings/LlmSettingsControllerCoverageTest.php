@@ -65,11 +65,11 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ChatService')
 			->willReturn($chatServiceMock);
 
-		// This will throw \Error due to named param mismatch bug in controller
-		// The controller uses testMessage: but ChatService expects $_testMessage.
-		// Verify the Error propagates (not caught by catch(Exception)).
-		$this->expectException(\Error::class);
-		$this->controller->testChat();
+		$chatServiceMock->method('testChat')->willReturn(['success' => true]);
+
+		$result = $this->controller->testChat();
+
+		$this->assertSame(200, $result->getStatus());
 	}
 
 	// =========================================================================
@@ -121,18 +121,6 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 		$data = $result->getData();
 		$this->assertFalse($data['has_vectors']);
 		$this->assertFalse($data['mismatch']);
-	}
-
-	// =========================================================================
-	// getVectorStats — response structure
-	// =========================================================================
-
-	public function testGetVectorStatsResponseContainsExpectedKeys(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
-	}
-
-	public function testGetVectorStatsExceptionIncludesTrace(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
 	}
 
 	// =========================================================================

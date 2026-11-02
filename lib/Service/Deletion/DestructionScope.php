@@ -144,7 +144,7 @@ final class DestructionScope {
 	 *
 	 * @return array{scope: array<int, string>, unknown: array<int, string>} Known members and the rest.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public static function declaredOn(?Schema $schema): array {
 		if ($schema === null) {
@@ -192,7 +192,7 @@ final class DestructionScope {
 	 *
 	 * @return bool True when the row is evidence.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public static function isEvidence(?string $action): bool {
 		return in_array(needle: (string)$action, haystack: self::EVIDENCE_ACTIONS, strict: true);

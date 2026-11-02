@@ -180,7 +180,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
 	/**
 	 * Every object an install or a refresh writes is caused by the set, as an import with the set as its run, so a
@@ -188,7 +188,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-writes-name-their-cause/specs/example-sets/spec.md#requirement-an-example-sets-writes-are-caused-as-an-import-of-that-set
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-example-sets-writes-are-caused-as-an-import-of-that-set
 	 */
 	public function testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
