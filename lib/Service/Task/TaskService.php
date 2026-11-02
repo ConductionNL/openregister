@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -94,7 +95,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
-class TaskService {
+class TaskService implements TaskManagerInterface {
 
 	/**
 	 * Constructor.
@@ -157,6 +158,8 @@ class TaskService {
 	 *                                         not. Nullable for hand-built
 	 *                                         test services; absent, tasks are
 	 *                                         written as given.
+	 * @param TaskEdit|null $editor Validates and applies an edit of a
+	 *                              task's own fields; absent, a plain one.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -173,6 +176,7 @@ class TaskService {
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 		private readonly ?TaskSubjectAccessGuard $subjects = null,
 		private readonly ?TaskSubjectLocator $locator = null,
+		private readonly ?TaskEdit $editor = null,
 	) {
 
 	}//end __construct()
@@ -406,6 +410,46 @@ class TaskService {
 			}
 		);
 	}//end offer()
+
+	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * Authorization runs first (the assignee, a pool member or an
+	 * administrator; a denial is audited and writes nothing), then the
+	 * values are validated, then the change and its audit entry are written
+	 * in one transaction. An edit that changes nothing writes nothing.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param array<string, mixed> $changes The new values by field.
+	 * @param string|null $actor The editing identity.
+	 *
+	 * @return Task The task as it now stands.
+	 *
+	 * @throws TaskValidationException When a field is unknown or invalid.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	public function edit(string $uuid, array $changes, ?string $actor): Task {
+		$task = $this->openTaskFor(verb: 'edit', uuid: $uuid, actor: $actor);
+		$changed = ($this->editor ?? new TaskEdit())->apply(task: $task, changes: $changes);
+		if ($changed === []) {
+			return $task;
+		}
+
+		return $this->transactional(
+			mutation: function () use ($task, $changed, $actor): Task {
+				$persisted = $this->persistOpen(task: $task);
+				$this->appendAudit(
+					task: $persisted,
+					action: 'edit',
+					actor: $actor,
+					reason: sprintf('Changed: %s.', implode(', ', $changed))
+				);
+
+				return $persisted;
+			}
+		);
+	}//end edit()
 
 	/**
 	 * Claim: assign IF still unassigned — the database decides the race.
@@ -801,7 +845,10 @@ class TaskService {
 	 *
 	 * Refused on a task that is not completed with an approving outcome, and
 	 * refused AGAIN on one already consumed — the second refusal is the
-	 * whole point.
+	 * whole point. An outcome approves only when it is in the task's declared
+	 * `approvingOutcomes`, or in {@see TaskState::APPROVING_OUTCOMES} when the
+	 * task declares none; a completion that neither approves nor rejects is
+	 * refused as undecided.
 	 *
 	 * @param string $uuid The decided task's uuid.
 	 * @param string $source The consuming identity recorded as actor.
@@ -812,22 +859,11 @@ class TaskService {
 	 * @throws TaskConflictException When not an unconsumed approving decision.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public function consume(string $uuid, string $source, string $reason): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
-
-		$approved = ((string)$task->getState() === Task::STATE_COMPLETED
-			&& TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === false);
-		if ($approved === false) {
-			throw new TaskConflictException(
-				message: sprintf(
-					"Verb 'consume' refused: task '%s' is not an approving decision (state '%s', outcome '%s').",
-					$uuid,
-					(string)$task->getState(),
-					(string)$task->getOutcome()
-				)
-			);
-		}
+		$this->assertApprovingDecision(task: $task);
 
 		$metadata = ($task->getMetadata() ?? []);
 		if (trim((string)($metadata['consumedAt'] ?? '')) !== '') {
@@ -861,6 +897,42 @@ class TaskService {
 
 		return $persisted;
 	}//end consume()
+
+	/**
+	 * Refuse anything but a completed task with an approving outcome.
+	 *
+	 * @param Task $task The decided task.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskConflictException When the task is open, rejected or undecided.
+	 *
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 */
+	private function assertApprovingDecision(Task $task): void {
+		$completed = ((string)$task->getState() === Task::STATE_COMPLETED);
+		if ($completed === false || TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: task '%s' is not an approving decision (state '%s', outcome '%s').",
+					(string)$task->getUuid(),
+					(string)$task->getState(),
+					(string)$task->getOutcome()
+				)
+			);
+		}
+
+		$approving = TaskState::approvingSetOrDefault(declared: (($task->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
+		if (TaskState::isApprovingOutcome(outcome: $task->getOutcome(), approving: $approving) === false) {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: task '%s' is undecided: outcome '%s' neither approves nor rejects.",
+					(string)$task->getUuid(),
+					(string)$task->getOutcome()
+				)
+			);
+		}
+	}//end assertApprovingDecision()
 
 	/**
 	 * Enable a position: the sequence's own promotion verb.
@@ -1015,6 +1087,27 @@ class TaskService {
 	public function get(string $uuid): Task {
 		return $this->tasks->findByUuid(uuid: $uuid);
 	}//end get()
+
+	/**
+	 * Every task carrying this external key, terminal ones included.
+	 *
+	 * A task added once per thing is looked up by its key before it is added
+	 * again; a completed or cancelled one still counts as added.
+	 *
+	 * @param string $key The external key.
+	 *
+	 * @return array<int, Task> The tasks; empty for a blank key.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function findByKey(string $key): array {
+		$key = trim($key);
+		if ($key === '') {
+			return [];
+		}
+
+		return $this->tasks->findByKey(key: $key);
+	}//end findByKey()
 
 	/**
 	 * Resolve, authorize and audit a verb's task WITHOUT running the verb.

@@ -20,7 +20,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ use OCP\AppFramework\Db\Entity;
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfile extends Entity implements JsonSerializable {
 
@@ -224,7 +224,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, string> The field names, in the profile's order.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getFieldsArray(): array {
 		if ($this->fields === null || $this->fields === '') {
@@ -244,7 +244,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The filters.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getFiltersArray(): array {
 		if ($this->filters === null || $this->filters === '') {
@@ -269,7 +269,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the profile is a whole-set extract.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function isWholeSet(): bool {
 		return ($this->wholeSet === true && $this->getFiltersArray() === []);
@@ -295,7 +295,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The published shape.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

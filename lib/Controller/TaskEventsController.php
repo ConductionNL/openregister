@@ -24,7 +24,7 @@
  * create, link, unlink, destroy. It is deliberately NOT index/create/
  * update/destroy, because there is no event UPDATE anywhere behind the
  * object leaf either. Neither `CalendarLinkService` nor
- * {@see \OCA\OpenRegister\Service\CalendarEventService} has a method that
+ * {@see \OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface} has a method that
  * rewrites a VEVENT, so an `update` verb here would have to grow its own
  * event handling, which is the one thing this controller must not do. The
  * pair that DOES exist, `link` and `unlink`, is what a task page needs
@@ -61,11 +61,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
-use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -100,10 +100,10 @@ class TaskEventsController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskService $tasks Resolves a task by uuid.
+	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param CalendarLinkService $links The link-table layer, uuid-anchored.
-	 * @param CalendarEventService $events The VEVENT layer, for the legacy
+	 * @param ObjectCalendarEventsInterface $events The VEVENT layer, for the legacy
 	 *                                     X-OPENREGISTER-* strip on destroy.
 	 * @param IUserSession $userSession Names the acting identity.
 	 *
@@ -112,10 +112,10 @@ class TaskEventsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskService $tasks,
+		private readonly TaskManagerInterface $tasks,
 		private readonly TaskAuthorizationService $authorization,
 		private readonly CalendarLinkService $links,
-		private readonly CalendarEventService $events,
+		private readonly ObjectCalendarEventsInterface $events,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -354,11 +354,11 @@ class TaskEventsController extends Controller {
 	 *
 	 * @param string $uuid The task uuid.
 	 *
-	 * @return Task|null The readable task, or null.
+	 * @return TaskInterface|null The readable task, or null.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function readableTask(string $uuid): ?Task {
+	private function readableTask(string $uuid): ?TaskInterface {
 		try {
 			$task = $this->tasks->get(uuid: $uuid);
 		} catch (Throwable) {

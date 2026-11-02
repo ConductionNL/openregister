@@ -332,6 +332,48 @@ class FlowMessagingServiceTest extends TestCase {
 		return $notification;
 	}//end fluentNotification()
 
+	// ---- Preview (flow dry-run) ---------------------------------------------
+
+	/**
+	 * A preview composes each item's recipients, subject and body and sends nothing.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 *
+	 * @return void
+	 */
+	public function testPreviewComposesTheMessageAndSendsNothing(): void {
+		$this->notificationManager->expects($this->never())->method('notify');
+		$this->mailer->expects($this->never())->method('send');
+
+		$messages = $this->makeService()->previewMessages(
+			channel: 'email',
+			config: ['recipients' => ['bob', 'carol'], 'subject' => 'About {{ name }}', 'body' => 'Hello'],
+			items: $this->itemsOf(['name' => 'Case 7']),
+			context: $this->contextFor()
+		);
+
+		self::assertSame([['channel' => 'email', 'to' => ['bob', 'carol'], 'subject' => 'About Case 7', 'body' => 'Hello']], $messages);
+	}//end testPreviewComposesTheMessageAndSendsNothing()
+
+	/**
+	 * A Talk preview names the conversation and posts nothing.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 *
+	 * @return void
+	 */
+	public function testTalkPreviewNamesTheConversationAndPostsNothing(): void {
+		$messages = $this->makeService()->previewMessages(
+			channel: 'talk',
+			config: ['conversation' => 'abc123', 'message' => 'News on {{ name }}'],
+			items: $this->itemsOf(['name' => 'Case 7']),
+			context: $this->contextFor()
+		);
+
+		self::assertSame([['channel' => 'talk', 'to' => ['abc123'], 'subject' => '', 'body' => 'News on Case 7']], $messages);
+		self::assertSame([], $this->talkSender->posts);
+	}//end testTalkPreviewNamesTheConversationAndPostsNothing()
+
 	// ---- Attribution -------------------------------------------------------
 
 	public function testMissingActingUserFailsTheStepAndSendsNothing(): void {

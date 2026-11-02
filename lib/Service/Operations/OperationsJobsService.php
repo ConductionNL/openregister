@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
  * the run that holds it, so the administrator learns "it is already going" and
  * not merely "no".
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+ * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
  */
 class OperationsJobsService {
 
@@ -96,7 +96,7 @@ class OperationsJobsService {
 	 *
 	 * @return array<string, mixed> The rows, and how many there are.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function runs(
 		?string $jobClass = null,
@@ -141,7 +141,7 @@ class OperationsJobsService {
 	 *
 	 * @throws JobRunRefusedException When the job is unknown, or already running.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function runNow(string $jobClass, string $actor): array {
 		$class = (self::MAINTENANCE_ACTIONS[$jobClass] ?? $jobClass);
@@ -199,7 +199,7 @@ class OperationsJobsService {
 	 *
 	 * @return array<string, mixed> The schedule.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function schedule(string $jobClass): array {
 		return $this->schedules->describe(
@@ -220,7 +220,7 @@ class OperationsJobsService {
 	 *
 	 * @return array<string, mixed> The schedule now in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function administerSchedule(
 		string $jobClass,
@@ -248,7 +248,7 @@ class OperationsJobsService {
 	 *
 	 * @return array<string, mixed> The alerts, and the threshold in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function alerts(array $jobClasses): array {
 		return [

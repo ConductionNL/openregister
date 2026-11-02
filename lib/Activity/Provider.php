@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Activity;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\Activity\Exceptions\UnknownActivityException;
 use OCP\Activity\IEvent;
 use OCP\Activity\IProvider;
@@ -84,7 +84,7 @@ class Provider implements IProvider {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function parse($language, IEvent $event, ?IEvent $previousEvent = null): IEvent {
-		if ($event->getApp() !== Application::APP_ID) {
+		if ($event->getApp() !== AppIdentity::APP_ID) {
 			throw new UnknownActivityException();
 		}
 
@@ -92,7 +92,7 @@ class Provider implements IProvider {
 			throw new UnknownActivityException();
 		}
 
-		$l = $this->l10nFactory->get(Application::APP_ID, $language);
+		$l = $this->l10nFactory->get(AppIdentity::APP_ID, $language);
 		$params = $event->getSubjectParameters();
 
 		$this->subjectHandler->applySubjectText(
@@ -103,7 +103,7 @@ class Provider implements IProvider {
 
 		$event->setIcon(
 			$this->urlGenerator->getAbsoluteURL(
-				$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg')
+				$this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app-dark.svg')
 			)
 		);
 

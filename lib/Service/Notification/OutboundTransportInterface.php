@@ -67,7 +67,7 @@ interface OutboundTransportInterface {
 	 *
 	 * @return string|null Why it did not land, or null when it did.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	public function send(
 		ObjectEntity $object,

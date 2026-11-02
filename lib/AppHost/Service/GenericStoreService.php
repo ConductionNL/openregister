@@ -138,12 +138,19 @@ class GenericStoreService {
 	private const SEARCH_LIMIT = 50;
 
 	/**
+	 * The registry URL that names this instance's own register: the store is
+	 * read in-process through the object service, with no HTTP request.
+	 */
+	public const LOCAL_REGISTRY = 'local';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IClientService $clientService Nextcloud HTTP client factory.
 	 * @param IAppConfig $appConfig App config store (registry url / token / register).
 	 * @param LoggerInterface $logger PSR logger — server-side diagnostics only.
 	 * @param StorePublishRules $publishRules The pure body and outcome rules of publish().
+	 * @param LocalStoreRegistry|null $localRegistry Reads a `local` registry from this instance.
 	 *
 	 * @return void
 	 */
@@ -152,6 +159,7 @@ class GenericStoreService {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly StorePublishRules $publishRules = new StorePublishRules(),
+		private readonly ?LocalStoreRegistry $localRegistry = null,
 	) {
 	}//end __construct()
 
@@ -293,6 +301,14 @@ class GenericStoreService {
 			return ['outcome' => self::OUTCOME_TOO_LARGE, 'slug' => ''];
 		}
 
+		if ($this->isLocal(descriptor: $descriptor) === true) {
+			return $this->localRegistry?->write(
+				register: $this->registerSlug(descriptor: $descriptor),
+				schema: $descriptor->schema,
+				body: (array)json_decode($json, true)
+			) ?? ['outcome' => self::OUTCOME_UNREACHABLE, 'slug' => ''];
+		}
+
 		$response = $this->send(
 			descriptor: $descriptor,
 			method: 'POST',
@@ -355,6 +371,15 @@ class GenericStoreService {
 	 * @return array{outcome: string, results: array<int, mixed>}
 	 */
 	private function fetch(StoreDescriptor $descriptor, array $params): array {
+		if ($this->isLocal(descriptor: $descriptor) === true) {
+			return $this->localRegistry?->read(
+				register: $this->registerSlug(descriptor: $descriptor),
+				schema: $descriptor->schema,
+				params: $params,
+				limit: self::SEARCH_LIMIT
+			) ?? ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
+		}
+
 		$response = $this->send(descriptor: $descriptor, method: 'GET', options: ['query' => $params]);
 		if ($response === null) {
 			return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
@@ -370,6 +395,38 @@ class GenericStoreService {
 
 		return $this->decodeBody(descriptor: $descriptor, body: (string)$response->getBody());
 	}//end fetch()
+
+	/**
+	 * Whether the registry is this instance's own register.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	private function isLocal(StoreDescriptor $descriptor): bool {
+		return trim($this->registryUrl(descriptor: $descriptor)) === self::LOCAL_REGISTRY;
+	}//end isLocal()
+
+	/**
+	 * The register segment: the configured one, else the descriptor's default.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 *
+	 * @return string
+	 */
+	private function registerSlug(StoreDescriptor $descriptor): string {
+		$register = trim(
+			$this->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
+		);
+
+		if ($register === '') {
+			return $descriptor->defaultRegister;
+		}
+
+		return $register;
+	}//end registerSlug()
 
 	/**
 	 * Send one request to the remote store's objects API under the plane's
@@ -483,12 +540,7 @@ class GenericStoreService {
 	 */
 	private function buildUrl(StoreDescriptor $descriptor): string {
 		$base = rtrim(trim($this->registryUrl(descriptor: $descriptor)), '/');
-		$register = trim(
-			$this->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
-		);
-		if ($register === '') {
-			$register = $descriptor->defaultRegister;
-		}
+		$register = $this->registerSlug(descriptor: $descriptor);
 
 		return $base
 			. '/index.php/apps/openregister/api/objects/'

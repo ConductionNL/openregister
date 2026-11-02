@@ -202,6 +202,61 @@ class CalendarLinkServiceTest extends TestCase {
 		$this->service->unlinkEvent('obj-1', 'ev-legacy');
 	}
 
+	/**
+	 * A linked event lists the people invited, with their names and answers,
+	 * read from the event itself (DqZaakTaken Afspraken "Sanne de Vries, Uitgenodigd").
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function testALinkedEventListsItsInviteesWithTheirAnswers(): void {
+		$link = new CalendarLink();
+		$link->setObjectUuid('obj-1');
+		$link->setEventUid('ev-A');
+		$link->setEventUri('a.ics');
+		$link->setCalendarUri('personal');
+		$link->setCalendarId(7);
+		$link->setSummary('Toelichting');
+		$link->setDtstart(new DateTime('2026-10-14T08:00:00Z'));
+		$this->linkMapper->method('findByObjectUuid')->willReturn([$link]);
+		$this->calendarEventService->method('getEventsForObject')->willReturn([]);
+		$ics = str_replace(
+			'LOCATION:HQ',
+			"LOCATION:HQ\r\nATTENDEE;CN=\"Sanne de Vries\";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:sanne@demo.example",
+			$this->buildVevent('ev-A', 'Toelichting')
+		);
+		$this->calDavBackend->method('getCalendarsForUser')->willReturn([]);
+		$this->calDavBackend->method('getCalendarObject')->with(7, 'a.ics')->willReturn(['calendardata' => $ics]);
+
+		$events = $this->service->getLinkedEvents('obj-1');
+
+		$this->assertSame([['name' => 'Sanne de Vries', 'email' => 'sanne@demo.example', 'partstat' => 'needs-action']], $events[0]['attendees']);
+	}
+
+	/**
+	 * An event that cannot be read lists nobody, and the link still shows.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableLinkedEventListsNobody(): void {
+		$link = new CalendarLink();
+		$link->setObjectUuid('obj-1');
+		$link->setEventUid('ev-A');
+		$link->setEventUri('a.ics');
+		$link->setCalendarUri('personal');
+		$link->setCalendarId(7);
+		$this->linkMapper->method('findByObjectUuid')->willReturn([$link]);
+		$this->calendarEventService->method('getEventsForObject')->willReturn([]);
+		$this->calDavBackend->method('getCalendarsForUser')->willReturn([]);
+		$this->calDavBackend->method('getCalendarObject')->willReturn(null);
+
+		$events = $this->service->getLinkedEvents('obj-1');
+
+		$this->assertCount(1, $events);
+		$this->assertSame([], $events[0]['attendees']);
+	}
+
 	public function testGetLinkedEventsUnionAndDedupe(): void {
 		// Link-table row for ev-A on calendar 'personal'.
 		$link = new CalendarLink();

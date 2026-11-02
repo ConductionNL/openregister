@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use Throwable;
 
 /**
@@ -101,18 +102,27 @@ class ReadableAuditTrailLister {
 	private array $schemaCache = [];
 
 	/**
+	 * Masks explicit-reveal values in the rows, built on first use.
+	 *
+	 * @var ExplicitRevealTrailMasker|null
+	 */
+	private ?ExplicitRevealTrailMasker $revealMasker = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapper  $auditTrailMapper  Reads the candidate rows.
 	 * @param MagicMapper       $objectMapper      Resolves an entry's object across the magic tables.
 	 * @param SchemaMapper      $schemaMapper      Resolves the object's schema.
 	 * @param PermissionHandler $permissionHandler Decides whether the caller may read the object.
+	 * @param ReadEventVisibility $readEvents      Whether the caller may see who read an object.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly MagicMapper $objectMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
+		private readonly ReadEventVisibility $readEvents,
 	) {
 	}//end __construct()
 
@@ -162,6 +172,9 @@ class ReadableAuditTrailLister {
 
 		$this->schemaCache = [];
 
+		// Who read an object is shown only to the groups named for it.
+		$withReads = $this->readEvents->maySeeReadEvents(userId: $userId);
+
 		$results = [];
 		$found = 0;
 		$scanned = 0;
@@ -187,7 +200,8 @@ class ReadableAuditTrailLister {
 				batch: $batch,
 				readable: $this->readableUuids(userId: $userId, batch: $batch),
 				room: ($limit - $found),
-				results: $results
+				results: $results,
+				withReads: $withReads
 			);
 
 			$found += $taken['kept'];
@@ -230,10 +244,11 @@ class ReadableAuditTrailLister {
 	 * @param array<string, true> $readable The readable object uuids.
 	 * @param int                 $room     How many more rows the page may hold.
 	 * @param array               $results  The page so far, appended to in place.
+	 * @param bool                $withReads Whether read entries are given to this caller.
 	 *
 	 * @return array{consumed: int, kept: int} How many rows were walked and kept.
 	 */
-	private function takeReadable(array $batch, array $readable, int $room, array &$results): array {
+	private function takeReadable(array $batch, array $readable, int $room, array &$results, bool $withReads): array {
 		$consumed = 0;
 		$kept = 0;
 
@@ -242,6 +257,10 @@ class ReadableAuditTrailLister {
 
 			$objectUuid = $entry->getObjectUuid();
 			if ($objectUuid === null || isset($readable[$objectUuid]) === false) {
+				continue;
+			}
+
+			if ($withReads === false && $this->readEvents->isReadAction(action: $entry->getAction()) === true) {
 				continue;
 			}
 
@@ -397,7 +416,9 @@ class ReadableAuditTrailLister {
 	 * @return array The row, without the withheld fields.
 	 */
 	private function scopedRow(AuditTrail $entry): array {
-		$row = $entry->jsonSerialize();
+		// Explicit-reveal values leave masked, as on every trail route.
+		$this->revealMasker ??= new ExplicitRevealTrailMasker(schemaMapper: $this->schemaMapper);
+		$row = $this->revealMasker->mask(entries: [$entry->jsonSerialize()])[0];
 
 		foreach (self::WITHHELD_FIELDS as $field) {
 			unset($row[$field]);

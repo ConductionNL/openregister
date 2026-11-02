@@ -1726,7 +1726,7 @@ class SaveObject {
 	 *
 	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyExpressionDefaults(Schema $schema, array $data): array {
 		$properties = ($schema->getProperties() ?? []);
@@ -3746,7 +3746,7 @@ class SaveObject {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors saveObject()'s own RBAC flag.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function selfDataForUpdate(array $selfData, bool $_rbac): array {
 		if ($_rbac === true) {
@@ -4497,13 +4497,14 @@ class SaveObject {
 		);
 
 		// A property the writer may not read was stripped from what they were
-		// shown, so omitting it is not a request to clear it: it is carried
-		// forward the same way (openregister#4170).
+		// shown, so omitting it is not a request to clear it (openregister#4170);
+		// one they may not update cannot be cleared by omission either, since that
+		// is the write the property rule refuses. Both are carried forward.
 		$omittedWriteOnly = array_values(
 			array_unique(
 				array_merge(
 					$omittedWriteOnly,
-					$this->propertyRbacHandler->collectOmittedUnreadableProperties(
+					$this->propertyRbacHandler->collectOmittedProtectedProperties(
 						schema: $schema,
 						incoming: $data,
 						stored: ($oldData ?? [])

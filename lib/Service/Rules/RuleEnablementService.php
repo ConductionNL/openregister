@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Switching a rule reaches the four
  *   places a rule is declared plus the audit entry; each collaborator owns one of them.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleEnablementService {
 
@@ -95,7 +95,7 @@ final class RuleEnablementService {
 	 *
 	 * @return array{ok: bool, rule?: array<string, mixed>, audit?: array<string, mixed>, error?: array{code: string, message: string}} The outcome.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array {
 		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
@@ -138,7 +138,7 @@ final class RuleEnablementService {
 	 *
 	 * @return Schema The schema as it now stands.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function write(Schema $schema, RuleDescriptor $rule, bool $enabled): Schema {
 		if ($rule->getKind() === RuleVocabulary::KIND_FLOW) {

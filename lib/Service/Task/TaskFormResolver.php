@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FormLinkMapper;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCP\IL10N;
 use Throwable;
@@ -113,13 +114,13 @@ class TaskFormResolver {
 	 * unresolvable declaration is a form with `state` unresolvable and an
 	 * `error` naming the flow and the version: never an empty field list.
 	 *
-	 * @param Task $task The task.
+	 * @param TaskInterface $task The task.
 	 *
 	 * @return array{form: array<string, mixed>|null, requireChecklist: bool} The description.
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
 	 */
-	public function describe(Task $task): array {
+	public function describe(TaskInterface $task): array {
 		try {
 			$declaration = $this->declarationOf(task: $task);
 		} catch (UnexpectedValueException $unresolvable) {
@@ -154,13 +155,13 @@ class TaskFormResolver {
 	 * (task-expiry-and-outcomes: the behaviours are the task's contract,
 	 * not the form's).
 	 *
-	 * @param Task $task The task.
+	 * @param TaskInterface $task The task.
 	 *
 	 * @return array<string, string|null> expiresAt, onTimeout and onReject.
 	 *
 	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
 	 */
-	private function behavioursOf(Task $task): array {
+	private function behavioursOf(TaskInterface $task): array {
 		return [
 			'expiresAt' => $task->getExpiresAt()?->format('c'),
 			'onTimeout' => $task->getOnTimeout(),
@@ -171,7 +172,7 @@ class TaskFormResolver {
 	/**
 	 * The declaration a task resolves to: pinned version, or its own record.
 	 *
-	 * @param Task $task The task.
+	 * @param TaskInterface $task The task.
 	 *
 	 * @return TaskForm The declaration.
 	 *
@@ -179,7 +180,7 @@ class TaskFormResolver {
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
 	 */
-	public function declarationOf(Task $task): TaskForm {
+	public function declarationOf(TaskInterface $task): TaskForm {
 		$runUuid = trim((string)$task->getRunUuid());
 		if ($runUuid === '') {
 			// A run-less task is first-class: its record is its declaration.
@@ -309,13 +310,13 @@ class TaskFormResolver {
 	 * when the Forms app is gone or the form was deleted.
 	 *
 	 * @param TaskForm $declaration The declaration.
-	 * @param Task $task The task, for its subject anchor.
+	 * @param TaskInterface $task The task, for its subject anchor.
 	 *
 	 * @return array<string, mixed> The description.
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
 	 */
-	private function describeExternal(TaskForm $declaration, Task $task): array {
+	private function describeExternal(TaskForm $declaration, TaskInterface $task): array {
 		$description = [
 			'kind' => TaskForm::KIND_EXTERNAL,
 			'state' => self::STATE_UNAVAILABLE,

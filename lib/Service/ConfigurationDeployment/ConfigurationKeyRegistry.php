@@ -100,8 +100,6 @@ class ConfigurationKeyRegistry {
 		'llm' => self::TYPE_OBJECT,
 		'fileManagement' => self::TYPE_OBJECT,
 		'objectManagement' => self::TYPE_OBJECT,
-		'solr' => self::TYPE_OBJECT,
-		'search_backend' => self::TYPE_OBJECT,
 		'flow_run_retention_days' => self::TYPE_STRING,
 		'flow_audit_enabled' => self::TYPE_BOOLEAN,
 		'flow_oversight_enabled' => self::TYPE_BOOLEAN,

@@ -910,6 +910,153 @@ recognised by `CalculationAnnotationValidator`.
 - **THEN** all three objects are saved and the command reports "Touched 3, unchanged 0, failed 0" and exits 0
 - @e2e exclude {occ command, covered by RematerialiseCalculationsAsSystemTest}
 
+### Requirement: A quantity accrues over graduated rate bands (REQ-GRC-01)
+
+The calculation engine MUST provide a `graduated` operator taking `[quantity, bands, cap?]`. `bands` MUST resolve to a list of `{upTo, rate}` objects with rising `upTo`, where only the last band MAY leave out `upTo` and then covers every later unit. The result MUST be the sum, per band, of the units of the quantity that fall in that band times the band's rate, and MUST NOT exceed `cap` when a cap is given. Units past the last closed band of a schedule without an open band MUST NOT be charged. A quantity of zero or less MUST yield zero. A quantity or schedule that resolves to null MUST yield null.
+
+#### Scenario: A stepped daily fee
+- **GIVEN** bands `[{upTo: 3, rate: 2}, {upTo: 8, rate: 3}, {rate: 5}]`
+- **WHEN** `graduated` is evaluated for quantity 9
+- **THEN** the result MUST be 26 (3 x 2 + 5 x 3 + 1 x 5)
+
+#### Scenario: The cap holds
+- **GIVEN** the same bands and cap 40
+- **WHEN** `graduated` is evaluated for quantity 13
+- **THEN** the result MUST be 40
+
+### Requirement: The rate of the band a unit falls in (REQ-GRC-02)
+
+The calculation engine MUST provide a `bandRate` operator taking `[unit, bands]` that returns the rate of the band whose range contains the unit, counting units from 1, and null when no band covers the unit (a unit of zero or less, or a unit past a closed schedule).
+
+#### Scenario: The boundary unit belongs to the lower band
+- **GIVEN** bands `[{upTo: 3, rate: 2}, {upTo: 8, rate: 3}, {rate: 5}]`
+- **WHEN** `bandRate` is evaluated for units 3, 4 and 9
+- **THEN** the results MUST be 2, 3 and 5
+
+### Requirement: A malformed schedule is refused (REQ-GRC-03)
+
+An empty schedule, a schedule that is not a list, a band without a numeric rate, an open band before the last position, or `upTo` bounds that do not rise MUST raise an evaluation error. A malformed schedule MUST NOT be read as an amount of zero.
+
+#### Scenario: Falling bounds
+- **GIVEN** bands `[{upTo: 5, rate: 1}, {upTo: 3, rate: 2}]`
+- **WHEN** `graduated` is evaluated
+- **THEN** evaluation MUST fail with an evaluation error
+
+### Requirement: A literal operand is data (REQ-GRC-04)
+
+The calculation annotation validator MUST NOT walk into the operand of `lit`, so a literal list of objects such as a rate schedule is accepted on import.
+
+#### Scenario: A schedule written in the expression
+- **GIVEN** a calculation `graduated: [{prop: hours}, {lit: [{upTo: 3, rate: 2}, {rate: 5}]}, 40]`
+- **WHEN** the schema is validated
+- **THEN** the validator MUST return no errors
+
+### Requirement: A referenced change refreshes the materialised values that read it
+
+When an object is updated, OpenRegister SHALL re-save the objects in the same register that point at it through a
+declared `x-openregister-references` entry (mode `relatedObject`), when one of their enabled materialised calculations
+reads `@ref.<name>.<field>` for a field whose value changed. It SHALL re-save at most 200 such objects per dependency
+within the save and log the rest with the command that refreshes them, and SHALL NOT fail the save that triggered it.
+
+#### Scenario: A case type starts listing flows
+
+- **GIVEN** a case whose `hasStartableFlows` materialises `@ref.caseType.startableFlows` and is false
+- **WHEN** its case type is saved with a flow in `startableFlows`
+- **THEN** the case is re-saved and its `hasStartableFlows` is true
+
+#### Scenario: A change no calculation reads
+
+- **GIVEN** the same case
+- **WHEN** its case type's title changes and `startableFlows` does not
+- **THEN** no case is re-saved
+
+### Requirement: A system re-save hands a string-typed JSON value back as stored
+
+When OpenRegister re-saves a stored row unchanged, it SHALL first restore every `type: string` value the read decoded to its stored JSON string. This covers rematerialising calculations, refreshing referencing calculations and the temporal calculation sweep.
+
+#### Scenario: rematerialising a case with a status history
+- **GIVEN** a case schema declaring `statusHistory` as `type: string` and a stored case whose history holds a JSON array
+- **WHEN** `occ openregister:rematerialise-calculations dossiq case` runs
+- **THEN** the case is re-saved with its history as the stored string, and the save is not refused
+
+### Requirement: A materialised calculation may be a fallback an app overrides
+
+A materialised calculation MAY declare `fallback: true`. Rematerialising SHALL re-save a row with such a calculation, and SHALL NOT count a value the save left as stored as a failure. A calculation without the declaration whose value the save did not write SHALL still be a failure.
+
+#### Scenario: a case deadline that follows its term
+- **GIVEN** a case whose deadline calculation is a fallback, and whose statutory term puts the deadline back on save
+- **WHEN** `occ openregister:rematerialise-calculations dossiq case` runs
+- **THEN** the case counts as touched, not failed
+
+### Requirement: The calculation operator catalogue is published (REQ-CVJ-001)
+
+The system SHALL publish every operator the JSON-AST calculation evaluator
+accepts, with its arity, the types of its operands, the type of its result
+and a description a human can read. The list SHALL be generated from the
+evaluator's own dispatch, so an operator added to the evaluator appears
+without a second edit.
+
+#### Scenario: an expression builder offers what the engine has
+
+- **GIVEN** an evaluator accepting arithmetic, comparison, logical, string and date operators
+- **WHEN** the operator catalogue is read
+- **THEN** each operator is returned with its arity and its operand types
+
+#### Scenario: a newly added operator appears on its own
+
+- **GIVEN** an operator added to the evaluator's dispatch
+- **WHEN** the catalogue is read
+- **THEN** that operator is present
+- @e2e exclude {generated from one source, covered by a unit test comparing the two}
+
+### Requirement: A calculation is authored through a property form and tried before it is saved (REQ-CVJ-002)
+
+A calculation declaration SHALL be forwardable by an application's
+property form under the published property vocabulary contract, and SHALL
+be validated at schema save against the operator catalogue exactly as a
+directly written annotation is. The system SHALL evaluate a declaration
+against a named object or a sample payload without saving the schema,
+returning either the value or the error. The properties an expression
+reads SHALL be derived from the expression itself, and circular dependency
+detection SHALL run on the derived list.
+
+#### Scenario: an administrator tries an expression before committing it
+
+- **GIVEN** an unsaved calculation that adds six weeks to `ontvangstdatum`
+- **WHEN** it is evaluated against a sample payload holding that date
+- **THEN** the response carries the resulting date
+- **AND** no schema was written
+
+#### Scenario: an invalid operator is refused at schema save
+
+- **GIVEN** a forwarded calculation naming an operator the catalogue does not hold
+- **WHEN** the schema is saved
+- **THEN** the save fails with 422 naming the operator
+
+#### Scenario: a cycle is caught on the derived list
+
+- **GIVEN** two calculations that read each other's properties, with no declared dependency lists
+- **WHEN** the schema is saved
+- **THEN** the save fails naming both properties as a cycle
+- @e2e exclude {validator, covered by unit tests}
+
+### Requirement: The two derivation engines are documented as what they are (REQ-CVJ-003)
+
+The system's documentation SHALL state which of the two derivation engines an
+authoring surface offers and which is for code-authored schemas, rather than
+presenting them as alternatives a reader has to choose between. A property
+authored through an administration surface SHALL carry a JSON-AST
+`calculation`; Twig `computed` SHALL remain supported for schemas authored in
+code.
+
+#### Scenario: a reader learns which engine is theirs
+
+- **GIVEN** the computed-fields documentation
+- **WHEN** a functional administrator reads it
+- **THEN** it says the JSON AST is the engine an authoring surface offers
+- **AND** it says Twig stays for schemas authored in code
+- @e2e exclude {a documentation statement, verified by reading docs/features/computed-fields.md}
+
 ## Current Implementation Status
 - **Implemented:**
   - `ComputedFieldHandler` (`lib/Service/Object/SaveObject/ComputedFieldHandler.php`) provides Twig-based expression evaluation with sandbox security policy

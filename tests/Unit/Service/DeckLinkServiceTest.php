@@ -173,6 +173,54 @@ class DeckLinkServiceTest extends TestCase {
 		$this->assertSame([], $rows[0]['assignees']);
 	}
 
+	/**
+	 * A linked card carries the titles of the board and list Deck's card
+	 * lookup put on it, so a row can read "Bord … · lijst … · assignee".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/deck-integration/spec.md
+	 */
+	public function testACardCarriesItsBoardAndListTitles(): void {
+		$titled = static fn (string $title): object => new class ($title) {
+			public function __construct(private string $title) {
+			}
+
+			public function getTitle(): string {
+				return $this->title;
+			}
+		};
+		$card = new class ($titled('Woo en informatie'), $titled('Deze week')) {
+			public function __construct(private object $board, private object $stack) {
+			}
+
+			public function getRelatedBoard(): object {
+				return $this->board;
+			}
+
+			public function getRelatedStack(): object {
+				return $this->stack;
+			}
+		};
+
+		$fields = (new \ReflectionMethod(DeckLinkService::class, 'extractCardFields'))->invoke($this->service, $card);
+
+		$this->assertSame('Woo en informatie', $fields['boardTitle']);
+		$this->assertSame('Deze week', $fields['stackTitle']);
+	}
+
+	/**
+	 * A card without them reads empty titles, not an error.
+	 *
+	 * @return void
+	 */
+	public function testACardWithoutBoardOrListReadsEmptyTitles(): void {
+		$fields = (new \ReflectionMethod(DeckLinkService::class, 'extractCardFields'))->invoke($this->service, new \stdClass());
+
+		$this->assertSame('', $fields['boardTitle']);
+		$this->assertSame('', $fields['stackTitle']);
+	}
+
 	public function testGetLinkedCardsEmpty(): void {
 		$this->mapper->method('findByObjectUuid')->willReturn([]);
 

@@ -32,6 +32,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
@@ -75,6 +76,7 @@ class AuditTrailController extends Controller {
 	 * @param ReadableAuditTrailLister $readableLister Lists the trail within one caller's read scope.
 	 * @param AuditTrailPageService $auditPage The audit page's keyset list and export.
 	 * @param ObjectHistoryForReaders $historyForReaders One object's history for a non-admin reader of it.
+	 * @param ExplicitRevealTrailMasker|null $revealMasker Masks explicit-reveal values in the admin lists.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten: the two framework arguments plus one
 	 *     service per audit surface this controller routes (log, mapper, hash chain, session,
@@ -91,6 +93,7 @@ class AuditTrailController extends Controller {
 		private readonly ReadableAuditTrailLister $readableLister,
 		private readonly AuditTrailPageService $auditPage,
 		private readonly ObjectHistoryForReaders $historyForReaders,
+		private readonly ?ExplicitRevealTrailMasker $revealMasker = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -330,6 +333,10 @@ class AuditTrailController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
+		if ($this->revealMasker !== null && is_array($page['results'] ?? null) === true) {
+			$page['results'] = $this->revealMasker->mask(entries: $page['results']);
+		}
+
 		return new JSONResponse(data: $page);
 	}//end cursorPage()
 
@@ -365,8 +372,12 @@ class AuditTrailController extends Controller {
 		// Extract common parameters.
 		$params = $this->extractRequestParameters();
 
-		// Get logs from service.
+		// Get logs from service. An explicit-reveal value reads masked for an
+		// administrator too (property-explicit-reveal).
 		$logs = $this->logService->getAllLogs($params);
+		if ($this->revealMasker !== null) {
+			$logs = $this->revealMasker->mask(entries: $logs);
+		}
 
 		// Get total count for pagination.
 		$total = $this->logService->countAllLogs($params['filters']);
@@ -524,7 +535,9 @@ class AuditTrailController extends Controller {
 
 		try {
 			$log = $this->logService->getLog($id);
-			return new JSONResponse(data: $log);
+			// The single entry shows explicit-reveal values masked, like the lists.
+			$masked = $this->logService->maskExplicitReveal(entries: [$log]);
+			return new JSONResponse(data: $masked[0]);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
 		}
@@ -626,15 +639,17 @@ class AuditTrailController extends Controller {
 				config: $params
 			);
 
-			// Return paginated results.
+			// Return paginated results. An administrator always sees read entries,
+			// and explicit-reveal values masked, like every other reader.
 			return new JSONResponse(
 				data: [
-					'results' => $logs,
+					'results' => $this->logService->maskExplicitReveal(entries: $logs),
 					'total' => $total,
 					'page' => $params['page'],
 					'pages' => ceil($total / $params['limit']),
 					'limit' => $params['limit'],
 					'offset' => $params['offset'],
+					'readEventsVisible' => true,
 				]
 			);
 		} catch (\InvalidArgumentException $e) {
@@ -1056,6 +1071,15 @@ class AuditTrailController extends Controller {
 
 		try {
 			$results = $this->auditTrailMapper->findByIdentifier($identifier);
+			// Explicit-reveal values leave masked here as on every trail route.
+			// Who may call this and the search it runs are issue #5148.
+			// The mapper answers raw rows grouped by schema id, `changed` as JSON text.
+			foreach ($results as $schemaId => $rows) {
+				if (is_array($rows) === true) {
+					$results[$schemaId] = $this->logService->maskExplicitReveal(entries: $rows);
+				}
+			}
+
 			return new JSONResponse(data: $results);
 		} catch (\Exception $e) {
 			return new JSONResponse(

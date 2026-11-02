@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -37,6 +38,7 @@ use ReflectionClass;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
@@ -136,7 +138,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, false, MagicSearchHandler::ARCHIVED_EXCLUDE, [], $quiet);
+		$apply->invoke($handler, $queryBuilder, DeletedLens::ANY, MagicSearchHandler::ARCHIVED_EXCLUDE, [], $quiet);
 		$this->assertSame(["(t._status IS NULL OR t._status <> 'draft')"], $this->functions);
 	}//end testASchemaKeepsOwnDraftsOutOnBothPaths()
 
@@ -174,7 +176,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 			$this->functions = [];
 			$handler = $this->handler(userId: $userId);
 			$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-			$apply->invoke($handler, $queryBuilder, false, MagicSearchHandler::ARCHIVED_EXCLUDE, $query);
+			$apply->invoke($handler, $queryBuilder, DeletedLens::ANY, MagicSearchHandler::ARCHIVED_EXCLUDE, $query);
 
 			$this->assertSame([$expected], $this->functions);
 		}
@@ -182,7 +184,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, false, MagicSearchHandler::ARCHIVED_EXCLUDE, ['_drafts' => 'any']);
+		$apply->invoke($handler, $queryBuilder, DeletedLens::ANY, MagicSearchHandler::ARCHIVED_EXCLUDE, ['_drafts' => 'any']);
 		$this->assertSame([], $this->functions);
 	}//end testTheSingleTablePathCarriesTheSameLens()
 

@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  */
 final class MagicSearchHandlerUnionTenancyTest extends TestCase {
@@ -88,6 +89,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$rbac->method('buildRbacConditionsSql')->willReturn(['bypass' => true, 'conditions' => []]);
 		$rbac->method('hasConditionalRulesBypassingMultitenancy')->willReturn($conditionalBypass);
 		$rbac->method('currentCallerHoldsObjectGrants')->willReturn($holdsGrants);
+		$rbac->method('publicReadLiftsOrganisationFilter')->willReturn(true);
 
 		$organisation = $this->createMock(originalClassName: MagicOrganizationHandler::class);
 		$organisation->method('resolveOrganizationScope')->willReturn($scope);

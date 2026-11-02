@@ -68,6 +68,28 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
 
+/**
+ * Whether both the register and the schema have an id.
+ *
+ * @param {object|null} register The selected register
+ * @param {object|null} schema The selected schema
+ * @return {boolean} True when both have one
+ */
+function hasIds(register, schema) {
+	return Boolean(register?.id && schema?.id)
+}
+
+/**
+ * The register and schema as they appear in the export URL: slug, else id.
+ *
+ * @param {object} register The selected register
+ * @param {object} schema The selected schema
+ * @return {Array<string>} The register and schema slugs
+ */
+function exportSlugs(register, schema) {
+	return [register.slug || register.id, schema.slug || schema.id]
+}
+
 export default {
 	name: 'ExportRegister',
 	components: {
@@ -129,7 +151,7 @@ export default {
 			const register = registerStore.registerItem
 			const schema = schemaStore.schemaItem
 
-			if (!register?.id || !schema?.id) {
+			if (!hasIds(register, schema)) {
 				this.error = t('openregister', 'Register and schema are required')
 				return
 			}
@@ -138,10 +160,9 @@ export default {
 			this.error = null
 
 			try {
-				const registerSlug = register.slug || register.id
-				const schemaSlug = schema.slug || schema.id
+				const slugs = exportSlugs(register, schema)
 				const url = generateUrl(
-					`/apps/openregister/api/objects/${registerSlug}/${schemaSlug}/export`,
+					`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
 				)
 				const params = {
 					type: this.exportFormat,
@@ -154,24 +175,7 @@ export default {
 					responseType: 'blob',
 				})
 
-				const blob = new Blob([response.data], {
-					type: response.headers['content-type'],
-				})
-				const downloadUrl = window.URL.createObjectURL(blob)
-				const link = document.createElement('a')
-
-				const contentDisposition = response.headers['content-disposition']
-				const filename = contentDisposition
-					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `${registerSlug}_${schemaSlug}_${new Date().toISOString().split('T')[0]}.${this.exportFormat === 'excel' ? 'xlsx' : 'csv'}`
-
-				link.href = downloadUrl
-				link.download = filename
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				window.URL.revokeObjectURL(downloadUrl)
-
+				this.saveExport(response, slugs)
 				this.closeModal()
 			} catch (error) {
 				this.error =
@@ -181,6 +185,46 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Hand the exported file to the browser as a download.
+		 *
+		 * @param {object} response The export response
+		 * @param {Array<string>} slugs The register and schema slugs
+		 * @spec exclude UI plumbing — turns the export response into a browser download
+		 * @return {void}
+		 */
+		saveExport(response, slugs) {
+			const blob = new Blob([response.data], {
+				type: response.headers['content-type'],
+			})
+			const downloadUrl = window.URL.createObjectURL(blob)
+			const link = document.createElement('a')
+
+			link.href = downloadUrl
+			link.download = this.exportFileName(response, slugs)
+			document.body.appendChild(link)
+			link.click()
+			document.body.removeChild(link)
+			window.URL.revokeObjectURL(downloadUrl)
+		},
+
+		/**
+		 * The file name the server gives, else one from the slugs, the date and the format.
+		 *
+		 * @param {object} response The export response
+		 * @param {Array<string>} slugs The register and schema slugs
+		 * @spec exclude UI plumbing — names the downloaded export file
+		 * @return {string} The file name
+		 */
+		exportFileName(response, slugs) {
+			const contentDisposition = response.headers['content-disposition']
+			if (contentDisposition) {
+				return contentDisposition.split('filename=')[1].replace(/"/g, '')
+			}
+			const extension = this.exportFormat === 'excel' ? 'xlsx' : 'csv'
+			return `${slugs[0]}_${slugs[1]}_${new Date().toISOString().split('T')[0]}.${extension}`
 		},
 	},
 }

@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -108,7 +108,7 @@ class ApiVersionRefusedException extends Exception {
 	 *
 	 * @return self The refusal.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public static function withdrawn(ApiVersion $version, array $acceptable): self {
 		return new self(
@@ -129,7 +129,7 @@ class ApiVersionRefusedException extends Exception {
 	 *
 	 * @return self The refusal.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public static function unknown(string $requestedId, array $acceptable): self {
 		return new self(
@@ -147,7 +147,7 @@ class ApiVersionRefusedException extends Exception {
 	 *
 	 * @return JSONResponse The refusal, with the successor named in a Link header when there is one.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function toResponse(): JSONResponse {
 		$body = [

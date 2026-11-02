@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ class ViewAlertRecipientException extends InvalidViewAlertException {
 	 *
 	 * @param array<int, string> $recipients The refused recipients.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function __construct(private readonly array $recipients) {
 		parent::__construct(
@@ -53,7 +53,7 @@ class ViewAlertRecipientException extends InvalidViewAlertException {
 	 *
 	 * @return array<int, string> The recipients.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getRecipients(): array {
 		return $this->recipients;
@@ -64,7 +64,7 @@ class ViewAlertRecipientException extends InvalidViewAlertException {
 	 *
 	 * @return int 403.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getStatus(): int {
 		return 403;
@@ -75,7 +75,7 @@ class ViewAlertRecipientException extends InvalidViewAlertException {
 	 *
 	 * @return array<string, mixed> `recipients`.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getDetails(): array {
 		return ['recipients' => $this->recipients];

@@ -48,7 +48,7 @@ use Throwable;
  *     Splitting the run across two classes would move the collaborators, not
  *     reduce them.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfileService {
 
@@ -87,7 +87,7 @@ class ExportProfileService {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function find(int $id): ExportProfile {
 		return $this->mapper->find($id);
@@ -101,7 +101,7 @@ class ExportProfileService {
 	 *
 	 * @return ExportProfile[] The profiles.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The admin listing is the
 	 *     same listing with a wider scope, not a second method.
@@ -127,7 +127,7 @@ class ExportProfileService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID
 	 *     pattern, as AuditTrailMapper::createToolInvocationEntry().
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function create(array $data, string $ownerUid): ExportProfile {
 		$this->validator->validate(data: $data, partial: false);
@@ -152,7 +152,7 @@ class ExportProfileService {
 	 *
 	 * @throws InvalidArgumentException When the submission does not make sense.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function update(ExportProfile $profile, array $data): ExportProfile {
 		$this->validator->validate(data: $data, partial: true);
@@ -169,7 +169,7 @@ class ExportProfileService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function delete(ExportProfile $profile): void {
 		$this->mapper->delete($profile);
@@ -186,7 +186,7 @@ class ExportProfileService {
 	 *
 	 * @throws ExportRefusedException When the caller may not touch the profile.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The administrator bypass is
 	 *     a property of the caller, not a second code path.
@@ -213,7 +213,7 @@ class ExportProfileService {
 	 *
 	 * @throws ExportRefusedException When the principal does not hold the export verb.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function run(ExportProfile $profile, string $actorUid): array {
 		$register = $this->registerOf(profile: $profile);
@@ -263,7 +263,7 @@ class ExportProfileService {
 	 *
 	 * @return string The filename.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function filenameFor(ExportProfile $profile): string {
 		$slug = preg_replace('/[^a-z0-9]+/i', '-', (string)($profile->getName() ?? 'export'));
@@ -283,7 +283,7 @@ class ExportProfileService {
 	 *
 	 * @return Register|null The register.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function registerOf(ExportProfile $profile): ?Register {
 		if ($profile->getRegisterId() === null) {
@@ -304,7 +304,7 @@ class ExportProfileService {
 	 *
 	 * @return Schema|null The schema.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function schemaOf(ExportProfile $profile): ?Schema {
 		if ($profile->getSchemaId() === null) {

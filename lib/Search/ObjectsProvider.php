@@ -316,174 +316,32 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @SuppressWarnings(PHPMD.StaticAccess)          SearchResult::complete is standard Nextcloud search pattern
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Search requires handling many filter and sort options
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Search filter building requires many conditional checks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * Search requires handling many filters, building queries, and formatting results
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
 	public function search(IUser $user, ISearchQuery $query): SearchResult {
-		// Initialize filters array.
-		$filters = [];
-
-		/*
-		 * @var string|null $register
-		 */
-
-		$register = $query->getFilter('register')?->get();
-		if ($register !== null) {
-			$filters['register'] = $register;
-		}
-
-		/*
-		 * @var string|null $schema
-		 */
-
-		$schema = $query->getFilter('schema')?->get();
-		if ($schema !== null) {
-			$filters['schema'] = $schema;
-		}
-
-		// What to look in. Read BEFORE the schema list is built, because it is
-		// what narrows that list; read after it would be a post-filter.
-		$scopes = SearchScopes::parse(raw: $query->getFilter('scopes')?->get());
-
 		/*
 		 * @var string|null $search
 		 */
 
 		$search = $query->getFilter('term')?->get();
+		$searchQuery = $this->buildBaseQuery(query: $query, search: $search);
 
-		/*
-		 * @var string|null $since
-		 */
-
-		$since = $query->getFilter('since')?->get();
-
-		/*
-		 * @var string|null $until
-		 */
-
-		$until = $query->getFilter('until')?->get();
-
-		// Build search query for searchObjectsPaginated.
-		$searchQuery = [];
-
-		// Add search term if provided.
-		if (empty($search) === false) {
-			$searchQuery['_search'] = $search;
+		$target = $this->resolveSchemaTarget(query: $query);
+		if ($target === null) {
+			return SearchResult::complete(
+				name: $this->getSectionName(),
+				entries: []
+			);
 		}
 
-		// Resolve the searchable-schema opt-out once per request.
-		$nonSearchableIds = $this->getNonSearchableIds();
-
-		// Add filters to @self metadata section. When an explicit schema
-		// filter targets a non-searchable schema, the opt-out wins: return
-		// an empty (complete) result set rather than leaking it.
-		// The reference travels as written. It used to be int-cast here, and
-		// `(int)'zaakregister'` is `0`, so a scope filter spelled with a slug
-		// searched a register that cannot exist and answered nothing found.
-		// ObjectService resolves the reference now, and refuses one that names
-		// no register instead of reporting an empty result (openregister#3990).
-		if (empty($register) === false) {
-			$registerRef = trim((string)$register);
-			if (ctype_digit($registerRef) === true) {
-				$searchQuery['@self']['register'] = (int)$registerRef;
-			} else {
-				$searchQuery['@self']['register'] = $registerRef;
-			}
+		if ($target['schema'] !== null) {
+			$searchQuery['@self']['schema'] = $target['schema'];
 		}
 
-		// The schema chunks this search fans out over. A single null chunk
-		// means "the explicit schema filter already in the query".
-		$schemaChunks = [null];
-		if (empty($schema) === false) {
-			// The opt-out list is numeric, so a slug has to be resolved before
-			// it can be compared against it. A reference that resolves to
-			// nothing is NOT swallowed here: it travels as written, so the one
-			// refusal lives in ObjectService and names the reference.
-			$schemaId = $this->schemaIdOf(reference: $schema);
-			if ($schemaId !== null && in_array($schemaId, $nonSearchableIds, true) === true) {
-				return SearchResult::complete(
-					name: $this->getSectionName(),
-					entries: []
-				);
-			}
-
-			$searchQuery['@self']['schema'] = ($schemaId ?? $schema);
-		}
-
-		if (empty($schema) === true) {
-			// No explicit schema filter: constrain the query to the
-			// searchable-schema allow-list so opted-out schemas never
-			// contribute results, applied inside the query (not by
-			// post-filtering a page). The list is passed even when nothing
-			// opted out, because it is also what bounds the fan-out: left
-			// unconstrained, the pipeline unions every schema table in one
-			// statement, the query shape that exhausts the database lock
-			// table on a many-schema instance (see SCHEMA_CHUNK_SIZE).
-			$searchableIds = $this->getSearchableIds();
-			if (empty($searchableIds) === true) {
-				return SearchResult::complete(
-					name: $this->getSectionName(),
-					entries: []
-				);
-			}
-
-			// 🔴 NARROWED BEFORE THE CHUNK LOOP, NEVER AFTER IT (D-4).
-			// Filtering the PAGE afterwards would make a scoped search cost
-			// MORE than an unscoped one — the same union over every searchable
-			// table plus a discard — and would break paging, because the page
-			// boundary would be cut before the unwanted rows were removed.
-			// Narrowing here means a scoped query is cheaper, never dearer,
-			// which is the whole reason a caller reaches for one.
-			if ($scopes->narrows() === true) {
-				$scoped = $scopes->narrowSchemas(schemas: $this->describeSearchableSchemas());
-				// An EMPTY narrowing is a real answer, not a reason to widen:
-				// the caller named a schema this instance does not have, and
-				// widening back to everything would answer rows they excluded.
-				$searchableIds = array_values(array_intersect($searchableIds, $scoped));
-				if ($searchableIds === []) {
-					return SearchResult::complete(
-						name: $this->getSectionName(),
-						entries: []
-					);
-				}
-			}
-
-			$schemaChunks = array_chunk($searchableIds, self::SCHEMA_CHUNK_SIZE);
-		}//end if
-
-		// Add date filters if provided.
-		if ($since !== null) {
-			$searchQuery['@self']['created'] = ['$gte' => $since];
-		}
-
-		if ($until !== null) {
-			if (($searchQuery['@self']['created'] ?? null) !== null) {
-				$searchQuery['@self']['created']['$lte'] = $until;
-			}
-
-			if (($searchQuery['@self']['created'] ?? null) === null) {
-				$searchQuery['@self']['created'] = ['$lte' => $until];
-			}
-		}
-
-		// Cursor pagination: cursor is an integer offset serialised as a
-		// string (matching the NC core files/contacts providers). Limit is
-		// capped at PAGE_LIMIT.
-		$limit = self::PAGE_LIMIT;
-		$queryLimit = $query->getLimit();
-		if ($queryLimit > 0 && $queryLimit < $limit) {
-			$limit = $queryLimit;
-		}
-
-		$offset = 0;
-		$cursor = $query->getCursor();
-		if (is_numeric($cursor) === true) {
-			$offset = max(0, (int)$cursor);
-		}
+		$schemaChunks = $target['chunks'];
+		$searchQuery = $this->withCreatedRange(searchQuery: $searchQuery, query: $query);
+		[$limit, $offset] = $this->pageWindow(query: $query);
 
 		$this->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search requested',
@@ -499,23 +357,12 @@ class ObjectsProvider implements IFilteringProvider {
 		);
 
 		// Widen the match to text OpenRegister has already extracted from
-		// attached files (ZKN-CONTENT-001). Without this the provider searches
-		// object METADATA only, so a term that appears solely inside an
-		// attached PDF finds nothing — while OR holds that text indexed in
-		// `openregister_chunks` and `ChunkMapper::searchByKeyword()` can find
-		// it. That gap was measured 2026-08-15: this file contained zero chunk
-		// references.
-		//
-		// It is safe to turn on HERE, and only because the fan-out is not a
-		// second query path around the guard rails: `QueryHandler` forwards
-		// `_rbac` and `_multitenancy` into `augmentWithChunkMatches()`, so a
-		// chunk hit on an object the caller may not read is filtered by the
-		// same pipeline that filters a metadata hit. The provider still
-		// applies no second access filter of its own.
-		//
-		// A chunk is a fragment of a file; the row appended is the OWNING
-		// OBJECT, which is the thing with a deep-link URL, an icon and a
-		// title. A bare chunk would not be navigable.
+		// attached files (ZKN-CONTENT-001), so a term that appears only inside
+		// an attached PDF is found. Safe because `QueryHandler` forwards `_rbac`
+		// and `_multitenancy` into `augmentWithChunkMatches()`: a chunk hit on an
+		// object the caller may not read is filtered by the same pipeline that
+		// filters a metadata hit. The row appended is the OWNING OBJECT, which
+		// has a deep-link URL, an icon and a title; a bare chunk would not.
 		$searchQuery['_content_search'] = true;
 
 		// Delegate to the OR search pipeline, one call per schema chunk.
@@ -531,7 +378,6 @@ class ObjectsProvider implements IFilteringProvider {
 			offset: $offset
 		);
 
-		// Convert results to SearchResultEntry format.
 		$searchResultEntries = [];
 		foreach ($searchResults['results'] as $result) {
 			$searchResultEntries[] = $this->resultFormatter->format(result: $result, term: $search);
@@ -563,6 +409,171 @@ class ObjectsProvider implements IFilteringProvider {
 			entries: $searchResultEntries
 		);
 	}//end search()
+
+	/**
+	 * The pipeline query for the search term and the register filter.
+	 *
+	 * The register reference travels as written, int-cast only when it is all
+	 * digits: a slug cast to int is `0`, which names no register. ObjectService
+	 * resolves the reference and refuses one that names no register
+	 * (openregister#3990).
+	 *
+	 * @param ISearchQuery $query  The search query from Nextcloud
+	 * @param mixed        $search The search term filter value
+	 *
+	 * @return array<string, mixed> The pipeline query.
+	 */
+	private function buildBaseQuery(ISearchQuery $query, mixed $search): array {
+		$searchQuery = [];
+		if (empty($search) === false) {
+			$searchQuery['_search'] = $search;
+		}
+
+		$register = $query->getFilter('register')?->get();
+		if (empty($register) === false) {
+			$registerRef = trim((string)$register);
+			$searchQuery['@self']['register'] = $registerRef;
+			if (ctype_digit($registerRef) === true) {
+				$searchQuery['@self']['register'] = (int)$registerRef;
+			}
+		}
+
+		return $searchQuery;
+	}//end buildBaseQuery()
+
+	/**
+	 * The schema chunks a search fans out over, and the explicit schema filter.
+	 *
+	 * An explicit schema filter gives a single null chunk ("the schema already in
+	 * the query"); a reference that resolves to nothing travels as written, so the
+	 * one refusal lives in ObjectService. Without it the search is bounded to the
+	 * searchable-schema allow-list, chunked by SCHEMA_CHUNK_SIZE, because an
+	 * unconstrained union over every schema table exhausts the database lock table
+	 * on a many-schema instance. Null means the answer is an empty result: the
+	 * filter names an opted-out schema, nothing is searchable, or the scopes
+	 * narrow to nothing.
+	 *
+	 * @param ISearchQuery $query The search query from Nextcloud
+	 *
+	 * @return array{chunks: array<int, int[]|null>, schema: mixed}|null The chunks and schema filter, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchScopes::parse is the named constructor of a value object
+	 */
+	private function resolveSchemaTarget(ISearchQuery $query): ?array {
+		/*
+		 * @var string|null $schema
+		 */
+
+		$schema = $query->getFilter('schema')?->get();
+
+		// Read before the schema list is built, because it is what narrows that list.
+		$scopes = SearchScopes::parse(raw: $query->getFilter('scopes')?->get());
+
+		$nonSearchableIds = $this->getNonSearchableIds();
+
+		if (empty($schema) === false) {
+			// The opt-out list is numeric, so a slug is resolved before the comparison.
+			$schemaId = $this->schemaIdOf(reference: $schema);
+			if ($schemaId !== null && in_array($schemaId, $nonSearchableIds, true) === true) {
+				return null;
+			}
+
+			return ['chunks' => [null], 'schema' => ($schemaId ?? $schema)];
+		}
+
+		$searchableIds = $this->narrowedSearchableIds(scopes: $scopes);
+		if (empty($searchableIds) === true) {
+			return null;
+		}
+
+		return ['chunks' => array_chunk($searchableIds, self::SCHEMA_CHUNK_SIZE), 'schema' => null];
+	}//end resolveSchemaTarget()
+
+	/**
+	 * The searchable schema ids, narrowed by the declared scopes.
+	 *
+	 * 🔴 NARROWED BEFORE THE CHUNK LOOP, NEVER AFTER IT (D-4). Filtering the page
+	 * afterwards would make a scoped search cost more than an unscoped one and
+	 * would cut the page boundary before the unwanted rows were removed. An empty
+	 * narrowing is a real answer, not a reason to widen back to everything.
+	 *
+	 * @param SearchScopes $scopes The scopes the caller declared
+	 *
+	 * @return array<int, int> The schema ids to search.
+	 */
+	private function narrowedSearchableIds(SearchScopes $scopes): array {
+		$searchableIds = $this->getSearchableIds();
+		if (empty($searchableIds) === true || $scopes->narrows() === false) {
+			return $searchableIds;
+		}
+
+		$scoped = $scopes->narrowSchemas(schemas: $this->describeSearchableSchemas());
+		return array_values(array_intersect($searchableIds, $scoped));
+	}//end narrowedSearchableIds()
+
+	/**
+	 * Add the `since` / `until` filters as a created-date range.
+	 *
+	 * @param array<string, mixed> $searchQuery The pipeline query
+	 * @param ISearchQuery         $query       The search query from Nextcloud
+	 *
+	 * @return array<string, mixed> The pipeline query with the range.
+	 */
+	private function withCreatedRange(array $searchQuery, ISearchQuery $query): array {
+		/*
+		 * @var string|null $since
+		 */
+
+		$since = $query->getFilter('since')?->get();
+
+		/*
+		 * @var string|null $until
+		 */
+
+		$until = $query->getFilter('until')?->get();
+
+		if ($since !== null) {
+			$searchQuery['@self']['created'] = ['$gte' => $since];
+		}
+
+		if ($until === null) {
+			return $searchQuery;
+		}
+
+		if (($searchQuery['@self']['created'] ?? null) !== null) {
+			$searchQuery['@self']['created']['$lte'] = $until;
+			return $searchQuery;
+		}
+
+		$searchQuery['@self']['created'] = ['$lte' => $until];
+		return $searchQuery;
+	}//end withCreatedRange()
+
+	/**
+	 * The page size and offset of a search.
+	 *
+	 * The cursor is an integer offset serialised as a string (matching the NC
+	 * core files/contacts providers). The limit is capped at PAGE_LIMIT.
+	 *
+	 * @param ISearchQuery $query The search query from Nextcloud
+	 *
+	 * @return array{0: int, 1: int} The limit and the offset.
+	 */
+	private function pageWindow(ISearchQuery $query): array {
+		$limit = self::PAGE_LIMIT;
+		$queryLimit = $query->getLimit();
+		if ($queryLimit > 0 && $queryLimit < $limit) {
+			$limit = $queryLimit;
+		}
+
+		$offset = 0;
+		$cursor = $query->getCursor();
+		if (is_numeric($cursor) === true) {
+			$offset = max(0, (int)$cursor);
+		}
+
+		return [$limit, $offset];
+	}//end pageWindow()
 
 	/**
 	 * Run the pipeline search per schema chunk and merge the pages.

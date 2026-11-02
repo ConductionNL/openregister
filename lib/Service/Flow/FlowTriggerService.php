@@ -175,7 +175,7 @@ class FlowTriggerService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
+	 * @spec openspec/specs/flow-execution-mode/spec.md
 	 */
 	private function runInline(FlowRun $run, string $flowId, array $subject): void {
 		$flow = $this->resolvers->resolveFlow($flowId);

@@ -76,7 +76,7 @@ class BulkActionRegistry {
 	 *
 	 * @throws InvalidArgumentException When the id is malformed or taken.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function register(BulkActionInterface $action): void {
 		$id = $action->getId();
@@ -103,7 +103,7 @@ class BulkActionRegistry {
 	 *
 	 * @throws InvalidArgumentException When no such action is registered.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function get(string $id): BulkActionInterface {
 		$this->load();
@@ -122,7 +122,7 @@ class BulkActionRegistry {
 	 *
 	 * @return bool True when the action exists.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function has(string $id): bool {
 		$this->load();
@@ -135,7 +135,7 @@ class BulkActionRegistry {
 	 *
 	 * @return array<string, BulkActionInterface> The actions.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function all(): array {
 		$this->load();
@@ -148,7 +148,7 @@ class BulkActionRegistry {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per action.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function describe(): array {
 		$catalogue = [];

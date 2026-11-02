@@ -48,6 +48,8 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses   \OCA\OpenRegister\Service\Configuration\ListedSeed
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
  * @uses   \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register

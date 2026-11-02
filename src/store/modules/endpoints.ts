@@ -3,10 +3,24 @@ import { ref } from 'vue'
 
 const apiEndpoint = '/index.php/apps/openregister/api/endpoints'
 
+type TEndpointItem = Record<string, unknown>
+
+/**
+ * Per save method: the URL it sends to, and the words its errors use.
+ */
+const SAVES = {
+	POST: { url: () => apiEndpoint, verb: 'create', doing: 'creating' },
+	PUT: {
+		url: (item: TEndpointItem) => `${apiEndpoint}/${item.id}`,
+		verb: 'update',
+		doing: 'updating',
+	},
+}
+
 export const useEndpointStore = defineStore('endpoint', () => {
 	// state.
-	const endpointItem = ref(null)
-	const endpointList = ref([])
+	const endpointItem = ref<TEndpointItem | null>(null)
+	const endpointList = ref<TEndpointItem[]>([])
 	const viewMode = ref('cards')
 
 	// ################################
@@ -18,7 +32,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 *
 	 * @param item - The endpoint item to set
 	 */
-	const setEndpointItem = (item) => {
+	const setEndpointItem = (item: TEndpointItem | null) => {
 		endpointItem.value = item
 	}
 
@@ -47,7 +61,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 *
 	 * @param list - The endpoint list to set
 	 */
-	const setEndpointList = (list) => {
+	const setEndpointList = (list: TEndpointItem[]) => {
 		endpointList.value = list
 	}
 
@@ -93,13 +107,18 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	}
 
 	/**
-	 * Create a new endpoint on the API
+	 * Send an endpoint to the API, then make the answer the active item and
+	 * refresh the list.
 	 *
-	 * @param item - The endpoint item to create
+	 * @param method - POST to create, PUT to update
+	 * @param item - The endpoint item to send
+	 * @return The saved endpoint
+	 * @spec exclude Endpoint store save request shared by create and update: no standalone behavioural contract.
 	 */
-	const createEndpoint = (item) => {
-		return fetch(apiEndpoint, {
-			method: 'POST',
+	const saveEndpoint = (method: keyof typeof SAVES, item: TEndpointItem) => {
+		const save = SAVES[method]
+		return fetch(save.url(item), {
+			method,
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -107,7 +126,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 		})
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error('Failed to create endpoint')
+					throw new Error(`Failed to ${save.verb} endpoint`)
 				}
 				return response.json()
 			})
@@ -117,43 +136,31 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				return data
 			})
 			.catch((err) => {
-				console.error('Error creating endpoint:', err)
+				console.error(`Error ${save.doing} endpoint:`, err)
 				throw err
 			})
 	}
 
 	/**
+	 * Create a new endpoint on the API
+	 *
+	 * @param item - The endpoint item to create
+	 * @spec exclude Endpoint store create action: no standalone behavioural contract.
+	 */
+	const createEndpoint = (item: TEndpointItem) => saveEndpoint('POST', item)
+
+	/**
 	 * Update an existing endpoint on the API
 	 *
 	 * @param item - The endpoint item to update
+	 * @spec exclude Endpoint store update action: no standalone behavioural contract.
 	 */
-	const updateEndpoint = (item) => {
+	const updateEndpoint = (item: TEndpointItem) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for update')
 		}
 
-		return fetch(`${apiEndpoint}/${item.id}`, {
-			method: 'PUT',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(item),
-		})
-			.then((response) => {
-				if (!response.ok) {
-					throw new Error('Failed to update endpoint')
-				}
-				return response.json()
-			})
-			.then((data) => {
-				setEndpointItem(data)
-				refreshEndpointList()
-				return data
-			})
-			.catch((err) => {
-				console.error('Error updating endpoint:', err)
-				throw err
-			})
+		return saveEndpoint('PUT', item)
 	}
 
 	/**
@@ -161,7 +168,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 *
 	 * @param item - The endpoint item to delete
 	 */
-	const deleteEndpoint = (item) => {
+	const deleteEndpoint = (item: TEndpointItem) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for deletion')
 		}
@@ -191,7 +198,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * @param item - The endpoint item to test
 	 * @param testData - Optional test data to send
 	 */
-	const testEndpoint = (item, testData = {}) => {
+	const testEndpoint = (item: TEndpointItem, testData = {}) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for testing')
 		}

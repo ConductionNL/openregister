@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class UniqueConstraintListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
@@ -120,7 +120,7 @@ class UniqueConstraintListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		try {

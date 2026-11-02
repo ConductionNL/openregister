@@ -1,0 +1,3052 @@
+{
+    "schema cannot load": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 0,
+            "errors": [
+                {
+                    "error": "Failed to load schema or register"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.error",
+                "[ValidationHandler] Failed to load schema or register",
+                {
+                    "register_id": 7,
+                    "schema_id": 9,
+                    "error": "no schema"
+                }
+            ]
+        ]
+    },
+    "register cannot load": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 0,
+            "errors": [
+                {
+                    "error": "Failed to load schema or register"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.error",
+                "[ValidationHandler] Failed to load schema or register",
+                {
+                    "register_id": 7,
+                    "schema_id": 9,
+                    "error": "no register"
+                }
+            ]
+        ]
+    },
+    "objects cannot load": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 0,
+            "total": 0,
+            "errors": [
+                {
+                    "error": "Failed to load objects for validation"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.error",
+                "[ValidationHandler] Failed to get objects from magic table",
+                {
+                    "schema_id": 9,
+                    "error": "no table"
+                }
+            ]
+        ]
+    },
+    "no objects": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 0,
+            "total": 0,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 0,
+                    "objects_to_process": 0,
+                    "chunk_size": 0,
+                    "estimated_chunks": 0
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 0,
+                    "objects_processed": 0,
+                    "objects_updated": 0,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "three objects": {
+        "result": {
+            "processed": 3,
+            "updated": 3,
+            "failed": 0,
+            "total": 3,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 3,
+                    "objects_to_process": 3,
+                    "chunk_size": 3,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 3,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                3,
+                {
+                    "id": null,
+                    "n": 0
+                },
+                {
+                    "id": null,
+                    "n": 2
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 3,
+                    "chunk_updated": 3,
+                    "chunk_failed": 0,
+                    "total_progress": "3/3"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 3,
+                    "objects_processed": 3,
+                    "objects_updated": 3,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "limit": {
+        "result": {
+            "processed": 2,
+            "updated": 2,
+            "failed": 0,
+            "total": 5,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": 2,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Applied limit/offset for chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "offset": 0,
+                    "limit": 2,
+                    "objects_to_process": 2
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "objects_to_process": 2,
+                    "chunk_size": 2,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 2,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                2,
+                {
+                    "id": null,
+                    "n": 0
+                },
+                {
+                    "id": null,
+                    "n": 1
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 2,
+                    "chunk_updated": 2,
+                    "chunk_failed": 0,
+                    "total_progress": "2/2"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 5,
+                    "objects_processed": 2,
+                    "objects_updated": 2,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "offset": {
+        "result": {
+            "processed": 2,
+            "updated": 2,
+            "failed": 0,
+            "total": 5,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 3
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Applied limit/offset for chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "offset": 3,
+                    "limit": null,
+                    "objects_to_process": 2
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "objects_to_process": 2,
+                    "chunk_size": 2,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 2,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                2,
+                {
+                    "id": null,
+                    "n": 3
+                },
+                {
+                    "id": null,
+                    "n": 4
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 2,
+                    "chunk_updated": 2,
+                    "chunk_failed": 0,
+                    "total_progress": "2/2"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 5,
+                    "objects_processed": 2,
+                    "objects_updated": 2,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "limit and offset": {
+        "result": {
+            "processed": 2,
+            "updated": 2,
+            "failed": 0,
+            "total": 5,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": 2,
+                    "offset": 1
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Applied limit/offset for chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "offset": 1,
+                    "limit": 2,
+                    "objects_to_process": 2
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "objects_to_process": 2,
+                    "chunk_size": 2,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 2,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                2,
+                {
+                    "id": null,
+                    "n": 1
+                },
+                {
+                    "id": null,
+                    "n": 2
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 2,
+                    "chunk_updated": 2,
+                    "chunk_failed": 0,
+                    "total_progress": "2/2"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 5,
+                    "objects_processed": 2,
+                    "objects_updated": 2,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "limit zero": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 0,
+            "total": 5,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": 0,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Applied limit/offset for chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "offset": 0,
+                    "limit": 0,
+                    "objects_to_process": 0
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "objects_to_process": 0,
+                    "chunk_size": 0,
+                    "estimated_chunks": 0
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 5,
+                    "objects_processed": 0,
+                    "objects_updated": 0,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "offset past the end": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 0,
+            "total": 5,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 9
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Applied limit/offset for chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "offset": 9,
+                    "limit": null,
+                    "objects_to_process": 0
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 5,
+                    "objects_to_process": 0,
+                    "chunk_size": 0,
+                    "estimated_chunks": 0
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 5,
+                    "objects_processed": 0,
+                    "objects_updated": 0,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "saved and updated": {
+        "result": {
+            "processed": 3,
+            "updated": 3,
+            "failed": 4,
+            "total": 3,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 3,
+                    "objects_to_process": 3,
+                    "chunk_size": 3,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 3,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                3,
+                {
+                    "id": null,
+                    "n": 0
+                },
+                {
+                    "id": null,
+                    "n": 2
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 3,
+                    "chunk_updated": 3,
+                    "chunk_failed": 4,
+                    "total_progress": "3/3"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 3,
+                    "objects_processed": 3,
+                    "objects_updated": 3,
+                    "objects_failed": 4
+                }
+            ]
+        ]
+    },
+    "no statistics": {
+        "result": {
+            "processed": 3,
+            "updated": 0,
+            "failed": 0,
+            "total": 3,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 3,
+                    "objects_to_process": 3,
+                    "chunk_size": 3,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 3,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                3,
+                {
+                    "id": null,
+                    "n": 0
+                },
+                {
+                    "id": null,
+                    "n": 2
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 3,
+                    "chunk_updated": 0,
+                    "chunk_failed": 0,
+                    "total_progress": "3/3"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 3,
+                    "objects_processed": 3,
+                    "objects_updated": 0,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "empty statistics": {
+        "result": {
+            "processed": 3,
+            "updated": 0,
+            "failed": 0,
+            "total": 3,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 3,
+                    "objects_to_process": 3,
+                    "chunk_size": 3,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 3,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                3,
+                {
+                    "id": null,
+                    "n": 0
+                },
+                {
+                    "id": null,
+                    "n": 2
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 3,
+                    "chunk_updated": 0,
+                    "chunk_failed": 0,
+                    "total_progress": "3/3"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 3,
+                    "objects_processed": 3,
+                    "objects_updated": 0,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "bulk save throws": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 3,
+            "total": 3,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 3,
+                    "objects_to_process": 3,
+                    "chunk_size": 3,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 3,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                3,
+                {
+                    "id": null,
+                    "n": 0
+                },
+                {
+                    "id": null,
+                    "n": 2
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.error",
+                "[ValidationHandler] Chunk validation failed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunkOffset": 0,
+                    "error": "bulk save 1 failed"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 3,
+                    "objects_processed": 0,
+                    "objects_updated": 0,
+                    "objects_failed": 3
+                }
+            ]
+        ]
+    },
+    "callback without bulk": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 3,
+            "total": 3,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 3,
+                    "objects_to_process": 3,
+                    "chunk_size": 3,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 3,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "log.error",
+                "[ValidationHandler] Chunk validation failed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunkOffset": 0,
+                    "error": "Cannot access bulk save method"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 3,
+                    "objects_processed": 0,
+                    "objects_updated": 0,
+                    "objects_failed": 3
+                }
+            ]
+        ]
+    },
+    "empty callback": {
+        "result": {
+            "processed": 0,
+            "updated": 0,
+            "failed": 3,
+            "total": 3,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 3,
+                    "objects_to_process": 3,
+                    "chunk_size": 3,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 3,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "log.error",
+                "[ValidationHandler] Chunk validation failed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunkOffset": 0,
+                    "error": "Cannot access bulk save method"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 3,
+                    "objects_processed": 0,
+                    "objects_updated": 0,
+                    "objects_failed": 3
+                }
+            ]
+        ]
+    },
+    "four chunks, one fails": {
+        "result": {
+            "processed": 2500,
+            "updated": 2500,
+            "failed": 2000,
+            "total": 4500,
+            "errors": []
+        },
+        "calls": {
+            "count": 15,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": null,
+                        "offset": 0
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 4500,
+                        "objects_to_process": 4500,
+                        "chunk_size": 2000,
+                        "estimated_chunks": "float:3.0"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/3",
+                        "chunk_size": 2000,
+                        "progress_pct": "float:0.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.error",
+                    "[ValidationHandler] Chunk validation failed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "2/3",
+                        "chunkOffset": 2000,
+                        "error": "bulk save 2 failed"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "3/3",
+                        "chunk_size": 500,
+                        "progress_pct": "float:88.9"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    500,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "3/3",
+                        "chunk_processed": 500,
+                        "chunk_updated": 500,
+                        "chunk_failed": 0,
+                        "total_progress": "500/4500"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 4500,
+                        "objects_processed": 2500,
+                        "objects_updated": 2500,
+                        "objects_failed": 2000
+                    }
+                ]
+            ],
+            "sha1": "397da48ae7aca240134aafa31edc5ae1db1a0605"
+        }
+    },
+    "band 1000": {
+        "result": {
+            "processed": 1000,
+            "updated": 1000,
+            "failed": 0,
+            "total": 1000,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 1000,
+                    "objects_to_process": 1000,
+                    "chunk_size": 1000,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 1000,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                1000,
+                {
+                    "id": null,
+                    "same": true
+                },
+                {
+                    "id": null,
+                    "same": true
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 1000,
+                    "chunk_updated": 1000,
+                    "chunk_failed": 0,
+                    "total_progress": "1000/1000"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 1000,
+                    "objects_processed": 1000,
+                    "objects_updated": 1000,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "band 1001": {
+        "result": {
+            "processed": 1001,
+            "updated": 1001,
+            "failed": 0,
+            "total": 1001,
+            "errors": []
+        },
+        "calls": [
+            [
+                "schema.find",
+                [
+                    9,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    7,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Loading objects for validation",
+                {
+                    "schema_id": 9,
+                    "storage_type": "magic_table",
+                    "limit": null,
+                    "offset": 0
+                }
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                7,
+                9,
+                [
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Starting chunked validation",
+                {
+                    "schema_id": 9,
+                    "total_objects": 1001,
+                    "objects_to_process": 1001,
+                    "chunk_size": 2000,
+                    "estimated_chunks": "float:1.0"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Processing validation chunk",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_size": 1001,
+                    "progress_pct": "float:0.0"
+                }
+            ],
+            [
+                "saveObjects",
+                1001,
+                {
+                    "id": null,
+                    "same": true
+                },
+                {
+                    "id": null,
+                    "same": true
+                },
+                {
+                    "register": 7,
+                    "schema": 9,
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "validation": true,
+                    "events": false,
+                    "deduplicateIds": false,
+                    "enrich": true
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Chunk validation completed",
+                {
+                    "schema_id": 9,
+                    "chunk": "1/1",
+                    "chunk_processed": 1001,
+                    "chunk_updated": 1001,
+                    "chunk_failed": 0,
+                    "total_progress": "1001/1001"
+                }
+            ],
+            [
+                "log.info",
+                "[ValidationHandler] Validation and save completed",
+                {
+                    "schema_id": 9,
+                    "total_in_schema": 1001,
+                    "objects_processed": 1001,
+                    "objects_updated": 1001,
+                    "objects_failed": 0
+                }
+            ]
+        ]
+    },
+    "band 10000": {
+        "result": {
+            "processed": 10000,
+            "updated": 10000,
+            "failed": 0,
+            "total": 10000,
+            "errors": []
+        },
+        "calls": {
+            "count": 21,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": null,
+                        "offset": 0
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 10000,
+                        "objects_to_process": 10000,
+                        "chunk_size": 2000,
+                        "estimated_chunks": "float:5.0"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/5",
+                        "chunk_size": 2000,
+                        "progress_pct": "float:0.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "4/5",
+                        "chunk_processed": 2000,
+                        "chunk_updated": 2000,
+                        "chunk_failed": 0,
+                        "total_progress": "2000/10000"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "5/5",
+                        "chunk_size": 2000,
+                        "progress_pct": "float:80.0"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "5/5",
+                        "chunk_processed": 2000,
+                        "chunk_updated": 2000,
+                        "chunk_failed": 0,
+                        "total_progress": "2000/10000"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 10000,
+                        "objects_processed": 10000,
+                        "objects_updated": 10000,
+                        "objects_failed": 0
+                    }
+                ]
+            ],
+            "sha1": "1e37b89bb3cf6bc7520daf15c6db2156ed98ddfd"
+        }
+    },
+    "band 10001": {
+        "result": {
+            "processed": 10001,
+            "updated": 10001,
+            "failed": 0,
+            "total": 10001,
+            "errors": []
+        },
+        "calls": {
+            "count": 18,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": null,
+                        "offset": 0
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 10001,
+                        "objects_to_process": 10001,
+                        "chunk_size": 3000,
+                        "estimated_chunks": "float:4.0"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/4",
+                        "chunk_size": 3000,
+                        "progress_pct": "float:0.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    3000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "3/4",
+                        "chunk_processed": 3000,
+                        "chunk_updated": 3000,
+                        "chunk_failed": 0,
+                        "total_progress": "3000/10001"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "4/4",
+                        "chunk_size": 1001,
+                        "progress_pct": "float:90.0"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    1001,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "4/4",
+                        "chunk_processed": 1001,
+                        "chunk_updated": 1001,
+                        "chunk_failed": 0,
+                        "total_progress": "1001/10001"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 10001,
+                        "objects_processed": 10001,
+                        "objects_updated": 10001,
+                        "objects_failed": 0
+                    }
+                ]
+            ],
+            "sha1": "07ed382d8202248c2650a2ef75b006e3a65fa183"
+        }
+    },
+    "band 50000": {
+        "result": {
+            "processed": 50000,
+            "updated": 50000,
+            "failed": 0,
+            "total": 50000,
+            "errors": []
+        },
+        "calls": {
+            "count": 57,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": null,
+                        "offset": 0
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 50000,
+                        "objects_to_process": 50000,
+                        "chunk_size": 3000,
+                        "estimated_chunks": "float:17.0"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/17",
+                        "chunk_size": 3000,
+                        "progress_pct": "float:0.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    3000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "16/17",
+                        "chunk_processed": 3000,
+                        "chunk_updated": 3000,
+                        "chunk_failed": 0,
+                        "total_progress": "3000/50000"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "17/17",
+                        "chunk_size": 2000,
+                        "progress_pct": "float:96.0"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "17/17",
+                        "chunk_processed": 2000,
+                        "chunk_updated": 2000,
+                        "chunk_failed": 0,
+                        "total_progress": "2000/50000"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 50000,
+                        "objects_processed": 50000,
+                        "objects_updated": 50000,
+                        "objects_failed": 0
+                    }
+                ]
+            ],
+            "sha1": "a6cf64a7fd6749ed2da431d602732e9236cb537d"
+        }
+    },
+    "band 50001": {
+        "result": {
+            "processed": 50001,
+            "updated": 50001,
+            "failed": 0,
+            "total": 50001,
+            "errors": []
+        },
+        "calls": {
+            "count": 84,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": null,
+                        "offset": 0
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 50001,
+                        "objects_to_process": 50001,
+                        "chunk_size": 2000,
+                        "estimated_chunks": "float:26.0"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/26",
+                        "chunk_size": 2000,
+                        "progress_pct": "float:0.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "25/26",
+                        "chunk_processed": 2000,
+                        "chunk_updated": 2000,
+                        "chunk_failed": 0,
+                        "total_progress": "2000/50001"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "26/26",
+                        "chunk_size": 1,
+                        "progress_pct": "float:100.0"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    1,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "26/26",
+                        "chunk_processed": 1,
+                        "chunk_updated": 1,
+                        "chunk_failed": 0,
+                        "total_progress": "1/50001"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 50001,
+                        "objects_processed": 50001,
+                        "objects_updated": 50001,
+                        "objects_failed": 0
+                    }
+                ]
+            ],
+            "sha1": "fc1b7b018cd6879f75eefbfc5f573d5755abbabb"
+        }
+    },
+    "band 200000": {
+        "result": {
+            "processed": 200000,
+            "updated": 200000,
+            "failed": 0,
+            "total": 200000,
+            "errors": []
+        },
+        "calls": {
+            "count": 306,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": null,
+                        "offset": 0
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 200000,
+                        "objects_to_process": 200000,
+                        "chunk_size": 2000,
+                        "estimated_chunks": "float:100.0"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/100",
+                        "chunk_size": 2000,
+                        "progress_pct": "float:0.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "99/100",
+                        "chunk_processed": 2000,
+                        "chunk_updated": 2000,
+                        "chunk_failed": 0,
+                        "total_progress": "2000/200000"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "100/100",
+                        "chunk_size": 2000,
+                        "progress_pct": "float:99.0"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "100/100",
+                        "chunk_processed": 2000,
+                        "chunk_updated": 2000,
+                        "chunk_failed": 0,
+                        "total_progress": "2000/200000"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 200000,
+                        "objects_processed": 200000,
+                        "objects_updated": 200000,
+                        "objects_failed": 0
+                    }
+                ]
+            ],
+            "sha1": "41de870e8eb24503e0735fe7149cb48341bc1e0c"
+        }
+    },
+    "band 200001": {
+        "result": {
+            "processed": 200001,
+            "updated": 200001,
+            "failed": 0,
+            "total": 200001,
+            "errors": []
+        },
+        "calls": {
+            "count": 609,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": null,
+                        "offset": 0
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 200001,
+                        "objects_to_process": 200001,
+                        "chunk_size": 1000,
+                        "estimated_chunks": "float:201.0"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/201",
+                        "chunk_size": 1000,
+                        "progress_pct": "float:0.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    1000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "200/201",
+                        "chunk_processed": 1000,
+                        "chunk_updated": 1000,
+                        "chunk_failed": 0,
+                        "total_progress": "1000/200001"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "201/201",
+                        "chunk_size": 1,
+                        "progress_pct": "float:100.0"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    1,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "201/201",
+                        "chunk_processed": 1,
+                        "chunk_updated": 1,
+                        "chunk_failed": 0,
+                        "total_progress": "1/200001"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 200001,
+                        "objects_processed": 200001,
+                        "objects_updated": 200001,
+                        "objects_failed": 0
+                    }
+                ]
+            ],
+            "sha1": "2d003d65c7b6b380dc1005f02a1e81fa41c05a77"
+        }
+    },
+    "band by limit": {
+        "result": {
+            "processed": 2500,
+            "updated": 2500,
+            "failed": 0,
+            "total": 4000,
+            "errors": []
+        },
+        "calls": {
+            "count": 13,
+            "first": [
+                [
+                    "schema.find",
+                    [
+                        9,
+                        [],
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "register.find",
+                    [
+                        7,
+                        true,
+                        true
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Loading objects for validation",
+                    {
+                        "schema_id": 9,
+                        "storage_type": "magic_table",
+                        "limit": 2500,
+                        "offset": 1000
+                    }
+                ],
+                [
+                    "findAllInRegisterSchemaTable",
+                    7,
+                    9,
+                    [
+                        null,
+                        null,
+                        null,
+                        []
+                    ]
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Applied limit/offset for chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 4000,
+                        "offset": 1000,
+                        "limit": 2500,
+                        "objects_to_process": 2500
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Starting chunked validation",
+                    {
+                        "schema_id": 9,
+                        "total_objects": 4000,
+                        "objects_to_process": 2500,
+                        "chunk_size": 2000,
+                        "estimated_chunks": "float:2.0"
+                    }
+                ]
+            ],
+            "last": [
+                [
+                    "saveObjects",
+                    2000,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "1/2",
+                        "chunk_processed": 2000,
+                        "chunk_updated": 2000,
+                        "chunk_failed": 0,
+                        "total_progress": "2000/2500"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Processing validation chunk",
+                    {
+                        "schema_id": 9,
+                        "chunk": "2/2",
+                        "chunk_size": 500,
+                        "progress_pct": "float:80.0"
+                    }
+                ],
+                [
+                    "saveObjects",
+                    500,
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "id": null,
+                        "same": true
+                    },
+                    {
+                        "register": 7,
+                        "schema": 9,
+                        "_rbac": false,
+                        "_multitenancy": false,
+                        "validation": true,
+                        "events": false,
+                        "deduplicateIds": false,
+                        "enrich": true
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Chunk validation completed",
+                    {
+                        "schema_id": 9,
+                        "chunk": "2/2",
+                        "chunk_processed": 500,
+                        "chunk_updated": 500,
+                        "chunk_failed": 0,
+                        "total_progress": "500/2500"
+                    }
+                ],
+                [
+                    "log.info",
+                    "[ValidationHandler] Validation and save completed",
+                    {
+                        "schema_id": 9,
+                        "total_in_schema": 4000,
+                        "objects_processed": 2500,
+                        "objects_updated": 2500,
+                        "objects_failed": 0
+                    }
+                ]
+            ],
+            "sha1": "37b37344e5d26b1798bffcd2d6e15d6042adbaa7"
+        }
+    }
+}

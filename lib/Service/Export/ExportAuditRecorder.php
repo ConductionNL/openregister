@@ -41,7 +41,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportAuditRecorder {
 	/**
@@ -85,7 +85,7 @@ class ExportAuditRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function recordCompleted(
 		string $profile,
@@ -122,7 +122,7 @@ class ExportAuditRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function recordRefused(
 		string $profile,

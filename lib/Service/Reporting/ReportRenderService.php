@@ -10,7 +10,7 @@
  *
  *   - csv  / xlsx / ods  -> SpreadsheetReportWriter (one sheet per widget)
  *   - html               -> HtmlReportWriter (browser print-to-PDF works on this)
- *   - pdf                -> PdfReportWriter (HTML pipeline routed through Dompdf)
+ *   - pdf                -> PdfReportWriter (the HTML written as ODT, converted by the office server)
  *
  * Usage from a controller:
  *
@@ -64,7 +64,7 @@ class ReportRenderService {
 	 * @param GraphQLService $graphqlService GraphQL executor.
 	 * @param SpreadsheetReportWriter $spreadsheetWriter CSV / XLSX / ODS writer.
 	 * @param HtmlReportWriter $htmlWriter HTML writer.
-	 * @param PdfReportWriter $pdfWriter PDF writer (Dompdf).
+	 * @param PdfReportWriter $pdfWriter PDF writer (office server conversion).
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -89,6 +89,7 @@ class ReportRenderService {
 	 *
 	 * @throws InvalidArgumentException When the format is unsupported
 	 *                                  or the dashboard is malformed.
+	 * @throws \OCA\OpenRegister\Exception\OfficeServerRequiredException When a PDF is asked for and no office server converts it.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-1
 	 */

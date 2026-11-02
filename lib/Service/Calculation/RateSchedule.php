@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Calculation;
  * Units past the last closed band are not charged when the schedule has no open
  * band. A quantity of zero or less charges nothing.
  *
- * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+ * @spec openspec/specs/computed-fields/spec.md
  */
 final class RateSchedule {
 
@@ -58,7 +58,7 @@ final class RateSchedule {
 	 *
 	 * @throws EvaluationException When an operand is not numeric or the schedule is malformed.
 	 *
-	 * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function evaluate(mixed $quantity, mixed $bands, mixed $cap, bool $cumulative): int|float|null {
 		if ($quantity === null || $bands === null) {
@@ -95,7 +95,7 @@ final class RateSchedule {
 	 *
 	 * @throws EvaluationException When the schedule is malformed.
 	 *
-	 * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function accrued(int|float $quantity, array $bands, int|float|null $cap): int|float {
 		$total = 0;
@@ -131,7 +131,7 @@ final class RateSchedule {
 	 *
 	 * @throws EvaluationException When the schedule is malformed.
 	 *
-	 * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function rateAt(int|float $unit, array $bands): int|float|null {
 		// The schedule is checked whatever the unit is: a malformed one must raise an evaluation error and never be read as

@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { Application } from '../../entities/index.js'
+import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
+import { listStateActions } from './listState.js'
 
 export const useApplicationStore = defineStore('application', {
 	state: () => ({
@@ -56,27 +58,7 @@ export const useApplicationStore = defineStore('application', {
 				(applicationItem) => new Application(applicationItem),
 			)
 		},
-		/**
-		 * Set pagination details
-		 *
-		 * @param {number} page - The current page number for pagination
-		 * @param {number} limit - The number of items to display per page
-		 *
-		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
-		 */
-		setPagination(page, limit = 20) {
-			this.pagination = { page, limit }
-		},
-		/**
-		 * Set query filters for application list
-		 *
-		 * @param {object} filters - The filter criteria to apply to the application list
-		 *
-		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
-		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-		},
+		...listStateActions(20),
 		/**
 		 * Refresh the application list from the API
 		 *
@@ -269,33 +251,7 @@ export const useApplicationStore = defineStore('application', {
 		 * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
 		 */
 		async loadNextcloudGroups() {
-			try {
-				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				const response = await fetch(
-					'/ocs/v1.php/cloud/groups?format=json',
-					{
-						headers: {
-							'OCS-APIRequest': 'true',
-						},
-					},
-				)
-
-				if (response.ok) {
-					const data = await response.json()
-					if (data.ocs?.data?.groups) {
-						// Transform group IDs into objects with additional info
-						this.nextcloudGroups = data.ocs.data.groups.map(
-							(groupId) => ({
-								id: groupId,
-								name: groupId,
-								userCount: 0, // Could be fetched separately if needed
-							}),
-						)
-					}
-				}
-			} catch (error) {
-				console.error('Error loading Nextcloud groups:', error)
-			}
+			return loadNextcloudGroupsInto(this)
 		},
 	},
 })

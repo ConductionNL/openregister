@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
@@ -127,7 +128,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class Schema extends Entity implements JsonSerializable {
+class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 	/**
 	 * Unique identifier for the schema
@@ -1437,7 +1438,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
 	 */
 	private function validateRolesAssignment(mixed $roles, string $context): void {
 		if (is_array($roles) === false) {
@@ -2474,7 +2475,7 @@ class Schema extends Entity implements JsonSerializable {
 	 * @return array<string, array{through: string, property: string, label?: string}>
 	 *                                                                                The declared lenses, keyed by property name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getLenses(): array {
 		$configuration = $this->getConfiguration();
@@ -2557,7 +2558,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getListPresentation(): array {
 		$configuration = $this->getConfiguration();
@@ -2642,7 +2643,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getGeoInheritance(): array {
 		$configuration = $this->getConfiguration();
@@ -2752,6 +2753,8 @@ class Schema extends Entity implements JsonSerializable {
 	 *   Example: 'profile.avatar' (should contain base64 encoded image data)
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
+	 *   a file property of this schema, unless the property sets its own.
 	 * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
@@ -2882,7 +2885,9 @@ class Schema extends Entity implements JsonSerializable {
 		// ever be declared.
 		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
 		// caller's own drafts out of the schema's lists by default.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
+		// `autoShare` is the schema-level default FilePropertyHandler reads for
+		// every file property.
+		$boolFields = ['allowFiles', 'autoShare', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
@@ -2900,7 +2905,11 @@ class Schema extends Entity implements JsonSerializable {
 		// UniqueConstraintEvaluator and UniqueConstraintListener read (named
 		// refuse/report constraints, beside the legacy `unique`). Off this
 		// list every save dropped it in silence and no constraint ever fired.
+		// `autoPublish` is the retired name of `autoShare`. It is kept unvalidated
+		// and never acted on, so FilePropertyHandler can still log the
+		// deprecation warning that names `autoShare`.
 		$passThrough = [
+			'autoPublish',
 			'unique',
 			'uniqueConstraints',
 			'facetCacheTtl',
@@ -3257,7 +3266,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
 	 * is a named constructor reading a config block; there is no instance to inject.
@@ -3687,19 +3696,24 @@ class Schema extends Entity implements JsonSerializable {
 	 * Validate and normalise `partyKinds`: the kinds of party an object of
 	 * this schema accepts, and per kind the roles it may hold.
 	 *
-	 * Each entry is `{key, label, description?, roles?}`; a bare string reads
-	 * as `{key: s, label: s}`. Keys are unique, non-empty and at most 64
-	 * characters, the width of the link table's `party_kind` column. `roles`
-	 * is an optional list of role keys: naming it binds those roles to that
-	 * kind, leaving it out lets the kind hold any role the schema declares.
+	 * Each entry is `{key, label, description?, roles?, identityShapes?}`; a
+	 * bare string reads as `{key: s, label: s}`. Keys are unique, non-empty and
+	 * at most 64 characters, the width of the link table's `party_kind` column.
+	 * `roles` is an optional list of role keys: naming it binds those roles to
+	 * that kind, leaving it out lets the kind hold any role the schema
+	 * declares. `identityShapes` names the identity shapes a party of this
+	 * kind has in a shared party-kind vocabulary (`naturalPerson`,
+	 * `organization`), so a host can check a party against a vocabulary that
+	 * accepts shapes rather than this schema's kind keys.
 	 *
 	 * @param mixed $value The configured value.
 	 *
-	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The normalised entries.
+	 * @return array<int, array<string, mixed>> The normalised entries, each
+	 *   `{key, label, description?, roles?, identityShapes?}`.
 	 *
 	 * @throws InvalidArgumentException When the value is not a list of valid entries.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function validatePartyKindsValue(mixed $value): array {
 		if (is_array($value) === false || array_is_list($value) === false) {
@@ -3726,36 +3740,50 @@ class Schema extends Entity implements JsonSerializable {
 	}//end validatePartyKindsValue()
 
 	/**
-	 * One `partyKinds` entry as `{key, label, description?, roles?}`, or null when it has no usable key.
+	 * One `partyKinds` entry as `{key, label, description?, roles?, identityShapes?}`, or null when it has no usable key.
 	 *
 	 * @param mixed $entry A string or an array.
 	 *
-	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>}|null The entry.
+	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>, identityShapes?: array<int, string>}|null The entry.
 	 */
 	private static function normalisePartyKind(mixed $entry): ?array {
 		$normalised = self::normaliseLinkRole(entry: $entry);
-		if ($normalised === null) {
-			return null;
-		}
-
-		if (is_array($entry) === false || isset($entry['roles']) === false || is_array($entry['roles']) === false) {
+		if ($normalised === null || is_array($entry) === false) {
 			return $normalised;
 		}
 
-		$roles = [];
-		foreach ($entry['roles'] as $role) {
-			$role = trim((string)$role);
-			if ($role !== '' && in_array($role, $roles, true) === false) {
-				$roles[] = $role;
+		foreach (['roles', 'identityShapes'] as $listKey) {
+			$list = self::distinctStrings(value: ($entry[$listKey] ?? null));
+			if ($list !== []) {
+				$normalised[$listKey] = $list;
 			}
-		}
-
-		if ($roles !== []) {
-			$normalised['roles'] = $roles;
 		}
 
 		return $normalised;
 	}//end normalisePartyKind()
+
+	/**
+	 * The distinct, trimmed, non-empty strings of a list, in order; [] for anything else.
+	 *
+	 * @param mixed $value The configured list.
+	 *
+	 * @return array<int, string> The strings.
+	 */
+	private static function distinctStrings(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($value as $item) {
+			$item = trim((string)$item);
+			if ($item !== '' && in_array($item, $out, true) === false) {
+				$out[] = $item;
+			}
+		}
+
+		return $out;
+	}//end distinctStrings()
 
 	/**
 	 * The kinds of party an object of this schema accepts, [] when it declares none.
@@ -3766,7 +3794,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function getPartyKinds(): array {
 		$configured = $this->configuration['partyKinds'] ?? null;
@@ -3790,7 +3818,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The annotation as stored.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function getPartyAnnotation(): array {
 		$configured = $this->configuration['x-openregister-party'] ?? null;
@@ -4109,7 +4137,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, string> Reason codes mapped to their labels.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function notSuppliedReasons(): array {
 		$configuration = ($this->getConfiguration() ?? []);

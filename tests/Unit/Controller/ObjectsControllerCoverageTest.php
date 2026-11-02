@@ -1840,6 +1840,151 @@ class ObjectsControllerCoverageTest extends TestCase {
 	}
 
 	/**
+	 * Wire a magic-mapped listing whose mapper answers with the given rows and total.
+	 *
+	 * @param array $params         The request parameters.
+	 * @param array $query          The query buildSearchQuery() returns.
+	 * @param array $ignoredFilters The filters the mapper ignored.
+	 *
+	 * @return MagicMapper&MockObject
+	 */
+	private function wireMagicListing(array $params, array $query, array $ignoredFilters = []): MagicMapper&MockObject {
+		$registerEntity = $this->createMagicMappedRegister(id: 1, slug: 'reg', magicSchemas: ['2']);
+		$schemaEntity   = $this->createSchemaMock(id: 2, slug: 'sch');
+		$this->registerDiMappersWithEntities(registerEntity: $registerEntity, schemaEntity: $schemaEntity);
+
+		$this->request->method('getParams')->willReturn($params);
+		$this->request->method('getRequestUri')->willReturn('/api/objects/reg/sch');
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(2);
+		$this->objectService->method('buildSearchQuery')->willReturn($query);
+
+		$magicMapper = $this->createMock(originalClassName: MagicMapper::class);
+		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([]);
+		$magicMapper->method('getIgnoredFilters')->willReturn($ignoredFilters);
+		$this->registerService(id: MagicMapper::class, factory: fn () => $magicMapper);
+		$renderHandler = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\RenderObject::class);
+		$this->registerService(id: \OCA\OpenRegister\Service\Object\RenderObject::class, factory: fn () => $renderHandler);
+
+		return $magicMapper;
+	}//end wireMagicListing()
+
+	/**
+	 * The magic-table listing reports its source, scope and pagination in a fixed shape.
+	 *
+	 * @return void
+	 */
+	public function testIndexMagicMapperResponseShape(): void {
+		$query       = ['_limit' => 10, '_offset' => 20, '_recentLens' => ['answered' => false]];
+		$magicMapper = $this->wireMagicListing(params: [], query: $query);
+		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(45);
+
+		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
+
+		$this->assertSame(expected: ['results', 'total', 'pages', 'page', 'limit', '@self'], actual: array_keys($data));
+		$this->assertSame(expected: [[], 45, 5, 3, 10], actual: [$data['results'], $data['total'], $data['pages'], $data['page'], $data['limit']]);
+		$this->assertSame(
+			expected: ['source', 'register', 'schema', 'query', 'rbac', 'multi', 'deleted', 'activeOrganisation', 'lenses'],
+			actual: array_keys($data['@self'])
+		);
+		$this->assertSame(expected: 'magic_mapper', actual: $data['@self']['source']);
+		$this->assertSame(expected: ['reg', 'sch'], actual: [$data['@self']['register'], $data['@self']['schema']]);
+		$this->assertTrue(condition: $data['@self']['query']['_rbac']);
+		$this->assertTrue(condition: $data['@self']['query']['_multitenancy']);
+		$this->assertFalse(condition: $data['@self']['query']['_multitenancy_explicit']);
+		$this->assertSame(expected: [true, true, false], actual: [$data['@self']['rbac'], $data['@self']['multi'], $data['@self']['deleted']]);
+		$this->assertSame(expected: ['recent' => ['answered' => false]], actual: $data['@self']['lenses']);
+	}//end testIndexMagicMapperResponseShape()
+
+	/**
+	 * `_noTotal=true` skips the count query and reports no total.
+	 *
+	 * @return void
+	 */
+	public function testIndexMagicMapperNoTotalSkipsTheCount(): void {
+		$magicMapper = $this->wireMagicListing(params: ['_noTotal' => true], query: ['_limit' => 10, '_page' => 4]);
+		$magicMapper->expects($this->never())->method('countObjectsInRegisterSchemaTable');
+
+		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
+
+		$this->assertSame(expected: [null, 1, 4], actual: [$data['total'], $data['pages'], $data['page']]);
+	}//end testIndexMagicMapperNoTotalSkipsTheCount()
+
+	/**
+	 * `_count=false` skips the count query as well, and the count query drops pagination.
+	 *
+	 * @return void
+	 */
+	public function testIndexMagicMapperCountFalseSkipsTheCount(): void {
+		$magicMapper = $this->wireMagicListing(params: ['_count' => 'false'], query: ['_limit' => 10]);
+		$magicMapper->expects($this->never())->method('countObjectsInRegisterSchemaTable');
+
+		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
+
+		$this->assertNull(actual: $data['total']);
+		$this->assertSame(expected: 1, actual: $data['page']);
+	}//end testIndexMagicMapperCountFalseSkipsTheCount()
+
+	/**
+	 * The count query is the search query without its pagination keys.
+	 *
+	 * @return void
+	 */
+	public function testIndexMagicMapperCountsWithoutPagination(): void {
+		$magicMapper = $this->wireMagicListing(params: [], query: ['_limit' => 5, '_offset' => 5, '_page' => 2, 'status' => 'open']);
+		$magicMapper->expects($this->once())
+			->method('countObjectsInRegisterSchemaTable')
+			->with(
+				$this->callback(
+					callback: fn (array $countQuery): bool => isset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']) === false
+						&& $countQuery['status'] === 'open'
+				)
+			)
+			->willReturn(7);
+
+		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
+
+		$this->assertSame(expected: [7, 2, 2], actual: [$data['total'], $data['pages'], $data['page']]);
+	}//end testIndexMagicMapperCountsWithoutPagination()
+
+	/**
+	 * Ignored control parameters get a hint naming the underscored spelling; `filter` never does.
+	 *
+	 * @return void
+	 */
+	public function testIndexMagicMapperHintNamesTheMistakenParameters(): void {
+		$magicMapper = $this->wireMagicListing(params: [], query: ['_limit' => 20], ignoredFilters: ['limit', 'filter', 'sort']);
+		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
+
+		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
+
+		$this->assertSame(expected: ['limit', 'filter', 'sort'], actual: $data['@self']['ignoredFilters']);
+		$this->assertSame(
+			expected: 'Query returned 0 results because limit, sort was treated as an object property filter.'
+			.' Did you mean _limit, _sort? Control parameters require an underscore prefix (e.g. _limit, _offset, _page).',
+			actual: $data['@self']['hint']
+		);
+	}//end testIndexMagicMapperHintNamesTheMistakenParameters()
+
+	/**
+	 * An ignored filter that is no control parameter is reported without a hint.
+	 *
+	 * @return void
+	 */
+	public function testIndexMagicMapperIgnoredFilterWithoutHint(): void {
+		$magicMapper = $this->wireMagicListing(params: [], query: ['_limit' => 20], ignoredFilters: ['filter']);
+		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(0);
+
+		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
+
+		$this->assertSame(expected: ['filter'], actual: $data['@self']['ignoredFilters']);
+		$this->assertArrayNotHasKey(key: 'hint', array: $data['@self']);
+	}//end testIndexMagicMapperIgnoredFilterWithoutHint()
+
+	/**
 	 * Register a factory the injected container will answer with.
 	 *
 	 * @param string   $id      Service id.

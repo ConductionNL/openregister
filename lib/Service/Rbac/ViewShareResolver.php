@@ -148,7 +148,7 @@ class ViewShareResolver {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-1
 	 */
 	private function shareNames(array $share, string $userId, array $userGroups): bool {
 		if (isset($share['user']) === true) {
@@ -325,7 +325,7 @@ class ViewShareResolver {
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
-	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
 	 */
 	public function validateShares(mixed $sharedWith, callable $groupExists, ?callable $userExists=null): array {
 		return (new ViewShareListValidator())->findings(
@@ -344,7 +344,7 @@ class ViewShareResolver {
 	 *
 	 * @return array<int, string> The group ids.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function shareGroups(array $view): array {
 		return array_values(array_unique(array_column($this->sharesOf(view: $view), 'group')));

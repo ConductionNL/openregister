@@ -90,7 +90,7 @@ class DeletionWindowService {
 	 *
 	 * @return array{days: int, source: string} The retention and its rule.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function retentionFor(?Schema $schema): array {
 		if ($schema !== null) {
@@ -143,7 +143,7 @@ class DeletionWindowService {
 	 *
 	 * @return array<string, mixed> Keys for the `deleted` metadata blob.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function openWindow(?Schema $schema, ?DateTimeImmutable $deletedAt = null): array {
 		$moment = ($deletedAt ?? new DateTimeImmutable());
@@ -173,7 +173,7 @@ class DeletionWindowService {
 	 *
 	 * @return DeletionWindow|null The window, or null when the object is live.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function windowFor(
 		ObjectEntity $object,
@@ -231,7 +231,7 @@ class DeletionWindowService {
 	 *
 	 * @return array<string, mixed> The refusal body.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalBody(ObjectEntity $object, ?Schema $schema = null): array {
 		$window = $this->windowFor(object: $object, schema: $schema);

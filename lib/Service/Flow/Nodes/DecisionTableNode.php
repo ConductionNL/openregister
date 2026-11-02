@@ -182,8 +182,9 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 			[
 				'key' => 'tableRef',
 				'label' => $this->l10n->t('Stored decision table'),
-				'type' => 'text',
-				'help' => $this->l10n->t('The key or id of a table in the decision-tables register. Use this or an inline table, not both.'),
+				'type' => 'select',
+				'optionsFrom' => '/apps/openregister/api/objects/'.DecisionTableStore::REGISTER.'/'.DecisionTableStore::SCHEMA,
+				'help' => $this->l10n->t('A table from the decision-tables register. Use this or an inline table, not both.'),
 			],
 			[
 				'key' => 'inputMapping',

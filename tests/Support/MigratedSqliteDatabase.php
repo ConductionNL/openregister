@@ -36,6 +36,7 @@ use Doctrine\DBAL\Schema\Schema;
 use OCP\DB\IResult;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
+use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
@@ -52,13 +53,18 @@ class MigratedSqliteDatabase {
 	private const BRIDGED = [
 		'select', 'from', 'where', 'andWhere', 'orWhere', 'orderBy', 'addOrderBy',
 		'setMaxResults', 'setFirstResult', 'groupBy', 'createNamedParameter', 'createFunction',
-		'expr', 'executeQuery', 'getSQL', 'insert', 'setValue', 'executeStatement', 'getLastInsertId',
+		'expr', 'func', 'executeQuery', 'getSQL', 'insert', 'setValue', 'executeStatement', 'getLastInsertId',
 	];
 
 	/**
 	 * Expression-builder methods forwarded to Doctrine. Everything else throws.
 	 */
-	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in', 'like', 'orX', 'andX'];
+	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in', 'notIn', 'like', 'orX', 'andX'];
+
+	/**
+	 * Function-builder methods rendered as SQL. Everything else throws.
+	 */
+	private const BRIDGED_FUNC = ['lower'];
 
 	private Connection $connection;
 
@@ -278,6 +284,9 @@ class MigratedSqliteDatabase {
 		}
 
 		$qb->method('expr')->willReturn($expr);
+		$func = self::mock(test: $this->test, class: IFunctionBuilder::class, bridged: self::BRIDGED_FUNC);
+		$func->method('lower')->willReturnCallback(fn ($x) => self::func(call: 'LOWER(' . self::sql(value: $x) . ')'));
+		$qb->method('func')->willReturn($func);
 		$qb->method('createNamedParameter')->willReturnCallback(
 			fn ($value, $type = IQueryBuilder::PARAM_STR) => self::parameter($inner->createNamedParameter($value, $type))
 		);
@@ -326,6 +335,7 @@ class MigratedSqliteDatabase {
 		$expr->method('isNull')->willReturnCallback(fn ($x) => $doctrine->isNull(self::sql($x)));
 		$expr->method('isNotNull')->willReturnCallback(fn ($x) => $doctrine->isNotNull(self::sql($x)));
 		$expr->method('in')->willReturnCallback(fn ($x, $y) => $doctrine->in(self::sql($x), self::sql($y)));
+		$expr->method('notIn')->willReturnCallback(fn ($x, $y) => $doctrine->notIn(self::sql(value: $x), self::sql(value: $y)));
 		// As Nextcloud's SqliteExpressionBuilder::like(): the backslash escapes `_` and `%`.
 		$expr->method('like')->willReturnCallback(fn ($x, $y) => $doctrine->like(self::sql($x), self::sql($y))." ESCAPE '\\'");
 		// Nextcloud's own composite, which renders `(a) OR (b)` like Doctrine's.

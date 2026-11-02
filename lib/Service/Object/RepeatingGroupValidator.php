@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function validate(array $object, Schema $schema): array {
 		$properties = $schema->getProperties();
@@ -127,7 +127,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateGroup(string $name, mixed $value, array $definition): array {
 		// An empty value clears the group. It is the minimum's business below,
@@ -189,7 +189,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateBounds(string $name, int $count, array $definition): array {
 		$violations = [];
@@ -230,7 +230,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateRow(string $name, int $position, mixed $row, array $members, array $required): array {
 		if (is_array($row) === false || array_is_list($row) === true) {
@@ -261,7 +261,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function missingMembers(string $name, int $position, array $row, array $required): array {
 		$violations = [];
@@ -298,7 +298,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function mistypedMembers(string $name, int $position, array $row, array $members): array {
 		$violations = [];
@@ -332,7 +332,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return string|null The type to check against, or null to leave it alone.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function checkableType(mixed $declaration): ?string {
 		if (is_array($declaration) === false) {
@@ -355,7 +355,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return boolean Whether there is a value to check.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function answers(array $row, string $member): bool {
 		if (array_key_exists($member, $row) === false) {
@@ -379,7 +379,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return boolean Whether the value matches.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function matchesType(mixed $value, string $expected): bool {
 		return match ($expected) {
@@ -404,7 +404,7 @@ class RepeatingGroupValidator {
 	 *
 	 * @return array{property: string, position: int|null, member: string|null, code: string, message: string}
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function violation(string $property, ?int $position, ?string $member, string $code, string $message): array {
 		return [

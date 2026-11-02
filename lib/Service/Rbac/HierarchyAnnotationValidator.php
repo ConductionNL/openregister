@@ -39,7 +39,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Validates the hierarchy annotation against the schema that carries it.
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class HierarchyAnnotationValidator {
 
@@ -73,7 +73,7 @@ class HierarchyAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function validate(array $schema): array {
 		$annotation = ($schema[HierarchyGrantExpander::ANNOTATION] ?? null);
@@ -135,7 +135,7 @@ class HierarchyAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function unknownKeyFindings(array $annotation): array {
 		$findings = [];
@@ -159,7 +159,7 @@ class HierarchyAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function maxDepthFindings(array $annotation): array {
 		if (array_key_exists('maxDepth', $annotation) === false) {
@@ -190,7 +190,7 @@ class HierarchyAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function inheritedVerbsFindings(array $annotation): array {
 		if (array_key_exists('inheritedVerbs', $annotation) === false) {
@@ -343,7 +343,7 @@ class HierarchyAnnotationValidator {
 	 *
 	 * @return array{errors: array<int, array<string, string>>, warnings: array<int, array<string, string>>} The split.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public static function partition(array $findings): array {
 		$errors = [];

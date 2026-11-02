@@ -419,6 +419,161 @@ import ObjectVectorizationModal from '../../../modals/settings/ObjectVectorizati
 import { useSettingsStore } from '../../../store/settings.js'
 
 /**
+ * Where each provider keeps its embedding model: [config key, model key].
+ */
+const EMBEDDING_MODELS = new Map([
+	['openai', ['openaiConfig', 'model']],
+	['fireworks', ['fireworksConfig', 'embeddingModel']],
+	['ollama', ['ollamaConfig', 'model']],
+])
+
+/**
+ * Where each provider keeps its chat model: [config key, model key].
+ */
+const CHAT_MODELS = new Map([
+	['openai', ['openaiConfig', 'chatModel']],
+	['fireworks', ['fireworksConfig', 'chatModel']],
+	['ollama', ['ollamaConfig', 'chatModel']],
+])
+
+// Vector stats fields, each with how to read it from the stats object.
+const VECTOR_COUNTS = [
+	['totalVectors', (stats) => stats.total_vectors || 0],
+	['objectVectors', (stats) => typedVectors(stats, 'object')],
+	['fileVectors', (stats) => typedVectors(stats, 'file')],
+	['storageMB', (stats) => stats.storage?.total_mb?.toFixed(1) || '0.0'],
+]
+
+/**
+ * File stats fields and the response keys they come from.
+ */
+const FILE_COUNTS = {
+	totalFiles: 'total_files',
+	filesExtracted: 'files_extracted',
+	vectorizedFiles: 'vectorized_files',
+	pendingFiles: 'pending_files',
+	totalChunks: 'total_chunks',
+}
+
+/**
+ * Object stats fields and the response keys they come from.
+ */
+const OBJECT_COUNTS = {
+	totalObjects: 'total_objects',
+	vectorizedObjects: 'vectorized_objects',
+	pendingObjects: 'pending_objects',
+	progressPercentage: 'percentage_complete',
+}
+
+/**
+ * A provider's model name from the settings, or null.
+ *
+ * @param {object} settings The LLM settings
+ * @param {Array<string>} field The config key and the model key
+ * @return {string|null} The model name
+ */
+function providerModel(settings, [configKey, modelKey]) {
+	return settings[configKey]?.[modelKey] || null
+}
+
+/**
+ * The number of vectors of one type, by type first, then the flat count.
+ *
+ * @param {object} stats The vector stats
+ * @param {string} type The vector type: object or file
+ * @return {number} The count
+ */
+function typedVectors(stats, type) {
+	return stats.by_type?.[type] || stats[`${type}_vectors`] || 0
+}
+
+/**
+ * Copy the vector counts into the shown stats, one field at a time.
+ *
+ * @param {object} target The shown vector stats
+ * @param {object} stats The vector stats from the API
+ * @return {void}
+ */
+function assignVectorCounts(target, stats) {
+	for (const [key, read] of VECTOR_COUNTS) {
+		target[key] = read(stats)
+	}
+}
+
+/**
+ * Named counts read from a response object, 0 where one is missing.
+ *
+ * @param {object} source The response object
+ * @param {object} fields Field name to response key
+ * @return {object} The counts
+ */
+function countsOf(source, fields) {
+	return Object.fromEntries(
+		Object.entries(fields).map(([field, key]) => [field, source[key] || 0]),
+	)
+}
+
+/**
+ * The vector notes of a database, as the API reports them.
+ *
+ * @param {object} db The database info
+ * @return {object} Vector support, recommended plugin and performance note
+ */
+function plainVectorInfo(db) {
+	return {
+		vectorSupport: db.vectorSupport,
+		recommendedPlugin: db.recommendedPlugin,
+		performanceNote: db.performanceNote,
+	}
+}
+
+/**
+ * The vector notes of a database whose own vector operations are in use.
+ *
+ * @param {object} db The database info
+ * @return {object} Vector support, recommended plugin and performance note
+ */
+function nativeVectorInfo(db) {
+	return {
+		vectorSupport: true,
+		recommendedPlugin: db.recommendedPlugin + ' (active ✓)',
+		performanceNote: `✅ Using ${db.type} with native vector operations for fast similarity search.`,
+	}
+}
+
+/**
+ * The database details to show.
+ *
+ * @param {object} db The database info
+ * @param {object} vector The vector notes to show with it
+ * @return {object} The details
+ */
+function databaseInfoOf(db, vector) {
+	return {
+		type: db.type || 'Unknown',
+		version: db.version || 'Unknown',
+		vectorSupport: vector.vectorSupport,
+		recommendedPlugin: vector.recommendedPlugin || null,
+		performanceNote: vector.performanceNote,
+		...databaseExtrasOf(db),
+	}
+}
+
+/**
+ * The extensions, hybrid search and update time of a database, with defaults.
+ *
+ * @param {object} db The database info
+ * @return {object} The extras
+ */
+function databaseExtrasOf(db) {
+	return {
+		extensions: db.extensions || [],
+		hybridSearch: db.hybridSearch || null,
+		lastUpdated: db.lastUpdated || null,
+	}
+}
+
+/**
  * LLM configuration settings component for managing AI/LLM integration.
  * Allows users to configure LLM providers, models, and AI features.
  */
@@ -568,37 +723,31 @@ export default {
 				const settings = await this.settingsStore.getLlmSettings()
 				if (settings) {
 					this.llmSettings = { ...this.llmSettings, ...settings }
-
-					// Extract provider configuration
-					this.providerConfig.embeddingProvider =
-						settings.embeddingProvider || null
-					this.providerConfig.chatProvider = settings.chatProvider || null
-
-					// Extract model names based on provider
-					if (settings.embeddingProvider === 'openai') {
-						this.providerConfig.embeddingModel =
-							settings.openaiConfig?.model || null
-					} else if (settings.embeddingProvider === 'fireworks') {
-						this.providerConfig.embeddingModel =
-							settings.fireworksConfig?.embeddingModel || null
-					} else if (settings.embeddingProvider === 'ollama') {
-						this.providerConfig.embeddingModel =
-							settings.ollamaConfig?.model || null
-					}
-
-					if (settings.chatProvider === 'openai') {
-						this.providerConfig.chatModel =
-							settings.openaiConfig?.chatModel || null
-					} else if (settings.chatProvider === 'fireworks') {
-						this.providerConfig.chatModel =
-							settings.fireworksConfig?.chatModel || null
-					} else if (settings.chatProvider === 'ollama') {
-						this.providerConfig.chatModel =
-							settings.ollamaConfig?.chatModel || null
-					}
+					this.applyProviderSettings(settings)
 				}
 			} catch (error) {
 				console.error('Failed to load LLM settings:', error)
+			}
+		},
+
+		/**
+		 * Take the embedding and chat providers, and each one's model, from the settings.
+		 *
+		 * @param {object} settings The LLM settings
+		 * @spec exclude UI plumbing — copies loaded settings into the form state
+		 * @return {void}
+		 */
+		applyProviderSettings(settings) {
+			const config = this.providerConfig
+			config.embeddingProvider = settings.embeddingProvider || null
+			config.chatProvider = settings.chatProvider || null
+			const embedding = EMBEDDING_MODELS.get(settings.embeddingProvider)
+			if (embedding) {
+				config.embeddingModel = providerModel(settings, embedding)
+			}
+			const chat = CHAT_MODELS.get(settings.chatProvider)
+			if (chat) {
+				config.chatModel = providerModel(settings, chat)
 			}
 		},
 
@@ -705,56 +854,46 @@ export default {
 					generateUrl('/apps/openregister/api/settings/database'),
 				)
 				if (response.data && response.data.success) {
-					const db = response.data.database
-
-					// Check if a different vector backend is configured
-					let performanceNote = db.performanceNote
-					let vectorSupport = db.vectorSupport
-					const displayType = db.type || 'Unknown'
-					const displayVersion = db.version || 'Unknown'
-
-					// Check LLM settings for vector backend
-					let recommendedPlugin = db.recommendedPlugin
-					try {
-						const llmResponse = await axios.get(
-							generateUrl('/apps/openregister/api/settings/llm'),
-						)
-						const vectorBackend = llmResponse.data.vectorConfig?.backend
-
-						if (vectorBackend === 'database' && db.vectorSupport) {
-							performanceNote = `✅ Using ${db.type} with native vector operations for fast similarity search.`
-							recommendedPlugin = db.recommendedPlugin + ' (active ✓)'
-							vectorSupport = true
-						} else if (
-							vectorBackend === 'database'
-							&& !db.vectorSupport
-						) {
-							performanceNote = db.performanceNote
-							recommendedPlugin = db.recommendedPlugin
-						} else {
-							// 'php' / not set — use defaults from db info
-							performanceNote = db.performanceNote
-							recommendedPlugin = db.recommendedPlugin
-						}
-					} catch (e) {
-						// If we can't check LLM settings, use default
-						recommendedPlugin = db.recommendedPlugin
-					}
-
-					this.databaseInfo = {
-						type: displayType,
-						version: displayVersion,
-						vectorSupport,
-						recommendedPlugin: recommendedPlugin || null,
-						performanceNote,
-						extensions: db.extensions || [],
-						hybridSearch: db.hybridSearch || null,
-						lastUpdated: db.lastUpdated || null,
-					}
+					await this.applyDatabaseInfo(response.data.database)
 				}
 			} catch (error) {
 				console.error('Failed to load database info:', error)
 				// Don't throw error, just use defaults
+			}
+		},
+
+		/**
+		 * Show the database's details, with the vector notes of the backend in use.
+		 *
+		 * @param {object} db The database info from the API
+		 * @spec exclude UI plumbing — maps database info for display
+		 * @return {Promise<void>}
+		 */
+		async applyDatabaseInfo(db) {
+			const plain = plainVectorInfo(db)
+			const backend = await this.vectorBackend()
+			this.databaseInfo = databaseInfoOf(
+				db,
+				backend === 'database' && db.vectorSupport
+					? nativeVectorInfo(db)
+					: plain,
+			)
+		},
+
+		/**
+		 * The configured vector backend, or undefined when the settings cannot be read.
+		 *
+		 * @spec exclude UI plumbing — reads one LLM setting for display
+		 * @return {Promise<string|undefined>}
+		 */
+		async vectorBackend() {
+			try {
+				const llmResponse = await axios.get(
+					generateUrl('/apps/openregister/api/settings/llm'),
+				)
+				return llmResponse.data.vectorConfig?.backend
+			} catch (e) {
+				return undefined
 			}
 		},
 
@@ -843,46 +982,7 @@ export default {
 			try {
 				const response = await this.settingsStore.getVectorStats()
 				if (response) {
-					// Extract stats from response (data is in 'stats' object)
-					const stats = response.stats || response
-
-					// Update connection status
-					this.llmConnectionStatus = response.success
-						? 'Connected'
-						: 'Disconnected'
-
-					// Update vector stats
-					this.vectorStats.totalVectors = stats.total_vectors || 0
-					this.vectorStats.objectVectors =
-						stats.by_type?.object || stats.object_vectors || 0
-					this.vectorStats.fileVectors =
-						stats.by_type?.file || stats.file_vectors || 0
-					this.vectorStats.storageMB =
-						stats.storage?.total_mb?.toFixed(1) || '0.0'
-
-					// Update file stats
-					if (response.files) {
-						this.fileStats.totalFiles = response.files.total_files || 0
-						this.fileStats.filesExtracted =
-							response.files.files_extracted || 0
-						this.fileStats.vectorizedFiles =
-							response.files.vectorized_files || 0
-						this.fileStats.pendingFiles =
-							response.files.pending_files || 0
-						this.fileStats.totalChunks = response.files.total_chunks || 0
-					}
-
-					// Update object stats
-					if (response.objects) {
-						this.objectStats.totalObjects =
-							response.objects.total_objects || 0
-						this.objectStats.vectorizedObjects =
-							response.objects.vectorized_objects || 0
-						this.objectStats.pendingObjects =
-							response.objects.pending_objects || 0
-						this.objectStats.progressPercentage =
-							response.objects.percentage_complete || 0
-					}
+					this.applyVectorStats(response)
 				}
 			} catch (error) {
 				console.error('Failed to load vector stats:', error)
@@ -892,6 +992,31 @@ export default {
 				this.llmConnectionStatus = 'Disconnected'
 			} finally {
 				this.loadingStats = false
+			}
+		},
+
+		/**
+		 * Show the vector, file and object counts of a vector stats response.
+		 *
+		 * @param {object} response The vector stats response
+		 * @spec exclude UI plumbing — maps vector stats for display
+		 * @return {void}
+		 */
+		applyVectorStats(response) {
+			// The counts sit in a 'stats' object, or at the top level.
+			const stats = response.stats || response
+			this.llmConnectionStatus = response.success
+				? 'Connected'
+				: 'Disconnected'
+			assignVectorCounts(this.vectorStats, stats)
+			if (response.files) {
+				Object.assign(this.fileStats, countsOf(response.files, FILE_COUNTS))
+			}
+			if (response.objects) {
+				Object.assign(
+					this.objectStats,
+					countsOf(response.objects, OBJECT_COUNTS),
+				)
 			}
 		},
 

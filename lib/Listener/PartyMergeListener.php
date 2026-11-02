@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md
+ * @spec openspec/specs/mdm-merge/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectsMergedEvent>
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+ * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
  *
  * @SuppressWarnings(PHPMD.StaticAccess) `ContactLink::partyUid()` is the entity's
  *   named constructor for the uid a party link is stored under. Spelling
@@ -88,7 +88,7 @@ class PartyMergeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectsMergedEvent === false) {

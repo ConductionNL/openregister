@@ -73,7 +73,7 @@ class BulkActionRegistrationEvent extends Event {
 	 *
 	 * @throws \InvalidArgumentException When the id is malformed or taken.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function registerAction(BulkActionInterface $action): void {
 		$this->registry->register(action: $action);

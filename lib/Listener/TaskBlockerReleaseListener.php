@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\TaskBlockerMapper;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -52,12 +52,12 @@ class TaskBlockerReleaseListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param TaskBlockerMapper $tasks Finds the dependants.
-	 * @param TaskService $service Records the release and announces it.
+	 * @param TaskManagerInterface $service Records the release and announces it.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly TaskBlockerMapper $tasks,
-		private readonly TaskService $service,
+		private readonly TaskManagerInterface $service,
 		private readonly LoggerInterface $logger,
 	) {
 

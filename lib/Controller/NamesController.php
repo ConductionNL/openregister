@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -63,14 +63,14 @@ class NamesController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param CacheHandler $objectCacheService Object cache service for name operations
+	 * @param ObjectNameCacheInterface $objectCacheService Object cache service for name operations
 	 * @param LoggerInterface $logger Logger for performance monitoring
 	 * @param IUserSession $userSession User session for the current user
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly CacheHandler $objectCacheService,
+		private readonly ObjectNameCacheInterface $objectCacheService,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 	) {
@@ -107,6 +107,11 @@ class NamesController extends Controller {
 	 * @throws \Exception If name lookup fails
 	 *
 	 * @return JSONResponse JSON response with object names or error
+	 *
+	 * @no-admin-idor-exempt Guarded in the name cache, not here: CacheHandler::visibleNames()
+	 *   returns only names the caller may read (object read RBAC + multitenancy, and the
+	 *   caller's organisation scope for organisation names), so an id the caller cannot
+	 *   read resolves to nothing.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
@@ -260,6 +265,11 @@ class NamesController extends Controller {
 	 * @throws \Exception If name lookup fails
 	 *
 	 * @return JSONResponse JSON response with object names or error
+	 *
+	 * @no-admin-idor-exempt Guarded in the name cache, not here: CacheHandler::visibleNames()
+	 *   returns only names the caller may read (object read RBAC + multitenancy, and the
+	 *   caller's organisation scope for organisation names), so an id the caller cannot
+	 *   read resolves to nothing.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */

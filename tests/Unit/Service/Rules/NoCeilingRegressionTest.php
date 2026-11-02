@@ -54,7 +54,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class NoCeilingRegressionTest extends TestCase {
 
@@ -150,7 +150,7 @@ class NoCeilingRegressionTest extends TestCase {
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's stateless
 	 *   JSONLogic facade, and calling it here is the point: it is the control.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheDialectAnswersExactlyWhatTheLegacyEvaluatorAnswered(): void {
 		$dialect = $this->dialect();
@@ -186,7 +186,7 @@ class NoCeilingRegressionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testEveryLegacyConditionIsStillAcceptedAtSchemaSave(): void {
 		foreach ($this->legacyConditions() as $condition) {
@@ -202,7 +202,7 @@ class NoCeilingRegressionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheInventoryReportsNoCeilingForALegacySchema(): void {
 		$triggers = $this->createMock(originalClassName: FlowTriggerMapper::class);
@@ -230,7 +230,7 @@ class NoCeilingRegressionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheNewPropertyAnnotationsAreInertOnALegacySchema(): void {
 		$properties = ($this->legacySchema()->getProperties() ?? []);

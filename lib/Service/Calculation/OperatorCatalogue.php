@@ -48,7 +48,7 @@ final class OperatorCatalogue {
 	 * @return array<int, array{op: string, category: string, arity: string,
 	 *   operands: array<int, string>, result: string, description: string}> The catalogue rows.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function all(): array {
 		$rows = [];
@@ -71,7 +71,7 @@ final class OperatorCatalogue {
 	 *
 	 * @return array<int, string> Operator keys in declaration order.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function operators(): array {
 		return array_map('strval', array_keys(CalculationEvaluator::OPERATORS));
@@ -84,7 +84,7 @@ final class OperatorCatalogue {
 	 *
 	 * @return bool True when the evaluator dispatches on this key.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function has(string $op): bool {
 		return array_key_exists($op, CalculationEvaluator::OPERATORS);
@@ -95,7 +95,7 @@ final class OperatorCatalogue {
 	 *
 	 * @return array<int, string> Unique category names in declaration order.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function categories(): array {
 		$categories = [];

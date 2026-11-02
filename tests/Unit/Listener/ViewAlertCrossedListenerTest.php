@@ -385,7 +385,7 @@ class ViewAlertCrossedListenerTest extends TestCase {
 	 * The sweep's event reaches this listener: Application subscribes it.
 	 */
 	public function testTheListenerIsSubscribedToTheCrossingEvent(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/Registrar/FlowsListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(

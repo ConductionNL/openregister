@@ -184,6 +184,71 @@ class ArchiveActionDateCalculator {
 	}//end determineBrondatum()
 
 	/**
+	 * The property on this record whose change moves the source date.
+	 *
+	 * For the relation methods that is the reference itself (`sourceRelation`);
+	 * a change of the date on the related record is followed separately, from
+	 * that record's own save.
+	 *
+	 * @param array $archiveConfig The schema's archive block
+	 *
+	 * @return string|null The property name, or null when the method has none configured
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function sourcePropertyOf(array $archiveConfig): ?string {
+		$afleidingswijze = ($archiveConfig['afleidingswijze'] ?? 'afgehandeld');
+
+		$key = match ($afleidingswijze) {
+			'eigenschap' => 'bronEigenschap',
+			'ander_datumkenmerk' => 'sourceDateProperty',
+			'afgehandeld', 'termijn' => 'closureField',
+			default => null,
+		};
+
+		if ($key === null && $this->isRelationMethod(afleidingswijze: $afleidingswijze) === true) {
+			$key = 'sourceRelation';
+		}
+
+		if ($key === null) {
+			return null;
+		}
+
+		$property = ($archiveConfig[$key] ?? null);
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		return $property;
+	}//end sourcePropertyOf()
+
+	/**
+	 * Whether a derivation method reads its date off a related record.
+	 *
+	 * @param string $afleidingswijze The derivation method
+	 *
+	 * @return bool True for the relation methods
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function isRelationMethod(string $afleidingswijze): bool {
+		return in_array($afleidingswijze, self::RELATION_AFLEIDINGSWIJZEN, true);
+	}//end isRelationMethod()
+
+	/**
+	 * The uuid or uri a relation property holds, or null.
+	 *
+	 * @param mixed $value The raw relation value
+	 *
+	 * @return string|null The reference
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function referenceOf(mixed $value): ?string {
+		return $this->firstReference(value: $value);
+	}//end referenceOf()
+
+	/**
 	 * Read a brondatum from a property that the schema need not configure.
 	 *
 	 * The quiet sibling of brondatumFromProperty. `eigenschap` and the closure

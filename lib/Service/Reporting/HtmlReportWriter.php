@@ -5,8 +5,8 @@
  *
  * Produces a self-contained HTML document showing each widget as a
  * styled card. Operators can browser-print to PDF directly. Phase 2b
- * pipes this same output through `PdfReportWriter` (Dompdf) for
- * server-side PDF rendering — the writer itself stays unchanged.
+ * reads this same output in `PdfReportWriter`, which writes it as an ODT
+ * for the office server to convert to PDF.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

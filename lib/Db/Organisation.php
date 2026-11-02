@@ -63,6 +63,12 @@ use Symfony\Component\Uid\Uuid;
  * @method void setBandwidthQuota(?int $bandwidthQuota)
  * @method int|null getRequestQuota()
  * @method void setRequestQuota(?int $requestQuota)
+ * @method int|null getUserQuota()
+ * @method void setUserQuota(?int $userQuota)
+ * @method int|null getObjectQuota()
+ * @method void setObjectQuota(?int $objectQuota)
+ * @method string|null getObjectQuotaSchema()
+ * @method void setObjectQuotaSchema(?string $objectQuotaSchema)
  * @method array|null getAuthorization()
  * @method static setAuthorization(array|string|null $authorization)
  * @method string|null getStatus()
@@ -234,6 +240,28 @@ class Organisation extends Entity implements JsonSerializable {
 	 * @var integer|null API request quota per day
 	 */
 	protected ?int $requestQuota = null;
+
+	/**
+	 * How many members the organisation may have; NULL = no limit.
+	 *
+	 * @var integer|null User quota
+	 */
+	protected ?int $userQuota = null;
+
+	/**
+	 * How many live objects the organisation may hold, of the schema
+	 * `objectQuotaSchema` names (every schema when it names none); NULL = no limit.
+	 *
+	 * @var integer|null Object quota
+	 */
+	protected ?int $objectQuota = null;
+
+	/**
+	 * The slug of the schema the object quota counts, such as `case`; NULL counts every schema.
+	 *
+	 * @var string|null Object quota schema slug
+	 */
+	protected ?string $objectQuotaSchema = null;
 
 	/**
 	 * Authorization rules for this organisation
@@ -607,6 +635,9 @@ class Organisation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'storageQuota', type: 'integer');
 		$this->addType(fieldName: 'bandwidthQuota', type: 'integer');
 		$this->addType(fieldName: 'requestQuota', type: 'integer');
+		$this->addType(fieldName: 'userQuota', type: 'integer');
+		$this->addType(fieldName: 'objectQuota', type: 'integer');
+		$this->addType(fieldName: 'objectQuotaSchema', type: 'string');
 		$this->addType(fieldName: 'authorization', type: 'json');
 		$this->addType(fieldName: 'parent', type: 'string');
 		$this->addType(fieldName: 'mail', type: 'json');
@@ -1013,13 +1044,16 @@ class Organisation extends Entity implements JsonSerializable {
 	 *         storage: int|null,
 	 *         bandwidth: int|null,
 	 *         requests: int|null,
-	 *         users: null,
+	 *         users: int|null,
+	 *         objects: int|null,
+	 *         objectsSchema: string|null,
 	 *         groups: null
 	 *     },
 	 *     usage: array{
 	 *         storage: null,
 	 *         bandwidth: null,
 	 *         requests: null,
+	 *         objects: null,
 	 *         users: int<0, max>,
 	 *         groups: int<0, max>
 	 *     },
@@ -1067,8 +1101,9 @@ class Organisation extends Entity implements JsonSerializable {
 				'storage' => $this->storageQuota,
 				'bandwidth' => $this->bandwidthQuota,
 				'requests' => $this->requestQuota,
-				'users' => null,
-				// To be set via admin configuration.
+				'users' => $this->userQuota,
+				'objects' => $this->objectQuota,
+				'objectsSchema' => $this->objectQuotaSchema,
 				'groups' => null,
 				// To be set via admin configuration.
 			],
@@ -1079,6 +1114,7 @@ class Organisation extends Entity implements JsonSerializable {
 				'storage' => null,
 				'bandwidth' => null,
 				'requests' => null,
+				'objects' => null,
 				'users' => count($users),
 				'groups' => count($groups),
 			],

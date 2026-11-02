@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\IDBConnection;
  *    objects, so the instance can answer "who changed this, and what did it
  *    hold before" after the person has forgotten.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+ * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
 class ConsistencyRepairService {
 
@@ -76,7 +76,7 @@ class ConsistencyRepairService {
 	 *
 	 * @throws RepairRefusedException When no such probe exists.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function plan(string $slug): array {
 		$plan = $this->check->repairPlan(slug: $slug);
@@ -110,7 +110,7 @@ class ConsistencyRepairService {
 	 *
 	 * @throws RepairRefusedException When no such probe exists, or nobody is named.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function apply(string $slug, string $actor): array {
 		if ($actor === '') {

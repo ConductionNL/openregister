@@ -38,6 +38,7 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -77,6 +78,7 @@ class BulkController extends Controller {
 	 * @param IUserSession $userSession User session for admin/manage checks
 	 * @param IGroupManager $groupManager Group manager for admin/manage checks
 	 * @param IDBConnection $db The connection an atomic batch runs its transaction on
+	 * @param SchemaManageGate|null $schemaManageGate Who may manage a schema. Built from the collaborators above when null.
 	 *
 	 * @return void
 	 */
@@ -89,6 +91,7 @@ class BulkController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly IDBConnection $db,
+		private readonly ?SchemaManageGate $schemaManageGate = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -107,48 +110,80 @@ class BulkController extends Controller {
 	 *
 	 * @return bool True if the current user may manage this schema.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
+		return $this->manageGate()->mayManage(schema: $schema);
+	}//end checkSchemaManagePermission()
 
-		// Admins always pass.
-		if ($this->groupManager->isAdmin($user->getUID()) === true) {
-			return true;
-		}
-
-		$authorization = $schema->getAuthorization();
-
-		// Default-secure: no manage rule defined → admin-only (already failed above).
-		if (empty($authorization) === true || isset($authorization['manage']) === false) {
-			return false;
+	/**
+	 * The refusal of a single-schema bulk write the caller may not manage, or null.
+	 *
+	 * Mixed-schema (0) batches name their schema per row and are checked against
+	 * {@see SchemaManageGate::firstUnmanageableRowSchema()} once the rows are read.
+	 *
+	 * @param int $schemaId The resolved schema id, 0 for mixed-schema.
+	 *
+	 * @return JSONResponse|null 404 or 403, or null when the write may go ahead.
+	 */
+	private function refusedSchemaGate(int $schemaId): ?JSONResponse {
+		if ($schemaId === 0) {
+			return null;
 		}
 
 		try {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
+			$schema = $this->schemaMapper->find($schemaId);
 		} catch (\Throwable $e) {
-			return false;
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$manageRules = $authorization['manage'];
-		foreach ($userGroups as $groupId) {
-			foreach ($manageRules as $entry) {
-				if (is_string($entry) === true && $entry === $groupId) {
-					return true;
-				}
-
-				if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-					return true;
-				}
-			}
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to bulk-write objects on this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
 		}
 
-		return false;
-	}//end checkSchemaManagePermission()
+		return null;
+	}//end refusedSchemaGate()
+
+	/**
+	 * The refusal of a mixed-schema batch naming a schema the caller may not manage, or null.
+	 *
+	 * @param bool         $isMixedSchema Whether the batch names its schema per row.
+	 * @param array<mixed> $objects       The rows.
+	 *
+	 * @return JSONResponse|null 403, or null when every named schema passes or the batch is single-schema.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 */
+	private function refusedRowSchemas(bool $isMixedSchema, array $objects): ?JSONResponse {
+		if ($isMixedSchema === false) {
+			return null;
+		}
+
+		$unmanageable = $this->manageGate()->firstUnmanageableRowSchema(objects: $objects);
+		if ($unmanageable === null) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'User does not have permission to bulk-write objects on schema ' . $unmanageable],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end refusedRowSchemas()
+
+	/**
+	 * The schema manage gate, built from this controller's collaborators when none was injected.
+	 *
+	 * @return SchemaManageGate The gate.
+	 */
+	private function manageGate(): SchemaManageGate {
+		return ($this->schemaManageGate ?? new SchemaManageGate(
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			schemaMapper: $this->schemaMapper
+		));
+	}//end manageGate()
 
 	/**
 	 * Check if the current user has 'manage' permission on a register.
@@ -161,48 +196,9 @@ class BulkController extends Controller {
 	 * @param Register $register The register to check manage permission for.
 	 *
 	 * @return bool True if the current user may manage this register.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function checkRegisterManagePermission(Register $register): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		// Admins always pass.
-		if ($this->groupManager->isAdmin($user->getUID()) === true) {
-			return true;
-		}
-
-		$authorization = $register->getAuthorization();
-
-		// Default-secure: no manage rule defined → admin-only (already failed above).
-		if (empty($authorization) === true || isset($authorization['manage']) === false) {
-			return false;
-		}
-
-		try {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		$manageRules = $authorization['manage'];
-		foreach ($userGroups as $groupId) {
-			foreach ($manageRules as $entry) {
-				if (is_string($entry) === true && $entry === $groupId) {
-					return true;
-				}
-
-				if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-					return true;
-				}
-			}
-		}
-
-		return false;
+		return $this->manageGate()->mayManageRegister(register: $register);
 	}//end checkRegisterManagePermission()
 
 	/**
@@ -231,6 +227,7 @@ class BulkController extends Controller {
 
 		return null;
 	}//end firstUnmanageableSchemaOf()
+
 
 	/**
 	 * Resolve a register/schema path pair to numeric ids.
@@ -665,28 +662,13 @@ class BulkController extends Controller {
 			// potentially high-impact write that any authenticated user could otherwise use
 			// to spray validation work or flood the audit trail.  Gate on manage-permission
 			// for the target schema (default-SECURE: admin-only when no manage rule exists).
-			// Mixed-schema (schema=0) bulk operations skip this gate because there is no
-			// single schema entity to check against — the per-object RBAC flag (_rbac:true)
-			// still runs inside saveObjects for individual object writes.
+			// Mixed-schema (schema=0) bulk operations name their schema per row, so the
+			// same gate runs for every schema the rows name (firstUnmanageableRowSchema).
 			$isMixedSchema = ($resolved['schema'] === 0);
-
-			if ($isMixedSchema === false) {
-				try {
-					$schemaEntityForGate = $this->schemaMapper->find((int)$resolved['schema']);
-				} catch (\Throwable $e) {
-					return new JSONResponse(
-						data: ['error' => 'Schema not found'],
-						statusCode: Http::STATUS_NOT_FOUND
-					);
-				}
-
-				if ($this->checkSchemaManagePermission(schema: $schemaEntityForGate) === false) {
-					return new JSONResponse(
-						data: ['error' => 'User does not have permission to bulk-write objects on this schema'],
-						statusCode: Http::STATUS_FORBIDDEN
-					);
-				}
-			}//end if
+			$refused = $this->refusedSchemaGate(schemaId: (int)$resolved['schema']);
+			if ($refused !== null) {
+				return $refused;
+			}
 
 			// Get request data.
 			$data = $this->request->getParams();
@@ -698,6 +680,11 @@ class BulkController extends Controller {
 					data: ['error' => 'Invalid input. "objects" array is required.'],
 					statusCode: Http::STATUS_BAD_REQUEST
 				);
+			}
+
+			$refused = $this->refusedRowSchemas(isMixedSchema: $isMixedSchema, objects: $objects);
+			if ($refused !== null) {
+				return $refused;
 			}
 
 			// Determine schema to use (null for mixed-schema, resolved for single-schema).

@@ -1,0 +1,1121 @@
+{
+    "no saved objects": {
+        "findAll": [],
+        "analysisAsked": [],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": []
+    },
+    "schema not cached": {
+        "findAll": [],
+        "analysisAsked": [],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "schema id null": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "",
+            ""
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "no inverse properties": {
+        "findAll": [],
+        "analysisAsked": [
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "analysis without key": {
+        "findAll": [],
+        "analysisAsked": [
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "single id": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "id list with gaps": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1",
+                    "missing",
+                    "t3"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s9"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1",
+                    "s9"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s9",
+                "p": [
+                    "t1",
+                    "",
+                    null,
+                    "0",
+                    "missing",
+                    "t3",
+                    0
+                ]
+            }
+        ]
+    },
+    "empty list id": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": [
+                    [],
+                    "t1",
+                    false
+                ]
+            }
+        ]
+    },
+    "keyed id list": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1",
+                    "t2"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s9"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": [
+                    "solo",
+                    "s9"
+                ]
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s9",
+                "p": {
+                    "x": "t1",
+                    "y": "t2"
+                }
+            }
+        ]
+    },
+    "scalar inverse wrapped": {
+        "findAll": [
+            {
+                "ids": [
+                    "t2"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": [
+                    "solo",
+                    "s1"
+                ]
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t2"
+            }
+        ]
+    },
+    "source already listed": {
+        "findAll": [
+            {
+                "ids": [
+                    "t3"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t3"
+            }
+        ]
+    },
+    "writeBack false": {
+        "findAll": [],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "writeBack falsy, fetched": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ],
+                "others": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1",
+                "q": "t1"
+            }
+        ]
+    },
+    "writeBack falsy, alone": {
+        "findAll": [],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "q": "t1"
+            }
+        ]
+    },
+    "writeBack missing, fetched": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [
+            "Undefined array key \"writeBack\""
+        ],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1",
+                "q": "t2"
+            }
+        ]
+    },
+    "writeBack missing, unset": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "no inverseProperty name": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1",
+                    "t2"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "p": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo",
+                "r": [
+                    "s1"
+                ]
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1",
+                "r": "t2"
+            }
+        ]
+    },
+    "property not set": {
+        "findAll": [],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": null,
+                "z": "t1"
+            }
+        ]
+    },
+    "two sources, one target": {
+        "findAll": [
+            {
+                "ids": {
+                    "0": "t1",
+                    "2": "t2"
+                }
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s",
+            "other",
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1",
+                    "s2"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": [
+                    "solo",
+                    "s2"
+                ]
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            },
+            {
+                "id": "s2",
+                "p": [
+                    "t1",
+                    "t2"
+                ]
+            },
+            {
+                "id": "s3",
+                "p": "t1"
+            }
+        ]
+    },
+    "keyed saved objects": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1",
+                    "t2"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s",
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": [
+                    "solo",
+                    "s3"
+                ]
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": {
+            "x": {
+                "id": "s1",
+                "p": "t1"
+            },
+            "5": {
+                "id": "s2",
+                "p": "t1"
+            },
+            "z": {
+                "id": "s3",
+                "p": "t2"
+            }
+        }
+    },
+    "numeric id": {
+        "findAll": [
+            {
+                "ids": [
+                    7
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven",
+                "members": [
+                    "s1"
+                ]
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": 7
+            }
+        ]
+    },
+    "nothing found": {
+        "findAll": [
+            {
+                "ids": [
+                    "missing"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "missing"
+            }
+        ]
+    },
+    "fetch fails": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one"
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1"
+            }
+        ]
+    },
+    "source without uuid": {
+        "findAll": [
+            {
+                "ids": [
+                    "t1"
+                ]
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    null
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": null,
+                "p": "t1"
+            }
+        ]
+    },
+    "two properties, two names": {
+        "findAll": [
+            {
+                "ids": {
+                    "0": "t1",
+                    "2": "t3"
+                }
+            }
+        ],
+        "analysisAsked": [
+            "s",
+            "s"
+        ],
+        "warnings": [],
+        "targets": {
+            "t1": {
+                "id": "t1",
+                "name": "one",
+                "members": [
+                    "s1"
+                ],
+                "owners": [
+                    "s1"
+                ]
+            },
+            "t2": {
+                "id": "t2",
+                "name": "two",
+                "members": "solo"
+            },
+            "t3": {
+                "id": "t3",
+                "name": "three",
+                "members": [
+                    "s1"
+                ],
+                "owners": [
+                    "s1"
+                ]
+            },
+            "7": {
+                "id": "7",
+                "name": "seven"
+            }
+        },
+        "saved": [
+            {
+                "id": "s1",
+                "p": "t1",
+                "q": [
+                    "t1",
+                    "t3"
+                ]
+            }
+        ]
+    }
+}

@@ -144,7 +144,7 @@ class BulkJobService {
 	 *
 	 * @return int The ceiling.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getCeiling(): int {
 		$ceiling = $this->appConfig->getValueInt(self::APP_ID, self::CEILING_KEY, self::CEILING_DEFAULT);
@@ -161,7 +161,7 @@ class BulkJobService {
 	 *
 	 * @return int The batch size.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getBatchSize(): int {
 		$size = $this->appConfig->getValueInt(self::APP_ID, self::BATCH_SIZE_KEY, self::BATCH_SIZE_DEFAULT);
@@ -207,7 +207,7 @@ class BulkJobService {
 	 *                                  register and schema do not resolve.
 	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function create(
 		string $actionId,
@@ -292,7 +292,7 @@ class BulkJobService {
 	 *
 	 * @throws BulkJobRefusedException When the action needs a reason and has none.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function commit(BulkJob $job, ?string $justification = null): BulkJob {
 		if ($justification !== null && trim($justification) !== '') {
@@ -322,7 +322,7 @@ class BulkJobService {
 	 *
 	 * @return BulkJob The job, cancelling or cancelled.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function cancel(BulkJob $job): BulkJob {
 		if ($job->getState() === BulkJob::STATE_RUNNING) {
@@ -362,7 +362,7 @@ class BulkJobService {
 	 *
 	 * @throws BulkJobRefusedException When the job is not running.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function pause(BulkJob $job): BulkJob {
 		if ($job->getState() !== BulkJob::STATE_RUNNING) {
@@ -392,7 +392,7 @@ class BulkJobService {
 	 *
 	 * @throws BulkJobRefusedException When the job is not paused.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function resume(BulkJob $job): BulkJob {
 		if ($job->getState() !== BulkJob::STATE_PAUSED) {
@@ -420,7 +420,7 @@ class BulkJobService {
 	 *
 	 * @throws BulkJobRefusedException When the job has nothing to retry.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function retry(BulkJob $job): BulkJob {
 		$retryable = [BulkJob::STATE_FAILED, BulkJob::STATE_CANCELLED, BulkJob::STATE_COMPLETED];
@@ -465,7 +465,7 @@ class BulkJobService {
 	 *
 	 * @return bool True when members remain.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function processBatch(BulkJob $job, int $batchSize): bool {
 		$actor = $this->userManager->get((string)$job->getStartedBy());
@@ -501,7 +501,7 @@ class BulkJobService {
 	 *
 	 * @return BulkJobMember[] The members.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function members(BulkJob $job, ?string $outcome = null, int $limit = 100, int $offset = 0): array {
 		return $this->memberMapper->findByJob(
@@ -617,7 +617,7 @@ class BulkJobService {
 	 *
 	 * @return BulkJobGuards The guards.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	private function guards(): BulkJobGuards {
 		return new BulkJobGuards(undoCeiling: $this->getUndoCeiling());

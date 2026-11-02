@@ -372,7 +372,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-1
 	 */
 	public function testAUserShareGrantsItsModeToThatUserOnly(): void {
 		$view = $this->view(['sharedWith' => [['user' => 'fatma', 'mode' => 'read'], ['user' => 'joris', 'mode' => 'write']]]);
@@ -389,7 +389,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-1
 	 */
 	public function testTheWidestOfAUserAndAGroupShareWins(): void {
 		$view = $this->view(['sharedWith' => [['user' => 'fatma', 'mode' => 'read'], ['group' => 'vth', 'mode' => 'write']]]);
@@ -403,7 +403,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
 	 */
 	public function testAUserShareIsValidated(): void {
 		$groups = static fn (string $gid): bool => ($gid === 'vth');

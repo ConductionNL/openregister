@@ -15,6 +15,94 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
+import {
+	defaultFileOptions,
+	defaultFlowOptions,
+	defaultLlmOptions,
+	defaultMultitenancyOptions,
+	defaultRbacOptions,
+	defaultRetentionOptions,
+	emptyCacheStats,
+	emptySystemStats,
+} from './settingsDefaults.js'
+
+// The warning counts that make the retention status unhealthy, and the
+// words each count is reported with.
+const RETENTION_ISSUES = [
+	['auditTrailsWithoutExpiry', 'audit trails without expiry'],
+	['searchTrailsWithoutExpiry', 'search trails without expiry'],
+	['expiredAuditTrails', 'expired audit trails'],
+	['expiredSearchTrails', 'expired search trails'],
+	['expiredObjects', 'expired objects'],
+]
+
+/**
+ * The retention problems the warning counts show, one phrase per count above 0.
+ *
+ * @param {object} warnings The warning counts from the stats.
+ * @return {Array<string>} The phrases, e.g. `3 expired objects`.
+ * @spec exclude Client-side wording of the retention warning counts; no backend contract.
+ */
+function retentionIssues(warnings) {
+	return RETENTION_ISSUES.filter(([key]) => warnings[key] > 0).map(
+		([key, words]) => `${warnings[key]} ${words}`,
+	)
+}
+
+/**
+ * The body of a mass validate request, with the defaults for what the
+ * options leave out.
+ *
+ * @param {object} options The mass validate options.
+ * @return {{batchSize: number, maxObjects: number, mode: string, collectErrors: boolean}} The body.
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function massValidateRequest(options) {
+	return {
+		batchSize: options.batchSize || 1000,
+		maxObjects: options.maxObjects || 0,
+		mode: options.mode || 'serial',
+		collectErrors: options.collectErrors || false,
+	}
+}
+
+/**
+ * Tell the user a mass validation failed.
+ *
+ * @param {string} message Why it failed.
+ * @return {void}
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function showMassValidateFailure(message) {
+	showError(
+		t('openregister', 'Mass validation failed: {error}', {
+			error: message,
+		}),
+	)
+}
+
+/**
+ * The results a failed mass validation leaves in the store.
+ *
+ * @param {string} message Why it failed.
+ * @return {object} The results, with zero counts.
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function failedMassValidation(message) {
+	return {
+		success: false,
+		message,
+		error: message,
+		stats: {
+			total_objects: 0,
+			processed_objects: 0,
+			successful_saves: 0,
+			failed_saves: 0,
+			duration_seconds: 0,
+		},
+		errors: [],
+	}
+}
 
 export const useSettingsStore = defineStore('settings', {
 	state: () => ({
@@ -56,75 +144,12 @@ export const useSettingsStore = defineStore('settings', {
 		showClearBlobObjectsConfirmation: false,
 
 		// Settings data
-		rbacOptions: {
-			enabled: false,
-			anonymousGroup: 'public',
-			defaultNewUserGroup: 'viewer',
-			defaultObjectOwner: '',
-			adminOverride: true,
-		},
-
-		multitenancyOptions: {
-			enabled: false,
-			defaultUserTenant: '',
-			defaultObjectTenant: '',
-			adminOverride: true,
-		},
-
-		// Flow-engine instance policy. Administrator settings, not personal
-		// preferences: how long run history is kept, whether every hop is
-		// audit-trailed, and whether the oversight gate runs.
-		//
-		// `auditEnabled` and `oversightEnabled` default OPPOSITELY on purpose —
-		// auditing is write volume and opt-in, oversight is what stops a
-		// running flow and so must be on unless deliberately turned off.
-		flowOptions: {
-			retentionDays: 31,
-			auditEnabled: false,
-			oversightEnabled: true,
-			killSwitch: false,
-		},
-
-		retentionOptions: {
-			objectArchiveRetention: 31536000000, // 1 year
-			objectDeleteRetention: 63072000000, // 2 years
-			searchTrailRetention: 2592000000, // 1 month
-			createLogRetention: 2592000000, // 1 month
-			readLogRetention: 86400000, // 24 hours
-			updateLogRetention: 604800000, // 1 week
-			deleteLogRetention: 2592000000, // 1 month
-			auditTrailsEnabled: true, // Audit trails enabled by default
-			searchTrailsEnabled: true, // Search trails enabled by default
-		},
-
-		llmOptions: {
-			enabled: false,
-			providerId: 'none',
-			apiEndpoint: '',
-			apiKey: '',
-			model: null,
-			temperature: 0.7,
-			maxTokens: 2000,
-			enabledFeatures: [],
-		},
-
-		fileOptions: {
-			extractionScope: 'objects', // none, all, folders, objects
-			extractionMode: 'background', // background, immediate, manual
-			maxFileSize: 100,
-			batchSize: 10,
-			enabledFileTypes: [
-				'txt',
-				'pdf',
-				'docx',
-				'xlsx',
-				'pptx',
-				'html',
-				'md',
-				'json',
-			],
-		},
-
+		rbacOptions: defaultRbacOptions(),
+		multitenancyOptions: defaultMultitenancyOptions(),
+		flowOptions: defaultFlowOptions(),
+		retentionOptions: defaultRetentionOptions(),
+		llmOptions: defaultLlmOptions(),
+		fileOptions: defaultFileOptions(),
 		loadingLlmSettings: false,
 		loadingFileSettings: false,
 
@@ -137,76 +162,8 @@ export const useSettingsStore = defineStore('settings', {
 		groupOptions: [],
 		userOptions: [],
 		tenantOptions: [],
-		// Statistics data
-		stats: {
-			warnings: {
-				objectsWithoutOwner: 0,
-				objectsWithoutOrganisation: 0,
-				auditTrailsWithoutExpiry: 0,
-				searchTrailsWithoutExpiry: 0,
-				expiredAuditTrails: 0,
-				expiredSearchTrails: 0,
-				expiredObjects: 0,
-			},
-			totals: {
-				totalObjects: 0,
-				totalBlobObjects: 0,
-				totalMagicObjects: 0,
-				totalSize: 0,
-				totalBlobSize: 0,
-				totalMagicSize: 0,
-				totalAuditTrails: 0,
-				totalSearchTrails: 0,
-				totalConfigurations: 0,
-				totalDataAccessProfiles: 0,
-				totalOrganisations: 0,
-				totalRegisters: 0,
-				totalSchemas: 0,
-				totalSources: 0,
-				totalWebhookLogs: 0,
-				deletedObjects: 0,
-			},
-			lastUpdated: null,
-		},
-
-		// Cache statistics
-		cacheStats: {
-			overview: {
-				totalCacheSize: 0,
-				totalCacheEntries: 0,
-				overallHitRate: 0.0,
-				averageResponseTime: 0.0,
-				cacheEfficiency: 0.0,
-			},
-			services: {
-				object: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
-				schema: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
-				facet: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
-			},
-			distributed: {
-				type: 'unknown',
-				backend: 'Unknown',
-				available: false,
-			},
-			performance: {
-				averageHitTime: 0,
-				averageMissTime: 0,
-				performanceGain: 0,
-				optimalHitRate: 85.0,
-				currentTrend: 'unknown',
-			},
-			names: {
-				cache_size: 0,
-				hit_rate: 0.0,
-				hits: 0,
-				misses: 0,
-				warmups: 0,
-				enabled: false,
-			},
-			lastUpdated: null,
-			unavailable: true,
-			errorMessage: 'Loading...',
-		},
+		stats: emptySystemStats(),
+		cacheStats: emptyCacheStats(),
 
 		// Dialog states
 		showRebaseConfirmation: false,
@@ -228,62 +185,21 @@ export const useSettingsStore = defineStore('settings', {
 		 *
 		 * @param {object} state - The state of the retention settings
 		 */
-		retentionStatusClass: (state) => {
-			const hasIssues =
-				state.stats.warnings.auditTrailsWithoutExpiry > 0
-				|| state.stats.warnings.searchTrailsWithoutExpiry > 0
-				|| state.stats.warnings.expiredAuditTrails > 0
-				|| state.stats.warnings.expiredSearchTrails > 0
-				|| state.stats.warnings.expiredObjects > 0
+		retentionStatusClass: (state) =>
+			retentionIssues(state.stats.warnings).length > 0
+				? 'warning-status'
+				: 'healthy-status',
 
-			return hasIssues ? 'warning-status' : 'healthy-status'
-		},
-
-		retentionStatusTextClass: (state) => {
-			const hasIssues =
-				state.stats.warnings.auditTrailsWithoutExpiry > 0
-				|| state.stats.warnings.searchTrailsWithoutExpiry > 0
-				|| state.stats.warnings.expiredAuditTrails > 0
-				|| state.stats.warnings.expiredSearchTrails > 0
-				|| state.stats.warnings.expiredObjects > 0
-
-			return hasIssues ? 'status-warning' : 'status-healthy'
-		},
+		retentionStatusTextClass: (state) =>
+			retentionIssues(state.stats.warnings).length > 0
+				? 'status-warning'
+				: 'status-healthy',
 
 		retentionStatusMessage: (state) => {
-			const warnings = state.stats.warnings
-			const hasIssues =
-				warnings.auditTrailsWithoutExpiry > 0
-				|| warnings.searchTrailsWithoutExpiry > 0
-				|| warnings.expiredAuditTrails > 0
-				|| warnings.expiredSearchTrails > 0
-				|| warnings.expiredObjects > 0
-
-			if (hasIssues) {
-				const issues = []
-				if (warnings.auditTrailsWithoutExpiry > 0)
-					issues.push(
-						`${warnings.auditTrailsWithoutExpiry} audit trails without expiry`,
-					)
-				if (warnings.searchTrailsWithoutExpiry > 0)
-					issues.push(
-						`${warnings.searchTrailsWithoutExpiry} search trails without expiry`,
-					)
-				if (warnings.expiredAuditTrails > 0)
-					issues.push(
-						`${warnings.expiredAuditTrails} expired audit trails`,
-					)
-				if (warnings.expiredSearchTrails > 0)
-					issues.push(
-						`${warnings.expiredSearchTrails} expired search trails`,
-					)
-				if (warnings.expiredObjects > 0)
-					issues.push(`${warnings.expiredObjects} expired objects`)
-
-				return `Issues found: ${issues.join(', ')}`
-			}
-
-			return 'All retention policies are properly configured and applied'
+			const issues = retentionIssues(state.stats.warnings)
+			return issues.length > 0
+				? `Issues found: ${issues.join(', ')}`
+				: 'All retention policies are properly configured and applied'
 		},
 	},
 
@@ -337,12 +253,7 @@ export const useSettingsStore = defineStore('settings', {
 			try {
 				const response = await axios.post(
 					generateUrl('/apps/openregister/api/settings/mass-validate'),
-					{
-						batchSize: options.batchSize || 1000,
-						maxObjects: options.maxObjects || 0,
-						mode: options.mode || 'serial',
-						collectErrors: options.collectErrors || false,
-					},
+					massValidateRequest(options),
 				)
 
 				this.massValidateResults = response.data
@@ -352,37 +263,15 @@ export const useSettingsStore = defineStore('settings', {
 						t('openregister', 'Mass validation completed successfully'),
 					)
 				} else {
-					showError(
-						t('openregister', 'Mass validation failed: {error}', {
-							error: response.data.message,
-						}),
-					)
+					showMassValidateFailure(response.data.message)
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Mass validation failed:', error)
 				const errorMessage = error.response?.data?.message || error.message
-				showError(
-					t('openregister', 'Mass validation failed: {error}', {
-						error: errorMessage,
-					}),
-				)
-
-				this.massValidateResults = {
-					success: false,
-					message: errorMessage,
-					error: errorMessage,
-					stats: {
-						total_objects: 0,
-						processed_objects: 0,
-						successful_saves: 0,
-						failed_saves: 0,
-						duration_seconds: 0,
-					},
-					errors: [],
-				}
-
+				showMassValidateFailure(errorMessage)
+				this.massValidateResults = failedMassValidation(errorMessage)
 				throw error
 			} finally {
 				this.massValidating = false

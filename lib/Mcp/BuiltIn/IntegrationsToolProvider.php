@@ -47,7 +47,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
  *
  * Built-in IMcpToolProvider exposing the integration registry as an
  * AI-agent discovery + invocation surface. Registered alongside the other
- * built-ins in Application::registerMcpToolProviders().
+ * built-ins in McpProviderDiscovery::register().
  *
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn
@@ -81,64 +81,71 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 	}//end getAppId()
 
 	/**
+	 * The tool definitions.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'integrations',
+			'description' => 'Discover and query pluggable integrations linked to OpenRegister objects '
+				. '(e.g. files, calendar, contacts, xwiki). Use action "list-integrations" to enumerate '
+				. 'which integrations exist on this instance, then "list"/"get" to read linked things for '
+				. 'a specific object, and "link"/"create" to attach a new linked thing where the '
+				. 'integration supports it.',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'action' => [
+						'type' => 'string',
+						'enum' => ['list-integrations', 'list', 'get', 'link', 'create'],
+						'description' => 'list-integrations enumerates available integrations; '
+							. 'list/get/link/create operate on linked things for one object.',
+					],
+					'integrationId' => [
+						'type' => 'string',
+						'description' => 'Stable integration id (e.g. "files", "calendar"). '
+							. 'Required for list/get/link/create.',
+					],
+					'register' => [
+						'type' => 'string',
+						'description' => 'Register slug or numeric id (required for list/get/link/create).',
+					],
+					'schema' => [
+						'type' => 'string',
+						'description' => 'Schema slug or numeric id (required for list/get/link/create).',
+					],
+					'objectId' => [
+						'type' => 'string',
+						'description' => 'Object uuid that owns the linked things (required for '
+							. 'list/get/link/create).',
+					],
+					'entityId' => [
+						'type' => 'string',
+						'description' => 'Linked-thing id (required for get).',
+					],
+					'filters' => [
+						'type' => 'object',
+						'description' => 'Optional list filters (_limit, _page, _search).',
+					],
+					'payload' => [
+						'type' => 'object',
+						'description' => 'New linked-thing fields (for link/create).',
+					],
+				],
+				'required' => ['action'],
+			],
+		],
+	];
+
+	/**
 	 * Returns tool descriptors.
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
 	 */
 	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'integrations',
-				'description' => 'Discover and query pluggable integrations linked to OpenRegister objects '
-					. '(e.g. files, calendar, contacts, xwiki). Use action "list-integrations" to enumerate '
-					. 'which integrations exist on this instance, then "list"/"get" to read linked things for '
-					. 'a specific object, and "link"/"create" to attach a new linked thing where the '
-					. 'integration supports it.',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list-integrations', 'list', 'get', 'link', 'create'],
-							'description' => 'list-integrations enumerates available integrations; '
-								. 'list/get/link/create operate on linked things for one object.',
-						],
-						'integrationId' => [
-							'type' => 'string',
-							'description' => 'Stable integration id (e.g. "files", "calendar"). '
-								. 'Required for list/get/link/create.',
-						],
-						'register' => [
-							'type' => 'string',
-							'description' => 'Register slug or numeric id (required for list/get/link/create).',
-						],
-						'schema' => [
-							'type' => 'string',
-							'description' => 'Schema slug or numeric id (required for list/get/link/create).',
-						],
-						'objectId' => [
-							'type' => 'string',
-							'description' => 'Object uuid that owns the linked things (required for '
-								. 'list/get/link/create).',
-						],
-						'entityId' => [
-							'type' => 'string',
-							'description' => 'Linked-thing id (required for get).',
-						],
-						'filters' => [
-							'type' => 'object',
-							'description' => 'Optional list filters (_limit, _page, _search).',
-						],
-						'payload' => [
-							'type' => 'object',
-							'description' => 'New linked-thing fields (for link/create).',
-						],
-					],
-					'required' => ['action'],
-				],
-			],
-		];
+		return self::TOOLS;
 	}//end getTools()
 
 	/**

@@ -1,5 +1,71 @@
 import { defineStore } from 'pinia'
 import { Organisation } from '../../entities/index.js'
+import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
+import { listStateActions } from './listState.js'
+
+/**
+ * Whether an organisation is the one a uuid or id names.
+ *
+ * @param {object} organisation The organisation.
+ * @param {string|number} organisationId Its uuid or id.
+ * @return {boolean} True when either matches.
+ */
+function isOrganisation(organisation, organisationId) {
+	return organisation.uuid === organisationId || organisation.id === organisationId
+}
+
+/**
+ * Save an organisation and read the answer.
+ *
+ * @param {string|number} organisationId The organisation's uuid, else its id.
+ * @param {object} body The fields to save.
+ * @return {Promise<{response: Response, data: object}>} The answer.
+ * @throws {Error} The answer's message, else the HTTP status.
+ */
+async function putOrganisation(organisationId, body) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/organisations/${organisationId}`,
+		{
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		},
+	)
+
+	if (!response.ok) {
+		const errorData = await response.json()
+		throw new Error(
+			errorData.message || `HTTP error! status: ${response.status}`,
+		)
+	}
+
+	return { response, data: await response.json() }
+}
+
+/**
+ * Put a saved organisation into the list and, when it is the current one,
+ * into the current item.
+ *
+ * @param {object} store The organisation store.
+ * @param {{organisationId: string|number, savedOrganisation: object}} saved The saved organisation and the uuid or id it was saved under.
+ */
+function applySavedOrganisation(store, saved) {
+	const { organisationId, savedOrganisation } = saved
+	const index = store.organisationList.findIndex((org) =>
+		isOrganisation(org, organisationId),
+	)
+	if (index !== -1) {
+		store.organisationList[index] = new Organisation(savedOrganisation)
+	}
+	if (
+		store.organisationItem
+		&& isOrganisation(store.organisationItem, organisationId)
+	) {
+		store.setOrganisationItem(savedOrganisation)
+	}
+}
 
 export const useOrganisationStore = defineStore('organisation', {
 	state: () => ({
@@ -68,27 +134,7 @@ export const useOrganisationStore = defineStore('organisation', {
 				list: (stats.results || []).map((org) => new Organisation(org)),
 			}
 		},
-		/**
-		 * Set pagination details
-		 *
-		 * @param {number} page - The current page number for pagination
-		 * @param {number} limit - The number of items to display per page
-		 *
-		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
-		 */
-		setPagination(page, limit = 14) {
-			this.pagination = { page, limit }
-		},
-		/**
-		 * Set query filters for organisation list
-		 *
-		 * @param {object} filters - The filter criteria to apply to the organisation list
-		 *
-		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
-		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-		},
+		...listStateActions(14),
 		/**
 		 * @spec exclude Thin API passthrough — GET /api/organisations list; observable contract owned by tenant-lifecycle.
 		 */
@@ -338,50 +384,17 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			// API expects UUID, not ID
 			const organisationId = organisationData.uuid || organisationData.id
-			const endpoint = `/index.php/apps/openregister/api/organisations/${organisationId}`
 
 			// Clean the data before sending - remove read-only fields
 			const cleanedData = this.cleanOrganisationForSave(organisationData)
 
 			try {
-				const response = await fetch(endpoint, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(cleanedData),
-				})
-
-				if (!response.ok) {
-					const errorData = await response.json()
-					throw new Error(
-						errorData.message
-							|| `HTTP error! status: ${response.status}`,
-					)
-				}
-
-				const data = await response.json()
-				const savedOrganisation = data.organisation || data
-
-				// Update existing in list
-				const index = this.organisationList.findIndex(
-					(org) =>
-						org.uuid === organisationId || org.id === organisationId,
+				const { response, data } = await putOrganisation(
+					organisationId,
+					cleanedData,
 				)
-				if (index !== -1) {
-					this.organisationList[index] = new Organisation(
-						savedOrganisation,
-					)
-				}
-
-				// Update current item if it's the same organisation
-				if (
-					this.organisationItem
-					&& (this.organisationItem.uuid === organisationId
-						|| this.organisationItem.id === organisationId)
-				) {
-					this.setOrganisationItem(savedOrganisation)
-				}
+				const savedOrganisation = data.organisation || data
+				applySavedOrganisation(this, { organisationId, savedOrganisation })
 
 				// Refresh the full list to get updated stats
 				await this.refreshOrganisationList()
@@ -518,33 +531,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
 		 */
 		async loadNextcloudGroups() {
-			try {
-				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				const response = await fetch(
-					'/ocs/v1.php/cloud/groups?format=json',
-					{
-						headers: {
-							'OCS-APIRequest': 'true',
-						},
-					},
-				)
-
-				if (response.ok) {
-					const data = await response.json()
-					if (data.ocs?.data?.groups) {
-						// Transform group IDs into objects with additional info
-						this.nextcloudGroups = data.ocs.data.groups.map(
-							(groupId) => ({
-								id: groupId,
-								name: groupId,
-								userCount: 0, // Could be fetched separately if needed
-							}),
-						)
-					}
-				}
-			} catch (error) {
-				console.error('Error loading Nextcloud groups:', error)
-			}
+			return loadNextcloudGroupsInto(this)
 		},
 	},
 })

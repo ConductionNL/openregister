@@ -381,6 +381,49 @@ class CacheHandlerTest extends TestCase {
 	}
 
 	/**
+	 * With a register, preload looks in that register's tables and nowhere else
+	 * when every identifier is found there.
+	 *
+	 * @return void
+	 */
+	public function testPreloadWithARegisterLooksInItsTablesOnly(): void {
+		$entity1 = $this->createObjectEntity(id: 1, uuid: 'uuid-1');
+
+		$this->objectMapper->expects($this->once())
+			->method('findMultipleAcrossAllMagicTables')
+			->with(['uuid-1'], false, 23)
+			->willReturn([$entity1]);
+		$this->objectMapper->expects($this->never())->method('findMultiple');
+
+		$result = $this->handler->preloadObjects(identifiers: ['uuid-1'], registerId: 23);
+
+		$this->assertCount(expectedCount: 1, haystack: $result);
+	}
+
+	/**
+	 * With a register, only the identifiers not found there go to every table.
+	 *
+	 * @return void
+	 */
+	public function testPreloadWithARegisterLooksEverywhereOnlyForTheRest(): void {
+		$entity1 = $this->createObjectEntity(id: 1, uuid: 'uuid-1');
+		$entity2 = $this->createObjectEntity(id: 2, uuid: 'uuid-2');
+
+		$this->objectMapper->expects($this->once())
+			->method('findMultipleAcrossAllMagicTables')
+			->with(['uuid-1', 'uuid-2'], false, 23)
+			->willReturn([$entity1]);
+		$this->objectMapper->expects($this->once())
+			->method('findMultiple')
+			->with(['uuid-2'])
+			->willReturn([$entity2]);
+
+		$result = $this->handler->preloadObjects(identifiers: ['uuid-1', 'uuid-2'], registerId: 23);
+
+		$this->assertCount(expectedCount: 2, haystack: $result);
+	}
+
+	/**
 	 * Test preloadObjects skips already cached objects.
 	 *
 	 * @return void

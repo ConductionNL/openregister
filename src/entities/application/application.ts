@@ -2,11 +2,37 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TApplication } from './application.types'
 
 import { z } from 'zod'
+import { COPY, NO_QUOTA, NO_USAGE, withFallbacks } from '../withFallbacks.js'
+
+const FALLBACKS = {
+	id: COPY,
+	uuid: '',
+	name: '',
+	description: '',
+	version: '1.0.0',
+	organisation: COPY,
+	configurations: [],
+	registers: [],
+	schemas: [],
+	groups: [],
+	quota: NO_QUOTA,
+	usage: NO_USAGE,
+	authorization: {
+		create: [],
+		read: [],
+		update: [],
+		delete: [],
+	},
+	owner: '',
+	active: COPY,
+	created: '',
+	updated: '',
+}
 
 export class Application implements TApplication {
 	public id?: number
 	public uuid?: string
-	public name: string
+	public name!: string
 	public description?: string
 	public version?: string
 	public organisation?: number
@@ -41,40 +67,8 @@ export class Application implements TApplication {
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(application: TApplication) {
-		this.id = application.id
-		this.uuid = application.uuid || ''
-		this.name = application.name || ''
-		this.description = application.description || ''
-		this.version = application.version || '1.0.0'
-		this.organisation = application.organisation
-		this.configurations = application.configurations || []
-		this.registers = application.registers || []
-		this.schemas = application.schemas || []
-		this.groups = application.groups || []
-		this.quota = application.quota || {
-			storage: null,
-			bandwidth: null,
-			requests: null,
-			users: null,
-			groups: null,
-		}
-		this.usage = application.usage || {
-			storage: 0,
-			bandwidth: 0,
-			requests: 0,
-			users: 0,
-			groups: 0,
-		}
-		this.authorization = application.authorization || {
-			create: [],
-			read: [],
-			update: [],
-			delete: [],
-		}
-		this.owner = application.owner || ''
+		Object.assign(this, withFallbacks(application, FALLBACKS))
 		this.active = application.active !== false
-		this.created = application.created || ''
-		this.updated = application.updated || ''
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {

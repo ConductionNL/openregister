@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\TestCase;
@@ -35,7 +36,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleInventoryServiceTest extends TestCase {
 
@@ -44,21 +45,28 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @param array<int, array{flow_uuid: string, event: string, register: string, enabled: bool}> $triggerRows The flow trigger rows.
 	 * @param array<string, RuleRunSummary> $summaries The summaries, keyed by rule id.
+	 * @param array<string, array<string, mixed>> $graphs The published graph per flow uuid.
 	 *
 	 * @return RuleInventoryService The service.
 	 */
-	private function service(array $triggerRows = [], array $summaries = []): RuleInventoryService {
+	private function service(array $triggerRows = [], array $summaries = [], array $graphs = []): RuleInventoryService {
 		$triggers = $this->createMock(originalClassName: FlowTriggerMapper::class);
 		$triggers->method('findBySchema')->willReturn($triggerRows);
 
 		$summaryMapper = $this->createMock(originalClassName: RuleRunSummaryMapper::class);
 		$summaryMapper->method('findBySchema')->willReturn($summaries);
 
+		$published = $this->createMock(originalClassName: FlowPublishedGraph::class);
+		$published->method('graphOf')->willReturnCallback(
+			static fn (string $flowId): ?array => ($graphs[$flowId] ?? null)
+		);
+
 		return new RuleInventoryService(
 			triggers: $triggers,
 			summaries: $summaryMapper,
 			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			vocabulary: new RuleVocabulary(),
+			published: $published
 		);
 
 	}//end service()
@@ -102,7 +110,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnAdministratorReadsWhatWillRunInEvaluationOrder(): void {
 		$service = $this->service(
@@ -136,7 +144,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARemovedAnnotationLeavesTheInventory(): void {
 		$service = $this->service();
@@ -163,7 +171,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testASwitchedOffRuleReadsAsDisabled(): void {
 		$schema = $this->schema();
@@ -184,7 +192,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARuleThatHasNotRunInsideTheWindowIsVisibleAsSuch(): void {
 		$stale = new RuleRunSummary();
@@ -217,7 +225,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARecentRunIsInsideTheWindow(): void {
 		$fresh = new RuleRunSummary();
@@ -242,7 +250,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAPropertyForwardedCalculationIsInventoriedOnce(): void {
 		$schema = new Schema();
@@ -269,7 +277,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFlowOnTwoEventsIsOneRule(): void {
 		$service = $this->service(
@@ -286,4 +294,106 @@ class RuleInventoryServiceTest extends TestCase {
 		$this->assertSame(expected: ['events' => ['created', 'updated']], actual: $rule->getCondition());
 
 	}//end testAFlowOnTwoEventsIsOneRule()
+	/**
+	 * A schema holding two kinds of object: a schema-wide calculation, a state
+	 * block scoped to case type a and a flow whose trigger node is scoped to b.
+	 *
+	 * @return RuleInventoryService The service over that flow.
+	 */
+	private function scopedService(): RuleInventoryService {
+		return $this->service(
+			triggerRows: [['flow_uuid' => 'flow-b', 'event' => 'updated', 'register' => 'zaken', 'enabled' => true]],
+			graphs: [
+				'flow-b' => [
+					'nodes' => [
+						[
+							'id' => 'trigger',
+							'type' => 'openregister.trigger-object',
+							'config' => [
+								'event' => 'object.updated',
+								'register' => 'zaken',
+								'schema' => 'bezwaar',
+								'scope' => ['property' => 'caseType', 'value' => 'b'],
+							],
+						],
+					],
+					'edges' => [],
+				],
+			]
+		);
+
+	}//end scopedService()
+
+	/**
+	 * The scoped schema: the transition carries no condition, so three rules.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function scopedSchema(): Schema {
+		$schema = $this->schema(withCondition: false);
+		$configuration = $schema->getConfiguration();
+		$configuration['x-openregister-lifecycle']['states']['gesloten']['scope'] = ['property' => 'caseType', 'value' => 'a'];
+		$schema->setConfiguration($configuration);
+
+		return $schema;
+
+	}//end scopedSchema()
+
+	/**
+	 * Asked for one scope, the inventory lists that scope's rules and the
+	 * schema-wide ones, never another scope's.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testAScopeFilterKeepsThatScopeAndTheSchemaWideRules(): void {
+		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'a']);
+
+		$this->assertSame(
+			expected: ['calculation:bezwaar:uiterlijkeDatum', 'stateFieldRule:bezwaar:gesloten'],
+			actual: array_column($rows, 'id')
+		);
+		$this->assertSame(expected: ['property' => 'caseType', 'value' => 'a'], actual: $rows[1]['scope']);
+
+	}//end testAScopeFilterKeepsThatScopeAndTheSchemaWideRules()
+
+	/**
+	 * A flow is scoped through the trigger node of its published graph.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testAFlowIsScopedThroughItsTriggerNode(): void {
+		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'b']);
+
+		$this->assertSame(
+			expected: ['calculation:bezwaar:uiterlijkeDatum', 'flow:bezwaar:flow-b'],
+			actual: array_column($rows, 'id')
+		);
+
+	}//end testAFlowIsScopedThroughItsTriggerNode()
+
+	/**
+	 * Without a filter every rule is listed, each with its scope or null; a
+	 * filter on another property leaves the scoped rules out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testWithoutAFilterEveryRuleIsListedWithItsScope(): void {
+		$service = $this->scopedService();
+		$rows = $service->inventory(schema: $this->scopedSchema());
+
+		$this->assertSame(
+			expected: [null, ['property' => 'caseType', 'value' => 'a'], ['property' => 'caseType', 'value' => 'b']],
+			actual: array_column($rows, 'scope')
+		);
+
+		$other = $service->inventory(schema: $this->scopedSchema(), scope: ['zaaksoort' => 'a']);
+		$this->assertSame(expected: ['calculation:bezwaar:uiterlijkeDatum'], actual: array_column($other, 'id'));
+
+	}//end testWithoutAFilterEveryRuleIsListedWithItsScope()
 }//end class

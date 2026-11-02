@@ -1016,8 +1016,8 @@ class ImportHandlerTest extends TestCase {
 			'appId' => 'myapp',
 			'version' => '1.0.0',
 		];
-		// No `components`, so the hash falls back to the whole payload.
-		$contentHash = hash('sha256', json_encode($data));
+		// No `components`, so the hash falls back to the whole payload, after the generation of the import's rules.
+		$contentHash = hash('sha256', 'seed-content-3:'.json_encode($data));
 
 		$this->appConfig->method('getValueString')
 			->willReturnCallback(function (string $app, string $key, string $default = '') use ($contentHash) {

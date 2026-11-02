@@ -23,9 +23,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
@@ -46,6 +49,43 @@ use Throwable;
  * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
  */
 class ObjectFileAccess {
+
+	/**
+	 * The file verb for reading an object's files.
+	 *
+	 * @var string
+	 */
+	public const READ_FILES = 'readFiles';
+
+	/**
+	 * The file verb for adding a file or changing one.
+	 *
+	 * @var string
+	 */
+	public const ADD_FILES = 'addFiles';
+
+	/**
+	 * The file verb for deleting a file.
+	 *
+	 * @var string
+	 */
+	public const DELETE_FILES = 'deleteFiles';
+
+	/**
+	 * The file verbs; a block naming any of them opts its schema in.
+	 *
+	 * @var array<int, string>
+	 */
+	public const FILE_VERBS = [self::READ_FILES, self::ADD_FILES, self::DELETE_FILES];
+
+	/**
+	 * The matrix key that declares whether a schema is in the file-verb regime
+	 * through its matrix. A `rowsFrom` matrix is in it unless this is false,
+	 * so a provider that fails cannot take the regime away with its rows.
+	 *
+	 * @var string
+	 */
+	public const MATRIX_FILE_VERBS = 'fileVerbs';
 
 	/**
 	 * Constructor.
@@ -93,6 +133,10 @@ class ObjectFileAccess {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
+		if ($this->mayUseFiles(object: $object, verb: self::READ_FILES) === false) {
+			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
+		}
+
 		return $object;
 	}//end readable()
 
@@ -102,6 +146,7 @@ class ObjectFileAccess {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
+	 * @param string $verb     The file verb the change needs when the schema names file verbs: addFiles or deleteFiles.
 	 *
 	 * @return ObjectEntity The changeable object.
 	 *
@@ -110,10 +155,10 @@ class ObjectFileAccess {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 */
-	public function changeable(string $register, string $schema, string $id): ObjectEntity {
+	public function changeable(string $register, string $schema, string $id, string $verb = self::ADD_FILES): ObjectEntity {
 		$object = $this->readable(register: $register, schema: $schema, id: $id);
 
-		if ($this->mayUpdate(object: $object) === false) {
+		if ($this->mayChangeFiles(object: $object, verb: $verb) === false) {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_CHANGEABLE);
 		}
 
@@ -153,7 +198,8 @@ class ObjectFileAccess {
 			return false;
 		}
 
-		return $readable instanceof ObjectEntity;
+		return $readable instanceof ObjectEntity
+			&& $this->mayUseFiles(object: $readable, verb: self::READ_FILES) === true;
 	}//end mayRead()
 
 	/**
@@ -186,4 +232,230 @@ class ObjectFileAccess {
 			return false;
 		}
 	}//end mayUpdate()
+
+	/**
+	 * Whether the caller may change an object's files with this verb.
+	 *
+	 * A schema that names file verbs asks the verb; one that names none asks
+	 * `update` on the object, as before file verbs existed.
+	 *
+	 * @param ObjectEntity $object The object, already known to be readable.
+	 * @param string       $verb   addFiles or deleteFiles.
+	 *
+	 * @return bool True when the caller may make the change.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function mayChangeFiles(ObjectEntity $object, string $verb = self::ADD_FILES): bool {
+		$schema = $this->schemaOf(object: $object);
+		if ($schema === null) {
+			return false;
+		}
+
+		$names = $this->namesFileVerbs(schema: $schema, object: $object);
+		if ($names === null) {
+			return false;
+		}
+
+		if ($names === true) {
+			return $this->allows(schema: $schema, object: $object, action: $verb);
+		}
+
+		return $this->mayUpdate(object: $object);
+	}//end mayChangeFiles()
+
+	/**
+	 * Whether a file verb lets the caller through, when the schema names file verbs.
+	 *
+	 * True when the schema names none (the object rule alone decides then).
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $verb   The file verb.
+	 *
+	 * @return bool
+	 */
+	private function mayUseFiles(ObjectEntity $object, string $verb): bool {
+		$schema = $this->schemaOf(object: $object);
+		if ($schema === null) {
+			return false;
+		}
+
+		$names = $this->namesFileVerbs(schema: $schema, object: $object);
+		if ($names === false) {
+			return true;
+		}
+
+		return $names === true && $this->allows(schema: $schema, object: $object, action: $verb);
+	}//end mayUseFiles()
+
+	/**
+	 * Whether the object's schema has opted into file verbs; null when it cannot be read.
+	 *
+	 * 🔴 DECIDED FROM THE DECLARED BLOCK AS WELL AS THE COMPILED ONE. A matrix
+	 * row past its `until`, and provider rows that did not arrive (the listener
+	 * threw or answered nothing), compile to nothing. Read from the compiled
+	 * block alone, a schema whose only file-verb rows were such rows would fall
+	 * out of the file regime and back to the object rule, opening its files to
+	 * every object reader the moment a grant expired. An expired or failed
+	 * source compiles to no grant, never to no regime.
+	 *
+	 * Opted in when the compiled or the declared block names a file verb, when
+	 * a declared matrix row names one in its actions (expired or not), when the
+	 * matrix declares `fileVerbs` other than false, or when it names a
+	 * `rowsFrom` provider and does not declare `fileVerbs: false`.
+	 *
+	 * @param Schema       $schema The object's schema.
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return bool|null
+	 */
+	private function namesFileVerbs(Schema $schema, ObjectEntity $object): ?bool {
+		try {
+			$authorization = $this->permissionHandler->resolveAuthorization(schema: $schema, object: $object);
+			$declared      = $this->permissionHandler->resolveDeclaredAuthorization(schema: $schema, object: $object);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		return self::blockNamesFileVerbs(block: $authorization) === true
+			|| self::blockNamesFileVerbs(block: $declared) === true
+			|| self::matrixNamesFileVerbs(block: $declared) === true;
+	}//end namesFileVerbs()
+
+	/**
+	 * Whether an authorization block names a file verb as one of its actions.
+	 *
+	 * @param mixed $block The block.
+	 *
+	 * @return bool
+	 */
+	private static function blockNamesFileVerbs(mixed $block): bool {
+		return is_array($block) === true
+			&& array_intersect(self::FILE_VERBS, array_keys($block)) !== [];
+	}//end blockNamesFileVerbs()
+
+	/**
+	 * Whether a block's declared matrix opts into file verbs: an explicit
+	 * `fileVerbs: true`, or any declared row (expired or not) naming one.
+	 *
+	 * @param mixed $block The declared block.
+	 *
+	 * @return bool
+	 */
+	private static function matrixNamesFileVerbs(mixed $block): bool {
+		if (is_array($block) === false) {
+			return false;
+		}
+
+		$matrix = ($block[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return false;
+		}
+
+		$declared = self::fileVerbsDeclared(matrix: $matrix);
+		if ($declared !== null) {
+			return $declared;
+		}
+
+		return self::rowsNameFileVerbs(rows: ($matrix['rows'] ?? []));
+	}//end matrixNamesFileVerbs()
+
+	/**
+	 * What the matrix itself declares about the file regime, or null to ask its rows.
+	 *
+	 * A provider's rows may carry file verbs, and a provider that fails
+	 * answers nothing: a `rowsFrom` matrix is therefore in the file regime
+	 * unless the schema opts out with `fileVerbs: false`. Any other value of
+	 * `fileVerbs` (true, "true", 1: the validator refuses the non-booleans)
+	 * opts in. Fail closed: a doubt is no file access.
+	 *
+	 * @param array<string, mixed> $matrix The declared matrix.
+	 *
+	 * @return bool|null True when in the regime; null when the rows decide.
+	 */
+	private static function fileVerbsDeclared(array $matrix): ?bool {
+		if (array_key_exists(self::MATRIX_FILE_VERBS, $matrix) === true) {
+			if ($matrix[self::MATRIX_FILE_VERBS] !== false) {
+				return true;
+			}
+
+			return null;
+		}
+
+		if (is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true) {
+			return true;
+		}
+
+		return null;
+	}//end fileVerbsDeclared()
+
+	/**
+	 * Whether any declared row (expired or not) names a file verb.
+	 *
+	 * @param mixed $rows The declared rows.
+	 *
+	 * @return bool
+	 */
+	private static function rowsNameFileVerbs(mixed $rows): bool {
+		if (is_array($rows) === false) {
+			return false;
+		}
+
+		foreach ($rows as $row) {
+			$actions = [];
+			if (is_array($row) === true) {
+				$actions = ($row['actions'] ?? []);
+			}
+
+			if (is_array($actions) === true && array_intersect(self::FILE_VERBS, $actions) !== []) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end rowsNameFileVerbs()
+
+	/**
+	 * The object's schema, or null when it cannot be found.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return Schema|null
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		$schemaId = $object->getSchema();
+		if ($schemaId === null || $schemaId === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end schemaOf()
+
+	/**
+	 * Whether the permission handler grants an action on the object.
+	 *
+	 * @param Schema       $schema The schema.
+	 * @param ObjectEntity $object The object.
+	 * @param string       $action The action.
+	 *
+	 * @return bool
+	 */
+	private function allows(Schema $schema, ObjectEntity $object, string $action): bool {
+		try {
+			return $this->permissionHandler->hasPermission(
+				schema: $schema,
+				action: $action,
+				userId: null,
+				objectOwner: $object->getOwner(),
+				_rbac: true,
+				object: $object
+			);
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end allows()
 }//end class

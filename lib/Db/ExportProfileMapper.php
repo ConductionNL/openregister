@@ -19,7 +19,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<ExportProfile>
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfileMapper extends QBMapper {
 	/**
@@ -57,7 +57,7 @@ class ExportProfileMapper extends QBMapper {
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
 	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When more than one row matches.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function find(int $id): ExportProfile {
 		$qb = $this->db->getQueryBuilder();
@@ -78,7 +78,7 @@ class ExportProfileMapper extends QBMapper {
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
 	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When more than one row matches.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function findByUuid(string $uuid): ExportProfile {
 		$qb = $this->db->getQueryBuilder();
@@ -96,7 +96,7 @@ class ExportProfileMapper extends QBMapper {
 	 *
 	 * @return ExportProfile[] The profiles.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function findByOwner(string $owner): array {
 		$qb = $this->db->getQueryBuilder();
@@ -113,7 +113,7 @@ class ExportProfileMapper extends QBMapper {
 	 *
 	 * @return ExportProfile[] The profiles.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function findAll(): array {
 		$qb = $this->db->getQueryBuilder();

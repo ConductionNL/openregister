@@ -2,8 +2,38 @@
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  */
 import { defineStore } from 'pinia'
+import {
+	getListPage,
+	listPageQuery,
+	listPagination,
+	requestJson,
+} from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
+
+/**
+ * The statistics with every count at 0.
+ *
+ * @return {object} Every count at 0.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyStatistics() {
+	return {
+		total: 0,
+		totalResults: 0,
+		averageResultsPerSearch: 0,
+		averageExecutionTime: 0,
+		successRate: 0,
+		uniqueSearchTerms: 0,
+		uniqueUsers: 0,
+		uniqueOrganizations: 0,
+		queryComplexity: {
+			simple: 0,
+			medium: 0,
+			complex: 0,
+		},
+	}
+}
 
 /**
  * Store for managing search trail logs
@@ -22,30 +52,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		searchTrailItem: null,
 
 		// Pagination
-		searchTrailPagination: {
-			total: 0,
-			page: 1,
-			pages: 1,
-			limit: 50,
-			offset: 0,
-		},
+		searchTrailPagination: listPagination({}, 50),
 
 		// Statistics
-		statistics: {
-			total: 0,
-			totalResults: 0,
-			averageResultsPerSearch: 0,
-			averageExecutionTime: 0,
-			successRate: 0,
-			uniqueSearchTerms: 0,
-			uniqueUsers: 0,
-			uniqueOrganizations: 0,
-			queryComplexity: {
-				simple: 0,
-				medium: 0,
-				complex: 0,
-			},
-		},
+		statistics: emptyStatistics(),
 
 		// Popular terms
 		popularTerms: [],
@@ -236,62 +246,19 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.searchTrailLoading = true
 
 			try {
-				// Build query parameters
-				const params = new URLSearchParams()
-
-				// Add pagination
-				if (options.limit) params.append('limit', options.limit)
-				if (options.offset) params.append('offset', options.offset)
-				if (options.page) params.append('page', options.page)
-
-				// Add search
-				if (options.search || this.searchTrailSearch) {
-					params.append('search', options.search || this.searchTrailSearch)
-				}
-
-				// Add filters
-				const filters = { ...this.searchTrailFilters, ...options.filters }
-				Object.entries(filters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						params.append(key, value)
-					}
+				const query = listPageQuery(options, {
+					search: this.searchTrailSearch,
+					filters: this.searchTrailFilters,
 				})
+				const data = await getListPage(
+					`${apiUrl}/search-trails?${query}`,
+					'Failed to fetch search trails',
+				)
 
-				// Add sort
-				if (options.sort) {
-					Object.entries(options.sort).forEach(([field, direction]) => {
-						params.append('sort', field)
-						params.append('order', direction)
-					})
-				}
-
-				const url = `${apiUrl}/search-trails?${params.toString()}`
-
-				const response = await fetch(url, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch search trails')
-				}
-
-				// Update store state - ensure we pass clean data
 				this.setSearchTrailList(
 					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
 				)
-				this.setSearchTrailPagination({
-					total: data.total || 0,
-					page: data.page || 1,
-					pages: data.pages || 1,
-					limit: data.limit || 50,
-					offset: data.offset || 0,
-				})
+				this.setSearchTrailPagination(listPagination(data, 50))
 
 				return data
 			} catch (error) {
@@ -318,22 +285,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				if (options.from) query.append('from', options.from)
 				if (options.to) query.append('to', options.to)
 				const suffix = query.toString() ? `?${query.toString()}` : ''
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/statistics${suffix}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
-					},
+					{ method: 'GET', failure: 'Failed to fetch statistics' },
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch statistics')
-				}
 
 				this.setStatistics(data)
 				return data
@@ -357,22 +312,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.popularTermsLoading = true
 
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/popular-terms?limit=${limit}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
-					},
+					{ method: 'GET', failure: 'Failed to fetch popular terms' },
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch popular terms')
-				}
 
 				this.setPopularTerms(data)
 				return data
@@ -396,22 +339,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.activityLoading = true
 
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/activity?interval=${period}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
-					},
+					{ method: 'GET', failure: 'Failed to fetch activity data' },
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch activity data')
-				}
 
 				this.setActivity({ [period]: data })
 				return data
@@ -432,24 +363,13 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchRegisterSchemaStats() {
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/register-schema-stats`,
 					{
 						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
+						failure: 'Failed to fetch register schema statistics',
 					},
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(
-						data.error || 'Failed to fetch register schema statistics',
-					)
-				}
 
 				this.setRegisterSchemaStats(data)
 				return data
@@ -468,24 +388,13 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchUserAgentStats() {
 			try {
-				const response = await fetch(
+				const data = await requestJson(
 					`${apiUrl}/search-trails/user-agent-stats`,
 					{
 						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							requesttoken: OC.requestToken,
-						},
+						failure: 'Failed to fetch user agent statistics',
 					},
 				)
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(
-						data.error || 'Failed to fetch user agent statistics',
-					)
-				}
 
 				this.setUserAgentStats(data)
 				return data
@@ -505,20 +414,11 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async cleanupSearchTrails(days = 30) {
 			try {
-				const response = await fetch(`${apiUrl}/search-trails/cleanup`, {
+				const data = await requestJson(`${apiUrl}/search-trails/cleanup`, {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-					body: JSON.stringify({ days }),
+					body: { days },
+					failure: 'Failed to cleanup search trails',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to cleanup search trails')
-				}
 
 				return data
 			} catch (error) {
@@ -554,21 +454,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				return this.statistics
 			} catch (error) {
 				console.error('Error getting statistics:', error)
-				return {
-					total: 0,
-					totalResults: 0,
-					averageResultsPerSearch: 0,
-					averageExecutionTime: 0,
-					successRate: 0,
-					uniqueSearchTerms: 0,
-					uniqueUsers: 0,
-					uniqueOrganizations: 0,
-					queryComplexity: {
-						simple: 0,
-						medium: 0,
-						complex: 0,
-					},
-				}
+				return emptyStatistics()
 			}
 		},
 
@@ -650,28 +536,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		clearSearchTrailStore() {
 			this.searchTrailList = []
 			this.searchTrailItem = null
-			this.searchTrailPagination = {
-				total: 0,
-				page: 1,
-				pages: 1,
-				limit: 50,
-				offset: 0,
-			}
-			this.statistics = {
-				total: 0,
-				totalResults: 0,
-				averageResultsPerSearch: 0,
-				averageExecutionTime: 0,
-				successRate: 0,
-				uniqueSearchTerms: 0,
-				uniqueUsers: 0,
-				uniqueOrganizations: 0,
-				queryComplexity: {
-					simple: 0,
-					medium: 0,
-					complex: 0,
-				},
-			}
+			this.searchTrailPagination = listPagination({}, 50)
+			this.statistics = emptyStatistics()
 			this.popularTerms = []
 			this.activity = {
 				hourly: [],

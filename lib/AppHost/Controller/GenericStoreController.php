@@ -430,6 +430,58 @@ class GenericStoreController extends Controller {
 	}//end resolveFor()
 
 	/**
+	 * Publish one item of the app's store schema to its configured registry.
+	 *
+	 * The body is `{item: {...}}`, an object that carries its `slug`. Only a
+	 * user the app's publish groups admit may publish
+	 * (StoreActionAuthorizer::canPublish); the engine then sends the slug and
+	 * the declared publish fields, and nothing else (GenericStoreService).
+	 *
+	 * @return JSONResponse `{outcome, slug}`; 401 anonymous, 403 not admitted, 400 no item.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	#[NoAdminRequired]
+	public function publish(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['outcome' => 'unauthenticated', 'slug' => ''],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
+
+		$store = $this->store();
+		if ($store->enabled === false) {
+			return new JSONResponse(
+				data: ['outcome' => GenericStoreService::OUTCOME_NOT_CONFIGURED, 'slug' => ''],
+				statusCode: Http::STATUS_OK
+			);
+		}
+
+		$descriptor = $this->descriptor(store: $store);
+		if ($this->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false) {
+			return new JSONResponse(
+				data: ['outcome' => 'forbidden', 'slug' => ''],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$item = $this->request->getParam('item');
+		if (is_array($item) === false) {
+			return new JSONResponse(
+				data: ['outcome' => GenericStoreService::OUTCOME_NOT_PUBLISHABLE, 'slug' => ''],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return new JSONResponse(
+			data: $this->storeService->publish(descriptor: $descriptor, payload: $item),
+			statusCode: Http::STATUS_OK
+		);
+	}//end publish()
+
+	/**
 	 * The calling app's declared store configuration.
 	 *
 	 * @return StoreManifest
@@ -454,7 +506,9 @@ class GenericStoreController extends Controller {
 			schema: $store->schema,
 			defaultRegister: $store->register,
 			cardFields: $store->cardFields,
-			types: $store->declaredTypes()
+			types: $store->declaredTypes(),
+			publishFields: $store->publishFields,
+			publishGroups: $store->publishGroups
 		);
 	}//end descriptor()
 }//end class

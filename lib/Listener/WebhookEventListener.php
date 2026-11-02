@@ -78,6 +78,57 @@ use Psr\Log\LoggerInterface;
 class WebhookEventListener implements IEventListener {
 
 	/**
+	 * Events whose payload is one serialised entity: event class => [objectType, action, getter].
+	 *
+	 * The entity lands under the objectType key.
+	 *
+	 * @var array<class-string<Event>, array{0: string, 1: string, 2: string}>
+	 */
+	private const SNAPSHOT_EVENTS = [
+		ObjectDeletingEvent::class => ['object', 'deleting', 'getObject'],
+		ObjectLockedEvent::class => ['object', 'locked', 'getObject'],
+		ObjectUnlockedEvent::class => ['object', 'unlocked', 'getObject'],
+		RegisterCreatedEvent::class => ['register', 'created', 'getRegister'],
+		RegisterUpdatedEvent::class => ['register', 'updated', 'getNewRegister'],
+		RegisterDeletedEvent::class => ['register', 'deleted', 'getRegister'],
+		SchemaCreatedEvent::class => ['schema', 'created', 'getSchema'],
+		SchemaUpdatedEvent::class => ['schema', 'updated', 'getNewSchema'],
+		SchemaDeletedEvent::class => ['schema', 'deleted', 'getSchema'],
+		ApplicationCreatedEvent::class => ['application', 'created', 'getApplication'],
+		ApplicationUpdatedEvent::class => ['application', 'updated', 'getNewApplication'],
+		ApplicationDeletedEvent::class => ['application', 'deleted', 'getApplication'],
+		AgentCreatedEvent::class => ['agent', 'created', 'getAgent'],
+		AgentUpdatedEvent::class => ['agent', 'updated', 'getAgent'],
+		AgentDeletedEvent::class => ['agent', 'deleted', 'getAgent'],
+		SourceCreatedEvent::class => ['source', 'created', 'getSource'],
+		SourceUpdatedEvent::class => ['source', 'updated', 'getSource'],
+		SourceDeletedEvent::class => ['source', 'deleted', 'getSource'],
+		ConfigurationCreatedEvent::class => ['configuration', 'created', 'getConfiguration'],
+		ConfigurationUpdatedEvent::class => ['configuration', 'updated', 'getConfiguration'],
+		ConfigurationDeletedEvent::class => ['configuration', 'deleted', 'getConfiguration'],
+		ViewCreatedEvent::class => ['view', 'created', 'getView'],
+		ViewUpdatedEvent::class => ['view', 'updated', 'getView'],
+		ViewDeletedEvent::class => ['view', 'deleted', 'getView'],
+		ConversationCreatedEvent::class => ['conversation', 'created', 'getConversation'],
+		ConversationUpdatedEvent::class => ['conversation', 'updated', 'getConversation'],
+		ConversationDeletedEvent::class => ['conversation', 'deleted', 'getConversation'],
+		OrganisationCreatedEvent::class => ['organisation', 'created', 'getOrganisation'],
+		OrganisationUpdatedEvent::class => ['organisation', 'updated', 'getOrganisation'],
+		OrganisationDeletedEvent::class => ['organisation', 'deleted', 'getOrganisation'],
+	];
+
+	/**
+	 * Object save and delete events: event class => [action, getter of the object].
+	 *
+	 * @var array<class-string<Event>, array{0: string, 1: string}>
+	 */
+	private const OBJECT_STATE_EVENTS = [
+		ObjectCreatedEvent::class => ['create', 'getObject'],
+		ObjectUpdatedEvent::class => ['update', 'getNewObject'],
+		ObjectDeletedEvent::class => ['delete', 'getObject'],
+	];
+
+	/**
 	 * Webhook service
 	 *
 	 * @var WebhookService
@@ -149,20 +200,38 @@ class WebhookEventListener implements IEventListener {
 	/**
 	 * Extract payload from event
 	 *
-	 * Uses a unified approach by checking event types directly.
+	 * Events that carry one entity map to `objectType`, `action` and the
+	 * serialised entity under the objectType key (SNAPSHOT_EVENTS). Object
+	 * create, update and revert events carry more context (objectPayload()).
 	 *
 	 * @param Event $event The event
 	 *
 	 * @return array<string, mixed>|null The event payload or null if not extractable
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Event handling requires checking many event types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Event handling requires checking many event types
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Unified event extraction requires handling all types
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-event-payload-input-must-include-full-context-for-mapping-templates
 	 */
 	private function extractPayload(Event $event): ?array {
-		// Object events.
+		foreach (self::SNAPSHOT_EVENTS as $class => [$objectType, $action, $getter]) {
+			if ($event instanceof $class) {
+				return [
+					'objectType' => $objectType,
+					'action' => $action,
+					$objectType => $event->{$getter}()->jsonSerialize(),
+				];
+			}
+		}
+
+		return $this->objectPayload(event: $event);
+	}//end extractPayload()
+
+	/**
+	 * Build the payload of an object create, update or revert event.
+	 *
+	 * @param Event $event The event
+	 *
+	 * @return array<string, mixed>|null The payload, or null for any other event
+	 */
+	private function objectPayload(Event $event): ?array {
 		if ($event instanceof ObjectCreatingEvent) {
 			$object = $event->getObject();
 			return [
@@ -176,74 +245,13 @@ class WebhookEventListener implements IEventListener {
 
 		if ($event instanceof ObjectUpdatingEvent) {
 			$newObject = $event->getNewObject();
-			$oldObject = $event->getOldObject();
 			return [
 				'objectType' => 'object',
 				'action' => 'updating',
 				'newObject' => $newObject->jsonSerialize(),
-				'oldObject' => $oldObject?->jsonSerialize(),
+				'oldObject' => $event->getOldObject()?->jsonSerialize(),
 				'register' => $newObject->getRegister(),
 				'schema' => $newObject->getSchema(),
-			];
-		}
-
-		if ($event instanceof ObjectDeletingEvent) {
-			return [
-				'objectType' => 'object',
-				'action' => 'deleting',
-				'object' => $event->getObject()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof ObjectCreatedEvent) {
-			$object = $event->getObject();
-			return [
-				'objectType' => 'object',
-				'action' => 'create',
-				'object' => $object->jsonSerialize(),
-				'objectUuid' => $object->getUuid(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-				'timestamp' => date('c'),
-			];
-		}
-
-		if ($event instanceof ObjectUpdatedEvent) {
-			$object = $event->getNewObject();
-			return [
-				'objectType' => 'object',
-				'action' => 'update',
-				'object' => $object->jsonSerialize(),
-				'objectUuid' => $object->getUuid(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-				'timestamp' => date('c'),
-			];
-		}
-
-		if ($event instanceof ObjectDeletedEvent) {
-			$object = $event->getObject();
-			return [
-				'objectType' => 'object',
-				'action' => 'delete',
-				'object' => $object->jsonSerialize(),
-				'objectUuid' => $object->getUuid(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-				'timestamp' => date('c'),
-			];
-		}
-
-		if ($event instanceof ObjectLockedEvent || $event instanceof ObjectUnlockedEvent) {
-			$action = 'unlocked';
-			if ($event instanceof ObjectLockedEvent) {
-				$action = 'locked';
-			}
-
-			return [
-				'objectType' => 'object',
-				'action' => $action,
-				'object' => $event->getObject()->jsonSerialize(),
 			];
 		}
 
@@ -256,217 +264,32 @@ class WebhookEventListener implements IEventListener {
 			];
 		}
 
-		// Register events.
-		if ($event instanceof RegisterCreatedEvent) {
-			return [
-				'objectType' => 'register',
-				'action' => 'created',
-				'register' => $event->getRegister()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof RegisterUpdatedEvent) {
-			return [
-				'objectType' => 'register',
-				'action' => 'updated',
-				'register' => $event->getNewRegister()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof RegisterDeletedEvent) {
-			return [
-				'objectType' => 'register',
-				'action' => 'deleted',
-				'register' => $event->getRegister()->jsonSerialize(),
-			];
-		}
-
-		// Schema events.
-		if ($event instanceof SchemaCreatedEvent) {
-			return [
-				'objectType' => 'schema',
-				'action' => 'created',
-				'schema' => $event->getSchema()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof SchemaUpdatedEvent) {
-			return [
-				'objectType' => 'schema',
-				'action' => 'updated',
-				'schema' => $event->getNewSchema()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof SchemaDeletedEvent) {
-			return [
-				'objectType' => 'schema',
-				'action' => 'deleted',
-				'schema' => $event->getSchema()->jsonSerialize(),
-			];
-		}
-
-		// Application events.
-		if ($event instanceof ApplicationCreatedEvent) {
-			return [
-				'objectType' => 'application',
-				'action' => 'created',
-				'application' => $event->getApplication()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof ApplicationUpdatedEvent) {
-			return [
-				'objectType' => 'application',
-				'action' => 'updated',
-				'application' => $event->getNewApplication()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof ApplicationDeletedEvent) {
-			return [
-				'objectType' => 'application',
-				'action' => 'deleted',
-				'application' => $event->getApplication()->jsonSerialize(),
-			];
-		}
-
-		// Agent events.
-		if ($event instanceof AgentCreatedEvent) {
-			return [
-				'objectType' => 'agent',
-				'action' => 'created',
-				'agent' => $event->getAgent()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof AgentUpdatedEvent) {
-			return [
-				'objectType' => 'agent',
-				'action' => 'updated',
-				'agent' => $event->getAgent()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof AgentDeletedEvent) {
-			return [
-				'objectType' => 'agent',
-				'action' => 'deleted',
-				'agent' => $event->getAgent()->jsonSerialize(),
-			];
-		}
-
-		// Source events.
-		if ($event instanceof SourceCreatedEvent) {
-			return [
-				'objectType' => 'source',
-				'action' => 'created',
-				'source' => $event->getSource()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof SourceUpdatedEvent) {
-			return [
-				'objectType' => 'source',
-				'action' => 'updated',
-				'source' => $event->getSource()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof SourceDeletedEvent) {
-			return [
-				'objectType' => 'source',
-				'action' => 'deleted',
-				'source' => $event->getSource()->jsonSerialize(),
-			];
-		}
-
-		// Configuration events.
-		if ($event instanceof ConfigurationCreatedEvent
-			|| $event instanceof ConfigurationUpdatedEvent
-			|| $event instanceof ConfigurationDeletedEvent
-		) {
-			$action = match (true) {
-				$event instanceof ConfigurationCreatedEvent => 'created',
-				$event instanceof ConfigurationUpdatedEvent => 'updated',
-				$event instanceof ConfigurationDeletedEvent => 'deleted',
-			};
-
-			return [
-				'objectType' => 'configuration',
-				'action' => $action,
-				'configuration' => $event->getConfiguration()->jsonSerialize(),
-			];
-		}
-
-		// View events.
-		if ($event instanceof ViewCreatedEvent
-			|| $event instanceof ViewUpdatedEvent
-			|| $event instanceof ViewDeletedEvent
-		) {
-			$action = match (true) {
-				$event instanceof ViewCreatedEvent => 'created',
-				$event instanceof ViewUpdatedEvent => 'updated',
-				$event instanceof ViewDeletedEvent => 'deleted',
-			};
-
-			return [
-				'objectType' => 'view',
-				'action' => $action,
-				'view' => $event->getView()->jsonSerialize(),
-			];
-		}
-
-		// Conversation events.
-		if ($event instanceof ConversationCreatedEvent) {
-			return [
-				'objectType' => 'conversation',
-				'action' => 'created',
-				'conversation' => $event->getConversation()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof ConversationUpdatedEvent) {
-			return [
-				'objectType' => 'conversation',
-				'action' => 'updated',
-				'conversation' => $event->getConversation()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof ConversationDeletedEvent) {
-			return [
-				'objectType' => 'conversation',
-				'action' => 'deleted',
-				'conversation' => $event->getConversation()->jsonSerialize(),
-			];
-		}
-
-		// Organisation events.
-		if ($event instanceof OrganisationCreatedEvent) {
-			return [
-				'objectType' => 'organisation',
-				'action' => 'created',
-				'organisation' => $event->getOrganisation()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof OrganisationUpdatedEvent) {
-			return [
-				'objectType' => 'organisation',
-				'action' => 'updated',
-				'organisation' => $event->getOrganisation()->jsonSerialize(),
-			];
-		}
-
-		if ($event instanceof OrganisationDeletedEvent) {
-			return [
-				'objectType' => 'organisation',
-				'action' => 'deleted',
-				'organisation' => $event->getOrganisation()->jsonSerialize(),
-			];
+		foreach (self::OBJECT_STATE_EVENTS as $class => [$action, $getter]) {
+			if ($event instanceof $class) {
+				return $this->objectStatePayload(object: $event->{$getter}(), action: $action);
+			}
 		}
 
 		return null;
-	}//end extractPayload()
+	}//end objectPayload()
+
+	/**
+	 * Build the payload of a saved or deleted object.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $object The object
+	 * @param string                             $action The action: create, update or delete
+	 *
+	 * @return array<string, mixed> The payload, stamped with the current time
+	 */
+	private function objectStatePayload(\OCA\OpenRegister\Db\ObjectEntity $object, string $action): array {
+		return [
+			'objectType' => 'object',
+			'action' => $action,
+			'object' => $object->jsonSerialize(),
+			'objectUuid' => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'timestamp' => date('c'),
+		];
+	}//end objectStatePayload()
 }//end class

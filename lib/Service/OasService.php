@@ -143,6 +143,55 @@ class OasService {
 	private const ALLOWED_STATUS_CODES = ['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'];
 
 	/**
+	 * OpenAPI schema keywords a property definition keeps, in output order.
+	 *
+	 * @var list<string>
+	 */
+	private const PROPERTY_KEYWORDS = [
+		'type',
+		'format',
+		'description',
+		'example',
+		'examples',
+		'default',
+		'enum',
+		'const',
+		'multipleOf',
+		'maximum',
+		'exclusiveMaximum',
+		'minimum',
+		'exclusiveMinimum',
+		'maxLength',
+		'minLength',
+		'pattern',
+		'maxItems',
+		'minItems',
+		'uniqueItems',
+		'maxProperties',
+		'minProperties',
+		'required',
+		'properties',
+		'items',
+		'additionalProperties',
+		'allOf',
+		'anyOf',
+		'oneOf',
+		'not',
+		'$ref',
+		'nullable',
+		'readOnly',
+		'writeOnly',
+		'title',
+	];
+
+	/**
+	 * The OpenAPI 3.1 types a property definition may declare.
+	 *
+	 * @var list<string>
+	 */
+	private const PROPERTY_TYPES = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
+
+	/**
 	 * What the RBAC declarations mean for the document.
 	 *
 	 * @var OasRbacAnnotator
@@ -601,9 +650,7 @@ class OasService {
 	 *     type?: 'string'|mixed
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many OpenAPI schema keywords require individual validation
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema keyword processing
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive OpenAPI schema validation logic
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function sanitizePropertyDefinition($propertyDefinition): array {
 		// If it's not an array, convert to basic string type.
@@ -614,165 +661,174 @@ class OasService {
 			];
 		}
 
-		// Start with a clean definition.
-		$cleanDef = [];
-
-		// Standard OpenAPI schema keywords that are allowed.
-		$allowedKeywords = [
-			'type',
-			'format',
-			'description',
-			'example',
-			'examples',
-			'default',
-			'enum',
-			'const',
-			'multipleOf',
-			'maximum',
-			'exclusiveMaximum',
-			'minimum',
-			'exclusiveMinimum',
-			'maxLength',
-			'minLength',
-			'pattern',
-			'maxItems',
-			'minItems',
-			'uniqueItems',
-			'maxProperties',
-			'minProperties',
-			'required',
-			'properties',
-			'items',
-			'additionalProperties',
-			'allOf',
-			'anyOf',
-			'oneOf',
-			'not',
-			'$ref',
-			'nullable',
-			'readOnly',
-			'writeOnly',
-			'title',
-		];
-
 		// Copy only valid OpenAPI schema keywords (strips internal fields like
 		// objectConfiguration, inversedBy, authorization, defaultBehavior, etc.).
-		foreach ($allowedKeywords as $keyword) {
+		$cleanDef = [];
+		foreach (self::PROPERTY_KEYWORDS as $keyword) {
 			if (($propertyDefinition[$keyword] ?? null) !== null) {
 				$cleanDef[$keyword] = $propertyDefinition[$keyword];
 			}
 		}
 
-		// Recursively sanitize nested structures (items, properties, composition keywords).
-		if (isset($cleanDef['items']) === true && is_array($cleanDef['items']) === true) {
+		$cleanDef = $this->sanitizeNestedDefinitions(cleanDef: $cleanDef);
+		$cleanDef = $this->dropInvalidKeywords(cleanDef: $cleanDef);
+		$cleanDef = $this->normalisePropertyType(cleanDef: $cleanDef);
+
+		// Ensure we have at least a type and a description.
+		if (isset($cleanDef['$ref']) === false) {
+			$cleanDef['type'] ??= 'string';
+			$cleanDef['description'] ??= 'Property value';
+		}
+
+		return $cleanDef;
+	}//end sanitizePropertyDefinition()
+
+	/**
+	 * Recursively sanitize the nested definitions: items, properties and the composition keywords.
+	 *
+	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
+	 *
+	 * @return array<string, mixed> The definition with sanitized nested definitions
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function sanitizeNestedDefinitions(array $cleanDef): array {
+		if (is_array($cleanDef['items'] ?? null) === true) {
 			$cleanDef['items'] = $this->sanitizePropertyDefinition(propertyDefinition: $cleanDef['items']);
 		}
 
-		if (isset($cleanDef['properties']) === true && is_array($cleanDef['properties']) === true) {
+		if (is_array($cleanDef['properties'] ?? null) === true) {
 			foreach ($cleanDef['properties'] as $subPropName => $subPropDef) {
 				$cleanDef['properties'][$subPropName] = $this->sanitizePropertyDefinition(propertyDefinition: $subPropDef);
 			}
 		}
 
 		foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
-			if (isset($cleanDef[$compositionKey]) === true && is_array($cleanDef[$compositionKey]) === true) {
-				foreach ($cleanDef[$compositionKey] as $idx => $item) {
-					if (is_array($item) === true) {
-						$cleanDef[$compositionKey][$idx] = $this->sanitizePropertyDefinition(propertyDefinition: $item);
-					}
+			if (is_array($cleanDef[$compositionKey] ?? null) === false) {
+				continue;
+			}
+
+			foreach ($cleanDef[$compositionKey] as $idx => $item) {
+				if (is_array($item) === true) {
+					$cleanDef[$compositionKey][$idx] = $this->sanitizePropertyDefinition(propertyDefinition: $item);
 				}
 			}
 		}
 
-		// Remove invalid/empty values that violate OpenAPI spec.
-		// OneOf must have at least 1 item, remove if empty.
-		$hasOneOf = ($cleanDef['oneOf'] ?? null) !== null;
-		$oneOfIsEmpty = empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false;
-		if ($hasOneOf === true && $oneOfIsEmpty === true) {
-			unset($cleanDef['oneOf']);
-		}//end if
+		return $cleanDef;
+	}//end sanitizeNestedDefinitions()
 
-		// AnyOf must have at least 1 item, remove if empty.
-		$hasAnyOf = ($cleanDef['anyOf'] ?? null) !== null;
-		$anyOfIsEmpty = empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false;
-		if ($hasAnyOf === true && $anyOfIsEmpty === true) {
-			unset($cleanDef['anyOf']);
-		}//end if
-
-		// AllOf must have at least 1 item, remove if empty or invalid.
-		if (isset($cleanDef['allOf']) === true) {
-			if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
-				unset($cleanDef['allOf']);
+	/**
+	 * Remove keyword values that violate the OpenAPI spec.
+	 *
+	 * OneOf, anyOf and enum must be non-empty lists, and a property-level `required`
+	 * must be a list (booleans leak from schema config).
+	 *
+	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
+	 *
+	 * @return array<string, mixed> The definition without invalid keywords
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function dropInvalidKeywords(array $cleanDef): array {
+		foreach (['oneOf', 'anyOf', 'enum'] as $listKeyword) {
+			if (isset($cleanDef[$listKeyword]) === true
+				&& (empty($cleanDef[$listKeyword]) === true || is_array($cleanDef[$listKeyword]) === false)
+			) {
+				unset($cleanDef[$listKeyword]);
 			}
-
-			if (isset($cleanDef['allOf']) === true && is_array($cleanDef['allOf']) === true) {
-				// Validate each allOf element.
-				$validAllOfItems = [];
-				foreach ($cleanDef['allOf'] as $item) {
-					// Each allOf item must be an object/array.
-					if (is_array($item) === true && empty($item) === false) {
-						$validAllOfItems[] = $item;
-					}
-				}
-
-				// If no valid items remain, remove allOf.
-				if (empty($validAllOfItems) === true) {
-					unset($cleanDef['allOf']);
-				}
-
-				if (empty($validAllOfItems) === false) {
-					$cleanDef['allOf'] = $validAllOfItems;
-				}
-			}//end if
-		}//end if
-
-		// $ref must be a non-empty string, remove if empty.
-		$hasRef = ($cleanDef['$ref'] ?? null) !== null;
-		$refIsEmpty = empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false;
-		if ($hasRef === true && $refIsEmpty === true) {
-			unset($cleanDef['$ref']);
-		}//end if
-
-		// Normalize bare $ref values (e.g., "vestiging") to proper component references.
-		if (isset($cleanDef['$ref']) === true
-			&& is_string($cleanDef['$ref']) === true
-			&& strpos($cleanDef['$ref'], '#/') !== 0
-		) {
-			$cleanDef['$ref'] = '#/components/schemas/' . $this->sanitizeSchemaName(title: $cleanDef['$ref']);
 		}
 
-		// Enum must have at least 1 item, remove if empty.
-		$hasEnum = ($cleanDef['enum'] ?? null) !== null;
-		$enumIsEmpty = empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false;
-		if ($hasEnum === true && $enumIsEmpty === true) {
-			unset($cleanDef['enum']);
-		}//end if
+		$cleanDef = $this->keepValidAllOfItems(cleanDef: $cleanDef);
+		$cleanDef = $this->normalisePropertyRef(cleanDef: $cleanDef);
 
-		// Property-level `required` must be an array (list of required sub-properties),
-		// not a boolean. Booleans leak from schema config and violate OpenAPI spec.
 		if (isset($cleanDef['required']) === true && is_array($cleanDef['required']) === false) {
 			unset($cleanDef['required']);
 		}
 
-		// Validate `type` is a recognized OpenAPI 3.1 type.
-		$validTypes = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
-		if (isset($cleanDef['type']) === true) {
-			if (is_string($cleanDef['type']) === true
-				&& in_array($cleanDef['type'], $validTypes, true) === false
-			) {
-				$cleanDef['type'] = 'string';
-			}
+		return $cleanDef;
+	}//end dropInvalidKeywords()
+
+	/**
+	 * Keep only the non-empty object items of allOf, and drop allOf when none remain.
+	 *
+	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
+	 *
+	 * @return array<string, mixed> The definition with a valid or no allOf
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function keepValidAllOfItems(array $cleanDef): array {
+		if (isset($cleanDef['allOf']) === false) {
+			return $cleanDef;
 		}
 
-		// `items` must be a JSON Schema object, not an array. Fix malformed items.
+		$validAllOfItems = [];
+		if (is_array($cleanDef['allOf']) === true) {
+			$validAllOfItems = array_values(
+				array_filter(
+					$cleanDef['allOf'],
+					static fn ($item): bool => is_array($item) === true && empty($item) === false
+				)
+			);
+		}
+
+		unset($cleanDef['allOf']);
+		if (empty($validAllOfItems) === false) {
+			$cleanDef['allOf'] = $validAllOfItems;
+		}
+
+		return $cleanDef;
+	}//end keepValidAllOfItems()
+
+	/**
+	 * Drop a $ref that is not a non-empty string and turn a bare $ref (e.g. "vestiging") into a component reference.
+	 *
+	 * @param array<string, mixed> $cleanDef The definition with only OpenAPI keywords
+	 *
+	 * @return array<string, mixed> The definition with a valid or no $ref
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function normalisePropertyRef(array $cleanDef): array {
+		if (isset($cleanDef['$ref']) === false) {
+			return $cleanDef;
+		}
+
+		if (empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false) {
+			unset($cleanDef['$ref']);
+			return $cleanDef;
+		}
+
+		if (strpos($cleanDef['$ref'], '#/') !== 0) {
+			$cleanDef['$ref'] = '#/components/schemas/' . $this->sanitizeSchemaName(title: $cleanDef['$ref']);
+		}
+
+		return $cleanDef;
+	}//end normalisePropertyRef()
+
+	/**
+	 * Map an unknown `type` to string and make `items` a JSON Schema object.
+	 *
+	 * A list of items is replaced by its first element, and an array type always gets items.
+	 *
+	 * @param array<string, mixed> $cleanDef The definition without invalid keywords
+	 *
+	 * @return array<string, mixed> The definition with a valid type and items
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function normalisePropertyType(array $cleanDef): array {
+		if (is_string($cleanDef['type'] ?? null) === true
+			&& in_array($cleanDef['type'], self::PROPERTY_TYPES, true) === false
+		) {
+			$cleanDef['type'] = 'string';
+		}
+
 		if (isset($cleanDef['items']) === true) {
 			if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
-				// Sequential array (list) — not valid. Use first element or default.
-				$firstItem = $cleanDef['items'][0] ?? null;
-				$cleanDef['items'] = ['type' => 'string'];
-				if (empty($firstItem) === false) {
-					$cleanDef['items'] = $firstItem;
-				}
+				// Sequential array (list) is not valid: use the first element or the default.
+				$cleanDef['items'] = ($cleanDef['items'][0] ?? null);
 			}
 
 			if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
@@ -780,23 +836,12 @@ class OasService {
 			}
 		}
 
-		// Array types must have items definition.
 		if (($cleanDef['type'] ?? null) === 'array' && isset($cleanDef['items']) === false) {
 			$cleanDef['items'] = ['type' => 'string'];
 		}
 
-		// Ensure we have at least a type.
-		if (isset($cleanDef['type']) === false && isset($cleanDef['$ref']) === false) {
-			$cleanDef['type'] = 'string';
-		}
-
-		// Add basic description if missing.
-		if (isset($cleanDef['description']) === false && isset($cleanDef['$ref']) === false) {
-			$cleanDef['description'] = 'Property value';
-		}
-
 		return $cleanDef;
-	}//end sanitizePropertyDefinition()
+	}//end normalisePropertyType()
 
 	/**
 	 * Add CRUD paths for a schema.

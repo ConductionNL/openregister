@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ProcessingPurpose>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class ProcessingPurposeMapper extends QBMapper {
 	/**
@@ -59,7 +59,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @throws DoesNotExistException When no row matches the id.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function find(int $id): ProcessingPurpose {
 		$qb = $this->db->getQueryBuilder();
@@ -77,7 +77,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose|null Null when no row matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findByCode(string $code): ?ProcessingPurpose {
 		if ($code === '') {
@@ -103,7 +103,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose|null Null when no row matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findByUuid(string $uuid): ?ProcessingPurpose {
 		if ($uuid === '') {
@@ -132,7 +132,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose|null Null when nothing matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function resolveReference(string $reference): ?ProcessingPurpose {
 		if ($reference === '') {
@@ -155,7 +155,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose[] The matching purposes.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findAll(?string $status = null, ?string $organisationId = null): array {
 		$qb = $this->db->getQueryBuilder();
@@ -183,7 +183,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function insert($entity): ProcessingPurpose {
 		if ($entity->getUuid() === null || $entity->getUuid() === '') {
@@ -207,7 +207,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose The persisted purpose.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function update($entity): ProcessingPurpose {
 		$entity->setUpdated(new DateTime());

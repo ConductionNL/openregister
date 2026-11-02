@@ -62,6 +62,38 @@ function widgetCacheKey(dataSource) {
 	return `unknown:${mode}`
 }
 
+/**
+ * The store fetcher per widget data-source mode.
+ */
+const WIDGET_FETCHERS = {
+	aggregation: '_fetchAggregation',
+	graphql: '_fetchGraphql',
+	statistics: '_fetchStatistics',
+}
+
+/**
+ * A widget cache entry, stamped with the current time.
+ *
+ * @param {unknown} data The widget data, or null.
+ * @param {string|null} error The failure text, or null.
+ * @return {object} The entry.
+ */
+function widgetEntry(data, error) {
+	return { data, fetchedAt: new Date().toISOString(), error }
+}
+
+/**
+ * The text of a failed request: the server's error, else the error message,
+ * else the fallback.
+ *
+ * @param {object} e The rejected error.
+ * @param {string} fallback The text when neither is set.
+ * @return {string} The text.
+ */
+function failureText(e, fallback) {
+	return e.response?.data?.error ?? e.message ?? fallback
+}
+
 export const useReportsStore = defineStore('reports', {
 	state: () => ({
 		dashboards: [],
@@ -121,10 +153,7 @@ export const useReportsStore = defineStore('reports', {
 				this.dashboards = response.data?.results ?? response.data ?? []
 				return this.dashboards
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch dashboards'
+				this.error = failureText(e, 'Failed to fetch dashboards')
 				console.error('[reports.fetchDashboards]', e)
 				throw e
 			} finally {
@@ -152,10 +181,7 @@ export const useReportsStore = defineStore('reports', {
 				this.activeDashboard = response.data ?? null
 				return this.activeDashboard
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch dashboard'
+				this.error = failureText(e, 'Failed to fetch dashboard')
 				console.error('[reports.fetchDashboard]', e)
 				throw e
 			} finally {
@@ -175,7 +201,6 @@ export const useReportsStore = defineStore('reports', {
 		 */
 		async fetchWidgetData(widget, forceRefresh = false) {
 			const dataSource = widget?.dataSource
-			if (!dataSource) return null
 			const key = widgetCacheKey(dataSource)
 			if (!key) return null
 
@@ -184,36 +209,17 @@ export const useReportsStore = defineStore('reports', {
 			}
 
 			try {
-				let data = null
-				if (dataSource.mode === 'aggregation') {
-					data = await this._fetchAggregation(dataSource)
-				} else if (dataSource.mode === 'graphql') {
-					data = await this._fetchGraphql(dataSource)
-				} else if (dataSource.mode === 'statistics') {
-					data = await this._fetchStatistics(dataSource)
-				}
-
+				const data = await this._fetchWidgetSource(dataSource)
 				this.widgetData = {
 					...this.widgetData,
-					[key]: {
-						data,
-						fetchedAt: new Date().toISOString(),
-						error: null,
-					},
+					[key]: widgetEntry(data, null),
 				}
 				return data
 			} catch (e) {
-				const message =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch widget data'
+				const message = failureText(e, 'Failed to fetch widget data')
 				this.widgetData = {
 					...this.widgetData,
-					[key]: {
-						data: null,
-						fetchedAt: new Date().toISOString(),
-						error: message,
-					},
+					[key]: widgetEntry(null, message),
 				}
 				console.error('[reports.fetchWidgetData]', { widget, error: e })
 				return null
@@ -242,6 +248,20 @@ export const useReportsStore = defineStore('reports', {
 		},
 
 		// --- Internal fetchers below -----------------------------------
+
+		/**
+		 * Fetch widget data with the fetcher of its data-source mode, or null
+		 * for a mode without one.
+		 *
+		 * @param {object} dataSource Widget data-source descriptor.
+		 * @return {Promise<unknown>} The widget data.
+		 * @spec exclude private dispatch to the per-mode fetchers below
+		 */
+		async _fetchWidgetSource(dataSource) {
+			return Object.hasOwn(WIDGET_FETCHERS, dataSource.mode)
+				? this[WIDGET_FETCHERS[dataSource.mode]](dataSource)
+				: null
+		},
 
 		/**
 		 * Fetch aggregation widget data.

@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/boolean-filter-values/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
  */
 
 declare(strict_types=1);

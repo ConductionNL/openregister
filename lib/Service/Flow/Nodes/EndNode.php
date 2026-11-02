@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -39,7 +40,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Stops the run, optionally as an error.
  */
-class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy {
+class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *

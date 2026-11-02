@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Event\DraftCreatedEvent;
 use OCA\OpenRegister\Event\DraftDeletedEvent;
 use OCA\OpenRegister\Event\DraftUpdatedEvent;
@@ -21,6 +20,7 @@ use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
+use OCA\OpenRegister\Listener\ListenerRegistrar;
 use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
@@ -30,7 +30,6 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use ReflectionClass;
 
 /**
  * Three ways around the rule, each closed here.
@@ -92,9 +91,7 @@ class ObjectEventRuleTest extends TestCase {
 			}
 		);
 
-		$reflection = new ReflectionClass(Application::class);
-		$application = $reflection->newInstanceWithoutConstructor();
-		$reflection->getMethod('registerEventListeners')->invoke($application, $context);
+		ListenerRegistrar::register(context: $context);
 
 		return $registered;
 	}//end registrations()
@@ -170,7 +167,7 @@ class ObjectEventRuleTest extends TestCase {
 	public function testNoOtherClassNamesADraftEvent(): void {
 		$allowed = [
 			'lib/Service/Object/ObjectEventGate.php',
-			'lib/AppInfo/Application.php',
+			'lib/Listener/ListenerRegistrar.php',
 			'lib/Event/DraftCreatedEvent.php',
 			'lib/Event/DraftUpdatedEvent.php',
 			'lib/Event/DraftDeletedEvent.php',
@@ -182,7 +179,7 @@ class ObjectEventRuleTest extends TestCase {
 			}
 		}
 
-		$this->assertSame([], $offenders, 'These classes name a draft event. Only ObjectEventGate dispatches one and only Application::registerDraftListeners() registers on one.');
+		$this->assertSame([], $offenders, 'These classes name a draft event. Only ObjectEventGate dispatches one and only ListenerRegistrar::registerDraftListeners() registers on one.');
 	}//end testNoOtherClassNamesADraftEvent()
 
 	/**

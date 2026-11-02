@@ -190,28 +190,6 @@ class ConfigurationSettingsHandler {
 	 *         deleteLogRetention: 2592000000|mixed,
 	 *         auditTrailsEnabled: mixed|true,
 	 *         searchTrailsEnabled: mixed|true
-	 *     },
-	 *     solr?: array{
-	 *         enabled: false|mixed,
-	 *         host: 'solr'|mixed,
-	 *         port: 8983|mixed,
-	 *         path: '/solr'|mixed,
-	 *         core: 'openregister'|mixed,
-	 *         configSet: '_default'|mixed,
-	 *         scheme: 'http'|mixed,
-	 *         username: 'solr'|mixed,
-	 *         password: 'SolrRocks'|mixed,
-	 *         timeout: 30|mixed,
-	 *         autoCommit: mixed|true,
-	 *         commitWithin: 1000|mixed,
-	 *         enableLogging: mixed|true,
-	 *         zookeeperHosts: 'zookeeper:2181'|mixed,
-	 *         zookeeperUsername: ''|mixed,
-	 *         zookeeperPassword: ''|mixed,
-	 *         collection: 'openregister'|mixed,
-	 *         useCloud: mixed|true,
-	 *         objectCollection: mixed|null,
-	 *         fileCollection: mixed|null
 	 *     }
 	 * }
 	 *
@@ -340,60 +318,6 @@ class ConfigurationSettingsHandler {
 				) === 'true',
 				'lastRun' => $this->appConfig->getValueString($this->appName, 'blob_migration_last_run', ''),
 			];
-
-			// SOLR Search Configuration.
-			$solrConfig = $this->appConfig->getValueString($this->appName, 'solr', '');
-
-			if (empty($solrConfig) === true) {
-				$data['solr'] = [
-					'enabled' => false,
-					'host' => 'solr',
-					'port' => 8983,
-					'path' => '/solr',
-					'core' => 'openregister',
-					'configSet' => '_default',
-					'scheme' => 'http',
-					'username' => 'solr',
-					'password' => 'SolrRocks',
-					'timeout' => 30,
-					'autoCommit' => true,
-					'commitWithin' => 1000,
-					'enableLogging' => true,
-					'zookeeperHosts' => 'zookeeper:2181',
-					'zookeeperUsername' => '',
-					'zookeeperPassword' => '',
-					'collection' => 'openregister',
-					'useCloud' => true,
-					'objectCollection' => null,
-					'fileCollection' => null,
-				];
-			}//end if
-
-			if (empty($solrConfig) === false) {
-				$solrData = json_decode($solrConfig, true);
-				$data['solr'] = [
-					'enabled' => $solrData['enabled'] ?? false,
-					'host' => $solrData['host'] ?? 'solr',
-					'port' => $solrData['port'] ?? 8983,
-					'path' => $solrData['path'] ?? '/solr',
-					'core' => $solrData['core'] ?? 'openregister',
-					'configSet' => $solrData['configSet'] ?? '_default',
-					'scheme' => $solrData['scheme'] ?? 'http',
-					'username' => $solrData['username'] ?? 'solr',
-					'password' => $solrData['password'] ?? 'SolrRocks',
-					'timeout' => $solrData['timeout'] ?? 30,
-					'autoCommit' => $solrData['autoCommit'] ?? true,
-					'commitWithin' => $solrData['commitWithin'] ?? 1000,
-					'enableLogging' => $solrData['enableLogging'] ?? true,
-					'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
-					'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
-					'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
-					'collection' => $solrData['collection'] ?? 'openregister',
-					'useCloud' => $solrData['useCloud'] ?? true,
-					'objectCollection' => $solrData['objectCollection'] ?? null,
-					'fileCollection' => $solrData['fileCollection'] ?? null,
-				];
-			}//end if
 
 			// Flow engine. These are ADMINISTRATOR settings, deliberately: how
 			// long run history is kept, whether every hop is audit-trailed, and
@@ -532,28 +456,6 @@ class ConfigurationSettingsHandler {
 	 *         deleteLogRetention: 2592000000|mixed,
 	 *         auditTrailsEnabled: mixed|true,
 	 *         searchTrailsEnabled: mixed|true
-	 *     },
-	 *     solr?: array{
-	 *         enabled: false|mixed,
-	 *         host: 'solr'|mixed,
-	 *         port: 8983|mixed,
-	 *         path: '/solr'|mixed,
-	 *         core: 'openregister'|mixed,
-	 *         configSet: '_default'|mixed,
-	 *         scheme: 'http'|mixed,
-	 *         username: 'solr'|mixed,
-	 *         password: 'SolrRocks'|mixed,
-	 *         timeout: 30|mixed,
-	 *         autoCommit: mixed|true,
-	 *         commitWithin: 1000|mixed,
-	 *         enableLogging: mixed|true,
-	 *         zookeeperHosts: 'zookeeper:2181'|mixed,
-	 *         zookeeperUsername: ''|mixed,
-	 *         zookeeperPassword: ''|mixed,
-	 *         collection: 'openregister'|mixed,
-	 *         useCloud: mixed|true,
-	 *         objectCollection: mixed|null,
-	 *         fileCollection: mixed|null
 	 *     }
 	 * }
 	 *
@@ -660,34 +562,6 @@ class ConfigurationSettingsHandler {
 				];
 				$this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
 			}
-
-			// Handle SOLR settings.
-			if (($data['solr'] ?? null) !== null) {
-				$solrData = $data['solr'];
-				$solrConfig = [
-					'enabled' => $solrData['enabled'] ?? false,
-					'host' => $solrData['host'] ?? 'solr',
-					'port' => (int)($solrData['port'] ?? 8983),
-					'path' => $solrData['path'] ?? '/solr',
-					'core' => $solrData['core'] ?? 'openregister',
-					'configSet' => $solrData['configSet'] ?? '_default',
-					'scheme' => $solrData['scheme'] ?? 'http',
-					'username' => $solrData['username'] ?? 'solr',
-					'password' => $solrData['password'] ?? 'SolrRocks',
-					'timeout' => (int)($solrData['timeout'] ?? 30),
-					'autoCommit' => $solrData['autoCommit'] ?? true,
-					'commitWithin' => (int)($solrData['commitWithin'] ?? 1000),
-					'enableLogging' => $solrData['enableLogging'] ?? true,
-					'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
-					'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
-					'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
-					'collection' => $solrData['collection'] ?? 'openregister',
-					'useCloud' => $solrData['useCloud'] ?? true,
-					'objectCollection' => $solrData['objectCollection'] ?? null,
-					'fileCollection' => $solrData['fileCollection'] ?? null,
-				];
-				$this->appConfig->setValueString($this->appName, 'solr', json_encode($solrConfig));
-			}//end if
 
 			// Record and announce after the writes and inside the try, so a
 			// save that threw records nothing. The recorder writes the
@@ -1112,7 +986,6 @@ class ConfigurationSettingsHandler {
 					],
 					'vectorConfig' => [
 						'backend' => 'php',
-						'solrField' => '_embedding_',
 					],
 				];
 			}//end if
@@ -1128,7 +1001,6 @@ class ConfigurationSettingsHandler {
 			if (isset($decoded['vectorConfig']) === false) {
 				$decoded['vectorConfig'] = [
 					'backend' => 'php',
-					'solrField' => '_embedding_',
 				];
 			}
 
@@ -1138,12 +1010,8 @@ class ConfigurationSettingsHandler {
 					$decoded['vectorConfig']['backend'] = 'php';
 				}
 
-				if (isset($decoded['vectorConfig']['solrField']) === false) {
-					$decoded['vectorConfig']['solrField'] = '_embedding_';
-				}
-
-				// Remove deprecated solrCollection if it exists.
-				unset($decoded['vectorConfig']['solrCollection']);
+				// Drop the retired Solr vector keys.
+				unset($decoded['vectorConfig']['solrField'], $decoded['vectorConfig']['solrCollection']);
 			}
 
 			return $decoded;
@@ -1206,7 +1074,6 @@ class ConfigurationSettingsHandler {
 				],
 				'vectorConfig' => [
 					'backend' => $newVector['backend'] ?? $oldVector['backend'] ?? 'php',
-					'solrField' => $newVector['solrField'] ?? $oldVector['solrField'] ?? '_embedding_',
 				],
 			];
 

@@ -1,0 +1,26 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RelationsTab.normaliseEntry (golden) matches the recorded rows 1`] = `
+[
+  "{"id":"unknown-1","type":"unknown","title":"","subtitle":"","timestamp":null}",
+  "{"id":"unknown-2","type":"unknown","title":"","subtitle":"","timestamp":null}",
+  "{"id":"e1","type":"email","title":"Hello","subtitle":"a@b","timestamp":"t1"}",
+  "{"id":"email-3","type":"email","title":"","subtitle":"Kept","timestamp":null}",
+  "{"id":"email-4","type":"email","title":"","subtitle":"Only from","timestamp":null}",
+  "{"id":"email-5","type":"email","title":"","subtitle":"","timestamp":null}",
+  "{"id":"c1","type":"contact","title":"Ann","subtitle":"","timestamp":null}",
+  "{"id":"contact-6","type":"contact","title":"ann@x","subtitle":"","timestamp":null}",
+  "{"id":"contact-7","type":"contact","title":"Named","subtitle":"","timestamp":null}",
+  "{"id":"contact-8","type":"contact","title":"","subtitle":"","timestamp":null}",
+  "{"id":"v1","type":"event","title":"Meet","subtitle":"","timestamp":"s"}",
+  "{"id":"deck-9","type":"deck","title":"Card","subtitle":"","timestamp":"u"}",
+  "{"id":"unknown-10","type":"unknown","title":"T","subtitle":"","timestamp":"c"}",
+  "{"id":"unknown-11","type":"unknown","title":"D","subtitle":"","timestamp":null}",
+  "{"id":"unknown-12","type":"unknown","title":"S","subtitle":"","timestamp":null}",
+  "{"id":"unknown-13","type":"unknown","title":"","subtitle":"","timestamp":"r"}",
+  "{"id":"constructor-14","type":"constructor","title":"odd","subtitle":"","timestamp":null}",
+  "{"id":"toString-15","type":"toString","title":"","subtitle":"","timestamp":null}",
+  "{"id":"email-16","type":"email","title":"","subtitle":"x@y","timestamp":null}",
+  "{"id":"contact-17","type":"contact","title":"","subtitle":"","timestamp":null}",
+]
+`;

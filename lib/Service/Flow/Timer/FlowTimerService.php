@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEvent;
 use OCA\OpenRegister\Db\FlowTimerEventMapper;
@@ -87,7 +88,7 @@ use Throwable;
  * the logger. Each is a distinct collaborator the lifecycle needs; bundling
  * them into a holder object would hide the coupling, not remove it.
  */
-class FlowTimerService {
+class FlowTimerService implements FlowTimerControlInterface {
 
 	/**
 	 * The actor recorded for sweep-originated writes.

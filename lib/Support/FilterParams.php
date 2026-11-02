@@ -369,7 +369,7 @@ final class FilterParams {
 	 *
 	 * @return mixed The value in its comparable form.
 	 *
-	 * @spec openspec/changes/boolean-filter-values/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
 	 */
 	public static function comparableValue(mixed $value, string $propertyType): mixed {
 		if (is_array($value) === true) {

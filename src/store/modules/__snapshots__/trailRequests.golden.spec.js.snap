@@ -1,0 +1,6756 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error deleting audit trail:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error deleting audit trail:",
+      "Failed to delete audit trail",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Failed to delete audit trail",
+}
+`;
+
+exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error deleting audit trails:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error deleting audit trails:",
+      "Failed to delete audit trails",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Failed to delete audit trails",
+}
+`;
+
+exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 2,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.fetchStatistics([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden auditTrail.fetchStatistics([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Failed to fetch statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Failed to fetch statistics",
+}
+`;
+
+exports[`trail store requests golden auditTrail.fetchStatistics([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "2": "x",
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "results": [
+        {
+          "id": 9,
+        },
+      ],
+      "total": 5,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getActionDistribution([]) failure with error text 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getActionDistribution([]) failure without error text 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getActionDistribution([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getStatistics([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Server says no",
+    ],
+    [
+      "Error getting statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "create": 0,
+    "delete": 0,
+    "read": 0,
+    "total": 0,
+    "update": 0,
+  },
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getStatistics([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Failed to fetch statistics",
+    ],
+    [
+      "Error getting statistics:",
+      "Failed to fetch statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "create": 0,
+    "delete": 0,
+    "read": 0,
+    "total": 0,
+    "update": 0,
+  },
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getStatistics([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "create": 0,
+    "delete": 0,
+    "read": 0,
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+    "update": 0,
+  },
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "2": "x",
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "results": [
+        {
+          "id": 9,
+        },
+      ],
+      "total": 5,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getTopObjects([]) failure with error text 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getTopObjects([]) failure without error text 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden auditTrail.getTopObjects([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden deleted.fetchStatistics([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden deleted.fetchStatistics([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Failed to fetch statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Failed to fetch statistics",
+}
+`;
+
+exports[`trail store requests golden deleted.fetchStatistics([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "2": "x",
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "results": [
+        {
+          "id": 9,
+        },
+      ],
+      "total": 5,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden deleted.fetchTopDeleters([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching top deleters:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/top-deleters",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden deleted.fetchTopDeleters([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching top deleters:",
+      "Failed to fetch top deleters",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/top-deleters",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Failed to fetch top deleters",
+}
+`;
+
+exports[`trail store requests golden deleted.fetchTopDeleters([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/top-deleters",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": {
+      "2": "x",
+      "results": [
+        {
+          "id": 9,
+        },
+      ],
+      "total": 5,
+    },
+    "topDeletersLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDelete([2]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error permanently deleting object:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDelete([2]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error permanently deleting object:",
+      "Failed to permanently delete object",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Failed to permanently delete object",
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDelete([2]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDeleteMultiple([[1,3]]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error permanently deleting objects:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDeleteMultiple([[1,3]]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error permanently deleting objects:",
+      "Failed to permanently delete objects",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Failed to permanently delete objects",
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDeleteMultiple([[1,3]]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 2,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden deleted.restoreDeleted([2]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error restoring object:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2/restore",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden deleted.restoreDeleted([2]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error restoring object:",
+      "Failed to restore object",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2/restore",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Failed to restore object",
+}
+`;
+
+exports[`trail store requests golden deleted.restoreDeleted([2]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2/restore",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden deleted.restoreMultiple([[1,3]]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error restoring objects:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/restore",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden deleted.restoreMultiple([[1,3]]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error restoring objects:",
+      "Failed to restore objects",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/restore",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Failed to restore objects",
+}
+`;
+
+exports[`trail store requests golden deleted.restoreMultiple([[1,3]]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/restore",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 2,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error cleaning up search trails:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":30}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error cleaning up search trails:",
+      "Failed to cleanup search trails",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":30}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to cleanup search trails",
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":30}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([7]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error cleaning up search trails:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":7}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([7]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error cleaning up search trails:",
+      "Failed to cleanup search trails",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":7}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to cleanup search trails",
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([7]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":7}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity(["weekly"]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=weekly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity(["weekly"]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Failed to fetch activity data",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=weekly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch activity data",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity(["weekly"]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=weekly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=daily",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Failed to fetch activity data",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=daily",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch activity data",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=daily",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=10",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Failed to fetch popular terms",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=10",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch popular terms",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=10",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [
+      {
+        "id": 9,
+      },
+    ],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([3]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=3",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([3]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Failed to fetch popular terms",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=3",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch popular terms",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([3]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=3",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [
+      {
+        "id": 9,
+      },
+    ],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchRegisterSchemaStats([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching register schema statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchRegisterSchemaStats([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching register schema statistics:",
+      "Failed to fetch register schema statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch register schema statistics",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchRegisterSchemaStats([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [
+      {
+        "id": 9,
+      },
+    ],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Failed to fetch statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch statistics",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "avgObjectViewsPerSession": 0,
+      "avgSearchesPerSession": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"from":"2026-01-01","to":"2026-02-01"}]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?from=2026-01-01&to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"from":"2026-01-01","to":"2026-02-01"}]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Failed to fetch statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?from=2026-01-01&to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch statistics",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"from":"2026-01-01","to":"2026-02-01"}]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?from=2026-01-01&to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "avgObjectViewsPerSession": 0,
+      "avgSearchesPerSession": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"to":"2026-02-01"}]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"to":"2026-02-01"}]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Failed to fetch statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch statistics",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"to":"2026-02-01"}]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "avgObjectViewsPerSession": 0,
+      "avgSearchesPerSession": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchUserAgentStats([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching user agent statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Server says no",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchUserAgentStats([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching user agent statistics:",
+      "Failed to fetch user agent statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Failed to fetch user agent statistics",
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchUserAgentStats([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "2": "x",
+    "results": [
+      {
+        "id": 9,
+      },
+    ],
+    "total": 5,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [
+      {
+        "id": 9,
+      },
+    ],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getActivity(["monthly"]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Server says no",
+    ],
+    [
+      "Error getting activity data:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=monthly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getActivity(["monthly"]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Failed to fetch activity data",
+    ],
+    [
+      "Error getting activity data:",
+      "Failed to fetch activity data",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=monthly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getActivity(["monthly"]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=monthly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getPopularTerms([4]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Server says no",
+    ],
+    [
+      "Error getting popular terms:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=4",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getPopularTerms([4]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Failed to fetch popular terms",
+    ],
+    [
+      "Error getting popular terms:",
+      "Failed to fetch popular terms",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=4",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getPopularTerms([4]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=4",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [
+    {
+      "id": 9,
+    },
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [
+      {
+        "id": 9,
+      },
+    ],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getRegisterSchemaStats([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching register schema statistics:",
+      "Server says no",
+    ],
+    [
+      "Error getting register schema statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getRegisterSchemaStats([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching register schema statistics:",
+      "Failed to fetch register schema statistics",
+    ],
+    [
+      "Error getting register schema statistics:",
+      "Failed to fetch register schema statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getRegisterSchemaStats([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [
+    {
+      "id": 9,
+    },
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [
+      {
+        "id": 9,
+      },
+    ],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getStatistics([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Server says no",
+    ],
+    [
+      "Error getting statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "successRate": 0,
+    "total": 0,
+    "totalResults": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getStatistics([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Failed to fetch statistics",
+    ],
+    [
+      "Error getting statistics:",
+      "Failed to fetch statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "successRate": 0,
+    "total": 0,
+    "totalResults": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getStatistics([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "avgObjectViewsPerSession": 0,
+    "avgSearchesPerSession": 0,
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "successRate": 0,
+    "total": 0,
+    "totalResults": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "avgObjectViewsPerSession": 0,
+      "avgSearchesPerSession": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getUserAgentStats([]) failure with error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching user agent statistics:",
+      "Server says no",
+    ],
+    [
+      "Error getting user agent statistics:",
+      "Server says no",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getUserAgentStats([]) failure without error text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching user agent statistics:",
+      "Failed to fetch user agent statistics",
+    ],
+    [
+      "Error getting user agent statistics:",
+      "Failed to fetch user agent statistics",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`trail store requests golden searchTrail.getUserAgentStats([]) ok 1`] = `
+{
+  "logged": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [
+    {
+      "id": 9,
+    },
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [
+      {
+        "id": 9,
+      },
+    ],
+  },
+}
+`;

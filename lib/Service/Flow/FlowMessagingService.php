@@ -220,6 +220,29 @@ class FlowMessagingService {
 	}//end sendNotification()
 
 	/**
+	 * The messages a step would send, composed and not sent (flow dry-run).
+	 *
+	 * Per item: the recipients the step resolves, and the subject and body its
+	 * templates give. For `talk` the recipient is the conversation and there is
+	 * no subject. Reads only: no rate budget is spent, nothing is delivered and
+	 * no report is written.
+	 *
+	 * @param string $channel `email`, `notification` or `talk`.
+	 * @param array $config The step configuration.
+	 * @param array $items The flow items.
+	 * @param array $context The run context.
+	 *
+	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 */
+	public function previewMessages(string $channel, array $config, array $items, array $context): array {
+		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->templating);
+
+		return $preview->messages(channel: $channel, config: $config, items: $items, context: $this->scalarContext(context: $context));
+	}//end previewMessages()
+
+	/**
 	 * Send an email per recipient per item.
 	 *
 	 * @param array $config The step configuration (`recipients`, `subject`, `body`).
@@ -378,7 +401,7 @@ class FlowMessagingService {
 		$distinctAddresses = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$resolved = $this->resolveRecipients(
+			$resolved = $this->addresses->resolveRecipients(
 				recipients: ($config['recipients'] ?? []),
 				json: $json,
 				acceptAddresses: $acceptAddresses
@@ -767,70 +790,6 @@ class FlowMessagingService {
 
 		return $uid;
 	}//end resolveActingUser()
-
-	/**
-	 * Resolve a node's recipients config against one item.
-	 *
-	 * Entries are literal user or group ids, or a template resolving a field
-	 * on the item (`{{ assignee }}` / `{{ item.assignee }}`). Resolution goes
-	 * through the subsystem's recipient resolver — groups expanded, every uid
-	 * verified — and unknown ids are returned for the run log rather than
-	 * silently dropped.
-	 *
-	 * With `$acceptAddresses` (the email channel), an entry that is not a
-	 * user or group but holds an `@` is a candidate address, and so is a
-	 * field value that is one, or an object carrying `email` /
-	 * `emailAddress`. Candidates are screened by the caller; this method only
-	 * sorts them out.
-	 *
-	 * @param mixed $recipients The config value.
-	 * @param array $json The item's json.
-	 * @param bool $acceptAddresses Whether addresses are candidates (email) or unknowns.
-	 *
-	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
-	 * fact about the channel, not a mode of this method's own.
-	 *
-	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
-	 */
-	private function resolveRecipients(mixed $recipients, array $json, bool $acceptAddresses = false): array {
-		$uids = [];
-		$addresses = [];
-		$unknown = [];
-
-		if (is_string($recipients) === true) {
-			$recipients = [$recipients];
-		}
-
-		foreach ((array)$recipients as $entry) {
-			if (is_string($entry) === false || trim($entry) === '') {
-				continue;
-			}
-
-			$entry = trim($entry);
-
-			$matches = [];
-			if (preg_match('/^\{\{\s*(?:item\.)?([a-zA-Z0-9_.-]+)\s*\}\}$/', $entry, $matches) === 1) {
-				$resolved = $this->addresses->resolveTemplate(field: $matches[1], json: $json, acceptAddresses: $acceptAddresses);
-				array_push($uids, ...$resolved['uids']);
-				array_push($addresses, ...$resolved['addresses']);
-				array_push($unknown, ...$resolved['unknown']);
-				continue;
-			}
-
-			$resolved = $this->addresses->resolveLiteral(entry: $entry, acceptAddresses: $acceptAddresses);
-			array_push($uids, ...$resolved['uids']);
-			array_push($addresses, ...$resolved['addresses']);
-			array_push($unknown, ...$resolved['unknown']);
-		}//end foreach
-
-		return [
-			'uids' => array_values(array_unique($uids)),
-			'addresses' => $addresses,
-			'unknown' => array_values(array_unique($unknown)),
-		];
-	}//end resolveRecipients()
 
 	/**
 	 * Whether the recipient's own preference allows this channel.

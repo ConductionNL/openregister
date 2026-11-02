@@ -57,7 +57,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
+use OCA\OpenRegister\Service\Rules\RuleScope;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -65,7 +67,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Starts the flow when an object is created, updated or deleted.
  */
-class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy {
+class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
 
 	/**
 	 * The object events a trigger may name.
@@ -162,12 +164,16 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 	/**
 	 * The config vocabulary of an object trigger.
 	 *
+	 * `scope` ({ property, value }) says which objects of the schema the flow
+	 * is about, for the rule inventory; it does not narrow what fires.
+	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function configKeys(): array {
-		return ['event', 'register', 'schema'];
+		return ['event', 'register', 'schema', 'scope'];
 	}//end configKeys()
 
 	/**
@@ -182,9 +188,10 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When the trigger does not name exactly one subject.
+	 * @throws InvalidArgumentException When the trigger does not name exactly one subject, or has a malformed scope.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		$event = trim((string)($config['event'] ?? ''));
@@ -215,6 +222,15 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 					)
 				);
 			}
+		}
+
+		if (array_key_exists('scope', $config) === true
+			&& (new RuleScope())->fromDeclaration(declaration: $config) === null
+		) {
+			throw new InvalidArgumentException(
+				'An object trigger scope names one "property" and one scalar "value", for example '
+				. '{"property": "caseType", "value": "<uuid>"}.'
+			);
 		}
 
 	}//end validateConfig()

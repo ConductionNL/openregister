@@ -591,14 +591,7 @@ class ArchivalController extends Controller {
 			return $authCheck;
 		}
 
-		// In a full implementation, this would query objects with active legal holds.
-		return new JSONResponse(
-			data: [
-				'results' => [],
-				'total' => 0,
-			],
-			statusCode: Http::STATUS_OK
-		);
+		return new JSONResponse(data: $this->legalHoldService->listActiveHolds(), statusCode: Http::STATUS_OK);
 	}//end listLegalHolds()
 
 	/**

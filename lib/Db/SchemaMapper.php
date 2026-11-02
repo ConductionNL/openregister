@@ -48,7 +48,8 @@ use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
-use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
@@ -259,7 +260,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param MacroActionValidator|null $macroActions Verifies the flows macro actions bind to.
+	 * @param ObjectActionValidator|null $objectActions Verifies every declared action, the flows macros bind to included.
 	 *
 	 * @return void
 	 */
@@ -275,9 +276,10 @@ class SchemaMapper extends QBMapper {
 		// LAST AND NULLABLE so every existing construction of this mapper keeps
 		// working. Nextcloud's container always supplies it; null happens only
 		// in a hand-built test, and then the SHAPE refusals below still fire —
-		// only the three questions about the flow itself are skipped, which the
-		// save says out loud rather than passing over in silence.
-		private readonly ?MacroActionValidator $macroActions = null,
+		// only the questions about other records (the bound flow, the step
+		// nodes, the saver) are skipped, which the save says out loud rather
+		// than passing over in silence.
+		private readonly ?ObjectActionValidator $objectActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -404,7 +406,6 @@ class SchemaMapper extends QBMapper {
 
 		// Verify RBAC permission to read if RBAC is enabled.
 		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 
@@ -1047,7 +1048,6 @@ class SchemaMapper extends QBMapper {
 	): array {
 		// Verify RBAC permission to read if RBAC is enabled.
 		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 
@@ -1248,7 +1248,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateAuthorizationDeny(Schema $schema): void {
 		$authorization = $schema->getAuthorization();
@@ -1364,33 +1364,41 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When a macro binding cannot run.
+	 * @throws InvalidArgumentException When a macro binding cannot run or a declared action is malformed.
 	 *
 	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
 	private function validateMacroActions(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
 
-		if ($this->macroActions === null) {
-			// No validator wired: the shape is still checked, and the save says
-			// which half did not run rather than reporting a clean pass.
-			$refusals = MacroActionBinding::refusals(configuration: $configuration);
+		if ($this->objectActions !== null) {
+			$refusals = $this->objectActions->refusals(schema: $schema);
 			if ($refusals !== []) {
 				throw new InvalidArgumentException(implode(' ', $refusals));
-			}
-
-			if (MacroActionBinding::parse(configuration: $configuration) !== []) {
-				$this->logger->warning(
-					'[SchemaMapper] Macro bindings saved without verifying their flows: no validator is wired'
-				);
 			}
 
 			return;
 		}
 
-		$refusals = $this->macroActions->refusals(configuration: $configuration);
+		// No validator wired: the shape is still checked, and the save says
+		// which half did not run rather than reporting a clean pass.
+		$refusals = array_merge(
+			ObjectActionDefinition::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? [])),
+			MacroActionBinding::refusals(configuration: $configuration)
+		);
 		if ($refusals !== []) {
 			throw new InvalidArgumentException(implode(' ', $refusals));
+		}
+
+		$runnable = array_filter(
+			ObjectActionDefinition::parse(configuration: $configuration),
+			static fn (ObjectActionDefinition $definition): bool => $definition->isRunnable()
+		);
+		if ($runnable !== []) {
+			$this->logger->warning(
+				'[SchemaMapper] Declared actions saved without verifying their flows: no validator is wired'
+			);
 		}
 	}//end validateMacroActions()
 
@@ -1608,7 +1616,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function validateCalculationsAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -1895,7 +1903,7 @@ class SchemaMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
 	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateDependentValueTables(Schema $schema): void {
 		$properties = ($schema->getProperties() ?? []);
@@ -1930,7 +1938,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateExtendingFormAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2049,7 +2057,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function validateHingeAnnotations(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2205,7 +2213,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	private function validatePartyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2479,7 +2487,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When the declaration cannot be honoured.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateHierarchyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2544,7 +2552,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When a declaration cannot produce a link.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	private function validateExternalLinksAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2830,7 +2838,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void {
 		// Check if it's a Twig-style template (contains {{ ... }}).
@@ -2898,7 +2906,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function isPropertyPath(string $path, array $propertyKeys): bool {
 		if (in_array($path, $propertyKeys, true) === true) {

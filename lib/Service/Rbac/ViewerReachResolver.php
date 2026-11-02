@@ -222,7 +222,7 @@ class ViewerReachResolver {
 	 *
 	 * @throws ViewAlertRecipientException When a recipient may not be added.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function assertMayNameRecipients(array $view, ViewerReach $reach, array $data): void {
 		$previous = array_values(array_filter((array)($view['alert']['recipients'] ?? []), 'is_string'));
@@ -271,7 +271,7 @@ class ViewerReachResolver {
 	 *
 	 * @return array<int, string> The refused recipients, empty when the alert may be saved.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function refusedRecipients(array $view, ViewerReach $reach, ?array $alert, array $previous): array {
 		$declared = ($alert['recipients'] ?? []);
@@ -308,7 +308,7 @@ class ViewerReachResolver {
 	 *
 	 * @return bool True when the view reaches every person the recipient names.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function recipientReads(array $view, string $recipient): bool {
 		if (str_starts_with($recipient, ViewAlert::USER_PREFIX) === false) {

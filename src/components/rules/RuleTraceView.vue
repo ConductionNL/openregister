@@ -64,7 +64,7 @@ export default {
 		 * @return {string} The sentence, or an empty string when the
 		 *   vocabulary does not carry this verdict.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		verdictSentence() {
 			const found = this.verdicts.find(

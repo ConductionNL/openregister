@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+ * @spec openspec/specs/organisation-usage-measured/spec.md
  */
 
 declare(strict_types=1);
@@ -26,6 +26,7 @@ use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -51,6 +52,13 @@ class OrganisationUsageServiceTest extends TestCase {
 	private FileMapper&MockObject $fileMapper;
 
 	/**
+	 * Resolves the schema slug an object quota counts.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
+	private SchemaMapper&MockObject $schemaMapper;
+
+	/**
 	 * Create the mapper doubles.
 	 *
 	 * @return void
@@ -59,6 +67,7 @@ class OrganisationUsageServiceTest extends TestCase {
 		parent::setUp();
 		$this->magicMapper = $this->createMock(originalClassName: MagicMapper::class);
 		$this->fileMapper = $this->createMock(originalClassName: FileMapper::class);
+		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 	}
 
 	/**
@@ -70,7 +79,7 @@ class OrganisationUsageServiceTest extends TestCase {
 	 * @return OrganisationUsageService The service.
 	 */
 	private function service(bool $available, array $counters = []): OrganisationUsageService {
-		return new class($this->magicMapper, $this->fileMapper, new NullLogger(), $available, $counters) extends OrganisationUsageService {
+		return new class($this->magicMapper, $this->fileMapper, new NullLogger(), $available, $counters, $this->schemaMapper) extends OrganisationUsageService {
 			/**
 			 * @param MagicMapper        $magicMapper The magic mapper.
 			 * @param FileMapper         $fileMapper  The file mapper.
@@ -84,8 +93,9 @@ class OrganisationUsageServiceTest extends TestCase {
 				NullLogger $logger,
 				private bool $available,
 				private array $counters,
+				SchemaMapper $schemaMapper,
 			) {
-				parent::__construct(magicMapper: $magicMapper, fileMapper: $fileMapper, logger: $logger);
+				parent::__construct(magicMapper: $magicMapper, fileMapper: $fileMapper, logger: $logger, schemaMapper: $schemaMapper);
 			}
 
 			/**
@@ -214,5 +224,50 @@ class OrganisationUsageServiceTest extends TestCase {
 	 */
 	public function testBandwidthIsNeverClaimed(): void {
 		$this->assertNull(actual: $this->service(available: true)->measure($this->organisation(requestQuota: 100))['bandwidth']);
+	}
+
+	/**
+	 * The object quota counts the organisation's live objects of the schema it names, by slug.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	public function testObjectsCountTheObjectsOfTheQuotaSchema(): void {
+		$organisation = $this->organisation();
+		$organisation->setObjectQuota(5000);
+		$organisation->setObjectQuotaSchema('case');
+		$this->schemaMapper->expects($this->once())->method('findIdsBySlugs')->with(['case'])->willReturn(['case' => ['7', '9']]);
+		$this->magicMapper->expects($this->once())->method('countObjectsByOrganisation')->with('org-1', [7, 9])->willReturn(1240);
+
+		$this->assertSame(expected: 1240, actual: $this->service(available: false)->measure($organisation)['objects']);
+	}
+
+	/**
+	 * Without an object quota nothing is counted and the figure is null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	public function testObjectsAreNullWithoutAnObjectQuota(): void {
+		$this->magicMapper->expects($this->never())->method('countObjectsByOrganisation');
+
+		$this->assertNull(actual: $this->service(available: false)->measure($this->organisation())['objects']);
+	}
+
+	/**
+	 * Objects that cannot be counted are null, not zero.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	public function testObjectsThatCannotBeCountedAreNullNotZero(): void {
+		$organisation = $this->organisation();
+		$organisation->setObjectQuota(5000);
+		$this->magicMapper->method('countObjectsByOrganisation')->willThrowException(exception: new Exception(message: 'db down'));
+
+		$this->assertNull(actual: $this->service(available: false)->measure($organisation)['objects']);
 	}
 }

@@ -30,6 +30,56 @@ import { defineStore } from 'pinia'
 
 const API_BASE = generateUrl('/apps/openregister/api')
 
+/**
+ * The message a failed request reports: the API's own error, else the
+ * transport's message, else the given fallback.
+ *
+ * @param {object} error The rejection.
+ * @param {string} fallback The message when neither names one.
+ * @return {string} The message.
+ */
+function errorText(error, fallback) {
+	return error.response?.data?.error ?? error.message ?? fallback
+}
+
+/**
+ * Read one page of a (register, schema)-scoped listing into the store.
+ *
+ * Paging falls back to the page the store holds; the answer's own paging
+ * wins when it names one.
+ *
+ * @param {object} store The quality store.
+ * @param {object} page `{ path, register, schema, params, keys, failure, tag }`:
+ * the listing path, the scope, the request parameters, the state names of
+ * `{ items, total, limit, offset }`, the fallback error text and the log tag.
+ * @return {Promise<object>} The answer.
+ */
+async function readScopedPage(store, page) {
+	const { keys, params } = page
+	store.loading = true
+	store.error = null
+	const limit = params.limit ?? store[keys.limit]
+	const offset = params.offset ?? store[keys.offset]
+	try {
+		const response = await axios.get(
+			`${API_BASE}/objects/${page.path}/${encodeURIComponent(page.register)}/${encodeURIComponent(page.schema)}`,
+			{ params: { ...params, limit, offset } },
+		)
+		const data = response.data ?? {}
+		store[keys.items] = data.items ?? []
+		store[keys.total] = data.total ?? 0
+		store[keys.limit] = data.limit ?? limit
+		store[keys.offset] = data.offset ?? offset
+		return data
+	} catch (e) {
+		store.error = errorText(e, page.failure)
+		console.error(page.tag, e)
+		throw e
+	} finally {
+		store.loading = false
+	}
+}
+
 export const useQualityStore = defineStore('quality', {
 	state: () => ({
 		// Shared (register, schema) selection — held here so switching
@@ -111,10 +161,7 @@ export const useQualityStore = defineStore('quality', {
 				this.registers = response.data?.results ?? response.data ?? []
 				return this.registers
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch registers'
+				this.error = errorText(e, 'Failed to fetch registers')
 				console.error('[quality.fetchRegisters]', e)
 				throw e
 			} finally {
@@ -142,8 +189,7 @@ export const useQualityStore = defineStore('quality', {
 				this.schemas = response.data?.results ?? response.data ?? []
 				return this.schemas
 			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to fetch schemas'
+				this.error = errorText(e, 'Failed to fetch schemas')
 				console.error('[quality.fetchSchemasForRegister]', e)
 				throw e
 			} finally {
@@ -170,10 +216,7 @@ export const useQualityStore = defineStore('quality', {
 				this.qualityStats = response.data ?? null
 				return this.qualityStats
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch quality statistics'
+				this.error = errorText(e, 'Failed to fetch quality statistics')
 				console.error('[quality.fetchQualityStats]', e)
 				throw e
 			} finally {
@@ -191,31 +234,20 @@ export const useQualityStore = defineStore('quality', {
 		 */
 		async fetchLowQualityObjects(register, schema, params = {}) {
 			if (!register || !schema) return { items: [], total: 0 }
-			this.loading = true
-			this.error = null
-			const limit = params.limit ?? this.lowQualityLimit
-			const offset = params.offset ?? this.lowQualityOffset
-			try {
-				const response = await axios.get(
-					`${API_BASE}/objects/quality/${encodeURIComponent(register)}/${encodeURIComponent(schema)}`,
-					{ params: { ...params, limit, offset } },
-				)
-				const data = response.data ?? {}
-				this.lowQualityObjects = data.items ?? []
-				this.lowQualityTotal = data.total ?? 0
-				this.lowQualityLimit = data.limit ?? limit
-				this.lowQualityOffset = data.offset ?? offset
-				return data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch lowest-quality objects'
-				console.error('[quality.fetchLowQualityObjects]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			return readScopedPage(this, {
+				path: 'quality',
+				register,
+				schema,
+				params,
+				keys: {
+					items: 'lowQualityObjects',
+					total: 'lowQualityTotal',
+					limit: 'lowQualityLimit',
+					offset: 'lowQualityOffset',
+				},
+				failure: 'Failed to fetch lowest-quality objects',
+				tag: '[quality.fetchLowQualityObjects]',
+			})
 		},
 
 		/**
@@ -228,31 +260,20 @@ export const useQualityStore = defineStore('quality', {
 		 */
 		async fetchDuplicates(register, schema, params = {}) {
 			if (!register || !schema) return { items: [], total: 0 }
-			this.loading = true
-			this.error = null
-			const limit = params.limit ?? this.duplicatesLimit
-			const offset = params.offset ?? this.duplicatesOffset
-			try {
-				const response = await axios.get(
-					`${API_BASE}/objects/duplicates/${encodeURIComponent(register)}/${encodeURIComponent(schema)}`,
-					{ params: { ...params, limit, offset } },
-				)
-				const data = response.data ?? {}
-				this.duplicates = data.items ?? []
-				this.duplicatesTotal = data.total ?? 0
-				this.duplicatesLimit = data.limit ?? limit
-				this.duplicatesOffset = data.offset ?? offset
-				return data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch duplicate candidates'
-				console.error('[quality.fetchDuplicates]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			return readScopedPage(this, {
+				path: 'duplicates',
+				register,
+				schema,
+				params,
+				keys: {
+					items: 'duplicates',
+					total: 'duplicatesTotal',
+					limit: 'duplicatesLimit',
+					offset: 'duplicatesOffset',
+				},
+				failure: 'Failed to fetch duplicate candidates',
+				tag: '[quality.fetchDuplicates]',
+			})
 		},
 
 		/**
@@ -280,10 +301,7 @@ export const useQualityStore = defineStore('quality', {
 				this.masterEntitiesTotal = data.total ?? this.masterEntities.length
 				return data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch master entities'
+				this.error = errorText(e, 'Failed to fetch master entities')
 				console.error('[quality.fetchMasterEntities]', e)
 				throw e
 			} finally {
@@ -311,10 +329,7 @@ export const useQualityStore = defineStore('quality', {
 				this.goldenRecord = response.data ?? null
 				return this.goldenRecord
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch golden record'
+				this.error = errorText(e, 'Failed to fetch golden record')
 				console.error('[quality.fetchGoldenRecord]', e)
 				throw e
 			} finally {
@@ -365,8 +380,7 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to preview merge'
+				this.error = errorText(e, 'Failed to preview merge')
 				console.error('[quality.previewMerge]', e)
 				throw e
 			} finally {
@@ -394,8 +408,7 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to execute merge'
+				this.error = errorText(e, 'Failed to execute merge')
 				console.error('[quality.executeMerge]', e)
 				throw e
 			} finally {
@@ -431,10 +444,7 @@ export const useQualityStore = defineStore('quality', {
 				this.mergeOperationsOffset = data.offset ?? offset
 				return data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch merge operations'
+				this.error = errorText(e, 'Failed to fetch merge operations')
 				console.error('[quality.fetchMergeOperations]', e)
 				throw e
 			} finally {
@@ -459,8 +469,7 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to reverse merge'
+				this.error = errorText(e, 'Failed to reverse merge')
 				console.error('[quality.reverseMerge]', e)
 				throw e
 			} finally {
@@ -490,10 +499,7 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to set the attribute override'
+				this.error = errorText(e, 'Failed to set the attribute override')
 				console.error('[quality.setAttributeOverride]', e)
 				throw e
 			} finally {
@@ -519,10 +525,7 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to clear the attribute override'
+				this.error = errorText(e, 'Failed to clear the attribute override')
 				console.error('[quality.clearAttributeOverride]', e)
 				throw e
 			} finally {
@@ -559,10 +562,7 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to persist the trust rule'
+				this.error = errorText(e, 'Failed to persist the trust rule')
 				console.error('[quality.persistTrustRule]', e)
 				throw e
 			} finally {
@@ -593,10 +593,7 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to recompute the master object'
+				this.error = errorText(e, 'Failed to recompute the master object')
 				console.error('[quality.touchObject]', e)
 				throw e
 			} finally {
@@ -659,10 +656,7 @@ export const useQualityStore = defineStore('quality', {
 					failures: this.webhookFailures,
 				}
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch webhook health'
+				this.error = errorText(e, 'Failed to fetch webhook health')
 				console.error('[quality.fetchWebhookHealth]', e)
 				throw e
 			} finally {

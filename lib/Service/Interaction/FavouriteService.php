@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+ * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
  *
  * @deprecated Follow through WatcherService. Removed in the release after merge-follow-and-favourites.
  */
@@ -41,7 +41,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 /**
  * Star, unstar and "is it starred", as a quiet follow.
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+ * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
  */
 class FavouriteService {
 
@@ -60,7 +60,7 @@ class FavouriteService {
 	 *
 	 * @return string|null The uid, or null when anonymous.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function callerUid(): ?string {
 		return $this->watchers->callerUid();
@@ -78,7 +78,7 @@ class FavouriteService {
 	 *
 	 * @return Watcher The follow as it now stands.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function star(
 		ObjectEntity $object,
@@ -98,7 +98,7 @@ class FavouriteService {
 	 *
 	 * @return boolean True when a follow was removed.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function unstar(ObjectEntity $object): bool {
 		return $this->watchers->unwatch(object: $object);

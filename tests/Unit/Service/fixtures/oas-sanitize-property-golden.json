@@ -1,0 +1,400 @@
+{
+    "allOf": {
+        "allOf": [
+            {
+                "type": "object",
+                "description": "Property value"
+            },
+            {
+                "type": "string",
+                "description": "Property value"
+            },
+            {
+                "$ref": "#/components/schemas/A"
+            }
+        ],
+        "type": "string",
+        "description": "Property value"
+    },
+    "allOf empty": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "allOf keyed": {
+        "allOf": [
+            {
+                "type": "string",
+                "description": "Property value"
+            },
+            {
+                "type": "integer",
+                "description": "Property value"
+            }
+        ],
+        "type": "string",
+        "description": "Property value"
+    },
+    "allOf only empty items": {
+        "allOf": [
+            {
+                "type": "string",
+                "description": "Property value"
+            }
+        ],
+        "type": "string",
+        "description": "Property value"
+    },
+    "allOf scalar": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "anyOf": {
+        "anyOf": [
+            {
+                "type": "integer",
+                "description": "Property value"
+            },
+            {
+                "type": "string",
+                "description": "Property value"
+            }
+        ],
+        "type": "string",
+        "description": "Property value"
+    },
+    "anyOf empty": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "anyOf scalar": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "array with empty items": {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "description": "Property value"
+        },
+        "description": "Property value"
+    },
+    "array with items": {
+        "type": "array",
+        "items": {
+            "type": "integer",
+            "description": "Property value"
+        },
+        "description": "Property value"
+    },
+    "array with list items": {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "description": "Property value"
+        },
+        "description": "Property value"
+    },
+    "array with list of empty item": {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "description": "Property value"
+        },
+        "description": "Property value"
+    },
+    "array with list of scalar": {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "description": "Property value"
+        },
+        "description": "Property value"
+    },
+    "array with scalar items": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        },
+        "description": "Property value"
+    },
+    "array without items": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        },
+        "description": "Property value"
+    },
+    "deep mix": {
+        "type": "object",
+        "required": [
+            "list"
+        ],
+        "properties": {
+            "list": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "Property value"
+                },
+                "description": "Property value"
+            },
+            "ref": {
+                "$ref": "#/components/schemas/persoon"
+            },
+            "choice": {
+                "anyOf": [
+                    {
+                        "allOf": [
+                            {
+                                "type": "string",
+                                "description": "Property value"
+                            },
+                            {
+                                "type": "string",
+                                "description": "Property value"
+                            }
+                        ],
+                        "type": "string",
+                        "description": "Property value"
+                    },
+                    "y"
+                ],
+                "type": "string",
+                "description": "Property value"
+            }
+        },
+        "description": "Property value"
+    },
+    "empty array": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "enum": {
+        "type": "string",
+        "enum": [
+            "a",
+            "b"
+        ],
+        "description": "Property value"
+    },
+    "enum empty": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "enum scalar": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "every keyword in reverse order": {
+        "type": "string",
+        "format": "email",
+        "description": "D",
+        "example": "e",
+        "examples": [
+            "e"
+        ],
+        "default": "d",
+        "const": "c",
+        "multipleOf": 2,
+        "maximum": 9,
+        "exclusiveMaximum": 10,
+        "minimum": 1,
+        "exclusiveMinimum": 0,
+        "maxLength": 5,
+        "minLength": 1,
+        "pattern": "^a",
+        "maxItems": 9,
+        "minItems": 0,
+        "uniqueItems": true,
+        "maxProperties": 3,
+        "minProperties": 1,
+        "additionalProperties": false,
+        "not": {
+            "type": "null"
+        },
+        "nullable": true,
+        "readOnly": true,
+        "writeOnly": false,
+        "title": "T"
+    },
+    "every valid type": {
+        "type": "integer",
+        "description": "n"
+    },
+    "falsy keyword values kept": {
+        "type": "boolean",
+        "description": "",
+        "default": false,
+        "minimum": 0
+    },
+    "integer scalar": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "internal fields stripped": {
+        "type": "object",
+        "description": "Property value"
+    },
+    "items without type": {
+        "items": {
+            "$ref": "#/components/schemas/adres"
+        },
+        "type": "string",
+        "description": "Property value"
+    },
+    "nested items sanitized": {
+        "type": "array",
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Property value"
+            },
+            "description": "Property value"
+        },
+        "description": "Property value"
+    },
+    "not and additionalProperties untouched": {
+        "type": "object",
+        "additionalProperties": {
+            "type": "weird"
+        },
+        "not": {
+            "visible": 1
+        },
+        "description": "Property value"
+    },
+    "null": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "null keyword values dropped": {
+        "format": "date",
+        "type": "string",
+        "description": "Property value"
+    },
+    "object properties": {
+        "type": "object",
+        "properties": {
+            "a": {
+                "type": "string",
+                "description": "Property value"
+            },
+            "b": {
+                "type": "string",
+                "description": "Property value"
+            },
+            "c": {
+                "type": "object",
+                "properties": {
+                    "d": {
+                        "type": "string",
+                        "description": "Property value"
+                    }
+                },
+                "description": "Property value"
+            }
+        },
+        "description": "Property value"
+    },
+    "oneOf": {
+        "oneOf": [
+            {
+                "type": "string",
+                "description": "Property value"
+            },
+            "scalar",
+            {
+                "$ref": "#/components/schemas/x"
+            }
+        ],
+        "type": "string",
+        "description": "Property value"
+    },
+    "oneOf empty": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "oneOf scalar": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "plain string": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "properties not an array": {
+        "type": "object",
+        "properties": "nope",
+        "description": "Property value"
+    },
+    "ref absolute url": {
+        "$ref": "#/components/schemas/https_example.org_schema.json"
+    },
+    "ref array": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "ref bare": {
+        "$ref": "#/components/schemas/vestiging"
+    },
+    "ref bare with spaces": {
+        "$ref": "#/components/schemas/Mijn_vestiging-type"
+    },
+    "ref component": {
+        "$ref": "#/components/schemas/Adres"
+    },
+    "ref empty": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "ref hash without slash": {
+        "$ref": "#/components/schemas/Adres"
+    },
+    "ref relative": {
+        "$ref": "#/definitions/A"
+    },
+    "ref with type and description": {
+        "type": "object",
+        "description": "d",
+        "$ref": "#/components/schemas/x"
+    },
+    "ref zero string": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "required boolean": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "required list": {
+        "type": "object",
+        "required": [
+            "a"
+        ],
+        "description": "Property value"
+    },
+    "required string": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "string scalar": {
+        "type": "string",
+        "description": "Property value"
+    },
+    "type list kept": {
+        "type": [
+            "string",
+            "null"
+        ],
+        "description": "Property value"
+    },
+    "type null": {
+        "type": "null",
+        "description": "Property value"
+    },
+    "unknown type": {
+        "type": "string",
+        "description": "Property value"
+    }
+}

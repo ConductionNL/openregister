@@ -2,8 +2,30 @@
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import { defineStore } from 'pinia'
+import {
+	getListPage,
+	listPageQuery,
+	listPagination,
+	requestJson,
+} from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
+
+/**
+ * The statistics with every count at 0.
+ *
+ * @return {object} Every count at 0.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyStatistics() {
+	return {
+		total: 0,
+		create: 0,
+		update: 0,
+		delete: 0,
+		read: 0,
+	}
+}
 
 /**
  * Store for managing audit trail logs
@@ -20,22 +42,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		auditTrailItem: null,
 
 		// Pagination
-		auditTrailPagination: {
-			total: 0,
-			page: 1,
-			pages: 1,
-			limit: 50,
-			offset: 0,
-		},
+		auditTrailPagination: listPagination({}, 50),
 
 		// Statistics
-		statistics: {
-			total: 0,
-			create: 0,
-			update: 0,
-			delete: 0,
-			read: 0,
-		},
+		statistics: emptyStatistics(),
 
 		// Filters
 		auditTrailFilters: {},
@@ -145,63 +155,20 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			this.auditTrailLoading = true
 
 			try {
-				// Build query parameters
-				const params = new URLSearchParams()
-
-				// Add pagination
-				if (options.limit) params.append('limit', options.limit)
-				if (options.offset) params.append('offset', options.offset)
-				if (options.page) params.append('page', options.page)
-
-				// Add search
-				if (options.search || this.auditTrailSearch) {
-					params.append('search', options.search || this.auditTrailSearch)
-				}
-
-				// Add filters
-				const filters = { ...this.auditTrailFilters, ...options.filters }
-				Object.entries(filters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						params.append(key, value)
-					}
+				const query = listPageQuery(options, {
+					search: this.auditTrailSearch,
+					filters: this.auditTrailFilters,
+					sort: this.auditTrailSort,
 				})
+				const data = await getListPage(
+					`${apiUrl}/audit-trails?${query}`,
+					'Failed to fetch audit trails',
+				)
 
-				// Add sort: an explicit one, else the one a header chose.
-				const sort = options.sort || this.auditTrailSort
-				if (sort) {
-					Object.entries(sort).forEach(([field, direction]) => {
-						params.append('sort', field)
-						params.append('order', direction)
-					})
-				}
-
-				const url = `${apiUrl}/audit-trails?${params.toString()}`
-
-				const response = await fetch(url, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch audit trails')
-				}
-
-				// Update store state - ensure we pass clean data
 				this.setAuditTrailList(
 					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
 				)
-				this.setAuditTrailPagination({
-					total: data.total || 0,
-					page: data.page || 1,
-					pages: data.pages || 1,
-					limit: data.limit || 50,
-					offset: data.offset || 0,
-				})
+				this.setAuditTrailPagination(listPagination(data, 50))
 
 				return data
 			} catch (error) {
@@ -223,19 +190,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			this.statisticsLoading = true
 
 			try {
-				const response = await fetch(`${apiUrl}/audit-trails/statistics`, {
+				const data = await requestJson(`${apiUrl}/audit-trails/statistics`, {
 					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to fetch statistics',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch statistics')
-				}
 
 				this.setStatistics(data)
 				return data
@@ -257,19 +215,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		async deleteAuditTrail(id) {
 			try {
-				const response = await fetch(`${apiUrl}/audit-trails/${id}`, {
+				const data = await requestJson(`${apiUrl}/audit-trails/${id}`, {
 					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
+					failure: 'Failed to delete audit trail',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to delete audit trail')
-				}
 
 				// Remove from audit trail list
 				this.auditTrailList = this.auditTrailList.filter(
@@ -293,20 +242,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		async deleteMultipleAuditTrails(ids) {
 			try {
-				const response = await fetch(`${apiUrl}/audit-trails`, {
+				const data = await requestJson(`${apiUrl}/audit-trails`, {
 					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-					body: JSON.stringify({ ids }),
+					body: { ids },
+					failure: 'Failed to delete audit trails',
 				})
-
-				const data = await response.json()
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to delete audit trails')
-				}
 
 				// Remove deleted audit trails from list
 				this.auditTrailList = this.auditTrailList.filter(
@@ -347,13 +287,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				return this.statistics
 			} catch (error) {
 				console.error('Error getting statistics:', error)
-				return {
-					total: 0,
-					create: 0,
-					update: 0,
-					delete: 0,
-					read: 0,
-				}
+				return emptyStatistics()
 			}
 		},
 
@@ -430,20 +364,8 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		clearAuditTrailStore() {
 			this.auditTrailList = []
 			this.auditTrailItem = null
-			this.auditTrailPagination = {
-				total: 0,
-				page: 1,
-				pages: 1,
-				limit: 50,
-				offset: 0,
-			}
-			this.statistics = {
-				total: 0,
-				create: 0,
-				update: 0,
-				delete: 0,
-				read: 0,
-			}
+			this.auditTrailPagination = listPagination({}, 50)
+			this.statistics = emptyStatistics()
 			this.auditTrailFilters = {}
 			this.auditTrailSearch = ''
 		},
