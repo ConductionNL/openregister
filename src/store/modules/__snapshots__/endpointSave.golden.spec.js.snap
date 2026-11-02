@@ -1,0 +1,328 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`endpoint store save golden createEndpoint notOk withId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "body": "{"id":4,"name":"E","path":"/x"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [
+    [
+      "Error creating endpoint:",
+      "Error: Failed to create endpoint",
+    ],
+  ],
+  "returned": undefined,
+  "thrown": "Error: Failed to create endpoint",
+}
+`;
+
+exports[`endpoint store save golden createEndpoint notOk withoutId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "body": "{"name":"E"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [
+    [
+      "Error creating endpoint:",
+      "Error: Failed to create endpoint",
+    ],
+  ],
+  "returned": undefined,
+  "thrown": "Error: Failed to create endpoint",
+}
+`;
+
+exports[`endpoint store save golden createEndpoint ok withId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "body": "{"id":4,"name":"E","path":"/x"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "item": {
+    "id": 9,
+    "name": "saved",
+  },
+  "list": [
+    {
+      "id": "listed",
+    },
+  ],
+  "logged": [],
+  "returned": {
+    "id": 9,
+    "name": "saved",
+  },
+  "thrown": undefined,
+}
+`;
+
+exports[`endpoint store save golden createEndpoint ok withoutId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "body": "{"name":"E"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "item": {
+    "id": 9,
+    "name": "saved",
+  },
+  "list": [
+    {
+      "id": "listed",
+    },
+  ],
+  "logged": [],
+  "returned": {
+    "id": 9,
+    "name": "saved",
+  },
+  "thrown": undefined,
+}
+`;
+
+exports[`endpoint store save golden createEndpoint rejected withId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "body": "{"id":4,"name":"E","path":"/x"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [
+    [
+      "Error creating endpoint:",
+      "Error: offline",
+    ],
+  ],
+  "returned": undefined,
+  "thrown": "Error: offline",
+}
+`;
+
+exports[`endpoint store save golden createEndpoint rejected withoutId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "body": "{"name":"E"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [
+    [
+      "Error creating endpoint:",
+      "Error: offline",
+    ],
+  ],
+  "returned": undefined,
+  "thrown": "Error: offline",
+}
+`;
+
+exports[`endpoint store save golden updateEndpoint notOk withId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints/4",
+      {
+        "body": "{"id":4,"name":"E","path":"/x"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [
+    [
+      "Error updating endpoint:",
+      "Error: Failed to update endpoint",
+    ],
+  ],
+  "returned": undefined,
+  "thrown": "Error: Failed to update endpoint",
+}
+`;
+
+exports[`endpoint store save golden updateEndpoint notOk withoutId 1`] = `
+{
+  "calls": [],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [],
+  "returned": undefined,
+  "thrown": "Error: Endpoint ID is required for update",
+}
+`;
+
+exports[`endpoint store save golden updateEndpoint ok withId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints/4",
+      {
+        "body": "{"id":4,"name":"E","path":"/x"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/endpoints",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "item": {
+    "id": 9,
+    "name": "saved",
+  },
+  "list": [
+    {
+      "id": "listed",
+    },
+  ],
+  "logged": [],
+  "returned": {
+    "id": 9,
+    "name": "saved",
+  },
+  "thrown": undefined,
+}
+`;
+
+exports[`endpoint store save golden updateEndpoint ok withoutId 1`] = `
+{
+  "calls": [],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [],
+  "returned": undefined,
+  "thrown": "Error: Endpoint ID is required for update",
+}
+`;
+
+exports[`endpoint store save golden updateEndpoint rejected withId 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/endpoints/4",
+      {
+        "body": "{"id":4,"name":"E","path":"/x"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [
+    [
+      "Error updating endpoint:",
+      "Error: offline",
+    ],
+  ],
+  "returned": undefined,
+  "thrown": "Error: offline",
+}
+`;
+
+exports[`endpoint store save golden updateEndpoint rejected withoutId 1`] = `
+{
+  "calls": [],
+  "item": {
+    "id": "before",
+  },
+  "list": [],
+  "logged": [],
+  "returned": undefined,
+  "thrown": "Error: Endpoint ID is required for update",
+}
+`;

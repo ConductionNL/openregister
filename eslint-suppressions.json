@@ -1304,7 +1304,7 @@
   },
   "src/store/modules/endpoints.ts": {
     "no-console": {
-      "count": 5
+      "count": 4
     }
   },
   "src/store/modules/object.js": {
