@@ -4380,7 +4380,8 @@ class ObjectService implements ObjectServiceInterface
      * The multitenancy flag a paginated search runs with.
      *
      * A current schema whose read rule lists `public` is visible to every
-     * organisation, so multitenancy is switched off for it.
+     * organisation, so multitenancy is switched off for it, unless the caller
+     * is signed in and the schema does not inherit public rights.
      *
      * @param bool $multitenancy The caller's multitenancy flag.
      *
@@ -4397,7 +4398,11 @@ class ObjectService implements ObjectServiceInterface
         $schemaAuth = $this->currentSchema->getAuthorization();
         $readGroups = $schemaAuth['read'] ?? [];
 
-        return in_array('public', $readGroups, true) === false;
+        if (in_array('public', $readGroups, true) === false) {
+            return true;
+        }
+
+        return $this->objectMapper->publicReadLiftsOrganisationFilter(schema: $this->currentSchema) === false;
     }//end searchMultitenancy()
 
     /**

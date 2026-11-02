@@ -799,6 +799,31 @@ class MagicRbacHandler {
 	}//end qualifiesForPublic()
 
 	/**
+	 * Whether a `public` read rule lifts the organisation filter for the current caller.
+	 *
+	 * True for an anonymous caller and for an admin. A signed-in caller only
+	 * qualifies for `public` when the schema inherits public rights, so for
+	 * anyone else the organisation filter stays on.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the `public` rule may lift the organisation filter.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 */
+	public function publicReadLiftsOrganisationFilter(Schema $schema): bool {
+		$userId = $this->getCurrentUserId();
+		if ($userId === null || $this->isAdmin() === true) {
+			return true;
+		}
+
+		return $this->qualifiesForPublic(
+			userId: $userId,
+			inheritFromPublic: $this->authenticatedInheritsPublic(schema: $schema)
+		);
+	}//end publicReadLiftsOrganisationFilter()
+
+	/**
 	 * Process a single authorization rule
 	 *
 	 * @param IQueryBuilder $qb Query builder
