@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\ViewPresentationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -109,6 +110,30 @@ class ViewPresentationServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->service->getKanbanBoard(view: $view);
 	}//end testGetKanbanBoardThrowsWhenRegisterOrSchemaMissing()
+
+	public function testGetKanbanBoardRefusesToGroupOnAnExplicitRevealProperty(): void {
+		$view = $this->createView(
+			['viewType' => 'kanban', 'kanban' => ['groupByField' => 'citizenServiceNumber']],
+			['registers' => [1], 'schemas' => [2]]
+		);
+		$propertyRbac = $this->createMock(originalClassName: PropertyRbacHandler::class);
+		$propertyRbac->method('canReadProperty')->willReturn(true);
+		$service = new ViewPresentationService(
+			schemaMapper: $this->schemaMapper,
+			objectService: $this->objectService,
+			logger: $this->logger,
+			propertyRbac: $propertyRbac
+		);
+		$this->schemaMapper->method('find')->willReturn(
+			$this->createSchema(
+				['citizenServiceNumber' => ['type' => 'string', 'authorization' => ['read' => [['group' => 'staff']], 'reveal' => 'explicit']]]
+			)
+		);
+
+		$this->objectService->expects($this->never())->method('searchObjectsPaginated');
+		$this->expectException(InvalidArgumentException::class);
+		$service->getKanbanBoard(view: $view);
+	}//end testGetKanbanBoardRefusesToGroupOnAnExplicitRevealProperty()
 
 	// ── getKanbanBoard() — column derivation + pagination (REQ-VIEW-KANBAN-02) ──
 
