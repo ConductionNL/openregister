@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
@@ -1572,6 +1573,7 @@ class RegistersController extends Controller {
 			'publish' => $this->parseBooleanParam(paramName: 'publish', default: false),
 			'enrich' => $this->parseBooleanParam(paramName: 'enrich', default: true),
 			'dryRun' => $this->parseBooleanParam(paramName: 'dryRun', default: false),
+			'historic' => $this->parseBooleanParam(paramName: 'historic', default: false),
 			'pack' => null,
 		];
 
@@ -1614,6 +1616,33 @@ class RegistersController extends Controller {
 	}//end logImportOptions()
 
 	/**
+	 * Run the import; when an administrator marked it historic, rows keep their own lifecycle state.
+	 *
+	 * Anybody but an administrator gets 403 for a historic import before any row
+	 * is read. The import is not elevated: it runs as the administrator, with
+	 * only the initial-state check on creates lifted.
+	 *
+	 * @param array $options The import options, including type, register, file and historic
+	 *
+	 * @return array|JSONResponse The import summary, or an error response
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) KeepLifecycleStatesScope is an ambient marker; a static call is the whole point of it.
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-an-administrator-can-import-historic-data-in-its-own-states
+	 */
+	private function runImport(array $options): array|JSONResponse {
+		if ($options['historic'] !== true) {
+			return $this->runImporter(options: $options);
+		}
+
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Only an administrator can import historic data.'], statusCode: 403);
+		}
+
+		return KeepLifecycleStatesScope::run(fn (): array|JSONResponse => $this->runImporter(options: $options));
+	}//end runImport()
+
+	/**
 	 * Run the importer that matches the import type.
 	 *
 	 * @param array $options The import options, including type, register and file
@@ -1622,7 +1651,7 @@ class RegistersController extends Controller {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function runImport(array $options): array|JSONResponse {
+	private function runImporter(array $options): array|JSONResponse {
 		switch ($options['type']) {
 			case 'excel':
 				return $this->importExcel(options: $options);
@@ -1633,7 +1662,7 @@ class RegistersController extends Controller {
 			default:
 				return $this->importConfigurationBundle(options: $options);
 		}
-	}//end runImport()
+	}//end runImporter()
 
 	/**
 	 * The arguments every row importer (excel, csv, json) receives.

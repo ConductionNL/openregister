@@ -39,10 +39,14 @@ data, as before.
 When a schema declares `x-openregister-lifecycle.initial` and a create sets
 the lifecycle field, the system SHALL refuse the create with
 `lifecycle-invalid-initial` unless the value equals the resolved initial
-state. When a dynamic initial cannot be resolved, a value the caller sets
-SHALL be refused. A create that leaves the field empty SHALL get the initial
-state. A write inside `SystemOperationContext` SHALL NOT be refused by this
-check.
+state or is one of the states listed in `x-openregister-lifecycle.createStates`.
+The comparison SHALL be strict. When a dynamic initial cannot be resolved,
+only a `createStates` value SHALL be accepted. A `createStates` that is not a
+list of strings SHALL allow nothing extra, and the annotation validator SHALL
+report it, as it SHALL report a listed state outside the field's enum. A
+create that leaves the field empty SHALL get the initial state. A write
+inside `SystemOperationContext` SHALL NOT be refused by this check.
+`createStates` SHALL survive a schema save, export and update.
 
 #### Scenario: a client creates an object in a later state
 
@@ -63,3 +67,36 @@ check.
 - **WHEN** a client creates a case with `status: closed`, and another with `status: intake`
 - **THEN** the first is refused and the second is stored
 - @e2e exclude {covered by `LifecycleInitialStateListenerTest::testADynamicInitialIsComparedWithTheCallersValue`}
+
+#### Scenario: a schema lets a create start in a later state
+
+- **GIVEN** a lifecycle with `initial: draft` and `createStates: [published]`
+- **WHEN** an app creates a version with `status: published`, and another with `status: archived`
+- **THEN** the first is stored and the second is refused, naming the allowed states
+- @e2e exclude {covered by `LifecycleInitialStateListenerTest::testADeclaredCreateStateMayBeChosen` and `SchemaLifecycleCreateStatesRoundTripTest`}
+
+### Requirement: An administrator can import historic data in its own states
+
+The system SHALL accept a `historic` flag on the register import
+(`POST /api/registers/{id}/import`). When it is set and the caller is an
+administrator, each row SHALL keep its own lifecycle state: the import runs
+inside `KeepLifecycleStatesScope`, which lifts only the initial-state check on
+creates. The import SHALL NOT be elevated: it runs as the administrator, and
+permissions, guards and validation still apply (ADR-099). When it is set and the caller is not an
+administrator, the import SHALL be refused with 403 before any row is read.
+Without the flag, every row SHALL be checked as an ordinary create.
+
+#### Scenario: an administrator imports closed cases
+
+- **GIVEN** an administrator and a CSV whose rows are in later states
+- **WHEN** the administrator imports it with `historic=true`
+- **THEN** the rows keep their states, and the import does not run inside `SystemOperationContext`
+- @e2e exclude {covered by `RegistersControllerImportGoldenTest::testAnAdminsHistoricImportKeepsTheRowsStates` and `LifecycleInitialStateListenerTest::testAHistoricImportKeepsTheState`}
+
+#### Scenario: a register manager asks for a historic import
+
+- **GIVEN** a user who may manage the register but is not an administrator
+- **WHEN** the user imports with `historic=true`
+- **THEN** the answer is 403 and nothing is imported
+- @e2e exclude {covered by `RegistersControllerImportGoldenTest::testAHistoricImportIsRefusedForSomebodyWhoIsNotAnAdmin`}
+

@@ -30,9 +30,14 @@ starts in.
   `lifecycle-invalid-initial`. A dynamic initial is resolved and compared. When
   it cannot be resolved, a value the caller sends is refused (fail closed). A
   create that leaves the field empty still gets the initial state filled in.
+- A schema may list extra states a create may start in, as
+  `x-openregister-lifecycle.createStates`.
 - A write inside `SystemOperationContext` (seeds, example sets, configuration
-  imports, system jobs) may create in any state, as it may write declared
-  state on update today.
+  imports, repairs, fixtures, system jobs) may create in any state, as it may
+  write declared state on update today.
+- An administrator can mark a register import as historic (`historic=true`).
+  The rows then keep their states (`KeepLifecycleStatesScope`, not an
+  elevation). Anybody else gets 403.
 
 ## What stays the same
 

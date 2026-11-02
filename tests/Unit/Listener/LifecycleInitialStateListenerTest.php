@@ -336,4 +336,77 @@ class LifecycleInitialStateListenerTest extends TestCase {
 
 	}//end testNoLifecycleAnnotationIsNoOp()
 
+	public function testADeclaredCreateStateMayBeChosen(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open', 'createStates' => ['published', 'archived']]])
+		);
+
+		$published = new ObjectCreatingEvent($this->object(['status' => 'published']));
+		$this->listener->handle($published);
+		$this->assertFalse($published->isPropagationStopped());
+
+		$closed = new ObjectCreatingEvent($this->object(['status' => 'closed']));
+		$this->listener->handle($closed);
+		$this->assertTrue($closed->isPropagationStopped());
+		$this->assertSame(['published', 'archived'], $closed->getErrors()['allowed']);
+
+	}//end testADeclaredCreateStateMayBeChosen()
+
+	public function testACreateStateCountsWhenTheInitialCannotBeResolved(): void {
+		$config = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+				'createStates' => ['imported'],
+			],
+			'x-openregister-references' => [
+				'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
+			],
+		];
+		$this->schemaMapper->method('find')->willReturn($this->schema($config));
+		$this->references->method('resolveAll')->willReturn(['caseType' => null]);
+
+		$event = new ObjectCreatingEvent($this->object(['caseTypeId' => 'missing', 'status' => 'imported']));
+		$this->listener->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+
+	}//end testACreateStateCountsWhenTheInitialCannotBeResolved()
+
+	public function testAValueOnlyLooselyEqualToTheInitialIsRefused(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open', 'createStates' => ['published']]])
+		);
+
+		$event = new ObjectCreatingEvent($this->object(['status' => true]));
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+
+	}//end testAValueOnlyLooselyEqualToTheInitialIsRefused()
+
+	public function testAMalformedCreateStatesListAllowsNothingExtra(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open', 'createStates' => 'published']])
+		);
+
+		$event = new ObjectCreatingEvent($this->object(['status' => 'published']));
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+
+	}//end testAMalformedCreateStatesListAllowsNothingExtra()
+
+	public function testAHistoricImportKeepsTheState(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
+		);
+
+		$event = new ObjectCreatingEvent($this->object(['status' => 'closed']));
+		\OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope::run(fn () => $this->listener->handle($event));
+
+		$this->assertFalse($event->isPropagationStopped());
+
+	}//end testAHistoricImportKeepsTheState()
+
 }//end class
