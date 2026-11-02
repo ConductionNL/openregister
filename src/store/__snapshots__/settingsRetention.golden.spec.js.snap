@@ -1,0 +1,790 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`settings retention and mass validate golden mass validates: all options, not successful 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "message": "Too many",
+      "success": false,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 50,
+        "collectErrors": true,
+        "maxObjects": 10,
+        "mode": "parallel",
+      },
+    ],
+  ],
+  "results": {
+    "message": "Too many",
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Too many"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: all options, rejected with server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 50,
+        "collectErrors": true,
+        "maxObjects": 10,
+        "mode": "parallel",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Server says",
+    "errors": [],
+    "message": "Server says",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Server says"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: all options, rejected without server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 50,
+        "collectErrors": true,
+        "maxObjects": 10,
+        "mode": "parallel",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Network",
+    "errors": [],
+    "message": "Network",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Network"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: all options, success 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "stats": {
+        "total_objects": 3,
+      },
+      "success": true,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 50,
+        "collectErrors": true,
+        "maxObjects": 10,
+        "mode": "parallel",
+      },
+    ],
+  ],
+  "results": {
+    "stats": {
+      "total_objects": 3,
+    },
+    "success": true,
+  },
+  "shownErrors": [],
+  "shownSuccesses": [
+    [
+      "[Mass validation completed successfully]",
+    ],
+  ],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: empty options, not successful 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "message": "Too many",
+      "success": false,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "message": "Too many",
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Too many"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: empty options, rejected with server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Server says",
+    "errors": [],
+    "message": "Server says",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Server says"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: empty options, rejected without server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Network",
+    "errors": [],
+    "message": "Network",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Network"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: empty options, success 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "stats": {
+        "total_objects": 3,
+      },
+      "success": true,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "stats": {
+      "total_objects": 3,
+    },
+    "success": true,
+  },
+  "shownErrors": [],
+  "shownSuccesses": [
+    [
+      "[Mass validation completed successfully]",
+    ],
+  ],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: falsy options, not successful 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "message": "Too many",
+      "success": false,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "message": "Too many",
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Too many"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: falsy options, rejected with server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Server says",
+    "errors": [],
+    "message": "Server says",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Server says"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: falsy options, rejected without server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Network",
+    "errors": [],
+    "message": "Network",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Network"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: falsy options, success 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "stats": {
+        "total_objects": 3,
+      },
+      "success": true,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "stats": {
+      "total_objects": 3,
+    },
+    "success": true,
+  },
+  "shownErrors": [],
+  "shownSuccesses": [
+    [
+      "[Mass validation completed successfully]",
+    ],
+  ],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: no options, not successful 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "message": "Too many",
+      "success": false,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "message": "Too many",
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Too many"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: no options, rejected with server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Server says",
+    "errors": [],
+    "message": "Server says",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Server says"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: no options, rejected without server message 1`] = `
+{
+  "logged": [
+    [
+      "Mass validation failed:",
+      "Network",
+    ],
+  ],
+  "massValidating": false,
+  "outcome": {
+    "threw": "Network",
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "error": "Network",
+    "errors": [],
+    "message": "Network",
+    "stats": {
+      "duration_seconds": 0,
+      "failed_saves": 0,
+      "processed_objects": 0,
+      "successful_saves": 0,
+      "total_objects": 0,
+    },
+    "success": false,
+  },
+  "shownErrors": [
+    [
+      "[Mass validation failed: {error}]{"error":"Network"}",
+    ],
+  ],
+  "shownSuccesses": [],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden mass validates: no options, success 1`] = `
+{
+  "logged": [],
+  "massValidating": false,
+  "outcome": {
+    "returned": {
+      "stats": {
+        "total_objects": 3,
+      },
+      "success": true,
+    },
+  },
+  "posted": [
+    [
+      "url:/apps/openregister/api/settings/mass-validate",
+      {
+        "batchSize": 1000,
+        "collectErrors": false,
+        "maxObjects": 0,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "results": {
+    "stats": {
+      "total_objects": 3,
+    },
+    "success": true,
+  },
+  "shownErrors": [],
+  "shownSuccesses": [
+    [
+      "[Mass validation completed successfully]",
+    ],
+  ],
+  "whileRunning": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`settings retention and mass validate golden words the retention status 1`] = `
+[
+  [
+    "none",
+    "healthy-status",
+    "status-healthy",
+    "All retention policies are properly configured and applied",
+  ],
+  [
+    "all zero",
+    "healthy-status",
+    "status-healthy",
+    "All retention policies are properly configured and applied",
+  ],
+  [
+    "only auditTrailsWithoutExpiry",
+    "warning-status",
+    "status-warning",
+    "Issues found: 1 audit trails without expiry",
+  ],
+  [
+    "only searchTrailsWithoutExpiry",
+    "warning-status",
+    "status-warning",
+    "Issues found: 2 search trails without expiry",
+  ],
+  [
+    "only expiredAuditTrails",
+    "warning-status",
+    "status-warning",
+    "Issues found: 3 expired audit trails",
+  ],
+  [
+    "only expiredSearchTrails",
+    "warning-status",
+    "status-warning",
+    "Issues found: 4 expired search trails",
+  ],
+  [
+    "only expiredObjects",
+    "warning-status",
+    "status-warning",
+    "Issues found: 5 expired objects",
+  ],
+  [
+    "all",
+    "warning-status",
+    "status-warning",
+    "Issues found: 2 audit trails without expiry, 3 search trails without expiry, 4 expired audit trails, 5 expired search trails, 6 expired objects",
+  ],
+  [
+    "negative and text",
+    "warning-status",
+    "status-warning",
+    "Issues found: 4 expired audit trails",
+  ],
+  [
+    "other keys only",
+    "healthy-status",
+    "status-healthy",
+    "All retention policies are properly configured and applied",
+  ],
+  [
+    "zero next to an issue",
+    "warning-status",
+    "status-warning",
+    "Issues found: 1 expired objects",
+  ],
+  [
+    "zeros around an issue",
+    "warning-status",
+    "status-warning",
+    "Issues found: 2 search trails without expiry",
+  ],
+]
+`;
