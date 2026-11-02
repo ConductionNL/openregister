@@ -2,7 +2,8 @@
  * Paged list reads for the audit trail, search trail and deleted-objects
  * stores. Each store keeps its own search, filters and sort; these helpers
  * turn them into the query the list endpoint reads, fetch the page, and turn
- * the answer back into store pagination.
+ * the answer back into store pagination. `requestJson` and `objectAnswer`
+ * check single answers for any store.
  *
  * @spec openspec/specs/audit-trail-immutable/spec.md
  */
@@ -113,4 +114,23 @@ export function listPagination(data, defaultLimit) {
 	return Object.fromEntries(
 		Object.entries(fallback).map(([key, value]) => [key, data[key] || value]),
 	)
+}
+
+/**
+ * The object a JSON answer holds, once the answer is OK.
+ *
+ * @param {Response} response The fetch response.
+ * @return {Promise<object>} The parsed body.
+ * @throws {Error} The HTTP status when the answer is not OK, or a note that the body is not an object.
+ * @spec exclude Shared response check of thin API passthroughs.
+ */
+export async function objectAnswer(response) {
+	if (!response.ok) {
+		throw new Error(`HTTP error! status: ${response.status}`)
+	}
+	const data = await response.json()
+	if (!data || typeof data !== 'object') {
+		throw new Error('Invalid response data')
+	}
+	return data
 }

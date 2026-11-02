@@ -2737,13 +2737,16 @@ class MagicSearchHandler {
 	 *
 	 * Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
 	 * multitenancy with _multi=true. This allows public data to be visible across orgs
-	 * while still giving users the option to filter by their own organisation.
+	 * while still giving users the option to filter by their own organisation. A
+	 * signed-in caller on a schema that does not inherit public rights keeps it.
 	 *
 	 * @param bool $_multitenancy Current multitenancy flag
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
 	 * @param Schema $schema Schema to check for public access
 	 *
 	 * @return bool Resolved multitenancy flag
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
 	 */
 	private function resolveMultitenancyFlag(
 		bool $_multitenancy,
@@ -2756,7 +2759,10 @@ class MagicSearchHandler {
 			$hasPublic = $this->hasPublicReadAccess(readRules: $readGroups);
 
 			// Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
-			if ($hasPublic === true && $multitenancyExplicit === false) {
+			if ($hasPublic === true
+				&& $multitenancyExplicit === false
+				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
+			) {
 				return false;
 			}
 		}
