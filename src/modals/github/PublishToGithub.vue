@@ -374,6 +374,16 @@ export default {
 			}
 			this.selectedRepository = existingRepo.full_name
 			await this.loadBranches(existingRepo.owner, existingRepo.name)
+			this.restorePublishedPlace()
+		},
+
+		/**
+		 * Restore the branch and path the entity was published to, when known.
+		 *
+		 * @spec exclude Modal data-load plumbing — restores the GitHub target the entity was published to.
+		 * @return {void}
+		 */
+		restorePublishedPlace() {
 			if (this.entity?.githubBranch) {
 				this.selectedBranch = this.entity.githubBranch
 			}
