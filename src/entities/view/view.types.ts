@@ -8,6 +8,8 @@
  * @version  1.0.0
  */
 
+import type { TQuota, TUsage } from '../quotaUsage.types'
+
 export type TView = {
 	id?: number
 	uuid?: string
@@ -18,20 +20,8 @@ export type TView = {
 	isDefault?: boolean
 	query?: Record<string, any>
 	favoredBy?: string[]
-	quota?: {
-		storage?: number | null
-		bandwidth?: number | null
-		requests?: number | null
-		users?: number | null
-		groups?: number | null
-	}
-	usage?: {
-		storage?: number
-		bandwidth?: number
-		requests?: number
-		users?: number
-		groups?: number
-	}
+	quota?: TQuota
+	usage?: TUsage
 	created?: string
 	updated?: string
 }

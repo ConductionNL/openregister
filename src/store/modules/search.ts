@@ -78,11 +78,27 @@ export const useSearchStore = defineStore('search', () => {
 	const oldSearchQuery = ref<Record<string, any>>({})
 
 	/**
+	 * The objects URL for the selected register and schema, with the query.
+	 *
+	 * @param searchQuery - Key-value pairs of search parameters
+	 * @return The URL to fetch
+	 * @spec exclude Search page request builder: no standalone behavioural contract.
+	 */
+	function objectsEndpoint(searchQuery: Record<string, string>): string {
+		const searchQueryString = new URLSearchParams(searchQuery).toString()
+		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
+		const register = searchObjectsDataRegister.value?.id || ''
+		const schema = searchObjectsDataSchema.value?.id || ''
+		return `/index.php/apps/openregister/api/objects/${register}/${schema}${queryPart}`
+	}
+
+	/**
 	 * Search for objects in the database.
 	 * This function returns refs immediately while updating them asynchronously as the search results come in.
 	 *
 	 * @param searchQuery - Key-value pairs of search parameters
 	 * @return Object containing refs that will be updated with search results
+	 * @spec exclude Search page object fetch that only fills the search refs: no standalone behavioural contract.
 	 */
 	function searchObjects(searchQuery: Record<string, string> = {}): {
 		success: Ref<boolean>
@@ -90,9 +106,6 @@ export const useSearchStore = defineStore('search', () => {
 		result: Ref<Record<string, any>[]>
 		error: Ref<string>
 	} {
-		const searchQueryString = new URLSearchParams(searchQuery).toString()
-		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
-
 		oldSearchQuery.value = searchQuery
 
 		console.group('search objects')
@@ -102,11 +115,7 @@ export const useSearchStore = defineStore('search', () => {
 
 		searchObjectsLoading.value = true
 
-		const register = searchObjectsDataRegister.value?.id || ''
-		const schema = searchObjectsDataSchema.value?.id || ''
-		const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}${queryPart}`
-
-		fetch(endpoint, { method: 'GET' })
+		fetch(objectsEndpoint(searchQuery), { method: 'GET' })
 			.then(async (response) => {
 				// Clear any previous errors
 				searchObjectsError.value = ''
