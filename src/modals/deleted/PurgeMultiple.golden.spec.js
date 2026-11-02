@@ -26,7 +26,11 @@ jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({}))
  * @return {object} The context
  */
 function context(selected) {
-	const ctx = { ...PurgeMultiple.data.call({}), selectedObjects: selected }
+	const ctx = {
+		...PurgeMultiple.data.call({}),
+		selectedObjects: selected,
+		error: 'old error',
+	}
 	for (const [name, method] of Object.entries(PurgeMultiple.methods)) {
 		ctx[name] = method.bind(ctx)
 	}
