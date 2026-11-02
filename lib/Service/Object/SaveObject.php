@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
@@ -191,6 +192,14 @@ class SaveObject {
 	 * @var ObjectVersionHandler
 	 */
 	private ObjectVersionHandler $versionHandler;
+
+	/**
+	 * Decides object slugs (#4037). Injected by DI; a manual construction
+	 * without it (tests) gets one built from the mappers already passed in.
+	 *
+	 * @var ObjectSlugHandler
+	 */
+	private ObjectSlugHandler $slugHandler;
 
 	/**
 	 * Cache for sub-objects created during cascade operations.
@@ -341,6 +350,7 @@ class SaveObject {
 	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
 	 * @param ContainerInterface|null $container App container, consulted lazily for the retention service (see resolveRetentionService)
 	 * @param UserActivityStamper|null $userActivity Stamps `@self.lastUserActivity` when a person writes
+	 * @param ObjectSlugHandler|null $slugHandler Decides object slugs (#4037)
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -378,9 +388,16 @@ class SaveObject {
 		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
 		private readonly ?ContainerInterface $container = null,
 		private readonly ?UserActivityStamper $userActivity = null,
+		?ObjectSlugHandler $slugHandler = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
 		$this->versionHandler = new ObjectVersionHandler();
+		$this->slugHandler = $slugHandler ?? new ObjectSlugHandler(
+			magicMapper: $objectEntityMapper,
+			hydrator: $metaHydrationHandler,
+			registerMapper: $registerMapper,
+			logger: $logger
+		);
 	}//end __construct()
 
 	/**
@@ -1457,36 +1474,6 @@ class SaveObject {
 	 */
 
 	/**
-	 * Get value from nested array using dot notation path
-	 *
-	 * @param array $data The data array to search
-	 * @param string $path The dot notation path (e.g., 'user.profile.name')
-	 *
-	 * @return mixed The value at the path or null if not found
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function getValueFromPath(array $data, string $path) {
-		$keys = explode('.', $path);
-		$current = $data;
-
-		foreach ($keys as $key) {
-			if (is_array($current) === false || array_key_exists($key, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$key];
-		}
-
-		// Convert to string if it's not null and not already a string.
-		if ($current !== null && is_string($current) === false) {
-			$current = (string)$current;
-		}
-
-		return $current;
-	}//end getValueFromPath()
-
-	/**
 	 * Set default values and constant values for properties based on the schema.
 	 *
 	 * This method now supports different default value behaviors:
@@ -1629,18 +1616,10 @@ class SaveObject {
 		// 1. Start with existing data.
 		// 2. Apply rendered default values (only for properties that should get defaults).
 		// 3. Override with constant values (constants always take precedence).
-		$mergedData = array_merge($data, $renderedDefaults, $constantValues);
-
-		// Generate slug if not present and schema has slug configuration.
-		if (isset($mergedData['slug']) === false && isset($mergedData['@self']['slug']) === false) {
-			$slug = $this->generateSlug(data: $mergedData, schema: $schema);
-			if ($slug !== null) {
-				// Set slug in the data (will be applied to entity in setSelfMetadata).
-				$mergedData['slug'] = $slug;
-			}
-		}
-
-		return $mergedData;
+		// No slug is added to the data here: the slug is entity metadata that
+		// ObjectSlugHandler decides. A `slug` key in the data landed in
+		// `@self.relations.slug` and made the magic mapper warn on every save (#4037).
+		return array_merge($data, $renderedDefaults, $constantValues);
 	}//end setDefaultValues()
 
 	/**
@@ -1991,72 +1970,6 @@ class SaveObject {
 			return null;
 		}//end try
 	}//end resolveDefaultTemplateValue()
-
-	/**
-	 * Generates a slug for an object based on its data and schema configuration.
-	 *
-	 * @param array $data The object data
-	 * @param Schema $schema The schema containing the configuration
-	 *
-	 * @return null|string The generated slug or null if no slug could be generated
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function generateSlug(array $data, Schema $schema): ?string {
-		try {
-			$config = $schema->getConfiguration();
-			$slugField = $config['objectSlugField'] ?? null;
-
-			if ($slugField === null) {
-				return null;
-			}
-
-			// Get the value from the specified field.
-			$value = $this->getValueFromPath(data: $data, path: $slugField);
-			if ($value === null || empty($value) === true) {
-				return null;
-			}
-
-			// Convert to string and generate slug.
-			$slug = $this->createSlug(text: $value);
-
-			// Ensure uniqueness by appending timestamp if needed.
-			$timestamp = time();
-			$uniqueSlug = $slug . '-' . $timestamp;
-
-			return $uniqueSlug;
-		} catch (Exception $e) {
-			return null;
-		}//end try
-	}//end generateSlug()
-
-	/**
-	 * Creates a URL-friendly slug from a string.
-	 *
-	 * @param string $text The text to convert to a slug
-	 *
-	 * @return string The generated slug
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function createSlug(string $text): string {
-		// Convert to lowercase.
-		$text = strtolower($text);
-
-		// Replace non-alphanumeric characters with hyphens.
-		$text = preg_replace('/[^a-z0-9]+/', '-', $text);
-
-		// Remove leading and trailing hyphens.
-		$text = trim($text, '-');
-
-		// Limit length.
-		if (strlen($text) > 50) {
-			$text = substr($text, 0, 50);
-			$text = rtrim($text, '-');
-		}
-
-		return $text;
-	}//end createSlug()
 
 	/**
 	 * Cascade objects from the data to separate objects.
@@ -3867,7 +3780,8 @@ class SaveObject {
 			existingObject: $preparedObject,
 			folderId: $folderId,
 			silent: $silent,
-			oldObject: $oldObject
+			oldObject: $oldObject,
+			slugDecided: true
 		);
 
 		// Record the verdict AFTER the write, so a cascade descendant saved
@@ -4323,6 +4237,14 @@ class SaveObject {
 			throw new Exception('Object metadata hydration failed: ' . $e->getMessage() . '. ' . $mismatchHint, 0, $e);
 		}
 
+		// Decide the slug after hydration, with the uuid known (#4037).
+		$this->slugHandler->applyOnSave(
+			entity: $objectEntity,
+			schema: $schema,
+			originalSlug: null,
+			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+		);
+
 		// Extract Nc* property references and populate linked entity metadata columns.
 		$this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
 
@@ -4443,6 +4365,7 @@ class SaveObject {
 	 * @param array $selfData The @self metadata.
 	 * @param int|null $folderId The folder ID to set on the object.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
+	 * @param bool $decideSlug False on a second prepare of the same save, which keeps the slug decided by the first (#4037).
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4457,7 +4380,11 @@ class SaveObject {
 		array $selfData,
 		?int $folderId,
 		?IUser $currentUser = null,
+		bool $decideSlug = true,
 	): ObjectEntity {
+		// The slug stored before this save decides the freeze (#4037).
+		$originalSlug = $existingObject->getSlug();
+
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
 
@@ -4566,6 +4493,16 @@ class SaveObject {
 		// Hydrate name and description from schema configuration.
 		$this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
+		// Decide the slug: a stored one is frozen (#4037).
+		if ($decideSlug === true) {
+			$this->slugHandler->applyOnSave(
+				entity: $existingObject,
+				schema: $schema,
+				originalSlug: $originalSlug,
+				clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+			);
+		}
+
 		// Extract Nc* property references and populate linked entity metadata columns.
 		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema, $preparedData);
 
@@ -4592,11 +4529,43 @@ class SaveObject {
 	}//end prepareObjectForUpdate()
 
 	/**
+	 * The slug handler this save pipeline uses, so the bulk path shares one instance.
+	 *
+	 * @return ObjectSlugHandler The handler.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	public function getSlugHandler(): ObjectSlugHandler {
+		return $this->slugHandler;
+	}//end getSlugHandler()
+
+	/**
+	 * The slug a client sent: `@self.slug`, else a top-level `slug` property.
+	 *
+	 * @param array $selfData The @self metadata.
+	 * @param array $data     The object data.
+	 *
+	 * @return string|null The non-empty string, or null.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 */
+	private function clientSlug(array $selfData, array $data): ?string {
+		// Keep in step with SaveObjects::applyObjectSlugs(), which reads the
+		// same two places for a bulk row.
+		$slug = $selfData['slug'] ?? $data['slug'] ?? null;
+		if (is_string($slug) === false || $slug === '') {
+			return null;
+		}
+
+		return $slug;
+	}//end clientSlug()
+
+	/**
 	 * Sets @self metadata properties on an object entity.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to set metadata on.
 	 * @param array $selfData The @self metadata.
-	 * @param array $data The object data (for generated values like slug).
+	 * @param array $data The object data.
 	 * @param IUser|null $currentUser Explicit acting user for the `@self.folder` access check; falls back to the session user when null.
 	 *
 	 * @return void
@@ -4613,11 +4582,9 @@ class SaveObject {
 		array $data = [],
 		?IUser $currentUser = null,
 	): void {
-		// Extract and set slug property if present (check both @self and data).
-		$slug = $selfData['slug'] ?? $data['slug'] ?? null;
-		if (empty($slug) === false) {
-			$objectEntity->setSlug($slug);
-		}
+		// The slug is not set here any more: ObjectSlugHandler::applyOnSave()
+		// decides it after hydration, so the freeze and uniqueness rules see
+		// the client slug and the stored one together (#4037).
 
 		// SECURITY (wave-7 CRITICAL C2): owner must NOT be set from client-supplied
 		// @self input. The sole authoritative setter is applyOwnerAttribution() which
@@ -6252,6 +6219,8 @@ class SaveObject {
 	 * @param int|null $folderId The folder ID to set on the object (optional).
 	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
 	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
+	 * @param bool $slugDecided True when the caller already prepared the entity and
+	 *                          decided its slug against the stored one (#4037).
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
@@ -6272,6 +6241,7 @@ class SaveObject {
 		?int $folderId = null,
 		bool $silent = false,
 		?ObjectEntity $oldObject = null,
+		bool $slugDecided = false,
 	): ObjectEntity {
 
 		// Use provided oldObject or clone the existing object for audit trail.
@@ -6305,12 +6275,16 @@ class SaveObject {
 		$schemaId = $schema->getId();
 
 		// Prepare the object for update using the new structure.
+		// A second prepare must not decide the slug again: the entity already
+		// carries the decision made against the stored slug, and `@self` is gone
+		// from $data here, so a re-decision would see neither (#4037).
 		$preparedObject = $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
 			schema: $schema,
 			data: $data,
 			selfData: $selfData,
-			folderId: $folderId
+			folderId: $folderId,
+			decideSlug: ($slugDecided === false)
 		);
 
 		// Recalculate the archive action date if a source property changed.

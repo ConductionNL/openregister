@@ -124,6 +124,21 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 	}//end testAnUnreadableObjectIs404()
 
 	/**
+	 * A slug two objects of the register and schema hold is the 409 an administrator
+	 * gets on this route, not a 500 (#4037).
+	 *
+	 * @return void
+	 */
+	public function testAnAmbiguousSlugIs409ForAReader(): void {
+		$this->history->method('page')->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two'));
+
+		$response = $this->controller->logs(id: 'dubbel', register: 'reg', schema: 'sch', objectService: $this->objectService);
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
+	}//end testAnAmbiguousSlugIs409ForAReader()
+
+	/**
 	 * An administrator still reads the stored history as before: the reader history is not asked.
 	 *
 	 * @return void

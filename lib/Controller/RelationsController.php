@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
@@ -243,12 +245,15 @@ class RelationsController extends Controller {
 	 * @param string $schema The schema slug
 	 * @param string $id The object ID
 	 *
-	 * @return JSONResponse
+	 * @return JSONResponse 200 with the relations, 404 when the object does not exist,
+	 *                      409 when the identifier is a slug two objects of this register
+	 *                      and schema hold (#4037).
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		try {
@@ -275,6 +280,15 @@ class RelationsController extends Controller {
 			return new JSONResponse($relations);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (MultipleObjectsReturnedException $e) {
+			// Same body as ObjectsController: neither object is returned and the uuids stay in the log.
+			return new JSONResponse(
+				data: [
+					'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
+					'error' => 'ambiguous-identifier',
+				],
+				statusCode: Http::STATUS_CONFLICT
+			);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
