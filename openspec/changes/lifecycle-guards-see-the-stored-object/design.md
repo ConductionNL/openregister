@@ -15,7 +15,10 @@ guard implements it and `check()` otherwise. A guard moves over by adding the
 interface and the method. Nothing else changes for the apps that do not.
 
 `LifecycleGuardContext` is a read-only value object: `object` (the incoming
-data), `stored` (the object before this write), `action` and `userId`. A
+data), `stored` (the entity being saved, as it is stored before this write),
+`action` and `userId`, with `uuid()` and `storedData()` read from the stored
+entity. The incoming data's `id` can name another object (humaniq#787), so a
+guard that needs to look the object up uses `uuid()`, never the payload. A
 context object, not more parameters, so a later field (the from and to state,
 the schema) can be added without touching any guard.
 

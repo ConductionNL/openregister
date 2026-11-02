@@ -412,7 +412,7 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->listener->handle($event);
 
 		$this->assertFalse($event->isPropagationStopped());
-		$this->assertSame('alice', $guard->seen?->stored['requestedBy']);
+		$this->assertSame('alice', $guard->seen?->storedData()['requestedBy']);
 		$this->assertSame('bob', $guard->seen?->object['requestedBy']);
 		$this->assertSame('indienen', $guard->seen?->action);
 		$this->assertSame('alice', $guard->seen?->userId);
@@ -430,7 +430,7 @@ class LifecycleValidationListenerTest extends TestCase {
 			}
 
 			public function checkTransition(LifecycleGuardContext $context): GuardResult {
-				if (($context->stored['requestedBy'] ?? null) === $context->userId) {
+				if (($context->storedData()['requestedBy'] ?? null) === $context->userId) {
 					return GuardResult::deny('You cannot approve your own request.');
 				}
 
@@ -447,6 +447,39 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame('You cannot approve your own request.', $event->getErrors()['message']);
 	}//end testAStoredObjectGuardCannotBeFooledByThePayload()
+
+	public function testAPayloadIdNamingAnotherObjectDoesNotMoveTheGuard(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['indienen']['requires'] = 'app.request.noSelfApproval';
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('alice');
+
+		$guard = new class implements LifecycleTransitionGuardInterface {
+			public ?LifecycleGuardContext $seen = null;
+
+			public function check(array $object, string $action, string $userId): GuardResult {
+				return GuardResult::allow();
+			}
+
+			public function checkTransition(LifecycleGuardContext $context): GuardResult {
+				$this->seen = $context;
+				return GuardResult::allow();
+			}
+		};
+		$this->registerGuard('app.request.noSelfApproval', $guard);
+
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
+		$event->getOldObject()->setUuid('real-request');
+		$event->getOldObject()->setObject(['lifecycle' => 'concept', 'requestedBy' => 'alice']);
+		$event->getNewObject()->setUuid('real-request');
+		$event->getNewObject()->setObject(['lifecycle' => 'in_parafering', 'id' => 'someone-elses-request']);
+		$this->listener->handle($event);
+
+		$this->assertSame('someone-elses-request', $guard->seen?->object['id']);
+		$this->assertSame('real-request', $guard->seen?->uuid());
+		$this->assertSame('real-request', $guard->seen?->stored->getUuid());
+		$this->assertSame('alice', $guard->seen?->storedData()['requestedBy']);
+	}//end testAPayloadIdNamingAnotherObjectDoesNotMoveTheGuard()
 
 	public function testAPayloadGuardStillReceivesThePayload(): void {
 		$lifecycle = self::VOORSTEL_LIFECYCLE;

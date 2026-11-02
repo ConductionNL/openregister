@@ -21,8 +21,9 @@ starts in.
 
 - A new interface, `LifecycleTransitionGuardInterface`, extends
   `LifecycleGuardInterface` with `checkTransition(LifecycleGuardContext)`.
-  The context holds the incoming data, the stored object, the action and the
-  caller. A guard that implements it is called with the context. Any other
+  The context holds the incoming data, the entity being saved as it is
+  stored (with its uuid), the action and the caller. A guard never has to
+  resolve the object from the payload's `id`, which the writer controls. A guard that implements it is called with the context. Any other
   guard is called with `check()` exactly as before, so no app breaks.
 - A create in a lifecycle schema that sets the lifecycle field must set the
   declared `initial` state. Another value is refused with

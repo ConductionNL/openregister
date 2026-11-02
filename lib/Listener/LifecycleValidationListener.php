@@ -288,7 +288,7 @@ class LifecycleValidationListener implements IEventListener {
 
 		$guardRefusal = $this->guardRefusal(
 			spec: $spec,
-			transition: ['field' => $field, 'action' => (string)$action, 'object' => $newData, 'stored' => $oldData]
+			transition: ['field' => $field, 'action' => (string)$action, 'object' => $newData, 'stored' => $oldObject]
 		);
 		if ($guardRefusal !== null) {
 			$this->reject(event: $event, error: $guardRefusal);
@@ -299,7 +299,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * The refusal of the transition's `requires` guard, or null when it allows or there is none.
 	 *
 	 * @param array<string, mixed> $spec       The matched transition.
-	 * @param array<string, mixed> $transition `field`, `action`, the incoming `object` and the `stored` object.
+	 * @param array<string, mixed> $transition `field`, `action`, the incoming `object` data and the `stored` entity.
 	 *
 	 * @return array<string, mixed>|null
 	 *

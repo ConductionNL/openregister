@@ -6,9 +6,12 @@
 
 The system SHALL call a transition guard that implements
 `LifecycleTransitionGuardInterface` with a `LifecycleGuardContext` holding the
-incoming data, the stored object, the transition action and the caller's
-uid. A guard that implements only `LifecycleGuardInterface` SHALL be called
-with `check()` and the incoming data, as before.
+incoming data, the entity being saved as it is stored, the transition action
+and the caller's uid. The context's `uuid()` SHALL come from the stored
+entity, never from the incoming data, so a guard never resolves the object
+it judges from client data. A guard that implements only
+`LifecycleGuardInterface` SHALL be called with `check()` and the incoming
+data, as before.
 
 #### Scenario: a guard reads the applicant from the stored object
 
@@ -16,6 +19,13 @@ with `check()` and the incoming data, as before.
 - **WHEN** `alice` moves it to the next state with a payload that names `bob` as the applicant
 - **THEN** the guard sees `alice` as the stored applicant and the transition is refused
 - @e2e exclude {needs an app guard; covered by `LifecycleValidationListenerTest::testAStoredObjectGuardCannotBeFooledByThePayload`}
+
+#### Scenario: a payload id that names another object does not move the guard
+
+- **GIVEN** a stored request `real-request` filed by `alice`
+- **WHEN** a write to it sends `id: someone-elses-request` in its payload
+- **THEN** the guard's context names `real-request` and its stored data says `alice` filed it
+- @e2e exclude {covered by `LifecycleValidationListenerTest::testAPayloadIdNamingAnotherObjectDoesNotMoveTheGuard`}
 
 #### Scenario: a payload guard is unchanged
 
