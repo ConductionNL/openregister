@@ -300,3 +300,53 @@ export function statisticsOrEmpty(store, job) {
 		{ log: job.log, fallback: job.empty },
 	)
 }
+
+/**
+ * Run a request; a failure is logged and rethrown, wrapped in the `failure`
+ * text when one is given.
+ *
+ * @param {{run: function(): Promise<object>, log: function(Error): void, failure?: string}} job
+ *     The request, what logs a failure, and the text a failure is wrapped in.
+ * @return {Promise<object>} What the request returns.
+ * @spec exclude Shared failure handling of thin API passthroughs.
+ */
+export async function loggedRequest(job) {
+	try {
+		return await job.run()
+	} catch (error) {
+		job.log(error)
+		throw job.failure
+			? new Error(`${job.failure}: ${error.message}`, { cause: error })
+			: error
+	}
+}
+
+/**
+ * The parsed body of an answer; when the answer is not OK, its own error, else the HTTP status.
+ *
+ * @param {Response} response The fetch response.
+ * @return {Promise<object>} The parsed body.
+ * @throws {Error} The answer's error or the HTTP status when the answer is not OK.
+ * @spec exclude Shared response check of thin API passthroughs.
+ */
+export async function answerOrError(response) {
+	const data = await response.json()
+	if (!response.ok) {
+		throw new Error(data.error || `HTTP error! status: ${response.status}`)
+	}
+	return data
+}
+
+/**
+ * Where and how to send an item: PUT to its own URL when it exists, else POST to the collection.
+ *
+ * @param {string} collection The collection URL.
+ * @param {object|null|false} existing The existing item, if any.
+ * @return {{endpoint: string, method: string}} The endpoint and method.
+ * @spec exclude Shared request step of thin API passthroughs.
+ */
+export function itemTarget(collection, existing) {
+	return existing
+		? { endpoint: `${collection}/${existing.id}`, method: 'PUT' }
+		: { endpoint: collection, method: 'POST' }
+}

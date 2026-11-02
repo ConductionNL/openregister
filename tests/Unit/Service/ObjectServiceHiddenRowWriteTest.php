@@ -409,4 +409,42 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$this->expectException(NotAuthorizedException::class);
 		$this->saveOver(rbac: true);
 	}//end testSomebodyElsesDraftIsStillRefused()
+	public function testASoftDeletedRowIsJudgedAgainstTheStoredObject(): void {
+		$this->signedIn('mallory');
+		$this->objectMapper->method('find')->willReturnCallback(
+			function (
+				string|int $identifier,
+				?Register $register = null,
+				?Schema $schema = null,
+				bool $includeDeleted = false,
+				bool $_rbac = true,
+				bool $_multitenancy = true,
+			): ObjectEntity {
+				$this->lookups[] = [$_rbac, $_multitenancy, $includeDeleted];
+				if ($includeDeleted === false) {
+					throw new DoesNotExistException('Object not found in magic table');
+				}
+
+				$entity = new ObjectEntity();
+				$entity->setUuid((string) $identifier);
+				$entity->setOwner('agent');
+				$entity->setDeleted(['deletedBy' => 'agent']);
+				return $entity;
+			}
+		);
+		$this->saveHandler->method('saveObject')->willReturnCallback(
+			function (mixed ...$arguments): ObjectEntity {
+				$this->saves[] = $arguments;
+				$entity = new ObjectEntity();
+				$entity->setUuid('draft-1');
+				return $entity;
+			}
+		);
+
+		$this->saveOver(rbac: true);
+
+		$this->assertSame([['create', null, null, true, null], ['update', null, 'agent', true, 'draft-1']], $this->checks);
+		$this->assertContains([false, false, true], $this->lookups);
+	}//end testASoftDeletedRowIsJudgedAgainstTheStoredObject()
+
 }//end class

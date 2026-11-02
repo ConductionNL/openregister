@@ -2444,10 +2444,12 @@ class ObjectService implements ObjectServiceInterface
         }
 
         try {
+            // A soft-deleted row counts too: the write would land on it.
             $stored = $this->objectMapper->find(
                 identifier: $uuid,
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
+                includeDeleted: true,
                 _rbac: false,
                 _multitenancy: false
             );
