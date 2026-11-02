@@ -20,6 +20,7 @@ function context(props) {
 		entityPath: 'registers',
 		copy: {},
 		error: 'old error',
+		loadingRepositories: false,
 		...props,
 	}
 	for (const [name, method] of Object.entries(PublishToGithub.methods)) {
