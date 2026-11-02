@@ -455,10 +455,21 @@ export function rowFromMapping(mapping) {
 		source: str(base.source),
 		target: str(base.target),
 		required: base.required === true,
-		transform: isPlainObject(base.transform)
-			? transformFromStored(base.transform)
-			: null,
+		transform: storedTransform(base),
 	}
+}
+
+/**
+ * The editable form of a mapping's stored transform, or null when it has none.
+ *
+ * @param {object} base The stored mapping.
+ * @return {object|null} The transform draft.
+ */
+function storedTransform(base) {
+	if (!isPlainObject(base.transform)) {
+		return null
+	}
+	return transformFromStored(base.transform)
 }
 
 /**
@@ -843,26 +854,48 @@ function mapTableErrors(draft) {
 	if (draft.mapRows.length === 0) {
 		errors.push(t('openregister', 'Add at least one value to the table.'))
 	}
-	const keys = new Set()
-	for (const row of draft.mapRows) {
-		if (keys.has(row.key)) {
-			errors.push(
-				t('openregister', 'The value "{key}" is in the table twice.', {
-					key: row.key,
-				}),
-			)
-		}
-		keys.add(row.key)
-		const cellError = mapCellError(row, draft.type)
-		if (cellError) {
-			errors.push(cellError)
-		}
-	}
+	errors.push(...mapRowErrors(draft))
 	const defaultError = mapDefaultError(draft)
 	if (defaultError) {
 		errors.push(defaultError)
 	}
 	return errors
+}
+
+/**
+ * Problems in the rows of a lookup or yes/no table: repeated values and
+ * cells that do not fit the table.
+ *
+ * @param {object} draft The transform draft.
+ * @return {Array<string>} Readable messages.
+ */
+function mapRowErrors(draft) {
+	const errors = []
+	const keys = new Set()
+	for (const row of draft.mapRows) {
+		errors.push(...repeatedValueErrors(row, keys))
+		keys.add(row.key)
+		errors.push(...[mapCellError(row, draft.type)].filter(Boolean))
+	}
+	return errors
+}
+
+/**
+ * The message for a table value that an earlier row already has.
+ *
+ * @param {object} row The table row.
+ * @param {Set<string>} seen The values of the rows before it.
+ * @return {Array<string>} Readable messages.
+ */
+function repeatedValueErrors(row, seen) {
+	if (!seen.has(row.key)) {
+		return []
+	}
+	return [
+		t('openregister', 'The value "{key}" is in the table twice.', {
+			key: row.key,
+		}),
+	]
 }
 
 /**
@@ -903,6 +936,43 @@ export function validateTransform(draft) {
 	return []
 }
 
+// The checks of the pack's own fields, in the order their messages are shown.
+const PACK_FIELD_CHECKS = [
+	[
+		(draft) => !SLUG_PATTERN.test(draft.slug),
+		() =>
+			t(
+				'openregister',
+				'The slug must start with a lowercase letter or digit and contain only lowercase letters, digits and hyphens.',
+			),
+	],
+	[
+		(draft) => draft.name.trim() === '',
+		() => t('openregister', 'The name is required.'),
+	],
+	[
+		(draft) => !SEMVER_PATTERN.test(draft.version),
+		() =>
+			t(
+				'openregister',
+				'The version must look like 1.0.0 (major.minor.patch).',
+			),
+	],
+	[
+		(draft) => !SOURCE_FORMATS.includes(draft.sourceFormat),
+		() => t('openregister', 'Choose a source format.'),
+	],
+	[
+		(draft) =>
+			draft.idStrategyType === 'sourceField' && draft.idStrategyField === '',
+		() => t('openregister', 'Name the column that holds the id.'),
+	],
+	[
+		(draft) => draft.rows.length === 0,
+		() => t('openregister', 'Add at least one field mapping.'),
+	],
+]
+
 /**
  * Problems in the pack's own fields: slug, name, version, source format,
  * id column and whether it maps anything.
@@ -911,37 +981,24 @@ export function validateTransform(draft) {
  * @return {Array<string>} Readable messages.
  */
 function packFieldErrors(draft) {
-	const errors = []
-	if (!SLUG_PATTERN.test(draft.slug)) {
-		errors.push(
-			t(
-				'openregister',
-				'The slug must start with a lowercase letter or digit and contain only lowercase letters, digits and hyphens.',
-			),
-		)
-	}
-	if (draft.name.trim() === '') {
-		errors.push(t('openregister', 'The name is required.'))
-	}
-	if (!SEMVER_PATTERN.test(draft.version)) {
-		errors.push(
-			t(
-				'openregister',
-				'The version must look like 1.0.0 (major.minor.patch).',
-			),
-		)
-	}
-	if (!SOURCE_FORMATS.includes(draft.sourceFormat)) {
-		errors.push(t('openregister', 'Choose a source format.'))
-	}
-	if (draft.idStrategyType === 'sourceField' && draft.idStrategyField === '') {
-		errors.push(t('openregister', 'Name the column that holds the id.'))
-	}
-	if (draft.rows.length === 0) {
-		errors.push(t('openregister', 'Add at least one field mapping.'))
-	}
-	return errors
+	return PACK_FIELD_CHECKS.filter(([fails]) => fails(draft)).map(([, message]) =>
+		message(),
+	)
 }
+
+// The checks of one field mapping row, in the order their messages are shown.
+const MAPPING_ROW_CHECKS = [
+	[
+		(row) => row.source === '',
+		(number) =>
+			t('openregister', 'Row {number} has no source column.', { number }),
+	],
+	[
+		(row) => row.target === '',
+		(number) =>
+			t('openregister', 'Row {number} has no target field.', { number }),
+	],
+]
 
 /**
  * Problems in one field mapping row.
@@ -951,29 +1008,15 @@ function packFieldErrors(draft) {
  * @return {Array<string>} Readable messages.
  */
 function mappingRowErrors(row, index) {
-	const errors = []
 	const number = index + 1
-	if (row.source === '') {
-		errors.push(
-			t('openregister', 'Row {number} has no source column.', { number }),
+	const transformErrors = row.transform ? validateTransform(row.transform) : []
+	return MAPPING_ROW_CHECKS.filter(([fails]) => fails(row))
+		.map(([, message]) => message(number))
+		.concat(
+			transformErrors.map((message) =>
+				t('openregister', 'Row {number}: {message}', { number, message }),
+			),
 		)
-	}
-	if (row.target === '') {
-		errors.push(
-			t('openregister', 'Row {number} has no target field.', { number }),
-		)
-	}
-	if (row.transform) {
-		for (const message of validateTransform(row.transform)) {
-			errors.push(
-				t('openregister', 'Row {number}: {message}', {
-					number,
-					message,
-				}),
-			)
-		}
-	}
-	return errors
 }
 
 /**
@@ -983,28 +1026,50 @@ function mappingRowErrors(row, index) {
  * @return {Array<string>} Readable messages.
  */
 function defaultErrors(defaults) {
-	const errors = []
 	const defaultKeys = new Set()
-	for (const row of defaults) {
-		if (row.key === '') {
-			errors.push(t('openregister', 'A default value has no target field.'))
-		} else if (defaultKeys.has(row.key)) {
-			errors.push(
-				t('openregister', 'The default for "{key}" is set twice.', {
-					key: row.key,
-				}),
-			)
-		}
+	return defaults.flatMap((row) => {
+		const errors = defaultKeyErrors(row, defaultKeys)
 		defaultKeys.add(row.key)
-		if (!cellIsValid(row)) {
-			errors.push(
-				t('openregister', 'The default for "{key}" is not valid JSON.', {
-					key: row.key,
-				}),
-			)
-		}
+		return errors.concat(defaultValueErrors(row))
+	})
+}
+
+/**
+ * Problems in the target field of one pack default: missing, or set twice.
+ *
+ * @param {object} row The default row.
+ * @param {Set<string>} seen The target fields of the rows before it.
+ * @return {Array<string>} Readable messages.
+ */
+function defaultKeyErrors(row, seen) {
+	if (row.key === '') {
+		return [t('openregister', 'A default value has no target field.')]
 	}
-	return errors
+	if (seen.has(row.key)) {
+		return [
+			t('openregister', 'The default for "{key}" is set twice.', {
+				key: row.key,
+			}),
+		]
+	}
+	return []
+}
+
+/**
+ * Problems in the value of one pack default.
+ *
+ * @param {object} row The default row.
+ * @return {Array<string>} Readable messages.
+ */
+function defaultValueErrors(row) {
+	if (cellIsValid(row)) {
+		return []
+	}
+	return [
+		t('openregister', 'The default for "{key}" is not valid JSON.', {
+			key: row.key,
+		}),
+	]
 }
 
 /**
@@ -1019,24 +1084,30 @@ function defaultErrors(defaults) {
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
 export function validateDraft(draft) {
-	const errors = [
+	return [
 		...packFieldErrors(draft),
 		...draft.rows.flatMap((row, index) => mappingRowErrors(row, index)),
 		...defaultErrors(draft.defaults),
+		...skipRowErrors(draft),
 	]
+}
+
+/**
+ * The message for rows to skip that are not whole numbers from 1 up.
+ *
+ * @param {object} draft The draft.
+ * @return {Array<string>} Readable messages.
+ */
+function skipRowErrors(draft) {
 	const invalidSkips = parseSkipRows(draft.skipRows).invalid
-	if (invalidSkips.length > 0) {
-		errors.push(
-			t(
-				'openregister',
-				'Rows to skip must be whole numbers from 1 up: {values}',
-				{
-					values: invalidSkips.join(', '),
-				},
-			),
-		)
+	if (invalidSkips.length === 0) {
+		return []
 	}
-	return errors
+	return [
+		t('openregister', 'Rows to skip must be whole numbers from 1 up: {values}', {
+			values: invalidSkips.join(', '),
+		}),
+	]
 }
 
 /**
