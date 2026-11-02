@@ -54,13 +54,16 @@ const ANSWERS = {
 }
 
 /**
- * A bare modal context that records closing.
+ * A bare modal context with the modal's methods that records closing.
  *
  * @param {string} exportFormat The chosen format
  * @return {object} The context
  */
 function context(exportFormat) {
 	const ctx = { ...ExportRegister.data.call({}), exportFormat, closed: 0 }
+	for (const [name, method] of Object.entries(ExportRegister.methods)) {
+		ctx[name] = method.bind(ctx)
+	}
 	ctx.closeModal = () => ctx.closed++
 	return ctx
 }
@@ -105,7 +108,7 @@ describe('ExportRegister.exportObjects', () => {
 					schemaStore.schemaItem = schema
 					axios.mockImplementation(answer)
 					const ctx = context(format)
-					await ExportRegister.methods.exportObjects.call(ctx)
+					await ctx.exportObjects()
 					expect({
 						requests: axios.mock.calls,
 						browser,
