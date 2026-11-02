@@ -30,6 +30,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Lifecycle\GuardResult;
+use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
+use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
@@ -285,9 +288,15 @@ class LifecycleValidationListener implements IEventListener {
 
 		$requires = ($spec['requires'] ?? null);
 		if (is_string($requires) === true && $requires !== '') {
-			$userId = ($this->userSession->getUser()?->getUID() ?? '');
-			$guard = $this->guardRegistry->resolve($requires);
-			$result = $guard->check($newData, $action, $userId);
+			$result = $this->runGuard(
+				requires: $requires,
+				context: new LifecycleGuardContext(
+					object: $newData,
+					stored: $oldData,
+					action: (string)$action,
+					userId: ($this->userSession->getUser()?->getUID() ?? '')
+				)
+			);
 			if ($result->isAllowed() === false) {
 				$this->reject(
 					event: $event,
@@ -301,6 +310,25 @@ class LifecycleValidationListener implements IEventListener {
 			}
 		}
 	}//end handle()
+
+	/**
+	 * Run a transition's guard: with the stored object when it asks for it, else on the incoming data.
+	 *
+	 * @param string                $requires The guard's tag.
+	 * @param LifecycleGuardContext $context  The incoming data, the stored object, the action and the caller.
+	 *
+	 * @return GuardResult
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-transition-guard-can-judge-the-stored-object
+	 */
+	private function runGuard(string $requires, LifecycleGuardContext $context): GuardResult {
+		$guard = $this->guardRegistry->resolve($requires);
+		if ($guard instanceof LifecycleTransitionGuardInterface) {
+			return $guard->checkTransition(context: $context);
+		}
+
+		return $guard->check($context->object, $context->action, $context->userId);
+	}//end runGuard()
 
 	/**
 	 * Record what a transition's condition decided, and on which operand.

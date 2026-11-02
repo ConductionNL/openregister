@@ -116,7 +116,7 @@ class LifecycleInitialStateListenerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testCallerValueNotOverridden(): void {
+	public function testACreateInAnotherStateIsRefused(): void {
 		$this->schemaMapper->method('find')->willReturn(
 			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
 		);
@@ -124,11 +124,56 @@ class LifecycleInitialStateListenerTest extends TestCase {
 		$this->references->expects($this->never())->method('resolveAll');
 
 		$object = $this->object(['status' => 'closed']);
-		$this->listener->handle(new ObjectCreatingEvent($object));
+		$event = new ObjectCreatingEvent($object);
+		$this->listener->handle($event);
 
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('lifecycle-invalid-initial', $event->getErrors()['code']);
+		$this->assertSame('closed', $event->getErrors()['attempted']);
 		$this->assertSame('closed', $object->getObject()['status']);
 
-	}//end testCallerValueNotOverridden()
+	}//end testACreateInAnotherStateIsRefused()
+
+	public function testACreateInTheInitialStatePasses(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
+		);
+
+		$event = new ObjectCreatingEvent($this->object(['status' => 'open']));
+		$this->listener->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+
+	}//end testACreateInTheInitialStatePasses()
+
+	public function testTheSystemMayCreateInAnyState(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
+		);
+
+		$event = new ObjectCreatingEvent($this->object(['status' => 'closed']));
+		\OCA\OpenRegister\Service\SystemOperationContext::run(fn () => $this->listener->handle($event));
+
+		$this->assertFalse($event->isPropagationStopped());
+
+		$after = new ObjectCreatingEvent($this->object(['status' => 'closed']));
+		$this->listener->handle($after);
+		$this->assertTrue($after->isPropagationStopped(), 'outside the system operation the same create is refused');
+
+	}//end testTheSystemMayCreateInAnyState()
+
+	public function testThePropertyAliasNamesTheField(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['property' => 'status', 'initial' => 'open']])
+		);
+
+		$event = new ObjectCreatingEvent($this->object(['status' => 'closed']));
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+
+	}//end testThePropertyAliasNamesTheField()
 
 	/**
 	 * Dynamic initial resolves the state from a related object (dict form).
@@ -189,6 +234,51 @@ class LifecycleInitialStateListenerTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testADynamicInitialIsComparedWithTheCallersValue(): void {
+		$config = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => '@ref.caseType.initialStatus',
+			],
+			'x-openregister-references' => [
+				'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
+			],
+		];
+		$this->schemaMapper->method('find')->willReturn($this->schema($config));
+		$this->references->method('resolveAll')->willReturn(['caseType' => ['initialStatus' => 'intake']]);
+
+		$refused = new ObjectCreatingEvent($this->object(['caseTypeId' => 'ct-1', 'status' => 'closed']));
+		$this->listener->handle($refused);
+		$this->assertTrue($refused->isPropagationStopped());
+		$this->assertSame('intake', $refused->getErrors()['initial']);
+
+		$allowed = new ObjectCreatingEvent($this->object(['caseTypeId' => 'ct-1', 'status' => 'intake']));
+		$this->listener->handle($allowed);
+		$this->assertFalse($allowed->isPropagationStopped());
+
+	}//end testADynamicInitialIsComparedWithTheCallersValue()
+
+	public function testAnUnresolvableInitialRefusesACallersValue(): void {
+		$config = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+			],
+			'x-openregister-references' => [
+				'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
+			],
+		];
+		$this->schemaMapper->method('find')->willReturn($this->schema($config));
+		$this->references->method('resolveAll')->willReturn(['caseType' => null]);
+
+		$event = new ObjectCreatingEvent($this->object(['caseTypeId' => 'missing', 'status' => 'closed']));
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('lifecycle-invalid-initial', $event->getErrors()['code']);
+
+	}//end testAnUnresolvableInitialRefusesACallersValue()
+
 	public function testUnresolvableReferenceIsNoOp(): void {
 		$config = [
 			'x-openregister-lifecycle' => [
