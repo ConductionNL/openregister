@@ -96,6 +96,35 @@ class TablesControllerTest extends TestCase {
 		$this->assertFalse($all->getData()['success']);
 	}
 
+	public function testSyncAndSyncAllRefuseWithoutASignedInUser(): void {
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->expects($this->never())->method('isAdmin');
+		$controller = new TablesController(
+			'openregister',
+			$this->request,
+			$this->config,
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->schemaMapper,
+			$this->logger,
+			$session,
+			$groupManager
+		);
+		$this->registerMapper->expects($this->never())->method('find');
+		$this->registerMapper->expects($this->never())->method('findAll');
+		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
+
+		$single = $controller->sync(1, 1);
+		$all = $controller->syncAll();
+
+		$this->assertSame(403, $single->getStatus());
+		$this->assertSame(403, $all->getStatus());
+		$this->assertFalse($single->getData()['success']);
+		$this->assertFalse($all->getData()['success']);
+	}
+
 	/**
 	 * Stub the register-scoped schema lookup the controller now performs.
 	 *
