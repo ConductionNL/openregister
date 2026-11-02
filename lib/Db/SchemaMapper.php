@@ -1263,7 +1263,7 @@ class SchemaMapper extends QBMapper {
 		// nothing, and the block looks correct in every screen that shows it.
 		// Refusing it here is what publishing the set is for.
 		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
-			authorization: $authorization,
+			authorization: $this->withoutDeclaredActions(authorization: $authorization, declared: $schema->declaredActionNames()),
 			roleDefinitions: null,
 			subject: $subject
 		);
@@ -1273,6 +1273,29 @@ class SchemaMapper extends QBMapper {
 			subject: $subject
 		);
 	}//end validateAuthorizationDeny()
+
+	/**
+	 * The block without the actions the schema declares itself, at its top level and in its deny.
+	 *
+	 * A schema may grant its own `x-openregister-action` entries
+	 * (declared-actions spec), which the app-wide catalogue does not list.
+	 *
+	 * @param array<string, mixed> $authorization The block as written.
+	 * @param array<int, string>   $declared      The schema's declared action keys.
+	 *
+	 * @return array<string, mixed> The block the catalogue checks.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
+	 */
+	private function withoutDeclaredActions(array $authorization, array $declared): array {
+		$names = array_flip($declared);
+		$checked = array_diff_key($authorization, $names);
+		if (is_array($checked[DenyResolver::DENY_KEY] ?? null) === true) {
+			$checked[DenyResolver::DENY_KEY] = array_diff_key($checked[DenyResolver::DENY_KEY], $names);
+		}
+
+		return $checked;
+	}//end withoutDeclaredActions()
 
 	/**
 	 * Refuse a schema that declares an action reversible that cannot be.
