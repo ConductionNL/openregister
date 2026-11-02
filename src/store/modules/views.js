@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { withoutReadOnly } from '../../services/listPage.js'
 
 /**
  * Store for managing saved search views
@@ -386,15 +387,7 @@ export const useViewsStore = defineStore('views', {
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanViewForSave(viewData) {
-			const cleaned = { ...viewData }
-
-			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.id
-			delete cleaned.uuid
-			delete cleaned.created
-			delete cleaned.updated
-
-			return cleaned
+			return withoutReadOnly(viewData)
 		},
 
 		/**

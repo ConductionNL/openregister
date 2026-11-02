@@ -11,8 +11,8 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
-import { objectAnswer } from '../../services/listPage.js'
-import { listStateActions } from './listState.js'
+import { getJson, objectAnswer, okJson, sendJson } from '../../services/listPage.js'
+import { listStateActions, listStateFields } from './listState.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
 // register store — AppInitializationService and every search/dashboard
@@ -30,11 +30,7 @@ export const useSchemaStore = defineStore('schema', {
 		viewMode: 'cards',
 		// True while the editor saves to the schema's draft instead of publishing (modelling-schema-draft).
 		draftMode: false,
-		filters: [], // List of query
-		pagination: {
-			page: 1,
-			limit: 20,
-		},
+		...listStateFields(),
 	}),
 	getters: {
 		getViewMode: (state) => state.viewMode,
@@ -203,10 +199,7 @@ export const useSchemaStore = defineStore('schema', {
 		async getSchema(id, options = { setItem: false }) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				// Convert properties array to object if needed (backend sometimes returns array when empty)
 				if (data && Array.isArray(data.properties)) {
 					data.properties = {}
@@ -228,10 +221,7 @@ export const useSchemaStore = defineStore('schema', {
 		async getSchemaStats(id) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}/stats`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				return data
 			} catch (err) {
 				console.error('Error in getSchemaStats:', err)
@@ -388,13 +378,7 @@ export const useSchemaStore = defineStore('schema', {
 				: `/index.php/apps/openregister/api/schemas/upload/${this.schemaItem.id}`
 			const method = isNewSchema ? 'POST' : 'PUT'
 
-			const response = await fetch(endpoint, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(schema),
-			})
+			const response = await sendJson(endpoint, { method, body: schema })
 
 			const responseData = await objectAnswer(response)
 
@@ -483,11 +467,7 @@ export const useSchemaStore = defineStore('schema', {
 				},
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const data = await response.json()
+			const data = await okJson(response)
 
 			if (data.error) {
 				throw new Error(data.error)
@@ -517,11 +497,7 @@ export const useSchemaStore = defineStore('schema', {
 				}),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const data = await response.json()
+			const data = await okJson(response)
 
 			if (data.error) {
 				throw new Error(data.error)

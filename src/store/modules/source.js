@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { Source } from '../../entities/index.js'
-import { objectAnswer } from '../../services/listPage.js'
+import { getJson, objectAnswer, sendJson } from '../../services/listPage.js'
 
 export const useSourceStore = defineStore('source', {
 	state: () => ({
@@ -64,10 +64,7 @@ export const useSourceStore = defineStore('source', {
 		async getSource(id) {
 			const endpoint = `/index.php/apps/openregister/api/sources/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				this.setSourceItem(data)
 				return data
 			} catch (err) {
@@ -120,13 +117,7 @@ export const useSourceStore = defineStore('source', {
 
 			sourceItem.updated = new Date().toISOString()
 
-			const response = await fetch(endpoint, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(sourceItem),
-			})
+			const response = await sendJson(endpoint, { method, body: sourceItem })
 
 			const responseData = await objectAnswer(response)
 

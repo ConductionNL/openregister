@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia'
 import { Register } from '../../entities/index.js'
-import { objectAnswer } from '../../services/listPage.js'
-import { listStateActions } from './listState.js'
+import {
+	getJson,
+	importAnswer,
+	objectAnswer,
+	sendJson,
+	withoutReadOnly,
+} from '../../services/listPage.js'
+import { listStateActions, listStateFields } from './listState.js'
 
 /**
  * The schema a CSV import goes into: the selected schema, for a .csv file only.
@@ -60,19 +66,7 @@ async function postImport(request) {
 	})
 
 	clearTimeout(timeoutId)
-	const responseData = await response.json()
-
-	if (!response.ok) {
-		// If we have an error message in the response, use that
-		if (responseData && responseData.error) {
-			throw new Error(responseData.error)
-		}
-		throw new Error(`HTTP error! status: ${response.status}`)
-	}
-
-	if (!responseData || typeof responseData !== 'object') {
-		throw new Error('Invalid response data')
-	}
+	const responseData = await importAnswer(response)
 
 	return { response, responseData }
 }
@@ -95,11 +89,7 @@ export const useRegisterStore = defineStore('register', {
 		error: null,
 		viewMode: 'cards',
 		activeTab: 'stats-tab',
-		filters: [], // List of query
-		pagination: {
-			page: 1,
-			limit: 20,
-		},
+		...listStateFields(),
 	}),
 	getters: {
 		getRegisterItem: (state) => state.registerItem,
@@ -187,10 +177,7 @@ export const useRegisterStore = defineStore('register', {
 		async getRegister(id) {
 			const endpoint = `/index.php/apps/openregister/api/registers/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				this.setRegisterItem(data)
 				return data
 			} catch (err) {
@@ -206,10 +193,7 @@ export const useRegisterStore = defineStore('register', {
 		async getRegisterStats(id) {
 			const endpoint = `/index.php/apps/openregister/api/registers/${id}/stats`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				return data
 			} catch (err) {
 				console.error(err)
@@ -266,12 +250,9 @@ export const useRegisterStore = defineStore('register', {
 			const cleanedData = this.cleanRegisterForSave(registerItem)
 
 			try {
-				const response = await fetch(endpoint, {
+				const response = await sendJson(endpoint, {
 					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(cleanedData),
+					body: cleanedData,
 				})
 
 				const responseData = await objectAnswer(response)
@@ -295,15 +276,7 @@ export const useRegisterStore = defineStore('register', {
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanRegisterForSave(registerItem) {
-			const cleaned = { ...registerItem }
-
-			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.id
-			delete cleaned.uuid
-			delete cleaned.created
-			delete cleaned.updated
-
-			return cleaned
+			return withoutReadOnly(registerItem)
 		},
 		// Create or save a register from store
 		/**
@@ -321,13 +294,7 @@ export const useRegisterStore = defineStore('register', {
 				: `/index.php/apps/openregister/api/registers/upload/${this.registerItem.id}`
 			const method = isNewRegister ? 'POST' : 'PUT'
 
-			const response = await fetch(endpoint, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(register),
-			})
+			const response = await sendJson(endpoint, { method, body: register })
 
 			const responseData = await objectAnswer(response)
 
