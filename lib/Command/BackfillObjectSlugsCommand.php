@@ -38,7 +38,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Throwable;
 
 /**
  * `occ openregister:backfill-slugs <register> <schema> [--dry-run]`.
@@ -108,7 +107,7 @@ class BackfillObjectSlugsCommand extends Command {
 			}
 
 			$schema ??= $this->schemaMapper->find($schemaArg, _rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
+		} catch (\Throwable $e) {
 			$output->writeln('<error>Register or schema not found: ' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
 		}
@@ -130,6 +129,23 @@ class BackfillObjectSlugsCommand extends Command {
 			return Command::FAILURE;
 		}
 
+		$this->printResult(result: $result, dryRun: $dryRun, output: $output);
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * Print the duplicates, the planned or written changes and the summary of a run.
+	 *
+	 * @param array           $result The run's duplicates, plan and summary.
+	 * @param bool            $dryRun Whether nothing was written.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `dryRun` is the documented command option.
+	 */
+	private function printResult(array $result, bool $dryRun, OutputInterface $output): void {
 		foreach ($result['duplicates'] as $slug => $uuids) {
 			$output->writeln(sprintf('<comment>duplicate "%s": %s</comment>', $slug, implode(', ', $uuids)));
 		}
@@ -163,9 +179,7 @@ class BackfillObjectSlugsCommand extends Command {
 				$dryRunNote
 			)
 		);
-
-		return Command::SUCCESS;
-	}//end execute()
+	}//end printResult()
 
 	/**
 	 * Run the backfill; print the reason and answer null when it cannot finish.
@@ -194,7 +208,7 @@ class BackfillObjectSlugsCommand extends Command {
 					$e->getSkipped()
 				)
 			);
-		} catch (Throwable $e) {
+		} catch (\Throwable $e) {
 			$output->writeln('<error>The slug backfill failed: ' . $e->getMessage() . '</error>');
 		}
 

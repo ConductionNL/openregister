@@ -26,7 +26,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -59,7 +58,6 @@ class MigrationHandler {
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param ObjectSlugHandler|null $slugHandler Re-checks a carried slug in the target (#4037).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -71,7 +69,6 @@ class MigrationHandler {
 		private readonly UtilityHandler $utilityHandler,
 		private readonly DataManipulationHandler $dataManipHandler,
 		private readonly LoggerInterface $logger,
-		private readonly ?ObjectSlugHandler $slugHandler=null,
 	) {
 	}//end __construct()
 
@@ -196,22 +193,7 @@ class MigrationHandler {
 			$sourceObject->setRegister($run->target->registerEntity->getId());
 			$sourceObject->setSchema($run->target->schemaEntity->getId());
 			$sourceObject->setObject($mappedData);
-
-			// The slug was decided in the source; the target may already
-			// have a live holder of it (#4037).
-			if ($this->slugHandler !== null
-				&& $run->target->registerEntity instanceof Register
-				&& $run->target->schemaEntity instanceof Schema
-			) {
-				$sourceObject->setSlug(
-					$this->slugHandler->slugForMove(
-						entity: $sourceObject,
-						register: $run->target->registerEntity,
-						schema: $run->target->schemaEntity
-					)
-				);
-			}
-
+			$this->keepSlugFreeAtTarget(sourceObject: $sourceObject, run: $run);
 			$savedObject = $this->objectMapper->update($sourceObject);
 
 			$objectDetail['success'] = true;
@@ -224,6 +206,26 @@ class MigrationHandler {
 
 		$run->addDetail(detail: $objectDetail);
 	}//end migrateOne()
+
+	/**
+	 * Re-check the slug an object carries against the target's live holders (#4037).
+	 *
+	 * The slug was decided in the source; the target may already have a live holder of it.
+	 *
+	 * @param ObjectEntity $sourceObject The object, already pointing at the target.
+	 * @param MigrationRun $run          The migration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	private function keepSlugFreeAtTarget(ObjectEntity $sourceObject, MigrationRun $run): void {
+		$register = $run->target->registerEntity;
+		$schema = $run->target->schemaEntity;
+		if ($register instanceof Register && $schema instanceof Schema) {
+			$sourceObject->setSlug($this->objectMapper->slugForMove(entity: $sourceObject, register: $register, schema: $schema));
+		}
+	}//end keepSlugFreeAtTarget()
 
 	/**
 	 * Refuse an object that does not live in the requested source register and schema.

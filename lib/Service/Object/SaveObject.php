@@ -58,6 +58,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
@@ -194,8 +197,7 @@ class SaveObject {
 	private ObjectVersionHandler $versionHandler;
 
 	/**
-	 * Decides object slugs (#4037). Injected by DI; a manual construction
-	 * without it (tests) gets one built from the mappers already passed in.
+	 * Decides object slugs (#4037), built from the mappers already passed in.
 	 *
 	 * @var ObjectSlugHandler
 	 */
@@ -350,7 +352,6 @@ class SaveObject {
 	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
 	 * @param ContainerInterface|null $container App container, consulted lazily for the retention service (see resolveRetentionService)
 	 * @param UserActivityStamper|null $userActivity Stamps `@self.lastUserActivity` when a person writes
-	 * @param ObjectSlugHandler|null $slugHandler Decides object slugs (#4037)
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -388,15 +389,14 @@ class SaveObject {
 		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
 		private readonly ?ContainerInterface $container = null,
 		private readonly ?UserActivityStamper $userActivity = null,
-		?ObjectSlugHandler $slugHandler = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
 		$this->versionHandler = new ObjectVersionHandler();
-		$this->slugHandler = $slugHandler ?? new ObjectSlugHandler(
-			magicMapper: $objectEntityMapper,
-			hydrator: $metaHydrationHandler,
-			registerMapper: $registerMapper,
-			logger: $logger
+		$slugLog = new ObjectSlugLog(logger: $logger);
+		$this->slugHandler = new ObjectSlugHandler(
+			store: new ObjectSlugStore(magicMapper: $objectEntityMapper, registerMapper: $registerMapper, log: $slugLog),
+			source: new ObjectSlugSource(hydrator: $metaHydrationHandler),
+			log: $slugLog
 		);
 	}//end __construct()
 
@@ -3698,8 +3698,7 @@ class SaveObject {
 		?IUser $currentUser = null,
 	): ObjectEntity {
 		// Check archival immutability: destroyed and transferred objects cannot be modified.
-		$retention = $existingObject->getRetention() ?? [];
-		$archStatus = $retention['archiefstatus'] ?? null;
+		$archStatus = ($existingObject->getRetention() ?? [])['archiefstatus'] ?? null;
 		// Both vocabularies. GAP A4 moved the stored spelling to English, and
 		// stored data is not migrated, so a guard that only knew `destroyed`
 		// would let every already-destroyed record in an existing install be
@@ -3752,6 +3751,10 @@ class SaveObject {
 			currentUser: $currentUser
 		);
 
+		// Decide the slug once, here: a stored one is frozen. updateObject() does
+		// not decide it again; `@self` is gone from $data there (#4037).
+		$this->decideSlug(entity: $preparedObject, schema: $schema, stored: $oldObject->getSlug(), sent: [$selfData, $data]);
+
 		// A record that changes its own selectielijst category (DECISIONS row
 		// 48) is refused when that category has no row, re-derived while it is
 		// still active, and refused once it has been nominated.
@@ -3780,8 +3783,7 @@ class SaveObject {
 			existingObject: $preparedObject,
 			folderId: $folderId,
 			silent: $silent,
-			oldObject: $oldObject,
-			slugDecided: true
+			oldObject: $oldObject
 		);
 
 		// Record the verdict AFTER the write, so a cascade descendant saved
@@ -4238,12 +4240,7 @@ class SaveObject {
 		}
 
 		// Decide the slug after hydration, with the uuid known (#4037).
-		$this->slugHandler->applyOnSave(
-			entity: $objectEntity,
-			schema: $schema,
-			originalSlug: null,
-			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
-		);
+		$this->decideSlug(entity: $objectEntity, schema: $schema, stored: null, sent: [$selfData, $data]);
 
 		// Extract Nc* property references and populate linked entity metadata columns.
 		$this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
@@ -4365,7 +4362,6 @@ class SaveObject {
 	 * @param array $selfData The @self metadata.
 	 * @param int|null $folderId The folder ID to set on the object.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
-	 * @param bool $decideSlug False on a second prepare of the same save, which keeps the slug decided by the first (#4037).
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4380,11 +4376,7 @@ class SaveObject {
 		array $selfData,
 		?int $folderId,
 		?IUser $currentUser = null,
-		bool $decideSlug = true,
 	): ObjectEntity {
-		// The slug stored before this save decides the freeze (#4037).
-		$originalSlug = $existingObject->getSlug();
-
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
 
@@ -4493,16 +4485,6 @@ class SaveObject {
 		// Hydrate name and description from schema configuration.
 		$this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
-		// Decide the slug: a stored one is frozen (#4037).
-		if ($decideSlug === true) {
-			$this->slugHandler->applyOnSave(
-				entity: $existingObject,
-				schema: $schema,
-				originalSlug: $originalSlug,
-				clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
-			);
-		}
-
 		// Extract Nc* property references and populate linked entity metadata columns.
 		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema, $preparedData);
 
@@ -4529,6 +4511,28 @@ class SaveObject {
 	}//end prepareObjectForUpdate()
 
 	/**
+	 * Decide and set an entity's slug: frozen when it has one, otherwise unique in its register+schema (#4037).
+	 *
+	 * @param ObjectEntity                 $entity The entity, hydrated and with its uuid.
+	 * @param Schema                       $schema Its schema.
+	 * @param string|null                  $stored The slug stored before this save (null on create).
+	 * @param array{0: array, 1: array}    $sent   The `@self` metadata and the data the client sent.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
+	 */
+	private function decideSlug(ObjectEntity $entity, Schema $schema, ?string $stored, array $sent): void {
+		[$selfData, $data] = $sent;
+		$this->slugHandler->applyOnSave(
+			entity: $entity,
+			schema: $schema,
+			originalSlug: $stored,
+			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+		);
+	}//end decideSlug()
+
+	/**
 	 * The slug handler this save pipeline uses, so the bulk path shares one instance.
 	 *
 	 * @return ObjectSlugHandler The handler.
@@ -4550,7 +4554,7 @@ class SaveObject {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	private function clientSlug(array $selfData, array $data): ?string {
-		// Keep in step with SaveObjects::applyObjectSlugs(), which reads the
+		// Keep in step with BulkObjectSlugs::apply(), which reads the
 		// same two places for a bulk row.
 		$slug = $selfData['slug'] ?? $data['slug'] ?? null;
 		if (is_string($slug) === false || $slug === '') {
@@ -6219,8 +6223,6 @@ class SaveObject {
 	 * @param int|null $folderId The folder ID to set on the object (optional).
 	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
 	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
-	 * @param bool $slugDecided True when the caller already prepared the entity and
-	 *                          decided its slug against the stored one (#4037).
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
@@ -6241,7 +6243,6 @@ class SaveObject {
 		?int $folderId = null,
 		bool $silent = false,
 		?ObjectEntity $oldObject = null,
-		bool $slugDecided = false,
 	): ObjectEntity {
 
 		// Use provided oldObject or clone the existing object for audit trail.
@@ -6275,16 +6276,12 @@ class SaveObject {
 		$schemaId = $schema->getId();
 
 		// Prepare the object for update using the new structure.
-		// A second prepare must not decide the slug again: the entity already
-		// carries the decision made against the stored slug, and `@self` is gone
-		// from $data here, so a re-decision would see neither (#4037).
 		$preparedObject = $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
 			schema: $schema,
 			data: $data,
 			selfData: $selfData,
-			folderId: $folderId,
-			decideSlug: ($slugDecided === false)
+			folderId: $folderId
 		);
 
 		// Recalculate the archive action date if a source property changed.

@@ -22,18 +22,12 @@
  * @link https://www.OpenRegister.app
  */
 
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCP\AppFramework\Utility\ITimeFactory;
-use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Decides object slugs for single save, bulk save and the slug backfill.
@@ -54,16 +48,6 @@ use Throwable;
 class ObjectSlugHandler {
 
 	/**
-	 * Width of the column that stores a slug.
-	 */
-	private const MAX_LENGTH = 255;
-
-	/**
-	 * Length of `-YYYYMMDDHHMMSS`.
-	 */
-	private const SUFFIX_LENGTH = 15;
-
-	/**
 	 * The `objectSlugField` value that builds the slug from the schema name and the
 	 * object's name instead of from a property: `<schema slug>-<slug of the value of
 	 * objectNameField>`. Offered as the second choice next to a property (Robert
@@ -72,18 +56,10 @@ class ObjectSlugHandler {
 	public const SCHEMA_NAME_SOURCE = '@schema.name';
 
 	/**
-	 * Registers resolved during this request, by id.
-	 *
-	 * @var array<string, Register|null>
+	 * Paths whose suffixed outcome is always logged: the object silently changes its
+	 * public slug there.
 	 */
-	private array $registers = [];
-
-	/**
-	 * Writes the [ObjectSlug] warnings.
-	 *
-	 * @var ObjectSlugLog
-	 */
-	private ObjectSlugLog $log;
+	private const SUFFIX_ALWAYS_SAID = ['restore', 'move', 'seed'];
 
 	/**
 	 * Decides the slugs of a bulk save group.
@@ -93,31 +69,18 @@ class ObjectSlugHandler {
 	private ObjectSlugBatch $batch;
 
 	/**
-	 * Builds the candidate: a normalised client slug, or the value `objectSlugField` names.
-	 *
-	 * @var ObjectSlugSource
-	 */
-	private ObjectSlugSource $source;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper              $magicMapper    Slug queries on the magic tables.
-	 * @param MetadataHydrationHandler $hydrator       Field extraction and the slugify routine.
-	 * @param RegisterMapper           $registerMapper Resolves the register of an entity.
-	 * @param LoggerInterface          $logger         Receives the [ObjectSlug] warnings.
-	 * @param ITimeFactory|null        $timeFactory    Clock for the suffix (null = system clock).
+	 * @param ObjectSlugStore  $store  Slug holders and registers.
+	 * @param ObjectSlugSource $source The candidate, and the date-time suffix.
+	 * @param ObjectSlugLog    $log    Writes the [ObjectSlug] warnings.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly MetadataHydrationHandler $hydrator,
-		private readonly RegisterMapper $registerMapper,
-		private readonly LoggerInterface $logger,
-		private readonly ?ITimeFactory $timeFactory=null,
+		private readonly ObjectSlugStore $store,
+		private readonly ObjectSlugSource $source,
+		private readonly ObjectSlugLog $log,
 	) {
-		$this->log = new ObjectSlugLog(logger: $logger);
-		$this->source = new ObjectSlugSource(hydrator: $hydrator);
-		$this->batch = new ObjectSlugBatch(handler: $this, magicMapper: $magicMapper, log: $this->log);
+		$this->batch = new ObjectSlugBatch(handler: $this, store: $store, log: $log);
 	}//end __construct()
 
 	/**
@@ -161,7 +124,7 @@ class ObjectSlugHandler {
 			return null;
 		}
 
-		return $this->sourceCandidate(objectData: $objectData, schema: $schema);
+		return $this->source->candidate(objectData: $objectData, schema: $schema, maxLength: ObjectSlugSource::MAX_LENGTH);
 	}//end candidate()
 
 	/**
@@ -182,25 +145,12 @@ class ObjectSlugHandler {
 	}//end differsFromStored()
 
 	/**
-	 * The candidate built from the schema's `objectSlugField` (see {@see ObjectSlugSource}).
-	 *
-	 * @param array  $objectData The object's business data.
-	 * @param Schema $schema     The schema.
-	 *
-	 * @return string|null The slugified value cut to the column, or null when there is none.
-	 */
-	private function sourceCandidate(array $objectData, Schema $schema): ?string {
-		return $this->source->candidate(objectData: $objectData, schema: $schema, maxLength: self::MAX_LENGTH);
-	}//end sourceCandidate()
-
-	/**
 	 * Decide and set the slug of one entity during a single save.
 	 *
 	 * @param ObjectEntity $entity       The entity being saved (uuid already set).
 	 * @param Schema       $schema       Its schema.
 	 * @param string|null  $originalSlug The slug stored before this save (null on create).
 	 * @param string|null  $clientSlug   `@self.slug` or top-level `slug` as sent.
-	 * @param string       $path         `single`, or `seed` for a seed-data import (log context).
 	 *
 	 * @return void
 	 *
@@ -208,84 +158,114 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-freed-by-deleting-its-holder-must-go-to-the-next-object-that-saves-without-a-slug
 	 */
-	public function applyOnSave(
-		ObjectEntity $entity,
-		Schema $schema,
-		?string $originalSlug,
-		?string $clientSlug,
-		string $path='single',
-	): void {
-		// Legacy branch (D8): a schema that did not opt in keeps today's
-		// behaviour exactly: a client slug overwrites, nothing else happens.
+	public function applyOnSave(ObjectEntity $entity, Schema $schema, ?string $originalSlug, ?string $clientSlug): void {
 		if ($this->isManaged(schema: $schema) === false) {
-			if ($clientSlug !== null && $clientSlug !== '') {
-				$entity->setSlug($clientSlug);
-			}
-
+			$this->applyLegacy(entity: $entity, clientSlug: $clientSlug);
 			return;
 		}
 
-		$register = $this->resolveRegister(registerId: $entity->getRegister());
+		$scope = new ObjectSlugScope(register: $this->store->register(registerId: $entity->getRegister()), schema: $schema);
 
 		// Freeze (D2): a stored slug stays, whatever the source field or the
 		// client says now.
 		if ($originalSlug !== null && $originalSlug !== '') {
-			$this->keepFrozen(entity: $entity, schema: $schema, register: $register, originalSlug: $originalSlug, clientSlug: $clientSlug);
+			$this->keepFrozen(entity: $entity, scope: $scope, originalSlug: $originalSlug, clientSlug: $clientSlug);
 			return;
 		}
 
-		$candidate = $this->candidate(objectData: $entity->getObject() ?? [], schema: $schema, clientSlug: $clientSlug);
+		$this->applyFresh(entity: $entity, scope: $scope, clientSlug: $clientSlug, path: 'single');
+	}//end applyOnSave()
+
+	/**
+	 * Decide and set the slug of an object a seed-data import creates.
+	 *
+	 * The same rules as a save of a new object; a suffixed outcome is always logged.
+	 *
+	 * @param ObjectEntity $entity     The entity being seeded (uuid already set).
+	 * @param Schema       $schema     Its schema.
+	 * @param string|null  $clientSlug An explicit `slug` in the seed data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function applyOnSeed(ObjectEntity $entity, Schema $schema, ?string $clientSlug): void {
+		if ($this->isManaged(schema: $schema) === false) {
+			$this->applyLegacy(entity: $entity, clientSlug: $clientSlug);
+			return;
+		}
+
+		$scope = new ObjectSlugScope(register: $this->store->register(registerId: $entity->getRegister()), schema: $schema);
+		$this->applyFresh(entity: $entity, scope: $scope, clientSlug: $clientSlug, path: 'seed');
+	}//end applyOnSeed()
+
+	/**
+	 * Legacy branch (D8): a schema that did not opt in keeps today's behaviour
+	 * exactly: a client slug overwrites, nothing else happens.
+	 *
+	 * @param ObjectEntity $entity     The entity.
+	 * @param string|null  $clientSlug What the client sent.
+	 *
+	 * @return void
+	 */
+	private function applyLegacy(ObjectEntity $entity, ?string $clientSlug): void {
+		if ($clientSlug !== null && $clientSlug !== '') {
+			$entity->setSlug($clientSlug);
+		}
+	}//end applyLegacy()
+
+	/**
+	 * Give an object without a stored slug its candidate, when it is free.
+	 *
+	 * @param ObjectEntity    $entity     The entity.
+	 * @param ObjectSlugScope $scope      Its register (null when it did not resolve) and schema.
+	 * @param string|null     $clientSlug What the client sent.
+	 * @param string          $path       single | seed (log context).
+	 *
+	 * @return void
+	 */
+	private function applyFresh(ObjectEntity $entity, ObjectSlugScope $scope, ?string $clientSlug, string $path): void {
+		$candidate = $this->candidate(objectData: $entity->getObject() ?? [], schema: $scope->schema, clientSlug: $clientSlug);
 		if ($candidate === null) {
 			$entity->setSlug(null);
 			return;
 		}
 
-		if ($register === null) {
+		$uuid = (string)$entity->getUuid();
+		if ($scope->register === null) {
 			// Fail closed: without the register no uniqueness check is possible.
-			$this->log->registerUnresolved(schema: $schema, objectUuid: (string)$entity->getUuid(), slug: $candidate);
+			$this->log->registerUnresolved(schema: $scope->schema, objectUuid: $uuid, slug: $candidate);
 			$entity->setSlug(null);
 			return;
 		}
 
-		$uuid = (string)$entity->getUuid();
 		$entity->setSlug(
 			$this->decide(
-				candidate: $candidate,
-				register: $register,
-				schema: $schema,
-				objectUuid: $uuid,
-				holderOf: function (string $slug) use ($register, $schema, $uuid): ?string {
-					return ($this->magicMapper->findSlugHolders(register: $register, schema: $schema, slug: $slug, excludeUuid: $uuid)[0] ?? null);
-				},
-				path: $path
+				want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: $path),
+				holderOf: fn (string $slug): ?string => $this->store->holderOf(scope: $scope, slug: $slug, excludeUuid: $uuid)
 			)
 		);
-	}//end applyOnSave()
+	}//end applyFresh()
 
 	/**
 	 * Keep the stored slug of an object and log a different client slug.
 	 *
-	 * @param ObjectEntity  $entity       The entity being saved.
-	 * @param Schema        $schema       Its schema.
-	 * @param Register|null $register     Its register, when it resolved.
-	 * @param string        $originalSlug The stored slug.
-	 * @param string|null   $clientSlug   What the client sent.
+	 * @param ObjectEntity    $entity       The entity being saved.
+	 * @param ObjectSlugScope $scope        Its register (when it resolved) and schema.
+	 * @param string          $originalSlug The stored slug.
+	 * @param string|null     $clientSlug   What the client sent.
 	 *
 	 * @return void
 	 */
-	private function keepFrozen(ObjectEntity $entity, Schema $schema, ?Register $register, string $originalSlug, ?string $clientSlug): void {
+	private function keepFrozen(ObjectEntity $entity, ObjectSlugScope $scope, string $originalSlug, ?string $clientSlug): void {
 		$entity->setSlug($originalSlug);
 		if ($this->differsFromStored(clientSlug: $clientSlug, stored: $originalSlug) === false) {
 			return;
 		}
 
 		$this->log->ignoredClientSlug(
-			register: $register,
-			schema: $schema,
-			objectUuid: (string)$entity->getUuid(),
-			sent: $clientSlug,
-			frozen: $originalSlug,
-			path: 'single'
+			want: new ObjectSlugWant(slug: $originalSlug, scope: $scope, objectUuid: (string)$entity->getUuid(), path: 'single'),
+			sent: (string)$clientSlug
 		);
 	}//end keepFrozen()
 
@@ -307,7 +287,7 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForRestore(ObjectEntity $entity, Register $register, Schema $schema): ?string {
-		return $this->slugAtTarget(entity: $entity, register: $register, schema: $schema, path: 'restore');
+		return $this->slugAtTarget(entity: $entity, scope: new ObjectSlugScope(register: $register, schema: $schema), path: 'restore');
 	}//end slugForRestore()
 
 	/**
@@ -329,35 +309,28 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
-		return $this->slugAtTarget(entity: $entity, register: $register, schema: $schema, path: 'move');
+		return $this->slugAtTarget(entity: $entity, scope: new ObjectSlugScope(register: $register, schema: $schema), path: 'move');
 	}//end slugForMove()
 
 	/**
 	 * Re-check an object's existing slug against the live holders of a register+schema.
 	 *
-	 * @param ObjectEntity $entity   The object.
-	 * @param Register     $register The register it lands in.
-	 * @param Schema       $schema   The schema it lands in.
-	 * @param string       $path     restore | move (log context).
+	 * @param ObjectEntity    $entity The object.
+	 * @param ObjectSlugScope $scope  The register and schema it lands in.
+	 * @param string          $path   restore | move (log context).
 	 *
 	 * @return string|null The slug to store; the entity's own slug when nothing changes.
 	 */
-	private function slugAtTarget(ObjectEntity $entity, Register $register, Schema $schema, string $path): ?string {
+	private function slugAtTarget(ObjectEntity $entity, ObjectSlugScope $scope, string $path): ?string {
 		$slug = $entity->getSlug();
-		if ($slug === null || $slug === '' || $this->isManaged(schema: $schema) === false) {
+		if ($slug === null || $slug === '' || $this->isManaged(schema: $scope->schema) === false) {
 			return $slug;
 		}
 
 		$uuid = (string)$entity->getUuid();
 		return $this->decide(
-			candidate: $slug,
-			register: $register,
-			schema: $schema,
-			objectUuid: $uuid,
-			holderOf: function (string $wanted) use ($register, $schema, $uuid): ?string {
-				return ($this->magicMapper->findSlugHolders(register: $register, schema: $schema, slug: $wanted, excludeUuid: $uuid)[0] ?? null);
-			},
-			path: $path
+			want: new ObjectSlugWant(slug: $slug, scope: $scope, objectUuid: $uuid, path: $path),
+			holderOf: fn (string $wanted): ?string => $this->store->holderOf(scope: $scope, slug: $wanted, excludeUuid: $uuid)
 		);
 	}//end slugAtTarget()
 
@@ -397,20 +370,17 @@ class ObjectSlugHandler {
 			return [];
 		}
 
-		return $this->batch->decide(rows: $rows, register: $register, schema: $schema);
+		return $this->batch->decide(rows: $rows, scope: new ObjectSlugScope(register: $register, schema: $schema));
 	}//end decideBatch()
 
 	/**
 	 * Resolve the slug a candidate becomes, given who holds what.
 	 *
-	 * @param string   $candidate  The wanted slug.
-	 * @param Register $register   The register (for the log line).
-	 * @param Schema   $schema     The schema (suffix switch, log line).
-	 * @param string   $objectUuid The object being decided.
-	 * @param callable $holderOf   fn(string $slug): ?string — uuid holding $slug, other than this object.
-	 * @param string   $path       single | bulk | backfill | restore | move | seed (log context; restore, move and seed always log a suffixed outcome).
-	 * @param bool     $log        Log a collision (false for a backfill dry run).
-	 * @param string|null $suffixed The suffixed slug to try, when the caller already computed it.
+	 * @param ObjectSlugWant $want     The wanted slug, its scope, the object and the path
+	 *                                 (restore, move and seed always log a suffixed outcome).
+	 * @param callable       $holderOf fn(string $slug): ?string — uuid holding $slug, other than this object.
+	 * @param bool           $log      Log a collision (false for a backfill dry run).
+	 * @param string|null    $suffixed The suffixed slug to try, when the caller already computed it.
 	 *
 	 * @return string|null The slug to write, or null when the object stays without one.
 	 *
@@ -419,36 +389,18 @@ class ObjectSlugHandler {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the backfill dry run,
 	 *   which must decide without writing a warning.
 	 */
-	public function decide(
-		string $candidate,
-		Register $register,
-		Schema $schema,
-		string $objectUuid,
-		callable $holderOf,
-		string $path,
-		bool $log=true,
-		?string $suffixed=null,
-	): ?string {
-		$holder = $holderOf($candidate);
+	public function decide(ObjectSlugWant $want, callable $holderOf, bool $log=true, ?string $suffixed=null): ?string {
+		$holder = $holderOf($want->slug);
 		if ($holder === null) {
-			return $candidate;
+			return $want->slug;
 		}
 
-		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
 		$tried = null;
-		if ($suffixOn === true) {
-			$tried = ($suffixed ?? $this->withSuffix(slug: $candidate));
+		if ($want->scope->suffixOn() === true) {
+			$tried = ($suffixed ?? $this->withSuffix(slug: $want->slug));
 			if ($holderOf($tried) === null) {
-				if ($log === true && in_array($path, ['restore', 'move', 'seed'], true) === true) {
-					$this->log->suffixedInstead(
-						register: $register,
-						schema: $schema,
-						slug: $candidate,
-						holderUuid: $holder,
-						objectUuid: $objectUuid,
-						suffixed: $tried,
-						path: $path
-					);
+				if ($log === true && in_array($want->path, self::SUFFIX_ALWAYS_SAID, true) === true) {
+					$this->log->suffixedInstead(want: $want, holderUuid: $holder, suffixed: $tried);
 				}
 
 				return $tried;
@@ -456,15 +408,7 @@ class ObjectSlugHandler {
 		}
 
 		if ($log === true) {
-			$this->log->collision(
-				register: $register,
-				schema: $schema,
-				slug: $candidate,
-				holderUuid: $holder,
-				objectUuid: $objectUuid,
-				suffixed: $tried,
-				path: $path
-			);
+			$this->log->collision(want: $want, holderUuid: $holder, suffixed: $tried);
 		}
 
 		return null;
@@ -481,7 +425,7 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function withSuffix(string $slug, ?string $stamp=null): string {
-		return $this->suffixBase(slug: $slug) . '-' . ($stamp ?? $this->currentStamp());
+		return $this->source->withSuffix(slug: $slug, stamp: $stamp);
 	}//end withSuffix()
 
 	/**
@@ -495,7 +439,7 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function isSuffixOf(string $slug, string $candidate): bool {
-		return preg_match('/^' . preg_quote($this->suffixBase(slug: $candidate), '/') . '-\d{14}$/', $slug) === 1;
+		return $this->source->isSuffixOf(slug: $slug, candidate: $candidate);
 	}//end isSuffixOf()
 
 	/**
@@ -506,81 +450,6 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function currentStamp(): string {
-		$timestamp = ($this->timeFactory?->now()->getTimestamp() ?? time());
-		return gmdate('YmdHis', $timestamp);
+		return $this->source->currentStamp();
 	}//end currentStamp()
-
-	/**
-	 * The part of a slug a suffix is appended to, cut so the result fits the column.
-	 *
-	 * @param string $slug The slug.
-	 *
-	 * @return string The base.
-	 */
-	private function suffixBase(string $slug): string {
-		return rtrim(substr($slug, 0, self::MAX_LENGTH - self::SUFFIX_LENGTH), '-');
-	}//end suffixBase()
-
-	/**
-	 * Log a collision: the object was saved (or restored) without a slug.
-	 *
-	 * @param Register    $register   The register.
-	 * @param Schema      $schema     The schema.
-	 * @param string      $slug       The wanted slug.
-	 * @param string      $holderUuid Who holds it.
-	 * @param string      $objectUuid Who wanted it.
-	 * @param string|null $suffixed   The suffixed slug that was also taken, if tried.
-	 * @param string      $path       single | bulk | backfill | restore.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
-	 */
-	public function logCollision(
-		Register $register,
-		Schema $schema,
-		string $slug,
-		string $holderUuid,
-		string $objectUuid,
-		?string $suffixed,
-		string $path,
-	): void {
-		$this->log->collision(
-			register: $register,
-			schema: $schema,
-			slug: $slug,
-			holderUuid: $holderUuid,
-			objectUuid: $objectUuid,
-			suffixed: $suffixed,
-			path: $path
-		);
-	}//end logCollision()
-
-	/**
-	 * Resolve the register of an entity, once per request.
-	 *
-	 * @param int|string|null $registerId The entity's register id.
-	 *
-	 * @return Register|null Null when it does not resolve (the slug is then left empty).
-	 */
-	private function resolveRegister(int|string|null $registerId): ?Register {
-		if ($registerId === null || $registerId === '') {
-			return null;
-		}
-
-		$key = (string)$registerId;
-		if (array_key_exists($key, $this->registers) === false) {
-			try {
-				$this->registers[$key] = $this->registerMapper->find(id: (int)$registerId, _rbac: false, _multitenancy: false);
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[ObjectSlug] Could not resolve register ' . $key . ' for the slug check: ' . $e->getMessage(),
-					context: ['app' => 'openregister']
-				);
-				$this->registers[$key] = null;
-			}
-		}
-
-		return $this->registers[$key];
-	}//end resolveRegister()
 }//end class

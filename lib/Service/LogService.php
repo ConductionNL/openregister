@@ -28,7 +28,9 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -52,6 +54,9 @@ use SimpleXMLElement;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The object history resolves an object within its register and
+ *   schema (#4037), so those entities and the lookup's two outcomes are part of this service's vocabulary.
  */
 class LogService {
 
@@ -263,33 +268,45 @@ class LogService {
 		}
 
 		try {
-			return $this->unifiedObjectMapper->findInRegisterSchemaTable(
-				identifier: $id,
-				register: $registerEntity,
-				schema: $schemaEntity,
-				_rbac: false,
-				_multitenancy: false,
-				includeDeleted: true
-			);
+			return $this->inTable(id: $id, register: $registerEntity, schema: $schemaEntity, includeDeleted: true);
 		} catch (MultipleObjectsReturnedException $e) {
 			// A slug freed by a delete goes to the next object that saves without
 			// one, so a deleted and a live object can share it. The single live
 			// holder is the one meant; only when the live rows alone are still
 			// ambiguous, or none is live, is the lookup refused.
 			try {
-				return $this->unifiedObjectMapper->findInRegisterSchemaTable(
-					identifier: $id,
-					register: $registerEntity,
-					schema: $schemaEntity,
-					_rbac: false,
-					_multitenancy: false,
-					includeDeleted: false
-				);
+				return $this->inTable(id: $id, register: $registerEntity, schema: $schemaEntity, includeDeleted: false);
 			} catch (DoesNotExistException $none) {
 				throw $e;
 			}
-		}//end try
+		}
 	}//end findObjectInScope()
+
+	/**
+	 * Look an object up in its register+schema table, without access filters.
+	 *
+	 * @param string   $id             Object id, uuid or slug.
+	 * @param Register $register       The register.
+	 * @param Schema   $schema         The schema.
+	 * @param bool     $includeDeleted Whether soft-deleted objects count.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DoesNotExistException            When no object matches.
+	 * @throws MultipleObjectsReturnedException When the identifier is ambiguous.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The one difference between the two lookups findObjectInScope() makes.
+	 */
+	private function inTable(string $id, Register $register, Schema $schema, bool $includeDeleted): ObjectEntity {
+		return $this->unifiedObjectMapper->findInRegisterSchemaTable(
+			identifier: $id,
+			register: $register,
+			schema: $schema,
+			_rbac: false,
+			_multitenancy: false,
+			includeDeleted: $includeDeleted
+		);
+	}//end inTable()
 
 	/**
 	 * Get all audit trail logs with optional filtering

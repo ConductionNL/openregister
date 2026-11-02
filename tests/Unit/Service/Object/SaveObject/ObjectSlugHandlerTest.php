@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -36,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * Tests for the slug decision: candidate, freeze, uniqueness, suffix, batch.
  */
 class ObjectSlugHandlerTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
 
 	private const UUID_A = '00000000-0000-0000-0000-00000000000a';
 	private const UUID_B = '00000000-0000-0000-0000-00000000000b';
@@ -80,7 +84,7 @@ class ObjectSlugHandlerTest extends TestCase {
 			cacheHandler: $this->createMock(CacheHandler::class)
 		);
 
-		$this->handler = new ObjectSlugHandler(
+		$this->handler = $this->buildSlugHandler(
 			magicMapper: $this->magicMapper,
 			hydrator: $hydrator,
 			registerMapper: $registerMapper,
@@ -592,12 +596,13 @@ class ObjectSlugHandlerTest extends TestCase {
 
 	public function testDecideDoesNotLogWhenAskedNotTo(): void {
 		$slug = $this->handler->decide(
-			candidate: 'hello-world',
-			register: $this->register,
-			schema: $this->schema(['objectSlugField' => 'title']),
-			objectUuid: self::UUID_B,
+			want: new ObjectSlugWant(
+				slug: 'hello-world',
+				scope: new ObjectSlugScope(register: $this->register, schema: $this->schema(['objectSlugField' => 'title'])),
+				objectUuid: self::UUID_B,
+				path: 'backfill'
+			),
 			holderOf: static fn (string $s): ?string => self::UUID_A,
-			path: 'backfill',
 			log: false
 		);
 

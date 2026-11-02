@@ -196,12 +196,11 @@ final class MoveObjectTest extends TestCase {
 	public function testTheSlugIsDecidedForTheTargetBeforeTheWrite(): void {
 		$object = $this->object();
 		$object->setSlug('hello-world');
-		$slugs = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class);
-		$slugs->expects(self::once())->method('slugForMove')
-			->with($object, self::callback(fn (Register $r) => (int)$r->getId() === 2), self::callback(fn (Schema $s) => (int)$s->getId() === 20))
-			->willReturn(null);
 		$seen = 'unset';
 		$objects = $this->createMock(MagicMapper::class);
+		$objects->expects(self::once())->method('slugForMove')
+			->with($object, self::callback(fn (Register $r) => (int)$r->getId() === 2), self::callback(fn (Schema $s) => (int)$s->getId() === 20))
+			->willReturn(null);
 		$objects->method('updateObjectEntity')->willReturnCallback(
 			function (ObjectEntity $entity) use (&$seen): ObjectEntity {
 				$seen = $entity->getSlug();
@@ -209,7 +208,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		);
 
-		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger(), $slugs))->move(
+		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger()))->move(
 			object: $object,
 			sourceRegister: $this->register(1),
 			sourceSchema: $this->schema(10),

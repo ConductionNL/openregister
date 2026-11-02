@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillWriter;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillLedger;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -71,8 +72,8 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->db = $this->createMock(IDBConnection::class);
 		$auditTrail = $this->createMock(AuditTrailMapper::class);
 		$auditTrail->method('createSlugBackfillEntry')->willReturnCallback(
-			function (string $mode, array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
-				$this->audits[] = ['mode' => $mode, 'changes' => $changes, 'summary' => $summary];
+			function (array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
+				$this->audits[] = ['changes' => $changes, 'summary' => $summary];
 				return new AuditTrail();
 			}
 		);
@@ -91,9 +92,8 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 
 		$this->writer = new ObjectSlugBackfillWriter(
 			magicMapper: $this->magicMapper,
-			cacheHandler: $this->cacheHandler,
 			db: $this->db,
-			auditTrail: $auditTrail,
+			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $auditTrail, logger: $this->logger),
 			logger: $this->logger
 		);
 	}//end setUp()

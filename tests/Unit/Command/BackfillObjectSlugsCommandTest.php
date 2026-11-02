@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use OCA\OpenRegister\Command\BackfillObjectSlugsCommand;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -22,6 +23,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillLedger;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillWriter;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\IDBConnection;
@@ -35,6 +38,8 @@ use Symfony\Component\Console\Tester\CommandTester;
  * Tests for the console surface of `openregister:backfill-slugs`.
  */
 class BackfillObjectSlugsCommandTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
 
 	private const UUID_A = '00000000-0000-0000-0000-00000000000a';
 
@@ -76,7 +81,7 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$service = new ObjectSlugBackfillService(
 			magicMapper: $this->magicMapper,
-			slugHandler: new ObjectSlugHandler(
+			slugHandler: $this->buildSlugHandler(
 				magicMapper: $this->magicMapper,
 				hydrator: new MetadataHydrationHandler(
 					logger: $this->createMock(LoggerInterface::class),
@@ -85,9 +90,12 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 				registerMapper: $this->registerMapper,
 				logger: $logger
 			),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			db: $this->createMock(IDBConnection::class),
-			auditTrail: $this->auditTrail,
+			writer: new ObjectSlugBackfillWriter(
+				magicMapper: $this->magicMapper,
+				db: $this->createMock(IDBConnection::class),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditTrail, logger: $logger),
+				logger: $logger
+			),
 			logger: $logger
 		);
 

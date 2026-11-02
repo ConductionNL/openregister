@@ -67,7 +67,7 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 		// APPENDED, not inserted. A named argument needs the parameter to exist;
 		// a positional caller needs every earlier slot to stay where it was. So
 		// the flag keeps the slot it was appended at, and anything appended
-		// after it (executeUpsertChunk's freezeSlug, #4037) must be optional,
+		// after it must be optional,
 		// so a positional caller that stops at the flag still works.
 		$this->assertSame(
 			$position,

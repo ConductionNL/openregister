@@ -233,16 +233,6 @@ final class ConfigurationServiceRegistrar {
 			$logger->warning('[Application] SchemaImportInstaller unavailable for ImportHandler: ' . $e->getMessage());
 		}
 
-		// Decides the slug of a seed object, so a seed cannot take a slug another
-		// live object holds (#4037). Resolved like the guard: without it a seed
-		// slug is set as before.
-		$slugHandler = null;
-		try {
-			$slugHandler = $container->get(\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class);
-		} catch (\Throwable $e) {
-			$logger->warning('[Application] ObjectSlugHandler unavailable for ImportHandler: ' . $e->getMessage());
-		}
-
 		$importHandler = new ConfigurationImportHandler(
 			schemaMapper: $container->get(SchemaMapper::class),
 			registerMapper: $container->get(RegisterMapper::class),
@@ -257,8 +247,7 @@ final class ConfigurationServiceRegistrar {
 			objectService: $container->get(ObjectService::class),
 			shippedGuard: $shippedGuard,
 			importJobRecorder: $importJobRecorder,
-			schemaInstaller: $schemaInstaller,
-			slugHandler: $slugHandler
+			schemaInstaller: $schemaInstaller
 		);
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed
@@ -321,6 +310,12 @@ final class ConfigurationServiceRegistrar {
 			'setSelectionListSeeder' => [
 				\OCA\OpenRegister\Service\Archival\SelectionListSeeder::class,
 				'SelectionListSeeder',
+			],
+			// Decides the slug of a seed object, so a seed cannot take a slug another
+			// live object holds (#4037); without it a seed slug is set as before.
+			'setSlugHandler' => [
+				\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class,
+				'ObjectSlugHandler',
 			],
 		];
 

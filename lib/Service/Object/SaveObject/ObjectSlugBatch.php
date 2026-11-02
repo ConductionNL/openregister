@@ -25,10 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-
 /**
  * The bulk side of the slug rules: two queries per group, then each row in batch order.
  *
@@ -39,13 +35,13 @@ class ObjectSlugBatch {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectSlugHandler $handler     The single-save rules this batch reuses.
-	 * @param MagicMapper       $magicMapper Slug state queries.
-	 * @param ObjectSlugLog     $log         Receives the warnings.
+	 * @param ObjectSlugHandler $handler The single-save rules this batch reuses.
+	 * @param ObjectSlugStore   $store   Slug state queries.
+	 * @param ObjectSlugLog     $log     Receives the warnings.
 	 */
 	public function __construct(
 		private readonly ObjectSlugHandler $handler,
-		private readonly MagicMapper $magicMapper,
+		private readonly ObjectSlugStore $store,
 		private readonly ObjectSlugLog $log,
 	) {
 	}//end __construct()
@@ -53,49 +49,47 @@ class ObjectSlugBatch {
 	/**
 	 * Decide the slugs of a group, in batch order.
 	 *
-	 * @param array<int|string, array{uuid: ?string, clientSlug: ?string, data: array}> $rows     The group's rows.
-	 * @param Register                                                                  $register The register.
-	 * @param Schema                                                                    $schema   The schema (managed).
+	 * @param array<int|string, array{uuid: ?string, clientSlug: ?string, data: array}> $rows  The group's rows.
+	 * @param ObjectSlugScope                                                           $scope Register and schema (managed).
 	 *
 	 * @return array<int|string, string|null> Row index => slug.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
-	public function decide(array $rows, Register $register, Schema $schema): array {
-		$wanted = $this->wanted(rows: $rows, schema: $schema);
+	public function decide(array $rows, ObjectSlugScope $scope): array {
+		$wanted = $this->wanted(rows: $rows, scope: $scope);
 
 		// Suffixed variants go into the same query: the single path checks a
 		// suffixed slug against the database too (D5, BC6).
-		$state = $this->magicMapper->findSlugState(
-			register: $register,
-			schema: $schema,
+		$found = $this->store->state(
+			scope: $scope,
 			slugs: array_values(array_unique(array_merge(array_filter($wanted['candidates']), array_values($wanted['suffixed'])))),
 			uuids: array_values($wanted['uuids'])
 		);
 		// Keyed case-folded: on a case-insensitive collation the query returns
 		// `hello` for the candidate `Hello`, and the single path (which compares in
 		// SQL) sees that as taken too.
-		$holders = [];
-		foreach ($state['holders'] as $slug => $holderUuids) {
-			$holders[$this->fold(slug: (string)$slug)] = $holderUuids;
+		$state = ['holders' => [], 'stored' => $found['stored']];
+		foreach ($found['holders'] as $slug => $holderUuids) {
+			$state['holders'][$this->fold(slug: (string)$slug)] = $holderUuids;
 		}
 
-		$stored = $state['stored'];
 		$decisions = [];
 		foreach ($rows as $index => $row) {
+			$uuid = ($wanted['uuids'][$index] ?? null);
 			$decisions[$index] = $this->decideRow(
-				row: $row,
-				uuid: ($wanted['uuids'][$index] ?? null),
-				candidate: ($wanted['candidates'][$index] ?? null),
-				suffixed: ($wanted['suffixed'][$index] ?? null),
-				register: $register,
-				schema: $schema,
-				holders: $holders,
-				stored: $stored
+				row: [
+					'uuid' => $uuid,
+					'clientSlug' => $row['clientSlug'],
+					'candidate' => ($wanted['candidates'][$index] ?? null),
+					'suffixed' => ($wanted['suffixed'][$index] ?? null),
+				],
+				scope: $scope,
+				state: $state
 			);
-			if ($decisions[$index] !== null && ($wanted['uuids'][$index] ?? null) === null) {
+			if ($decisions[$index] !== null && $uuid === null) {
 				// A row without a uuid still takes the slug for the rest of the batch.
-				$holders[$this->fold(slug: $decisions[$index])][] = ('batch-' . $index);
+				$state['holders'][$this->fold(slug: $decisions[$index])][] = ('batch-' . $index);
 			}
 		}
 
@@ -105,13 +99,13 @@ class ObjectSlugBatch {
 	/**
 	 * Candidates, suffixed variants and uuids of every row.
 	 *
-	 * @param array<int|string, array{uuid: ?string, clientSlug: ?string, data: array}> $rows   The rows.
-	 * @param Schema                                                                    $schema The schema.
+	 * @param array<int|string, array{uuid: ?string, clientSlug: ?string, data: array}> $rows  The rows.
+	 * @param ObjectSlugScope                                                           $scope Register and schema.
 	 *
 	 * @return array{candidates: array<int|string, string|null>, suffixed: array<int|string, string>, uuids: array<int|string, string>}
 	 */
-	private function wanted(array $rows, Schema $schema): array {
-		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
+	private function wanted(array $rows, ObjectSlugScope $scope): array {
+		$suffixOn = $scope->suffixOn();
 		// One stamp for the whole batch, so the suffixed slugs queried are
 		// exactly the ones decide() would write.
 		$stamp = $this->handler->currentStamp();
@@ -121,7 +115,7 @@ class ObjectSlugBatch {
 		foreach ($rows as $index => $row) {
 			$candidates[$index] = $this->handler->candidate(
 				objectData: $row['data'],
-				schema: $schema,
+				schema: $scope->schema,
 				clientSlug: $row['clientSlug']
 			);
 			if ($suffixOn === true && $candidates[$index] !== null) {
@@ -139,85 +133,75 @@ class ObjectSlugBatch {
 	/**
 	 * Decide one row against the state the earlier rows left.
 	 *
-	 * @param array{uuid: ?string, clientSlug: ?string, data: array} $row       The row.
-	 * @param string|null                                           $uuid      Its uuid, when it has one.
-	 * @param string|null                                           $candidate Its wanted slug.
-	 * @param string|null                                           $suffixed  Its suffixed variant, when the suffix is on.
-	 * @param Register                                              $register  The register.
-	 * @param Schema                                                $schema    The schema.
-	 * @param array<string, list<string>>                           $holders   Case-folded slug => holders, extended by this decision.
-	 * @param array<string, string|null>                            $stored    uuid => stored slug, extended by this decision.
+	 * @param array{uuid: ?string, clientSlug: ?string, candidate: ?string, suffixed: ?string} $row   The row: its uuid
+	 *        (when it has one), what the client sent, its wanted slug and the suffixed variant (when the suffix is on).
+	 * @param ObjectSlugScope                                                                 $scope Register and schema.
+	 * @param array{holders: array<string, list<string>>, stored: array<string, string|null>}  $state Case-folded slug =>
+	 *        holders and uuid => stored slug, both extended by this decision.
 	 *
 	 * @return string|null The slug to write, or null.
 	 */
-	private function decideRow(
-		array $row,
-		?string $uuid,
-		?string $candidate,
-		?string $suffixed,
-		Register $register,
-		Schema $schema,
-		array &$holders,
-		array &$stored,
-	): ?string {
-		$frozen = $this->frozenSlug(row: $row, uuid: $uuid, register: $register, schema: $schema, stored: $stored);
-		if ($frozen !== null || $candidate === null) {
+	private function decideRow(array $row, ObjectSlugScope $scope, array &$state): ?string {
+		$uuid = $row['uuid'];
+		$frozen = $this->frozenSlug(row: $row, scope: $scope, stored: $state['stored']);
+		if ($frozen !== null || $row['candidate'] === null) {
 			return $frozen;
 		}
 
 		$decided = $this->handler->decide(
-			candidate: $candidate,
-			register: $register,
-			schema: $schema,
-			objectUuid: (string)($uuid ?? '?'),
-			holderOf: function (string $slug) use (&$holders, $uuid): ?string {
-				foreach ($holders[$this->fold(slug: $slug)] ?? [] as $holder) {
-					if ($holder !== $uuid) {
-						return $holder;
-					}
-				}
-
-				return null;
-			},
-			path: 'bulk',
-			suffixed: $suffixed
+			want: new ObjectSlugWant(slug: $row['candidate'], scope: $scope, objectUuid: (string)($uuid ?? '?'), path: 'bulk'),
+			holderOf: fn (string $slug): ?string => $this->otherHolder(holders: $state['holders'], slug: $slug, uuid: $uuid),
+			suffixed: $row['suffixed']
 		);
 		if ($decided !== null && $uuid !== null) {
 			// Later rows of this batch see the slug as taken, and a later row
 			// for the same object finds it frozen, as consecutive single saves would.
-			$holders[$this->fold(slug: $decided)][] = $uuid;
-			$stored[$uuid] = $decided;
+			$state['holders'][$this->fold(slug: $decided)][] = $uuid;
+			$state['stored'][$uuid] = $decided;
 		}
 
 		return $decided;
 	}//end decideRow()
 
 	/**
+	 * The first holder of a slug other than the object asking.
+	 *
+	 * @param array<string, list<string>> $holders Case-folded slug => holders.
+	 * @param string                      $slug    The slug.
+	 * @param string|null                 $uuid    The object asking.
+	 *
+	 * @return string|null The holder, or null when the slug is free for this object.
+	 */
+	private function otherHolder(array $holders, string $slug, ?string $uuid): ?string {
+		foreach ($holders[$this->fold(slug: $slug)] ?? [] as $holder) {
+			if ($holder !== $uuid) {
+				return $holder;
+			}
+		}
+
+		return null;
+	}//end otherHolder()
+
+	/**
 	 * The slug a row's object already holds, logging a different client slug.
 	 *
-	 * @param array{uuid: ?string, clientSlug: ?string, data: array} $row      The row.
-	 * @param string|null                                           $uuid     Its uuid.
-	 * @param Register                                              $register The register.
-	 * @param Schema                                                $schema   The schema.
-	 * @param array<string, string|null>                            $stored   uuid => stored slug.
+	 * @param array{uuid: ?string, clientSlug: ?string} $row    The row.
+	 * @param ObjectSlugScope                          $scope  Register and schema.
+	 * @param array<string, string|null>               $stored uuid => stored slug.
 	 *
 	 * @return string|null The frozen slug, or null when the object has none.
 	 */
-	private function frozenSlug(array $row, ?string $uuid, Register $register, Schema $schema, array $stored): ?string {
+	private function frozenSlug(array $row, ObjectSlugScope $scope, array $stored): ?string {
+		$uuid = $row['uuid'];
 		if ($uuid === null || ($stored[$uuid] ?? null) === null) {
 			return null;
 		}
 
 		$storedSlug = $stored[$uuid];
-		$clientSlug = $row['clientSlug'];
-		if ($this->handler->differsFromStored(clientSlug: $clientSlug, stored: $storedSlug) === true) {
+		if ($this->handler->differsFromStored(clientSlug: $row['clientSlug'], stored: $storedSlug) === true) {
 			$this->log->ignoredClientSlug(
-				register: $register,
-				schema: $schema,
-				objectUuid: $uuid,
-				sent: $clientSlug,
-				frozen: $storedSlug,
-				path: 'bulk'
+				want: new ObjectSlugWant(slug: $storedSlug, scope: $scope, objectUuid: $uuid, path: 'bulk'),
+				sent: (string)$row['clientSlug']
 			);
 		}
 

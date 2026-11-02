@@ -22,18 +22,14 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
-use ReflectionMethod;
 
 /**
- * Tests for SaveObjects::applyObjectSlugs().
+ * Tests for BulkObjectSlugs::apply().
  */
 class SaveObjectsObjectSlugTest extends TestCase {
 
@@ -45,7 +41,7 @@ class SaveObjectsObjectSlugTest extends TestCase {
 	/** @var RegisterMapper&MockObject */
 	private RegisterMapper $registerMapper;
 
-	private SaveObjects $saveObjects;
+	private BulkObjectSlugs $bulkSlugs;
 
 	/** @var list<array{rows: array, register: Register}> decideBatch() calls. */
 	private array $calls = [];
@@ -61,30 +57,21 @@ class SaveObjectsObjectSlugTest extends TestCase {
 				return array_map(static fn (): string => 'decided', $rows);
 			}
 		);
-		$saveHandler = $this->createMock(SaveObject::class);
-		$saveHandler->method('getSlugHandler')->willReturn($this->slugHandler);
-
 		$schema = new Schema();
 		$schema->setId(12);
-		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->method('find')->willReturn($schema);
 
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
-		$this->saveObjects = (new ReflectionClass(SaveObjects::class))->newInstanceWithoutConstructor();
-		foreach ([
-			'saveHandler' => $saveHandler,
-			'schemaMapper' => $schemaMapper,
-			'registerMapper' => $this->registerMapper,
-			'logger' => $this->createMock(LoggerInterface::class),
-		] as $property => $value) {
-			$reflection = new \ReflectionProperty(SaveObjects::class, $property);
-			$reflection->setValue($this->saveObjects, $value);
-		}
+		$this->bulkSlugs = new BulkObjectSlugs(
+			slugHandler: $this->slugHandler,
+			registerMapper: $this->registerMapper,
+			logger: $this->createMock(LoggerInterface::class),
+			schemaOf: static fn (string $schemaId): Schema => $schema
+		);
 	}//end setUp()
 
 	/**
-	 * Run applyObjectSlugs() on rows with a caller register and schema.
+	 * Run the bulk slug pass on rows with a caller register and schema.
 	 *
 	 * @param array      $rows     The prepared rows.
 	 * @param mixed      $register The caller register.
@@ -93,9 +80,7 @@ class SaveObjectsObjectSlugTest extends TestCase {
 	 * @return array The rows after the pass.
 	 */
 	private function apply(array $rows, mixed $register, mixed $schema): array {
-		$method = new ReflectionMethod(SaveObjects::class, 'applyObjectSlugs');
-		$method->invokeArgs($this->saveObjects, [&$rows, $register, $schema]);
-		return $rows;
+		return $this->bulkSlugs->apply(objects: $rows, register: $register, schema: $schema);
 	}//end apply()
 
 	public function testTheFastPathDecidesAgainstTheCallersRegisterNotTheRowsAdvisoryOne(): void {

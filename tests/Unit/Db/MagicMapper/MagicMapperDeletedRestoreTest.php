@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -56,6 +57,8 @@ use Psr\Log\LoggerInterface;
  *    against an unknown table.
  */
 class MagicMapperDeletedRestoreTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
 
 	private IDBConnection&MockObject $db;
 
@@ -443,7 +446,7 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 			->setConstructorArgs($this->constructorArgs())
 			->onlyMethods(['findAcrossAllSources', 'getTableNameForRegisterSchema', 'findSlugHolders'])
 			->getMock();
-		$this->slugHandler = new ObjectSlugHandler(
+		$this->slugHandler = $this->buildSlugHandler(
 			magicMapper: $mapper,
 			hydrator: new MetadataHydrationHandler(
 				logger: $this->createMock(LoggerInterface::class),

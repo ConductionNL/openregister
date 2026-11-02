@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use Closure;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
@@ -61,6 +62,8 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
 
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
 
@@ -257,7 +260,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		$routing->method('findSlugHolders')->willReturnCallback(
 			fn ($register, $schema, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
 		);
-		return new ObjectSlugHandler(
+		return $this->buildSlugHandler(
 			magicMapper: $routing,
 			hydrator: new MetadataHydrationHandler(
 				logger: $this->createMock(LoggerInterface::class),
@@ -352,10 +355,10 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
 			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->createMock(ObjectService::class),
-			slugHandler:         $this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders)
+			objectService:       $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);
+		$handler->setSlugHandler($this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders));
 
 		$ref = new ReflectionClass($handler);
 		$map = $ref->getProperty('schemasMap');

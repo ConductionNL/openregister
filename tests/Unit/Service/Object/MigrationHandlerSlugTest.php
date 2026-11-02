@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -81,8 +80,7 @@ class MigrationHandlerSlugTest extends TestCase {
 		);
 		$manip = $this->createMock(DataManipulationHandler::class);
 		$manip->method('mapObjectProperties')->willReturn(['title' => 'Hello World']);
-		$slugs = $this->createMock(ObjectSlugHandler::class);
-		$slugs->expects($this->once())->method('slugForMove')
+		$mapper->expects($this->once())->method('slugForMove')
 			->with($object, $targetRegister, $targetSchema)
 			->willReturn('hello-world-20261030120000');
 
@@ -93,8 +91,7 @@ class MigrationHandlerSlugTest extends TestCase {
 			$this->createMock(SaveObject::class),
 			$utility,
 			$manip,
-			new NullLogger(),
-			$slugs
+			new NullLogger()
 		);
 
 		$report = $handler->migrateObjects(1, 10, 2, 20, ['11111111-1111-1111-1111-111111111111'], ['title' => 'title']);

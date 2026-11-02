@@ -334,18 +334,38 @@ class FilesController extends Controller {
 			return $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
 		}
 
-		// Legacy wiring without the guard: the object read check alone.
+		return $this->legacyObjectAccess(register: $register, schema: $schema, id: $id, change: $change);
+	}//end ensureObjectAccess()
+
+	/**
+	 * Legacy wiring without the access guard: the object read check alone.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema   Schema slug or id.
+	 * @param string $id       Object id, uuid or slug.
+	 * @param bool   $change   Whether the files are about to change (frozen and archived objects refuse).
+	 *
+	 * @return ObjectEntity|null The object, resolved within the register and schema.
+	 *
+	 * @throws ObjectStateWriteException When $change is true and the object is frozen or archived (REQ-OAS-007).
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `change` is ensureObjectAccess()'s own flag, passed on.
+	 */
+	private function legacyObjectAccess(string $register, string $schema, string $id, bool $change): ?ObjectEntity {
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true));
-		if ($change === true && $object instanceof ObjectEntity) {
+		if ($object instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		if ($change === true) {
 			$this->fileWriteGuard?->assertWritable(object: $object);
 		}
 
-		if ($object instanceof ObjectEntity) {
-			return $object;
-		}
-
-		return null;
-	}//end ensureObjectAccess()
+		return $object;
+	}//end legacyObjectAccess()
 
 	/**
 	 * Refuse a restricted file, as if it were not there, to a caller the restriction does not admit.

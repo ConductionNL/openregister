@@ -81,6 +81,9 @@ class MagicBulkHandler {
 	 */
 	private array $tableColumnsCache = [];
 
+	/** @var array<string, bool> Tables whose schema has managed slugs (#4037): the upsert keeps a stored `_slug`. */
+	private array $managedSlugTables = [];
+
 	/**
 	 * Decides the version an inserted row starts on.
 	 *
@@ -495,6 +498,7 @@ class MagicBulkHandler {
 		// Determine optimal chunk size.
 		$chunkSize = $this->calculateOptimalChunkSize(objects: $preparedObjects);
 		$chunks = array_chunk($preparedObjects, $chunkSize);
+		$this->managedSlugTables[$tableName] = MagicBulkUpsertSql::hasManagedSlugs(schema: $schema);
 
 		$allResults = [];
 
@@ -509,8 +513,7 @@ class MagicBulkHandler {
 					chunk: $chunk,
 					tableName: $tableName,
 					chunkNumber: ($chunkIndex + 1),
-					needsPreUpdateState: $needsPreUpdateState,
-					freezeSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema)
+					needsPreUpdateState: $needsPreUpdateState
 				);
 
 				$this->db->commit();
@@ -548,8 +551,6 @@ class MagicBulkHandler {
 	 * @param bool $needsPreUpdateState Whether anything downstream will read the
 	 *                                  pre-update rows. False narrows the fetch
 	 *                                  to the uuid. See the SuppressWarnings note.
-	 * @param bool $freezeSlug Whether the schema has managed slugs, so the upsert
-	 *                         keeps a stored `_slug` instead of overwriting it.
 	 *
 	 * @return array Array of complete objects with object_status
 	 *
@@ -573,7 +574,6 @@ class MagicBulkHandler {
 		string $tableName,
 		int $chunkNumber,
 		bool $needsPreUpdateState = true,
-		bool $freezeSlug = false,
 	): array {
 		if ($chunk === []) {
 			return [];
@@ -820,7 +820,7 @@ class MagicBulkHandler {
 				column: $column,
 				isPostgres: $isPostgres,
 				fullTableName: $fullTableName,
-				freezeSlug: $freezeSlug
+				freezeSlug: ($this->managedSlugTables[$tableName] ?? false)
 			);
 		}//end foreach
 
