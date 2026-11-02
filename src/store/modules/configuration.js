@@ -1,17 +1,20 @@
 import { defineStore } from 'pinia'
 import { ConfigurationEntity } from '../../entities/index.js'
-import { objectAnswer } from '../../services/listPage.js'
-import { listStateActions } from './listState.js'
+import {
+	getJson,
+	importAnswer,
+	objectAnswer,
+	okJson,
+	sendJson,
+	withoutReadOnly,
+} from '../../services/listPage.js'
+import { listStateActions, listStateFields } from './listState.js'
 
 export const useConfigurationStore = defineStore('configuration', {
 	state: () => ({
 		configurationItem: false,
 		configurationList: [],
-		filters: [], // List of query
-		pagination: {
-			page: 1,
-			limit: 20,
-		},
+		...listStateFields(),
 	}),
 	actions: {
 		/**
@@ -65,10 +68,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		async getConfiguration(id) {
 			const endpoint = `/index.php/apps/openregister/api/configurations/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				this.setConfigurationItem(data)
 				return data
 			} catch (err) {
@@ -139,15 +139,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanConfigurationForSave(configurationItem) {
-			const cleaned = { ...configurationItem }
-
-			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.id
-			delete cleaned.uuid
-			delete cleaned.created
-			delete cleaned.updated
-
-			return cleaned
+			return withoutReadOnly(configurationItem)
 		},
 		/**
 		 * @param configuration
@@ -193,19 +185,7 @@ export const useConfigurationStore = defineStore('configuration', {
 					body: formData,
 				})
 
-				const responseData = await response.json()
-
-				if (!response.ok) {
-					// If we have an error message in the response, use that
-					if (responseData && responseData.error) {
-						throw new Error(responseData.error)
-					}
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
+				const responseData = await importAnswer(response)
 
 				await this.refreshConfigurationList()
 
@@ -361,11 +341,7 @@ export const useConfigurationStore = defineStore('configuration', {
 					method: 'GET',
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
+				const data = await okJson(response)
 				return data[request.path] || []
 			} catch (error) {
 				console.error(request.logText, error)
@@ -384,12 +360,9 @@ export const useConfigurationStore = defineStore('configuration', {
 			const endpoint = `/index.php/apps/openregister/api/configurations/import/${request.kind}`
 
 			try {
-				const response = await fetch(endpoint, {
+				const response = await sendJson(endpoint, {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(request.params),
+					body: request.params,
 				})
 
 				if (!response.ok) {
