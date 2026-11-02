@@ -1,0 +1,2341 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, blankJson, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, brokenJson, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, form, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, json, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noRegister, otherTab, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, blankJson, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, brokenJson, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, form, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, json, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves noSchema, otherTab, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Register and schema are required",
+    "isSaving": false,
+    "success": null,
+  },
+  "timer": [
+    null,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, blankJson, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "JSON data cannot be empty",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering empty, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering empty, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering refused, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering refused, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering saved, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering saved, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering silent, refresh fails false 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, brokenJson, answering silent, refresh fails true 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "Invalid JSON format: <parse error>",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering empty, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+    [
+      "refetchSearchCollection",
+    ],
+  ],
+  "state": {
+    "error": "null",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering empty, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering refused, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Validation failed",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering refused, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Validation failed",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering saved, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+    [
+      "setObjectItem",
+      {
+        "id": "new",
+        "title": "Saved",
+      },
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+    [
+      "refetchSearchCollection",
+    ],
+    [
+      "initializeData",
+      true,
+    ],
+  ],
+  "state": {
+    "error": "null",
+    "isSaving": false,
+    "success": true,
+  },
+  "timer": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering saved, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+    [
+      "setObjectItem",
+      {
+        "id": "new",
+        "title": "Saved",
+      },
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering silent, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Failed to save object",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, form, answering silent, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Form",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Failed to save object",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering empty, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+    [
+      "refetchSearchCollection",
+    ],
+  ],
+  "state": {
+    "error": "null",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering empty, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering refused, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Validation failed",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering refused, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Validation failed",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering saved, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+    [
+      "setObjectItem",
+      {
+        "id": "new",
+        "title": "Saved",
+      },
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+    [
+      "refetchSearchCollection",
+    ],
+    [
+      "initializeData",
+      true,
+    ],
+  ],
+  "state": {
+    "error": "null",
+    "isSaving": false,
+    "success": true,
+  },
+  "timer": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering saved, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+    [
+      "setObjectItem",
+      {
+        "id": "new",
+        "title": "Saved",
+      },
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering silent, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Failed to save object",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, json, answering silent, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Json",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Failed to save object",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering empty, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+    [
+      "refetchSearchCollection",
+    ],
+  ],
+  "state": {
+    "error": "null",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering empty, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering refused, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Validation failed",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering refused, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Validation failed",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering saved, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+    [
+      "setObjectItem",
+      {
+        "id": "new",
+        "title": "Saved",
+      },
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+    [
+      "refetchSearchCollection",
+    ],
+    [
+      "initializeData",
+      true,
+    ],
+  ],
+  "state": {
+    "error": "null",
+    "isSaving": false,
+    "success": true,
+  },
+  "timer": [
+    true,
+    null,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering saved, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+    [
+      "setObjectItem",
+      {
+        "id": "new",
+        "title": "Saved",
+      },
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 9,
+      },
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering silent, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Failed to save object",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
+
+exports[`ViewObject.saveObject saves scoped, otherTab, answering silent, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "registerObjectType",
+      "3-9",
+      9,
+      3,
+    ],
+    [
+      "saveObject",
+      "3-9",
+      {
+        "title": "Other",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "error": "Failed to save object",
+    "isSaving": false,
+    "success": false,
+  },
+  "timer": [
+    false,
+    false,
+  ],
+}
+`;
