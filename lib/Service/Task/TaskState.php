@@ -225,7 +225,7 @@ final class TaskState {
 			}
 		}
 
-		return array_values(array_unique($set));
+		return $set;
 	}//end approvingSet()
 
 	/**
