@@ -196,6 +196,8 @@ class SaveObjects {
 	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
 	 * @param PropertyRbacHandler|null $propertyRbac Applies property authorization per row, as SaveObject does.
 	 *                                               Null only in legacy fixtures.
+	 * @param BulkWriteEvents|null $bulkWriteEvents Runs the save events per row where they are switched on.
+	 *                                              Null only in legacy fixtures.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -214,6 +216,7 @@ class SaveObjects {
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		private readonly ?DecisionTableBulkGuard $decisionTables = null,
 		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly ?BulkWriteEvents $bulkWriteEvents = null,
 	) {
 
 	}//end __construct()
@@ -793,10 +796,11 @@ class SaveObjects {
 			return [$row, $this->schemalessRowRefusal(run: $run)];
 		}
 
+		$run->rowRegister = $this->resolveSafeguardRowRegister(object: $row, defaultRegister: $run->defaultRegister);
 		[$run->rowUuid, $run->rowAction, $run->rowExisting] = $this->resolveSafeguardActionForRow(
 			object: $row,
 			rowSchema: $run->rowSchema,
-			rowRegister: $this->resolveSafeguardRowRegister(object: $row, defaultRegister: $run->defaultRegister),
+			rowRegister: $run->rowRegister,
 			existingByUuid: $run->existingByUuid
 		);
 
@@ -831,7 +835,8 @@ class SaveObjects {
 
 	/**
 	 * A row with a resolved schema and action through the remaining gates, in order: the
-	 * draft rule, appendOnly, the permission, property authorization, then validation.
+	 * draft rule, appendOnly, the permission, property authorization, validation, then
+	 * the pre-save event where the bulk-write events are on.
 	 *
 	 * @param array            $row The row
 	 * @param BulkSafeguardRun $run The safeguard pass
@@ -859,7 +864,12 @@ class SaveObjects {
 			}
 		}
 
-		return [$row, $this->validationRefusal(row: $row, run: $run)];
+		$refusal = $this->validationRefusal(row: $row, run: $run);
+		if ($refusal !== null || $this->bulkWriteEvents?->appliesTo(schema: $run->rowSchema, register: $run->rowRegister) !== true) {
+			return [$row, $refusal];
+		}
+
+		return $this->bulkWriteEvents->screen(row: $row, run: $run);
 	}//end screenResolvedRow()
 
 	/**
@@ -1970,6 +1980,13 @@ class SaveObjects {
 			return $result;
 		}
 
+		// The register/schema pairs of this chunk whose bulk-write events are on, when
+		// the caller did not ask for events on every object.
+		$eventTargets = [];
+		if ($_events === false) {
+			$eventTargets = $this->bulkEventTargets(transformedObjects: $transformedObjects, schemaCache: $schemaCache);
+		}
+
 		// STEP 2: Persist transformed objects to database.
 		$phaseStart = microtime(true);
 		// The pre-update rows the persist step fetches exist for ONE purpose:
@@ -1986,7 +2003,7 @@ class SaveObjects {
 			transformedObjects: $transformedObjects,
 			register: $register,
 			schema: $schema,
-			needsPreUpdateState: ($_events === true || $_audit === true)
+			needsPreUpdateState: ($_events === true || $_audit === true || $eventTargets !== [])
 		);
 		$phaseMs['persist'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
@@ -2008,6 +2025,14 @@ class SaveObjects {
 		// statement) instead of one INSERT (plus hash-chain queries) per object.
 		$phaseStart = microtime(true);
 		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events, _audit: $_audit);
+		if ($eventTargets !== []) {
+			$this->emitChunkSideEffects(
+				sideEffects: $this->sideEffectsWithin(sideEffects: $sideEffects, targets: $eventTargets),
+				_events: true,
+				_audit: false
+			);
+		}
+
 		$phaseMs['sideEffects'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		$endTime = microtime(true);
@@ -2019,6 +2044,73 @@ class SaveObjects {
 
 		return $result;
 	}//end processObjectsChunk()
+
+	/**
+	 * The "registerId/schemaId" pairs of a chunk whose bulk-write events are on.
+	 *
+	 * @param array $transformedObjects The chunk, after the guards.
+	 * @param array $schemaCache        Schema cache keyed by schema id.
+	 *
+	 * @return array<string, true>
+	 *
+	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
+	 */
+	private function bulkEventTargets(array $transformedObjects, array $schemaCache): array {
+		if ($this->bulkWriteEvents === null) {
+			return [];
+		}
+
+		$targets = [];
+		$asked   = [];
+		foreach ($transformedObjects as $objData) {
+			$key = ((string)($objData['register'] ?? '')) . '/' . ((string)($objData['schema'] ?? ''));
+			$schema = ($schemaCache[$objData['schema'] ?? ''] ?? null);
+			if (isset($asked[$key]) === true || $schema instanceof Schema === false) {
+				continue;
+			}
+
+			$asked[$key] = true;
+			if ($this->bulkWriteEvents->appliesTo(schema: $schema, register: $this->eventRegister(registerId: ($objData['register'] ?? null))) === true) {
+				$targets[$key] = true;
+			}
+		}
+
+		return $targets;
+	}//end bulkEventTargets()
+
+	/**
+	 * The register a chunk row names, from the register cache the preparation step filled.
+	 *
+	 * @param mixed $registerId The row's register id.
+	 *
+	 * @return Register|null Null when it does not load.
+	 */
+	private function eventRegister(mixed $registerId): ?Register {
+		try {
+			return $this->loadRegisterWithCache(registerId: $registerId);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end eventRegister()
+
+	/**
+	 * The side effects of the objects whose register and schema are among the targets.
+	 *
+	 * @param array               $sideEffects As buildChunkResults() returns them.
+	 * @param array<string, true> $targets     The "registerId/schemaId" pairs.
+	 *
+	 * @return array{created: list<ObjectEntity>, updated: list<array{old: ObjectEntity|null, new: ObjectEntity}>}
+	 */
+	private function sideEffectsWithin(array $sideEffects, array $targets): array {
+		$inTargets = static fn (ObjectEntity $entity): bool => isset($targets[$entity->getRegister() . '/' . $entity->getSchema()]);
+
+		return [
+			'created' => array_values(array_filter(($sideEffects['created'] ?? []), $inTargets)),
+			'updated' => array_values(
+				array_filter(($sideEffects['updated'] ?? []), static fn (array $pair): bool => $inTargets($pair['new']))
+			),
+		];
+	}//end sideEffectsWithin()
 
 	/**
 	 * Enforce per-object RBAC and schema validation before persistence (BUG-OBJ-1).
