@@ -6165,12 +6165,8 @@ class ImportHandler {
 					$objectEntity->setCreated($now);
 					$objectEntity->setUpdated($now);
 
-					// Insert into database using MagicMapper if available.
-					// Fallback: MagicMapper not available, use objectEntityMapper.
-					$createdObject = $this->objectEntityMapper->insert($objectEntity);
-					if ($this->routingMapper !== null) {
-						$createdObject = $this->routingMapper->insert($objectEntity);
-					}
+					// Insert once: through the routing mapper when one is set, else the object entity mapper.
+					$createdObject = ($this->routingMapper ?? $this->objectEntityMapper)->insert($objectEntity);
 
 					$result['objects'][] = $createdObject->getId();
 					$this->logger->debug(

@@ -313,6 +313,13 @@ class MagicMapper extends AbstractObjectMapper {
 	private string $lastWriteAction = '';
 
 	/**
+	 * The stored row the last insert() replaced because its identifier was taken, null when it created.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	private ?ObjectEntity $replacedByLastInsert = null;
+
+	/**
 	 * Number of magic tables probed per UNION ALL query in the locate phase.
 	 *
 	 * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
@@ -8695,6 +8702,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function writeClaimingIdentifier(ObjectEntity $entity, array $write): array {
+		// Reset here, after the creating listeners ran, so an insert nested in one of them cannot leave its flag behind.
+		$this->replacedByLastInsert = null;
 		$insertedId = null;
 		try {
 			$uuid = $this->saveObjectToRegisterSchemaTable(
@@ -8740,12 +8749,15 @@ class MagicMapper extends AbstractObjectMapper {
 			$stored = $this->convertRowToObjectEntity(row: $row, _register: $target['register'], _schema: $target['schema']);
 		}
 
-		return (string)$this->updateObjectEntity(
+		$updated = $this->updateObjectEntity(
 			entity: $entity,
 			register: $target['register'],
 			schema: $target['schema'],
 			oldEntity: $stored
-		)->getUuid();
+		);
+
+		$this->replacedByLastInsert = ($stored ?? clone $entity);
+		return (string)$updated->getUuid();
 	}//end updateTakenIdentifier()
 
 	/**
@@ -10926,28 +10938,45 @@ class MagicMapper extends AbstractObjectMapper {
 		$insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema, failIfExists: $failIfExists);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:DB-INSERT');
 
-		$this->logger->debug(
-			message: '[MagicMapper] Dispatching ObjectCreatedEvent',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'entityUuid' => $insertedEntity->getUuid(),
-			]
-		);
-		// Which event that is, is decided in ObjectEventGate (decision 227). A
-		// draft is never deferred: only the listeners that keep the stored
-		// draft right receive its event, and they need it now.
-		if ($this->suppressLifecycleEvents() === false
-			&& ($insertedEntity->isDraft() === true
-			|| $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false)
-		) {
-			(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $insertedEntity);
-		}
-
+		$this->announceInsert(inserted: $insertedEntity, target: ['register' => $register, 'schema' => $schema]);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
 
 		return $insertedEntity;
 	}//end insert()
+
+	/**
+	 * Announce what an insert did: an update of the stored row when its identifier was taken, else a creation.
+	 *
+	 * Which event that is, is decided in ObjectEventGate (decision 227). A draft is never
+	 * deferred: only the listeners that keep the stored draft right receive its event, and
+	 * they need it now.
+	 *
+	 * @param ObjectEntity                             $inserted The object as written.
+	 * @param array{register: Register, schema: Schema} $target   Where it was written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/insert-race-follow-ups/specs/object-lifecycle/spec.md#requirement-a-create-written-as-an-update-is-announced-as-an-update
+	 */
+	private function announceInsert(ObjectEntity $inserted, array $target): void {
+		$replaced = $this->replacedByLastInsert;
+		$this->replacedByLastInsert = null;
+		if ($this->suppressLifecycleEvents() === true) {
+			return;
+		}
+
+		$gate = new ObjectEventGate(events: $this->eventDispatcher);
+		if ($replaced !== null) {
+			$gate->updated(new: $inserted, old: $replaced);
+			return;
+		}
+
+		if ($inserted->isDraft() === true
+			|| $this->dispatchCreatedDeferred(entity: $inserted, register: $target['register'], schema: $target['schema']) === false
+		) {
+			$gate->created(object: $inserted);
+		}
+	}//end announceInsert()
 
 	/**
 	 * Hand the created-event off to a background job instead of dispatching it inline.
