@@ -98,6 +98,16 @@ final class TaskState {
 	public const REJECTING_OUTCOMES = ['rejected', 'returned', 'declined', 'denied'];
 
 	/**
+	 * Outcomes that approve a sequence position when its template declares none.
+	 *
+	 * `done` is what the generic task screens send; `approved` is what
+	 * migrated chains and explicit approve actions send.
+	 *
+	 * @var array<int, string>
+	 */
+	public const APPROVING_OUTCOMES = ['approved', 'done'];
+
+	/**
 	 * Resolve a status value — canonical or legacy — onto a CMMN state.
 	 *
 	 * A migration that knows its SOURCE vocabulary passes it: a value the
@@ -173,6 +183,39 @@ final class TaskState {
 
 		return in_array(strtolower(trim($outcome)), self::REJECTING_OUTCOMES, true);
 	}//end isRejectingOutcome()
+
+	/**
+	 * Whether an outcome approves, against a lowercased approving set.
+	 *
+	 * A rejecting outcome never approves, also when the set names it.
+	 *
+	 * @param string|null $outcome The outcome, when any.
+	 * @param array<int, string> $approving The approving set, lowercased and trimmed.
+	 *
+	 * @return boolean True when the outcome is in the set and does not reject.
+	 *
+	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public static function isApprovingOutcome(?string $outcome, array $approving = self::APPROVING_OUTCOMES): bool {
+		if ($outcome === null || self::isRejectingOutcome(outcome: $outcome) === true) {
+			return false;
+		}
+
+		return in_array(strtolower(trim($outcome)), $approving, true);
+	}//end isApprovingOutcome()
+
+	/**
+	 * Normalise a declared approving set: trimmed, lowercased, no empty entries.
+	 *
+	 * @param mixed $declared The declared `approvingOutcomes` value.
+	 *
+	 * @return array<int, string> The usable entries; empty when there are none.
+	 *
+	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 */
+	public static function approvingSet(mixed $declared): array {
+		return (new ApprovingOutcomeSet(declared: $declared))->entries();
+	}//end approvingSet()
 
 	/**
 	 * The published mapping, for documentation surfaces and tests.
