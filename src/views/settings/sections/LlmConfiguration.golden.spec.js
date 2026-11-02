@@ -174,6 +174,11 @@ const VECTOR_RESPONSES = {
 	},
 	empty: {},
 	none: null,
+	filesOnly: { success: true, files: { total_files: 2, total_chunks: 9 } },
+	objectsOnly: {
+		success: true,
+		objects: { total_objects: 6, percentage_complete: 50 },
+	},
 	stringStorage: {
 		success: true,
 		stats: { total_vectors: 4, object_vectors: 1, storage: { total_mb: '9' } },
