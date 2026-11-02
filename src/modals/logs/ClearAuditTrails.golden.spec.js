@@ -79,7 +79,7 @@ describe('ClearAuditTrails.clearAuditTrails', () => {
 		for (const [answerName, answer] of Object.entries(ANSWERS)) {
 			for (const refreshFails of [false, true]) {
 				it(`clears with filters ${filterName}, answering ${answerName}, refresh fails ${refreshFails}`, async () => {
-					auditTrailStore.filters = filters
+					auditTrailStore.auditTrailFilters = filters
 					const ctx = context()
 					auditTrailStore.refreshAuditTrailList = async () => {
 						log.push(['refresh', ctx.loading])
