@@ -39,90 +39,83 @@ export const RUN_TERMINAL_STATUSES = [
 export const RUN_FAILED_STATUSES = ['failed', 'dead_letter']
 
 /**
+ * The badge variant of each status that has one.
+ */
+const STATUS_VARIANTS = new Map([
+	['completed', 'success'],
+	['published', 'success'],
+	['enabled', 'success'],
+	['failed', 'error'],
+	['dead_letter', 'error'],
+	['suspended', 'warning'],
+	['awaiting_consent', 'warning'],
+	['draft', 'warning'],
+	['queued', 'info'],
+	['running', 'info'],
+])
+
+/**
  * The badge variant for a run or lifecycle status.
  *
  * @param {string} status The status.
  * @return {string} A CnStatusBadge variant.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
  */
 export function statusVariant(status) {
-	switch (status) {
-		case 'completed':
-		case 'published':
-		case 'enabled':
-			return 'success'
-		case 'failed':
-		case 'dead_letter':
-			return 'error'
-		case 'suspended':
-		case 'awaiting_consent':
-		case 'draft':
-			return 'warning'
-		case 'queued':
-		case 'running':
-			return 'info'
-		default:
-			return 'default'
-	}
+	return STATUS_VARIANTS.get(status) || 'default'
 }
+
+/**
+ * The words for each known status, translated when they are read.
+ */
+const STATUS_LABELS = new Map([
+	['completed', () => t('openregister', 'Completed')],
+	['failed', () => t('openregister', 'Failed')],
+	['dead_letter', () => t('openregister', 'Gave up')],
+	['stopped', () => t('openregister', 'Stopped')],
+	['suspended', () => t('openregister', 'Waiting')],
+	['awaiting_consent', () => t('openregister', 'Waiting for consent')],
+	['queued', () => t('openregister', 'Queued')],
+	['running', () => t('openregister', 'Running')],
+	['published', () => t('openregister', 'Published')],
+	['draft', () => t('openregister', 'Draft')],
+	['deprecated', () => t('openregister', 'Deprecated')],
+])
 
 /**
  * The words for a run or lifecycle status.
  *
  * @param {string} status The status.
  * @return {string} The translated label, or the raw status when unknown.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
  */
 export function statusLabel(status) {
-	switch (status) {
-		case 'completed':
-			return t('openregister', 'Completed')
-		case 'failed':
-			return t('openregister', 'Failed')
-		case 'dead_letter':
-			return t('openregister', 'Gave up')
-		case 'stopped':
-			return t('openregister', 'Stopped')
-		case 'suspended':
-			return t('openregister', 'Waiting')
-		case 'awaiting_consent':
-			return t('openregister', 'Waiting for consent')
-		case 'queued':
-			return t('openregister', 'Queued')
-		case 'running':
-			return t('openregister', 'Running')
-		case 'published':
-			return t('openregister', 'Published')
-		case 'draft':
-			return t('openregister', 'Draft')
-		case 'deprecated':
-			return t('openregister', 'Deprecated')
-		default:
-			return String(status || '')
-	}
+	const label = STATUS_LABELS.get(status)
+	return label ? label() : String(status || '')
 }
+
+/**
+ * The sentence for each known trigger, translated when it is read.
+ */
+const TRIGGER_LABELS = new Map([
+	['object.created', () => t('openregister', 'An object is created')],
+	['object.updated', () => t('openregister', 'An object changes')],
+	['object.deleted', () => t('openregister', 'An object is deleted')],
+	['schedule', () => t('openregister', 'On a schedule')],
+	['manual', () => t('openregister', 'Someone starts it')],
+	['test', () => t('openregister', 'A test run')],
+])
 
 /**
  * What starts a flow, or what started a run, in words.
  *
  * @param {string} trigger The flow or run `trigger`.
  * @return {string} The translated sentence, or the raw trigger when unknown.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
  */
 export function triggerLabel(trigger) {
-	switch (trigger) {
-		case 'object.created':
-			return t('openregister', 'An object is created')
-		case 'object.updated':
-			return t('openregister', 'An object changes')
-		case 'object.deleted':
-			return t('openregister', 'An object is deleted')
-		case 'schedule':
-			return t('openregister', 'On a schedule')
-		case 'manual':
-			return t('openregister', 'Someone starts it')
-		case 'test':
-			return t('openregister', 'A test run')
-		default:
-			return String(trigger || '')
-	}
+	const label = TRIGGER_LABELS.get(trigger)
+	return label ? label() : String(trigger || '')
 }
 
 /**
@@ -147,16 +140,23 @@ export function catalogNames(catalog) {
  * @param {object} node The flow node.
  * @param {Object<string, string>} names Type to display name.
  * @return {string} The label.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
  */
 export function nodeLabel(node, names = {}) {
-	return (
-		node?.label
-		|| node?.name
-		|| names[node?.type]
-		|| node?.type
-		|| node?.id
-		|| ''
-	)
+	return node?.label || node?.name || typeLabel(node, names)
+}
+
+/**
+ * The label of a node that names none itself: its type's display name,
+ * else its type, else its id.
+ *
+ * @param {object} node The flow node.
+ * @param {Object<string, string>} names Type to display name.
+ * @return {string} The label.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+ */
+function typeLabel(node, names) {
+	return names[node?.type] || node?.type || node?.id || ''
 }
 
 /**
@@ -182,45 +182,71 @@ export function nodeDetail(node) {
  * @param {Array<object>} nodes The flow's nodes.
  * @param {Array<object>} edges The flow's edges (`from`/`to`, or `source`/`target`).
  * @return {Array<object>} The nodes, ordered.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
  */
 export function orderedNodes(nodes, edges) {
 	const list = Array.isArray(nodes) ? nodes.filter((node) => node?.id) : []
-	const links = (Array.isArray(edges) ? edges : [])
+	const links = graphLinks(edges)
+	const pointedAt = new Set(links.map((edge) => edge.to))
+	const walked = breadthFirst(
+		{ byId: new Map(list.map((node) => [node.id, node])), links },
+		list.filter((node) => !pointedAt.has(node.id)).map((node) => node.id),
+	)
+	const seen = new Set(walked.map((node) => node.id))
+	return [...walked, ...list.filter((node) => !seen.has(node.id))]
+}
+
+/**
+ * The edges as `from`/`to` pairs, without the edges that miss an end.
+ *
+ * @param {Array<object>} edges The flow's edges (`from`/`to`, or `source`/`target`).
+ * @return {Array<{from: string, to: string}>} The links.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+ */
+function graphLinks(edges) {
+	return (Array.isArray(edges) ? edges : [])
 		.map((edge) => ({
 			from: edge?.from ?? edge?.source,
 			to: edge?.to ?? edge?.target,
 		}))
 		.filter((edge) => edge.from && edge.to)
+}
 
-	const byId = new Map(list.map((node) => [node.id, node]))
-	const pointedAt = new Set(links.map((edge) => edge.to))
-	const queue = list
-		.filter((node) => !pointedAt.has(node.id))
-		.map((node) => node.id)
+/**
+ * The nodes a breadth-first walk reaches from the start ids, each once.
+ *
+ * @param {{byId: Map<string, object>, links: Array<{from: string, to: string}>}} graph The nodes by id and the links.
+ * @param {Array<string>} queue The start ids; the walk appends to it.
+ * @return {Array<object>} The reached nodes, in walk order.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+ */
+function breadthFirst(graph, queue) {
 	const seen = new Set()
-	const ordered = []
-
+	const walked = []
 	while (queue.length > 0) {
 		const id = queue.shift()
-		if (seen.has(id) || !byId.has(id)) {
+		if (seen.has(id) || !graph.byId.has(id)) {
 			continue
 		}
 		seen.add(id)
-		ordered.push(byId.get(id))
-		for (const edge of links) {
-			if (edge.from === id && !seen.has(edge.to)) {
-				queue.push(edge.to)
-			}
-		}
+		walked.push(graph.byId.get(id))
+		const next = graph.links.filter(
+			(edge) => edge.from === id && !seen.has(edge.to),
+		)
+		queue.push(...next.map((edge) => edge.to))
 	}
+	return walked
+}
 
-	for (const node of list) {
-		if (!seen.has(node.id)) {
-			ordered.push(node)
-		}
-	}
-
-	return ordered
+/**
+ * A run's log entries, or none when the run has no log.
+ *
+ * @param {object} run The run record.
+ * @return {Array<object>} The log entries.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+ */
+function runLog(run) {
+	return Array.isArray(run?.log) ? run.log : []
 }
 
 /**
@@ -228,10 +254,11 @@ export function orderedNodes(nodes, edges) {
  *
  * @param {object} run The run record.
  * @return {number|null} Milliseconds, or null when no step recorded one.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
  */
 export function runDuration(run) {
 	let total = null
-	for (const entry of Array.isArray(run?.log) ? run.log : []) {
+	for (const entry of runLog(run)) {
 		if (typeof entry?.durationMs === 'number') {
 			total = (total ?? 0) + entry.durationMs
 		}
@@ -300,23 +327,47 @@ function unitFormat(locale, unit, digits) {
  *
  * @param {Array<object>} runs The runs.
  * @return {{total: number, completed: number, failed: number, stopped: number, active: number}} The counts.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
  */
 export function runCounts(runs) {
 	const counts = { total: 0, completed: 0, failed: 0, stopped: 0, active: 0 }
 	for (const run of Array.isArray(runs) ? runs : []) {
 		counts.total++
-		if (run?.status === 'completed') {
-			counts.completed++
-		} else if (RUN_FAILED_STATUSES.includes(run?.status)) {
-			counts.failed++
-		} else if (run?.status === 'stopped') {
-			counts.stopped++
-		} else if (RUN_ACTIVE_STATUSES.includes(run?.status)) {
-			counts.active++
+		const outcome = runOutcome(run?.status)
+		if (outcome) {
+			counts[outcome]++
 		}
 	}
 	return counts
 }
+
+/**
+ * The count a run status adds to.
+ *
+ * @param {string} status The run status.
+ * @return {string|null} completed, failed, stopped or active; null for none.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
+ */
+function runOutcome(status) {
+	if (status === 'completed') {
+		return 'completed'
+	}
+	if (RUN_FAILED_STATUSES.includes(status)) {
+		return 'failed'
+	}
+	if (status === 'stopped') {
+		return 'stopped'
+	}
+	return RUN_ACTIVE_STATUSES.includes(status) ? 'active' : null
+}
+
+// The run statuses each runs-table filter keeps. A filter not listed keeps
+// every run.
+const RUN_FILTERS = new Map([
+	['failed', (status) => RUN_FAILED_STATUSES.includes(status)],
+	['completed', (status) => status === 'completed'],
+	['running', (status) => RUN_ACTIVE_STATUSES.includes(status)],
+])
 
 /**
  * Whether a run matches a runs-table filter.
@@ -324,18 +375,11 @@ export function runCounts(runs) {
  * @param {object} run The run.
  * @param {string} filter One of all, failed, completed, running.
  * @return {boolean} True when the run belongs in the filtered list.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
  */
 export function matchesRunFilter(run, filter) {
-	switch (filter) {
-		case 'failed':
-			return RUN_FAILED_STATUSES.includes(run?.status)
-		case 'completed':
-			return run?.status === 'completed'
-		case 'running':
-			return RUN_ACTIVE_STATUSES.includes(run?.status)
-		default:
-			return true
-	}
+	const matches = RUN_FILTERS.get(filter)
+	return matches ? matches(run?.status) : true
 }
 
 /**
@@ -350,25 +394,49 @@ export function matchesRunFilter(run, filter) {
  * @param {Array<object>} ordered The flow's nodes in graph order.
  * @param {Object<string, string>} names Type to display name.
  * @return {{nodeId: string, position: number|null, label: string, error: string}|null} The failed step, or null.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
  */
 export function failedStep(run, ordered = [], names = {}) {
-	const log = Array.isArray(run?.log) ? run.log : []
-	for (let i = log.length - 1; i >= 0; i--) {
-		const entry = log[i]
-		if (entry?.status !== 'failed') {
-			continue
-		}
-		const index = ordered.findIndex((node) => node.id === entry.transition)
-		const node =
-			index >= 0 ? ordered[index] : { id: entry.transition, type: entry.type }
-		return {
-			nodeId: entry.transition || '',
-			position: index >= 0 ? index + 1 : null,
-			label: nodeLabel(node, names),
-			error: entry.error || run?.error || '',
-		}
+	const entry = [...runLog(run)]
+		.reverse()
+		.find((candidate) => candidate?.status === 'failed')
+	return entry ? failedStepOf(entry, { run, ordered, names }) : null
+}
+
+/**
+ * The failed step one failed log entry names.
+ *
+ * @param {object} entry The failed log entry.
+ * @param {{run: object, ordered: Array<object>, names: Object<string, string>}} context The run, its nodes in graph order and the type names.
+ * @return {{nodeId: string, position: number|null, label: string, error: string}} The failed step.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+ */
+function failedStepOf(entry, context) {
+	const index = context.ordered.findIndex((node) => node.id === entry.transition)
+	return {
+		nodeId: entry.transition || '',
+		position: index >= 0 ? index + 1 : null,
+		label: nodeLabel(nodeFor(entry, context.ordered), context.names),
+		error: entry.error || context.run?.error || '',
 	}
-	return null
+}
+
+/**
+ * The node a log entry belongs to, or a stand-in made from the entry when
+ * the flow no longer has it.
+ *
+ * @param {object} entry The log entry.
+ * @param {Array<object>} ordered The flow's nodes in graph order.
+ * @return {object} The node.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+ */
+function nodeFor(entry, ordered) {
+	return (
+		ordered.find((node) => node.id === entry.transition) || {
+			id: entry.transition,
+			type: entry.type,
+		}
+	)
 }
 
 /**
@@ -453,23 +521,17 @@ function unreachedStepRow(nodeId, label) {
  * @param {Array<object>} ordered The flow's nodes in graph order.
  * @param {Object<string, string>} names Type to display name.
  * @return {Array<object>} Rows: nodeId, label, status, times, itemsIn, itemsOut, durationMs, input, output, error, reached.
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
  */
 export function stepRows(run, ordered = [], names = {}) {
 	const rows = new Map()
-	for (const entry of Array.isArray(run?.log) ? run.log : []) {
-		const nodeId = entry?.transition
-		if (!nodeId) {
-			continue
-		}
-		const node = ordered.find((candidate) => candidate.id === nodeId) || {
-			id: nodeId,
-			type: entry.type,
-		}
+	for (const entry of runLog(run).filter((logged) => logged?.transition)) {
+		const nodeId = entry.transition
 		rows.set(
 			nodeId,
 			loggedStepRow(entry, {
 				nodeId,
-				label: nodeLabel(node, names),
+				label: nodeLabel(nodeFor(entry, ordered), names),
 				previous: rows.get(nodeId),
 			}),
 		)
