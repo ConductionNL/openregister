@@ -466,8 +466,36 @@ class ExampleSetPeople {
 			}
 		}
 
-		return array_merge($refusals, $this->memberRefusals(plan: $plan));
+		return array_merge($refusals, $this->memberRefusals(plan: $plan), $this->foreignGroupRefusals(plan: $plan, record: $record));
 	}//end refusals()
+
+	/**
+	 * Refuse sub-admins on a group that exists and that this set did not create.
+	 *
+	 * A sub-admin manages the group's accounts, so making a cast person one of a
+	 * group somebody else runs would hand out that group behind its owner's
+	 * back. Members are not refused: a set adds its cast to groups an app made
+	 * (dossiq's `behandelaars`), which the example-sets spec requires.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $record The set's record.
+	 *
+	 * @return array<int, string>
+	 */
+	private function foreignGroupRefusals(array $plan, array $record): array {
+		$own      = array_map('strval', (array) ($record['groups'] ?? []));
+		$refusals = [];
+		foreach ($this->declaredSubAdmins(plan: $plan) as [$gid]) {
+			$gid = (string) $gid;
+			if (in_array($gid, $own, true) === true || $this->accounts->groupExists(gid: $gid) === false) {
+				continue;
+			}
+
+			$refusals[$gid] = 'group "'.$gid.'": it exists and this set did not create it, so the set may not name sub-admins of it';
+		}
+
+		return array_values($refusals);
+	}//end foreignGroupRefusals()
 
 	/**
 	 * What one cast person refuses: a BSN that fails the eleven test, a group that is not in the cast.

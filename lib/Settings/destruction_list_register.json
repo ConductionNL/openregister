@@ -3,7 +3,7 @@
   "info": {
     "title": "Destruction Lists",
     "description": "System register for destruction lists: the objects due for destruction, the reviewer and answer of each entry, the approvals of the list and its decision history. Name it in the archival setting (destructionListRegister, destructionListSchema) so the destruction sweep and the review endpoints have a home for their lists.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "x-openregister": {
     "type": "core",
@@ -17,9 +17,27 @@
       "destruction-lists": {
         "slug": "destruction-lists",
         "title": "Destruction Lists",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "description": "Destruction lists under review: entries, reviewers, answers, approvals and the decision history.",
         "published": "2026-01-01T00:00:00+00:00",
+        "authorization": {
+          "read": [
+            "archivaris",
+            "admin"
+          ],
+          "create": [
+            "archivaris",
+            "admin"
+          ],
+          "update": [
+            "archivaris",
+            "admin"
+          ],
+          "delete": [
+            "archivaris",
+            "admin"
+          ]
+        },
         "schemas": [
           "destructionList"
         ],
@@ -30,8 +48,26 @@
       "destructionList": {
         "slug": "destructionList",
         "title": "Destruction List",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "published": "2026-01-01T00:00:00+00:00",
+        "authorization": {
+          "read": [
+            "archivaris",
+            "admin"
+          ],
+          "create": [
+            "archivaris",
+            "admin"
+          ],
+          "update": [
+            "archivaris",
+            "admin"
+          ],
+          "delete": [
+            "archivaris",
+            "admin"
+          ]
+        },
         "summary": "A list of objects due for destruction, reviewed entry by entry before it is approved and executed.",
         "description": "The record of one destruction round: the objects whose disposal date has passed, who reviews each entry and what they answered, the approvals of the list and the one decision history an auditor reads. The archival setting names this register and schema (destructionListRegister, destructionListSchema); the destruction sweep writes lists here and the review endpoints read them.",
         "required": [

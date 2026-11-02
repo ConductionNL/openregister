@@ -22,8 +22,11 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -42,6 +45,8 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per migration step, plus the slug re-check (#4037).
  */
 class MigrationHandler {
 	/**
@@ -54,6 +59,7 @@ class MigrationHandler {
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
 	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param ObjectSlugHandler|null $slugHandler Re-checks a carried slug in the target (#4037).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -65,6 +71,7 @@ class MigrationHandler {
 		private readonly UtilityHandler $utilityHandler,
 		private readonly DataManipulationHandler $dataManipHandler,
 		private readonly LoggerInterface $logger,
+		private readonly ?ObjectSlugHandler $slugHandler=null,
 	) {
 	}//end __construct()
 
@@ -189,6 +196,22 @@ class MigrationHandler {
 			$sourceObject->setRegister($run->target->registerEntity->getId());
 			$sourceObject->setSchema($run->target->schemaEntity->getId());
 			$sourceObject->setObject($mappedData);
+
+			// The slug was decided in the source; the target may already
+			// have a live holder of it (#4037).
+			if ($this->slugHandler !== null
+				&& $run->target->registerEntity instanceof Register
+				&& $run->target->schemaEntity instanceof Schema
+			) {
+				$sourceObject->setSlug(
+					$this->slugHandler->slugForMove(
+						entity: $sourceObject,
+						register: $run->target->registerEntity,
+						schema: $run->target->schemaEntity
+					)
+				);
+			}
+
 			$savedObject = $this->objectMapper->update($sourceObject);
 
 			$objectDetail['success'] = true;

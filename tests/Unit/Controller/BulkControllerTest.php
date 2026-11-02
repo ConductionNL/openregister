@@ -428,6 +428,8 @@ class BulkControllerTest extends TestCase {
 
 	public function testSaveMixedSchemaMode(): void {
 		// When schema resolves to 0, it means mixed-schema mode
+		$this->stubAdminUser();
+		$this->schemaMapper->method('find')->willReturn(new Schema());
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
 		$this->objectService->method('getRegister')->willReturn(1);
@@ -435,7 +437,7 @@ class BulkControllerTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObjects')
 			->with(
-				$this->equalTo([['name' => 'obj1']]),
+				$this->equalTo([['name' => 'obj1', '@self' => ['schema' => 'document']]]),
 				$this->equalTo(1),
 				$this->isNull(),  // schema should be null for mixed mode
 				$this->equalTo(true),
@@ -448,7 +450,7 @@ class BulkControllerTest extends TestCase {
 			]);
 
 		$this->request->method('getParams')->willReturn([
-			'objects' => [['name' => 'obj1']],
+			'objects' => [['name' => 'obj1', '@self' => ['schema' => 'document']]],
 		]);
 
 		$result = $this->controller->save('1', '0');
@@ -496,6 +498,31 @@ class BulkControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['objects' => [['@self' => ['schema' => 'ghost']]]]);
 
 		$this->assertEquals(Http::STATUS_FORBIDDEN, $this->controller->save('1', '0')->getStatus());
+	}
+
+	/**
+	 * A mixed-schema row that names no @self.schema is refused before the save,
+	 * even when a flat top-level `schema` names one the save would accept.
+	 */
+	public function testSaveMixedSchemaRefusesARowThatNamesNoSchema(): void {
+		$this->stubAdminUser();
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(0);
+		$this->objectService->expects($this->never())->method('saveObjects');
+		$this->request->method('getParams')->willReturn([
+			'objects' => [
+				['@self' => ['schema' => 'document']],
+				['schema' => 'restricted', 'name' => 'flat row'],
+			],
+		]);
+
+		$result = $this->controller->save('1', '0');
+
+		$this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
+		$this->assertStringContainsString('@self.schema', $result->getData()['error']);
 	}
 
 	public function testSaveWithStatisticsMissingSavedKey(): void {

@@ -251,7 +251,16 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function registerUserAndOrganisation(IRegistrationContext $context): void {
-		// Register OrganisationService without SettingsService to break circular dependency.
+		// OrganisationService is registered without SettingsService. The reason
+		// once given, a circular dependency, no longer holds: nothing in
+		// SettingsService's constructor graph reaches OrganisationService.
+		// Wiring it is not a no-op, though. Without it OrganisationService
+		// reads and writes only the flat `defaultOrganisation` app-config key.
+		// Wired, it would still write that key (setDefaultOrganisationId()),
+		// additionally write `organisation.default_organisation` through
+		// SettingsService, and read the nested key instead of the flat one.
+		// The two keys already diverge today; reconciling them is a separate
+		// change.
 		$context->registerService(
 			OrganisationService::class,
 			function (ContainerInterface $container) {
@@ -318,7 +327,9 @@ final class ServiceRegistrar {
 					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
 					// Reads a located task's subject from its own table instead
 					// of searching every magic table for it.
-					locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
+					locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
+					// Without it the derived `blocked` flag is never computed.
+					blockers: $container->get(\OCA\OpenRegister\Db\TaskBlockerMapper::class)
 				);
 			}
 		);
@@ -343,7 +354,12 @@ final class ServiceRegistrar {
 					container: $container,
 					registerMapper: $container->get(RegisterMapper::class),
 					schemaMapper: $container->get(SchemaMapper::class),
-					db: $container->get('OCP\IDBConnection')
+					db: $container->get('OCP\IDBConnection'),
+					// The name scope reads the multitenancy switches and the
+					// admin override through these two; without them it
+					// treats multitenancy as on and the override as off.
+					groupManager: $container->get('OCP\IGroupManager'),
+					appConfig: $container->get('OCP\IAppConfig')
 				);
 			}
 		);

@@ -44,6 +44,37 @@ class ListenerRegistrarTest extends TestCase {
 	}//end testEveryListenerExists()
 
 	/**
+	 * The registrar registers exactly the pinned (event, listener) pairs, in order.
+	 *
+	 * A count floor stays green when one pair is dropped in a merge, and the
+	 * order of listeners on the same event decides which runs first. The
+	 * pinned list lives in fixtures/listener-registrations.txt; a change to
+	 * the registrar updates it in the same commit.
+	 *
+	 * @return void
+	 */
+	public function testRegistersExactlyThePinnedPairsInOrder(): void {
+		$context = new RecordingRegistrationContext();
+		ListenerRegistrar::register(context: $context);
+
+		$lines = file(filename: __DIR__.'/fixtures/listener-registrations.txt', flags: (FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+		$this->assertIsArray(actual: $lines);
+		$expected = array_values(
+			array_filter(
+				$lines,
+				static fn (string $line): bool => str_starts_with($line, '#') === false
+			)
+		);
+
+		$actual = array_map(
+			static fn (array $registration): string => $registration['event'].' -> '.$registration['listener'],
+			$context->listeners
+		);
+
+		$this->assertSame(expected: $expected, actual: $actual);
+	}//end testRegistersExactlyThePinnedPairsInOrder()
+
+	/**
 	 * Every OpenRegister event a listener is registered on exists.
 	 *
 	 * Events dispatch by class name, so a listener on a name no event carries

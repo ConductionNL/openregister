@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use Closure;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
@@ -247,6 +248,13 @@ class SchemaMapper extends QBMapper {
 	private array $updateEventCounts = [];
 
 	/**
+	 * The declared-action validator once the factory closure has run.
+	 *
+	 * @var ObjectActionValidator|null
+	 */
+	private ?ObjectActionValidator $objectActionsCache = null;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
@@ -260,7 +268,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param ObjectActionValidator|null $objectActions Verifies every declared action, the flows macros bind to included.
+	 * @param (Closure(): ObjectActionValidator)|null $objectActions Resolves the validator for every declared action and the flow it binds.
 	 *
 	 * @return void
 	 */
@@ -274,12 +282,18 @@ class SchemaMapper extends QBMapper {
 		IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction of this mapper keeps
-		// working. Nextcloud's container always supplies it; null happens only
-		// in a hand-built test, and then the SHAPE refusals below still fire —
-		// only the questions about other records (the bound flow, the step
-		// nodes, the saver) are skipped, which the save says out loud rather
-		// than passing over in silence.
-		private readonly ?ObjectActionValidator $objectActions = null,
+		// working. MapperRegistrar's factory always supplies it; null happens
+		// only in a hand-built test, and then the SHAPE refusals below still
+		// fire — only the questions about other records (the bound flow, the
+		// step nodes, the saver) are skipped, which the save says out loud
+		// rather than passing over in silence.
+		//
+		// 🔴 A closure, not the validator itself: ObjectActionValidator →
+		// ObjectActionStepsFlow → FlowVersionService → FlowTrigger* →
+		// RegisterMapper → SchemaMapper is a construction cycle, so the
+		// validator is resolved on the first save that needs it (the
+		// MemberOfResolver / issue #1564 lazy-resolution pattern).
+		private readonly ?Closure $objectActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -1372,8 +1386,9 @@ class SchemaMapper extends QBMapper {
 	private function validateMacroActions(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
 
-		if ($this->objectActions !== null) {
-			$refusals = $this->objectActions->refusals(schema: $schema);
+		$objectActions = $this->objectActionValidator();
+		if ($objectActions !== null) {
+			$refusals = $objectActions->refusals(schema: $schema);
 			if ($refusals !== []) {
 				throw new InvalidArgumentException(implode(' ', $refusals));
 			}
@@ -1401,6 +1416,21 @@ class SchemaMapper extends QBMapper {
 			);
 		}
 	}//end validateMacroActions()
+
+	/**
+	 * The declared-action validator, resolved on first use.
+	 *
+	 * @return ObjectActionValidator|null The validator, or null when none is wired.
+	 */
+	private function objectActionValidator(): ?ObjectActionValidator {
+		if ($this->objectActions === null) {
+			return null;
+		}
+
+		$this->objectActionsCache ??= ($this->objectActions)();
+
+		return $this->objectActionsCache;
+	}//end objectActionValidator()
 
 	/**
 	 * Validate the optional `x-openregister-lifecycle` annotation.

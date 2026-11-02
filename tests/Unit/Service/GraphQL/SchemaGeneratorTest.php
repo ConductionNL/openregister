@@ -10,8 +10,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 
 class SchemaGeneratorTest extends TestCase {
 	private SchemaGenerator $generator;
@@ -250,5 +252,39 @@ class SchemaGeneratorTest extends TestCase {
 		$graphqlSchema = $this->generator->generate();
 
 		$this->assertNotNull($graphqlSchema->getQueryType());
+	}
+
+	/**
+	 * The type mapper asks the generator's property-RBAC handler.
+	 *
+	 * The generator builds TypeMapperHandler by hand. When it did not pass the
+	 * handler on, every governed property was withheld from the filter and
+	 * input types for every caller, even one allowed to read it.
+	 *
+	 * @return void
+	 */
+	public function testTheTypeMapperAsksThePropertyRbacHandler(): void {
+		$schema = $this->createSchema(
+			id: 1,
+			slug: 'items',
+			properties: [
+				'name'   => ['type' => 'string'],
+				'secret' => ['type' => 'string', 'authorization' => ['read' => [['group' => 'redactie']]]],
+			]
+		);
+
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$rbac = $this->createMock(originalClassName: PropertyRbacHandler::class);
+		$rbac->expects($this->atLeastOnce())->method('canReadProperty')->willReturn(true);
+
+		$generator = new SchemaGenerator(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, propertyRbac: $rbac);
+		$generator->generate();
+
+		$typeMapper = (new ReflectionProperty(class: SchemaGenerator::class, property: 'typeMapper'))->getValue($generator);
+		$fields = $typeMapper->getFilterInputType(schema: $schema)->getFields();
+
+		$this->assertArrayHasKey(key: 'secret', array: $fields);
 	}
 }

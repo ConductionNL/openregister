@@ -34,6 +34,11 @@ the moment of the change. The answer SHALL be readable for the whole
 instance and for one app, and SHALL be reported beside the effective
 configuration.
 
+A part whose value is an empty array SHALL count as absent, in this report
+and in the upgrade merge of REQ-LCA-003 alike: a schema read back without an
+authorization block answers an empty one where the shipped definition has no
+key, and that is not a local change.
+
 #### Scenario: an administrator sees the local configuration in one place
 
 - **GIVEN** an instance where two properties of one shipped schema were edited locally
@@ -55,6 +60,12 @@ A conflicting part SHALL NOT be applied without an explicit decision for
 that part, and the decision SHALL be recorded with its actor. An import
 running unattended SHALL complete, leaving the conflicting parts as they
 are and reporting them, rather than applying them or failing the upgrade.
+
+#### Scenario: an empty block is no local change
+
+- **GIVEN** a shipped schema imported without an authorization block, which the instance now reads back as an empty one
+- **WHEN** a new app version ships an authorization block for it
+- **THEN** the shipped block is applied, and no conflict is reported
 
 #### Scenario: the extra field survives the release
 
