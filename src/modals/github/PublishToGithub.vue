@@ -345,7 +345,12 @@ export default {
 					'Failed to load repositories',
 				)
 				this.repositories = data.repositories || []
-				await this.restorePublishedTarget()
+				const publishedRepo = this.publishedRepository()
+				if (publishedRepo) {
+					this.selectedRepository = publishedRepo.full_name
+					await this.loadBranches(publishedRepo.owner, publishedRepo.name)
+					this.restorePublishedPlace()
+				}
 			} catch (e) {
 				this.error = e.message || 'Failed to load repositories'
 				console.error('Failed to load repositories:', e)
@@ -355,26 +360,21 @@ export default {
 		},
 
 		/**
-		 * When the form preselects the published target: select the repository
-		 * the entity was already published to, load its branches, and restore
-		 * the published branch and path.
+		 * The loaded repository the entity was already published to, when the
+		 * form preselects the published target. Synchronous, so loading the
+		 * repositories awaits nothing but the branch request.
 		 *
-		 * @spec exclude Modal data-load plumbing — restores the GitHub target the entity was published to.
-		 * @return {Promise<void>}
+		 * @spec exclude Modal data-load plumbing — finds the GitHub target the entity was published to.
+		 * @return {object|null}
 		 */
-		async restorePublishedTarget() {
+		publishedRepository() {
 			if (!this.preselectPublished || !this.entity?.githubRepo) {
-				return
+				return null
 			}
-			const existingRepo = this.repositories.find(
-				(r) => r.full_name === this.entity.githubRepo,
+			return (
+				this.repositories.find((r) => r.full_name === this.entity.githubRepo)
+				|| null
 			)
-			if (!existingRepo) {
-				return
-			}
-			this.selectedRepository = existingRepo.full_name
-			await this.loadBranches(existingRepo.owner, existingRepo.name)
-			this.restorePublishedPlace()
 		},
 
 		/**

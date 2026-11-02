@@ -3,14 +3,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  */
 
-import axios from '@nextcloud/axios'
 import { defineStore } from 'pinia'
-import {
-	loadRelations,
-	postAndRefetch,
-	pruneRelations,
-	relationUrl,
-} from './relationCache.js'
+import { postAction, relationActions, relationState } from './relationCache.js'
 
 /**
  * Store wrapping the per-object Deck-card endpoints.
@@ -29,93 +23,15 @@ import {
  * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
  */
 export const useDeckRelationsStore = defineStore('deckRelations', {
-	state: () => ({
-		byObject: {},
-		loading: {},
-		errors: {},
-		deckUnavailable: false,
-	}),
+	state: () => relationState('deckUnavailable'),
 
 	actions: {
-		/**
-		 * Build the Deck endpoint URL for an object.
-		 *
-		 * @param register
-		 * @param schema
-		 * @param id
-		 * @param suffix
-		 * @spec exclude private URL-builder helper (no client state)
-		 */
-		_url(register, schema, id, suffix = '') {
-			return relationUrl('deck', { register, schema, id, suffix })
-		},
-
-		/**
-		 * Fetch and cache Deck links for an object, falling back to an empty
-		 * state when the Deck app is unavailable (HTTP 501).
-		 *
-		 * @param register
-		 * @param schema
-		 * @param id
-		 * @spec openspec/specs/frontend-store-client-state/spec.md
-		 */
-		async fetch(register, schema, id) {
-			return loadRelations(this, {
-				url: this._url(register, schema, id),
-				key: `${register}:${schema}:${id}`,
-				flag: 'deckUnavailable',
-				arraysOnly: true,
-			})
-		},
-
-		/**
-		 * Create or link a Deck card to an object, then refresh the cached
-		 * list for that object key.
-		 *
-		 * @param register
-		 * @param schema
-		 * @param id
-		 * @param payload
-		 * @spec openspec/specs/frontend-store-client-state/spec.md
-		 */
-		async createOrLink(register, schema, id, payload) {
-			return postAndRefetch(this, {
-				url: this._url(register, schema, id),
-				payload,
-				object: [register, schema, id],
-			})
-		},
-
-		/**
-		 * Unlink a Deck card, optimistically pruning it from the cached list
-		 * for that object key without refetching.
-		 *
-		 * @param register
-		 * @param schema
-		 * @param id
-		 * @param deckRef
-		 * @spec openspec/specs/frontend-store-client-state/spec.md
-		 */
-		async unlink(register, schema, id, deckRef) {
-			await axios.delete(
-				this._url(register, schema, id, '/' + encodeURIComponent(deckRef)),
-			)
-			return pruneRelations(this, {
-				key: `${register}:${schema}:${id}`,
-				keep: (c) => (c.ref || c.deckRef || c.id) !== deckRef,
-			})
-		},
-
-		/**
-		 * Read the cached Deck links for an object key.
-		 *
-		 * @param register
-		 * @param schema
-		 * @param id
-		 * @spec exclude store getter (reads local per-key cache)
-		 */
-		get(register, schema, id) {
-			return this.byObject[`${register}:${schema}:${id}`] || []
-		},
+		...relationActions({
+			kind: 'deck',
+			flag: 'deckUnavailable',
+			arraysOnly: true,
+			refOf: (c) => c.ref || c.deckRef || c.id,
+		}),
+		createOrLink: postAction(''),
 	},
 })

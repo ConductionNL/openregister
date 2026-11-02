@@ -274,25 +274,30 @@ function numericPair(pair) {
  * @return {Array<number>|null} `[lon, lat]` centroid, or null.
  */
 function ringCentroid(ring) {
-	if (!Array.isArray(ring) || ring.length === 0) {
+	const vertices = Array.isArray(ring) ? ring.filter(isLonLat) : []
+	if (vertices.length === 0) {
 		return null
 	}
 	let sumLon = 0
 	let sumLat = 0
-	let n = 0
-	for (const vertex of ring) {
-		if (!Array.isArray(vertex) || vertex.length < 2) {
-			continue
-		}
-		if (typeof vertex[0] !== 'number' || typeof vertex[1] !== 'number') {
-			continue
-		}
+	for (const vertex of vertices) {
 		sumLon += vertex[0]
 		sumLat += vertex[1]
-		n += 1
 	}
-	if (n === 0) {
-		return null
-	}
-	return [sumLon / n, sumLat / n]
+	return [sumLon / vertices.length, sumLat / vertices.length]
+}
+
+/**
+ * Whether a ring vertex holds a numeric longitude and latitude.
+ *
+ * @param {Array|object|string|number|null} vertex The vertex.
+ * @return {boolean} True for `[lon, lat, ...]` with numbers.
+ */
+function isLonLat(vertex) {
+	return (
+		Array.isArray(vertex)
+		&& vertex.length >= 2
+		&& typeof vertex[0] === 'number'
+		&& typeof vertex[1] === 'number'
+	)
 }

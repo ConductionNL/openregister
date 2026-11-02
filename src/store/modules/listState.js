@@ -35,3 +35,19 @@ export function listStateActions(defaultLimit) {
 		},
 	}
 }
+
+/**
+ * The list-state fields of an admin list store: no filters, page 1 of 20.
+ *
+ * @return {{filters: Array, pagination: {page: number, limit: number}}} The fields, to spread into the store's `state`.
+ * @spec exclude Pure client UI-state defaults — list pagination cursor and filter criteria. No backend contract.
+ */
+export function listStateFields() {
+	return {
+		filters: [], // List of query
+		pagination: {
+			page: 1,
+			limit: 20,
+		},
+	}
+}

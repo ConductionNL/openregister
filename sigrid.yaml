@@ -60,9 +60,17 @@ exclude:
   # Not part of the shipped app.
   - ".*/scripts/.*"
   - ".*/tools/.*"
+  # Scripts kept inside OpenSpec change folders (openspec/changes/**, archive
+  # included): one-off tooling for a change, not part of the shipped app.
+  - ".*/openspec/changes/.*"
   # Composer manifests for isolated developer tools.
   - ".*/vendor-bin/.*"
   # Root-level tool configuration (ESLint flat config, PHPStan bootstrap, PHP-CS-Fixer).
   - ".*/eslint[.]config[.]m?js"
   - ".*/phpstan-bootstrap[.]php"
   - ".*/[.]php-cs-fixer[.]dist[.]php"
+  # Developer tooling for Claude Code under .claude/: skills, agents and their
+  # configuration, partly copied from upstream (the skill-creator skill carries
+  # its own Apache-2.0 licence and update script). Not part of the shipped app;
+  # the skills stay in the repository for developers.
+  - ".*/[.]claude/.*"

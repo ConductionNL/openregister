@@ -25,6 +25,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
+import { failureText, whileLoading } from './loadingState.js'
 
 const API_BASE = generateUrl('/apps/openregister/api')
 
@@ -83,15 +84,40 @@ function widgetEntry(data, error) {
 }
 
 /**
- * The text of a failed request: the server's error, else the error message,
- * else the fallback.
+ * The dashboards listing URL of a register and schema, defaulting to the
+ * configured reports register and dashboard schema.
  *
- * @param {object} e The rejected error.
- * @param {string} fallback The text when neither is set.
- * @return {string} The text.
+ * @param {{register?: string, schema?: string}} params The register and schema, if given.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL of the dashboard API passthroughs.
  */
-function failureText(e, fallback) {
-	return e.response?.data?.error ?? e.message ?? fallback
+function dashboardsUrl(params) {
+	const register = params.register || DEFAULT_REPORTS_REGISTER
+	const schema = params.schema || DEFAULT_DASHBOARD_SCHEMA
+	return `${API_BASE}/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}`
+}
+
+/**
+ * Load one widget's data into the widget cache. A failure is cached as the
+ * widget's error, logged, and answered with null.
+ *
+ * @param {object} store The reports store.
+ * @param {{widget: object, key: string}} job The widget and its cache key.
+ * @return {Promise<object|null>} The data, or null after a failure.
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+async function loadWidget(store, job) {
+	const { widget, key } = job
+	try {
+		const data = await store._fetchWidgetSource(widget.dataSource)
+		store.widgetData = { ...store.widgetData, [key]: widgetEntry(data, null) }
+		return data
+	} catch (e) {
+		const message = failureText(e, 'Failed to fetch widget data')
+		store.widgetData = { ...store.widgetData, [key]: widgetEntry(null, message) }
+		console.error('[reports.fetchWidgetData]', { widget, error: e })
+		return null
+	}
 }
 
 export const useReportsStore = defineStore('reports', {
@@ -141,24 +167,17 @@ export const useReportsStore = defineStore('reports', {
 		 * @spec exclude API passthrough to GET /api/objects/{register}/{schema} (dashboard list)
 		 */
 		async fetchDashboards(params = {}) {
-			this.loading = true
-			this.error = null
-			const register = params.register || DEFAULT_REPORTS_REGISTER
-			const schema = params.schema || DEFAULT_DASHBOARD_SCHEMA
-			try {
-				const response = await axios.get(
-					`${API_BASE}/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}`,
-					{ params: { _limit: 200, ...params } },
-				)
-				this.dashboards = response.data?.results ?? response.data ?? []
-				return this.dashboards
-			} catch (e) {
-				this.error = failureText(e, 'Failed to fetch dashboards')
-				console.error('[reports.fetchDashboards]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			return whileLoading(this, {
+				failure: 'Failed to fetch dashboards',
+				log: (e) => console.error('[reports.fetchDashboards]', e),
+				run: async () => {
+					const response = await axios.get(dashboardsUrl(params), {
+						params: { _limit: 200, ...params },
+					})
+					this.dashboards = response.data?.results ?? response.data ?? []
+					return this.dashboards
+				},
+			})
 		},
 
 		/**
@@ -170,23 +189,17 @@ export const useReportsStore = defineStore('reports', {
 		 */
 		async fetchDashboard(identifier, params = {}) {
 			if (!identifier) return null
-			this.loading = true
-			this.error = null
-			const register = params.register || DEFAULT_REPORTS_REGISTER
-			const schema = params.schema || DEFAULT_DASHBOARD_SCHEMA
-			try {
-				const response = await axios.get(
-					`${API_BASE}/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(identifier)}`,
-				)
-				this.activeDashboard = response.data ?? null
-				return this.activeDashboard
-			} catch (e) {
-				this.error = failureText(e, 'Failed to fetch dashboard')
-				console.error('[reports.fetchDashboard]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			return whileLoading(this, {
+				failure: 'Failed to fetch dashboard',
+				log: (e) => console.error('[reports.fetchDashboard]', e),
+				run: async () => {
+					const response = await axios.get(
+						`${dashboardsUrl(params)}/${encodeURIComponent(identifier)}`,
+					)
+					this.activeDashboard = response.data ?? null
+					return this.activeDashboard
+				},
+			})
 		},
 
 		/**
@@ -200,30 +213,12 @@ export const useReportsStore = defineStore('reports', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetchWidgetData(widget, forceRefresh = false) {
-			const dataSource = widget?.dataSource
-			const key = widgetCacheKey(dataSource)
+			const key = widgetCacheKey(widget?.dataSource)
 			if (!key) return null
-
 			if (!forceRefresh && this.widgetData[key]?.data) {
 				return this.widgetData[key].data
 			}
-
-			try {
-				const data = await this._fetchWidgetSource(dataSource)
-				this.widgetData = {
-					...this.widgetData,
-					[key]: widgetEntry(data, null),
-				}
-				return data
-			} catch (e) {
-				const message = failureText(e, 'Failed to fetch widget data')
-				this.widgetData = {
-					...this.widgetData,
-					[key]: widgetEntry(null, message),
-				}
-				console.error('[reports.fetchWidgetData]', { widget, error: e })
-				return null
-			}
+			return loadWidget(this, { widget, key })
 		},
 
 		/**

@@ -2899,6 +2899,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// `autoShare` is the schema-level default FilePropertyHandler reads for
 		// every file property. `objectSlugSuffix` (#4037) is read by
 		// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
+		// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
+		// runs the save events per row.
 		$boolFields = [
 			'allowFiles',
 			'autoShare',
@@ -2908,6 +2910,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'additionalProperties',
 			'draftsVisible',
 			'draftsListed',
+			'fireEventsOnBulkWrites',
 			'objectSlugSuffix',
 		];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type

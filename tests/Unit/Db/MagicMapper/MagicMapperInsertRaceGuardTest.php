@@ -1,0 +1,405 @@
+<?php
+
+/**
+ * MagicMapper: a create that finds its identifier taken runs the update guard before it updates.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Unit\Db\MagicMapper
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
+
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IConfig;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserManager;
+use OCP\IUserSession;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+
+/**
+ * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Exception\ObjectExistsException
+ *
+ * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md
+ */
+class MagicMapperInsertRaceGuardTest extends TestCase {
+
+	private const UUID = '11111111-2222-3333-4444-555555555555';
+
+	private const REFUSAL = 'The transition is not allowed';
+
+	/**
+	 * Events in the order they were dispatched.
+	 *
+	 * @var list<object>
+	 */
+	private array $dispatched = [];
+
+	/**
+	 * The failIfExists flag of every table write, in order.
+	 *
+	 * @var list<bool>
+	 */
+	private array $writes = [];
+
+	/**
+	 * Whether the uuid is already in the table.
+	 *
+	 * @var bool
+	 */
+	private bool $taken = false;
+
+	/**
+	 * Run once inside the next ObjectCreatingEvent, before it is recorded.
+	 *
+	 * @var callable|null
+	 */
+	private $onCreating = null;
+
+	/**
+	 * Run once inside the next ObjectUpdatingEvent, before it is recorded.
+	 *
+	 * @var callable|null
+	 */
+	private $onUpdating = null;
+
+	/**
+	 * The mapper with its table I/O stubbed.
+	 *
+	 * @param bool $taken Whether the uuid is already in the table.
+	 *
+	 * @return MagicMapper&MockObject
+	 */
+	private function mapper(bool $taken): MagicMapper&MockObject {
+		$this->dispatched = [];
+		$this->writes     = [];
+		$this->taken      = $taken;
+
+		$events = $this->createMock(IEventDispatcher::class);
+		$events->method('dispatchTyped')->willReturnCallback(
+			function (object $event): void {
+				if ($event instanceof ObjectCreatingEvent && $this->onCreating !== null) {
+					$hook             = $this->onCreating;
+					$this->onCreating = null;
+					$hook();
+				}
+
+				if ($event instanceof ObjectUpdatingEvent && $this->onUpdating !== null) {
+					$hook             = $this->onUpdating;
+					$this->onUpdating = null;
+					$hook();
+				}
+
+				if ($event instanceof ObjectUpdatingEvent && (($event->getNewObject()->getObject()['status'] ?? null) === 'in-deliberation')) {
+					$event->setErrors(['message' => self::REFUSAL]);
+					$event->stopPropagation();
+				}
+
+				$this->dispatched[] = $event;
+			}
+		);
+
+		$mapper = $this->getMockBuilder(MagicMapper::class)
+			->setConstructorArgs(
+				[
+					$this->createMock(IDBConnection::class),
+					$this->createMock(SchemaMapper::class),
+					$this->createMock(RegisterMapper::class),
+					$this->createMock(IConfig::class),
+					$events,
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class),
+					$this->createMock(IUserManager::class),
+					$this->createMock(IAppConfig::class),
+					$this->createMock(LoggerInterface::class),
+					$this->createMock(AppSettingsInterface::class),
+					$this->container(),
+				]
+			)
+			->onlyMethods(
+				[
+					'ensureTableForRegisterSchema',
+					'getTableNameForRegisterSchema',
+					'saveObjectToRegisterSchemaTable',
+					'findObjectInRegisterSchemaTable',
+					'convertRowToObjectEntity',
+				]
+			)
+			->getMock();
+
+		$mapper->method('ensureTableForRegisterSchema')->willReturn(true);
+		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_3_7');
+		$mapper->method('saveObjectToRegisterSchemaTable')->willReturnCallback(
+			function (array $objectData, Register $register, Schema $schema, string $tableName, bool $failIfExists = false, ?int &$insertedId = null): string {
+				$this->writes[] = $failIfExists;
+				if ($this->taken === true && $failIfExists === true) {
+					throw new ObjectExistsException(message: 'taken', uuid: self::UUID);
+				}
+
+				if ($this->taken === false) {
+					$insertedId = 41;
+				}
+
+				return self::UUID;
+			}
+		);
+		$mapper->method('findObjectInRegisterSchemaTable')->willReturn(['_id' => 5, '_uuid' => self::UUID]);
+		$mapper->method('convertRowToObjectEntity')->willReturnCallback(
+			static function (): ObjectEntity {
+				$stored = new ObjectEntity();
+				$stored->setId(5);
+				$stored->setUuid(self::UUID);
+				$stored->setObject(['status' => 'open']);
+				return $stored;
+			}
+		);
+
+		return $mapper;
+	}//end mapper()
+
+	/**
+	 * A container that hands the mapper's handlers the collaborators they need.
+	 *
+	 * @return ContainerInterface
+	 */
+	private function container(): ContainerInterface {
+		$services = [
+			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
+			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+		];
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): ?object => ($services[$id] ?? null));
+		return $container;
+	}//end container()
+
+	/**
+	 * An object to create with the given status.
+	 *
+	 * @param string $status The status it carries.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function entity(string $status): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid(self::UUID);
+		$entity->setRegister('3');
+		$entity->setSchema('7');
+		$entity->setObject(['status' => $status]);
+		return $entity;
+	}//end entity()
+
+	/**
+	 * A register and a schema with ids.
+	 *
+	 * @return array{0: Register, 1: Schema}
+	 */
+	private function target(): array {
+		$register = new Register();
+		$register->setId(3);
+		$schema = new Schema();
+		$schema->setId(7);
+		return [$register, $schema];
+	}//end target()
+
+	/**
+	 * The classes of the dispatched events, in order.
+	 *
+	 * @return list<string>
+	 */
+	private function eventClasses(): array {
+		return array_map(static fn (object $e): string => $e::class, $this->dispatched);
+	}//end eventClasses()
+
+	public function testALostInsertRunsTheUpdateGuard(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		try {
+			$mapper->insertObjectEntity(entity: $this->entity('in-deliberation'), register: $register, schema: $schema);
+			$this->fail('The update guard should have refused the write.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::REFUSAL, $e->getMessage());
+		}
+
+		$this->assertSame([true], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class, ObjectUpdatingEvent::class], $this->eventClasses());
+	}//end testALostInsertRunsTheUpdateGuard()
+
+	public function testALostInsertTheGuardAllowsIsWrittenAsAnUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		$saved = $mapper->insertObjectEntity(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([true, false], $this->writes);
+		$this->assertSame(5, $saved->getId());
+		$updating = $this->dispatched[1];
+		$this->assertInstanceOf(ObjectUpdatingEvent::class, $updating);
+		$this->assertSame('open', $updating->getOldObject()?->getObject()['status']);
+		$this->assertSame('closed', $updating->getNewObject()->getObject()['status']);
+	}//end testALostInsertTheGuardAllowsIsWrittenAsAnUpdate()
+
+	public function testAnInsertThatMustNotUpdateStillRefuses(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		$this->expectException(ObjectExistsException::class);
+		try {
+			$mapper->insertObjectEntity(entity: $this->entity('closed'), register: $register, schema: $schema, failIfExists: true);
+		} finally {
+			$this->assertSame([true], $this->writes);
+			$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+		}
+	}//end testAnInsertThatMustNotUpdateStillRefuses()
+
+	public function testAnInsertThatWinsWritesOnce(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+
+		$saved = $mapper->insertObjectEntity(entity: $this->entity('in-deliberation'), register: $register, schema: $schema);
+
+		$this->assertSame([true], $this->writes);
+		$this->assertSame(41, $saved->getId());
+		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+	}//end testAnInsertThatWinsWritesOnce()
+	public function testALostInsertAnnouncesAnUpdateNotACreate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectUpdatingEvent::class, ObjectUpdatedEvent::class], $this->eventClasses());
+		$updated = $this->dispatched[2];
+		$this->assertInstanceOf(ObjectUpdatedEvent::class, $updated);
+		$this->assertSame('open', $updated->getOldObject()?->getObject()['status']);
+		$this->assertSame('closed', $updated->getNewObject()->getObject()['status']);
+	}//end testALostInsertAnnouncesAnUpdateNotACreate()
+
+	public function testAWonInsertAnnouncesACreate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
+	}//end testAWonInsertAnnouncesACreate()
+
+	public function testAnInsertAfterALostOneAnnouncesACreateAgain(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$mapper->insertObjectEntity(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->taken      = false;
+		$this->dispatched = [];
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
+	}//end testAnInsertAfterALostOneAnnouncesACreateAgain()
+	public function testANestedLostInsertDoesNotTurnTheOuterCreateIntoAnUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+		$this->onCreating = function () use ($mapper, $register, $schema): void {
+			$this->taken = true;
+			$mapper->insert(entity: $this->entity('inner'), register: $register, schema: $schema);
+			$this->taken = false;
+		};
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame(
+			[ObjectCreatingEvent::class, ObjectUpdatingEvent::class, ObjectUpdatedEvent::class, ObjectCreatingEvent::class, ObjectCreatedEvent::class],
+			$this->eventClasses()
+		);
+	}//end testANestedLostInsertDoesNotTurnTheOuterCreateIntoAnUpdate()
+
+	public function testAStoppedUpdateLeavesNoReplacedRowBehind(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		try {
+			$mapper->insert(entity: $this->entity('in-deliberation'), register: $register, schema: $schema);
+		} catch (HookStoppedException $e) {
+			// The refusal is the point of the first insert.
+		}
+
+		$this->taken      = false;
+		$this->dispatched = [];
+		$mapper->insertObjectEntity(entity: $this->entity('closed'), register: $register, schema: $schema);
+		$this->dispatched = [];
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
+	}//end testAStoppedUpdateLeavesNoReplacedRowBehind()
+	public function testAWonInsertNestedInAnUpdatingListenerKeepsTheOuterUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->onUpdating = function () use ($mapper, $register, $schema): void {
+			$this->taken = false;
+			$mapper->insert(entity: $this->entity('inner'), register: $register, schema: $schema);
+			$this->taken = true;
+		};
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$last = end($this->dispatched);
+		$this->assertInstanceOf(ObjectUpdatedEvent::class, $last);
+		$this->assertSame('closed', $last->getNewObject()->getObject()['status']);
+		$this->assertSame('open', $last->getOldObject()?->getObject()['status']);
+	}//end testAWonInsertNestedInAnUpdatingListenerKeepsTheOuterUpdate()
+
+}//end class
