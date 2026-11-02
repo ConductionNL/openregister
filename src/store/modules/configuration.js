@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ConfigurationEntity } from '../../entities/index.js'
+import { objectAnswer } from '../../services/listPage.js'
 import { listStateActions } from './listState.js'
 
 export const useConfigurationStore = defineStore('configuration', {
@@ -326,15 +327,7 @@ export const useConfigurationStore = defineStore('configuration', {
 					body: JSON.stringify(request.payload),
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
+				const responseData = await objectAnswer(response)
 
 				const data = new ConfigurationEntity(responseData)
 
