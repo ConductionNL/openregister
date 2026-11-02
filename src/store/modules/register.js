@@ -71,6 +71,91 @@ async function postImport(request) {
 	return { response, responseData }
 }
 
+/**
+ * Send one heartbeat request, which keeps the session alive during an import.
+ *
+ * @return {Promise<void>}
+ * @throws {Error} When the answer is not OK.
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+async function pingHeartbeat() {
+	const response = await fetch('/index.php/apps/openregister/api/heartbeat', {
+		method: 'GET',
+		headers: {
+			'X-Requested-With': 'XMLHttpRequest',
+			'Cache-Control': 'no-cache',
+		},
+		// Add timeout to prevent hanging requests
+		signal: AbortSignal.timeout(10000), // 10 second timeout
+	})
+	if (!response.ok) {
+		throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+	}
+}
+
+/**
+ * Record a successful heartbeat: after failures it is healthy again, and the
+ * listener hears so.
+ *
+ * @param {object} state The heartbeat's `{ count, failures, healthy, notify }`.
+ * @return {void}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+function heartbeatRecovered(state) {
+	if (state.failures === 0) {
+		return
+	}
+	state.failures = 0
+	state.healthy = true
+	if (state.notify) {
+		state.notify({ healthy: true, failures: 0, count: state.count })
+	}
+}
+
+/**
+ * Record a failed heartbeat: three failures in a row make it unhealthy, and
+ * the listener hears when health changes.
+ *
+ * @param {object} state The heartbeat's `{ count, failures, healthy, notify }`.
+ * @param {Error} error Why it failed.
+ * @return {void}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+function heartbeatFailed(state, error) {
+	state.failures++
+	const wasHealthy = state.healthy
+	state.healthy = state.failures < 3
+	console.error(
+		`RegisterStore: Heartbeat #${state.count} failed (failure ${state.failures}):`,
+		error.message,
+	)
+	if (state.notify && !wasHealthy !== !state.healthy) {
+		state.notify({
+			healthy: state.healthy,
+			failures: state.failures,
+			count: state.count,
+			error: error.message,
+		})
+	}
+}
+
+/**
+ * One heartbeat: count it, send it, and record how it went.
+ *
+ * @param {object} state The heartbeat's `{ count, failures, healthy, notify }`.
+ * @return {Promise<void>}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+async function beat(state) {
+	try {
+		state.count++
+		await pingHeartbeat()
+		heartbeatRecovered(state)
+	} catch (error) {
+		heartbeatFailed(state, error)
+	}
+}
+
 // Module-scoped single-flight token for refreshRegisterList. The endpoint is
 // expensive (~5-16s with _extend=schemas + @self.stats on dev envs with 100+
 // registers), and every sidebar mount + AppInitializationService both call
@@ -315,66 +400,13 @@ export const useRegisterStore = defineStore('register', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		startImportHeartbeat(intervalMs = 15000, onStatusChange = null) {
-			let heartbeatCount = 0
-			let failureCount = 0
-			let isHealthy = true
-
-			const heartbeatInterval = setInterval(async () => {
-				try {
-					heartbeatCount++
-
-					// Send a lightweight request to keep the session alive
-					const response = await fetch(
-						'/index.php/apps/openregister/api/heartbeat',
-						{
-							method: 'GET',
-							headers: {
-								'X-Requested-With': 'XMLHttpRequest',
-								'Cache-Control': 'no-cache',
-							},
-							// Add timeout to prevent hanging requests
-							signal: AbortSignal.timeout(10000), // 10 second timeout
-						},
-					)
-
-					if (!response.ok) {
-						throw new Error(
-							`HTTP ${response.status}: ${response.statusText}`,
-						)
-					}
-
-					// Reset failure count on success
-					if (failureCount > 0) {
-						failureCount = 0
-						isHealthy = true
-						if (onStatusChange) {
-							onStatusChange({
-								healthy: true,
-								failures: 0,
-								count: heartbeatCount,
-							})
-						}
-					}
-				} catch (error) {
-					failureCount++
-					const wasHealthy = isHealthy
-					isHealthy = failureCount < 3 // Consider unhealthy after 3 consecutive failures
-
-					console.error(
-						`RegisterStore: Heartbeat #${heartbeatCount} failed (failure ${failureCount}):`,
-						error.message,
-					)
-
-					if (onStatusChange && !wasHealthy !== !isHealthy) {
-						onStatusChange({
-							healthy: isHealthy,
-							failures: failureCount,
-							count: heartbeatCount,
-							error: error.message,
-						})
-					}
-				}
-			}, intervalMs)
+			const state = {
+				count: 0,
+				failures: 0,
+				healthy: true,
+				notify: onStatusChange,
+			}
+			const heartbeatInterval = setInterval(() => beat(state), intervalMs)
 
 			return {
 				/**
@@ -383,11 +415,14 @@ export const useRegisterStore = defineStore('register', {
 				stop() {
 					clearInterval(heartbeatInterval)
 				},
+				/**
+				 * @spec openspec/specs/frontend-store-client-state/spec.md
+				 */
 				getStatus() {
 					return {
-						healthy: isHealthy,
-						failures: failureCount,
-						count: heartbeatCount,
+						healthy: state.healthy,
+						failures: state.failures,
+						count: state.count,
 					}
 				},
 			}

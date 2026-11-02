@@ -439,9 +439,14 @@ function warmupMessage(data) {
 	)
 }
 
-export const useSettingsStore = defineStore('settings', {
-	state: () => ({
-		// Loading states
+/**
+ * The settings store's loading flags and cached stats, before anything loads.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsLoadingState() {
+	return {
 		loading: false,
 		loadingInProgress: false,
 		saving: false,
@@ -449,12 +454,19 @@ export const useSettingsStore = defineStore('settings', {
 		loadingStats: false,
 		loadingCacheStats: false,
 		loadingVersionInfo: false,
-
-		// Stats data (cached)
 		extractionStats: null,
 		vectorStats: null,
+	}
+}
 
-		// Cache states
+/**
+ * The settings store's cache management state.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsCacheState() {
+	return {
 		clearingCache: false,
 		warmingUpCache: false,
 		showClearCacheConfirmation: false,
@@ -464,21 +476,37 @@ export const useSettingsStore = defineStore('settings', {
 		warmupLastRun: null,
 		loadingWarmupInterval: false,
 		savingWarmupInterval: false,
+	}
+}
 
-		// Mass validation states
+/**
+ * The settings store's mass validation and clear-logs state.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsMaintenanceState() {
+	return {
 		massValidating: false,
 		showMassValidateConfirmation: false,
 		massValidateResults: null,
-
-		// Clear logs states
 		clearingAuditTrails: false,
 		clearingSearchTrails: false,
 		clearingBlobObjects: false,
 		showClearAuditTrailsConfirmation: false,
 		showClearSearchTrailsConfirmation: false,
 		showClearBlobObjectsConfirmation: false,
+	}
+}
 
-		// Settings data
+/**
+ * The settings store's settings sections, before they load.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsSectionsState() {
+	return {
 		rbacOptions: defaultRbacOptions(),
 		multitenancyOptions: defaultMultitenancyOptions(),
 		flowOptions: defaultFlowOptions(),
@@ -487,21 +515,34 @@ export const useSettingsStore = defineStore('settings', {
 		fileOptions: defaultFileOptions(),
 		loadingLlmSettings: false,
 		loadingFileSettings: false,
+	}
+}
 
-		versionInfo: {
-			appName: 'Open Register',
-			appVersion: '0.2.3',
-		},
-
-		// Options data
+/**
+ * The settings store's version, select options and statistics, before they load.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsOptionsState() {
+	return {
+		versionInfo: { appName: 'Open Register', appVersion: '0.2.3' },
 		groupOptions: [],
 		userOptions: [],
 		tenantOptions: [],
 		stats: emptySystemStats(),
 		cacheStats: emptyCacheStats(),
-
-		// Dialog states
 		showRebaseConfirmation: false,
+	}
+}
+
+export const useSettingsStore = defineStore('settings', {
+	state: () => ({
+		...settingsLoadingState(),
+		...settingsCacheState(),
+		...settingsMaintenanceState(),
+		...settingsSectionsState(),
+		...settingsOptionsState(),
 	}),
 
 	getters: {
