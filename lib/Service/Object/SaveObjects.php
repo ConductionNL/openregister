@@ -60,6 +60,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -73,6 +74,8 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -191,6 +194,8 @@ class SaveObjects {
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
 	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
+	 * @param PropertyRbacHandler|null $propertyRbac Applies property authorization per row, as SaveObject does.
+	 *                                               Null only in legacy fixtures.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -208,6 +213,7 @@ class SaveObjects {
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		private readonly ?DecisionTableBulkGuard $decisionTables = null,
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 
 	}//end __construct()
@@ -635,10 +641,6 @@ class SaveObjects {
 	 * @param array $result Result accumulator (mutated in place: `invalid` + `statistics`).
 	 *
 	 * @return array<int, array<string, mixed>> Objects that passed every gate.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	private function applyBulkSafeguards(
 		array $objects,
@@ -653,268 +655,364 @@ class SaveObjects {
 			return $objects;
 		}
 
-		$currentUser = $this->userSession->getUser();
-		$isAdmin = false;
-		if ($currentUser !== null && $this->groupManager !== null) {
-			try {
-				$isAdmin = $this->groupManager->isAdmin($currentUser->getUID());
-			} catch (\Throwable $e) {
-				$isAdmin = false;
-			}
-		}
-
-		// Non-admin callers cannot disable RBAC via `_rbac:false`. The flag
-		// is honoured only when the caller is admin (e.g. trusted import
-		// pipelines). The reserved-key policy at
-		// `/tmp/wave11-or-engine-primitives.md` Section B6 documents the
-		// intent: `_rbac` is a system/internal escape hatch, not an
-		// end-user opt-out.
-		$effectiveRbac = $_rbac;
-		if ($isAdmin === false) {
-			// Non-admin → force RBAC on regardless of payload.
-			$effectiveRbac = true;
-		}
-
-		// Validation flag is honoured as-passed by either tier — it
-		// controls a defence-in-depth schema check that authors opt in to
-		// when they want bulk-import payloads to be schema-validated.
-		$effectiveValidation = $_validation;
-		// Resolve the default schema entity once for the loop. It is used when
-		// an individual object does not carry an explicit schema in `@self`.
-		//
-		// "The caller named no schema" (mixed-schema bulk) and "the caller
-		// named a schema and it could not be loaded" are kept APART. Both used
-		// to arrive at the loop as a bare null, and the loop's `$rowSchema ===
-		// null` branch lets a row through UNCHECKED — so a transient failure
-		// inside `loadSchemaWithCache()` silently skipped the RBAC gate for
-		// every row of the batch while the write itself still went ahead (the
-		// fast path re-resolves `$schema` downstream). That is the fail-open
-		// shape CWE-863 describes: the caller read "could not resolve" as
-		// "nothing to check".
-		$defaultSchema = null;
-		$defaultSchemaUnresolved = false;
-		if ($schema !== null && $schema !== 0 && $schema !== '0') {
-			try {
-				$defaultSchema = $this->loadSafeguardSchema(schema: $schema);
-			} catch (\Throwable $e) {
-				$defaultSchemaUnresolved = true;
-			}
-		}
-
-		// Resolve the register once too, for the SAME reason the schema is
-		// resolved once: it bounds the create-vs-update lookup below to a single
-		// magic table. Without it MagicMapper::find() falls through to
-		// findAcrossAllMagicTables(), an instance-wide union over every magic
-		// table there is — and it runs once PER ROW.
-		//
-		// Measured on this instance: 757 ms per row, so a 20-row bulk save spent
-		// 15,143 ms of its 15,187 ms right here while the actual insert took 19 ms
-		// for all twenty. That made saveObjects() roughly FORTY TIMES slower per
-		// object than the saveObject() loop it exists to replace, which is the
-		// opposite of what every caller reaches for it expecting, and it grows
-		// with the number of magic tables on the instance rather than with the
-		// size of the batch.
-		$defaultRegister = null;
-		if ($register !== null && $register !== 0 && $register !== '0') {
-			try {
-				$defaultRegister = $this->loadSafeguardRegister(register: $register);
-			} catch (\Throwable $e) {
-				// A register we cannot resolve only costs the bounded lookup, not
-				// correctness: resolveSafeguardActionForRow() falls back to the
-				// instance-wide search, which is what it did before.
-				$defaultRegister = null;
-			}
-		}
-
-		// Resolve "which of these uuids already exist" for the WHOLE batch in one
-		// query per register+schema, before the row loop. Without it the loop
-		// below asks the same question one row at a time, which is O(N) queries
-		// inside the one code path whose entire purpose is to avoid them — and
-		// after the register/schema bounding above it was the single largest
-		// remaining cost of a bulk write.
-		//
-		// Rows whose group could not be prefetched (unresolvable register, an
-		// unreadable probe) are simply absent from the map, and
-		// resolveSafeguardActionForRow() falls back to its own lookup for them.
-		// An empty map is therefore "not prefetched", never "nothing exists" —
-		// treating a failed probe as an empty result would classify every row as
-		// a create and write duplicates on the next run.
-		$existingByUuid = $this->prefetchExistingRows(
-			objects: $objects,
-			defaultSchema: $defaultSchema,
-			defaultRegister: $defaultRegister
+		$run = $this->startBulkSafeguardRun(
+			batch: ['objects' => $objects, 'register' => $register, 'schema' => $schema],
+			flags: ['rbac' => $_rbac, 'validation' => $_validation]
 		);
 
 		$passed = [];
 		foreach ($objects as $index => $object) {
-			// Note: phpdoc shape guarantees each $object is an array. Earlier
-			// versions of this loop carried an `is_array($object) === false`
-			// defence; phpstan flagged it as dead because the typed shape
-			// contracts on the public method. Callers passing non-array
-			// rows would be a programmer error, not a runtime concern.
-			//
-			// The key is the caller's own array position and travels with every
-			// rejection below (issue #2778) — it used to be discarded here, and
-			// a refused row then had no way of naming itself in the response.
+			// The caller's own array position travels with every rejection (issue #2778).
 			$rowIndex = null;
 			if (is_int($index) === true) {
 				$rowIndex = $index;
 			}
 
-			// Step 1: strip dangerous @self fields for non-admins.
-			$sanitised = $this->stripSelfInjectionFields(object: $object, isAdmin: $isAdmin);
-
-			// A row naming two different identities is refused: the guard below
-			// resolves "which row is this" once, the writers resolve it with their
-			// own precedence (`id`, then `@self.id`; the mixed-schema writer reads
-			// `@self.id` only), so two candidates let the guard see a create while
-			// the writer overwrites another user's draft.
-			if ($this->rowIdentityIsAmbiguous(object: $sanitised) === true) {
-				$this->recordSafeguardRejection(
-					object: $sanitised,
-					reason: 'The row names more than one identity (id, @self.id, @self.uuid differ); send one.',
-					result: $result,
-					index: $rowIndex
-				);
+			[$row, $refusal] = $this->screenSafeguardRow(object: $object, run: $run);
+			if ($refusal !== null) {
+				$this->recordSafeguardRejection(object: $row, reason: $refusal, result: $result, index: $rowIndex);
 				continue;
 			}
 
-			// Resolve effective schema for this row (per-object schema wins
-			// for mixed-schema bulk).
-			$rowSchema = $this->resolveSafeguardRowSchema(
-				object: $sanitised,
-				defaultSchema: $defaultSchema
-			);
-
-			// No schema → can't enforce schema-bound rules.
-			//
-			// A row that names no schema at all in a mixed-schema batch is a
-			// malformed payload: allow it through so the downstream prep
-			// records an "invalid" with the proper error shape (wave-11
-			// behaviour). But a row with no schema BECAUSE the schema the
-			// caller named could not be loaded is a different thing entirely —
-			// the RBAC gate below is the check, and skipping it is a decision
-			// to write without one. Refuse instead.
-			if ($rowSchema === null) {
-				if ($effectiveRbac === true && $defaultSchemaUnresolved === true) {
-					$this->recordSafeguardRejection(
-						object: $sanitised,
-						reason: 'Schema could not be resolved; refusing to write a row whose permissions cannot be checked.',
-						result: $result,
-						index: $rowIndex
-					);
-					continue;
-				}
-
-				$passed[] = $sanitised;
-				continue;
-			}
-
-			// Determine CREATE vs UPDATE by UUID lookup.
-			[$uuid, $action, $existingEntity] = $this->resolveSafeguardActionForRow(
-				object: $sanitised,
-				rowSchema: $rowSchema,
-				rowRegister: $this->resolveSafeguardRowRegister(
-					object: $sanitised,
-					defaultRegister: $defaultRegister
-				),
-				existingByUuid: $existingByUuid
-			);
-
-			// Step 2b: a draft is kept to its owner. Asked before the appendOnly
-			// gate, whose message would otherwise tell a non-owner that the uuid
-			// names an existing row. The existing row was found
-			// past the read RBAC, so without this a user who cannot read another
-			// user's draft could overwrite it by sending its uuid. The answer is
-			// the one a refused permission gives, so the draft's existence stays
-			// unannounced (same rule as ObjectService::refuseSomebodyElsesDraft).
-			// An administrator reads every draft, so is not kept from one.
-			if ($effectiveRbac === true && $existingEntity !== null) {
-				$draftKept = (new DraftCallerRule())->keptFromCaller(
-					object: $existingEntity,
-					schema: $rowSchema,
-					userId: $currentUser?->getUID(),
-					isAdmin: $isAdmin
-				);
-				if ($draftKept === true) {
-					$this->recordSafeguardRejection(
-						object: $sanitised,
-						reason: 'Permission denied for action ' . $action . ' on schema ' . $rowSchema->getSlug(),
-						result: $result,
-						index: $rowIndex
-					);
-					continue;
-				}
-			}
-
-			// Step 4: appendOnly UPDATE → reject.
-			if ($action === 'update' && $rowSchema->isAppendOnly() === true) {
-				$this->recordSafeguardRejection(
-					object: $sanitised,
-					reason: 'Schema is appendOnly; UPDATE rejected for row UUID ' . ((string)($uuid ?? '?')),
-					result: $result,
-					index: $rowIndex
-				);
-				continue;
-			}
-
-			// Step 3: PermissionHandler check (per row).
-			if ($effectiveRbac === true) {
-				$hasPermission = $this->permissionHandler->hasPermission(
-					schema: $rowSchema,
-					action: $action,
-					userId: $currentUser?->getUID(),
-					objectOwner: $existingEntity?->getOwner(),
-					_rbac: true,
-					object: $existingEntity
-				);
-
-				if ($hasPermission === false) {
-					$this->recordSafeguardRejection(
-						object: $sanitised,
-						reason: 'Permission denied for action ' . $action . ' on schema ' . $rowSchema->getSlug(),
-						result: $result,
-						index: $rowIndex
-					);
-					continue;
-				}
-			}
-
-			// Step 5: Opis JSON-Schema validation when requested.
-			if ($effectiveValidation === true && $this->validateHandler !== null) {
-				try {
-					$validationData = $sanitised;
-					unset($validationData['@self']);
-					$validationResult = $this->validateHandler->validateObject(
-						object: $validationData,
-						schema: $rowSchema
-					);
-					if ($validationResult->isValid() === false) {
-						$errorMessage = $this->validateHandler->generateErrorMessage(result: $validationResult);
-						$this->recordSafeguardRejection(
-							object: $sanitised,
-							reason: 'Schema validation failed: ' . $errorMessage,
-							result: $result,
-							index: $rowIndex
-						);
-						continue;
-					}
-				} catch (\Throwable $e) {
-					$this->recordSafeguardRejection(
-						object: $sanitised,
-						reason: 'Schema validation threw: ' . $e->getMessage(),
-						result: $result,
-						index: $rowIndex
-					);
-					continue;
-				}//end try
-			}//end if
-
-			$passed[] = $sanitised;
-		}//end foreach
+			$passed[] = $row;
+		}
 
 		return $passed;
 	}//end applyBulkSafeguards()
+
+	/**
+	 * Start a safeguard pass: the caller, the effective flags, the batch defaults and the
+	 * stored rows the batch's uuids name.
+	 *
+	 * `_rbac:false` is honoured only for an administrator (a trusted import, for instance);
+	 * for anyone else RBAC stays on, whatever the payload says. `_validation` is honoured as
+	 * passed: it is a defence-in-depth check authors opt in to.
+	 *
+	 * The stored rows are fetched for the whole batch in one query per register and schema.
+	 * A group whose probe failed is absent from the map, and the row lookup falls back to
+	 * its own query: an empty map means "not prefetched", never "nothing exists".
+	 *
+	 * @param array{objects: array, register: Register|string|int|null, schema: Schema|string|int|null} $batch The batch
+	 * @param array{rbac: bool, validation: bool}                                                     $flags The caller's flags
+	 *
+	 * @return BulkSafeguardRun
+	 */
+	private function startBulkSafeguardRun(array $batch, array $flags): BulkSafeguardRun {
+		$run             = new BulkSafeguardRun(currentUser: $this->userSession->getUser());
+		$run->isAdmin    = $this->safeguardCallerIsAdmin(run: $run);
+		$run->rbac       = ($flags['rbac'] === true || $run->isAdmin === false);
+		$run->validation = $flags['validation'];
+		$this->resolveSafeguardDefaults(run: $run, defaults: ['register' => $batch['register'], 'schema' => $batch['schema']]);
+		$run->existingByUuid = $this->prefetchExistingRows(
+			objects: $batch['objects'],
+			defaultSchema: $run->defaultSchema,
+			defaultRegister: $run->defaultRegister
+		);
+
+		return $run;
+	}//end startBulkSafeguardRun()
+
+	/**
+	 * Whether the bulk caller is an administrator; false when the group lookup fails.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return bool
+	 */
+	private function safeguardCallerIsAdmin(BulkSafeguardRun $run): bool {
+		if ($run->currentUser === null || $this->groupManager === null) {
+			return false;
+		}
+
+		try {
+			return $this->groupManager->isAdmin($run->currentUser->getUID());
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end safeguardCallerIsAdmin()
+
+	/**
+	 * Resolve the batch's default schema and register once, before the row loop.
+	 *
+	 * "The caller named no schema" (a mixed-schema batch) and "the caller named a schema
+	 * that could not be loaded" are kept apart. Both used to reach the loop as a bare
+	 * null, and a row without a schema passes unchecked, so a transient failure in
+	 * loadSchemaWithCache() skipped the RBAC gate for every row while the write went
+	 * ahead: the fail-open shape of CWE-863.
+	 *
+	 * The register bounds the create-or-update lookup to one magic table. Without it
+	 * every row searched every magic table (measured: 757 ms per row, 15 s of a 20-row
+	 * save). A register that cannot be loaded only costs that bound:
+	 * resolveSafeguardActionForRow() then falls back to the instance-wide lookup.
+	 *
+	 * @param BulkSafeguardRun                                                    $run      The safeguard pass
+	 * @param array{register: Register|string|int|null, schema: Schema|string|int|null} $defaults The batch arguments
+	 *
+	 * @return void
+	 */
+	private function resolveSafeguardDefaults(BulkSafeguardRun $run, array $defaults): void {
+		$schema = $defaults['schema'];
+		if ($schema !== null && $schema !== 0 && $schema !== '0') {
+			try {
+				$run->defaultSchema = $this->loadSafeguardSchema(schema: $schema);
+			} catch (\Throwable $e) {
+				$run->schemaUnresolved = true;
+			}
+		}
+
+		$register = $defaults['register'];
+		if ($register !== null && $register !== 0 && $register !== '0') {
+			try {
+				$run->defaultRegister = $this->loadSafeguardRegister(register: $register);
+			} catch (\Throwable $e) {
+				$run->defaultRegister = null;
+			}
+		}
+	}//end resolveSafeguardDefaults()
+
+	/**
+	 * One row through the gates: the row as it stands and the refusal, or null when it passes.
+	 *
+	 * @param array            $object The row
+	 * @param BulkSafeguardRun $run    The safeguard pass
+	 *
+	 * @return array{0: array, 1: string|null}
+	 */
+	private function screenSafeguardRow(array $object, BulkSafeguardRun $run): array {
+		$row = $this->stripSelfInjectionFields(object: $object, isAdmin: $run->isAdmin);
+
+		// A row naming two different identities is refused: the guard resolves "which row
+		// is this" once, the writers with their own precedence, so two candidates would let
+		// the guard see a create while the writer overwrites another user's draft.
+		if ($this->rowIdentityIsAmbiguous(object: $row) === true) {
+			return [$row, 'The row names more than one identity (id, @self.id, @self.uuid differ); send one.'];
+		}
+
+		$run->rowSchema = $this->resolveSafeguardRowSchema(object: $row, defaultSchema: $run->defaultSchema);
+		if ($run->rowSchema === null) {
+			return [$row, $this->schemalessRowRefusal(run: $run)];
+		}
+
+		[$run->rowUuid, $run->rowAction, $run->rowExisting] = $this->resolveSafeguardActionForRow(
+			object: $row,
+			rowSchema: $run->rowSchema,
+			rowRegister: $this->resolveSafeguardRowRegister(object: $row, defaultRegister: $run->defaultRegister),
+			existingByUuid: $run->existingByUuid
+		);
+
+		// A row that sends an explicit-reveal value back as its mask keeps the stored
+		// value, before validation refuses the mask's shape.
+		if ($run->rowExisting !== null) {
+			$row = ExplicitReveal::restoreMasked(schema: $run->rowSchema, incoming: $row, stored: ($run->rowExisting->getObject() ?? []));
+		}
+
+		return $this->screenResolvedRow(row: $row, run: $run);
+	}//end screenSafeguardRow()
+
+	/**
+	 * The refusal for a row without a schema, or null to let it through.
+	 *
+	 * A row that names no schema in a mixed-schema batch is let through, so the downstream
+	 * preparation records it as invalid with the proper error. A row without a schema
+	 * because the batch schema could not be loaded is refused while RBAC applies: the RBAC
+	 * gate is the check, and skipping it would be a decision to write without one.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function schemalessRowRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rbac === true && $run->schemaUnresolved === true) {
+			return 'Schema could not be resolved; refusing to write a row whose permissions cannot be checked.';
+		}
+
+		return null;
+	}//end schemalessRowRefusal()
+
+	/**
+	 * A row with a resolved schema and action through the remaining gates, in order: the
+	 * draft rule, appendOnly, the permission, property authorization, then validation.
+	 *
+	 * @param array            $row The row
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return array{0: array, 1: string|null}
+	 */
+	private function screenResolvedRow(array $row, BulkSafeguardRun $run): array {
+		$refusal = ($this->draftRefusal(run: $run)
+			?? $this->appendOnlyRefusal(run: $run)
+			?? $this->permissionRefusal(run: $run));
+		if ($refusal !== null) {
+			return [$row, $refusal];
+		}
+
+		// Property authorization per row, as the single-object save applies it.
+		if ($run->rbac === true) {
+			[$row, $refusal] = $this->applyPropertyAuthorization(
+				object: $row,
+				schema: $run->rowSchema,
+				existing: $run->rowExisting,
+				isCreate: ($run->rowAction === 'create')
+			);
+			if ($refusal !== null) {
+				return [$row, $refusal];
+			}
+		}
+
+		return [$row, $this->validationRefusal(row: $row, run: $run)];
+	}//end screenResolvedRow()
+
+	/**
+	 * The refusal for a row that overwrites somebody else's draft, or null.
+	 *
+	 * Asked before the appendOnly gate, whose message would otherwise tell a non-owner
+	 * that the uuid names an existing row. The stored row was found past the read RBAC,
+	 * so without this a user who cannot read another user's draft could overwrite it by
+	 * sending its uuid. The answer is the one a refused permission gives, so the draft's
+	 * existence stays unannounced (same rule as ObjectService::refuseSomebodyElsesDraft).
+	 * An administrator reads every draft, so is not kept from one.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function draftRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rbac === false || $run->rowExisting === null) {
+			return null;
+		}
+
+		$draftKept = (new DraftCallerRule())->keptFromCaller(
+			object: $run->rowExisting,
+			schema: $run->rowSchema,
+			userId: $run->userId(),
+			isAdmin: $run->isAdmin
+		);
+		if ($draftKept === false) {
+			return null;
+		}
+
+		return 'Permission denied for action ' . $run->rowAction . ' on schema ' . $run->rowSchema->getSlug();
+	}//end draftRefusal()
+
+	/**
+	 * The refusal for an update to an appendOnly schema, or null.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function appendOnlyRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rowAction !== 'update' || $run->rowSchema->isAppendOnly() === false) {
+			return null;
+		}
+
+		return 'Schema is appendOnly; UPDATE rejected for row UUID ' . ((string)($run->rowUuid ?? '?'));
+	}//end appendOnlyRefusal()
+
+	/**
+	 * The refusal when PermissionHandler does not grant the row's action, or null.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function permissionRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rbac === false) {
+			return null;
+		}
+
+		$hasPermission = $this->permissionHandler->hasPermission(
+			schema: $run->rowSchema,
+			action: $run->rowAction,
+			userId: $run->userId(),
+			objectOwner: $run->rowExisting?->getOwner(),
+			_rbac: true,
+			object: $run->rowExisting
+		);
+		if ($hasPermission === true) {
+			return null;
+		}
+
+		return 'Permission denied for action ' . $run->rowAction . ' on schema ' . $run->rowSchema->getSlug();
+	}//end permissionRefusal()
+
+	/**
+	 * The refusal when the row fails Opis JSON-Schema validation, or null.
+	 *
+	 * Only when the caller asked for validation and a validator is wired.
+	 *
+	 * @param array            $row The row
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function validationRefusal(array $row, BulkSafeguardRun $run): ?string {
+		if ($run->validation === false || $this->validateHandler === null) {
+			return null;
+		}
+
+		try {
+			$validationData = $row;
+			unset($validationData['@self']);
+			$validationResult = $this->validateHandler->validateObject(object: $validationData, schema: $run->rowSchema);
+			if ($validationResult->isValid() === false) {
+				return 'Schema validation failed: ' . $this->validateHandler->generateErrorMessage(result: $validationResult);
+			}
+		} catch (\Throwable $e) {
+			return 'Schema validation threw: ' . $e->getMessage();
+		}
+
+		return null;
+	}//end validationRefusal()
+
+	/**
+	 * Apply property authorization to one row, the way SaveObject does for a single save.
+	 *
+	 * A value the caller may not write is refused (unchanged values pass, as in a PATCH). On an
+	 * update, a stored property the row omits and the caller may not read or update is carried
+	 * forward, so leaving it out cannot clear it. A system operation is not narrowed.
+	 *
+	 * @param array<string, mixed> $object   The row, business fields at the top and `@self` beside them.
+	 * @param Schema               $schema   The row's schema.
+	 * @param ObjectEntity|null    $existing The stored row on an update, null on a create.
+	 * @param bool                 $isCreate Whether the row creates.
+	 *
+	 * @return array{0: array<string, mixed>, 1: string|null} The row to write, and a refusal or null.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
+	 */
+	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
+		// A system operation (cron, runAsSystem, the example-set installer) is trusted here as
+		// PermissionHandler::hasPermission trusts it for the object rule.
+		if ($this->propertyRbac === null || SystemOperationContext::isActive() === true) {
+			return [$object, null];
+		}
+
+		$incoming = $object;
+		unset($incoming['@self']);
+		$stored = ($existing?->getObject() ?? []);
+
+		$unauthorized = $this->propertyRbac->getUnauthorizedProperties(
+			schema: $schema,
+			object: $stored,
+			incomingData: $incoming,
+			isCreate: $isCreate
+		);
+		if ($unauthorized !== []) {
+			return [$object, 'You are not authorized to modify: ' . implode(', ', $unauthorized)];
+		}
+
+		if ($existing === null) {
+			return [$object, null];
+		}
+
+		$omitted = $this->propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
+		if ($omitted === []) {
+			return [$object, null];
+		}
+
+		return [$this->propertyRbac->restoreWriteOnlyValues(prepared: $object, stored: $stored, omittedPaths: $omitted), null];
+	}//end applyPropertyAuthorization()
 
 	/**
 	 * Strip dangerous client-supplied @self / top-level fields.

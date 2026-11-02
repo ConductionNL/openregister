@@ -60,7 +60,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -131,7 +131,7 @@ class DenyResolver {
 	 *
 	 * @return array<string, array> The deny block, keyed by action; empty when none is declared.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denyBlock(?array $authorization): array {
 		if (is_array($authorization) === false) {
@@ -158,7 +158,7 @@ class DenyResolver {
 	 *
 	 * @return bool True when at least one action carries a non-empty deny list.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declaresAnyDeny(?array $authorization): bool {
 		foreach ($this->denyBlock(authorization: $authorization) as $entries) {
@@ -178,7 +178,7 @@ class DenyResolver {
 	 *
 	 * @return array<int, mixed> The entries, in declaration order.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function entriesFor(?array $authorization, string $action): array {
 		$entries = ($this->denyBlock(authorization: $authorization)[$action] ?? null);
@@ -204,7 +204,7 @@ class DenyResolver {
 	 *
 	 * @return array<string, array> The union, keyed by action.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function mergeDeny(?array $baseline, ?array $override): array {
 		$merged = [];
@@ -273,7 +273,7 @@ class DenyResolver {
 	 *
 	 * @return string[] The principal names, deduplicated.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function principalsFor(?string $userId, array $userGroups): array {
 		$principals = [self::PRINCIPAL_PUBLIC];
@@ -302,7 +302,7 @@ class DenyResolver {
 	 *
 	 * @return string|null The principal the entry named, or null when it names none.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function entryNames(mixed $entry, array $principals): ?string {
 		return $this->matcher->entryNames(entry: $entry, principals: $principals);
@@ -322,7 +322,7 @@ class DenyResolver {
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The matching denials.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function matchingDenials(?array $authorization, string $action, array $principals): array {
 		return $this->matcher->matchingDenials(
@@ -344,7 +344,7 @@ class DenyResolver {
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function unconditionalDenial(?array $authorization, string $action, array $principals): ?array {
 		foreach ($this->matchingDenials(authorization: $authorization, action: $action, principals: $principals) as $denial) {
@@ -365,7 +365,7 @@ class DenyResolver {
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The conditional denials.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function conditionalDenials(?array $authorization, string $action, array $principals): array {
 		$conditional = [];
@@ -407,7 +407,7 @@ class DenyResolver {
 	 *
 	 * @return string A SQL predicate true for rows this caller is not denied.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function notDeniedRowSql(string $columnName, string $action, bool $isPostgres, array $principals): string {
 		if ($principals === []) {

@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Database-native faceting across PostgreSQL and MariaDB
 The faceting system MUST operate on the database backends only (PostgreSQL/MariaDB). `MagicFacetHandler` MUST handle SQL-based faceting with per-column `GROUP BY` queries on dynamic magic tables, and `MariaDbFacetHandler` MUST handle JSON faceting on the legacy `openregister_objects` table. There is no external search engine and no `SolrFacetProcessor`. `FacetHandler.transformFacetsToStandardFormat()` MUST normalize output into the API response format with `name`, `type`, `title`, `description`, `queryParameter`, `order`, `data.buckets[]` structure.
@@ -20,3 +20,13 @@ The faceting system MUST operate on the database backends only (PostgreSQL/Maria
 - **WHEN** `MagicFacetHandler.getSimpleFacetsUnion()` computes facets
 - **THEN** it MUST build a single UNION ALL query combining `SELECT status, COUNT(*) FROM oc_or_r1_s1 GROUP BY status` with `SELECT status, COUNT(*) FROM oc_or_r1_s2 GROUP BY status`
 - **AND** bucket counts from both tables MUST be merged into aggregated totals
+
+## REMOVED Requirements
+
+### Requirement: Solr facet configuration discovery and management API
+**Reason**: Solr and the search Index abstraction are removed. `SolrSettingsController` and its facet configuration and discovery endpoints no longer exist.
+**Migration**: Facets are configured per schema property through the `facetable` config object and discovered through the `_facetable` parameter (see "Facet discovery via _facetable parameter").
+
+### Requirement: Backend-agnostic faceting across PostgreSQL and Solr
+**Reason**: `SolrFacetProcessor` and the Solr backend are removed, so the Solr terms facet scenario no longer applies.
+**Migration**: Replaced by "Database-native faceting across PostgreSQL and MariaDB", which carries the PostgreSQL, MariaDB JSON and UNION ALL facet scenarios unchanged.

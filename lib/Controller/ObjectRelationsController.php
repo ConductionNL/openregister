@@ -808,7 +808,7 @@ class ObjectRelationsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the read may go on.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function purposeRefusal(ObjectEntity $object): ?JSONResponse {
 		$schema = $this->access->schemaOf(object: $object);

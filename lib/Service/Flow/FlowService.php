@@ -59,6 +59,10 @@ use Throwable;
  * itself depends on all of them.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every constructor parameter is
  * an injected collaborator; Nextcloud's container wires them by type.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) delete() and deleteStored() are
+ * one cascade with and without the caller check; an example set removing the
+ * flow it wrote has no caller to check. Moving the cascade out would split one
+ * flow's delete over two classes.
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
@@ -611,7 +615,24 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function delete(string $uuid): void {
-		$this->mapper->delete($this->find(uuid: $uuid));
+		$this->deleteStored(flow: $this->find(uuid: $uuid));
+
+	}//end delete()
+
+	/**
+	 * Delete a stored flow with its trigger rows, runs, state and versions,
+	 * without asking whose it is. For callers that already decided they may,
+	 * such as an example set removing the flow it wrote.
+	 *
+	 * @param Flow $flow The stored flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 */
+	public function deleteStored(Flow $flow): void {
+		$uuid = (string)$flow->getUuid();
+		$this->mapper->delete($flow);
 
 		// Drop the flow's trigger rows too. An orphaned row is read on every
 		// matching object event and names a flow that can no longer be loaded,
@@ -662,7 +683,7 @@ class FlowService {
 			);
 		}
 
-	}//end delete()
+	}//end deleteStored()
 
 	/**
 	 * Queue a manual run of a flow the caller owns.
@@ -732,6 +753,48 @@ class FlowService {
 		// swallows for the opposite reason — one bad run must not stop a queue.
 		return $this->advancer->advance(run: $run, rethrow: true);
 	}//end run()
+
+	/**
+	 * Run a flow on behalf of a declared action whose right the caller already holds.
+	 *
+	 * For the system-held flow inline `steps` are lowered to
+	 * ({@see \OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow}).
+	 * That flow has no owner and belongs to no person, so the owner check in
+	 * {@see assertRunnable()} would refuse everyone: the action's own right on
+	 * the subject, checked by the caller before this, is the authorisation
+	 * (ADR-023). The run still executes as the acting user, so every write
+	 * inside it is checked against their rights.
+	 *
+	 * @param string               $uuid    The flow uuid.
+	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 * @param boolean              $sync    Execute inline and return the finished run.
+	 *
+	 * @return FlowRun The queued run, or the finished run when $sync is true.
+	 *
+	 * @throws DoesNotExistException When no such flow exists.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As run(): $sync chooses who advances the run.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
+	 */
+	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
+		$flow = $this->mapper->findByUuid($uuid);
+
+		$run = $this->runner->queue(
+			flowId: (string)$flow->getUuid(),
+			subject: $subject,
+			trigger: Flow::TRIGGER_MANUAL,
+			context: $context,
+			user: $this->caller->actingUser()
+		);
+
+		if ($sync === false) {
+			return $run;
+		}
+
+		return $this->advancer->advance(run: $run, rethrow: true);
+	}//end runForAction()
 
 	/**
 	 * Mint a v4 uuid.

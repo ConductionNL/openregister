@@ -23,7 +23,7 @@ What an example set needs before its check: the OpenRegister registers it
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use DateTimeImmutable;
 /**
  * Registers and organisations before the check, and the base context.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
  */
 class ExampleSetPrerequisites {
 	/**
@@ -65,7 +65,7 @@ class ExampleSetPrerequisites {
 	 * @return array{refusals: array<int, string>, registers: array<string, string>} Refusals, and per required register
 	 *                                                                              `imported`, `kept` or `failed`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function ensure(array $plan, array &$record): array {
 		$registers = $this->ensureRegisters(plan: $plan, record: $record);
@@ -85,7 +85,7 @@ class ExampleSetPrerequisites {
 	 * @return array<string, mixed> `cast`, `today`, `accounts` (service accounts by key), `organisations` (uuid by
 	 *                              slug and name) and `instance` (`baseUrl`).
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function context(array $plan, DateTimeImmutable $today): array {
 		$accounts = [];
@@ -103,15 +103,18 @@ class ExampleSetPrerequisites {
 	}//end context()
 
 	/**
-	 * Import every required register that is not on the instance, or that this set imported and removed the data of,
-	 * and record the import.
+	 * Import every required register that is not on the instance, that this set imported and removed the data of, or
+	 * whose descriptor ships a newer version than the instance holds, and record the import.
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $record The record; gains the imports.
 	 *
 	 * @return array{refusals: array<int, string>, outcome: array<string, string>}
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Missing, emptied and behind are three reasons to
+	 *                                               import, then the jobs and the refusal follow.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function ensureRegisters(array $plan, array &$record): array {
 		$result = ['refusals' => [], 'outcome' => []];
@@ -120,11 +123,14 @@ class ExampleSetPrerequisites {
 			$result['outcome'][$slug] = 'kept';
 			// A register this set imported whose import was removed again is on the instance without its data.
 			$dataRemoved = (array_key_exists($slug, $record['registers']) === true && $record['registers'][$slug] === []);
-			if ($this->registers->exists(slug: $slug) === true && $dataRemoved === false) {
+			$mock        = (($required['mock'] ?? false) === true);
+			if ($this->registers->exists(slug: $slug) === true && $dataRemoved === false
+				&& $this->registers->isBehind(slug: $slug, mock: $mock) === false
+			) {
 				continue;
 			}
 
-			$import = match (($required['mock'] ?? false) === true) {
+			$import = match ($mock) {
 				true  => $this->registers->importMock(slug: $slug),
 				false => $this->registers->import(slug: $slug),
 			};
@@ -151,7 +157,8 @@ class ExampleSetPrerequisites {
 	}//end ensureRegisters()
 
 	/**
-	 * Create every OpenRegister organisation the cast declares and the instance lacks, and record it.
+	 * Create every OpenRegister organisation the cast declares and the instance lacks, and record it; one the set
+	 * made earlier gains the quota it declares where it has none.
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $record The record; gains the organisations this set created.
@@ -161,9 +168,9 @@ class ExampleSetPrerequisites {
 	private function ensureOrganisations(array $plan, array &$record): array {
 		$refusals = [];
 		foreach ((array) ($plan['organisations'] ?? []) as $declared) {
-			$made = $this->instance->ensure(declared: $declared);
+			$made = $this->instance->ensure(declared: $declared, made: (array) ($record['organisations'] ?? []));
 			if ($made['error'] !== '') {
-				$refusals[] = 'OpenRegister organisation "'.$declared['slug'].'" could not be created: '.$made['error'];
+				$refusals[] = 'OpenRegister organisation "'.$declared['slug'].'" could not be created or completed: '.$made['error'];
 				continue;
 			}
 

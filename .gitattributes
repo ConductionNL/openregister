@@ -28,3 +28,17 @@ lib/Service/Flow/Bpmn/schema/*.xsd -text
 LICENSE export-ignore
 README.md export-ignore
 update-deps.sh export-ignore
+
+# Generated files. GitHub collapses them in diffs and leaves them out of the
+# language statistics. l10n/*.js is built from l10n/*.json; openapi.json is
+# written by `composer openapi`.
+l10n/*.js linguist-generated=true
+openapi.json linguist-generated=true
+
+# Third-party code and specifications we ship unchanged.
+lib/Service/Flow/Bpmn/schema/*.xsd linguist-vendored=true
+lib/Resources/schemaorg/*.jsonld linguist-vendored=true
+lib/Resources/mdto/*.xsd linguist-vendored=true
+lib/Resources/Vocabulary/tooi-*.jsonld linguist-vendored=true
+lib/Resources/ggm/ggm-snapshot.json linguist-vendored=true
+docker/dolphin/models/** linguist-vendored=true

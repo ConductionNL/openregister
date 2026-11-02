@@ -148,7 +148,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 			->with('openregister', 'rbac', '{"enabled":true}');
 		$appConfig->expects($this->once())
 			->method('deleteKey')
-			->with('openregister', 'solr');
+			->with('openregister', 'archival');
 
 		$store = new ConfigurationValueStore(
 			$this->createMock(ConfigurationValueMapper::class),
@@ -159,7 +159,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$restored = $store->restore(
 			[
 				['layer' => ConfigurationLayer::INSTANCE, 'key' => 'rbac', 'present' => true, 'raw' => '{"enabled":true}'],
-				['layer' => ConfigurationLayer::INSTANCE, 'key' => 'solr', 'present' => false, 'raw' => ''],
+				['layer' => ConfigurationLayer::INSTANCE, 'key' => 'archival', 'present' => false, 'raw' => ''],
 				// A layer below the instance has no app config side to undo;
 				// its row is put back by the transaction rolling back.
 				['layer' => ConfigurationLayer::REGISTER, 'key' => 'integration.mail', 'present' => false, 'raw' => ''],
@@ -172,17 +172,17 @@ final class ConfigurationValueStoreTest extends TestCase {
 	public function testRemovingAnInstanceKeyDeletesItFromAppConfig(): void {
 		$mapper = $this->createMock(ConfigurationValueMapper::class);
 		$mapper->method('findAtAddress')->willReturn(
-			$this->row(ConfigurationLayer::INSTANCE, null, 'solr', ['enabled' => true], 'dep-1')
+			$this->row(ConfigurationLayer::INSTANCE, null, 'archival', ['enabled' => true], 'dep-1')
 		);
 		$mapper->expects($this->once())->method('remove');
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(true);
 		$appConfig->method('getValueString')->willReturn('{"enabled":true}');
-		$appConfig->expects($this->once())->method('deleteKey')->with('openregister', 'solr');
+		$appConfig->expects($this->once())->method('deleteKey')->with('openregister', 'archival');
 
 		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
-		$undo = $store->remove(ConfigurationLayer::INSTANCE, null, 'solr');
+		$undo = $store->remove(ConfigurationLayer::INSTANCE, null, 'archival');
 
 		$this->assertTrue($undo['present']);
 		$this->assertSame('{"enabled":true}', $undo['raw']);

@@ -23,7 +23,7 @@
 
 namespace OCA\OpenRegister\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\L10N\IFactory;
@@ -53,7 +53,7 @@ class Notifier implements INotifier {
 	 *                                       binding; absent, the uid is shown,
 	 *                                       which is worse copy but never a wrong
 	 *                                       name.
-	 * @param NotificationTemplateRegistry|null $templates The platform's shipped
+	 * @param NotificationTemplatesInterface|null $templates The platform's shipped
 	 *                                       message templates. Consulted only for
 	 *                                       an event whose words an administrator
 	 *                                       has actually changed; nullable and
@@ -63,7 +63,7 @@ class Notifier implements INotifier {
 		private readonly IFactory $factory,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly ?IUserManager $userManager = null,
-		private readonly ?NotificationTemplateRegistry $templates = null,
+		private readonly ?NotificationTemplatesInterface $templates = null,
 	) {
 	}//end __construct()
 
@@ -81,7 +81,7 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification|null The prepared notification, or null when there is no edit.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	private function renderEditedTemplate(INotification $notification, string $languageCode): ?INotification {
 		if ($this->templates === null) {
@@ -257,7 +257,7 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification The prepared notification
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function prepareSecuritySettingChanged(INotification $notification, $l): INotification {
 		$parameters = $notification->getSubjectParameters();

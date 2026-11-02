@@ -1,0 +1,5 @@
+- [x] 1.1 ShippedSeedContent (hash, update) and a hash ledger beside the version ledger
+- [x] 1.2 ImportHandler: write a seed whose shipped content changed; remember the hash on create and on update
+- [x] 1.3 IMPORT_RULES in the definition hash, so the fast-skip lets each app import once more
+- [x] 1.4 tests (ShippedSeedContentTest, ImportHandlerSeedObjectUpgradeTest)
+- [x] 1.5 the hash is remembered after the write; unchanged content still fills missing fields; IMPORT_RULES seed-content-2

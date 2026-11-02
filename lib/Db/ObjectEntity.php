@@ -937,7 +937,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return array<string, mixed>|null The clocks, or null when not resolved.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function getRetentionClocks(): ?array {
 		return $this->retentionClocks;
@@ -952,7 +952,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function setRetentionClocks(?array $clocks): void {
 		$this->retentionClocks = $clocks;
@@ -1025,7 +1025,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function setWatching(?bool $watching, ?bool $notify = null): void {
 		$this->watching = $watching;
@@ -1099,7 +1099,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
 	public function setViewedAt(?string $viewedAt): void {
 		$this->viewedAt = $viewedAt;
@@ -2031,7 +2031,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return static Returns the entity
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
 		$currentUser = $userSession->getUser();

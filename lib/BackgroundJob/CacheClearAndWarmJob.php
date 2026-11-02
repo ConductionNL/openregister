@@ -17,14 +17,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCP\AppFramework\Utility\ITimeFactory;
 
@@ -36,21 +36,21 @@ use OCP\AppFramework\Utility\ITimeFactory;
  * pressed the button has no way to tell whether that has happened yet. One job
  * with one outcome answers "is the cache back".
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
  */
 class CacheClearAndWarmJob extends RecordedQueuedJob {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory   $time     Time factory for the parent job class.
+	 * @param ITimeFactory $time Time factory for the parent job class.
 	 * @param JobRunRecorder $recorder The wrapper that writes the run row.
-	 * @param CacheHandler   $cache    The caches being cleared and warmed.
+	 * @param ObjectNameCacheInterface $cache The caches being cleared and warmed.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		JobRunRecorder $recorder,
-		private readonly CacheHandler $cache,
+		private readonly ObjectNameCacheInterface $cache,
 	) {
 		parent::__construct(time: $time, recorder: $recorder);
 
@@ -63,7 +63,7 @@ class CacheClearAndWarmJob extends RecordedQueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$this->cache->clearAllCaches();

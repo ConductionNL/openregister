@@ -229,13 +229,15 @@ class LlmSettingsControllerTest extends TestCase {
 	}
 
 	/**
-	 * testChat success/failure paths cannot be unit tested due to a named parameter
-	 * mismatch bug in LlmSettingsController::testChat() — it calls
-	 * chatService->testChat(testMessage: ...) but the real signature is $_testMessage.
-	 * The Error is caught by the controller's catch block, so we test that path.
+	 * The controller passes the request values to ChatService::testChat() by
+	 * the service's own parameter names, so the call reaches the service.
 	 */
-	public function testTestChatNamedParamBugHitsExceptionPath(): void {
+	public function testTestChatPassesTheRequestToChatService(): void {
 		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Service\ChatService::class);
+		$chatServiceMock->expects($this->once())
+			->method('testChat')
+			->with('openai', ['apiKey' => 'key'], 'Hi')
+			->willReturn(['success' => true, 'message' => 'ok']);
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -247,13 +249,42 @@ class LlmSettingsControllerTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ChatService')
 			->willReturn($chatServiceMock);
 
-		// The controller call with testMessage: named param triggers an Error
-		// which is NOT caught by catch (Exception) — it's an Error, so it propagates
-		// Actually in PHP 8 this is an \Error not \Exception.
-		// The controller catch block only catches Exception, so the Error propagates.
-		// Let's verify this throws.
-		$this->expectException(\Error::class);
-		$this->controller->testChat();
+		$result = $this->controller->testChat();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(['success' => true, 'message' => 'ok'], $result->getData());
+	}
+
+	/**
+	 * The status follows the chat test result: 200 on success, 400 otherwise.
+	 *
+	 * The container answers an object with ChatService's parameter names,
+	 * so the result handling runs.
+	 */
+	public function testTestChatStatusFollowsTheResult(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['provider', null, 'openai'],
+				['config', [], ['apiKey' => 'key']],
+				['testMessage', 'Hello! Please respond with a brief greeting.', 'Hi'],
+			]);
+		$chat = new class {
+			/** @var list<bool> */
+			public array $answers = [true, false];
+
+			public function testChat(string $provider, array $config, string $_testMessage): array {
+				return ['success' => array_shift($this->answers), 'provider' => $provider, 'message' => $_testMessage];
+			}
+		};
+		$this->container->method('get')->willReturn($chat);
+
+		$ok = $this->controller->testChat();
+		$this->assertSame(200, $ok->getStatus());
+		$this->assertSame(['success' => true, 'provider' => 'openai', 'message' => 'Hi'], $ok->getData());
+
+		$failed = $this->controller->testChat();
+		$this->assertSame(400, $failed->getStatus());
+		$this->assertFalse($failed->getData()['success']);
 	}
 
 	public function testTestChatException(): void {
@@ -416,14 +447,6 @@ class LlmSettingsControllerTest extends TestCase {
 		$this->assertFalse($result->getData()['success']);
 	}
 
-	public function testGetVectorStatsContainsTimestamp(): void {
-		$this->markTestSkipped(
-			'LlmSettingsController::getVectorStats() was removed; '
-			. 'vector stats now live on a dedicated endpoint. Test kept '
-			. 'as a marker until the replacement controller is finalised.'
-		);
-	}
-
 	public function testPatchLLMSettingsWithAllModelConfigs(): void {
 		// patchLLMSettings delegates to updateLLMSettings — test end-to-end with all configs.
 		$this->request->method('getParams')->willReturn([
@@ -485,11 +508,47 @@ class LlmSettingsControllerTest extends TestCase {
 	}
 
 	public function testGetVectorStatsSuccess(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+		$stats = [
+			'total_vectors' => 100,
+			'by_type' => ['object' => 70, 'file' => 30],
+			'by_model' => ['text-embedding-3-small' => 60, 'nomic-embed-text' => 40],
+			'object_vectors' => 70,
+			'file_vectors' => 30,
+		];
+		$this->vectorizationService->expects($this->once())
+			->method('getVectorStats')
+			->willReturn($stats);
+
+		$result = $this->controller->getVectorStats();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame(array_merge(['success' => true], $stats), $result->getData());
 	}
 
 	public function testGetVectorStatsException(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+		$this->vectorizationService->method('getVectorStats')
+			->willThrowException(new \Exception('DB error'));
+
+		$result = $this->controller->getVectorStats();
+		$data = $result->getData();
+
+		$this->assertEquals(500, $result->getStatus());
+		$this->assertFalse($data['success']);
+		$this->assertSame('DB error', $data['error']);
+		$this->assertArrayNotHasKey('trace', $data);
+	}
+
+	public function testGetVectorStatsRouteIsRegistered(): void {
+		$routes = require __DIR__ . '/../../../../appinfo/routes.php';
+		$matches = array_filter(
+			$routes['routes'],
+			static fn (array $route): bool => $route['url'] === '/api/vectors/stats'
+		);
+
+		$this->assertCount(1, $matches);
+		$route = array_values($matches)[0];
+		$this->assertSame('Settings\\LlmSettings#getVectorStats', $route['name']);
+		$this->assertSame('GET', $route['verb']);
 	}
 
 	// =========================================================================

@@ -52,7 +52,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * request path and the AddObjectStateColumns repair step use. No maintenance
  * mode is needed.
  *
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
  */
 class ReconcileMagicTablesCommand extends Command {
 	/**
@@ -74,7 +74,7 @@ class ReconcileMagicTablesCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:tables:reconcile')
@@ -107,7 +107,7 @@ class ReconcileMagicTablesCommand extends Command {
 	 *
 	 * @return int 0 on success (including "nothing to do"); 1 when a repair failed.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$apply = (bool)$input->getOption('apply');
@@ -164,6 +164,10 @@ class ReconcileMagicTablesCommand extends Command {
 					// the metadata pass above; reporting them again here would
 					// count the same drift twice.
 					$missing = array_diff_key($missing, array_flip($metadataNames));
+					$narrow = $this->magicMapper->findDecimalColumnsNeedingWiden(
+						currentColumns: $currentColumns,
+						requiredColumns: $requiredColumns
+					);
 				} catch (\Throwable $e) {
 					$output->writeln(
 						sprintf(
@@ -177,23 +181,38 @@ class ReconcileMagicTablesCommand extends Command {
 					continue;
 				}//end try
 
-				if (empty($missing) === true) {
+				if (empty($missing) === true && empty($narrow) === true) {
 					continue;
 				}
 
 				$driftTables++;
-				$driftColumns += count($missing);
+				$driftColumns += count($missing) + count($narrow);
 
-				$output->writeln(
-					sprintf(
-						'r%d schema=%s(#%d) missing %d: %s',
-						$register->getId(),
-						$schema->getSlug(),
-						$schema->getId(),
-						count($missing),
-						implode(', ', array_keys($missing))
-					)
-				);
+				if (empty($missing) === false) {
+					$output->writeln(
+						sprintf(
+							'r%d schema=%s(#%d) missing %d: %s',
+							$register->getId(),
+							$schema->getSlug(),
+							$schema->getId(),
+							count($missing),
+							implode(', ', array_keys($missing))
+						)
+					);
+				}
+
+				if (empty($narrow) === false) {
+					$output->writeln(
+						sprintf(
+							'r%d schema=%s(#%d) number columns to widen %d: %s',
+							$register->getId(),
+							$schema->getSlug(),
+							$schema->getId(),
+							count($narrow),
+							implode(', ', $narrow)
+						)
+					);
+				}
 
 				if ($apply === false) {
 					continue;
@@ -203,6 +222,11 @@ class ReconcileMagicTablesCommand extends Command {
 					$this->magicMapper->ensureTableForRegisterSchema(
 						register: $register,
 						schema: $schema
+					);
+					$this->magicMapper->widenDecimalColumns(
+						tableName: $tableName,
+						currentColumns: $currentColumns,
+						requiredColumns: $requiredColumns
 					);
 					$repaired++;
 				} catch (\Throwable $e) {
@@ -263,7 +287,7 @@ class ReconcileMagicTablesCommand extends Command {
 	 *
 	 * @return array{tables: int, columns: int, repaired: int, failed: int} The counts for the summary.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	private function reconcileMetadataColumns(OutputInterface $output, bool $apply, mixed $registerFilter): array {
 		$counts = ['tables' => 0, 'columns' => 0, 'repaired' => 0, 'failed' => 0];

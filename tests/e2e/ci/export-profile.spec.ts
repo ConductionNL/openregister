@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * EXPORT AS ITS OWN RIGHT — end to end, through the HTTP API a real client uses.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/export-as-its-own-right/specs/` is archived into
+ * once `openspec/changes/archive/2026-10-30-export-as-its-own-right/specs/` is archived into
  * `openspec/specs/`:
  *
  * @e2e authorization-rbac::a-reader-who-may-not-take-the-data

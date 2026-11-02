@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
  * canonical form, so a purpose added after the insert would sit outside the
  * hash the row is later given.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class PurposeAttribution {
 	/**
@@ -71,7 +71,7 @@ class PurposeAttribution {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
 		try {
@@ -124,7 +124,7 @@ class PurposeAttribution {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function claimActivity(AuditTrail $auditTrail, ?string $activityUuid): void {
 		if ($activityUuid === null || $activityUuid === '') {
@@ -151,7 +151,7 @@ class PurposeAttribution {
 	 *
 	 * @return bool True when the column and the sealed copy name different purposes.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public static function disagrees(AuditTrail $auditTrail): bool {
 		$summary = ($auditTrail->getResultSummary() ?? []);

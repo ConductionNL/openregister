@@ -1,0 +1,10139 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`entity constructors (golden) Application matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "uuid",
+      "uuid-1",
+    ],
+    [
+      "name",
+      "name-2",
+    ],
+    [
+      "description",
+      "description-3",
+    ],
+    [
+      "version",
+      "version-4",
+    ],
+    [
+      "organisation",
+      "organisation-5",
+    ],
+    [
+      "configurations",
+      "configurations-6",
+    ],
+    [
+      "registers",
+      "registers-7",
+    ],
+    [
+      "schemas",
+      "schemas-8",
+    ],
+    [
+      "groups",
+      "groups-9",
+    ],
+    [
+      "quota",
+      "quota-10",
+    ],
+    [
+      "usage",
+      "usage-11",
+    ],
+    [
+      "authorization",
+      "authorization-12",
+    ],
+    [
+      "owner",
+      "owner-13",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "created-15",
+    ],
+    [
+      "updated",
+      "updated-16",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      false,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      false,
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      false,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      null,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      "<undefined>",
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "version",
+      "1.0.0",
+    ],
+    [
+      "organisation",
+      0,
+    ],
+    [
+      "configurations",
+      [],
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) AuditTrail matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "uuid",
+      "uuid-1",
+    ],
+    [
+      "schema",
+      "schema-2",
+    ],
+    [
+      "register",
+      "register-3",
+    ],
+    [
+      "object",
+      "object-4",
+    ],
+    [
+      "objectUuid",
+      "objectUuid-5",
+    ],
+    [
+      "registerUuid",
+      "registerUuid-6",
+    ],
+    [
+      "schemaUuid",
+      "schemaUuid-7",
+    ],
+    [
+      "action",
+      "action-8",
+    ],
+    [
+      "changed",
+      "changed-9",
+    ],
+    [
+      "user",
+      "user-10",
+    ],
+    [
+      "userName",
+      "userName-11",
+    ],
+    [
+      "session",
+      "session-12",
+    ],
+    [
+      "request",
+      "request-13",
+    ],
+    [
+      "ipAddress",
+      "ipAddress-14",
+    ],
+    [
+      "version",
+      "version-15",
+    ],
+    [
+      "created",
+      "created-16",
+    ],
+    [
+      "organisationId",
+      "organisationId-17",
+    ],
+    [
+      "organisationIdType",
+      "organisationIdType-18",
+    ],
+    [
+      "processingActivityId",
+      "processingActivityId-19",
+    ],
+    [
+      "processingActivityUrl",
+      "processingActivityUrl-20",
+    ],
+    [
+      "processingId",
+      "processingId-21",
+    ],
+    [
+      "confidentiality",
+      "confidentiality-22",
+    ],
+    [
+      "retentionPeriod",
+      "retentionPeriod-23",
+    ],
+    [
+      "size",
+      "size-24",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "schema",
+      0,
+    ],
+    [
+      "register",
+      0,
+    ],
+    [
+      "object",
+      0,
+    ],
+    [
+      "objectUuid",
+      null,
+    ],
+    [
+      "registerUuid",
+      null,
+    ],
+    [
+      "schemaUuid",
+      null,
+    ],
+    [
+      "action",
+      "",
+    ],
+    [
+      "changed",
+      [],
+    ],
+    [
+      "user",
+      "",
+    ],
+    [
+      "userName",
+      "",
+    ],
+    [
+      "session",
+      "",
+    ],
+    [
+      "request",
+      "",
+    ],
+    [
+      "ipAddress",
+      "",
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "organisationId",
+      null,
+    ],
+    [
+      "organisationIdType",
+      null,
+    ],
+    [
+      "processingActivityId",
+      null,
+    ],
+    [
+      "processingActivityUrl",
+      null,
+    ],
+    [
+      "processingId",
+      null,
+    ],
+    [
+      "confidentiality",
+      null,
+    ],
+    [
+      "retentionPeriod",
+      null,
+    ],
+    [
+      "size",
+      0,
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) ConfigurationEntity matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "title",
+      "title-1",
+    ],
+    [
+      "description",
+      "description-2",
+    ],
+    [
+      "version",
+      "version-3",
+    ],
+    [
+      "type",
+      "type-4",
+    ],
+    [
+      "application",
+      "application-5",
+    ],
+    [
+      "owner",
+      "owner-6",
+    ],
+    [
+      "organisation",
+      "organisation-7",
+    ],
+    [
+      "registers",
+      "registers-8",
+    ],
+    [
+      "schemas",
+      "schemas-9",
+    ],
+    [
+      "created",
+      "created-10",
+    ],
+    [
+      "updated",
+      "updated-11",
+    ],
+    [
+      "isLocal",
+      "isLocal-12",
+    ],
+    [
+      "sourceType",
+      "sourceType-13",
+    ],
+    [
+      "sourceUrl",
+      "sourceUrl-14",
+    ],
+    [
+      "localVersion",
+      "localVersion-15",
+    ],
+    [
+      "remoteVersion",
+      "remoteVersion-16",
+    ],
+    [
+      "syncEnabled",
+      "syncEnabled-17",
+    ],
+    [
+      "syncInterval",
+      "syncInterval-18",
+    ],
+    [
+      "syncStatus",
+      "syncStatus-19",
+    ],
+    [
+      "lastSyncDate",
+      "lastSyncDate-20",
+    ],
+    [
+      "githubRepo",
+      "githubRepo-21",
+    ],
+    [
+      "githubBranch",
+      "githubBranch-22",
+    ],
+    [
+      "githubPath",
+      "githubPath-23",
+    ],
+    [
+      "app",
+      "app-24",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "",
+    ],
+    [
+      "sourceType",
+      "",
+    ],
+    [
+      "sourceUrl",
+      "",
+    ],
+    [
+      "localVersion",
+      "",
+    ],
+    [
+      "remoteVersion",
+      "",
+    ],
+    [
+      "syncEnabled",
+      "",
+    ],
+    [
+      "syncInterval",
+      "",
+    ],
+    [
+      "syncStatus",
+      "",
+    ],
+    [
+      "lastSyncDate",
+      "",
+    ],
+    [
+      "githubRepo",
+      "",
+    ],
+    [
+      "githubBranch",
+      "",
+    ],
+    [
+      "githubPath",
+      "",
+    ],
+    [
+      "app",
+      "",
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      false,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      false,
+    ],
+    [
+      "sourceType",
+      false,
+    ],
+    [
+      "sourceUrl",
+      false,
+    ],
+    [
+      "localVersion",
+      false,
+    ],
+    [
+      "remoteVersion",
+      false,
+    ],
+    [
+      "syncEnabled",
+      false,
+    ],
+    [
+      "syncInterval",
+      false,
+    ],
+    [
+      "syncStatus",
+      false,
+    ],
+    [
+      "lastSyncDate",
+      false,
+    ],
+    [
+      "githubRepo",
+      false,
+    ],
+    [
+      "githubBranch",
+      false,
+    ],
+    [
+      "githubPath",
+      false,
+    ],
+    [
+      "app",
+      false,
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      null,
+    ],
+    [
+      "sourceType",
+      null,
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      null,
+    ],
+    [
+      "syncInterval",
+      null,
+    ],
+    [
+      "syncStatus",
+      null,
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      null,
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      "<undefined>",
+    ],
+    [
+      "sourceType",
+      "<undefined>",
+    ],
+    [
+      "sourceUrl",
+      null,
+    ],
+    [
+      "localVersion",
+      null,
+    ],
+    [
+      "remoteVersion",
+      null,
+    ],
+    [
+      "syncEnabled",
+      "<undefined>",
+    ],
+    [
+      "syncInterval",
+      "<undefined>",
+    ],
+    [
+      "syncStatus",
+      "<undefined>",
+    ],
+    [
+      "lastSyncDate",
+      null,
+    ],
+    [
+      "githubRepo",
+      null,
+    ],
+    [
+      "githubBranch",
+      null,
+    ],
+    [
+      "githubPath",
+      null,
+    ],
+    [
+      "app",
+      "<undefined>",
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "version",
+      0,
+    ],
+    [
+      "type",
+      "",
+    ],
+    [
+      "application",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "organisation",
+      null,
+    ],
+    [
+      "registers",
+      [],
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "isLocal",
+      0,
+    ],
+    [
+      "sourceType",
+      0,
+    ],
+    [
+      "sourceUrl",
+      0,
+    ],
+    [
+      "localVersion",
+      0,
+    ],
+    [
+      "remoteVersion",
+      0,
+    ],
+    [
+      "syncEnabled",
+      0,
+    ],
+    [
+      "syncInterval",
+      0,
+    ],
+    [
+      "syncStatus",
+      0,
+    ],
+    [
+      "lastSyncDate",
+      0,
+    ],
+    [
+      "githubRepo",
+      0,
+    ],
+    [
+      "githubBranch",
+      0,
+    ],
+    [
+      "githubPath",
+      0,
+    ],
+    [
+      "app",
+      0,
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) ObjectEntity matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+    [
+      "properties",
+      [],
+    ],
+  ],
+  "distinct": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+    [
+      "active",
+      "active-1",
+    ],
+    [
+      "isDefault",
+      "isDefault-2",
+    ],
+    [
+      "version",
+      "version-3",
+    ],
+    [
+      "properties",
+      "properties-4",
+    ],
+    [
+      "unknownExtra",
+      "unknownExtra-5",
+    ],
+  ],
+  "empty": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+  ],
+  "emptyString": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+    [
+      "active",
+      "",
+    ],
+    [
+      "isDefault",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "properties",
+      "",
+    ],
+    [
+      "unknownExtra",
+      "",
+    ],
+  ],
+  "false": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+    [
+      "active",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "version",
+      false,
+    ],
+    [
+      "properties",
+      false,
+    ],
+    [
+      "unknownExtra",
+      false,
+    ],
+  ],
+  "null": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+    [
+      "active",
+      null,
+    ],
+    [
+      "isDefault",
+      null,
+    ],
+    [
+      "version",
+      null,
+    ],
+    [
+      "properties",
+      null,
+    ],
+    [
+      "unknownExtra",
+      null,
+    ],
+  ],
+  "self": [
+    [
+      "@self",
+      {
+        "application": "application-16",
+        "authorization": "authorization-15",
+        "created": "created-25",
+        "deleted": "deleted-20",
+        "description": "description-2",
+        "files": "files-10",
+        "folder": "folder-11",
+        "geo": "geo-21",
+        "groups": "groups-18",
+        "id": "id-0",
+        "locked": "locked-13",
+        "name": "name-1",
+        "organisation": "organisation-17",
+        "owner": "owner-14",
+        "register": "register-6",
+        "relations": "relations-9",
+        "retention": "retention-22",
+        "schema": "schema-7",
+        "schemaVersion": "schemaVersion-8",
+        "size": "size-23",
+        "textRepresentation": "textRepresentation-12",
+        "updated": "updated-24",
+        "uri": "uri-4",
+        "uuid": "uuid-3",
+        "validation": "validation-19",
+        "version": "version-5",
+      },
+    ],
+    [
+      "id",
+      "x",
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+  ],
+  "self-false": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+  ],
+  "self-null": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+  ],
+  "self-undefined": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+  ],
+  "self-zero": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+    [
+      "active",
+      "<undefined>",
+    ],
+    [
+      "isDefault",
+      "<undefined>",
+    ],
+    [
+      "version",
+      "<undefined>",
+    ],
+    [
+      "properties",
+      "<undefined>",
+    ],
+    [
+      "unknownExtra",
+      "<undefined>",
+    ],
+  ],
+  "zero": [
+    [
+      "@self",
+      {
+        "application": null,
+        "authorization": null,
+        "created": "",
+        "deleted": null,
+        "description": null,
+        "files": null,
+        "folder": null,
+        "geo": null,
+        "groups": null,
+        "id": "",
+        "locked": null,
+        "name": null,
+        "organisation": null,
+        "owner": null,
+        "register": "",
+        "relations": null,
+        "retention": null,
+        "schema": "",
+        "schemaVersion": null,
+        "size": null,
+        "textRepresentation": null,
+        "updated": "",
+        "uri": "",
+        "uuid": "",
+        "validation": null,
+        "version": null,
+      },
+    ],
+    [
+      "active",
+      0,
+    ],
+    [
+      "isDefault",
+      0,
+    ],
+    [
+      "version",
+      0,
+    ],
+    [
+      "properties",
+      0,
+    ],
+    [
+      "unknownExtra",
+      0,
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) Organisation matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "uuid",
+      "uuid-1",
+    ],
+    [
+      "name",
+      "name-2",
+    ],
+    [
+      "slug",
+      "slug-3",
+    ],
+    [
+      "description",
+      "description-4",
+    ],
+    [
+      "users",
+      "users-5",
+    ],
+    [
+      "groups",
+      "groups-6",
+    ],
+    [
+      "isDefault",
+      "isDefault-7",
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "owner-9",
+    ],
+    [
+      "parent",
+      "parent-10",
+    ],
+    [
+      "children",
+      "children-11",
+    ],
+    [
+      "quota",
+      "quota-12",
+    ],
+    [
+      "usage",
+      "usage-13",
+    ],
+    [
+      "authorization",
+      "authorization-14",
+    ],
+    [
+      "created",
+      "created-15",
+    ],
+    [
+      "updated",
+      "updated-16",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      false,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      false,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      null,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "users",
+      [],
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "active",
+      true,
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "parent",
+      null,
+    ],
+    [
+      "children",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "authorization",
+      {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) Register matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "title",
+      "title-1",
+    ],
+    [
+      "description",
+      "description-2",
+    ],
+    [
+      "schemas",
+      "schemas-3",
+    ],
+    [
+      "source",
+      "source-4",
+    ],
+    [
+      "databaseId",
+      "databaseId-5",
+    ],
+    [
+      "tablePrefix",
+      "tablePrefix-6",
+    ],
+    [
+      "updated",
+      "updated-7",
+    ],
+    [
+      "created",
+      "created-8",
+    ],
+    [
+      "slug",
+      "slug-9",
+    ],
+    [
+      "groups",
+      "groups-10",
+    ],
+    [
+      "languages",
+      "languages-11",
+    ],
+    [
+      "quota",
+      "quota-12",
+    ],
+    [
+      "usage",
+      "usage-13",
+    ],
+    [
+      "stats",
+      "stats-14",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "",
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      false,
+    ],
+    [
+      "description",
+      false,
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      false,
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      false,
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      null,
+    ],
+    [
+      "description",
+      null,
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      null,
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      null,
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "<undefined>",
+    ],
+    [
+      "description",
+      "<undefined>",
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      "<undefined>",
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      0,
+    ],
+    [
+      "description",
+      0,
+    ],
+    [
+      "schemas",
+      [],
+    ],
+    [
+      "source",
+      "",
+    ],
+    [
+      "databaseId",
+      0,
+    ],
+    [
+      "tablePrefix",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "groups",
+      [],
+    ],
+    [
+      "languages",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "stats",
+      0,
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) Schema matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "title",
+      "title-1",
+    ],
+    [
+      "version",
+      "version-2",
+    ],
+    [
+      "description",
+      "description-3",
+    ],
+    [
+      "summary",
+      "summary-4",
+    ],
+    [
+      "required",
+      "required-5",
+    ],
+    [
+      "properties",
+      "properties-6",
+    ],
+    [
+      "archive",
+      "archive-7",
+    ],
+    [
+      "updated",
+      "updated-8",
+    ],
+    [
+      "created",
+      "created-9",
+    ],
+    [
+      "slug",
+      "slug-10",
+    ],
+    [
+      "configuration",
+      "configuration-11",
+    ],
+    [
+      "hardValidation",
+      "hardValidation-12",
+    ],
+    [
+      "maxDepth",
+      "maxDepth-13",
+    ],
+    [
+      "authorization",
+      "authorization-14",
+    ],
+    [
+      "allOf",
+      "allOf-15",
+    ],
+    [
+      "oneOf",
+      "oneOf-16",
+    ],
+    [
+      "anyOf",
+      "anyOf-17",
+    ],
+    [
+      "stats",
+      "stats-18",
+    ],
+    [
+      "draft",
+      "draft-19",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "",
+    ],
+    [
+      "oneOf",
+      "",
+    ],
+    [
+      "anyOf",
+      "",
+    ],
+    [
+      "stats",
+      "",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      false,
+    ],
+    [
+      "oneOf",
+      false,
+    ],
+    [
+      "anyOf",
+      false,
+    ],
+    [
+      "stats",
+      false,
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      null,
+    ],
+    [
+      "oneOf",
+      null,
+    ],
+    [
+      "anyOf",
+      null,
+    ],
+    [
+      "stats",
+      null,
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      "<undefined>",
+    ],
+    [
+      "oneOf",
+      "<undefined>",
+    ],
+    [
+      "anyOf",
+      "<undefined>",
+    ],
+    [
+      "stats",
+      "<undefined>",
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "version",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "summary",
+      "",
+    ],
+    [
+      "required",
+      [],
+    ],
+    [
+      "properties",
+      {},
+    ],
+    [
+      "archive",
+      {},
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "slug",
+      "",
+    ],
+    [
+      "configuration",
+      {
+        "allowFiles": false,
+        "allowedTags": [],
+        "facetCacheTtl": 0,
+        "linkedTypes": [],
+        "objectDescriptionField": "",
+        "objectImageField": "",
+        "objectNameField": "",
+        "objectSummaryField": "",
+        "unique": false,
+      },
+    ],
+    [
+      "hardValidation",
+      false,
+    ],
+    [
+      "maxDepth",
+      0,
+    ],
+    [
+      "authorization",
+      {},
+    ],
+    [
+      "allOf",
+      0,
+    ],
+    [
+      "oneOf",
+      0,
+    ],
+    [
+      "anyOf",
+      0,
+    ],
+    [
+      "stats",
+      0,
+    ],
+    [
+      "draft",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) Source matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "title",
+      "title-1",
+    ],
+    [
+      "description",
+      "description-2",
+    ],
+    [
+      "databaseUrl",
+      "databaseUrl-3",
+    ],
+    [
+      "type",
+      "type-4",
+    ],
+    [
+      "authConfig",
+      "authConfig-5",
+    ],
+    [
+      "updated",
+      "updated-6",
+    ],
+    [
+      "created",
+      "created-7",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "title",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "databaseUrl",
+      "",
+    ],
+    [
+      "type",
+      "internal",
+    ],
+    [
+      "authConfig",
+      null,
+    ],
+    [
+      "updated",
+      "",
+    ],
+    [
+      "created",
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`entity constructors (golden) View matches the recorded behaviour 1`] = `
+{
+  "arrayProperties": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "distinct": [
+    [
+      "id",
+      "id-0",
+    ],
+    [
+      "uuid",
+      "uuid-1",
+    ],
+    [
+      "name",
+      "name-2",
+    ],
+    [
+      "description",
+      "description-3",
+    ],
+    [
+      "owner",
+      "owner-4",
+    ],
+    [
+      "isPublic",
+      "isPublic-5",
+    ],
+    [
+      "isDefault",
+      "isDefault-6",
+    ],
+    [
+      "query",
+      "query-7",
+    ],
+    [
+      "favoredBy",
+      "favoredBy-8",
+    ],
+    [
+      "quota",
+      "quota-9",
+    ],
+    [
+      "usage",
+      "usage-10",
+    ],
+    [
+      "created",
+      "created-11",
+    ],
+    [
+      "updated",
+      "updated-12",
+    ],
+  ],
+  "empty": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "emptyString": [
+    [
+      "id",
+      "",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "false": [
+    [
+      "id",
+      false,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "null": [
+    [
+      "id",
+      null,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self": [
+    [
+      "id",
+      "x",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-emptyString": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-false": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-null": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-undefined": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "self-zero": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "sharedDefaults": [],
+  "undefined": [
+    [
+      "id",
+      "<undefined>",
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+  "zero": [
+    [
+      "id",
+      0,
+    ],
+    [
+      "uuid",
+      "",
+    ],
+    [
+      "name",
+      "",
+    ],
+    [
+      "description",
+      "",
+    ],
+    [
+      "owner",
+      "",
+    ],
+    [
+      "isPublic",
+      false,
+    ],
+    [
+      "isDefault",
+      false,
+    ],
+    [
+      "query",
+      {},
+    ],
+    [
+      "favoredBy",
+      [],
+    ],
+    [
+      "quota",
+      {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+    ],
+    [
+      "usage",
+      {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+    ],
+    [
+      "created",
+      "",
+    ],
+    [
+      "updated",
+      "",
+    ],
+  ],
+}
+`;

@@ -47,7 +47,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class ExportRightService {
 	/**
@@ -89,7 +89,7 @@ class ExportRightService {
 	 *
 	 * @return ExportRefusedException|null The refusal, or null when allowed.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function refusalFor(?Schema $schema): ?ExportRefusedException {
 		$user = $this->userSession->getUser();
@@ -133,7 +133,7 @@ class ExportRightService {
 	 *
 	 * @return ExportRefusedException|null The refusal, or null when allowed.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function refusalForUid(?Schema $schema, string $userId): ?ExportRefusedException {
 		if ($this->groupManager->isAdmin($userId) === true) {

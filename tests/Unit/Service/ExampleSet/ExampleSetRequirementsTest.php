@@ -39,8 +39,32 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  */
 class ExampleSetRequirementsTest extends ExampleSetTestCase {
+	/**
+	 * A register already on the instance is imported again when the shipped
+	 * descriptor is a newer version, so a schema fixed in the descriptor
+	 * reaches an instance that installed the set before.
+	 *
+	 * @return void
+	 */
+	public function testARegisterBehindItsDescriptorIsImportedAgain(): void {
+		$this->store->offer(register: 'brp', schema: 'person');
+		$this->registers->present['brp']    = true;
+		$this->registers->importable['brp'] = true;
+		$this->registers->behind['brp']     = true;
+		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame(expected: ['brp' => 'imported'], actual: $report['registers']);
+		$this->assertSame(expected: 1, actual: $this->registers->imports);
+	}//end testARegisterBehindItsDescriptorIsImportedAgain()
+
 	/**
 	 * A cast file that requires the `brp` register and writes one person into it.
 	 *

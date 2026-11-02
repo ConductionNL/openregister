@@ -38,6 +38,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  */
 class ExampleSetInstallerTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -170,6 +174,63 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertSame(['declared' => 2, 'created' => 0, 'kept' => 2, 'arrived' => 2], $report['types']['cases case']);
 	}
 
+	/**
+	 * `--refresh` rewrites every object the set declares to today's values, keeps a field the declaration does not
+	 * name, and leaves an object the set did not write alone.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	/**
+	 * Every object an install or a refresh writes is caused by the set, as an import with the set as its run, so a
+	 * history can tell the set's upkeep from a person's change and the audit trail can find one load as a whole.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-example-sets-writes-are-caused-as-an-import-of-that-set
+	 */
+	public function testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days'));
+
+		$this->assertGreaterThan(expected: 3, actual: count($this->store->causes));
+		foreach ($this->store->causes as $cause) {
+			$this->assertSame(expected: ['cause' => 'import', 'run' => 'example-set:demo'], actual: $cause);
+		}
+
+		$this->assertSame(expected: 'person', actual: \OCA\OpenRegister\Service\WriteCause::current()['cause'], message: 'the cause ends with the run');
+	}//end testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet()
+
+	public function testARefreshRewritesTheDeclaredObjectsToTodaysValues(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$case   = $this->store->find(register: 'cases', schema: 'case', filters: ['start' => '2026-10-11'])[0];
+		$extra  = ($case + ['remark' => 'added on the instance']);
+		$this->store->update(register: 'cases', schema: 'case', id: $case['id'], data: $extra);
+		$type    = $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0];
+		$updates = $this->store->updates;
+
+		$later  = $this->today()->modify('+5 days');
+		$plain  = $this->installer->install(plan: $plan, today: $later);
+		$this->assertSame('2026-10-11', $this->store->get(register: 'cases', schema: 'case', id: $case['id'])['start'], 'a plain install keeps the stored value');
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $later);
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertTrue($plain['ok']);
+		$refreshed = $this->store->get(register: 'cases', schema: 'case', id: $case['id']);
+		$this->assertSame('2026-10-16', $refreshed['start'], 'the date is resolved against the new day');
+		$this->assertSame('added on the instance', $refreshed['remark'], 'a field the declaration does not name stays');
+		// The case whose dates moved is written; the one whose declaration resolves as stored is not.
+		$this->assertSame(1, $report['types']['cases case']['refreshed']);
+		$this->assertSame(1, $report['types']['cases case']['unchanged']);
+		$this->assertSame($type, $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0], 'an object the set did not write is untouched');
+		$this->assertGreaterThan($updates, $this->store->updates);
+	}//end testARefreshRewritesTheDeclaredObjectsToTodaysValues()
+
 	public function testAForeignAccountRefusesTheInstallBeforeAnyWrite(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Somebody', 'email' => '', 'password' => 'theirs'];
 
@@ -256,6 +317,13 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 				'changes'          => 0,
 				'app config'       => 0,
 				'user preferences' => 0,
+				'tasks'            => 0,
+				'views'            => 0,
+				'watchers'         => 0,
+				'parties'          => 0,
+				'notes'            => 0,
+				'readStates'       => 0,
+				'flows'            => 0,
 				'memberships'      => 2,
 				'groups'           => 1,
 				'accounts'         => 2,

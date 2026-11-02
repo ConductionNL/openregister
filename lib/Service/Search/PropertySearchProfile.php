@@ -26,6 +26,7 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 
 /**
  * Reads a property's declared match type and input control, or works them out.
@@ -198,9 +199,17 @@ final class PropertySearchProfile {
 	 * @return bool True when the free-text scan should read this column.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	public static function participatesInFreeText(array $property): bool {
 		if (($property['x-openregister-encrypted'] ?? false) === true) {
+			return false;
+		}
+
+		// A value shown only through the logged reveal is not matched by free
+		// text either: a hit would confirm it without the reveal.
+		if (ExplicitReveal::isExplicit(definition: $property) === true) {
 			return false;
 		}
 

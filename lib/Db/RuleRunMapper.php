@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleRunMapper extends QBMapper {
 
@@ -100,7 +100,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return array<int, RuleRun> The rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findByRule(
 		string $ruleId,
@@ -158,7 +158,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return array<int, RuleRun> The rows, newest first.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function findRecent(
 		?string $verdict = null,
@@ -198,7 +198,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return int The number of matching rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function countByRule(
 		string $ruleId,
@@ -246,7 +246,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return int How many rows were deleted.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function pruneBefore(DateTime $before, int $batches = 25): int {
 		$deleted = 0;
@@ -286,7 +286,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return array<int, int> The row ids.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function idsBefore(DateTime $before, int $limit): array {
 		$qb = $this->db->getQueryBuilder();

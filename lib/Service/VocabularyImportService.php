@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,28 +48,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/skos-concept-registers/spec.md
  */
-class VocabularyImportService {
-	/**
-	 * Slug of the vocabulary register.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'vocabulary';
-
-	/**
-	 * Slug of the conceptScheme schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SCHEME = 'conceptScheme';
-
-	/**
-	 * Slug of the concept schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_CONCEPT = 'concept';
-
+class VocabularyImportService implements VocabularyImporterInterface {
 	/**
 	 * Constructor.
 	 *
@@ -495,7 +475,7 @@ class VocabularyImportService {
 	 * @param array<string> $related Resolved related uuids.
 	 *
 	 * @return void
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */

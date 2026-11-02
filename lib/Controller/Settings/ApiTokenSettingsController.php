@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Http\Client\IClientService;
@@ -47,7 +47,7 @@ class ApiTokenSettingsController extends Controller {
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param IAppConfig $config App configuration.
-	 * @param SettingsService $settingsService Settings service.
+	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param IClientService $clientService HTTP client factory for the token probes.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ConnectionReporter $connectionReporter Tells integriq's connection registry about saves and token tests.
@@ -56,7 +56,7 @@ class ApiTokenSettingsController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IAppConfig $config,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 		private readonly ConnectionReporter $connectionReporter,

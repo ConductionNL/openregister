@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * THE TRAIL IS SHIPPED, AND A READ NAMES ITS PURPOSE — end to end, over HTTP.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/audit-trail-shipped-and-purpose-bound/specs/` is
+ * once `openspec/changes/archive/2026-10-30-audit-trail-shipped-and-purpose-bound/specs/` is
  * archived into `openspec/specs/`:
  *
  * @e2e verwerkingsregister-api::a-person-search-names-its-grondslag

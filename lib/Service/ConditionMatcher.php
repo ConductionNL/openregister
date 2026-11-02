@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -99,6 +100,8 @@ class ConditionMatcher {
 	 * @param IGroupManager|null $groupManager Group manager for resolving `$user.groups` (optional;
 	 *                                         {@see resolveUserGroups()} falls back to an empty array
 	 *                                         when not wired — Wave-12 Fix 4)
+	 * @param MemberOfResolver|null $memberOfResolver Resolves `$memberOf` (optional; without it a
+	 *                                                `$memberOf` rule admits nobody)
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -106,6 +109,7 @@ class ConditionMatcher {
 		private readonly OperatorEvaluator $operatorEvaluator,
 		private readonly LoggerInterface $logger,
 		private readonly ?IGroupManager $groupManager = null,
+		private readonly ?MemberOfResolver $memberOfResolver = null,
 	) {
 	}//end __construct()
 
@@ -264,6 +268,7 @@ class ConditionMatcher {
 	 * - $organisation / $activeOrganisation: Current user's active organisation UUID
 	 * - $userId / $user: Current user's ID
 	 * - $now: Current datetime as 'Y-m-d H:i:s' (SQL-native format)
+	 * - {"$memberOf": {...}}: `$in` over the caller's membership set, see {@see MemberOfResolver::resolveOperators()}
 	 *
 	 * For operator arrays (e.g. {"$lte": "$now"}), resolves dynamic values
 	 * inside operator operands recursively.
@@ -295,6 +300,14 @@ class ConditionMatcher {
 	 * @spec openspec/changes/shared-credentials-and-flows/specs/flow-sharing/spec.md#requirement-the-single-object-and-list-access-decisions-agree
 	 */
 	public function resolveDynamicValue(mixed $value): mixed {
+		if (isset($value[MemberOfResolver::OPERATOR]) === true) {
+			return $this->memberOfResolver?->resolveOperators(
+				operators: $value,
+				userId: $this->userSession->getUser()?->getUID(),
+				resolveSibling: fn (mixed $sibling): mixed => $this->resolveDynamicValue(value: $sibling)
+			);
+		}
+
 		// For operator arrays, resolve dynamic values inside operands.
 		if (is_array($value) === true) {
 			$resolved = [];
@@ -310,7 +323,7 @@ class ConditionMatcher {
 		}
 
 		// $organisation (bare and dotted forms).
-		if ($value === '$organisation' || $value === '$activeOrganisation') {
+		if (in_array($value, ['$organisation', '$activeOrganisation'], true) === true) {
 			return $this->getActiveOrganisationUuid();
 		}
 
@@ -322,7 +335,7 @@ class ConditionMatcher {
 		}
 
 		// $userId / $user (bare and dotted forms).
-		if ($value === '$userId' || $value === '$user') {
+		if (in_array($value, ['$userId', '$user'], true) === true) {
 			return $this->userSession->getUser()?->getUID();
 		}
 

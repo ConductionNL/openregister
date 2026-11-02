@@ -1,0 +1,1544 @@
+{
+    "testGetDatabaseInfoMatchesTheRecording cache empty": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    "",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "SQLite",
+                            "version": "Unknown",
+                            "platform": "sqlite",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                            "performanceNote": "SQLite not recommended for production vector search.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "SQLite",
+                "version": "Unknown",
+                "platform": "sqlite",
+                "vectorSupport": false,
+                "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                "performanceNote": "SQLite not recommended for production vector search.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording cache hit": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    "",
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "database": {
+                "type": "PostgreSQL"
+            },
+            "success": true,
+            "fromCache": true
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording cache hit with string refresh false": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    "",
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "database": {
+                "type": "PostgreSQL"
+            },
+            "success": true,
+            "fromCache": true
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording cache not json": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    "",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "SQLite",
+                            "version": "Unknown",
+                            "platform": "sqlite",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                            "performanceNote": "SQLite not recommended for production vector search.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "SQLite",
+                "version": "Unknown",
+                "platform": "sqlite",
+                "vectorSupport": false,
+                "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                "performanceNote": "SQLite not recommended for production vector search.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording cache without a database key": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    "",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "SQLite",
+                            "version": "Unknown",
+                            "platform": "sqlite",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                            "performanceNote": "SQLite not recommended for production vector search.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "SQLite",
+                "version": "Unknown",
+                "platform": "sqlite",
+                "vectorSupport": false,
+                "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                "performanceNote": "SQLite not recommended for production vector search.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording mariadb": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT VERSION()",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "MariaDB",
+                            "version": "10.11.6",
+                            "platform": "mariadb",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "pgvector for PostgreSQL",
+                            "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "MariaDB",
+                "version": "10.11.6",
+                "platform": "mariadb",
+                "vectorSupport": false,
+                "recommendedPlugin": "pgvector for PostgreSQL",
+                "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording mysql": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT VERSION()",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "MySQL",
+                            "version": "8.0.33",
+                            "platform": "mysql",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "pgvector for PostgreSQL",
+                            "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "MySQL",
+                "version": "8.0.33",
+                "platform": "mysql",
+                "vectorSupport": false,
+                "recommendedPlugin": "pgvector for PostgreSQL",
+                "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording mysql version query fails": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT VERSION()",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "MySQL/MariaDB",
+                            "version": "Unknown",
+                            "platform": "mysql",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "pgvector for PostgreSQL",
+                            "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "MySQL/MariaDB",
+                "version": "Unknown",
+                "platform": "mysql",
+                "vectorSupport": false,
+                "recommendedPlugin": "pgvector for PostgreSQL",
+                "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording mysql without a semantic version": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT VERSION()",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "MySQL",
+                            "version": "weird",
+                            "platform": "mysql",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "pgvector for PostgreSQL",
+                            "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "MySQL",
+                "version": "weird",
+                "platform": "mysql",
+                "vectorSupport": false,
+                "recommendedPlugin": "pgvector for PostgreSQL",
+                "performanceNote": "Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording platform lookup throws": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "logger.error": [
+                    "[SettingsController] Failed to get database info",
+                    {
+                        "error": "connection lost"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "Failed to get database information: connection lost"
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording postgres queries fail": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT VERSION()",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT extname, extversion FROM pg_extension ORDER BY extname",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "logger.warning": [
+                    "[SettingsController] Failed to fetch PostgreSQL extensions",
+                    {
+                        "error": "no catalog"
+                    }
+                ]
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "PostgreSQL",
+                            "version": "Unknown",
+                            "platform": "postgresql",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "pgvector (not installed)",
+                            "performanceNote": "Install pgvector extension: CREATE EXTENSION vector;",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "PostgreSQL",
+                "version": "Unknown",
+                "platform": "postgresql",
+                "vectorSupport": false,
+                "recommendedPlugin": "pgvector (not installed)",
+                "performanceNote": "Install pgvector extension: CREATE EXTENSION vector;",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording postgres with pgvector": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT VERSION()",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT extname, extversion FROM pg_extension ORDER BY extname",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "PostgreSQL",
+                            "version": "16.2",
+                            "platform": "postgresql",
+                            "vectorSupport": true,
+                            "recommendedPlugin": "pgvector (installed)",
+                            "performanceNote": "Optimal: Using database-level vector operations for fast semantic search.",
+                            "extensions": [
+                                {
+                                    "name": "plpgsql",
+                                    "version": "1.0"
+                                },
+                                {
+                                    "name": "vector",
+                                    "version": "0.7.0"
+                                }
+                            ],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "PostgreSQL",
+                "version": "16.2",
+                "platform": "postgresql",
+                "vectorSupport": true,
+                "recommendedPlugin": "pgvector (installed)",
+                "performanceNote": "Optimal: Using database-level vector operations for fast semantic search.",
+                "extensions": [
+                    {
+                        "name": "plpgsql",
+                        "version": "1.0"
+                    },
+                    {
+                        "name": "vector",
+                        "version": "0.7.0"
+                    }
+                ],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording postgres without pgvector": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT VERSION()",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "db.prepare": [
+                    "SELECT extname, extversion FROM pg_extension ORDER BY extname",
+                    null,
+                    null
+                ]
+            },
+            {
+                "statement.execute": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetchOne": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "db.executeQuery": [
+                    "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id",
+                    [],
+                    []
+                ]
+            },
+            {
+                "result.fetch": []
+            },
+            {
+                "result.closeCursor": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "PostgreSQL",
+                            "version": "Unknown",
+                            "platform": "postgresql",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "pgvector (not installed)",
+                            "performanceNote": "Install pgvector extension: CREATE EXTENSION vector;",
+                            "extensions": [
+                                {
+                                    "name": "plpgsql",
+                                    "version": "1.0"
+                                }
+                            ],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "PostgreSQL",
+                "version": "Unknown",
+                "platform": "postgresql",
+                "vectorSupport": false,
+                "recommendedPlugin": "pgvector (not installed)",
+                "performanceNote": "Install pgvector extension: CREATE EXTENSION vector;",
+                "extensions": [
+                    {
+                        "name": "plpgsql",
+                        "version": "1.0"
+                    }
+                ],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording refresh skips the cache": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "SQLite",
+                            "version": "Unknown",
+                            "platform": "sqlite",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                            "performanceNote": "SQLite not recommended for production vector search.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "SQLite",
+                "version": "Unknown",
+                "platform": "sqlite",
+                "vectorSupport": false,
+                "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                "performanceNote": "SQLite not recommended for production vector search.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording sqlite": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "SQLite",
+                            "version": "Unknown",
+                            "platform": "sqlite",
+                            "vectorSupport": false,
+                            "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                            "performanceNote": "SQLite not recommended for production vector search.",
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "SQLite",
+                "version": "Unknown",
+                "platform": "sqlite",
+                "vectorSupport": false,
+                "recommendedPlugin": "sqlite-vss or migrate to PostgreSQL",
+                "performanceNote": "SQLite not recommended for production vector search.",
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    },
+    "testGetDatabaseInfoMatchesTheRecording unknown platform": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "refresh",
+                    false
+                ]
+            },
+            {
+                "db.getDatabasePlatform": []
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+            },
+            {
+                "logger.debug": [
+                    "[SettingsController] Failed to fetch chunk vectorization progress",
+                    {
+                        "error": "not in this test"
+                    }
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "databaseInfo",
+                    {
+                        "success": true,
+                        "database": {
+                            "type": "Unknown",
+                            "version": "Unknown",
+                            "platform": "oracle",
+                            "vectorSupport": false,
+                            "recommendedPlugin": null,
+                            "performanceNote": null,
+                            "extensions": [],
+                            "hybridSearch": {
+                                "annSidecarTable": false,
+                                "embeddingVectorDimension": null,
+                                "hnswIndex": false,
+                                "textSearchGinIndex": false,
+                                "chunks": {
+                                    "total": 0,
+                                    "vectorized": 0
+                                },
+                                "vectors": {
+                                    "total": 0,
+                                    "pgvectorPopulated": 0
+                                }
+                            },
+                            "lastUpdated": "(iso 8601)"
+                        },
+                        "fromCache": false
+                    },
+                    false,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "database": {
+                "type": "Unknown",
+                "version": "Unknown",
+                "platform": "oracle",
+                "vectorSupport": false,
+                "recommendedPlugin": null,
+                "performanceNote": null,
+                "extensions": [],
+                "hybridSearch": {
+                    "annSidecarTable": false,
+                    "embeddingVectorDimension": null,
+                    "hnswIndex": false,
+                    "textSearchGinIndex": false,
+                    "chunks": {
+                        "total": 0,
+                        "vectorized": 0
+                    },
+                    "vectors": {
+                        "total": 0,
+                        "pgvectorPopulated": 0
+                    }
+                },
+                "lastUpdated": "(iso 8601)"
+            },
+            "fromCache": false
+        }
+    }
+}

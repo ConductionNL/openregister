@@ -13,7 +13,6 @@ use OCP\AppFramework\Http;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
-use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -39,8 +38,6 @@ class FileTextControllerCoverageTest extends TestCase {
 
 	private LoggerInterface&MockObject $logger;
 
-	private IAppConfig&MockObject $config;
-
 	private ManualEntityService&MockObject $manualEntityService;
 
 	private IUserSession&MockObject $userSession;
@@ -57,7 +54,6 @@ class FileTextControllerCoverageTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 		$this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->config = $this->createMock(IAppConfig::class);
 		$this->manualEntityService = $this->createMock(ManualEntityService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->rootFolder = $this->createMock(IRootFolder::class);
@@ -79,53 +75,12 @@ class FileTextControllerCoverageTest extends TestCase {
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$this->userSession,
 			$this->rootFolder,
 			$this->groupManager
 		);
 	}//end setUp()
-
-	// =========================================================================
-	// extractFileText — enabled with valid scope
-	// =========================================================================
-	public function testExtractFileTextEnabledWithValidScope(): void {
-		$this->config->method('hasKey')
-			->with('openregister', 'fileManagement')
-			->willReturn(true);
-		$this->config->method('getValueString')
-			->with('openregister', 'fileManagement')
-			->willReturn(json_encode(['extractionScope' => 'all']));
-
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(123, true);
-
-		$result = $this->controller->extractFileText(123);
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertEquals('Text extracted successfully', $data['message']);
-	}//end testExtractFileTextEnabledWithValidScope()
-
-	public function testExtractFileTextEnabledWithNullScope(): void {
-		$this->config->method('hasKey')
-			->with('openregister', 'fileManagement')
-			->willReturn(true);
-		$this->config->method('getValueString')
-			->with('openregister', 'fileManagement')
-			->willReturn(json_encode([]));
-		// no extractionScope key
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(42, true);
-
-		$result = $this->controller->extractFileText(42);
-
-		$this->assertEquals(200, $result->getStatus());
-	}//end testExtractFileTextEnabledWithNullScope()
 
 	// =========================================================================
 	// bulkExtract — with limit at boundary

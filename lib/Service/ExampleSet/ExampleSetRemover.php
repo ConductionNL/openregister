@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+ * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
 
 declare(strict_types=1);
@@ -33,7 +33,9 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Removes an installed example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) The constructor takes one collaborator per part of a set, as the installer's does.
+ *
+ * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
 class ExampleSetRemover {
 	/**
@@ -48,6 +50,8 @@ class ExampleSetRemover {
 	 * @param ExampleSetAppConfig $appConfig Restores the app config the set wrote.
 	 * @param ExampleSetInstance  $instance  Deletes the OpenRegister organisations the set created.
 	 * @param ExampleSetUserPreferences $userPreferences Restores the user preferences the set wrote.
+	 * @param ExampleSetEngineKinds|null $engineRows     Deletes the tasks and saved views the set wrote; null names them as failed.
+	 * @param ExampleSetLock|null        $lock           One install or removal of a set at a time; null holds nothing.
 	 *
 	 * @return void
 	 */
@@ -61,6 +65,8 @@ class ExampleSetRemover {
 		private readonly ExampleSetAppConfig $appConfig,
 		private readonly ExampleSetInstance $instance,
 		private readonly ExampleSetUserPreferences $userPreferences,
+		private readonly ?ExampleSetEngineKinds $engineRows=null,
+		private readonly ?ExampleSetLock $lock=null,
 	) {
 	}//end __construct()
 
@@ -73,10 +79,32 @@ class ExampleSetRemover {
 	 *         Whether there was anything to remove, counts per kind, adopted accounts left in place, and what could
 	 *         not be removed (still in the record).
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function remove(string $set): array {
+		if ($this->lock !== null && $this->lock->hold(set: $set) === false) {
+			return ['installed' => true, 'removed' => [], 'left' => [], 'failed' => [$this->lock->busy(set: $set)]];
+		}
+
+		try {
+			return $this->removeHeld(set: $set);
+		} finally {
+			$this->lock?->release(set: $set);
+		}
+	}//end remove()
+
+	/**
+	 * Remove what the record holds, in a run that holds the set.
+	 *
+	 * @param string $set The set id.
+	 *
+	 * @return array{installed: bool, removed: array<string, int>, left: array<int, string>, failed: array<int, string>}
+	 *         As remove() returns it.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 */
+	private function removeHeld(string $set): array {
 		$record = $this->record->read(set: $set);
 		$report = [
 			'installed' => ($this->record->isEmpty(record: $record) === false),
@@ -86,6 +114,13 @@ class ExampleSetRemover {
 				'changes'           => 0,
 				'app config'        => 0,
 				'user preferences'  => 0,
+				'tasks'             => 0,
+				'views'             => 0,
+				'watchers'          => 0,
+				'parties'           => 0,
+				'notes'             => 0,
+				'readStates'        => 0,
+				'flows'             => 0,
 				'memberships'       => 0,
 				'groups'            => 0,
 				'accounts'          => 0,
@@ -95,6 +130,13 @@ class ExampleSetRemover {
 			'left'      => [],
 			'failed'    => [],
 		];
+
+		// First: a task is on an object the set wrote, and goes before it.
+		($this->engineRows ?? new ExampleSetEngineKinds())->delete(
+			record: $record,
+			report: $report,
+			written: fn (array $now) => $this->record->write(set: $set, record: $now)
+		);
 
 		foreach (array_reverse($record['objects'], true) as $name => $held) {
 			if ($this->deleteFiles(set: $set, name: $name, objectId: (string) $held['id'], record: $record, report: $report) === false) {
@@ -117,6 +159,17 @@ class ExampleSetRemover {
 		$record = $this->restoreAppConfig(set: $set, record: $record, report: $report);
 		// Before the accounts: an account the set created goes, an adopted one keeps its own values.
 		$record = $this->restoreUserPreferences(set: $set, record: $record, report: $report);
+
+		foreach ($record['subAdmins'] as $index => [$gid, $uid]) {
+			if ($this->accounts->removeSubAdmin(gid: $gid, uid: $uid) === false) {
+				$report['failed'][] = 'sub-admin '.$gid.' / '.$uid;
+				continue;
+			}
+
+			unset($record['subAdmins'][$index]);
+		}
+
+		$record['subAdmins'] = array_values($record['subAdmins']);
 
 		foreach ($record['memberships'] as $index => [$gid, $uid]) {
 			if ($this->accounts->removeFromGroup(gid: $gid, uid: $uid) === false) {
@@ -141,7 +194,7 @@ class ExampleSetRemover {
 		$this->removeOrganisations(set: $set, record: $record, report: $report, accounts: $accounts);
 
 		return $report;
-	}//end remove()
+	}//end removeHeld()
 
 	/**
 	 * Revert the recorded changes, newest first.
@@ -222,7 +275,7 @@ class ExampleSetRemover {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	private function deleteFiles(string $set, string $name, string $objectId, array &$record, array &$report): bool {
 		$left = [];
@@ -285,7 +338,7 @@ class ExampleSetRemover {
 	 *
 	 * @return array<string, mixed> The record without the restored entries.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	private function restoreUserPreferences(string $set, array $record, array &$report): array {
 		foreach (array_reverse($record['userPreferences'], true) as $name => $entry) {
@@ -356,6 +409,15 @@ class ExampleSetRemover {
 	 * @return array<string, mixed> The record without what is gone.
 	 */
 	private function removeGroupsAndAccounts(string $set, array $record, array &$report): array {
+		// A group the set only named gets its old name back, while it still carries the set's.
+		foreach ($record['groupNames'] as $gid => $name) {
+			if ($this->accounts->groupName(gid: (string) $gid) === (string) $name['new']) {
+				$this->accounts->setGroupName(gid: (string) $gid, displayName: (string) $name['old']);
+			}
+
+			unset($record['groupNames'][$gid]);
+		}
+
 		$keptGroups = [];
 		foreach ($record['groups'] as $gid) {
 			if ($this->accounts->deleteGroup(gid: $gid) === false) {

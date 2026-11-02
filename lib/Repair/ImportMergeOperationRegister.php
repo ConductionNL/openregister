@@ -39,7 +39,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -106,7 +106,7 @@ class ImportMergeOperationRegister implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Import OpenRegister merge-operation register (merge audit + reversal snapshots)';
@@ -125,7 +125,7 @@ class ImportMergeOperationRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

@@ -1,3 +1,0 @@
-BASELINE — clean origin/development (f6d0b339a), phpunit-unit-local.xml, php:8.3 + zip/bcmath/soap/xsl/intl/gd, memory_limit=2G
-Tests: 14717, Assertions: 32218, Errors: 54, Failures: 18, Warnings: 8, Deprecations: 23, PHPUnit Deprecations: 6, Skipped: 22.
-NOTE: phpunit-unit.xml (the CI config) cannot run outside an NC root — fatals at bootstrap. phpunit-unit-local.xml is the standalone equivalent.

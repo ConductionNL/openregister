@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -52,14 +52,14 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param NotificationTemplateRegistry $registry The catalogue of platform events and their texts.
+	 * @param NotificationTemplatesInterface $registry The catalogue of platform events and their texts.
 	 * @param IGroupManager $groupManager The authority on who is an administrator.
 	 * @param IUserSession $userSession Current-user session.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly NotificationTemplateRegistry $registry,
+		private readonly NotificationTemplatesInterface $registry,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserSession $userSession,
 	) {
@@ -71,7 +71,7 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 *
 	 * @no-admin-idor-exempt The catalogue is the platform's own, identical for
 	 * every reader, and this method takes no caller-supplied identifier at all:
@@ -106,7 +106,7 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -127,7 +127,7 @@ class NotificationTemplatesController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 *
 	 * @NoCSRFRequired
 	 */

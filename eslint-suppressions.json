@@ -431,7 +431,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 2
+      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -453,7 +453,7 @@
       "count": 28
     },
     "no-console": {
-      "count": 14
+      "count": 8
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -500,18 +500,6 @@
   },
   "src/modals/configuration/PublishConfiguration.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 4
-    },
-    "no-console": {
-      "count": 3
-    },
-    "vue/prefer-define-options": {
       "count": 1
     }
   },
@@ -561,6 +549,17 @@
     },
     "vue/prefer-define-options": {
       "count": 1
+    }
+  },
+  "src/modals/github/PublishToGithub.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    },
+    "@nextcloud/no-deprecated-library-props": {
+      "count": 1
+    },
+    "no-console": {
+      "count": 3
     }
   },
   "src/modals/logs/AuditTrailChanges.vue": {
@@ -810,7 +809,7 @@
       "count": 2
     },
     "no-console": {
-      "count": 4
+      "count": 3
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -886,18 +885,6 @@
   },
   "src/modals/register/PublishRegister.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 4
-    },
-    "no-console": {
-      "count": 3
-    },
-    "vue/prefer-define-options": {
       "count": 1
     }
   },
@@ -1063,7 +1050,7 @@
       "count": 2
     },
     "no-console": {
-      "count": 3
+      "count": 2
     },
     "vue/custom-event-name-casing": {
       "count": 1
@@ -1161,7 +1148,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 5
+      "count": 3
     }
   },
   "src/modals/webhook/EditWebhook.vue": {
@@ -1299,7 +1286,7 @@
   },
   "src/store/modules/configuration.js": {
     "no-console": {
-      "count": 11
+      "count": 7
     },
     "no-unused-vars": {
       "count": 1
@@ -1317,7 +1304,7 @@
   },
   "src/store/modules/endpoints.ts": {
     "no-console": {
-      "count": 5
+      "count": 4
     }
   },
   "src/store/modules/object.js": {
@@ -1335,7 +1322,7 @@
   },
   "src/store/modules/quality.js": {
     "no-console": {
-      "count": 18
+      "count": 17
     }
   },
   "src/store/modules/register.js": {

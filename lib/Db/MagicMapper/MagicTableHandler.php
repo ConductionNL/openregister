@@ -306,7 +306,7 @@ class MagicTableHandler {
 	 *
 	 * @return bool True if specialized table exists, false if should use generic storage
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function existsTableForRegisterSchema(Register $register, Schema $schema): bool {
 		$registerId = $register->getId();
@@ -354,7 +354,7 @@ class MagicTableHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	private function ensureMetadataColumns(Register $register, Schema $schema): void {
 		if ($this->metadataColumns === null) {
@@ -391,147 +391,45 @@ class MagicTableHandler {
 	 *
 	 * @throws Exception If table sync fails
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Table sync: create-vs-update branch, then add/make-nullable/skip per column — necessary DDL paths
+	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
 	public function syncTableForRegisterSchema(Register $register, Schema $schema): array {
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$registerId = $register->getId();
-		$schemaId = $schema->getId();
-		$cacheKey = $this->magicMapper->getCacheKey(registerId: $registerId, schemaId: $schemaId);
+		$cacheKey = $this->magicMapper->getCacheKey(registerId: $register->getId(), schemaId: $schema->getId());
+		$target = [
+			'registerId' => $register->getId(),
+			'schemaId' => $schema->getId(),
+			'tableName' => $tableName,
+		];
 
 		$this->logger->info(
 			message: '[MagicTableHandler] Syncing register+schema table',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
-				'tableName' => $tableName,
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__] + $target
 		);
 
 		try {
-			// Check if table exists - if not, create it instead of trying to update.
-			$tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
-
-			if ($tableExists === false) {
+			if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
 				$this->logger->info(
 					message: '[MagicTableHandler] Table does not exist, creating it',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $registerId,
-						'schemaId' => $schemaId,
-						'tableName' => $tableName,
-					]
+					context: ['file' => __FILE__, 'line' => __LINE__] + $target
 				);
 
-				// Create the table.
 				$this->magicMapper->createTableForRegisterSchema(register: $register, schema: $schema);
+				$columns = new TableSyncColumns(required: $this->magicMapper->buildTableColumnsFromSchema(schema: $schema));
+				return $columns->createdStatistics();
+			}
 
-				// Get the columns that were created.
-				$requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
-				$metadataColumns = [
-					'id',
-					'uuid',
-					'register',
-					'schema',
-					'object',
-					'deleted',
-					'locked',
-					'updated',
-					'created',
-					'version',
-				];
-				$metadataCount = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
-				$regularPropCount = count($requiredColumns) - $metadataCount;
-
-				// Return statistics for newly created table.
-				return [
-					'success' => true,
-					'created' => true,
-					'metadataProperties' => $metadataCount,
-					'regularProperties' => $regularPropCount,
-					'totalProperties' => count($requiredColumns),
-					'columnsAdded' => count($requiredColumns),
-					'columnsDeRequired' => 0,
-					'columnsDropped' => 0,
-					'columnsUnchanged' => 0,
-					'columnsAddedList' => array_keys($requiredColumns),
-					'columnsDeRequiredList' => [],
-					'columnsDroppedList' => [],
-				];
-			}//end if
-
-			// Table exists, update its structure.
 			$this->logger->info(
 				message: '[MagicTableHandler] Table exists, updating structure',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-					'tableName' => $tableName,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__] + $target
 			);
 
-			// Get current table structure.
-			$currentColumns = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
-
-			// Get required columns from schema.
-			$requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
-
-			// Count metadata properties (non-schema columns).
-			$metadataColumns = [
-				'id',
-				'uuid',
-				'register',
-				'schema',
-				'object',
-				'deleted',
-				'locked',
-				'updated',
-				'created',
-				'version',
-			];
-			$metadataCount = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
-
-			// Compare and update table structure - this returns statistics.
-			$columnStats = $this->magicMapper->updateTableStructure(
-				tableName: $tableName,
-				currentColumns: $currentColumns,
-				requiredColumns: $requiredColumns
-			);
-
-			// Update indexes.
+			$result = $this->alterTable(tableName: $tableName, schema: $schema);
 			$this->magicMapper->updateTableIndexes(tableName: $tableName, register: $register, schema: $schema);
 
 			// Store updated schema version and refresh cache.
 			$this->magicMapper->storeRegisterSchemaVersion(register: $register, schema: $schema);
 			MagicMapper::setTableExistsCache(key: $cacheKey, value: time());
-			// Refresh cache timestamp.
-			// Calculate regular properties (excluding metadata).
-			$regularPropCount = count($requiredColumns) - $metadataCount;
-
-			$added = count($columnStats['columnsAdded']);
-			$dropped = count($columnStats['columnsDropped']);
-			$unchangedCount = count($currentColumns) - $added - $dropped;
-
-			$result = [
-				'success' => true,
-				'metadataProperties' => $metadataCount,
-				'regularProperties' => $regularPropCount,
-				'totalProperties' => count($requiredColumns),
-				'columnsAdded' => count($columnStats['columnsAdded']),
-				'columnsDeRequired' => count($columnStats['columnsDeRequired']),
-				'columnsReRequired' => count($columnStats['columnsReRequired']),
-				'columnsDropped' => count($columnStats['columnsDropped']),
-				'columnsUnchanged' => $unchangedCount,
-				'columnsAddedList' => $columnStats['columnsAdded'],
-				'columnsDeRequiredList' => $columnStats['columnsDeRequired'],
-				'columnsReRequiredList' => $columnStats['columnsReRequired'],
-				'columnsDroppedList' => $columnStats['columnsDropped'],
-			];
 
 			MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
 
@@ -561,6 +459,27 @@ class MagicTableHandler {
 			throw $e;
 		}//end try
 	}//end syncTableForRegisterSchema()
+
+	/**
+	 * Bring an existing table's columns in line with its schema.
+	 *
+	 * @param string $tableName The magic table name
+	 * @param Schema $schema    The schema the table stores
+	 *
+	 * @return array Statistics about what was changed
+	 */
+	private function alterTable(string $tableName, Schema $schema): array {
+		$currentColumns = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
+		$requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
+		$changes = $this->magicMapper->updateTableStructure(
+			tableName: $tableName,
+			currentColumns: $currentColumns,
+			requiredColumns: $requiredColumns
+		);
+
+		$columns = new TableSyncColumns(required: $requiredColumns, changes: $changes);
+		return $columns->updatedStatistics(current: $currentColumns);
+	}//end alterTable()
 
 	/**
 	 * Clear all caches for MagicMapper

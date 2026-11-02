@@ -74,7 +74,7 @@ class PrincipalReachController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function show(string $principal): JSONResponse {
 		$principal = trim($principal);
@@ -99,7 +99,7 @@ class PrincipalReachController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function revoke(string $principal): JSONResponse {
 		$principal = trim($principal);

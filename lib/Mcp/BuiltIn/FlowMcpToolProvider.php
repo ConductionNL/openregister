@@ -77,6 +77,98 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	}//end getAppId()
 
 	/**
+	 * The tool definitions.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const TOOLS = [
+		[
+			'id' => 'openregister.runFlow',
+			'name' => 'Run a flow',
+			'description' => 'Queue an OpenRegister flow against an object. Returns the run uuid; poll it with openregister.flowRunStatus.',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'flowId' => ['type' => 'string', 'description' => 'The id of the flow to run.'],
+					'uuid' => ['type' => 'string', 'description' => 'The subject object uuid (optional for a subjectless flow).'],
+					'register' => ['type' => 'string', 'description' => 'The subject object register slug (optional).'],
+					'schema' => ['type' => 'string', 'description' => 'The subject object schema slug (optional).'],
+				],
+				'required' => ['flowId'],
+			],
+			'readOnlyHint' => false,
+			'destructiveHint' => true,
+			'idempotentHint' => false,
+			'scope' => 'create',
+			// A flow can write objects other users read, and can drive an
+			// outbound integration. `instance` is the floor, not a ceiling:
+			// a consumer composing reach should take the MAX of this and
+			// whatever the flow's own steps reach.
+			'reach' => 'instance',
+		],
+		[
+			'id' => 'openregister.saveFlow',
+			'name' => 'Create or update a flow',
+			'description' => 'Author an OpenRegister flow: its nodes (each with a type and config) and the '
+				. 'edges between them. Omit uuid to create, pass one to update. A flow needs at least one trigger '
+				. 'node (openregister.trigger-manual, .trigger-schedule or .trigger-object) and at least one end '
+				. 'node (openregister.end). A node carries the step; an edge carries only from/to — an edge with a '
+				. 'type is refused. List the available node types first.',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'uuid' => ['type' => 'string', 'description' => 'The flow to update. Omit to create a new one.'],
+					'name' => ['type' => 'string', 'description' => 'The flow name.'],
+					'description' => ['type' => 'string', 'description' => 'What the flow does.'],
+					'app' => ['type' => 'string', 'description' => 'The owning app id (defaults to openregister).'],
+					'enabled' => ['type' => 'boolean', 'description' => 'Whether triggers may fire it.'],
+					'nodes' => [
+						'type' => 'array',
+						'description' => 'The nodes. Each: {id, type, config, x?, y?}.',
+						'items' => ['type' => 'object'],
+					],
+					'edges' => [
+						'type' => 'array',
+						'description' => 'The connections. Each: {id, from, to}. NEVER a type.',
+						'items' => ['type' => 'object'],
+					],
+				],
+				'required' => ['name'],
+			],
+			'readOnlyHint' => false,
+			'destructiveHint' => true,
+			'idempotentHint' => false,
+			'scope' => 'create',
+			// Authoring a flow is authoring something that can later write
+			// objects and call outbound integrations, so its reach is the
+			// reach of what it may become — not the reach of one save.
+			'reach' => 'instance',
+		],
+		[
+			'id' => 'openregister.flowRunStatus',
+			'name' => 'Get a flow run status',
+			'description' => 'Read the status, per-step log and result items of a flow run by its uuid.',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'runUuid' => ['type' => 'string', 'description' => 'The uuid returned by openregister.runFlow.'],
+				],
+				'required' => ['runUuid'],
+			],
+			'readOnlyHint' => true,
+			'destructiveHint' => false,
+			'idempotentHint' => true,
+			'scope' => 'read',
+			// Polling a run the caller already started, through the same
+			// RBAC as any other read. Nothing observes an effect, so `user`
+			// — and declaring it matters: a consumer that fails closed on an
+			// absent reach would otherwise gate the STATUS POLL of a flow it
+			// had just been granted permission to start.
+			'reach' => 'user',
+		],
+	];
+
+	/**
 	 * The tools this provider offers.
 	 *
 	 * Both descriptors declare their MCP 2025-11-25 annotation hints and an
@@ -97,93 +189,7 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
 	 */
 	public function getTools(): array {
-		return [
-			[
-				'id' => 'openregister.runFlow',
-				'name' => 'Run a flow',
-				'description' => 'Queue an OpenRegister flow against an object. Returns the run uuid; poll it with openregister.flowRunStatus.',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'flowId' => ['type' => 'string', 'description' => 'The id of the flow to run.'],
-						'uuid' => ['type' => 'string', 'description' => 'The subject object uuid (optional for a subjectless flow).'],
-						'register' => ['type' => 'string', 'description' => 'The subject object register slug (optional).'],
-						'schema' => ['type' => 'string', 'description' => 'The subject object schema slug (optional).'],
-					],
-					'required' => ['flowId'],
-				],
-				'readOnlyHint' => false,
-				'destructiveHint' => true,
-				'idempotentHint' => false,
-				'scope' => 'create',
-				// A flow can write objects other users read, and can drive an
-				// outbound integration. `instance` is the floor, not a ceiling:
-				// a consumer composing reach should take the MAX of this and
-				// whatever the flow's own steps reach.
-				'reach' => 'instance',
-			],
-			[
-				'id' => 'openregister.saveFlow',
-				'name' => 'Create or update a flow',
-				'description' => 'Author an OpenRegister flow: its nodes (each with a type and config) and the '
-					. 'edges between them. Omit uuid to create, pass one to update. A flow needs at least one trigger '
-					. 'node (openregister.trigger-manual, .trigger-schedule or .trigger-object) and at least one end '
-					. 'node (openregister.end). A node carries the step; an edge carries only from/to — an edge with a '
-					. 'type is refused. List the available node types first.',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'uuid' => ['type' => 'string', 'description' => 'The flow to update. Omit to create a new one.'],
-						'name' => ['type' => 'string', 'description' => 'The flow name.'],
-						'description' => ['type' => 'string', 'description' => 'What the flow does.'],
-						'app' => ['type' => 'string', 'description' => 'The owning app id (defaults to openregister).'],
-						'enabled' => ['type' => 'boolean', 'description' => 'Whether triggers may fire it.'],
-						'nodes' => [
-							'type' => 'array',
-							'description' => 'The nodes. Each: {id, type, config, x?, y?}.',
-							'items' => ['type' => 'object'],
-						],
-						'edges' => [
-							'type' => 'array',
-							'description' => 'The connections. Each: {id, from, to}. NEVER a type.',
-							'items' => ['type' => 'object'],
-						],
-					],
-					'required' => ['name'],
-				],
-				'readOnlyHint' => false,
-				'destructiveHint' => true,
-				'idempotentHint' => false,
-				'scope' => 'create',
-				// Authoring a flow is authoring something that can later write
-				// objects and call outbound integrations, so its reach is the
-				// reach of what it may become — not the reach of one save.
-				'reach' => 'instance',
-			],
-			[
-				'id' => 'openregister.flowRunStatus',
-				'name' => 'Get a flow run status',
-				'description' => 'Read the status, per-step log and result items of a flow run by its uuid.',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'runUuid' => ['type' => 'string', 'description' => 'The uuid returned by openregister.runFlow.'],
-					],
-					'required' => ['runUuid'],
-				],
-				'readOnlyHint' => true,
-				'destructiveHint' => false,
-				'idempotentHint' => true,
-				'scope' => 'read',
-				// Polling a run the caller already started, through the same
-				// RBAC as any other read. Nothing observes an effect, so `user`
-				// — and declaring it matters: a consumer that fails closed on an
-				// absent reach would otherwise gate the STATUS POLL of a flow it
-				// had just been granted permission to start.
-				'reach' => 'user',
-			],
-		];
-
+		return self::TOOLS;
 	}//end getTools()
 
 	/**

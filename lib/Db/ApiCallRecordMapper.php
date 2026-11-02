@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class ApiCallRecordMapper extends QBMapper {
 	 *
 	 * @return bool True when the call was counted.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function count(
 		string $principal,
@@ -137,7 +137,7 @@ class ApiCallRecordMapper extends QBMapper {
 	 *
 	 * @return array<int, ApiCallRecord> The records, busiest first.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function findInPeriod(DateTime $from, DateTime $to, ?string $apiVersion = null, int $limit = 500): array {
 		$qb = $this->db->getQueryBuilder();
@@ -167,7 +167,7 @@ class ApiCallRecordMapper extends QBMapper {
 	 *
 	 * @return int The number of records dropped.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function pruneBefore(DateTime $before): int {
 		$qb = $this->db->getQueryBuilder();

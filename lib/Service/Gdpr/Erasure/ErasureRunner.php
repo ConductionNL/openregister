@@ -64,7 +64,7 @@ use Throwable;
  * existing destruction path rather than grow a second one, so it holds the
  * collaborators of that path plus the two that decide what to run over.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class ErasureRunner {
 	/**
@@ -118,7 +118,7 @@ class ErasureRunner {
 	 *
 	 * @throws ErasureRefusedException When the approved preview no longer describes the world.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function run(ErasurePreview $record): array {
 		$subject = (string)($record->getSubject() ?? '');

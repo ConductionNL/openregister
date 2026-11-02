@@ -1,0 +1,2801 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`pack draft validation (golden) validateDraft matches the recorded messages 1`] = `
+{
+  "badFormat": [
+    "Choose a source format.",
+  ],
+  "badSlug": [
+    "The slug must start with a lowercase letter or digit and contain only lowercase letters, digits and hyphens.",
+  ],
+  "badVersion": [
+    "The version must look like 1.0.0 (major.minor.patch).",
+  ],
+  "blankName": [
+    "The name is required.",
+  ],
+  "defaults": [
+    "A default value has no target field.",
+    "The default for "x" is set twice.",
+    "The default for "x" is not valid JSON.",
+    "A default value has no target field.",
+    "The default for "" is not valid JSON.",
+  ],
+  "everything": [
+    "The slug must start with a lowercase letter or digit and contain only lowercase letters, digits and hyphens.",
+    "The name is required.",
+    "The version must look like 1.0.0 (major.minor.patch).",
+    "Choose a source format.",
+    "Name the column that holds the id.",
+    "Add at least one field mapping.",
+    "A default value has no target field.",
+    "The default for "" is not valid JSON.",
+    "Rows to skip must be whole numbers from 1 up: zero",
+  ],
+  "idFieldGiven": [],
+  "idFieldMissing": [
+    "Name the column that holds the id.",
+  ],
+  "noRows": [
+    "Add at least one field mapping.",
+  ],
+  "rowGaps": [
+    "Row 1 has no source column.",
+    "Row 2 has no target field.",
+    "Row 3 has no source column.",
+    "Row 3 has no target field.",
+    "Row 3: Add at least one column to join.",
+    "Row 4: Choose yes or no as the result for "a".",
+    "Row 4: Choose yes or no as the result for "b".",
+    "Row 4: The value "b" is in the table twice.",
+    "Row 4: The result for "b" is not valid JSON.",
+    "Row 4: Choose yes or no for values that are not in the table.",
+  ],
+  "skips": [
+    "Rows to skip must be whole numbers from 1 up: 0, x, -2",
+  ],
+  "skipsOk": [],
+  "valid": [],
+}
+`;
+
+exports[`pack draft validation (golden) validateTransform matches the recorded messages 1`] = `
+{
+  "bool-map/badJson/bad/blank/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/blank/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/blank/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/none/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/none/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/none/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/ok/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/ok/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/bad/ok/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/badJson/none/blank/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/blank/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/blank/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/none/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/none/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/none/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/ok/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/ok/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/none/ok/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/ok/blank/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/blank/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/blank/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/none/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/none/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/none/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/ok/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/ok/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/ok/ok/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/blank/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/blank/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/blank/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/none/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/none/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/none/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/ok/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/ok/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/plain/ok/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/badJson/yes/blank/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/blank/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/blank/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/none/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/none/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/none/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/ok/bad": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/ok/ok": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/badJson/yes/ok/plain": [
+    "The result for "a" is not valid JSON.",
+    "Choose yes or no as the result for "b".",
+  ],
+  "bool-map/none/bad/blank/bad": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/blank/ok": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/blank/plain": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/none/bad": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/none/ok": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/none/plain": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/ok/bad": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/ok/ok": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/bad/ok/plain": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/none/none/blank/bad": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/blank/ok": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/blank/plain": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/none/bad": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/none/ok": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/none/plain": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/ok/bad": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/ok/ok": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/none/ok/plain": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/ok/blank/bad": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/blank/ok": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/blank/plain": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/none/bad": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/none/ok": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/none/plain": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/ok/bad": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/ok/ok": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/ok/ok/plain": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/blank/bad": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/blank/ok": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/blank/plain": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/none/bad": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/none/ok": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/none/plain": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/ok/bad": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/ok/ok": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/plain/ok/plain": [
+    "Add at least one value to the table.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/none/yes/blank/bad": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/blank/ok": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/blank/plain": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/none/bad": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/none/ok": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/none/plain": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/ok/bad": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/ok/ok": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/none/yes/ok/plain": [
+    "Add at least one value to the table.",
+  ],
+  "bool-map/notBoolean/bad/blank/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/blank/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/blank/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/none/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/none/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/none/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/ok/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/ok/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/bad/ok/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/blank/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/blank/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/blank/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/none/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/none/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/none/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/ok/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/ok/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/none/ok/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/ok/blank/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/blank/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/blank/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/none/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/none/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/none/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/ok/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/ok/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/ok/ok/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/blank/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/blank/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/blank/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/none/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/none/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/none/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/ok/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/ok/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/plain/ok/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/notBoolean/yes/blank/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/blank/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/blank/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/none/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/none/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/none/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/ok/bad": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/ok/ok": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/notBoolean/yes/ok/plain": [
+    "Choose yes or no as the result for "a".",
+    "Choose yes or no as the result for "b".",
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "bool-map/one/bad/blank/bad": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/blank/ok": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/blank/plain": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/none/bad": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/none/ok": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/none/plain": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/ok/bad": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/ok/ok": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/bad/ok/plain": [
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/one/none/blank/bad": [],
+  "bool-map/one/none/blank/ok": [],
+  "bool-map/one/none/blank/plain": [],
+  "bool-map/one/none/none/bad": [],
+  "bool-map/one/none/none/ok": [],
+  "bool-map/one/none/none/plain": [],
+  "bool-map/one/none/ok/bad": [],
+  "bool-map/one/none/ok/ok": [],
+  "bool-map/one/none/ok/plain": [],
+  "bool-map/one/ok/blank/bad": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/blank/ok": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/blank/plain": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/none/bad": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/none/ok": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/none/plain": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/ok/bad": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/ok/ok": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/ok/ok/plain": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/blank/bad": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/blank/ok": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/blank/plain": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/none/bad": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/none/ok": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/none/plain": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/ok/bad": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/ok/ok": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/plain/ok/plain": [
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/one/yes/blank/bad": [],
+  "bool-map/one/yes/blank/ok": [],
+  "bool-map/one/yes/blank/plain": [],
+  "bool-map/one/yes/none/bad": [],
+  "bool-map/one/yes/none/ok": [],
+  "bool-map/one/yes/none/plain": [],
+  "bool-map/one/yes/ok/bad": [],
+  "bool-map/one/yes/ok/ok": [],
+  "bool-map/one/yes/ok/plain": [],
+  "bool-map/twice/bad/blank/bad": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/blank/ok": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/blank/plain": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/none/bad": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/none/ok": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/none/plain": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/ok/bad": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/ok/ok": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/bad/ok/plain": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "bool-map/twice/none/blank/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/blank/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/blank/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/none/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/none/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/none/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/ok/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/ok/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/none/ok/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/ok/blank/bad": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/blank/ok": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/blank/plain": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/none/bad": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/none/ok": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/none/plain": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/ok/bad": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/ok/ok": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/ok/ok/plain": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/blank/bad": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/blank/ok": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/blank/plain": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/none/bad": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/none/ok": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/none/plain": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/ok/bad": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/ok/ok": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/plain/ok/plain": [
+    "The value "a" is in the table twice.",
+    "Choose yes or no for values that are not in the table.",
+  ],
+  "bool-map/twice/yes/blank/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/blank/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/blank/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/none/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/none/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/none/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/ok/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/ok/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "bool-map/twice/yes/ok/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "concat/badJson/bad/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/bad/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/bad/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/bad/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/bad/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/bad/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/bad/ok/bad": [],
+  "concat/badJson/bad/ok/ok": [],
+  "concat/badJson/bad/ok/plain": [],
+  "concat/badJson/none/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/none/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/none/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/none/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/none/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/none/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/none/ok/bad": [],
+  "concat/badJson/none/ok/ok": [],
+  "concat/badJson/none/ok/plain": [],
+  "concat/badJson/ok/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/ok/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/ok/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/ok/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/ok/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/ok/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/ok/ok/bad": [],
+  "concat/badJson/ok/ok/ok": [],
+  "concat/badJson/ok/ok/plain": [],
+  "concat/badJson/plain/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/plain/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/plain/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/plain/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/plain/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/plain/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/plain/ok/bad": [],
+  "concat/badJson/plain/ok/ok": [],
+  "concat/badJson/plain/ok/plain": [],
+  "concat/badJson/yes/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/yes/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/yes/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/badJson/yes/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/yes/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/yes/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/badJson/yes/ok/bad": [],
+  "concat/badJson/yes/ok/ok": [],
+  "concat/badJson/yes/ok/plain": [],
+  "concat/none/bad/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/none/bad/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/none/bad/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/none/bad/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/bad/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/bad/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/bad/ok/bad": [],
+  "concat/none/bad/ok/ok": [],
+  "concat/none/bad/ok/plain": [],
+  "concat/none/none/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/none/none/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/none/none/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/none/none/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/none/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/none/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/none/ok/bad": [],
+  "concat/none/none/ok/ok": [],
+  "concat/none/none/ok/plain": [],
+  "concat/none/ok/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/none/ok/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/none/ok/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/none/ok/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/ok/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/ok/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/ok/ok/bad": [],
+  "concat/none/ok/ok/ok": [],
+  "concat/none/ok/ok/plain": [],
+  "concat/none/plain/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/none/plain/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/none/plain/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/none/plain/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/plain/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/plain/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/plain/ok/bad": [],
+  "concat/none/plain/ok/ok": [],
+  "concat/none/plain/ok/plain": [],
+  "concat/none/yes/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/none/yes/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/none/yes/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/none/yes/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/yes/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/yes/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/none/yes/ok/bad": [],
+  "concat/none/yes/ok/ok": [],
+  "concat/none/yes/ok/plain": [],
+  "concat/notBoolean/bad/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/bad/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/bad/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/bad/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/bad/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/bad/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/bad/ok/bad": [],
+  "concat/notBoolean/bad/ok/ok": [],
+  "concat/notBoolean/bad/ok/plain": [],
+  "concat/notBoolean/none/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/none/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/none/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/none/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/none/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/none/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/none/ok/bad": [],
+  "concat/notBoolean/none/ok/ok": [],
+  "concat/notBoolean/none/ok/plain": [],
+  "concat/notBoolean/ok/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/ok/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/ok/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/ok/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/ok/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/ok/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/ok/ok/bad": [],
+  "concat/notBoolean/ok/ok/ok": [],
+  "concat/notBoolean/ok/ok/plain": [],
+  "concat/notBoolean/plain/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/plain/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/plain/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/plain/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/plain/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/plain/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/plain/ok/bad": [],
+  "concat/notBoolean/plain/ok/ok": [],
+  "concat/notBoolean/plain/ok/plain": [],
+  "concat/notBoolean/yes/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/yes/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/yes/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/notBoolean/yes/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/yes/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/yes/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/notBoolean/yes/ok/bad": [],
+  "concat/notBoolean/yes/ok/ok": [],
+  "concat/notBoolean/yes/ok/plain": [],
+  "concat/one/bad/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/one/bad/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/one/bad/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/one/bad/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/bad/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/bad/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/bad/ok/bad": [],
+  "concat/one/bad/ok/ok": [],
+  "concat/one/bad/ok/plain": [],
+  "concat/one/none/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/one/none/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/one/none/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/one/none/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/none/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/none/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/none/ok/bad": [],
+  "concat/one/none/ok/ok": [],
+  "concat/one/none/ok/plain": [],
+  "concat/one/ok/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/one/ok/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/one/ok/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/one/ok/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/ok/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/ok/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/ok/ok/bad": [],
+  "concat/one/ok/ok/ok": [],
+  "concat/one/ok/ok/plain": [],
+  "concat/one/plain/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/one/plain/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/one/plain/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/one/plain/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/plain/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/plain/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/plain/ok/bad": [],
+  "concat/one/plain/ok/ok": [],
+  "concat/one/plain/ok/plain": [],
+  "concat/one/yes/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/one/yes/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/one/yes/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/one/yes/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/yes/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/yes/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/one/yes/ok/bad": [],
+  "concat/one/yes/ok/ok": [],
+  "concat/one/yes/ok/plain": [],
+  "concat/twice/bad/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/bad/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/bad/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/bad/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/bad/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/bad/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/bad/ok/bad": [],
+  "concat/twice/bad/ok/ok": [],
+  "concat/twice/bad/ok/plain": [],
+  "concat/twice/none/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/none/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/none/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/none/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/none/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/none/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/none/ok/bad": [],
+  "concat/twice/none/ok/ok": [],
+  "concat/twice/none/ok/plain": [],
+  "concat/twice/ok/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/ok/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/ok/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/ok/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/ok/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/ok/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/ok/ok/bad": [],
+  "concat/twice/ok/ok/ok": [],
+  "concat/twice/ok/ok/plain": [],
+  "concat/twice/plain/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/plain/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/plain/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/plain/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/plain/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/plain/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/plain/ok/bad": [],
+  "concat/twice/plain/ok/ok": [],
+  "concat/twice/plain/ok/plain": [],
+  "concat/twice/yes/blank/bad": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/yes/blank/ok": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/yes/blank/plain": [
+    "A column to join has no name.",
+  ],
+  "concat/twice/yes/none/bad": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/yes/none/ok": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/yes/none/plain": [
+    "Add at least one column to join.",
+  ],
+  "concat/twice/yes/ok/bad": [],
+  "concat/twice/yes/ok/ok": [],
+  "concat/twice/yes/ok/plain": [],
+  "const/badJson/bad/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/bad/blank/ok": [],
+  "const/badJson/bad/blank/plain": [],
+  "const/badJson/bad/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/bad/none/ok": [],
+  "const/badJson/bad/none/plain": [],
+  "const/badJson/bad/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/bad/ok/ok": [],
+  "const/badJson/bad/ok/plain": [],
+  "const/badJson/none/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/none/blank/ok": [],
+  "const/badJson/none/blank/plain": [],
+  "const/badJson/none/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/none/none/ok": [],
+  "const/badJson/none/none/plain": [],
+  "const/badJson/none/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/none/ok/ok": [],
+  "const/badJson/none/ok/plain": [],
+  "const/badJson/ok/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/ok/blank/ok": [],
+  "const/badJson/ok/blank/plain": [],
+  "const/badJson/ok/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/ok/none/ok": [],
+  "const/badJson/ok/none/plain": [],
+  "const/badJson/ok/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/ok/ok/ok": [],
+  "const/badJson/ok/ok/plain": [],
+  "const/badJson/plain/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/plain/blank/ok": [],
+  "const/badJson/plain/blank/plain": [],
+  "const/badJson/plain/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/plain/none/ok": [],
+  "const/badJson/plain/none/plain": [],
+  "const/badJson/plain/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/plain/ok/ok": [],
+  "const/badJson/plain/ok/plain": [],
+  "const/badJson/yes/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/yes/blank/ok": [],
+  "const/badJson/yes/blank/plain": [],
+  "const/badJson/yes/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/yes/none/ok": [],
+  "const/badJson/yes/none/plain": [],
+  "const/badJson/yes/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/badJson/yes/ok/ok": [],
+  "const/badJson/yes/ok/plain": [],
+  "const/none/bad/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/bad/blank/ok": [],
+  "const/none/bad/blank/plain": [],
+  "const/none/bad/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/bad/none/ok": [],
+  "const/none/bad/none/plain": [],
+  "const/none/bad/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/bad/ok/ok": [],
+  "const/none/bad/ok/plain": [],
+  "const/none/none/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/none/blank/ok": [],
+  "const/none/none/blank/plain": [],
+  "const/none/none/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/none/none/ok": [],
+  "const/none/none/none/plain": [],
+  "const/none/none/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/none/ok/ok": [],
+  "const/none/none/ok/plain": [],
+  "const/none/ok/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/ok/blank/ok": [],
+  "const/none/ok/blank/plain": [],
+  "const/none/ok/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/ok/none/ok": [],
+  "const/none/ok/none/plain": [],
+  "const/none/ok/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/ok/ok/ok": [],
+  "const/none/ok/ok/plain": [],
+  "const/none/plain/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/plain/blank/ok": [],
+  "const/none/plain/blank/plain": [],
+  "const/none/plain/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/plain/none/ok": [],
+  "const/none/plain/none/plain": [],
+  "const/none/plain/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/plain/ok/ok": [],
+  "const/none/plain/ok/plain": [],
+  "const/none/yes/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/yes/blank/ok": [],
+  "const/none/yes/blank/plain": [],
+  "const/none/yes/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/yes/none/ok": [],
+  "const/none/yes/none/plain": [],
+  "const/none/yes/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/none/yes/ok/ok": [],
+  "const/none/yes/ok/plain": [],
+  "const/notBoolean/bad/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/bad/blank/ok": [],
+  "const/notBoolean/bad/blank/plain": [],
+  "const/notBoolean/bad/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/bad/none/ok": [],
+  "const/notBoolean/bad/none/plain": [],
+  "const/notBoolean/bad/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/bad/ok/ok": [],
+  "const/notBoolean/bad/ok/plain": [],
+  "const/notBoolean/none/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/none/blank/ok": [],
+  "const/notBoolean/none/blank/plain": [],
+  "const/notBoolean/none/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/none/none/ok": [],
+  "const/notBoolean/none/none/plain": [],
+  "const/notBoolean/none/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/none/ok/ok": [],
+  "const/notBoolean/none/ok/plain": [],
+  "const/notBoolean/ok/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/ok/blank/ok": [],
+  "const/notBoolean/ok/blank/plain": [],
+  "const/notBoolean/ok/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/ok/none/ok": [],
+  "const/notBoolean/ok/none/plain": [],
+  "const/notBoolean/ok/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/ok/ok/ok": [],
+  "const/notBoolean/ok/ok/plain": [],
+  "const/notBoolean/plain/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/plain/blank/ok": [],
+  "const/notBoolean/plain/blank/plain": [],
+  "const/notBoolean/plain/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/plain/none/ok": [],
+  "const/notBoolean/plain/none/plain": [],
+  "const/notBoolean/plain/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/plain/ok/ok": [],
+  "const/notBoolean/plain/ok/plain": [],
+  "const/notBoolean/yes/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/yes/blank/ok": [],
+  "const/notBoolean/yes/blank/plain": [],
+  "const/notBoolean/yes/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/yes/none/ok": [],
+  "const/notBoolean/yes/none/plain": [],
+  "const/notBoolean/yes/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/notBoolean/yes/ok/ok": [],
+  "const/notBoolean/yes/ok/plain": [],
+  "const/one/bad/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/bad/blank/ok": [],
+  "const/one/bad/blank/plain": [],
+  "const/one/bad/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/bad/none/ok": [],
+  "const/one/bad/none/plain": [],
+  "const/one/bad/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/bad/ok/ok": [],
+  "const/one/bad/ok/plain": [],
+  "const/one/none/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/none/blank/ok": [],
+  "const/one/none/blank/plain": [],
+  "const/one/none/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/none/none/ok": [],
+  "const/one/none/none/plain": [],
+  "const/one/none/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/none/ok/ok": [],
+  "const/one/none/ok/plain": [],
+  "const/one/ok/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/ok/blank/ok": [],
+  "const/one/ok/blank/plain": [],
+  "const/one/ok/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/ok/none/ok": [],
+  "const/one/ok/none/plain": [],
+  "const/one/ok/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/ok/ok/ok": [],
+  "const/one/ok/ok/plain": [],
+  "const/one/plain/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/plain/blank/ok": [],
+  "const/one/plain/blank/plain": [],
+  "const/one/plain/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/plain/none/ok": [],
+  "const/one/plain/none/plain": [],
+  "const/one/plain/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/plain/ok/ok": [],
+  "const/one/plain/ok/plain": [],
+  "const/one/yes/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/yes/blank/ok": [],
+  "const/one/yes/blank/plain": [],
+  "const/one/yes/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/yes/none/ok": [],
+  "const/one/yes/none/plain": [],
+  "const/one/yes/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/one/yes/ok/ok": [],
+  "const/one/yes/ok/plain": [],
+  "const/twice/bad/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/bad/blank/ok": [],
+  "const/twice/bad/blank/plain": [],
+  "const/twice/bad/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/bad/none/ok": [],
+  "const/twice/bad/none/plain": [],
+  "const/twice/bad/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/bad/ok/ok": [],
+  "const/twice/bad/ok/plain": [],
+  "const/twice/none/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/none/blank/ok": [],
+  "const/twice/none/blank/plain": [],
+  "const/twice/none/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/none/none/ok": [],
+  "const/twice/none/none/plain": [],
+  "const/twice/none/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/none/ok/ok": [],
+  "const/twice/none/ok/plain": [],
+  "const/twice/ok/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/ok/blank/ok": [],
+  "const/twice/ok/blank/plain": [],
+  "const/twice/ok/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/ok/none/ok": [],
+  "const/twice/ok/none/plain": [],
+  "const/twice/ok/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/ok/ok/ok": [],
+  "const/twice/ok/ok/plain": [],
+  "const/twice/plain/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/plain/blank/ok": [],
+  "const/twice/plain/blank/plain": [],
+  "const/twice/plain/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/plain/none/ok": [],
+  "const/twice/plain/none/plain": [],
+  "const/twice/plain/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/plain/ok/ok": [],
+  "const/twice/plain/ok/plain": [],
+  "const/twice/yes/blank/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/yes/blank/ok": [],
+  "const/twice/yes/blank/plain": [],
+  "const/twice/yes/none/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/yes/none/ok": [],
+  "const/twice/yes/none/plain": [],
+  "const/twice/yes/ok/bad": [
+    "The fixed value is not valid JSON.",
+  ],
+  "const/twice/yes/ok/ok": [],
+  "const/twice/yes/ok/plain": [],
+  "lookup/badJson/bad/blank/bad": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/blank/ok": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/blank/plain": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/none/bad": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/none/ok": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/none/plain": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/ok/bad": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/ok/ok": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/bad/ok/plain": [
+    "The result for "a" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/badJson/none/blank/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/blank/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/blank/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/none/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/none/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/none/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/ok/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/ok/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/none/ok/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/blank/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/blank/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/blank/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/none/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/none/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/none/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/ok/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/ok/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/ok/ok/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/blank/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/blank/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/blank/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/none/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/none/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/none/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/ok/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/ok/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/plain/ok/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/blank/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/blank/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/blank/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/none/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/none/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/none/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/ok/bad": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/ok/ok": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/badJson/yes/ok/plain": [
+    "The result for "a" is not valid JSON.",
+  ],
+  "lookup/none/bad/blank/bad": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/blank/ok": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/blank/plain": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/none/bad": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/none/ok": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/none/plain": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/ok/bad": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/ok/ok": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/bad/ok/plain": [
+    "Add at least one value to the table.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/none/none/blank/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/blank/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/blank/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/none/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/none/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/none/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/ok/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/ok/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/none/ok/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/blank/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/blank/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/blank/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/none/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/none/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/none/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/ok/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/ok/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/ok/ok/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/blank/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/blank/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/blank/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/none/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/none/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/none/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/ok/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/ok/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/plain/ok/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/blank/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/blank/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/blank/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/none/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/none/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/none/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/ok/bad": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/ok/ok": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/none/yes/ok/plain": [
+    "Add at least one value to the table.",
+  ],
+  "lookup/notBoolean/bad/blank/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/blank/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/blank/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/none/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/none/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/none/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/ok/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/ok/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/bad/ok/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/blank/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/blank/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/blank/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/none/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/none/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/none/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/ok/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/ok/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/none/ok/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/blank/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/blank/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/blank/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/none/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/none/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/none/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/ok/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/ok/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/ok/ok/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/blank/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/blank/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/blank/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/none/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/none/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/none/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/ok/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/ok/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/plain/ok/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/blank/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/blank/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/blank/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/none/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/none/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/none/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/ok/bad": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/ok/ok": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/notBoolean/yes/ok/plain": [
+    "The value "b" is in the table twice.",
+    "The result for "b" is not valid JSON.",
+  ],
+  "lookup/one/bad/blank/bad": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/blank/ok": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/blank/plain": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/none/bad": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/none/ok": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/none/plain": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/ok/bad": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/ok/ok": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/bad/ok/plain": [
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/one/none/blank/bad": [],
+  "lookup/one/none/blank/ok": [],
+  "lookup/one/none/blank/plain": [],
+  "lookup/one/none/none/bad": [],
+  "lookup/one/none/none/ok": [],
+  "lookup/one/none/none/plain": [],
+  "lookup/one/none/ok/bad": [],
+  "lookup/one/none/ok/ok": [],
+  "lookup/one/none/ok/plain": [],
+  "lookup/one/ok/blank/bad": [],
+  "lookup/one/ok/blank/ok": [],
+  "lookup/one/ok/blank/plain": [],
+  "lookup/one/ok/none/bad": [],
+  "lookup/one/ok/none/ok": [],
+  "lookup/one/ok/none/plain": [],
+  "lookup/one/ok/ok/bad": [],
+  "lookup/one/ok/ok/ok": [],
+  "lookup/one/ok/ok/plain": [],
+  "lookup/one/plain/blank/bad": [],
+  "lookup/one/plain/blank/ok": [],
+  "lookup/one/plain/blank/plain": [],
+  "lookup/one/plain/none/bad": [],
+  "lookup/one/plain/none/ok": [],
+  "lookup/one/plain/none/plain": [],
+  "lookup/one/plain/ok/bad": [],
+  "lookup/one/plain/ok/ok": [],
+  "lookup/one/plain/ok/plain": [],
+  "lookup/one/yes/blank/bad": [],
+  "lookup/one/yes/blank/ok": [],
+  "lookup/one/yes/blank/plain": [],
+  "lookup/one/yes/none/bad": [],
+  "lookup/one/yes/none/ok": [],
+  "lookup/one/yes/none/plain": [],
+  "lookup/one/yes/ok/bad": [],
+  "lookup/one/yes/ok/ok": [],
+  "lookup/one/yes/ok/plain": [],
+  "lookup/twice/bad/blank/bad": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/blank/ok": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/blank/plain": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/none/bad": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/none/ok": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/none/plain": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/ok/bad": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/ok/ok": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/bad/ok/plain": [
+    "The value "a" is in the table twice.",
+    "The value for other values is not valid JSON.",
+  ],
+  "lookup/twice/none/blank/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/blank/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/blank/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/none/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/none/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/none/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/ok/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/ok/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/none/ok/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/blank/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/blank/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/blank/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/none/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/none/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/none/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/ok/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/ok/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/ok/ok/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/blank/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/blank/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/blank/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/none/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/none/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/none/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/ok/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/ok/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/plain/ok/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/blank/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/blank/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/blank/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/none/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/none/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/none/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/ok/bad": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/ok/ok": [
+    "The value "a" is in the table twice.",
+  ],
+  "lookup/twice/yes/ok/plain": [
+    "The value "a" is in the table twice.",
+  ],
+  "other/badJson/bad/blank/bad": [],
+  "other/badJson/bad/blank/ok": [],
+  "other/badJson/bad/blank/plain": [],
+  "other/badJson/bad/none/bad": [],
+  "other/badJson/bad/none/ok": [],
+  "other/badJson/bad/none/plain": [],
+  "other/badJson/bad/ok/bad": [],
+  "other/badJson/bad/ok/ok": [],
+  "other/badJson/bad/ok/plain": [],
+  "other/badJson/none/blank/bad": [],
+  "other/badJson/none/blank/ok": [],
+  "other/badJson/none/blank/plain": [],
+  "other/badJson/none/none/bad": [],
+  "other/badJson/none/none/ok": [],
+  "other/badJson/none/none/plain": [],
+  "other/badJson/none/ok/bad": [],
+  "other/badJson/none/ok/ok": [],
+  "other/badJson/none/ok/plain": [],
+  "other/badJson/ok/blank/bad": [],
+  "other/badJson/ok/blank/ok": [],
+  "other/badJson/ok/blank/plain": [],
+  "other/badJson/ok/none/bad": [],
+  "other/badJson/ok/none/ok": [],
+  "other/badJson/ok/none/plain": [],
+  "other/badJson/ok/ok/bad": [],
+  "other/badJson/ok/ok/ok": [],
+  "other/badJson/ok/ok/plain": [],
+  "other/badJson/plain/blank/bad": [],
+  "other/badJson/plain/blank/ok": [],
+  "other/badJson/plain/blank/plain": [],
+  "other/badJson/plain/none/bad": [],
+  "other/badJson/plain/none/ok": [],
+  "other/badJson/plain/none/plain": [],
+  "other/badJson/plain/ok/bad": [],
+  "other/badJson/plain/ok/ok": [],
+  "other/badJson/plain/ok/plain": [],
+  "other/badJson/yes/blank/bad": [],
+  "other/badJson/yes/blank/ok": [],
+  "other/badJson/yes/blank/plain": [],
+  "other/badJson/yes/none/bad": [],
+  "other/badJson/yes/none/ok": [],
+  "other/badJson/yes/none/plain": [],
+  "other/badJson/yes/ok/bad": [],
+  "other/badJson/yes/ok/ok": [],
+  "other/badJson/yes/ok/plain": [],
+  "other/none/bad/blank/bad": [],
+  "other/none/bad/blank/ok": [],
+  "other/none/bad/blank/plain": [],
+  "other/none/bad/none/bad": [],
+  "other/none/bad/none/ok": [],
+  "other/none/bad/none/plain": [],
+  "other/none/bad/ok/bad": [],
+  "other/none/bad/ok/ok": [],
+  "other/none/bad/ok/plain": [],
+  "other/none/none/blank/bad": [],
+  "other/none/none/blank/ok": [],
+  "other/none/none/blank/plain": [],
+  "other/none/none/none/bad": [],
+  "other/none/none/none/ok": [],
+  "other/none/none/none/plain": [],
+  "other/none/none/ok/bad": [],
+  "other/none/none/ok/ok": [],
+  "other/none/none/ok/plain": [],
+  "other/none/ok/blank/bad": [],
+  "other/none/ok/blank/ok": [],
+  "other/none/ok/blank/plain": [],
+  "other/none/ok/none/bad": [],
+  "other/none/ok/none/ok": [],
+  "other/none/ok/none/plain": [],
+  "other/none/ok/ok/bad": [],
+  "other/none/ok/ok/ok": [],
+  "other/none/ok/ok/plain": [],
+  "other/none/plain/blank/bad": [],
+  "other/none/plain/blank/ok": [],
+  "other/none/plain/blank/plain": [],
+  "other/none/plain/none/bad": [],
+  "other/none/plain/none/ok": [],
+  "other/none/plain/none/plain": [],
+  "other/none/plain/ok/bad": [],
+  "other/none/plain/ok/ok": [],
+  "other/none/plain/ok/plain": [],
+  "other/none/yes/blank/bad": [],
+  "other/none/yes/blank/ok": [],
+  "other/none/yes/blank/plain": [],
+  "other/none/yes/none/bad": [],
+  "other/none/yes/none/ok": [],
+  "other/none/yes/none/plain": [],
+  "other/none/yes/ok/bad": [],
+  "other/none/yes/ok/ok": [],
+  "other/none/yes/ok/plain": [],
+  "other/notBoolean/bad/blank/bad": [],
+  "other/notBoolean/bad/blank/ok": [],
+  "other/notBoolean/bad/blank/plain": [],
+  "other/notBoolean/bad/none/bad": [],
+  "other/notBoolean/bad/none/ok": [],
+  "other/notBoolean/bad/none/plain": [],
+  "other/notBoolean/bad/ok/bad": [],
+  "other/notBoolean/bad/ok/ok": [],
+  "other/notBoolean/bad/ok/plain": [],
+  "other/notBoolean/none/blank/bad": [],
+  "other/notBoolean/none/blank/ok": [],
+  "other/notBoolean/none/blank/plain": [],
+  "other/notBoolean/none/none/bad": [],
+  "other/notBoolean/none/none/ok": [],
+  "other/notBoolean/none/none/plain": [],
+  "other/notBoolean/none/ok/bad": [],
+  "other/notBoolean/none/ok/ok": [],
+  "other/notBoolean/none/ok/plain": [],
+  "other/notBoolean/ok/blank/bad": [],
+  "other/notBoolean/ok/blank/ok": [],
+  "other/notBoolean/ok/blank/plain": [],
+  "other/notBoolean/ok/none/bad": [],
+  "other/notBoolean/ok/none/ok": [],
+  "other/notBoolean/ok/none/plain": [],
+  "other/notBoolean/ok/ok/bad": [],
+  "other/notBoolean/ok/ok/ok": [],
+  "other/notBoolean/ok/ok/plain": [],
+  "other/notBoolean/plain/blank/bad": [],
+  "other/notBoolean/plain/blank/ok": [],
+  "other/notBoolean/plain/blank/plain": [],
+  "other/notBoolean/plain/none/bad": [],
+  "other/notBoolean/plain/none/ok": [],
+  "other/notBoolean/plain/none/plain": [],
+  "other/notBoolean/plain/ok/bad": [],
+  "other/notBoolean/plain/ok/ok": [],
+  "other/notBoolean/plain/ok/plain": [],
+  "other/notBoolean/yes/blank/bad": [],
+  "other/notBoolean/yes/blank/ok": [],
+  "other/notBoolean/yes/blank/plain": [],
+  "other/notBoolean/yes/none/bad": [],
+  "other/notBoolean/yes/none/ok": [],
+  "other/notBoolean/yes/none/plain": [],
+  "other/notBoolean/yes/ok/bad": [],
+  "other/notBoolean/yes/ok/ok": [],
+  "other/notBoolean/yes/ok/plain": [],
+  "other/one/bad/blank/bad": [],
+  "other/one/bad/blank/ok": [],
+  "other/one/bad/blank/plain": [],
+  "other/one/bad/none/bad": [],
+  "other/one/bad/none/ok": [],
+  "other/one/bad/none/plain": [],
+  "other/one/bad/ok/bad": [],
+  "other/one/bad/ok/ok": [],
+  "other/one/bad/ok/plain": [],
+  "other/one/none/blank/bad": [],
+  "other/one/none/blank/ok": [],
+  "other/one/none/blank/plain": [],
+  "other/one/none/none/bad": [],
+  "other/one/none/none/ok": [],
+  "other/one/none/none/plain": [],
+  "other/one/none/ok/bad": [],
+  "other/one/none/ok/ok": [],
+  "other/one/none/ok/plain": [],
+  "other/one/ok/blank/bad": [],
+  "other/one/ok/blank/ok": [],
+  "other/one/ok/blank/plain": [],
+  "other/one/ok/none/bad": [],
+  "other/one/ok/none/ok": [],
+  "other/one/ok/none/plain": [],
+  "other/one/ok/ok/bad": [],
+  "other/one/ok/ok/ok": [],
+  "other/one/ok/ok/plain": [],
+  "other/one/plain/blank/bad": [],
+  "other/one/plain/blank/ok": [],
+  "other/one/plain/blank/plain": [],
+  "other/one/plain/none/bad": [],
+  "other/one/plain/none/ok": [],
+  "other/one/plain/none/plain": [],
+  "other/one/plain/ok/bad": [],
+  "other/one/plain/ok/ok": [],
+  "other/one/plain/ok/plain": [],
+  "other/one/yes/blank/bad": [],
+  "other/one/yes/blank/ok": [],
+  "other/one/yes/blank/plain": [],
+  "other/one/yes/none/bad": [],
+  "other/one/yes/none/ok": [],
+  "other/one/yes/none/plain": [],
+  "other/one/yes/ok/bad": [],
+  "other/one/yes/ok/ok": [],
+  "other/one/yes/ok/plain": [],
+  "other/twice/bad/blank/bad": [],
+  "other/twice/bad/blank/ok": [],
+  "other/twice/bad/blank/plain": [],
+  "other/twice/bad/none/bad": [],
+  "other/twice/bad/none/ok": [],
+  "other/twice/bad/none/plain": [],
+  "other/twice/bad/ok/bad": [],
+  "other/twice/bad/ok/ok": [],
+  "other/twice/bad/ok/plain": [],
+  "other/twice/none/blank/bad": [],
+  "other/twice/none/blank/ok": [],
+  "other/twice/none/blank/plain": [],
+  "other/twice/none/none/bad": [],
+  "other/twice/none/none/ok": [],
+  "other/twice/none/none/plain": [],
+  "other/twice/none/ok/bad": [],
+  "other/twice/none/ok/ok": [],
+  "other/twice/none/ok/plain": [],
+  "other/twice/ok/blank/bad": [],
+  "other/twice/ok/blank/ok": [],
+  "other/twice/ok/blank/plain": [],
+  "other/twice/ok/none/bad": [],
+  "other/twice/ok/none/ok": [],
+  "other/twice/ok/none/plain": [],
+  "other/twice/ok/ok/bad": [],
+  "other/twice/ok/ok/ok": [],
+  "other/twice/ok/ok/plain": [],
+  "other/twice/plain/blank/bad": [],
+  "other/twice/plain/blank/ok": [],
+  "other/twice/plain/blank/plain": [],
+  "other/twice/plain/none/bad": [],
+  "other/twice/plain/none/ok": [],
+  "other/twice/plain/none/plain": [],
+  "other/twice/plain/ok/bad": [],
+  "other/twice/plain/ok/ok": [],
+  "other/twice/plain/ok/plain": [],
+  "other/twice/yes/blank/bad": [],
+  "other/twice/yes/blank/ok": [],
+  "other/twice/yes/blank/plain": [],
+  "other/twice/yes/none/bad": [],
+  "other/twice/yes/none/ok": [],
+  "other/twice/yes/none/plain": [],
+  "other/twice/yes/ok/bad": [],
+  "other/twice/yes/ok/ok": [],
+  "other/twice/yes/ok/plain": [],
+}
+`;

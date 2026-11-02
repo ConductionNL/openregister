@@ -29,7 +29,7 @@ TBD - created by archiving change export-pdf-format. Update Purpose after archiv
 - **THEN** the PDF contains one table section per schema (mirroring `exportToExcel()`'s one-sheet-per-schema behaviour), each starting on a fresh page with its own title/count header
 
 ### Requirement: PDF export enforces a row-count cap to bound memory use
-PDF rendering builds a full in-memory box-tree per row, unlike the streaming CSV writer or PhpSpreadsheet's XLSX writer, and is therefore meaningfully more memory-heavy per row. `ExportService::MAX_PDF_EXPORT_ROWS` SHALL be a public class constant set to `5000`. When the fetched object count (summed across all schema sections for a register-level export) exceeds this cap, `exportToPdf()` SHALL throw `OCA\OpenRegister\Exception\ExportTooLargeException` before any HTML construction or Dompdf rendering begins. Controllers exposing PDF export SHALL catch this exception specifically and return HTTP 400 with a structured JSON body identifying the actual row count and the limit — never a 500, and never a silently truncated PDF.
+A PDF is laid out by the office server from one document holding every row, unlike the streaming CSV writer, so its cost grows with the row count. `ExportService::MAX_PDF_EXPORT_ROWS` SHALL be a public class constant set to `5000`. When the fetched object count (summed across all schema sections for a register-level export) exceeds this cap, `exportToPdf()` SHALL throw `OCA\OpenRegister\Exception\ExportTooLargeException` before any document is built or sent for conversion. Controllers exposing PDF export SHALL catch this exception specifically and return HTTP 400 with a structured JSON body identifying the actual row count and the limit — never a 500, and never a silently truncated PDF.
 
 #### Scenario: Export request under the cap succeeds
 - **GIVEN** a schema with 4,000 matching objects
@@ -40,12 +40,26 @@ PDF rendering builds a full in-memory box-tree per row, unlike the streaming CSV
 - **GIVEN** a schema with 6,000 matching objects
 - **WHEN** the user requests `format=pdf` via `GET /api/objects/{register}/{schema}/export`
 - **THEN** the controller returns HTTP 400 with a JSON body containing `error`, the actual row count (6000), and the configured limit (5000)
-- **AND** no Dompdf rendering work is performed (the guard runs immediately after the object fetch, before HTML construction)
+- **AND** no document is built or converted (the guard runs immediately after the object fetch)
 
 #### Scenario: Row cap applies to combined multi-schema register export
 - **GIVEN** a register-level PDF export (no schema specified) whose schemas' object counts sum to more than 5,000
 - **WHEN** the user requests `format=pdf`
 - **THEN** the export is rejected with the same `ExportTooLargeException` → HTTP 400 mapping, using the combined count across all schema sections
+
+### Requirement: PDF output is converted by an office server
+openregister SHALL NOT render PDFs itself. It SHALL write the export (and a dashboard report) as an A4 ODT, with the first heading as document title and a "Page n / N" footer, and SHALL convert that ODT to PDF through Nextcloud's file conversion API (`OCP\Files\Conversion\IConversionManager`), which an office server provides: Collabora through richdocuments, or Euro-Office. `ExportService::isPdfAvailable()` SHALL report whether a registered provider converts ODT to PDF. When none does, PDF export and PDF reports SHALL throw `OCA\OpenRegister\Exception\OfficeServerRequiredException` before reading any objects, and controllers SHALL return HTTP 501 with `error: office_server_required` and a message naming the missing office server. The UI SHALL show that message; a PDF request SHALL never fail silently. PDF/A cannot be requested through the conversion API, so the PDF is plain PDF.
+
+#### Scenario: PDF export without an office server
+- **GIVEN** no installed app registers a conversion provider for ODT to PDF
+- **WHEN** the user requests `GET /api/objects/{register}/{schema}/export?format=pdf`
+- **THEN** the controller returns HTTP 501 with `error` `office_server_required` and a message naming Collabora and Euro-Office
+- **AND** no objects are read
+
+#### Scenario: PDF export with an office server
+- **GIVEN** richdocuments or Euro-Office registers a provider for ODT to PDF
+- **WHEN** the user requests a PDF export
+- **THEN** the PDF is the provider's conversion of an ODT holding the export table, so text in any script keeps its characters
 
 ### Requirement: PDF format is wired into the objects and register export endpoints
 `ObjectsController::export()` (`GET /api/objects/{register}/{schema}/export`) and `RegistersController::export()` (`GET /api/registers/{id}/export`) SHALL accept `format=pdf` alongside their existing `csv`/`excel`/`json`/`configuration` values, returning a `DataDownloadResponse` with `Content-Type: application/pdf` and a `.pdf` filename following the same `{register}_{schema}_{timestamp}` naming convention already used for `.csv`/`.xlsx` downloads. `RegistersController::export()`'s `pdf` case SHALL require an explicit `schema` query parameter and return HTTP 400 when absent, mirroring the existing `csv` case's single-schema requirement. `RegistersController::importTemplate()` SHALL NOT gain a `pdf` option — it downloads a blank, re-importable header-only template, and PDF cannot round-trip back through the import endpoint the way its existing `xlsx`/`csv` outputs do.

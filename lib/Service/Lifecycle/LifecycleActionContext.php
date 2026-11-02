@@ -68,6 +68,13 @@ class LifecycleActionContext {
 	private array $system = [];
 
 	/**
+	 * Objects whose write sets declared state rather than moving through a transition, with a nesting count.
+	 *
+	 * @var array<string, int>
+	 */
+	private array $declaredState = [];
+
+	/**
 	 * Declare that the named transition is being performed on this object.
 	 *
 	 * Pair every call with release() in a `finally`, or the declaration leaks
@@ -179,4 +186,54 @@ class LifecycleActionContext {
 
 		return $stack[array_key_last($stack)];
 	}//end systemAppFor()
+
+	/**
+	 * Mark that the next write of this object sets declared state, as a seed or example-set refresh does.
+	 *
+	 * Read by the lifecycle guard, which lets such a write set the declared
+	 * status without a matching transition, and only inside the system scope.
+	 * Pair every call with leaveDeclaredState() in a `finally`.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function enterDeclaredState(string $uuid): void {
+		$this->declaredState[$uuid] = (($this->declaredState[$uuid] ?? 0) + 1);
+	}//end enterDeclaredState()
+
+	/**
+	 * Release one declared-state mark for this object.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function leaveDeclaredState(string $uuid): void {
+		if (isset($this->declaredState[$uuid]) === false) {
+			return;
+		}
+
+		$this->declaredState[$uuid]--;
+		if ($this->declaredState[$uuid] <= 0) {
+			unset($this->declaredState[$uuid]);
+		}
+	}//end leaveDeclaredState()
+
+	/**
+	 * Whether a write of this object currently sets declared state.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function writesDeclaredState(string $uuid): bool {
+		return isset($this->declaredState[$uuid]);
+	}//end writesDeclaredState()
 }//end class

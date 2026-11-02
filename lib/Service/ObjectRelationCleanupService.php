@@ -116,7 +116,7 @@ class ObjectRelationCleanupService {
 	 *
 	 * @return int The number of timeline link rows.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function countTimelineLinks(string $objectUuid): int {
 		$total = 0;
@@ -152,7 +152,7 @@ class ObjectRelationCleanupService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destroyTimelineLinks(string $objectUuid): void {
 		$this->cleanupEmails(objectUuid: $objectUuid);

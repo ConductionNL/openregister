@@ -70,7 +70,7 @@ class LensResolver {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
@@ -99,7 +99,7 @@ class LensResolver {
 	 *   PermissionHandler, ObjectService all take it); splitting this one method
 	 *   in two would make it the exception rather than the rule.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function apply(?Schema $schema, array $data, bool $_rbac = true): array {
 		if ($schema === null) {
@@ -128,7 +128,7 @@ class LensResolver {
 	 *
 	 * @return array<int, string> The lens property names.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public static function lensPropertyNames(?Schema $schema): array {
 		if ($schema === null) {
@@ -150,7 +150,7 @@ class LensResolver {
 	 *
 	 * @return array<int, string> The lens properties the payload names, in declaration order.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public static function refusedLensWrites(?Schema $schema, array $object): array {
 		$named = [];

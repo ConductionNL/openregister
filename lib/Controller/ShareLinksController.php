@@ -9,10 +9,10 @@
  * source of truth). See `ShareLinkService` for the rationale.
  *
  * Endpoints:
- *   - GET    /api/objects/{register}/{schema}/{id}/shares          — list
- *   - POST   /api/objects/{register}/{schema}/{id}/shares          — create
- *   - DELETE /api/objects/{register}/{schema}/{id}/shares/{shareId} — revoke
- *   - GET    /api/integrations/shares/files/{register}/{schema}/{id} — shareable files
+ *   - GET    /api/objects/{register}/{schema}/{id}/file-shares     — list
+ *   - POST   /api/objects/{register}/{schema}/{id}/file-shares     — create
+ *   - DELETE /api/objects/{register}/{schema}/{id}/file-shares/{shareId} — revoke
+ *   - GET    /api/integrations/shares/files/{register}/{schema}/{id}      — shareable files
  *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller

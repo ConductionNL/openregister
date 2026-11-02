@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 
 declare(strict_types=1);
@@ -36,15 +36,24 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Applies, proves and reverts changes to existing objects.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One change lifecycle: resolve, apply, refresh, prove and revert,
+ *                                                   each reading JSON-text fields the same way.
+ *
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 class ExampleSetChanges {
+	/**
+	 * The prefix of a recorded fingerprint: the record keeps an access link's address only as its hash.
+	 */
+	private const SECRET = 'example-set-secret:sha256:';
+
 	/**
 	 * Constructor.
 	 *
 	 * @param ExampleSetStore  $store  Register access.
 	 * @param ExampleSetValues $values Fills placeholders.
 	 * @param ExampleSetPaths  $paths  Reads and writes values at dot paths.
+	 * @param ExampleSetProof  $proof  Tells whether a value read back is the value written.
 	 *
 	 * @return void
 	 */
@@ -52,6 +61,7 @@ class ExampleSetChanges {
 		private readonly ExampleSetStore $store,
 		private readonly ExampleSetValues $values,
 		private readonly ExampleSetPaths $paths=new ExampleSetPaths(),
+		private readonly ExampleSetProof $proof=new ExampleSetProof(),
 	) {
 	}//end __construct()
 
@@ -65,8 +75,8 @@ class ExampleSetChanges {
 	 *               append: array<string, mixed>} The object, the object as the change makes it, and the filled
 	 *               `set` and `append`; or why the change cannot be made.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function resolve(array $change, array $context): array {
 		$none = ['refusal' => '', 'row' => [], 'merged' => [], 'set' => [], 'append' => []];
@@ -103,8 +113,9 @@ class ExampleSetChanges {
 			);
 		}
 
-		// A field the schema keeps as JSON text is changed as its structure and written as text again.
-		$fields = $this->jsonFields(change: $change);
+		// A field the schema keeps as JSON text is changed as its structure and written as text again; so is a text
+		// property the store reads back as a structure, which the change does not have to name.
+		$fields = array_values(array_unique(array_merge($this->jsonFields(change: $change), $this->structuredText(change: $change, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
 		$merged = $row;
 		foreach ((array) $fill['set'] as $path => $value) {
@@ -138,8 +149,8 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to change),
 	 *                                                                 or why the write failed.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function apply(array $change, array $resolved): array {
 		$row   = $resolved['row'];
@@ -157,7 +168,7 @@ class ExampleSetChanges {
 				'path' => (string) $path,
 				'had'  => $held['found'],
 				'old'  => $held['value'],
-				'new'  => $value,
+				'new'  => $this->recorded(change: $change, path: (string) $path, value: $value),
 				'from' => $this->paths->firstMissing(row: $row, path: (string) $path),
 			];
 		}
@@ -186,6 +197,224 @@ class ExampleSetChanges {
 	}//end apply()
 
 	/**
+	 * What the install last wrote into the reference fields of a kept object.
+	 *
+	 * The value a refresh wrote when there was one (the newest `new` of the
+	 * `#references` change), else the value the object was created with.
+	 *
+	 * @param array<string, mixed> $record The record.
+	 * @param string               $name   The record key of the refresh change, `<app>/<key>#references`.
+	 * @param string               $key    The record key of the object, `<app>/<key>`.
+	 *
+	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	public function writtenReferences(array $record, string $name, string $key): array {
+		$written = (array) ($record['objects'][$key]['refs'] ?? []);
+		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $set) {
+			$written[(string) $set['path']] = $set['new'];
+		}
+
+		return $written;
+	}//end writtenReferences()
+
+
+	/**
+	 * Keep a held change in step with its declaration.
+	 *
+	 * The entry lets go of every field the declaration no longer sets (a job may own it now), so the proof and remove
+	 * leave it alone. A field the declaration gained is written on any install and recorded like the others. On a
+	 * refresh a declared field is written again when it holds what the change replaced (an import put it back) or
+	 * what the change wrote while the declaration now resolves to something else; a field with a third value is
+	 * somebody's edit and is left.
+	 *
+	 * @param array<string, mixed> $change  The declared change.
+	 * @param array<string, mixed> $entry   The record entry from apply().
+	 * @param array<string, mixed> $context The context placeholders draw on.
+	 * @param bool                 $refresh Whether this run refreshes.
+	 *
+	 * @return array{error: string, entry: array<string, mixed>, wrote: bool} The entry to hold, whether a field was
+	 *                                                                         written, or why the write failed.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+	 */
+	public function follow(array $change, array $entry, array $context, bool $refresh): array {
+		$declared        = array_map('strval', array_keys((array) ($change['set'] ?? [])));
+		$appended        = array_map('strval', array_keys((array) ($change['append'] ?? [])));
+		$entry['set']    = $this->onPaths(rows: (array) $entry['set'], paths: $declared);
+		$entry['append'] = $this->onPaths(rows: (array) $entry['append'], paths: $appended);
+		$gained          = array_values(array_diff($declared, array_map('strval', array_column($entry['set'], 'path'))));
+		if ($refresh === false && $gained === []) {
+			return ['error' => '', 'entry' => $entry, 'wrote' => false];
+		}
+
+		$resolved = $this->resolve(change: $change, context: $context);
+		if ($resolved['refusal'] !== '') {
+			return ['error' => $resolved['refusal'], 'entry' => $entry, 'wrote' => false];
+		}
+
+		$fresh = $this->gainedRows(paths: $gained, resolved: $resolved);
+		$again = array_merge($this->refreshed(refresh: $refresh, entry: $entry, resolved: $resolved), array_column($fresh, 'new', 'path'));
+		if ($again === []) {
+			return ['error' => '', 'entry' => $entry, 'wrote' => false];
+		}
+
+		$merged = $resolved['row'];
+		foreach ($again as $path => $value) {
+			$merged = $this->paths->withPath(row: $merged, path: $path, value: $value);
+		}
+
+		$fields = array_merge($this->jsonFields(change: $change), $this->structuredText(change: $change, row: $resolved['row']));
+		$fields = array_values(array_unique($fields));
+		$error  = $this->store->update(
+			register: (string) $change['register'],
+			schema: (string) $change['schema'],
+			id: (string) $entry['id'],
+			data: $this->paths->withJsonText(row: $merged, fields: $fields)
+		);
+		if ($error !== '') {
+			return ['error' => $error, 'entry' => $entry, 'wrote' => false];
+		}
+
+		$entry['set'] = $this->withWritten(change: $change, rows: $entry['set'], again: $again, fresh: $fresh);
+
+		return ['error' => '', 'entry' => $entry, 'wrote' => true];
+	}//end follow()
+
+	/**
+	 * The held fields this run writes again: those of writtenAgain() on a refresh, none otherwise.
+	 *
+	 * @param bool                 $refresh  Whether this run refreshes.
+	 * @param array<string, mixed> $entry    The record entry, held fields only.
+	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function refreshed(bool $refresh, array $entry, array $resolved): array {
+		if ($refresh === false) {
+			return [];
+		}
+
+		return $this->writtenAgain(entry: $entry, resolved: $resolved);
+	}//end refreshed()
+
+	/**
+	 * The record rows of fields the declaration gained that do not hold their declared value yet.
+	 *
+	 * @param array<int, string>   $paths    The gained paths.
+	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
+	 *
+	 * @return array<int, array{path: string, had: bool, old: mixed, new: mixed, from: string}>
+	 */
+	private function gainedRows(array $paths, array $resolved): array {
+		$rows = [];
+		foreach ($paths as $path) {
+			$want = $resolved['set'][$path];
+			$held = $this->paths->atPath(row: $resolved['row'], path: $path);
+			if ($held['found'] === true && $held['value'] === $want) {
+				continue;
+			}
+
+			$rows[] = [
+				'path' => $path,
+				'had'  => $held['found'],
+				'old'  => $held['value'],
+				'new'  => $want,
+				'from' => $this->paths->firstMissing(row: $resolved['row'], path: $path),
+			];
+		}
+
+		return $rows;
+	}//end gainedRows()
+
+	/**
+	 * The record rows whose path is one of the given paths.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  Record rows with a `path`.
+	 * @param array<int, string>               $paths The paths to keep.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function onPaths(array $rows, array $paths): array {
+		return array_values(array_filter($rows, static fn (array $row): bool => in_array((string) $row['path'], $paths, true)));
+	}//end onPaths()
+
+	/**
+	 * The held fields a refresh writes again, by path: back at what the change replaced, or still what it wrote while
+	 * the declaration resolves to a new value.
+	 *
+	 * @param array<string, mixed> $entry    The record entry, held fields only.
+	 * @param array<string, mixed> $resolved From resolve(), without a refusal.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 */
+	private function writtenAgain(array $entry, array $resolved): array {
+		$again = [];
+		foreach ($entry['set'] as $set) {
+			$path = (string) $set['path'];
+			$want = $resolved['set'][$path];
+			$held = $this->paths->atPath(row: $resolved['row'], path: $path);
+			if ($held['found'] === true && $this->sameAs(stored: $held['value'], value: $want) === true) {
+				continue;
+			}
+
+			$moved = ($held['found'] === true && $this->sameAs(stored: $held['value'], value: $set['new']) === true);
+			if ($this->undone(held: $held, set: $set) === true || $moved === true) {
+				$again[$path] = $want;
+			}
+		}
+
+		return $again;
+	}//end writtenAgain()
+
+	/**
+	 * Whether a held field is back at what the change replaced. A field that reads back null was never set, as one
+	 * the object did not have.
+	 *
+	 * @param array{found: bool, value: mixed} $held The field as read back.
+	 * @param array<string, mixed>             $set  The record's entry for the field: `had`, `old` and `new`.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-that-reads-back-null-is-not-set
+	 */
+	private function undone(array $held, array $set): bool {
+		$isSet  = ($held['found'] === true && $held['value'] !== null);
+		$hadSet = ((bool) $set['had'] === true && $set['old'] !== null);
+
+		return $isSet === $hadSet && $this->sameAs(stored: $held['value'], value: $set['old']) === true;
+	}//end undone()
+
+	/**
+	 * Whether a stored value is the given value as the store keeps it: the same keys and values in any key order,
+	 * JSON text read as its structure, and nothing more or less on either side.
+	 *
+	 * @param mixed $stored The value as read back.
+	 * @param mixed $value  The value a declaration or the record names.
+	 *
+	 * @return bool
+	 */
+	private function sameAs(mixed $stored, mixed $value): bool {
+		if ($this->isFingerprint(value: $value) === true) {
+			return is_string($stored) === true && hash_equals($value, self::SECRET.hash('sha256', $stored));
+		}
+
+		$read = $stored;
+		if (is_string($stored) === true) {
+			$decoded = json_decode($stored, true);
+			if (is_array($decoded) === true) {
+				$read = $decoded;
+			}
+		}
+
+		return $this->proof->lostPaths(declared: $value, stored: $stored) === []
+			&& $this->proof->lostPaths(declared: $read, stored: $value) === [];
+	}//end sameAs()
+
+	/**
 	 * Bring top-level fields of an object the set wrote earlier to the values its declaration resolves to now.
 	 *
 	 * Made like a change, so only a field that differs is written, its old
@@ -202,13 +431,14 @@ class ExampleSetChanges {
 	 * @return array{error: string, entry: array<string, mixed>|null, left: array<int, string>} The record entry (null
 	 *         when no field had to be written), or why the write failed, and the fields left because somebody changed them.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function refresh(array $object, array $row, array $values, array $written=[]): array {
 		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
+		$change['jsonFields'] = array_values(array_unique(array_merge($change['jsonFields'], $this->structuredText(change: $change, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
 
-		$same = static fn (mixed $first, mixed $second): bool => json_encode($first) === json_encode($second);
+		$same = fn (mixed $first, mixed $second): bool => $this->sameAs(stored: $first, value: $second);
 		$todo = [];
 		$left = [];
 		foreach ($values as $field => $value) {
@@ -247,8 +477,8 @@ class ExampleSetChanges {
 	 *
 	 * @return array<int, string> Empty when the change is on the instance; `(gone)` when the object is.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function lost(array $entry): array {
 		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
@@ -260,7 +490,7 @@ class ExampleSetChanges {
 		$lost = [];
 		foreach ($entry['set'] as $set) {
 			$held = $this->paths->atPath(row: $row, path: $set['path']);
-			if ($held['found'] === false || $held['value'] !== $set['new']) {
+			if ($this->stillHolds(held: $held, written: $set['new']) === false) {
 				$lost[] = $set['path'];
 			}
 		}
@@ -273,6 +503,86 @@ class ExampleSetChanges {
 
 		return $lost;
 	}//end lost()
+
+	/**
+	 * Whether a path still holds what a change wrote, in whatever form the
+	 * store keeps it (a moment in UTC, an empty text as null).
+	 *
+	 * @param array{found: bool, value: mixed} $held    The path as read back.
+	 * @param mixed                            $written The value the change wrote.
+	 *
+	 * @return bool
+	 */
+	private function stillHolds(array $held, mixed $written): bool {
+		if ($this->isFingerprint(value: $written) === true) {
+			return $held['found'] === true && is_string($held['value']) === true
+				&& hash_equals($written, self::SECRET.hash('sha256', $held['value']));
+		}
+
+		return $held['found'] === true && $this->proof->lostPaths(declared: $written, stored: $held['value']) === [];
+	}//end stillHolds()
+
+	/**
+	 * The record rows of a held change after a follow wrote fields again or for the first time, each value as the
+	 * record keeps it.
+	 *
+	 * @param array<string, mixed>             $change The declared change.
+	 * @param array<int, array<string, mixed>> $rows   The held rows.
+	 * @param array<string, mixed>             $again  The values written again, by path.
+	 * @param array<int, array<string, mixed>> $fresh  The rows of fields written for the first time.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function withWritten(array $change, array $rows, array $again, array $fresh): array {
+		foreach ($rows as $index => $set) {
+			$path = (string) $set['path'];
+			if (array_key_exists($path, $again) === true) {
+				$rows[$index]['new'] = $this->recorded(change: $change, path: $path, value: $again[$path]);
+			}
+		}
+
+		foreach ($fresh as $row) {
+			$row['new'] = $this->recorded(change: $change, path: (string) $row['path'], value: $row['new']);
+			$rows[]     = $row;
+		}
+
+		return $rows;
+	}//end withWritten()
+
+	/**
+	 * Whether a recorded value is the fingerprint of an access link's address.
+	 *
+	 * @param mixed $value A recorded value.
+	 *
+	 * @return bool
+	 */
+	private function isFingerprint(mixed $value): bool {
+		return is_string($value) === true && str_starts_with($value, self::SECRET) === true;
+	}//end isFingerprint()
+
+	/**
+	 * The value the record keeps for a field a change wrote: a value filled from an access link's address
+	 * (`{{accessLink:key.url}}`) as a fingerprint, since the address carries the link's secret anchor; any other
+	 * value as it is.
+	 *
+	 * @param array<string, mixed> $change The declared change.
+	 * @param string               $path   The field's path.
+	 * @param mixed                $value  The value written.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
+	 */
+	private function recorded(array $change, string $path, mixed $value): mixed {
+		$declared = ($change['set'][$path] ?? null);
+		if (is_string($value) === false || is_string($declared) === false
+			|| preg_match('/\{\{\s*accessLink:[^}]*\.url\s*\}\}/', $declared) !== 1
+		) {
+			return $value;
+		}
+
+		return self::SECRET.hash('sha256', $value);
+	}//end recorded()
 
 	/**
 	 * Put back what a change replaced and take out what it appended, while the object still holds what the change wrote.
@@ -288,8 +598,8 @@ class ExampleSetChanges {
 	 *                                                    too when the object could not be read),
 	 *                                                    and the paths left because somebody changed them.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function revert(array $entry): array {
 		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
@@ -300,12 +610,12 @@ class ExampleSetChanges {
 			return ['ok' => ($read['error'] === ''), 'left' => []];
 		}
 
-		$fields = $this->jsonFields(change: $entry);
+		$fields = array_values(array_unique(array_merge($this->jsonFields(change: $entry), $this->structuredText(change: $entry, row: $row))));
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
 		$left   = [];
 		foreach (array_reverse((array) $entry['set']) as $set) {
 			$held = $this->paths->atPath(row: $row, path: $set['path']);
-			if ($held['found'] === false || $held['value'] !== $set['new']) {
+			if ($this->stillHolds(held: $held, written: $set['new']) === false) {
 				$left[] = (string) $set['path'];
 				continue;
 			}
@@ -358,11 +668,30 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function asSent(array $row, array $fields): array {
 		return $this->paths->withJsonText(row: $row, fields: $fields);
 	}//end asSent()
+
+	/**
+	 * The text properties of the changed object's schema that the store read back as a structure.
+	 *
+	 * @param array<string, mixed> $change The change.
+	 * @param array<string, mixed> $row    The object as read.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 */
+	private function structuredText(array $change, array $row): array {
+		return array_values(
+			array_filter(
+				$this->store->textProperties(register: (string) $change['register'], schema: (string) $change['schema']),
+				static fn (string $field): bool => is_array($row[$field] ?? null) === true
+			)
+		);
+	}//end structuredText()
 
 	/**
 	 * The fields a change or a record entry keeps as JSON text.

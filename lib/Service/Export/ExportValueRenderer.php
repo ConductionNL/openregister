@@ -35,7 +35,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportValueRenderer {
 
@@ -50,7 +50,7 @@ class ExportValueRenderer {
 	 *
 	 * @return string The cell.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function stored($value): string {
 		if ($value === null) {
@@ -81,7 +81,7 @@ class ExportValueRenderer {
 	 *
 	 * @return string The cell.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function rendered($value, array $property, array $names): string {
 		if ($value === null) {

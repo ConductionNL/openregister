@@ -173,7 +173,7 @@ final class DeploymentPreviewServiceTest extends TestCase {
 
 	public function testAKeyThatDidNotExistYetIsACreateRatherThanAChange(): void {
 		$preview = $this->previews(
-			[$this->draft('solr', ['enabled' => true], null, false)],
+			[$this->draft('archival', ['enabled' => true], null, false)],
 			[]
 		)->preview($this->set());
 
@@ -185,12 +185,12 @@ final class DeploymentPreviewServiceTest extends TestCase {
 		$preview = $this->previews(
 			[
 				$this->draft('rbac', ['enabled' => false], ['enabled' => true]),
-				$this->draft('solr', ['enabled' => true], ['enabled' => false]),
+				$this->draft('archival', ['enabled' => true], ['enabled' => false]),
 				$this->draft('llm', 'not-an-object', ['provider' => 'ollama']),
 			],
 			[
 				'rbac' => $this->live('rbac', ['enabled' => true]),
-				'solr' => $this->live('solr', ['enabled' => false]),
+				'archival' => $this->live('archival', ['enabled' => false]),
 				'llm' => $this->live('llm', ['provider' => 'ollama']),
 			]
 		)->preview($this->set());

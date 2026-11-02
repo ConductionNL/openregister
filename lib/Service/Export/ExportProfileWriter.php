@@ -50,7 +50,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfileWriter {
 	/**
@@ -83,7 +83,7 @@ class ExportProfileWriter {
 	 *
 	 * @return array{bytes: string, rowCount: int, metadata: array<string, mixed>} The file and what it is.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function write(ExportProfile $profile, array $objects, ?Schema $schema = null): array {
 		$fields = $profile->getFieldsArray();
@@ -127,7 +127,7 @@ class ExportProfileWriter {
 	 *
 	 * @return string The CSV line, newline terminated.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function csvLineFor(ExportProfile $profile, ObjectEntity $object, ?Schema $schema = null): string {
 		$fields = $profile->getFieldsArray();
@@ -146,7 +146,7 @@ class ExportProfileWriter {
 	 *
 	 * @return string The two opening lines of a whole-set file.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function csvOpeningFor(ExportProfile $profile): string {
 		$fields = $profile->getFieldsArray();

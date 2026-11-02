@@ -217,7 +217,7 @@ class CredentialController extends Controller {
 	 * @return JSONResponse `{results: Array<{identifier, title}>}`.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	#[NoAdminRequired]
 	public function providers(): JSONResponse {
@@ -271,7 +271,7 @@ class CredentialController extends Controller {
 	 *
 	 * @return string The translated title, or the identifier.
 	 *
-	 * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function providerTitle(array $entry, string $identifier): string {
 		$title = trim((string)($entry['title'] ?? ''));

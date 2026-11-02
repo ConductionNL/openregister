@@ -516,6 +516,11 @@ class AuditTrailMapper extends QBMapper {
 				continue;
 			}
 
+			if (is_array($value) === true) {
+				$this->applyListFilter(qb: $qb, field: $field, value: $value);
+				continue;
+			}
+
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($field));
 				continue;
@@ -623,6 +628,61 @@ class AuditTrailMapper extends QBMapper {
 	}//end findAll()
 
 	/**
+	 * Apply a filter whose value is a list: `field[notIn]=a,b` leaves out the
+	 * rows whose column is one of the values (case-insensitive), and a plain
+	 * list (`field[]=a&field[]=b`) keeps only the rows whose column is one of
+	 * them. The exclusion runs in the query, so a page holds what is left.
+	 *
+	 * @param IQueryBuilder        $qb    The query being built.
+	 * @param string               $field The allowlisted column.
+	 * @param array<string, mixed> $value The operator map or the plain list.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the list names an operator other than `notIn`.
+	 *
+	 * @spec openspec/changes/audit-trail-not-in-filter/specs/audit-trail-immutable/spec.md#requirement-a-history-read-can-leave-out-actions-and-actors-in-the-query
+	 */
+	private function applyListFilter(IQueryBuilder $qb, string $field, array $value): void {
+		if (array_is_list($value) === true) {
+			$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($this->listValues(value: $value), IQueryBuilder::PARAM_STR_ARRAY)));
+			return;
+		}
+
+		$unknown = array_diff(array_keys($value), ['notIn']);
+		if ($unknown !== []) {
+			throw new InvalidArgumentException('Unsupported audit trail filter operator for ' . $field . ': ' . implode(', ', $unknown));
+		}
+
+		$excluded = array_map('strtolower', $this->listValues(value: $value['notIn']));
+		if ($excluded === []) {
+			return;
+		}
+
+		$qb->andWhere(
+			$qb->expr()->notIn($qb->func()->lower($field), $qb->createNamedParameter($excluded, IQueryBuilder::PARAM_STR_ARRAY))
+		);
+	}//end applyListFilter()
+
+	/**
+	 * The values a list filter names: an array of values, or one comma-separated string.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return list<string> The trimmed, non-empty values.
+	 */
+	private function listValues(mixed $value): array {
+		$values = $value;
+		if (is_array($value) === false) {
+			$values = explode(',', (string)$value);
+		}
+
+		$values = array_map(static fn ($one): string => trim((string)$one), $values);
+
+		return array_values(array_filter($values, static fn (string $one): bool => $one !== ''));
+	}//end listValues()
+
+	/**
 	 * Creates an audit trail for object changes
 	 *
 	 * @param ObjectEntity|null $old The old state of the object
@@ -688,7 +748,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return AuditTrail|null The amended entry, or null to insert normally.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function mergeIntoAggregationWindow(AuditTrail $candidate): ?AuditTrail {
 		if ($candidate->getAction() !== 'update' || $candidate->getObjectUuid() === null) {
@@ -755,7 +815,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return AuditTrail|null The entry to amend, or null.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function findMergeCandidate(AuditTrail $candidate): ?AuditTrail {
 		$qb = $this->db->getQueryBuilder();
@@ -2352,7 +2412,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return int The number of rows that would be tombstoned.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function countForObject(
 		string $objectUuid,
@@ -2397,7 +2457,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return array<int, AuditTrail> The matching rows, newest first.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function findForObjectByAction(string $objectUuid, array $actions = [], int $limit = 50): array {
 		$qb = $this->db->getQueryBuilder();
@@ -2437,7 +2497,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @throws \Exception When the statement fails.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function tombstoneForObject(
 		string $objectUuid,
@@ -3063,7 +3123,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
 		$user = $this->userSession->getUser();
@@ -3114,7 +3174,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function createPurposeRefusalEntry(
 		string $rule,
@@ -3167,7 +3227,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return array<string, int> Purpose code to count, unattributed rows under `null`.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function countByPurpose(?DateTime $from = null, ?DateTime $to = null): array {
 		$qb = $this->db->getQueryBuilder();
@@ -3218,7 +3278,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function shipToSink(array $entries): void {
 		try {
@@ -3267,7 +3327,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function recordSinkGap(AuditTrail $unshipped, string $error): void {
 		$gap = new AuditTrail();
@@ -3378,7 +3438,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function createExportEntry(
 		string $outcome,
@@ -3433,8 +3493,8 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return array<string, string> Object uuid => ISO 8601 moment of the latest read, newest first.
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	public function findLatestReadsByUser(string $userId, int $limit = 100): array {
 		$qb = $this->db->getQueryBuilder();

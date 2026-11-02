@@ -189,7 +189,7 @@ class DataSubjectRequestService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function findSubjectObjects(
 		string $subjectId,
@@ -235,7 +235,7 @@ class DataSubjectRequestService {
 	 *
 	 * @return array<string, mixed>|null The persisted envelope, or null on failure.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function pseudonymiseObject(ObjectEntity $object, string $subjectId, array $matched): ?array {
 		$this->pseudonymise(object: $object, subjectId: $subjectId, matched: $matched);

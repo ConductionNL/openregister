@@ -60,6 +60,9 @@ use OCP\IDBConnection;
  * inbox ask of the table (same reasoning as FlowRunMapper); two of them
  * (`watchersAsText`, `candidateMembershipSql`) are public so the
  * platform-dependent SQL is unit-testable without a database.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is that same vocabulary,
+ * each question with its own documented query; splitting the table's reads over
+ * two mappers would leave callers guessing which one asks what.
  *
  * @template-extends QBMapper<Task>
  *
@@ -225,6 +228,28 @@ class TaskMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end findByUuid()
+
+	/**
+	 * Every task carrying this external key.
+	 *
+	 * A caller that adds a task once per thing keys it, and asks this before
+	 * adding it again.
+	 *
+	 * @param string $key The external key.
+	 *
+	 * @return array<int, Task> The tasks, oldest first.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function findByKey(string $key): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('task_key', $qb->createNamedParameter($key)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByKey()
 
 	/**
 	 * Update a task ONLY while it is still open: the conditional write every
@@ -1039,9 +1064,16 @@ class TaskMapper extends QBMapper {
 			$direction = 'DESC';
 		}
 
+		// Open work first: a finished task sorts after every open one.
+		$order = 'orderBy';
+		if ($criteria->openFirst === true) {
+			$qb->orderBy('is_terminal', 'ASC');
+			$order = 'addOrderBy';
+		}
+
 		switch ($criteria->sort) {
 			case TaskInboxCriteria::SORT_PRIORITY:
-				$qb->orderBy(
+				$qb->$order(
 					$qb->createFunction(
 						sprintf(
 							"CASE %s WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END",
@@ -1052,10 +1084,10 @@ class TaskMapper extends QBMapper {
 				);
 				break;
 			case TaskInboxCriteria::SORT_CREATED:
-				$qb->orderBy('created', $direction);
+				$qb->$order('created', $direction);
 				break;
 			default:
-				$qb->orderBy('due_at', $direction);
+				$qb->$order('due_at', $direction);
 				break;
 		}
 

@@ -48,7 +48,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Gdpr\Erasure
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class ErasurePreviewStore {
 	/**
@@ -77,7 +77,7 @@ class ErasurePreviewStore {
 	 *
 	 * @return ErasurePreview The recorded preview.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function record(array $preview, ?string $requestId = null): ErasurePreview {
 		return $this->mapper->createFromArray(
@@ -103,7 +103,7 @@ class ErasurePreviewStore {
 	 *
 	 * @throws ErasureRefusedException When it does not exist or is not the caller's.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function load(string $uuid): ErasurePreview {
 		try {
@@ -140,7 +140,7 @@ class ErasurePreviewStore {
 	 *
 	 * @throws ErasureRefusedException When it is already spent, or not the caller's.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function approve(string $uuid): ErasurePreview {
 		$preview = $this->load(uuid: $uuid);
@@ -170,7 +170,7 @@ class ErasurePreviewStore {
 	 *
 	 * @throws ErasureRefusedException When it is unapproved or already spent.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function requireRunnable(string $uuid): ErasurePreview {
 		$preview = $this->load(uuid: $uuid);
@@ -205,7 +205,7 @@ class ErasurePreviewStore {
 	 *
 	 * @return ErasurePreview The consumed preview.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function consume(ErasurePreview $preview, array $outcome): ErasurePreview {
 		$preview->setStatus(ErasurePreview::STATUS_CONSUMED);

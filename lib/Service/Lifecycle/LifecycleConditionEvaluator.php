@@ -83,7 +83,7 @@ class LifecycleConditionEvaluator {
 	 * @param ConditionDialect $dialect Decides which dialect a condition is written in.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -201,7 +201,7 @@ class LifecycleConditionEvaluator {
 	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function holds(
 		mixed $rule,
@@ -272,7 +272,7 @@ class LifecycleConditionEvaluator {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function document(array $newData, array $oldData, string $action, string $from, string $to): array {
 		$user = $this->userSession->getUser();

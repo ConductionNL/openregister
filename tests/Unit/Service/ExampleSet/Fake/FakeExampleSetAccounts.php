@@ -32,6 +32,15 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 	/** @var array<string, array<int, string>> Members by gid. */
 	public array $groups = [];
 
+	/** @var array<string, array<int, string>> Sub-admins by gid. */
+	public array $subAdmins = [];
+
+	/** @var array<int, string> Accounts that exist but userExists() does not see yet (another writer made them). */
+	public array $unseenUsers = [];
+
+	/** @var array<int, string> Groups another writer makes between the check and the install: groupExists() does not see them until createGroup() finds them taken. */
+	public array $unseenGroups = [];
+
 	/** @var int Number of accounts created. */
 	public int $userCreates = 0;
 
@@ -55,6 +64,12 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 	}
 
 	public function createUser(string $uid, string $displayName, string $email, string $password): string {
+		if (in_array($uid, $this->unseenUsers, true) === true) {
+			$this->unseenUsers = array_values(array_diff($this->unseenUsers, [$uid]));
+			$this->users[$uid] = ['displayName' => $displayName, 'email' => $email, 'password' => 'theirs'];
+			return ExampleSetAccounts::ALREADY_EXISTS;
+		}
+
 		$this->userCreates++;
 		$this->users[$uid] = ['displayName' => $displayName, 'email' => $email, 'password' => $password];
 
@@ -67,12 +82,36 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 		return true;
 	}
 
+	/** @var array<string, string> Display names by group id. */
+	public array $groupNames = [];
+
+	public function groupName(string $gid): string {
+		return ($this->groupNames[$gid] ?? '');
+	}
+
+	public function setGroupName(string $gid, string $displayName): bool {
+		if (isset($this->groups[$gid]) === false) {
+			return false;
+		}
+
+		$this->groupNames[$gid] = $displayName;
+
+		return true;
+	}
+
 	public function groupExists(string $gid): bool {
 		return isset($this->groups[$gid]);
 	}
 
 	public function createGroup(string $gid, string $displayName): bool {
+		if (in_array($gid, $this->unseenGroups, true) === true) {
+			$this->unseenGroups = array_values(array_diff($this->unseenGroups, [$gid]));
+			$this->groups[$gid] = [];
+			return false;
+		}
+
 		$this->groups[$gid] = [];
+		$this->groupNames[$gid] = ($displayName === '' ? $gid : $displayName);
 
 		return true;
 	}
@@ -99,6 +138,26 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 
 	public function removeFromGroup(string $gid, string $uid): bool {
 		$this->groups[$gid] = array_values(array_diff(($this->groups[$gid] ?? []), [$uid]));
+
+		return true;
+	}
+
+	public function isSubAdmin(string $gid, string $uid): bool {
+		return in_array($uid, ($this->subAdmins[$gid] ?? []), true);
+	}
+
+	public function addSubAdmin(string $gid, string $uid): bool {
+		if (isset($this->groups[$gid]) === false || isset($this->users[$uid]) === false) {
+			return false;
+		}
+
+		$this->subAdmins[$gid][] = $uid;
+
+		return true;
+	}
+
+	public function removeSubAdmin(string $gid, string $uid): bool {
+		$this->subAdmins[$gid] = array_values(array_diff(($this->subAdmins[$gid] ?? []), [$uid]));
 
 		return true;
 	}

@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Controller\Settings;
 use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -51,14 +51,14 @@ class FileSettingsController extends Controller {
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param ContainerInterface $container DI container.
-	 * @param SettingsService $settingsService Settings service.
+	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly ContainerInterface $container,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -286,69 +286,58 @@ class FileSettingsController extends Controller {
 	/**
 	 * Get file extraction statistics
 	 *
-	 * Combines multiple data sources for comprehensive file statistics:
-	 * - FileMapper: Total files in Nextcloud (from oc_filecache, bypasses rights logic)
-	 * - FileTextMapper: Extraction status (from oc_openregister_file_texts)
+	 * Combines two data sources:
+	 * - FileMapper: total files and their size in Nextcloud (oc_filecache, bypasses rights logic)
+	 * - TextExtractionService and ChunkMapper: extraction state (oc_openregister_chunks)
 	 *
-	 * This provides accurate statistics without dealing with Nextcloud's extensive rights logic.
+	 * Extraction keeps no per-file queue state, so pendingFiles, failed and
+	 * processing are always 0, and extractedTextStorageMB is not measured.
 	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse File extraction statistics including:
-	 *                      - totalFiles: All files in Nextcloud (from oc_filecache)
-	 *                      - processedFiles: Files tracked in extraction system
-	 *                      (from oc_openregister_file_texts)
-	 *                      - pendingFiles: Files discovered and waiting for extraction
-	 *                      (status='pending')
-	 *                      - untrackedFiles: Files in Nextcloud not yet discovered
-	 *                      - completed, failed, indexed, processing, vectorized:
-	 *                      Detailed processing status counts
+	 *                      - totalFiles: all files in Nextcloud (from oc_filecache)
+	 *                      - processedFiles, completed: files that have text chunks
+	 *                      - untrackedFiles: user files without text chunks
+	 *                      - indexed, vectorized: indexed and vectorized chunks
+	 *                      - totalChunks, totalEntities: chunk and entity rows
 	 *
 	 * @psalm-return JSONResponse<200,
-	 *     array{success: true, totalFiles: 0|mixed, processedFiles: 0|mixed,
-	 *     pendingFiles: 0|mixed, untrackedFiles: 0|mixed,
+	 *     array{success: true, totalFiles: int, processedFiles: int,
+	 *     pendingFiles: 0, untrackedFiles: int,
 	 *     extractedTextStorageMB: string, totalFilesStorageMB: string,
-	 *     completed: 0|mixed, failed: 0|mixed, indexed: 0|mixed,
-	 *     processing: 0|mixed, vectorized: 0|mixed, error?: string},
+	 *     completed: int, failed: 0, indexed: int,
+	 *     processing: 0, vectorized: int, totalChunks?: int,
+	 *     totalEntities?: int, error?: string},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
 	 */
 	public function getFileExtractionStats(): JSONResponse {
 		try {
-			// Get total files from Nextcloud filecache (bypasses rights logic).
 			$fileMapper = $this->container->get(\OCA\OpenRegister\Db\FileMapper::class);
-			$totalNcFiles = $fileMapper->countAllFiles();
-			$totalFilesSize = $fileMapper->getTotalFilesSize();
+			$chunkMapper = $this->container->get(\OCA\OpenRegister\Db\ChunkMapper::class);
+			$extractionStats = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class)->getStats();
 
-			// Get extraction statistics from our file_texts table.
-			$textExtractSvc = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-			$dbStats = $textExtractSvc->getExtractionStats('file');
-
-			// Calculate storage in MB.
-			$extractedTextMB = round($dbStats['total_text_size'] / 1024 / 1024, 2);
-			$totalFilesStorageMB = round($totalFilesSize / 1024 / 1024, 2);
-
-			// Calculate untracked files (files in Nextcloud not yet discovered).
-			$untrackedFiles = $totalNcFiles - $dbStats['total'];
+			$processedFiles = $chunkMapper->countFileSourceSummaries();
+			$totalFilesStorageMB = round($fileMapper->getTotalFilesSize() / 1024 / 1024, 2);
 
 			return new JSONResponse(
 				data: [
 					'success' => true,
-					'totalFiles' => $totalNcFiles,
-					'processedFiles' => $dbStats['completed'],
-					// Files successfully extracted (status='completed').
-					'pendingFiles' => $dbStats['pending'],
-					// Files discovered and waiting for extraction.
-					'untrackedFiles' => max(0, $untrackedFiles),
-					// Files not yet discovered.
-					'extractedTextStorageMB' => number_format($extractedTextMB, 2),
+					'totalFiles' => $fileMapper->countAllFiles(),
+					'processedFiles' => $processedFiles,
+					'pendingFiles' => 0,
+					'untrackedFiles' => $extractionStats['untrackedFiles'],
+					'extractedTextStorageMB' => '0.00',
 					'totalFilesStorageMB' => number_format($totalFilesStorageMB, 2),
-					'completed' => $dbStats['completed'],
-					'failed' => $dbStats['failed'],
-					'indexed' => $dbStats['indexed'],
-					'processing' => $dbStats['processing'],
-					'vectorized' => $dbStats['vectorized'],
+					'completed' => $processedFiles,
+					'failed' => 0,
+					'indexed' => $chunkMapper->countIndexed(),
+					'processing' => 0,
+					'vectorized' => $chunkMapper->countVectorized(),
+					'totalChunks' => $extractionStats['totalChunks'],
+					'totalEntities' => $extractionStats['totalEntities'],
 				]
 			);
 		} catch (Exception $e) {

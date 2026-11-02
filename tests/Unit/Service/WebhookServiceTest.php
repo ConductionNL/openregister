@@ -2458,6 +2458,57 @@ class WebhookServiceTest extends TestCase {
 		$this->addToAssertionCount(1);
 	}//end testAssertSafeWebhookUriAllowsPublicIpv6()
 
+	/**
+	 * Provider: reserved and embedded-IPv4 targets the URL check must reject.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function reservedWebhookUrls(): array {
+		return [
+			'unspecified IPv4' => ['http://0.0.0.0:8080/webhook'],
+			'this-network IPv4' => ['http://0.1.2.3/webhook'],
+			'shared address space' => ['http://100.64.0.1/webhook'],
+			'benchmarking range' => ['http://198.18.0.1/webhook'],
+			'IETF protocol range' => ['http://192.0.0.1/webhook'],
+			'IPv4-compatible loopback' => ['http://[::127.0.0.1]/webhook'],
+			'NAT64 private' => ['http://[64:ff9b::a00:1]/webhook'],
+		];
+	}//end reservedWebhookUrls()
+
+	/**
+	 * assertSafeWebhookUri must reject reserved ranges and embedded IPv4 forms.
+	 *
+	 * @param string $url URL to validate.
+	 *
+	 * @dataProvider reservedWebhookUrls
+	 */
+	public function testAssertSafeWebhookUriBlocksReservedRanges(string $url): void {
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('blocked IP range');
+		$this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => $url]);
+	}//end testAssertSafeWebhookUriBlocksReservedRanges()
+
+	/**
+	 * assertSafeWebhookUri must reject a host that does not resolve.
+	 */
+	public function testAssertSafeWebhookUriRejectsAnUnresolvableHost(): void {
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('could not be resolved');
+		$this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => 'https://no-such-host.invalid/webhook']);
+	}//end testAssertSafeWebhookUriRejectsAnUnresolvableHost()
+
+	/**
+	 * The log preview treats a reserved target as private.
+	 */
+	public function testPreviewResponseBodyRedactsReservedTargets(): void {
+		$result = $this->invokePrivateMethod(
+			'previewResponseBody',
+			['body' => 'internal-secret-data', 'url' => 'http://0.0.0.0:8080/probe']
+		);
+
+		$this->assertStringNotContainsString('internal-secret-data', $result);
+	}//end testPreviewResponseBodyRedactsReservedTargets()
+
 	// ─── Per-hook allowPrivateTargets opt-in (SSRF bypass) ──────────────
 	//
 	// configuration.allowPrivateTargets lets an admin deliberately opt a single

@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Names the declared paths a stored object did not keep.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 class ExampleSetProof {
 	/**
@@ -46,15 +46,20 @@ class ExampleSetProof {
 	 *
 	 * @return array<int, string> Dot paths, such as `verblijfplaats.postcode`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function lostPaths(mixed $declared, mixed $stored, string $path=''): array {
+		$declared = $this->asDeclared(declared: $declared, stored: $stored);
 		if (is_array($declared) === false) {
 			if ($this->sameValue(declared: $declared, stored: $stored) === true) {
 				return [];
 			}
 
 			return [$path];
+		}
+
+		if ($this->readInOneLanguage(declared: $declared, stored: $stored) === true) {
+			return [];
 		}
 
 		$stored = $this->structured(stored: $stored);
@@ -73,6 +78,52 @@ class ExampleSetProof {
 
 		return $lost;
 	}//end lostPaths()
+
+	/**
+	 * Whether a declared language map reads back as one of its texts.
+	 *
+	 * A translatable property keeps `{nl: …, en: …}` and a read answers it in
+	 * the reader's language, so the map arrived when the read is one of its values.
+	 *
+	 * @param array<int|string, mixed> $declared What was sent.
+	 * @param mixed                    $stored   What was read back.
+	 *
+	 * @return bool
+	 */
+	private function readInOneLanguage(array $declared, mixed $stored): bool {
+		if (is_string($stored) === false || $declared === [] || is_array($this->structured(stored: $stored)) === true) {
+			return false;
+		}
+
+		foreach ($declared as $language => $text) {
+			if (is_string($language) === false || preg_match('/^[a-z]{2}(?:[-_][A-Za-z]{2})?$/', $language) !== 1 || is_string($text) === false) {
+				return false;
+			}
+		}
+
+		return in_array($stored, $declared, true);
+	}//end readInOneLanguage()
+
+	/**
+	 * JSON text declared for a field the store answers decoded, as what it encodes; any other value as it is.
+	 *
+	 * @param mixed $declared What was sent.
+	 * @param mixed $stored   What was read back.
+	 *
+	 * @return mixed
+	 */
+	private function asDeclared(mixed $declared, mixed $stored): mixed {
+		if (is_string($declared) === false || is_array($stored) === false) {
+			return $declared;
+		}
+
+		$decoded = $this->structured(stored: $declared);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return $declared;
+	}//end asDeclared()
 
 	/**
 	 * A stored value, decoded when a schema keeps a structure as JSON text.
@@ -95,7 +146,8 @@ class ExampleSetProof {
 	}//end structured()
 
 	/**
-	 * Whether two leaf values are the same value.
+	 * Whether two leaf values are the same value: equal numbers, one moment in
+	 * two offsets, and an empty text the store keeps as null count as the same.
 	 *
 	 * @param mixed $declared What was sent.
 	 * @param mixed $stored   What was read back.
@@ -103,7 +155,7 @@ class ExampleSetProof {
 	 * @return bool
 	 */
 	private function sameValue(mixed $declared, mixed $stored): bool {
-		if ($declared === $stored) {
+		if ($declared === $stored || ($declared === '' && $stored === null)) {
 			return true;
 		}
 
@@ -111,6 +163,18 @@ class ExampleSetProof {
 			return (float) $declared === (float) $stored;
 		}
 
+		return $this->sameMoment(declared: $declared, stored: $stored);
+	}//end sameValue()
+
+	/**
+	 * Whether two values are one moment, whatever offset each is written in.
+	 *
+	 * @param mixed $declared What was sent.
+	 * @param mixed $stored   What was read back.
+	 *
+	 * @return bool
+	 */
+	private function sameMoment(mixed $declared, mixed $stored): bool {
 		if (is_string($declared) === false || is_string($stored) === false || preg_match('/^\d{4}-\d{2}-\d{2}T/', $declared) !== 1) {
 			return false;
 		}
@@ -118,5 +182,5 @@ class ExampleSetProof {
 		$left = strtotime($declared);
 
 		return $left !== false && $left === strtotime($stored);
-	}//end sameValue()
+	}//end sameMoment()
 }//end class

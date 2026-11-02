@@ -36,7 +36,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -94,7 +94,7 @@ class ApiContractService {
 	 *
 	 * @return array<string, mixed> The description.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function documentFor(ApiVersion $version, ?string $registerId = null): array {
 		$document = $this->oasService->createOas($registerId, false);
@@ -117,7 +117,7 @@ class ApiContractService {
 	 *
 	 * @return array<string, mixed> The stamp.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function stamp(ApiVersion $version): array {
 		$stamp = $version->jsonSerialize();

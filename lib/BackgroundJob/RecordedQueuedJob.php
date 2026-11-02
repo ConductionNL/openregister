@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\BackgroundJob\QueuedJob;
  * a queued job was asked for once, by something that already decided it should
  * happen, so switching it off is the caller's decision, not the console's.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
  */
 abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 
@@ -60,7 +60,7 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	final protected function run($argument): void {
 		$this->recorder->around(
@@ -119,7 +119,7 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	abstract protected function runRecorded(mixed $argument): void;
 }//end class

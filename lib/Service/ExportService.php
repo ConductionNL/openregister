@@ -28,10 +28,13 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -39,6 +42,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
+use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -46,7 +52,6 @@ use OCP\IUserManager;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use RuntimeException;
 
 /**
  * Service for exporting data to various formats
@@ -58,17 +63,15 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class ExportService {
+class ExportService implements ObjectExporterInterface {
 
 	/**
 	 * Maximum number of objects a single PDF export may render.
 	 *
-	 * PDF rendering (Dompdf) builds a full in-memory HTML/CSS box-tree per
-	 * row, unlike the streaming CSV writer or PhpSpreadsheet's XLSX writer,
-	 * making it meaningfully more memory-heavy per row. Requests whose
-	 * object count exceeds this cap MUST fail fast with
-	 * {@see ExportTooLargeException} before any HTML construction or
-	 * Dompdf rendering begins.
+	 * A PDF is laid out by an office server from an ODT holding every row,
+	 * unlike the streaming CSV writer, so its cost grows with the row count.
+	 * Requests whose object count exceeds this cap MUST fail fast with
+	 * {@see ExportTooLargeException} before any document is built.
 	 *
 	 * @var int
 	 */
@@ -131,6 +134,13 @@ class ExportService {
 	private ?Register $contextRegister = null;
 
 	/**
+	 * The explicit-reveal columns of the export being written.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $maskedColumns = [];
+
+	/**
 	 * Constructor for the ExportService.
 	 *
 	 * @param RegisterMapper $registerMapper The register mapper.
@@ -140,6 +150,7 @@ class ExportService {
 	 * @param CacheHandler $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
+	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -151,6 +162,7 @@ class ExportService {
 		CacheHandler $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
+		private readonly ?NcOfficeConverterInterface $officeConverter = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -186,8 +198,8 @@ class ExportService {
 	/**
 	 * Export data to Excel format
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
@@ -195,15 +207,20 @@ class ExportService {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function exportToExcel(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): Spreadsheet {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Create new spreadsheet.
 		$spreadsheet = new Spreadsheet();
 
@@ -241,8 +258,8 @@ class ExportService {
 	/**
 	 * Export data to CSV format
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
@@ -253,11 +270,14 @@ class ExportService {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function exportToCsv(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): string {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		if ($register !== null && $schema === null) {
 			throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
 		}
@@ -284,8 +304,8 @@ class ExportService {
 	 * metadata block. The result is a JSON array re-importable via
 	 * `ImportService::importFromJson()`, which upserts by `@self.id`.
 	 *
-	 * @param Register|null $register Register context (required)
-	 * @param Schema|null $schema Schema whose objects are exported (required)
+	 * @param RegisterInterface|null $register Register context (required)
+	 * @param SchemaInterface|null $schema Schema whose objects are exported (required)
 	 * @param array $filters Optional `@self.*` metadata filters
 	 *
 	 * @return string Pretty-printed JSON array of objects
@@ -295,10 +315,13 @@ class ExportService {
 	 * @spec exclude Retrofit — JSON object export added alongside the existing Excel/CSV exporters; no dedicated openspec change.
 	 */
 	public function exportToJson(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 	): string {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		if ($schema === null) {
 			throw new InvalidArgumentException('JSON export requires a specific schema.');
 		}
@@ -317,8 +340,7 @@ class ExportService {
 	 * Export data to PDF format
 	 *
 	 * Renders the same tabular data the CSV/Excel exporters produce into an
-	 * A4-landscape PDF via Dompdf (already an OpenRegister dependency, used
-	 * by `PdfReportWriter`). Reuses the existing column/data-extraction
+	 * A4-landscape PDF: an ODT converted by the office server. Reuses the existing column/data-extraction
 	 * pipeline (`fetchObjectsForExport()`, `getHeaders()`,
 	 * `identifyNameCompanionColumns()`, `resolveUuidNameMap()`,
 	 * `getObjectValue()`, `resolveUuidsToNames()`) — only the renderer is
@@ -326,23 +348,33 @@ class ExportService {
 	 * per schema is rendered (the PDF analogue of `exportToExcel()`'s
 	 * one-sheet-per-schema behaviour).
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
 	 * @return string Raw PDF bytes
 	 *
 	 * @throws ExportTooLargeException When the object count exceeds {@see self::MAX_PDF_EXPORT_ROWS}.
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function exportToPdf(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): string {
+		if ($this->isPdfAvailable() === false) {
+			throw new OfficeServerRequiredException();
+		}
+
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Capture register context so getHeaders/getObjectValue can emit
 		// per-language columns for translatable properties, same as the
 		// Excel/CSV pipeline.
@@ -381,7 +413,7 @@ class ExportService {
 	 * portal resident's scoped collection (portaliq#765): exportToPdf() fetches
 	 * its own objects with the Nextcloud user's RBAC and only `@self.` filters,
 	 * so it cannot render that read. This renders what it is given, through the
-	 * same Dompdf sandbox and under the same row cap, and reads nothing itself.
+	 * same office conversion and under the same row cap, and reads nothing itself.
 	 *
 	 * @param string                           $title   The heading above the table.
 	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys that are their own labels.
@@ -390,10 +422,14 @@ class ExportService {
 	 * @return string The PDF bytes.
 	 *
 	 * @throws ExportTooLargeException When there are more rows than {@see self::MAX_PDF_EXPORT_ROWS}.
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function renderRowsToPdf(string $title, array $columns, array $rows): string {
+		if ($this->isPdfAvailable() === false) {
+			throw new OfficeServerRequiredException();
+		}
 		$this->guardPdfRowCap(rowCount: count($rows));
 
 		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(title: $title, columns: $columns, rows: $rows)]);
@@ -444,11 +480,7 @@ class ExportService {
 	 *
 	 * Extracted as its own method (rather than inlined at each call site)
 	 * so the boundary condition can be unit-tested directly without
-	 * exercising the expensive Dompdf render path — Dompdf's table layout
-	 * (`Cellmap`) has real per-row memory cost, so tests that need to
-	 * assert "N rows over the cap throws" or "N rows at the cap doesn't
-	 * throw" should call this method directly rather than rendering
-	 * thousands of rows just to observe whether an exception was thrown.
+	 * building a document of thousands of rows.
 	 *
 	 * @param int $rowCount The object count to check against {@see self::MAX_PDF_EXPORT_ROWS}.
 	 *
@@ -561,72 +593,36 @@ class ExportService {
 	}//end truncatePdfCellValue()
 
 	/**
+	 * Whether PDF output is possible: an office server converts ODT to PDF.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	public function isPdfAvailable(): bool {
+		return $this->officeConverter?->isAvailable() === true;
+	}//end isPdfAvailable()
+
+	/**
 	 * Render one or more section HTML fragments into a single A4-landscape PDF.
 	 *
-	 * Uses the same Dompdf sandboxing pattern established by
-	 * `PdfReportWriter`: no remote fetches, no PHP execution. Page numbers
-	 * are added via `Canvas::page_text()`'s safe `{PAGE_NUM}`/`{PAGE_COUNT}`
-	 * placeholder substitution — not the PHP-script-in-HTML mechanism,
-	 * which stays disabled for security.
+	 * The sections are written as one ODT, each section on a new page, and the
+	 * office server converts it to PDF.
 	 *
 	 * @param string[] $sections Escaped HTML fragments, one per schema section.
 	 *
 	 * @return string Raw PDF bytes.
+	 *
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
 	 */
 	private function renderPdfDocument(array $sections): string {
-		$style = '@page { margin: 12mm; }'
-			. "body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #1a1a1a; }"
-			. 'h1 { font-size: 14pt; margin: 0 0 2mm 0; }'
-			. 'p.meta { font-size: 8pt; color: #555555; margin: 0 0 4mm 0; }'
-			. 'table { width: 100%; border-collapse: collapse; }'
-			. 'th, td { border: 0.25pt solid #cccccc; padding: 1.5mm 2mm; text-align: left; word-wrap: break-word; }'
-			. 'th { background-color: #2c3e50; color: #ffffff; font-weight: bold; }'
-			. 'tbody tr:nth-child(even) { background-color: #f2f2f2; }'
-			. '.pdf-section { page-break-after: always; }'
-			. '.pdf-section:last-child { page-break-after: auto; }';
-
-		$body = implode('', $sections);
-		$html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' . $style . '</style></head><body>' . $body . '</body></html>';
-
-		$options = new Options();
-		// No remote stylesheet/image fetches — keeps the renderer hermetic,
-		// same rationale as PdfReportWriter.
-		$options->set('isRemoteEnabled', false);
-		// PHP execution in templates stays disabled; page numbers use
-		// Canvas::page_text() placeholders instead (see below).
-		$options->set('isPhpEnabled', false);
-		$options->set('defaultFont', 'DejaVu Sans');
-		$options->set('defaultPaperSize', 'A4');
-		$options->set('defaultPaperOrientation', 'landscape');
-
-		// SECURITY: assert sandbox flags didn't drift via a future refactor.
-		// Dompdf has a history of SSRF / file-disclosure CVEs
-		// (CVE-2022-41343, CVE-2023-23924); these flags are the primary
-		// mitigation and must stay false.
-		if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
-			throw new RuntimeException(
-				'ExportService PDF sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
-			);
+		if ($this->officeConverter === null) {
+			throw new OfficeServerRequiredException();
 		}
 
-		$dompdf = new Dompdf($options);
-		$dompdf->loadHtml($html, 'UTF-8');
-		$dompdf->setPaper('A4', 'landscape');
-		$dompdf->render();
+		$odt = (new OdtWriter())->fromHtml(html: implode('', $sections), landscape: true);
 
-		$canvas = $dompdf->getCanvas();
-		$font = $dompdf->getFontMetrics()->getFont('DejaVu Sans');
-		$canvas->page_text(
-			$canvas->get_width() - 70,
-			$canvas->get_height() - 20,
-			'Page {PAGE_NUM} / {PAGE_COUNT}',
-			$font,
-			8,
-			[0.3, 0.3, 0.3]
-		);
-
-		$output = $dompdf->output();
-		return $output ?? '';
+		return $this->officeConverter->odtToPdf(odtBytes: $odt);
 	}//end renderPdfDocument()
 
 	/**
@@ -636,20 +632,25 @@ class ExportService {
 	 * schema's properties (the same headers `exportToExcel` would emit), with no
 	 * data rows. The returned spreadsheet can be written to either XLSX or CSV.
 	 *
-	 * @param Register|null $register Optional register context (used for translation column expansion)
-	 * @param Schema $schema Schema whose property keys become the header row
+	 * @param RegisterInterface|null $register Optional register context (used for translation column expansion)
+	 * @param SchemaInterface $schema Schema whose property keys become the header row
 	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
 	 *
 	 * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (builds a header-only
 	 *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
 	 */
 	public function buildTemplateSpreadsheet(
-		?Register $register,
-		Schema $schema,
+		?RegisterInterface $register,
+		SchemaInterface $schema,
 		?IUser $currentUser = null,
 	): Spreadsheet {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Capture register context so getHeaders can emit per-language
 		// `field_lang` columns for translatable properties.
 		$this->contextRegister = $register;
@@ -674,20 +675,25 @@ class ExportService {
 	 * derived from the schema's properties. Mirrors the BOM convention used
 	 * by the export pipeline so Excel opens the file with the correct encoding.
 	 *
-	 * @param Register|null $register Optional register context
-	 * @param Schema $schema Schema whose property keys become the header row
+	 * @param RegisterInterface|null $register Optional register context
+	 * @param SchemaInterface $schema Schema whose property keys become the header row
 	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
 	 *
 	 * @return string CSV content with a UTF-8 BOM prefix and a single header row
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (renders the per-schema
 	 *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
 	 */
 	public function buildTemplateCsv(
-		?Register $register,
-		Schema $schema,
+		?RegisterInterface $register,
+		SchemaInterface $schema,
 		?IUser $currentUser = null,
 	): string {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		$spreadsheet = $this->buildTemplateSpreadsheet(
 			register: $register,
 			schema: $schema,
@@ -775,15 +781,20 @@ class ExportService {
 	 * have to name a guess. Every other format counts off its own
 	 * bytes, which is one query cheaper and cannot drift from the file.
 	 *
-	 * @param Register|null $register Optional register to export.
-	 * @param Schema|null   $schema   Optional schema to export.
+	 * @param RegisterInterface|null $register Optional register to export.
+	 * @param SchemaInterface|null   $schema   Optional schema to export.
 	 * @param array         $filters  Optional filters to apply.
 	 *
 	 * @return int The object count this export would write.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function countExportRows(?Register $register = null, ?Schema $schema = null, array $filters = []): int {
+	public function countExportRows(?RegisterInterface $register = null, ?SchemaInterface $schema = null, array $filters = []): int {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		return count($this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters));
 	}//end countExportRows()
 
@@ -800,7 +811,7 @@ class ExportService {
 	 *
 	 * @return ObjectEntity[] The objects this export would write.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function fetchExportObjects(?Register $register = null, ?Schema $schema = null, array $filters = []): array {
 		return $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
@@ -861,6 +872,14 @@ class ExportService {
 			$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
 		}
 
+		// `_ids` (a list or a comma-separated string) narrows the export to the
+		// selected objects; RBAC and multitenancy still apply to each.
+		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
+		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
+		if ($selectedIds === []) {
+			$selectedIds = null;
+		}
+
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// Set a very high limit to get all objects (export needs all data).
 		// The export's own keys come first, so no property filter can replace them.
@@ -878,10 +897,11 @@ class ExportService {
 			// Apply RBAC filtering.
 			_multitenancy: $multitenancy,
 			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: null,
+			ids: $selectedIds,
 			uses: null
 		);
 	}//end fetchObjectsForExport()
+
 
 	/**
 	 * Identify which header columns are name-companion columns (prefixed with _).
@@ -1019,8 +1039,13 @@ class ExportService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getHeaders(?Schema $schema = null, ?IUser $currentUser = null): array {
+		// The export's explicit-reveal columns read masked, as on every other route.
+		$this->maskedColumns = array_fill_keys(ExplicitReveal::explicitProperties(schema: $schema), true);
+
 		// Start with id as the first column.
 		// Will contain the uuid.
 		$headers = [
@@ -1137,6 +1162,8 @@ class ExportService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex multi-step value extraction logic
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Value extraction requires many conditional type checks
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple header prefix and value type conditions
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getObjectValue(ObjectEntity $object, string $header): ?string {
 		// Handle metadata fields with @self. prefix.
@@ -1245,6 +1272,10 @@ class ExportService {
 				}
 
 				$value = $objectData[$header] ?? null;
+				if (isset($this->maskedColumns[$header]) === true && $value !== null && $value !== '') {
+					return ExplicitReveal::mask(value: $value);
+				}
+
 				return $this->convertValueToString(value: $value);
 		}
 	}//end getObjectValue()
