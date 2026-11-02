@@ -217,4 +217,83 @@ export async function getJson(endpoint) {
 		method: 'GET',
 	})
 	return response.json()
+ * Send one JSON request for a store: raise the store's loading flag while it
+ * runs, hand the answer to `keep`, and log a failure before rethrowing it.
+ *
+ * @param {object} store The store the request is for.
+ * @param {{url: string, request: object, log: function(Error): void, flag?: string, keep?: function(object): void}} job
+ *     The URL and request (as `requestJson` takes them), what logs a
+ *     failure, and optionally the flag to raise and what to do with the answer.
+ * @return {Promise<object>} The parsed answer.
+ * @throws {Error} The request's failure.
+ *
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+export async function storeRequest(store, job) {
+	if (job.flag) {
+		store[job.flag] = true
+	}
+	try {
+		const data = await requestJson(job.url, job.request)
+		job.keep?.(data)
+		return data
+	} catch (error) {
+		job.log(error)
+		throw error
+	} finally {
+		if (job.flag) {
+			store[job.flag] = false
+		}
+	}
+}
+
+/**
+ * Read through a store action; a failure is logged and answered with the fallback.
+ *
+ * @param {function(): Promise<object|Array>} read The read, returning the value.
+ * @param {{log: function(Error): void, fallback: function(): (object|Array)}} job What logs a failure, and the fallback value's factory.
+ * @return {Promise<object|Array>} What the read or the fallback returns.
+ *
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+export async function readOrFallback(read, job) {
+	try {
+		return await read()
+	} catch (error) {
+		job.log(error)
+		return job.fallback()
+	}
+}
+
+/**
+ * The list without the items whose id is listed.
+ *
+ * @param {Array<object>} list The list.
+ * @param {Array} ids The ids to leave out.
+ * @return {Array<object>} The remaining items.
+ *
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+export function withoutIds(list, ids) {
+	return list.filter((item) => !ids.includes(item.id))
+}
+
+/**
+ * A store's statistics after fetching them, or the empty statistics when the
+ * fetch fails.
+ *
+ * @param {object} store A store with `fetchStatistics()` and `statistics`.
+ * @param {{empty: function(): object, log: function(Error): void}} job The empty statistics' factory, and what logs a failure.
+ * @return {Promise<object>} The statistics.
+ *
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+export function statisticsOrEmpty(store, job) {
+	return readOrFallback(
+		async () => {
+			await store.fetchStatistics()
+			return store.statistics
+		},
+		{ log: job.log, fallback: job.empty },
+	)
 }

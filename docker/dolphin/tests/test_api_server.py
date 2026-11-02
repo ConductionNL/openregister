@@ -197,5 +197,22 @@ class ApiServerGolden(unittest.TestCase):
                 self.assertEqual(golden[name], cases[name])
 
 
+class Base64Image(unittest.TestCase):
+    def test_a_base64_image_is_parsed_like_an_upload(self):
+        server = load_server()
+        setup = {"texts": TEXTS["json"]}
+        sent = run_case(server, "/parse", setup, {"json": {"image_base64": base64.b64encode(png()).decode()}})
+        uploaded = run_case(server, "/parse", setup, PARSE[0][1]())
+        self.assertEqual(sent["status"], 200)
+        self.assertEqual(sent["body"], uploaded["body"])
+        self.assertEqual(sent["logged"], [])
+
+    def test_invalid_base64_still_fails_with_500(self):
+        server = load_server()
+        sent = run_case(server, "/parse", {"texts": TEXTS["json"]}, {"json": {"image_base64": "not base64!"}})
+        self.assertEqual(sent["status"], 500)
+        self.assertEqual(sent["body"], {"error": "Document parsing failed"})
+
+
 if __name__ == "__main__":
     unittest.main()

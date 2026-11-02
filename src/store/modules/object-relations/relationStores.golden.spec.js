@@ -151,6 +151,19 @@ describe.each(STORES)(
 			}).toMatchSnapshot()
 		})
 
+		it('exposes its actions and state', () => {
+			const store = useStore()
+			expect({
+				actions: Object.keys(store)
+					.filter(
+						(key) =>
+							!key.startsWith('$') && typeof store[key] === 'function',
+					)
+					.sort(),
+				state: plain(store),
+			}).toMatchSnapshot()
+		})
+
 		it('get and _url', () => {
 			const store = useStore()
 			store.byObject = { 'r:s:7': [{ id: 1 }] }
