@@ -108,6 +108,16 @@ actually written.
   listener's side effect (a number issued, a refusal recorded) stays when a
   later guard drops the row or the chunk rolls back. The single save has the
   same order for its own checks after the event.
+- In mixed-schema mode, and in a call that names a schema but no register, the
+  writer can refuse the whole chunk and throw after the rows' pre-save events
+  have fired. The write fails closed (nothing is stored), but the listeners
+  have already run.
+
+The post-save step keys its targets on the same table as the screen: the
+caller's register and schema first, the row's own only where the caller
+named none. The stored objects carry that table's register and schema, so a
+row whose `@self.register` names another register still gets its created or
+updated event.
 
 ## D-8: what is left out
 

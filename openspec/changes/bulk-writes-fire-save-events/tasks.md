@@ -10,6 +10,7 @@
 - [x] 2.1 `BulkWriteEvents::screen()` as the last step of `SaveObjects::screenResolvedRow()`: creating or updating event, refusal per row, hook data written.
 - [x] 2.2 Post-save events for the register and schema pairs with the setting on, when the caller did not pass `_events: true`.
 - [x] 2.3 The row's register kept on `BulkSafeguardRun`.
+- [x] 2.5 Post-save targets keyed on the written table (caller's register and schema first), so a row naming another register keeps its created or updated event.
 - [x] 2.4 Rows screened against the caller's register and schema, as the writer stores them; `@self` decides only in mixed-schema mode.
 
 ## 3. Tests

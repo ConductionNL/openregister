@@ -502,6 +502,57 @@ class BulkWriteEventsTest extends TestCase {
 		$this->assertSame(self::CONFLICT, $result['invalid'][0]['error']);
 	}//end testAnotherRegistersSettingDoesNotDecide()
 
+	public function testARowNamingAnotherRegisterGetsItsUpdatedEvent(): void {
+		$rows = $this->twoUpdates();
+		$row = $rows[0];
+		$row['@self']['register'] = '9';
+		$row['status'] = 'closed';
+		$this->twoRegisters([]);
+		$this->writerAnswers('updated');
+
+		$this->saveObjects($this->dispatcher())->saveObjects(
+			objects: [$row],
+			register: $this->register(),
+			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+		);
+
+		$this->assertSame(['u-1'], $this->writtenUuids());
+		$this->assertCount(1, $this->eventsOf(ObjectUpdatingEvent::class));
+		$updated = $this->eventsOf(ObjectUpdatedEvent::class);
+		$this->assertSame(['u-1'], array_map(static fn (ObjectUpdatedEvent $e): string => (string)$e->getNewObject()->getUuid(), $updated));
+	}//end testARowNamingAnotherRegisterGetsItsUpdatedEvent()
+
+	public function testARowNamingAnotherRegisterGetsItsCreatedEvent(): void {
+		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturn([]);
+		$this->twoRegisters([BulkWriteEvents::CONFIG_KEY => false]);
+		$this->writerAnswers('created');
+
+		$this->saveObjects($this->dispatcher())->saveObjects(
+			objects: [['@self' => ['register' => '9'], 'title' => 'imported']],
+			register: $this->register([BulkWriteEvents::CONFIG_KEY => true]),
+			schema: $this->schema()
+		);
+
+		$this->assertCount(1, $this->written);
+		$this->assertCount(1, $this->eventsOf(ObjectCreatingEvent::class));
+		$this->assertCount(1, $this->eventsOf(ObjectCreatedEvent::class));
+	}//end testARowNamingAnotherRegisterGetsItsCreatedEvent()
+
+	public function testAnotherRegistersSettingDoesNotSwitchOnThePostStep(): void {
+		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturn([]);
+		$this->twoRegisters([BulkWriteEvents::CONFIG_KEY => true]);
+		$this->writerAnswers('created');
+
+		$this->saveObjects($this->dispatcher())->saveObjects(
+			objects: [['@self' => ['register' => '9'], 'title' => 'imported']],
+			register: $this->register([BulkWriteEvents::CONFIG_KEY => false]),
+			schema: $this->schema()
+		);
+
+		$this->assertCount(1, $this->written);
+		$this->assertSame([], $this->dispatched);
+	}//end testAnotherRegistersSettingDoesNotSwitchOnThePostStep()
+
 	public function testARowNamingTheRouteRegisterIsUnchanged(): void {
 		$rows = $this->twoUpdates();
 		$rows[0]['@self']['register'] = '3';

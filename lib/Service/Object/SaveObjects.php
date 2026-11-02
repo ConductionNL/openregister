@@ -1996,7 +1996,14 @@ class SaveObjects {
 		// the caller did not ask for events on every object.
 		$eventTargets = [];
 		if ($_events === false) {
-			$eventTargets = $this->bulkEventTargets(transformedObjects: $transformedObjects, schemaCache: $schemaCache);
+			$eventTargets = $this->bulkEventTargets(
+				transformedObjects: $transformedObjects,
+				context: [
+					'schemas' => $schemaCache,
+					'register' => $this->callEntity(target: $register, kind: Register::class),
+					'schema' => $this->callEntity(target: $schema, kind: Schema::class),
+				]
+			);
 		}
 
 		// STEP 2: Persist transformed objects to database.
@@ -2060,14 +2067,19 @@ class SaveObjects {
 	/**
 	 * The "registerId/schemaId" pairs of a chunk whose bulk-write events are on.
 	 *
+	 * The pair is the table the row is written to: the caller's register and schema
+	 * first, the row's own only where the caller named none. That is the rule the row
+	 * screen follows, and the pair the stored objects carry afterwards.
+	 *
 	 * @param array $transformedObjects The chunk, after the guards.
-	 * @param array $schemaCache        Schema cache keyed by schema id.
+	 * @param array $context            `schemas`: the schema cache; `register` and `schema`: what the
+	 *                                  caller named, loaded, or null.
 	 *
 	 * @return array<string, true>
 	 *
 	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
 	 */
-	private function bulkEventTargets(array $transformedObjects, array $schemaCache): array {
+	private function bulkEventTargets(array $transformedObjects, array $context): array {
 		if ($this->bulkWriteEvents === null) {
 			return [];
 		}
@@ -2075,20 +2087,49 @@ class SaveObjects {
 		$targets = [];
 		$asked   = [];
 		foreach ($transformedObjects as $objData) {
-			$key = ((string)($objData['register'] ?? '')) . '/' . ((string)($objData['schema'] ?? ''));
-			$schema = ($schemaCache[$objData['schema'] ?? ''] ?? null);
+			$schema   = ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
+			$register = ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null)));
+			$key      = ((string)($register?->getId() ?? ($objData['register'] ?? ''))) . '/' . ((string)$schema?->getId());
 			if (isset($asked[$key]) === true || $schema instanceof Schema === false) {
 				continue;
 			}
 
 			$asked[$key] = true;
-			if ($this->bulkWriteEvents->appliesTo(schema: $schema, register: $this->eventRegister(registerId: ($objData['register'] ?? null))) === true) {
+			if ($this->bulkWriteEvents->appliesTo(schema: $schema, register: $register) === true) {
 				$targets[$key] = true;
 			}
-		}
+		}//end foreach
 
 		return $targets;
 	}//end bulkEventTargets()
+
+	/**
+	 * The register or schema the caller named, loaded; null when it named none or it does not load.
+	 *
+	 * @param Register|Schema|string|int|null $target What the caller passed.
+	 * @param class-string                    $kind   Register::class or Schema::class.
+	 *
+	 * @return Register|Schema|null
+	 */
+	private function callEntity(Register|Schema|string|int|null $target, string $kind): Register|Schema|null {
+		if ($target instanceof $kind) {
+			return $target;
+		}
+
+		if ($target === null || $target === 0 || $target === '0' || $target === '' || is_object($target) === true) {
+			return null;
+		}
+
+		try {
+			if ($kind === Register::class) {
+				return $this->loadRegisterWithCache(registerId: $target);
+			}
+
+			return $this->loadSchemaWithCache(schemaId: $target);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end callEntity()
 
 	/**
 	 * The register a chunk row names, from the register cache the preparation step filled.
