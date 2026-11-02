@@ -8,7 +8,8 @@
  * the flow pages show a realistic process instead of an empty canvas. Written
  * switched off and published, as an app's own shipped flow is, and removed
  * with the set. A flow may carry finished `runs` on a subject object, so a
- * case's run history reads as it would after real work.
+ * case's run history reads as it would after real work, and runs that wait
+ * on a task of the same fragment (ExampleSetFlowRuns).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,8 +25,9 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
- * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+ * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
  */
 
 declare(strict_types=1);
@@ -35,8 +37,6 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the flows of an example set.
  *
- * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One check, write, proof and delete step per flow part.
  */
@@ -74,7 +74,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	/**
 	 * The run fields a fragment may set.
 	 */
-	public const RUN_FIELDS = ['status', 'subject', 'subjectRegister', 'subjectSchema', 'trigger', 'triggeredBy', 'error', 'created', 'updated'];
+	public const RUN_FIELDS = ExampleSetFlowRuns::FIELDS;
 
 	/**
 	 * Constructor.
@@ -93,7 +93,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function part(): string {
 		return 'flows';
@@ -104,7 +104,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function noun(): string {
 		return 'flow';
@@ -118,7 +118,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -139,69 +139,27 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			return 'publish is true or false';
 		}
 
-		return $this->runsRefusal(runs: ($data['runs'] ?? []));
+		return $this->runs()->refusal(runs: ($data['runs'] ?? []), nodes: $data['nodes']);
 	}//end refusal()
 
 	/**
-	 * Why the declared runs cannot be written, or ''.
+	 * The fragment's refusals, and a waiting run that no task of the fragment names: its slot would stay empty.
 	 *
-	 * Only a finished run may be declared: a queued or waiting run would be
-	 * picked up by the flow worker and executed.
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  The fill context.
+	 * @param array<int, string>   $users    The account ids the set creates or adopts.
+	 * @param ExampleSetValues     $values   Fills the placeholders.
 	 *
-	 * @param mixed $runs The declared runs.
+	 * @return array<int, string>
 	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
-	private function runsRefusal(mixed $runs): string {
-		if (is_array($runs) === false || array_is_list($runs) === false) {
-			return 'runs is a list';
-		}
-
-		foreach ($runs as $run) {
-			$refusal = $this->runRefusal(run: (array) $run);
-			if ($refusal !== '') {
-				return $refusal;
-			}
-		}
-
-		return '';
-	}//end runsRefusal()
-
-	/**
-	 * Why one declared run cannot be written, or ''.
-	 *
-	 * @param array<string, mixed> $run The declared run.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
-	 */
-	private function runRefusal(array $run): string {
-		$unknown = array_diff(array_keys($run), self::RUN_FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a run field a set may write';
-		}
-
-		if (in_array(($run['status'] ?? null), FlowRun::TERMINAL, true) === false) {
-			return 'a run is finished: status is one of '.implode(', ', FlowRun::TERMINAL);
-		}
-
-		if (is_string($run['subject'] ?? null) === false || trim($run['subject']) === '') {
-			return 'a run needs the object it ran on (subject)';
-		}
-
-		foreach (['created', 'updated'] as $field) {
-			try {
-				new DateTime((string) ($run[$field] ?? 'now'));
-			} catch (Throwable) {
-				return 'run '.$field.' "'.(string) $run[$field].'" is not a date';
-			}
-		}
-
-		return '';
-	}//end runRefusal()
+	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
+		return array_merge(
+			parent::checkFragment(fragment: $fragment, context: $context, users: $users, values: $values),
+			$this->runs()->unnamedRefusals(fragment: $fragment)
+		);
+	}//end checkFragment()
 
 	/**
 	 * Why the steps and lines cannot make a flow, or ''.
@@ -244,9 +202,10 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 * @param string               $key  The flow's key in the fragment (unused).
 	 * @param array<string, mixed> $data The filled fields.
 	 *
-	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
+	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (the flow's uuid, and its
+	 *                                                                 keyed runs), or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function write(string $app, string $key, array $data): array {
 		try {
@@ -266,14 +225,17 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 				$version = $this->container->get(FlowVersionService::class)->publish(flow: $stored, publishedBy: null)->getVersion();
 			}
 
-			foreach ((array) ($data['runs'] ?? []) as $run) {
-				$this->writeRun(flow: $stored, version: $version, run: (array) $run);
-			}
+			$entry = ['uuid' => (string) $stored->getUuid()] + $this->runs()->write(
+				flow: $stored,
+				version: $version,
+				runs: array_map(static fn (mixed $run): array => (array) $run, (array) ($data['runs'] ?? [])),
+				newUuid: fn (): string => $this->newUuid()
+			);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['uuid' => (string) $stored->getUuid()]];
+		return ['error' => '', 'entry' => $entry];
 	}//end write()
 
 	/**
@@ -282,7 +244,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
 	 */
 	public function updatesInPlace(): bool {
 		return true;
@@ -298,9 +260,10 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 * @param string               $key   The flow's key in the fragment.
 	 * @param array<string, mixed> $data  The filled fields.
 	 *
-	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the update failed.
+	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, keeping the flow's runs,
+	 *                                                                 or why the update failed.
 	 *
-	 * @spec openspec/changes/example-set-flows-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
 	 */
 	public function update(array $entry, string $app, string $key, array $data): array {
 		$uuid = (string) ($entry['uuid'] ?? '');
@@ -323,7 +286,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['uuid' => $uuid]];
+		return ['error' => '', 'entry' => (['uuid' => $uuid] + array_intersect_key($entry, ['runs' => true, 'waitsOn' => true]))];
 	}//end update()
 
 	/**
@@ -383,7 +346,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -402,7 +365,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-flows/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 */
 	public function revert(array $entry): string {
 		try {
@@ -418,36 +381,13 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	}//end revert()
 
 	/**
-	 * Store one finished run of the flow on its subject, in the flow's organisation.
+	 * The runs a flow carries.
 	 *
-	 * @param Flow                 $flow    The stored flow.
-	 * @param int|null             $version The published version, or null for a draft.
-	 * @param array<string, mixed> $run     The filled run fields.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/example-set-flow-runs/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
+	 * @return ExampleSetFlowRuns
 	 */
-	private function writeRun(Flow $flow, ?int $version, array $run): void {
-		$created = new DateTime((string) ($run['created'] ?? 'now'));
-
-		$entity = new FlowRun();
-		$entity->setUuid($this->newUuid());
-		$entity->setFlowId((string) $flow->getUuid());
-		$entity->setFlowVersion($version);
-		$entity->setStatus((string) $run['status']);
-		$entity->setSubjectUuid((string) $run['subject']);
-		$entity->setSubjectRegister(($run['subjectRegister'] ?? null));
-		$entity->setSubjectSchema(($run['subjectSchema'] ?? null));
-		$entity->setTrigger((string) ($run['trigger'] ?? $flow->getTrigger() ?? 'manual'));
-		$entity->setTriggeredBy(($run['triggeredBy'] ?? null));
-		$entity->setError(($run['error'] ?? null));
-		$entity->setOrganisation($flow->getOrganisation());
-		$entity->setCreated($created);
-		$entity->setUpdated(new DateTime((string) ($run['updated'] ?? $created->format('c'))));
-
-		$this->container->get(FlowRunMapper::class)->insert($entity);
-	}//end writeRun()
+	private function runs(): ExampleSetFlowRuns {
+		return new ExampleSetFlowRuns(container: $this->container);
+	}//end runs()
 
 	/**
 	 * A fresh version 4 uuid.

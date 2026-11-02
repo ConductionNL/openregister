@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  * happens to succeed is a gap nobody ever learns the size of. It clears only
  * when an operator acknowledges it.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class AuditSinkStatus {
 	/**
@@ -72,7 +72,7 @@ class AuditSinkStatus {
 	 *
 	 * @return array<string, mixed> The status, with every key always present.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function read(): array {
 		$stored = [];
@@ -104,7 +104,7 @@ class AuditSinkStatus {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function recordSuccess(): void {
 		$status = $this->read();
@@ -129,7 +129,7 @@ class AuditSinkStatus {
 	 * @return bool True when this is the FIRST failure of a healthy sink, which
 	 *              is when the failure is worth its own audit entry.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function recordFailure(string $error): bool {
 		$status = $this->read();
@@ -150,7 +150,7 @@ class AuditSinkStatus {
 	 *
 	 * @return array<string, mixed> The cleared status.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function acknowledge(): array {
 		$status = $this->read();
@@ -170,7 +170,7 @@ class AuditSinkStatus {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function write(array $status): void {
 		try {

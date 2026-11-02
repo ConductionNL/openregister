@@ -1,0 +1,889 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ExportRegister.exportObjects exports ids as csv, answering named 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "application/vnd.ms-excel",
+      10,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "export.xlsx",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as csv, answering oddDisposition 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      5,
+    ],
+    [
+      "create",
+      "a",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Cannot read properties of undefined (reading 'replace')","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as csv, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as csv, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as csv, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export objects","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as csv, answering unnamed 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      9,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "3_four_2026-03-04.csv",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as excel, answering named 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "application/vnd.ms-excel",
+      10,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "export.xlsx",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as excel, answering oddDisposition 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      5,
+    ],
+    [
+      "create",
+      "a",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Cannot read properties of undefined (reading 'replace')","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as excel, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as excel, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as excel, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export objects","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports ids as excel, answering unnamed 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      9,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "3_four_2026-03-04.xlsx",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/3/four/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as csv, answering named 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as csv, answering oddDisposition 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as csv, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as csv, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as csv, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as csv, answering unnamed 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as excel, answering named 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as excel, answering oddDisposition 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as excel, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as excel, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as excel, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noRegisterId as excel, answering unnamed 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as csv, answering named 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as csv, answering oddDisposition 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as csv, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as csv, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as csv, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as csv, answering unnamed 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as excel, answering named 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as excel, answering oddDisposition 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as excel, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as excel, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as excel, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports noSchema as excel, answering unnamed 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Register and schema are required","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as csv, answering named 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "application/vnd.ms-excel",
+      10,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "export.xlsx",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as csv, answering oddDisposition 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      5,
+    ],
+    [
+      "create",
+      "a",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Cannot read properties of undefined (reading 'replace')","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as csv, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as csv, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as csv, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export objects","exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as csv, answering unnamed 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      9,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "reg_sch_2026-03-04.csv",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "csv",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"csv","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as excel, answering named 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "application/vnd.ms-excel",
+      10,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "export.xlsx",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as excel, answering oddDisposition 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      5,
+    ],
+    [
+      "create",
+      "a",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Cannot read properties of undefined (reading 'replace')","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as excel, answering plainError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as excel, answering serverError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as excel, answering silentError 1`] = `
+{
+  "browser": [],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export objects","exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":0}",
+}
+`;
+
+exports[`ExportRegister.exportObjects exports slugs as excel, answering unnamed 1`] = `
+{
+  "browser": [
+    [
+      "blob",
+      "text/csv",
+      9,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "reg_sch_2026-03-04.xlsx",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "type": "excel",
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/objects/reg/sch/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"exportFormat":"excel","exportFormats":[{"label":"Excel","value":"excel"},{"label":"CSV","value":"csv"}],"closed":1}",
+}
+`;

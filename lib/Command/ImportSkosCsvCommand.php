@@ -35,7 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -52,12 +52,12 @@ class ImportSkosCsvCommand extends Command {
 	/**
 	 * Wire the import service.
 	 *
-	 * @param VocabularyImportService $vocabulary Performs the idempotent import.
+	 * @param VocabularyImporterInterface $vocabulary Performs the idempotent import.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
 	 */
 	public function __construct(
-		private readonly VocabularyImportService $vocabulary,
+		private readonly VocabularyImporterInterface $vocabulary,
 	) {
 		parent::__construct();
 

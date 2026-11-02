@@ -233,7 +233,7 @@ class ObjectFileAccess {
 	 *
 	 * @return bool True when the caller may make the change.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function mayChangeFiles(ObjectEntity $object, string $verb = self::ADD_FILES): bool {
 		$schema = $this->schemaOf(object: $object);

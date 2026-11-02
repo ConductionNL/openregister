@@ -170,7 +170,7 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 	 * @return array<int, string> The accepted config keys.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function configKeys(): array {
 		return ['event', 'register', 'schema', 'scope'];
@@ -191,7 +191,7 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 	 * @throws InvalidArgumentException When the trigger does not name exactly one subject, or has a malformed scope.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		$event = trim((string)($config['event'] ?? ''));

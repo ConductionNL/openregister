@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function testAMarkedSetIsRefreshedAgainstTheDayOfTheRun(): void {
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
@@ -117,7 +117,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function testAMarkedSetThatIsNotInstalledIsSkipped(): void {
 		$daily = $this->daily();
@@ -132,7 +132,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function testTheInstallCommandMarksAndUnmarksTheSet(): void {
 		$daily   = $this->daily();
@@ -152,7 +152,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function testTheJobRefreshesAndLogsEachSet(): void {
 		$daily = $this->createMock(ExampleSetDailyRefresh::class);

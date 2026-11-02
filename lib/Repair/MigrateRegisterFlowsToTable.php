@@ -59,7 +59,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -80,7 +80,7 @@ use Throwable;
 /**
  * Copies register-authored flows into the table every subsystem reads.
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  */
@@ -142,7 +142,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Migrate register-authored flows into the flow table (one store per flow)';
@@ -159,7 +159,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

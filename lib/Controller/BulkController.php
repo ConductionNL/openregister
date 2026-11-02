@@ -155,7 +155,7 @@ class BulkController extends Controller {
 	 * @return JSONResponse|null 400 for a row without @self.schema, 403, or null when every row
 	 *                           names a schema that passes or the batch is single-schema.
 	 *
-	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
 	private function refusedRowSchemas(bool $isMixedSchema, array $objects): ?JSONResponse {
 		if ($isMixedSchema === false) {

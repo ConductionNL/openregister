@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * The party declaration of one schema.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+ * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) An immutable value object with one
  *   reader per declared field. The count IS the annotation's field count, and
@@ -93,7 +93,7 @@ class PartyDefinition {
 	 *
 	 * @return self|null The declaration.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public static function fromSchema(Schema $schema): ?self {
 		$annotation = $schema->getPartyAnnotation();
@@ -111,7 +111,7 @@ class PartyDefinition {
 	 *
 	 * @return self The declaration, every key defaulted.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public static function fromAnnotation(array $annotation): self {
 		$merge = ($annotation['merge'] ?? []);
@@ -144,7 +144,7 @@ class PartyDefinition {
 	 *
 	 * @return string The kind.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function kind(): string {
 		return $this->kind;
@@ -155,7 +155,7 @@ class PartyDefinition {
 	 *
 	 * @return string|null The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function nameProperty(): ?string {
 		return $this->nameProperty;
@@ -166,7 +166,7 @@ class PartyDefinition {
 	 *
 	 * @return string The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function addressesProperty(): string {
 		return $this->addressesProperty;
@@ -177,7 +177,7 @@ class PartyDefinition {
 	 *
 	 * @return string The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function indicatorsProperty(): string {
 		return $this->indicatorsProperty;
@@ -188,7 +188,7 @@ class PartyDefinition {
 	 *
 	 * @return string|null The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function parentProperty(): ?string {
 		return $this->parentProperty;
@@ -199,7 +199,7 @@ class PartyDefinition {
 	 *
 	 * @return int The bound, at least one.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function maxDepth(): int {
 		return $this->maxDepth;
@@ -210,7 +210,7 @@ class PartyDefinition {
 	 *
 	 * @return array<int, string> The property names, [] when the schema names none.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function survivingProperties(): array {
 		return $this->survivingProperties;
@@ -221,7 +221,7 @@ class PartyDefinition {
 	 *
 	 * @return bool True when it does.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function unionAddresses(): bool {
 		return $this->unionAddresses;

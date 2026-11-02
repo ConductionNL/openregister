@@ -122,6 +122,13 @@ class TaskSequence extends Entity implements JsonSerializable {
 	public const STATUS_TERMINATED = 'terminated';
 
 	/**
+	 * A position completed with an outcome that neither approves nor rejects.
+	 *
+	 * @var string
+	 */
+	public const STATUS_UNDECIDED = 'undecided';
+
+	/**
 	 * The terminal statuses. A sequence in one of these is never re-opened.
 	 *
 	 * @var array<int, string>
@@ -130,6 +137,7 @@ class TaskSequence extends Entity implements JsonSerializable {
 		self::STATUS_COMPLETED,
 		self::STATUS_REJECTED,
 		self::STATUS_TERMINATED,
+		self::STATUS_UNDECIDED,
 	];
 
 	/**
@@ -288,6 +296,34 @@ class TaskSequence extends Entity implements JsonSerializable {
 	public function isTerminal(): bool {
 		return in_array((string)$this->status, self::TERMINAL_STATUSES, true);
 	}//end isTerminal()
+
+	/**
+	 * Open this sequence now as running.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function openNow(): void {
+		$this->setStatus(self::STATUS_RUNNING);
+		$this->setOpenedAt(new DateTime());
+	}//end openNow()
+
+	/**
+	 * Close this sequence now with a terminal status and its outcome.
+	 *
+	 * @param string $status One of the terminal statuses.
+	 * @param string $outcome The recorded outcome.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function closeAs(string $status, string $outcome): void {
+		$this->setStatus($status);
+		$this->setOutcome($outcome);
+		$this->setClosedAt(new DateTime());
+	}//end closeAs()
 
 	/**
 	 * Serialize for API and log consumption.

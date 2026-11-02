@@ -48,6 +48,39 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+/**
+ * The file name of an export: the one the server names, or a dated default.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {string} The file name
+ */
+function exportFilename(response, id) {
+	const contentDisposition = response.headers['content-disposition']
+	return contentDisposition
+		? contentDisposition.split('filename=')[1].replace(/"/g, '')
+		: `configuration_${id}_${new Date().toISOString().split('T')[0]}.json`
+}
+
+/**
+ * Hand an export to the browser as a JSON file download.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {void}
+ */
+function downloadExport(response, id) {
+	const blob = new Blob([response.data], { type: 'application/json' })
+	const downloadUrl = window.URL.createObjectURL(blob)
+	const link = document.createElement('a')
+	link.href = downloadUrl
+	link.download = exportFilename(response, id)
+	document.body.appendChild(link)
+	link.click()
+	document.body.removeChild(link)
+	window.URL.revokeObjectURL(downloadUrl)
+}
+
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -147,24 +180,7 @@ export default {
 					responseType: 'blob', // Important for file download
 				})
 
-				// Create a download link
-				const blob = new Blob([response.data], { type: 'application/json' })
-				const downloadUrl = window.URL.createObjectURL(blob)
-				const link = document.createElement('a')
-
-				// Get filename from response headers or generate a default one
-				const contentDisposition = response.headers['content-disposition']
-				const filename = contentDisposition
-					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `configuration_${item.id}_${new Date().toISOString().split('T')[0]}.json`
-
-				link.href = downloadUrl
-				link.download = filename
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				window.URL.revokeObjectURL(downloadUrl)
-
+				downloadExport(response, item.id)
 				this.closeModal()
 			} catch (error) {
 				this.error =

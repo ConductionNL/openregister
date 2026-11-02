@@ -1177,7 +1177,7 @@ export default {
 		 * choosing a branch needs to see that a value exists and is retired;
 		 * hiding it makes the tree look like it never held that term.
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		flatConceptTree() {
 			const rows = []
@@ -1203,7 +1203,7 @@ export default {
 		 * an operator the evaluator gains appears here without an edit.
 		 *
 		 * @return {Array<object>} The select options.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		operatorOptions() {
 			return this.operatorCatalogue.map((operator) => ({
@@ -1458,7 +1458,7 @@ export default {
 		 * Read the published operator catalogue and build the picker from it.
 		 *
 		 * @return {Promise<void>} Resolves once the catalogue is loaded or the read failed.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		async loadOperatorCatalogue() {
 			this.operatorsLoading = true
@@ -1483,7 +1483,7 @@ export default {
 		 *
 		 * @param {object|null} option The chosen operator option.
 		 * @return {void}
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		insertOperator(option) {
 			if (!option || !option.value) return
@@ -1497,7 +1497,7 @@ export default {
 		 * Evaluate the expression against the sample payload, without saving.
 		 *
 		 * @return {Promise<void>} Resolves once the trial answered.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		async tryCalculation() {
 			this.calculationTrying = true
@@ -1546,7 +1546,7 @@ export default {
 		 * The declaration to store on the property, or null when there is none.
 		 *
 		 * @return {object|null} The `calculation` key's value.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		buildCalculationValue() {
 			if (!this.calculationEnabled || !this.calculationExpression) return null
@@ -1755,7 +1755,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		hydrateCodeListState(schemaProperty) {
 			const coded = schemaProperty['x-openregister-concepts'] || {}
@@ -1800,7 +1800,7 @@ export default {
 		 *
 		 * @return {object} The annotations to merge into the property.
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		codeListAnnotations() {
 			const annotations = {}
@@ -1853,7 +1853,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		async loadConceptTree() {
 			const scheme = (this.codedConfig.scheme || '').trim()

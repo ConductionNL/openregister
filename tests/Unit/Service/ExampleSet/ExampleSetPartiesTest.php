@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function testARepresentativeIsLinkedOnceAndUnlinkedOnRemove(): void {
 		$this->caseWithParties(parties: [
@@ -95,7 +95,7 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-parties-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
 	 */
 	public function testARefreshWritesTheLinkAgainWhereItIs(): void {
 		$row = ['objectUuid' => '{{object:case-1.id}}', 'partyUuid' => 'party-vanwijk', 'role' => 'gemachtigde', 'note' => 'Awb 2:1'];

@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -47,9 +47,9 @@ class CalendarEventsController extends Controller {
 	/**
 	 * Calendar event service (legacy X-OR-* CalDAV custom properties).
 	 *
-	 * @var CalendarEventService
+	 * @var ObjectCalendarEventsInterface
 	 */
-	private readonly CalendarEventService $calendarEventService;
+	private readonly ObjectCalendarEventsInterface $calendarEventService;
 
 	/**
 	 * Tier-2 calendar link service (additive link-table layer).
@@ -70,7 +70,7 @@ class CalendarEventsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param CalendarEventService $calendarEventService Calendar event service (legacy)
+	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service (legacy)
 	 * @param CalendarLinkService $calendarLinkService Calendar link service (Tier-2)
 	 * @param ObjectService $objectService Object service
 	 *
@@ -79,7 +79,7 @@ class CalendarEventsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		CalendarEventService $calendarEventService,
+		ObjectCalendarEventsInterface $calendarEventService,
 		CalendarLinkService $calendarLinkService,
 		ObjectService $objectService,
 	) {

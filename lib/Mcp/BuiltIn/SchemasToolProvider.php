@@ -69,45 +69,52 @@ class SchemasToolProvider implements IMcpToolProvider {
 	}//end getAppId()
 
 	/**
+	 * The tool definitions.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'schemas',
+			'description' => 'Manage schemas (data definitions that describe the structure of objects)',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'action' => [
+						'type' => 'string',
+						'enum' => ['list', 'get', 'create', 'update', 'delete'],
+						'description' => 'The CRUD action to perform',
+					],
+					'id' => [
+						'type' => 'integer',
+						'description' => 'Schema ID (required for get, update, delete)',
+					],
+					'data' => [
+						'type' => 'object',
+						'description' => 'Schema fields (for create and update)',
+					],
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of results (for list)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of results to skip (for list)',
+					],
+				],
+				'required' => ['action'],
+			],
+		],
+	];
+
+	/**
 	 * Returns tool descriptors.
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
 	 */
 	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'schemas',
-				'description' => 'Manage schemas (data definitions that describe the structure of objects)',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list', 'get', 'create', 'update', 'delete'],
-							'description' => 'The CRUD action to perform',
-						],
-						'id' => [
-							'type' => 'integer',
-							'description' => 'Schema ID (required for get, update, delete)',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'Schema fields (for create and update)',
-						],
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results (for list)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip (for list)',
-						],
-					],
-					'required' => ['action'],
-				],
-			],
-		];
+		return self::TOOLS;
 	}//end getTools()
 
 	/**

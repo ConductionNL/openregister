@@ -48,7 +48,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -116,7 +116,7 @@ class PermissionsAuditController extends Controller {
 	 *
 	 * @return JSONResponse The preview.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -181,7 +181,7 @@ class PermissionsAuditController extends Controller {
 	 *
 	 * @return JSONResponse The audit.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -222,7 +222,7 @@ class PermissionsAuditController extends Controller {
 	 *
 	 * @return JSONResponse The comparison.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

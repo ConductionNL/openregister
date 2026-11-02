@@ -82,7 +82,7 @@ class DestroyRightService {
 	 *
 	 * @return DestructionRefusedException|null The refusal, or null when allowed.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalFor(ObjectEntity $object, ?Schema $schema): ?DestructionRefusedException {
 		$user = $this->userSession->getUser();

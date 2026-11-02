@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -107,10 +107,10 @@ class CronFileTextExtractionJob extends TimedJob {
 			/*
 			 * Get required services.
 			 *
-			 * @var SettingsService $settingsService
+			 * @var AppSettingsInterface $settingsService
 			 */
 
-			$settingsService = $this->container->get(SettingsService::class);
+			$settingsService = $this->container->get(AppSettingsInterface::class);
 
 			/*
 			 * @var TextExtractionService $textExtractor

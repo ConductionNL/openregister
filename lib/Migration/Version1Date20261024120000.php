@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
+ * @spec openspec/specs/flow-tasks/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCP\Migration\SimpleMigrationStep;
  * this migration again, so the post-migration repair step
  * EnsureTaskKeyUniqueIndex adds the index later, once the keys are distinct.
  *
- * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
+ * @spec openspec/specs/flow-tasks/spec.md
  */
 class Version1Date20261024120000 extends SimpleMigrationStep {
 
@@ -81,7 +81,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
-	 * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		if ($schemaClosure()->hasTable(self::TABLE) === false) {
@@ -107,7 +107,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 	 * @return ISchemaWrapper|null The schema.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
-	 * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -134,7 +134,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 	 *
 	 * @return int The count.
 	 *
-	 * @spec openspec/changes/task-key-unique/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function sharedKeys(): int {
 		$qb = $this->db->getQueryBuilder();

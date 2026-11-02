@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);
@@ -98,7 +98,7 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getName(): string {
 		return 'Seed the intake-sources register (one object per watched folder, mailbox or endpoint)';
@@ -111,7 +111,7 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -107,7 +107,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-publishes-its-capabilities-and-its-limits-req-avs-002
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-publishes-its-capabilities-and-its-limits-req-avs-002
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 */
@@ -135,7 +135,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 */
@@ -171,7 +171,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|404|410|500, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 *

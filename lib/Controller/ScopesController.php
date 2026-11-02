@@ -285,7 +285,7 @@ class ScopesController extends Controller {
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function provenanceFor(Schema $schema, ?string $userId, bool $isAdmin): array {
 		// An administrator holds everything by bypass, not by rule, and saying
@@ -324,7 +324,7 @@ class ScopesController extends Controller {
 	 *
 	 * @return array<int, string> Permitted action vocabulary.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function collectActionsForUser(Schema $schema, ?string $userId, bool $isAdmin): array {
 		if ($isAdmin === true) {

@@ -34,12 +34,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -137,10 +137,9 @@ class TaskSequenceService {
 		}
 
 		$sequence->setPositionCursor((int)(($positions[0]['order'] ?? 1)));
-		$sequence->setStatus(TaskSequence::STATUS_RUNNING);
 		$sequence->setRunUuid($runUuid);
 		$sequence->setNodeId($nodeId);
-		$sequence->setOpenedAt(new DateTime());
+		$sequence->openNow();
 		$sequence = $this->sequences->insert($sequence);
 
 		$creator = ($requesterId ?? self::ACTOR_PREFIX . (string)$sequence->getUuid());
@@ -175,7 +174,7 @@ class TaskSequenceService {
 					'schemaId' => $sequence->getSchemaId(),
 					'templateId' => $sequence->getTemplateId(),
 					'templateVersion' => $sequence->getTemplateVersion(),
-					'templateSnapshot' => $position,
+					'templateSnapshot' => $this->positionSnapshot(position: $position, template: $template),
 					'sequenceUuid' => $sequence->getUuid(),
 					'sequencePosition' => $order,
 					'runUuid' => $runUuid,
@@ -189,6 +188,26 @@ class TaskSequenceService {
 	}//end provision()
 
 	/**
+	 * A position as frozen onto its task, carrying the chain's declared
+	 * approving set so the task alone tells what approves it.
+	 *
+	 * @param array<string, mixed> $position The declared position.
+	 * @param array<string, mixed> $template The compiled template.
+	 *
+	 * @return array<string, mixed> The position, with `approvingOutcomes` when declared.
+	 *
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 */
+	private function positionSnapshot(array $position, array $template): array {
+		$approving = TaskState::approvingSet(declared: ($template['approvingOutcomes'] ?? null));
+		if ($approving !== []) {
+			$position['approvingOutcomes'] = $approving;
+		}
+
+		return $position;
+	}//end positionSnapshot()
+
+	/**
 	 * Progress a sequence after one of its tasks reached a terminal state.
 	 *
 	 * Called in the SAME request as the completing decision, after the
@@ -199,8 +218,15 @@ class TaskSequenceService {
 	 * - a rejecting completion closes the sequence as rejected (KEPT, never
 	 *   deleted; design D-5) and terminates every remaining task with a
 	 *   reason naming the rejecting position
+	 * - a completion that neither approves nor rejects closes the sequence as
+	 *   undecided, terminates the remainder and dispatches
+	 *   {@see TaskSequenceUndecidedEvent}
 	 * - any other terminal end (cancelled, terminated, disabled) closes the
 	 *   sequence as terminated and terminates the remainder
+	 *
+	 * An outcome approves only when it is in the frozen template's
+	 * `approvingOutcomes`, or in {@see TaskState::APPROVING_OUTCOMES} when the
+	 * template declares none.
 	 *
 	 * Idempotent: a terminal sequence absorbs every further report, which is
 	 * exactly what the remainder-termination fan-out produces.
@@ -210,6 +236,7 @@ class TaskSequenceService {
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
+	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public function onTaskTerminal(Task $task): void {
 		$sequenceUuid = trim((string)$task->getSequenceUuid());
@@ -232,16 +259,22 @@ class TaskSequenceService {
 			return;
 		}
 
-		$outcome = (string)$task->getOutcome();
-		$isDecision = ((string)$task->getState() === Task::STATE_COMPLETED);
-
-		if ($isDecision === true && TaskState::isRejectingOutcome(outcome: $outcome) === false) {
-			$this->advance(sequence: $sequence, completed: $task);
+		if ((string)$task->getState() !== Task::STATE_COMPLETED) {
+			$this->close(
+				sequence: $sequence,
+				status: TaskSequence::STATUS_TERMINATED,
+				outcome: 'terminated',
+				reason: sprintf(
+					"Position %d ended as '%s' without a decision.",
+					(int)$task->getSequencePosition(),
+					(string)$task->getState()
+				)
+			);
 
 			return;
 		}
 
-		if ($isDecision === true) {
+		if (TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
 			$this->close(
 				sequence: $sequence,
 				status: TaskSequence::STATUS_REJECTED,
@@ -256,16 +289,13 @@ class TaskSequenceService {
 			return;
 		}
 
-		$this->close(
-			sequence: $sequence,
-			status: TaskSequence::STATUS_TERMINATED,
-			outcome: 'terminated',
-			reason: sprintf(
-				"Position %d ended as '%s' without a decision.",
-				(int)$task->getSequencePosition(),
-				(string)$task->getState()
-			)
-		);
+		if (TaskState::isApprovingOutcome(outcome: $task->getOutcome(), approving: $this->approvingOutcomes(sequence: $sequence)) === true) {
+			$this->advance(sequence: $sequence, completed: $task);
+
+			return;
+		}
+
+		$this->closeUndecided(sequence: $sequence, task: $task);
 	}//end onTaskTerminal()
 
 	/**
@@ -302,9 +332,7 @@ class TaskSequenceService {
 		}
 
 		$statusOnApprove = $this->statusOnApprove(sequence: $sequence, position: (int)$completed->getSequencePosition());
-		$sequence->setStatus(TaskSequence::STATUS_COMPLETED);
-		$sequence->setOutcome($statusOnApprove);
-		$sequence->setClosedAt(new DateTime());
+		$sequence->closeAs(status: TaskSequence::STATUS_COMPLETED, outcome: $statusOnApprove);
 		$persisted = $this->sequences->update($sequence);
 
 		$this->dispatcher->dispatchTyped(
@@ -316,6 +344,45 @@ class TaskSequenceService {
 			)
 		);
 	}//end advance()
+
+	/**
+	 * Close a sequence whose position completed without a decision.
+	 *
+	 * @param TaskSequence $sequence The running sequence.
+	 * @param Task $task The position that completed with an outcome that
+	 *                   neither approves nor rejects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 */
+	private function closeUndecided(TaskSequence $sequence, Task $task): void {
+		$this->close(
+			sequence: $sequence,
+			status: TaskSequence::STATUS_UNDECIDED,
+			outcome: TaskSequence::STATUS_UNDECIDED,
+			reason: sprintf(
+				"Position %d completed with outcome '%s', which neither approves nor rejects.",
+				(int)$task->getSequencePosition(),
+				(string)$task->getOutcome()
+			)
+		);
+
+		$this->dispatcher->dispatchTyped(new TaskSequenceUndecidedEvent(sequence: $sequence, task: $task));
+	}//end closeUndecided()
+
+	/**
+	 * The approving set frozen onto a sequence.
+	 *
+	 * @param TaskSequence $sequence The sequence whose snapshot to read.
+	 *
+	 * @return array<int, string> The declared set, or the default set when none is usable.
+	 *
+	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	private function approvingOutcomes(TaskSequence $sequence): array {
+		return TaskState::approvingSetOrDefault(declared: (($sequence->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
+	}//end approvingOutcomes()
 
 	/**
 	 * Close a sequence and terminate every task it still owns.
@@ -335,9 +402,7 @@ class TaskSequenceService {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
 	 */
 	private function close(TaskSequence $sequence, string $status, string $outcome, string $reason): void {
-		$sequence->setStatus($status);
-		$sequence->setOutcome($outcome);
-		$sequence->setClosedAt(new DateTime());
+		$sequence->closeAs(status: $status, outcome: $outcome);
 		$this->sequences->update($sequence);
 
 		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();

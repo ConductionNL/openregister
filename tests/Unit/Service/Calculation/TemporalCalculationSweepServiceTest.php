@@ -229,7 +229,7 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/resave-restores-string-typed-values/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function testTheSweepRestoresDecodedStringTypedValues(): void {
 		$schema = $this->dsarSchema();

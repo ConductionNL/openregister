@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ class ExampleSetGroupNamesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-group-display-names/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-group-without-a-name-gets-the-declared-one
 	 */
 	public function testAnUnnamedExistingGroupGetsTheDeclaredName(): void {
 		$plan   = $this->catalogue->gather(set: 'demo');

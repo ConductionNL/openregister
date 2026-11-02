@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -334,7 +334,7 @@ final class BulkJobsControllerTest extends TestCase {
 	/**
 	 * The console's two new verbs reach the service and answer the wire.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -356,7 +356,7 @@ final class BulkJobsControllerTest extends TestCase {
 	 * The interesting half is that it never reaches the service: an
 	 * ownership check that ran after the act would stop nothing.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -373,7 +373,7 @@ final class BulkJobsControllerTest extends TestCase {
 	/**
 	 * An administrator drives the console over anybody's job.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -389,7 +389,7 @@ final class BulkJobsControllerTest extends TestCase {
 	/**
 	 * A refusal from the state machine reaches the caller as a 422 with its code.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */

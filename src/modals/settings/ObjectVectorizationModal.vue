@@ -235,6 +235,21 @@ import {
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
 
+/**
+ * The counts of one batch response, 0 where one is missing.
+ *
+ * @param {object} response The batch response
+ * @return {{processed: number, vectorized: number, failed: number}} The counts
+ */
+function batchCounts(response) {
+	const result = response.data?.data || {}
+	return {
+		processed: result.processed || 0,
+		vectorized: result.vectorized || 0,
+		failed: result.failed || 0,
+	}
+}
+
 export default {
 	name: 'ObjectVectorizationModal',
 
@@ -429,40 +444,9 @@ export default {
 			this.failed = 0
 
 			try {
-				const viewsToProcess = this.vectorizeAllViews
-					? null
-					: this.selectedViews
-				const objectCount =
-					this.maxObjects > 0
-						? this.maxObjects
-						: this.stats.objectsToProcess
-
-				// Process in batches until complete
-				let remaining = objectCount
-				while (remaining > 0 && this.processing) {
-					const currentBatchSize = Math.min(this.batchSize, remaining)
-
-					const response = await axios.post(
-						generateUrl(
-							'/apps/openregister/api/objects/vectorize/batch',
-						),
-						{
-							views: viewsToProcess,
-							batchSize: currentBatchSize,
-						},
-					)
-
-					const result = response.data?.data || {}
-					this.processed += result.processed || 0
-					this.vectorized += result.vectorized || 0
-					this.failed += result.failed || 0
-					remaining -= result.processed || 0
-
-					// Stop if no more objects were processed
-					if ((result.processed || 0) === 0) {
-						break
-					}
-				}
+				await this.runBatches(
+					this.vectorizeAllViews ? null : this.selectedViews,
+				)
 
 				showSuccess(
 					this.t(
@@ -487,6 +471,48 @@ export default {
 			} finally {
 				this.processing = false
 			}
+		},
+
+		/**
+		 * Send batches until the objects are done, one comes back empty, or processing stops.
+		 *
+		 * @param {Array|null} views The views to vectorize, null for all
+		 * @spec exclude UI plumbing — drives the batch loop of the modal
+		 * @return {Promise<void>}
+		 */
+		async runBatches(views) {
+			let remaining =
+				this.maxObjects > 0 ? this.maxObjects : this.stats.objectsToProcess
+			while (remaining > 0 && this.processing) {
+				const processed = await this.vectorizeBatch(
+					views,
+					Math.min(this.batchSize, remaining),
+				)
+				remaining -= processed
+				if (processed === 0) {
+					break
+				}
+			}
+		},
+
+		/**
+		 * Vectorize one batch and add its counts to the totals.
+		 *
+		 * @param {Array|null} views The views to vectorize, null for all
+		 * @param {number} batchSize The number of objects in this batch
+		 * @spec exclude UI plumbing — one batch request of the modal
+		 * @return {Promise<number>} The number of objects the batch processed
+		 */
+		async vectorizeBatch(views, batchSize) {
+			const response = await axios.post(
+				generateUrl('/apps/openregister/api/objects/vectorize/batch'),
+				{ views, batchSize },
+			)
+			const counts = batchCounts(response)
+			this.processed += counts.processed
+			this.vectorized += counts.vectorized
+			this.failed += counts.failed
+			return counts.processed
 		},
 	},
 }

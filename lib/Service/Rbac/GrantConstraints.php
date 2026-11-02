@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use DateTimeInterface;
 /**
  * Drops the entries of a block that have expired or belong to another area.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class GrantConstraints {
 
@@ -94,7 +94,7 @@ class GrantConstraints {
 	 *
 	 * @return bool True when something in the block has to be read.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declaresAnyConstraint(?array $authorization): bool {
 		if (is_array($authorization) === false || $authorization === []) {
@@ -125,7 +125,7 @@ class GrantConstraints {
 	 *
 	 * @return array|null The block, with the entries that do not reach here removed.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function apply(?array $authorization, array $area = [], ?DateTimeInterface $now = null): ?array {
 		if ($this->declaresAnyConstraint(authorization: $authorization) === false) {
@@ -194,7 +194,7 @@ class GrantConstraints {
 	 *
 	 * @return bool True when the entry answers here and now.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function reaches(mixed $entry, array $area, DateTimeInterface $now): bool {
 		if (is_array($entry) === false) {

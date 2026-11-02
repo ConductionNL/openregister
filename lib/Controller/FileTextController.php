@@ -35,7 +35,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\IRootFolder;
-use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -67,7 +66,6 @@ class FileTextController extends Controller {
 	 * @param FileService $fileService File service for file operations
 	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
 	 * @param LoggerInterface $logger Logger
-	 * @param IAppConfig $config Application configuration
 	 * @param ManualEntityService $manualEntityService Orchestrator for the manual-entity write path
 	 * @param IUserSession $userSession Session user accessor (for the manual-entity endpoint)
 	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
@@ -81,7 +79,6 @@ class FileTextController extends Controller {
 		private readonly FileService $fileService,
 		private readonly EntityRelationMapper $entityRelationMapper,
 		private readonly LoggerInterface $logger,
-		private readonly IAppConfig $config,
 		private readonly ManualEntityService $manualEntityService,
 		private readonly IUserSession $userSession,
 		private readonly IRootFolder $rootFolder,
@@ -201,75 +198,6 @@ class FileTextController extends Controller {
 			);
 		}//end try
 	}//end getFileText()
-
-	/**
-	 * Extract text from a file (force re-extraction)
-	 *
-	 * @param int $fileId Nextcloud file ID
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse JSON response with extraction result
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-	 */
-	public function extractFileText(int $fileId): JSONResponse {
-		// IDOR guard: only (re-)extract files the caller can access. 404 (not
-		// 403) so a non-owner cannot probe which file IDs exist.
-		if ($this->hasFileAccess(fileId: $fileId) === false) {
-			return new JSONResponse(
-				data: ['success' => false, 'message' => 'File not found or access denied'],
-				statusCode: 404
-			);
-		}
-
-		$hasFileManagement = $this->config->hasKey(app: 'openregister', key: 'fileManagement');
-		$fileManagementConfig = json_decode(
-			$this->config->getValueString(app: 'openregister', key: 'fileManagement'),
-			true
-		);
-		$extractionScope = $fileManagementConfig['extractionScope'] ?? null;
-		if ($hasFileManagement === false || $extractionScope === 'none') {
-			$logMsg = '[FileTextController] File extraction is disabled. Not extracting text from files.';
-			$this->logger->info(message: $logMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			return new JSONResponse(
-				data: ['success' => false, 'message' => 'Text extraction disabled'],
-				statusCode: Http::STATUS_NOT_IMPLEMENTED
-			);
-		}
-
-		try {
-			// Force re-extraction.
-			$this->textExtractor->extractFile(fileId: $fileId, forceReExtract: true);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Text extracted successfully',
-				]
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileTextController] Failed to extract file text',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Failed to extract file text: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end extractFileText()
 
 	/**
 	 * Bulk extract text from multiple files
@@ -455,6 +383,13 @@ class FileTextController extends Controller {
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
 	 */
 	public function anonymizeFile(int $fileId): JSONResponse {
+		if ($this->hasFileAccess(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'File not found or access denied'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
 		try {
 			$this->logger->info(
 				message: '[FileTextController] Anonymizing file',

@@ -74,7 +74,7 @@ class PropertyVocabularyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function index(): JSONResponse {
 		return new JSONResponse($this->vocabulary->all());
@@ -97,8 +97,8 @@ class PropertyVocabularyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function extendingForms(): JSONResponse {
 		$rows = [];

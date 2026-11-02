@@ -17,7 +17,7 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -71,7 +71,7 @@ class AuditSettingsController extends Controller {
 	 *
 	 * @return JSONResponse The window.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function getAggregationSettings(): JSONResponse {
 		try {
@@ -101,7 +101,7 @@ class AuditSettingsController extends Controller {
 	 *
 	 * @return JSONResponse The window that was stored.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function updateAggregationSettings(): JSONResponse {
 		$seconds = $this->request->getParam('windowSeconds');

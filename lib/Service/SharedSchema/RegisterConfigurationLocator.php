@@ -48,7 +48,7 @@ use Throwable;
  * is not evidence at all. Both are what the existing
  * `openregister:schemas:dedup` command uses, and both silently pick a side.
  *
- * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+ * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
  */
 class RegisterConfigurationLocator {
 
@@ -74,7 +74,7 @@ class RegisterConfigurationLocator {
 	 * @return array<string, array<string, mixed>> Lowercased schema slug => definition.
 	 *         Empty when the app ships no configuration naming this register.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function schemasFor(Register $register): array {
 		$appId = (string)$register->getApplication();

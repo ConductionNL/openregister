@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Rules;
  * object says so. That is the silent no-op this validator exists to turn into
  * a refusal at the moment the table is written.
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class DependentValueValidator {
 
@@ -86,7 +86,7 @@ final class DependentValueValidator {
 	 *   them would move the branch, not remove it.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $schema): array {
 		$properties = ($schema['properties'] ?? []);
@@ -128,7 +128,7 @@ final class DependentValueValidator {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) See validate().
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateTable(
 		string $name,
@@ -219,7 +219,7 @@ final class DependentValueValidator {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Five facts about one table, all read.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) See validate().
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validatePairs(
 		string $name,

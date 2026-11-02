@@ -12,6 +12,8 @@
  * - `{{view:key.uuid}}` the uuid of a saved view the same fragment declares (user preferences only);
  * - `{{task:key.uuid}}` the uuid of a task the same fragment declares (the parts written after its tasks: notes, read states);
  * - `{{flow:key.uuid}}` the uuid of a flow the same fragment declares (changes and the engine parts, all written after its flows);
+ * - `{{accessLink:key.id|uuid|url}}` an access link the same fragment declares (changes and the engine parts, all
+ *   written after its links);
  * - `{{lookup:name}}` the id a lookup by business key found;
  * - `{{account:key.field}}` a field of a service account a fragment declares;
  * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
@@ -42,7 +44,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+ * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
  */
 
 declare(strict_types=1);
@@ -55,7 +57,7 @@ use DateTimeImmutable;
 /**
  * Fills placeholders in declared values.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+ * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One resolver per placeholder kind.
  */
@@ -90,7 +92,7 @@ class ExampleSetValues {
 	 *
 	 * @return mixed The filled value; an unfilled placeholder stays as written and is named in `$gaps`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function fill(mixed $value, array $context, array &$gaps): mixed {
 		if (is_array($value) === true) {
@@ -133,7 +135,7 @@ class ExampleSetValues {
 	 *
 	 * @return array{owner: string|null, refusal: string} The account id, or why the owner cannot be used.
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function ownerOf(array $object, array $context): array {
 		if (array_key_exists('owner', $object) === false) {
@@ -161,7 +163,7 @@ class ExampleSetValues {
 	 *
 	 * @return array<string, mixed> The data, in the declared order.
 	 *
-	 * @spec openspec/changes/example-set-verbatim-fields/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
 	 */
 	public function fillObject(array $object, array $context, array &$gaps): array {
 		$data     = (array) ($object['data'] ?? []);
@@ -180,7 +182,7 @@ class ExampleSetValues {
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
 	 */
 	public function viewsOf(array $fragment, ?array $record): array {
 		$views = [];
@@ -209,25 +211,47 @@ class ExampleSetValues {
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
 	 */
 	public function tasksOf(array $fragment, ?array $record): array {
 		return $this->writtenRowsOf(fragment: $fragment, part: 'tasks', noun: 'task', record: $record);
 	}//end tasksOf()
 
 	/**
-	 * The flows a fragment declares, by key, for `{{flow:key.uuid}}`: as the record holds them after the install
-	 * wrote them, or with a stand-in uuid for the check (`$record` null), since none is written yet.
+	 * The flows a fragment declares, by key, for `{{flow:key.uuid}}` and `{{flow:key.runs.run}}`: as the record
+	 * holds them after the install wrote them, or with stand-in uuids for the check (`$record` null), since none
+	 * is written yet. A stand-in names its keyed runs, and the step each waiting one waits on (`waitsOn`).
 	 *
 	 * @param array<string, mixed>      $fragment The fragment.
 	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
 	public function flowsOf(array $fragment, ?array $record): array {
-		return $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
+		$flows = $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
+		if ($record !== null) {
+			return $flows;
+		}
+
+		foreach (($fragment['flows'] ?? []) as $flow) {
+			foreach ((array) ($flow['data']['runs'] ?? []) as $run) {
+				$run = (array) $run;
+				if (is_string($run['key'] ?? null) === false) {
+					continue;
+				}
+
+				$standIn = 'example-set-stand-in:run:'.$flow['key'].'.'.$run['key'];
+				$flows[(string) $flow['key']]['runs'][$run['key']] = $standIn;
+				if (($run['status'] ?? null) === 'suspended') {
+					$flows[(string) $flow['key']]['waitsOn'][$standIn] = (string) ($run['node'] ?? '');
+				}
+			}
+		}
+
+		return $flows;
 	}//end flowsOf()
 
 	/**
@@ -292,7 +316,7 @@ class ExampleSetValues {
 	 *
 	 * @return mixed
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	private function valueOf(string $placeholder, array $context): mixed {
 		[$kind, $rest] = array_pad(explode(':', $placeholder, 2), 2, '');
@@ -305,6 +329,7 @@ class ExampleSetValues {
 			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
 			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
 			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $rest),
+			'accessLink' => $this->pathIn(entries: (array) ($context['accessLinks'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
 			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),
@@ -324,7 +349,7 @@ class ExampleSetValues {
 	 *
 	 * @return int|null The file id, or null when there is no such file.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
 	private function fileId(array $files, string $reference): ?int {
 		[$key, $index] = array_pad(explode('.', $reference, 2), 2, '');

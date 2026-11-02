@@ -31,7 +31,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -91,7 +91,7 @@ class ObjectDateEventBuilder {
 	 * @return array{lines: array<int, string>, years: array<int, int>}|null
 	 *         The unfolded lines and the years the event touches, or null.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function build(
 		ObjectEntity $object,
@@ -155,7 +155,7 @@ class ObjectDateEventBuilder {
 	 *
 	 * @return string The UID.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function uid(int|string $schemaId, ObjectEntity $object, ObjectDateDeclaration $declaration): string {
 		$property = preg_replace('/[^A-Za-z0-9_-]/', '-', $declaration->property);

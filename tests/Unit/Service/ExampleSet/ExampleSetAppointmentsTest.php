@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -72,7 +72,7 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function testAnAppointmentIsWrittenLinkedOnceAndTakenAway(): void {
 		$this->caseWithAppointments(rows: [['key' => 'toelichting', 'data' => self::appointment()]]);
@@ -130,7 +130,7 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function testARefreshMovesTheAppointmentToItsNewDay(): void {
 		$this->caseWithAppointments(rows: [['key' => 'toelichting', 'data' => ['start' => '{{datetime:3 10:00}}', 'end' => '{{datetime:3 10:30}}'] + self::appointment()]]);
@@ -152,7 +152,7 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-appointments/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function testAnAppointmentMaySitOnATask(): void {
 		$this->app(app: 'alpha', fragment: [

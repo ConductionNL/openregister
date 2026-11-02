@@ -210,7 +210,7 @@ final class WriteCauseTest extends TestCase {
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testTheVocabularyIsSevenWords(): void {
 		self::assertCount(7, WriteCause::ALL);
@@ -240,7 +240,7 @@ final class WriteCauseTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testALookupForAPersonIsCausedLookup(): void {
 		$seen = WriteCause::asLookup(operation: static fn (): array => WriteCause::current());
@@ -254,7 +254,7 @@ final class WriteCauseTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testALookupInsideAScheduledJobKeepsTheJob(): void {
 		$seen = WriteCause::runAs(
@@ -273,7 +273,7 @@ final class WriteCauseTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testAThrowingLookupClosesItsFrame(): void {
 		try {

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  * canonical form, so a token added after the insert would sit outside the hash
  * the row is later given.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class TokenAttribution {
 	/**
@@ -97,7 +97,7 @@ class TokenAttribution {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
 		try {
@@ -141,7 +141,7 @@ class TokenAttribution {
 	 *
 	 * @return bool True when a payload key is present anywhere in the summary.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function carriesPayload(AuditTrail $auditTrail): bool {
 		return self::hasPayloadKey(value: ($auditTrail->getResultSummary() ?? []));
@@ -158,7 +158,7 @@ class TokenAttribution {
 	 *
 	 * @return bool True when a payload key is present.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private static function hasPayloadKey(mixed $value): bool {
 		if (is_array($value) === false) {
@@ -190,7 +190,7 @@ class TokenAttribution {
 	 *
 	 * @return bool True when the column and the sealed copy name different consumers.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function disagrees(AuditTrail $auditTrail): bool {
 		$summary = ($auditTrail->getResultSummary() ?? []);

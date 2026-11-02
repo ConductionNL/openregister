@@ -1,0 +1,796 @@
+{
+    "broken serialised skipped": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": [
+            "unserialize(): Error at offset 0 of 14 bytes"
+        ]
+    },
+    "class blob never woken": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "db failure": {
+        "threw": "Exception",
+        "message": "Semantic search failed: Failed to fetch vectors: db down",
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "error",
+                "[VectorSearchHandler] Failed to fetch vectors",
+                {
+                    "error": "db down"
+                }
+            ],
+            [
+                "error",
+                "[VectorSearchHandler] Semantic search failed",
+                {
+                    "error": "Failed to fetch vectors: db down"
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "dimension mismatch logged": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "warning",
+                "[VectorSearchHandler] Failed to process vector",
+                {
+                    "vector_id": 2900593890,
+                    "error": "Vectors must have same dimensions"
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "equal similarity keeps order": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 750207046,
+                "entity_type": "object",
+                "entity_id": "e-near copy",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near copy",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 1101984974,
+                "entity_type": "object",
+                "entity_id": "e-mid",
+                "similarity": 0.7071067811865475,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text mid",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 3,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "limit cuts": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 1101984974,
+                "entity_type": "object",
+                "entity_id": "e-mid",
+                "similarity": 0.7071067811865475,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text mid",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 2,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 2,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "limit zero": {
+        "results": [],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 0,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 0,
+                    "top_similarity": 0
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "metadata empty string": {
+        "results": [
+            {
+                "vector_id": 3594853437,
+                "entity_type": "object",
+                "entity_id": "e-empty meta",
+                "similarity": 0.7071067811865475,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text empty meta",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.7071067811865475
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "metadata invalid json": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 2118096543,
+                "entity_type": "object",
+                "entity_id": "e-bad meta",
+                "similarity": 0.24253562503633294,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text bad meta",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 2,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "metadata json": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 3622966325,
+                "entity_type": "object",
+                "entity_id": "e-meta",
+                "similarity": 0.7071067811865476,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text meta",
+                "metadata": {
+                    "title": "T",
+                    "n": 2
+                },
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 2,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "no rows": {
+        "results": [],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "warning",
+                "[VectorSearchHandler] No vectors found in database",
+                {
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "non string blob skipped": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "object blob not instantiated": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "one row": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "only skipped rows": {
+        "results": [],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 0,
+                    "top_similarity": 0
+                }
+            ]
+        ],
+        "warnings": [
+            "unserialize(): Error at offset 0 of 14 bytes"
+        ]
+    },
+    "ranked": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 1101984974,
+                "entity_type": "object",
+                "entity_id": "e-mid",
+                "similarity": 0.7071067811865475,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text mid",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 1911956598,
+                "entity_type": "object",
+                "entity_id": "e-far",
+                "similarity": 0.11043152607484655,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text far",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 3636889328,
+                "entity_type": "object",
+                "entity_id": "e-opposite",
+                "similarity": -1.0,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text opposite",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 4,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "serialised non array skipped": {
+        "results": [
+            {
+                "vector_id": 1101984974,
+                "entity_type": "object",
+                "entity_id": "e-mid",
+                "similarity": 0.7071067811865475,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text mid",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 1,
+                    "top_similarity": 0.7071067811865475
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "stream blob": {
+        "results": [
+            {
+                "vector_id": 4041850396,
+                "entity_type": "object",
+                "entity_id": "e-stream",
+                "similarity": 0.9701425001453318,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text stream",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 1911956598,
+                "entity_type": "object",
+                "entity_id": "e-far",
+                "similarity": 0.11043152607484655,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text far",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 2,
+                    "top_similarity": 0.9701425001453318
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "zero vector": {
+        "results": [
+            {
+                "vector_id": 1984699409,
+                "entity_type": "object",
+                "entity_id": "e-near",
+                "similarity": 0.9938837346736189,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text near",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            },
+            {
+                "vector_id": 2883514770,
+                "entity_type": "object",
+                "entity_id": "e-zero",
+                "similarity": 0.0,
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "chunk_text": "text zero",
+                "metadata": [],
+                "model": "golden",
+                "dimensions": 2
+            }
+        ],
+        "logs": [
+            [
+                "info",
+                "[VectorSearchHandler] Performing semantic search",
+                {
+                    "limit": 10,
+                    "filters": {
+                        "entity_type": "object"
+                    }
+                }
+            ],
+            [
+                "info",
+                "[VectorSearchHandler] Semantic search completed (PHP fallback path)",
+                {
+                    "results_count": 2,
+                    "top_similarity": 0.9938837346736189
+                }
+            ]
+        ],
+        "warnings": []
+    }
+}

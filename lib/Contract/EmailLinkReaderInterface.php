@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Contract;
 /**
  * Reads the emails linked to an object.
  *
- * @spec openspec/changes/email-link-reader-contract/specs/generic-integrations/spec.md
+ * @spec openspec/specs/generic-integrations/spec.md
  */
 interface EmailLinkReaderInterface {
 
@@ -47,7 +47,7 @@ interface EmailLinkReaderInterface {
 	 *         id, objectUuid, registerId, schemaId, mailAccountId, mailMessageId, mailMessageUid,
 	 *         subject, sender, mailDate (ISO 8601), metadata, linkedBy and linkedAt.
 	 *
-	 * @spec openspec/changes/email-link-reader-contract/specs/generic-integrations/spec.md
+	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getLinkedEmails(string $objectUuid, ?string $cursor=null, int $limit=50): array;
 }//end interface

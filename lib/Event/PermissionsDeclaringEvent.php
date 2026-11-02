@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use OCP\EventDispatcher\Event;
  *         fires on about forty untouched files in this repo for the same
  *         reason, which is why `composer phpmd` is red on `development` too.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class PermissionsDeclaringEvent extends Event {
 
@@ -112,7 +112,7 @@ class PermissionsDeclaringEvent extends Event {
 	 *
 	 * @return bool True when the declaration was accepted.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declareVerb(
 		string $verb,
@@ -153,7 +153,7 @@ class PermissionsDeclaringEvent extends Event {
 	 *
 	 * @return array<string, array{verb: string, app: string, description: string, levels: array<int, string>}> The declarations.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getDeclared(): array {
 		return $this->declared;
@@ -164,7 +164,7 @@ class PermissionsDeclaringEvent extends Event {
 	 *
 	 * @return array<string, string> The refusals.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getRejected(): array {
 		return $this->rejected;

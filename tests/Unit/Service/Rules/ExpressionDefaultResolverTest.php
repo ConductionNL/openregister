@@ -37,7 +37,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class ExpressionDefaultResolverTest extends TestCase {
 
@@ -92,7 +92,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testADefaultIsDerivedOnCreate(): void {
 		$result = $this->resolver()->apply(
@@ -109,7 +109,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASuppliedValueIsNotOverwritten(): void {
 		$result = $this->resolver()->apply(
@@ -128,7 +128,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnevaluableDefaultRefusesTheCreateAndNamesTheProperty(): void {
 		try {
@@ -153,7 +153,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnExpressionCannotReadAnotherExpressionDefault(): void {
 		$properties = [
@@ -177,7 +177,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaWithNoExpressionDefaultIsUntouched(): void {
 		$properties = ['ontvangstdatum' => ['type' => 'string'], 'uiterlijkeDatum' => ['type' => 'string']];
@@ -197,7 +197,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASoundDeclarationIsAccepted(): void {
 		$this->assertSame([], ExpressionDefaultResolver::validateDeclarations(properties: $this->properties()));
@@ -211,7 +211,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnknownOperatorIsRefusedAtSchemaSave(): void {
 		$errors = ExpressionDefaultResolver::validateDeclarations(
@@ -228,7 +228,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAScalarExpressionIsRefused(): void {
 		$errors = ExpressionDefaultResolver::validateDeclarations(properties: $this->properties('2026-01-01'));
@@ -242,7 +242,7 @@ class ExpressionDefaultResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testALiteralDefaultBesideAnExpressionIsRefused(): void {
 		$properties = $this->properties();

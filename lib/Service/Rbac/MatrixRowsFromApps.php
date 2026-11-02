@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Asks apps for matrix rows, once per request per schema and provider.
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class MatrixRowsFromApps {
 
@@ -77,7 +77,7 @@ class MatrixRowsFromApps {
 	 *
 	 * @return array<string, mixed> The matrix to compile.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function withAppRows(Schema $schema, array $matrix): array {
 		$provider = ($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null);

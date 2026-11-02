@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -80,7 +80,7 @@ class PropertyConversionService {
 	 *
 	 * @return array<int,array{from:string,to:array<int,string>}> The supported conversions.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function supported(): array {
 		$published = [];
@@ -102,7 +102,7 @@ class PropertyConversionService {
 	 *
 	 * @return boolean True when the conversion may be attempted.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function isSupported(string $from, string $to): bool {
 		if ($from === $to) {
@@ -120,7 +120,7 @@ class PropertyConversionService {
 	 *
 	 * @return string The reason.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function refusalReason(string $from, string $to): string {
 		$targets = (self::SUPPORTED[$from] ?? []);
@@ -149,7 +149,7 @@ class PropertyConversionService {
 	 *
 	 * @return array{supported:bool,total:int,convertible:int,rejected:int,samples:array<int,array{value:string,reason:string}>,reason:string|null}
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function preview(array $values, string $from, string $to): array {
 		if ($this->isSupported(from: $from, to: $to) === false) {

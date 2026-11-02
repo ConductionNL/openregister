@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class IcalendarWriter {
 	 *
 	 * @return string The escaped text.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function escapeText(string $value): string {
 		$escaped = str_replace('\\', '\\\\', $value);
@@ -92,7 +92,7 @@ class IcalendarWriter {
 	 *
 	 * @return string The complete, folded, CRLF-terminated calendar.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function calendar(
 		string $calendarName,
@@ -141,7 +141,7 @@ class IcalendarWriter {
 	 *
 	 * @return array<int, string> The unfolded lines of the component.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function timeZoneComponent(DateTimeZone $timeZone, int $fromYear, int $toYear): array {
 		$start = (new DateTimeImmutable(sprintf('%04d-01-01T00:00:00+00:00', ($fromYear - 1))))->getTimestamp();
@@ -222,7 +222,7 @@ class IcalendarWriter {
 	 *
 	 * @return string The formatted offset.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function formatOffset(int $seconds): string {
 		$sign = '+';
@@ -247,7 +247,7 @@ class IcalendarWriter {
 	 *
 	 * @return string The folded line, with CRLF + space between segments.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function fold(string $line): string {
 		if (strlen($line) <= self::FOLD_AT) {

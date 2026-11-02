@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
  * different act: it is reading content that was reported, frozen, and kept
  * after removal, and it belongs to the people reviewing it.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReportController extends Controller {
 	/**
@@ -78,7 +78,7 @@ class ContentReportController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function create(): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -133,7 +133,7 @@ class ContentReportController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function index(): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -173,7 +173,7 @@ class ContentReportController extends Controller {
 	 *   given a way back in. An id lookup that clears that gate is reviewing, which is the
 	 *   whole purpose of the endpoint.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function show(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -209,7 +209,7 @@ class ContentReportController extends Controller {
 	 *   ContentReportService::readCopy() a second time, which returns null rather than the
 	 *   copy for anybody outside the group the report itself pinned when it was filed.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function copy(string $id): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -260,7 +260,7 @@ class ContentReportController extends Controller {
 	 * @no-admin-idor-exempt Guarded by the reviewer-group check below. Reviewing is the
 	 *   only write this endpoint allows, and it is the reviewer group's job by definition.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function update(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -307,7 +307,7 @@ class ContentReportController extends Controller {
 	 *
 	 * @return ContentReport|null The report, or null.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function resolve(string $identifier): ?ContentReport {
 		if (ctype_digit($identifier) === true) {
@@ -326,7 +326,7 @@ class ContentReportController extends Controller {
 	 *
 	 * @return bool True when the caller may review reported content.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function isReviewer(): bool {
 		$probe = new ContentReport();
@@ -342,7 +342,7 @@ class ContentReportController extends Controller {
 	 *
 	 * @return string|null The trimmed value, or null when absent or empty.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function optionalParam(string $key): ?string {
 		$value = $this->request->getParam(key: $key);
@@ -358,7 +358,7 @@ class ContentReportController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 401.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function unauthorized(): JSONResponse {
 		return new JSONResponse(
@@ -372,7 +372,7 @@ class ContentReportController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 403.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function forbidden(): JSONResponse {
 		return new JSONResponse(
@@ -391,7 +391,7 @@ class ContentReportController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 404.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function notFound(string $identifier): JSONResponse {
 		return new JSONResponse(

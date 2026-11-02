@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Reads an object's access set out of the rules, and its history out of the trail.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class ObjectPermissionsResolver {
 
@@ -85,7 +85,7 @@ class ObjectPermissionsResolver {
 	 * @return array{holders: array<int, array<string, mixed>>, denied: array<int, array<string, mixed>>}
 	 *         The access set.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function holders(array $blocks, mixed $roleDefinitions = null): array {
 		$holders = [];

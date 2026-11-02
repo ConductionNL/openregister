@@ -113,7 +113,6 @@ class FileTextControllerManualEntityTest extends TestCase {
 			$this->createMock(originalClassName: FileService::class),
 			$this->createMock(originalClassName: EntityRelationMapper::class),
 			$this->logger,
-			$this->createMock(originalClassName: IAppConfig::class),
 			$this->manualEntityService,
 			$this->userSession,
 			$rootFolder,

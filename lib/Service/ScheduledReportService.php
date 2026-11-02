@@ -794,7 +794,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 *
 	 * @throws RuntimeException When the profile cannot be run.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function runProfileExport(ScheduledReport $report, \OCP\IUser $owner): array {
 		if ($this->profileService === null) {

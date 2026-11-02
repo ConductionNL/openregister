@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
  * know who called, and a trail that names the WRONG consumer is worse than
  * both, because somebody will act on it.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class TokenResolver {
 	/**
@@ -76,7 +76,7 @@ class TokenResolver {
 	 *
 	 * @return TokenIdentity|null The identity, or null for an interactive or unauthenticated call.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function resolve(): ?TokenIdentity {
 		$token = $this->currentToken();
@@ -103,7 +103,7 @@ class TokenResolver {
 	 *
 	 * @return IToken|null The token, or null when this is not a token call.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function currentToken(): ?IToken {
 		try {
@@ -130,7 +130,7 @@ class TokenResolver {
 	 *
 	 * @return string|null The name, or null when it is blank.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function tokenName(IToken $token): ?string {
 		try {
@@ -158,7 +158,7 @@ class TokenResolver {
 	 *
 	 * @return string|null The uid, or null when the token does not name one.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function ownerUid(IToken $token): ?string {
 		try {
@@ -181,7 +181,7 @@ class TokenResolver {
 	 *
 	 * @return string|null The display name, or null when it cannot be read.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function ownerName(?string $ownerUid): ?string {
 		if ($ownerUid === null) {
@@ -224,7 +224,7 @@ class TokenResolver {
 	 *
 	 * @return TokenIdentity The identity, with the consumer when one was found.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function withConsumer(TokenIdentity $identity, ?string $ownerUid): TokenIdentity {
 		$consumer = $this->findConsumer(ownerUid: $ownerUid);
@@ -250,7 +250,7 @@ class TokenResolver {
 	 *
 	 * @return Consumer|null The consumer, or null when there is no unambiguous one.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function findConsumer(?string $ownerUid): ?Consumer {
 		if ($ownerUid === null) {

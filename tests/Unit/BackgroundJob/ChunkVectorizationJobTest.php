@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 
 /**
  * Test class for ChunkVectorizationJob
@@ -70,7 +71,7 @@ class ChunkVectorizationJobTest extends TestCase {
 		$this->registerService(ChunkMapper::class, function () {
 			return $this->chunkMapper;
 		});
-		$this->registerService(VectorEmbeddings::class, function () {
+		$this->registerService(EmbeddingGeneratorInterface::class, function () {
 			return $this->embeddings;
 		});
 		$this->registerService(VectorStorageHandler::class, function () {

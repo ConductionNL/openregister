@@ -196,7 +196,7 @@ class SearchController extends Controller {
 	 *
 	 * @param string $query The raw search query from the request
 	 *
-	 * @return string The processed search query ready for the SOLR search service
+	 * @return string The processed search query ready for the database search
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *

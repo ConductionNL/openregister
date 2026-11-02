@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCP\IUserSession;
  * detail an ordinary caller has no business learning, and acknowledging a gap
  * is an operator's decision about evidence.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class AuditSinkController extends Controller {
 	/**
@@ -75,7 +75,7 @@ class AuditSinkController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function show(): JSONResponse {
 		if ($this->isAdmin() === false) {
@@ -119,7 +119,7 @@ class AuditSinkController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function acknowledge(): JSONResponse {
 		if ($this->isAdmin() === false) {
@@ -134,7 +134,7 @@ class AuditSinkController extends Controller {
 	 *
 	 * @return bool True when the caller is in the admin group.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function isAdmin(): bool {
 		$user = $this->userSession->getUser();
@@ -154,7 +154,7 @@ class AuditSinkController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 403.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function forbidden(): JSONResponse {
 		return new JSONResponse(

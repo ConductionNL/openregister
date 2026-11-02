@@ -406,6 +406,62 @@ import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 
+/**
+ * Import a discovered configuration from GitHub (a result with a repository) or GitLab.
+ *
+ * @param {object} result The discovered configuration
+ * @return {Promise<void>}
+ */
+async function importDiscovered(result) {
+	if (result.repository) {
+		const [owner, repo] = result.repository.split('/')
+		await configurationStore.importFromGitHub({
+			owner,
+			repo,
+			path: result.path,
+			branch: result.ref || 'main',
+			syncEnabled: true,
+			syncInterval: 24,
+		})
+		return
+	}
+	await configurationStore.importFromGitLab({
+		namespace: result.namespace,
+		project: result.project,
+		path: result.path,
+		ref: result.ref || 'main',
+		syncEnabled: true,
+		syncInterval: 24,
+	})
+}
+
+/**
+ * Reload the configuration, register and schema lists after an import.
+ *
+ * @return {Promise<Array>}
+ */
+function refreshImportedLists() {
+	return Promise.all([
+		configurationStore.refreshConfigurationList(),
+		registerStore.refreshRegisterList(),
+		schemaStore.refreshSchemaList(),
+	])
+}
+
+/**
+ * Whether a text is a URL.
+ *
+ * @param {string} value The text
+ * @return {boolean} True for a valid URL
+ */
+function isValidUrl(value) {
+	try {
+		return Boolean(new URL(value).href)
+	} catch {
+		return false
+	}
+}
+
 export default {
 	name: 'ImportConfiguration',
 	components: {
@@ -657,38 +713,12 @@ export default {
 			this.error = null
 
 			try {
-				// Determine import method based on source
-				if (result.repository) {
-					// GitHub result
-					const [owner, repo] = result.repository.split('/')
-					await configurationStore.importFromGitHub({
-						owner,
-						repo,
-						path: result.path,
-						branch: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				} else {
-					// GitLab result
-					await configurationStore.importFromGitLab({
-						namespace: result.namespace,
-						project: result.project,
-						path: result.path,
-						ref: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				}
+				await importDiscovered(result)
 
 				this.successMessage = 'Configuration imported successfully!'
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				// Don't show error if configuration already exists (UI shows this visually)
@@ -698,11 +728,7 @@ export default {
 					this.error = errorMessage
 				}
 				// Always refresh all lists to update UI
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 			} finally {
 				this.loading = false
 			}
@@ -793,72 +819,96 @@ export default {
 			this.error = null
 
 			try {
-				// Tab 1: GitHub/GitLab
-				if (this.activeTab === 1) {
-					const params = {
-						path: this.selectedFile.path,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					}
-
-					if (this.repoSource === 'GitHub') {
-						await configurationStore.importFromGitHub({
-							owner: this.repoOwner,
-							repo: this.repoName,
-							branch: this.selectedBranch.id,
-							...params,
-						})
-					} else {
-						await configurationStore.importFromGitLab({
-							namespace: this.repoNamespace,
-							project: this.repoName,
-							ref: this.selectedBranch.id,
-							...params,
-						})
-					}
-
-					this.successMessage = `Configuration imported from ${this.repoSource}!`
-				} else if (this.activeTab === 2) {
-					// Tab 2: URL
-					// Validate URL
-					try {
-						const validUrl = new URL(this.importUrl) // URL validation successful
-						// Use validUrl.href to avoid no-new and no-void rule violations
-						if (!validUrl.href) {
-							throw new Error('Invalid URL')
-						}
-					} catch {
-						this.urlError = 'Please enter a valid URL'
-						this.loading = false
-						return
-					}
-
-					await configurationStore.importFromUrl({
-						url: this.importUrl,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					})
-
-					this.successMessage = 'Configuration imported from URL!'
-				} else if (this.activeTab === 3) {
-					// Tab 3: File Upload
-					await this.importFromFile()
-					this.successMessage = 'Configuration imported from file!'
+				const message = await this.importFromTab()
+				if (message === false) {
+					return
+				}
+				if (message) {
+					this.successMessage = message
 				}
 
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				this.error = error.message || 'Failed to import configuration'
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Import from the active tab: 1 a repository, 2 a URL, 3 a file.
+		 *
+		 * @spec exclude Per-tab import dispatch for the import button; UI orchestration plumbing.
+		 * @return {Promise<string|false|undefined>} The success message, false when the URL is not valid, undefined for another tab
+		 */
+		async importFromTab() {
+			if (this.activeTab === 1) {
+				await this.importFromRepository()
+				return `Configuration imported from ${this.repoSource}!`
+			}
+			if (this.activeTab === 2) {
+				return this.importFromUrlTab()
+			}
+			if (this.activeTab === 3) {
+				await this.importFromFile()
+				return 'Configuration imported from file!'
+			}
+			return undefined
+		},
+
+		/**
+		 * Import the selected file from the chosen GitHub or GitLab repository.
+		 *
+		 * @spec exclude Repository-tab import delegating to configurationStore.importFromGitHub/GitLab; UI orchestration plumbing.
+		 * @return {Promise<void>}
+		 */
+		async importFromRepository() {
+			const params = {
+				path: this.selectedFile.path,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			}
+
+			if (this.repoSource === 'GitHub') {
+				await configurationStore.importFromGitHub({
+					owner: this.repoOwner,
+					repo: this.repoName,
+					branch: this.selectedBranch.id,
+					...params,
+				})
+			} else {
+				await configurationStore.importFromGitLab({
+					namespace: this.repoNamespace,
+					project: this.repoName,
+					ref: this.selectedBranch.id,
+					...params,
+				})
+			}
+		},
+
+		/**
+		 * Import from the entered URL, or mark the URL as not valid.
+		 *
+		 * @spec exclude URL-tab import delegating to configurationStore.importFromUrl; UI orchestration plumbing.
+		 * @return {Promise<string|false>} The success message, or false when the URL is not valid
+		 */
+		async importFromUrlTab() {
+			if (!isValidUrl(this.importUrl)) {
+				this.urlError = 'Please enter a valid URL'
+				this.loading = false
+				return false
+			}
+
+			await configurationStore.importFromUrl({
+				url: this.importUrl,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			})
+
+			return 'Configuration imported from URL!'
 		},
 
 		/**

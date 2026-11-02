@@ -586,22 +586,7 @@ export default {
 			}
 
 			try {
-				const result = await searchTrailStore.cleanupSearchTrails(30)
-
-				if (result.success) {
-					OC.Notification.showTemporary(
-						this.t(
-							'openregister',
-							'Cleanup completed successfully. Deleted {count} entries.',
-							{ count: result.deletedCount || 0 },
-						),
-						{ type: 'success' },
-					)
-					// Refresh the list
-					await this.loadSearchTrails()
-				} else {
-					throw new Error(result.message || 'Cleanup failed')
-				}
+				await this.cleanedUp(await this.requestCleanup())
 			} catch (error) {
 				console.error('Error during cleanup:', error)
 				OC.Notification.showTemporary(
@@ -611,6 +596,42 @@ export default {
 					{ type: 'error' },
 				)
 			}
+		},
+
+		/**
+		 * Ask the store to delete search trails older than 30 days.
+		 *
+		 * @return {Promise<object>} The answer when it reports success
+		 * @throws {Error} When the cleanup reports a failure
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+		 */
+		async requestCleanup() {
+			const result = await searchTrailStore.cleanupSearchTrails(30)
+			if (!result.success) {
+				throw new Error(result.message || 'Cleanup failed')
+			}
+			return result
+		},
+
+		/**
+		 * Tell the user how many entries the cleanup deleted and reload the list.
+		 *
+		 * @param {object} result The cleanup's answer
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+		 */
+		async cleanedUp(result) {
+			OC.Notification.showTemporary(
+				this.t(
+					'openregister',
+					'Cleanup completed successfully. Deleted {count} entries.',
+					{ count: result.deletedCount || 0 },
+				),
+				{ type: 'success' },
+			)
+			await this.loadSearchTrails()
 		},
 
 		/**
@@ -778,36 +799,7 @@ export default {
 			}
 
 			try {
-				// Make the API request to delete selected search trails
-				const response = await fetch(
-					'/index.php/apps/openregister/api/search-trails/bulk-delete',
-					{
-						method: 'DELETE',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({ ids: this.selectedSearchTrails }),
-					},
-				)
-
-				const result = await response.json()
-
-				if (result.success) {
-					OC.Notification.showTemporary(
-						result.message
-							|| this.t(
-								'openregister',
-								'Selected search trails deleted successfully',
-							),
-						{ type: 'success' },
-					)
-					// Clear selection
-					this.selectedSearchTrails = []
-					// Refresh the list
-					await this.loadSearchTrails()
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
+				await this.bulkDeleted(await this.requestBulkDelete())
 			} catch (error) {
 				console.error('Error deleting search trails:', error)
 				OC.Notification.showTemporary(
@@ -817,6 +809,52 @@ export default {
 					{ type: 'error' },
 				)
 			}
+		},
+
+		/**
+		 * Tell the user the selected search trails are gone, clear the
+		 * selection and reload the list.
+		 *
+		 * @param {object} result The server's answer
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+		 */
+		async bulkDeleted(result) {
+			OC.Notification.showTemporary(
+				result.message
+					|| this.t(
+						'openregister',
+						'Selected search trails deleted successfully',
+					),
+				{ type: 'success' },
+			)
+			this.selectedSearchTrails = []
+			await this.loadSearchTrails()
+		},
+
+		/**
+		 * Ask the server to delete the selected search trails.
+		 *
+		 * @return {Promise<object>} The server's answer when it reports success
+		 * @throws {Error} When the server reports a failure
+		 *
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+		 */
+		async requestBulkDelete() {
+			const response = await fetch(
+				'/index.php/apps/openregister/api/search-trails/bulk-delete',
+				{
+					method: 'DELETE',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ ids: this.selectedSearchTrails }),
+				},
+			)
+			const result = await response.json()
+			if (!result.success) {
+				throw new Error(result.error || 'Deletion failed')
+			}
+			return result
 		},
 	},
 }

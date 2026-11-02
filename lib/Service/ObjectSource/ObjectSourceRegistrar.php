@@ -34,13 +34,131 @@ use Psr\Container\ContainerInterface;
  * Application::register() calls register() once; Application::boot() calls boot() once.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A registrar names every service it wires.
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Factory closures list every constructor argument.
  */
 final class ObjectSourceRegistrar {
 
 	/**
-	 * Register the ObjectSourceRegistry (shared) and the built-in
-	 * CalDAV-VTODO object-source provider service.
+	 * Stands for the container itself as a constructor argument.
+	 */
+	private const CONTAINER = '(container)';
+
+	/**
+	 * The services register() adds, in order: per service, its constructor
+	 * arguments by name and the container id each one is resolved from.
+	 *
+	 * A later registration of the same name replaces an earlier one, so the order matters.
+	 *
+	 * @var array<class-string, array<string, string>>
+	 */
+	private const SERVICES = [
+		ObjectSourceRegistry::class => [
+			'logger' => 'Psr\Log\LoggerInterface',
+		],
+		FederatedObjectSourceProvider::class => [
+			'clientService' => 'OCP\Http\Client\IClientService',
+			'logger'        => 'Psr\Log\LoggerInterface',
+		],
+		CalDavVtodoObjectSourceProvider::class => [
+			'taskService' => TaskService::class,
+			'appManager'  => 'OCP\App\IAppManager',
+			'logger'      => 'Psr\Log\LoggerInterface',
+		],
+		UserDirectoryObjectSourceProvider::class => [
+			'userManager'  => 'OCP\IUserManager',
+			'userSession'  => 'OCP\IUserSession',
+			'groupManager' => 'OCP\IGroupManager',
+			'logger'       => 'Psr\Log\LoggerInterface',
+		],
+		GroupObjectSourceProvider::class => [
+			'groupManager' => 'OCP\IGroupManager',
+			'userSession'  => 'OCP\IUserSession',
+			'logger'       => 'Psr\Log\LoggerInterface',
+		],
+		OrganisationObjectSourceProvider::class => [
+			'organisationMapper'  => 'OCA\OpenRegister\Db\OrganisationMapper',
+			'userSession'         => 'OCP\IUserSession',
+			'groupManager'        => 'OCP\IGroupManager',
+			'logger'              => 'Psr\Log\LoggerInterface',
+			'organisationService' => 'OCA\OpenRegister\Service\OrganisationService',
+		],
+		ContactsObjectSourceProvider::class => [
+			'contactsManager' => 'OCP\Contacts\IManager',
+			'appManager'      => 'OCP\App\IAppManager',
+			'logger'          => 'Psr\Log\LoggerInterface',
+		],
+		CalendarEventObjectSourceProvider::class => [
+			'calendarEventService' => \OCA\OpenRegister\Service\CalendarEventService::class,
+			'appManager'           => 'OCP\App\IAppManager',
+			'logger'               => 'Psr\Log\LoggerInterface',
+		],
+		FilesObjectSourceProvider::class => [
+			'rootFolder'  => 'OCP\Files\IRootFolder',
+			'userSession' => 'OCP\IUserSession',
+			'logger'      => 'Psr\Log\LoggerInterface',
+		],
+		DeckObjectSourceProvider::class => [
+			'appManager'  => 'OCP\App\IAppManager',
+			'userSession' => 'OCP\IUserSession',
+			'container'   => self::CONTAINER,
+			'logger'      => 'Psr\Log\LoggerInterface',
+		],
+		TalkObjectSourceProvider::class => [
+			'appManager'  => 'OCP\App\IAppManager',
+			'userSession' => 'OCP\IUserSession',
+			'container'   => self::CONTAINER,
+			'logger'      => 'Psr\Log\LoggerInterface',
+		],
+		// DBAL virtual registers: the connection factory depends only on the CredentialStore interface.
+		DbalConnectionFactory::class => [
+			'credentialStore' => \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+			'logger'          => 'Psr\Log\LoggerInterface',
+		],
+		SqlTypeMapper::class => [
+			'logger' => 'Psr\Log\LoggerInterface',
+		],
+		DatabaseIntrospectionService::class => [
+			'connectionFactory' => DbalConnectionFactory::class,
+			'typeMapper'        => SqlTypeMapper::class,
+			'registerMapper'    => \OCA\OpenRegister\Db\RegisterMapper::class,
+			'schemaMapper'      => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'diffService'       => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
+			'logger'            => 'Psr\Log\LoggerInterface',
+		],
+		DbalObjectSourceProvider::class => [
+			'sourceMapper'      => \OCA\OpenRegister\Db\SourceMapper::class,
+			'connectionFactory' => DbalConnectionFactory::class,
+			'logger'            => 'Psr\Log\LoggerInterface',
+		],
+		// Tables provider stack: a guarded reader (the sole Tables boundary), pure mappers, a schema-sync reconciler and the provider.
+		TablesUuidDeriver::class => [],
+		TablesTableReader::class => [
+			'appManager' => 'OCP\App\IAppManager',
+			'container'  => self::CONTAINER,
+			'logger'     => 'Psr\Log\LoggerInterface',
+		],
+		TablesColumnMapper::class => [
+			'uuidDeriver' => TablesUuidDeriver::class,
+			'logger'      => 'Psr\Log\LoggerInterface',
+		],
+		TablesSchemaSyncService::class => [
+			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapper::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'columnMapper'   => TablesColumnMapper::class,
+			'logger'         => 'Psr\Log\LoggerInterface',
+		],
+		TablesObjectSourceProvider::class => [
+			'reader'       => TablesTableReader::class,
+			'columnMapper' => TablesColumnMapper::class,
+			'uuidDeriver'  => TablesUuidDeriver::class,
+			'syncService'  => TablesSchemaSyncService::class,
+			'userSession'  => 'OCP\IUserSession',
+			'logger'       => 'Psr\Log\LoggerInterface',
+		],
+	];
+
+	/**
+	 * Register the ObjectSourceRegistry (shared), the built-in object source
+	 * providers and the DBAL and Tables services they use.
 	 *
 	 * The registry is shared so `addProvider()` registrations made during
 	 * `boot()` persist for the whole request; GetObject auto-wires it.
@@ -52,233 +170,35 @@ final class ObjectSourceRegistrar {
 	 * @spec openspec/changes/object-source-providers/tasks.md#1-provider-interface-registry
 	 */
 	public static function register(IRegistrationContext $context): void {
-		$context->registerService(
-			ObjectSourceRegistry::class,
-			function (ContainerInterface $container) {
-				return new ObjectSourceRegistry(
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			FederatedObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new FederatedObjectSourceProvider(
-					clientService: $container->get('OCP\Http\Client\IClientService'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			CalDavVtodoObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new CalDavVtodoObjectSourceProvider(
-					taskService: $container->get(TaskService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			UserDirectoryObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new UserDirectoryObjectSourceProvider(
-					userManager: $container->get('OCP\IUserManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			GroupObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new GroupObjectSourceProvider(
-					groupManager: $container->get('OCP\IGroupManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			OrganisationObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new OrganisationObjectSourceProvider(
-					organisationMapper: $container->get('OCA\OpenRegister\Db\OrganisationMapper'),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					organisationService: $container->get('OCA\OpenRegister\Service\OrganisationService')
-				);
-			}
-		);
-
-		$context->registerService(
-			ContactsObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new ContactsObjectSourceProvider(
-					contactsManager: $container->get('OCP\Contacts\IManager'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			CalendarEventObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new CalendarEventObjectSourceProvider(
-					calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			FilesObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new FilesObjectSourceProvider(
-					rootFolder: $container->get('OCP\Files\IRootFolder'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			DeckObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new DeckObjectSourceProvider(
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TalkObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new TalkObjectSourceProvider(
-					appManager: $container->get('OCP\App\IAppManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		// DBAL virtual-register services + provider (dbal-virtual-registers).
-		// The connection factory depends only on the CredentialStore interface,
-		// which is already bound to the active leaf via CredentialStoreResolver.
-		$context->registerService(
-			\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
-			function (ContainerInterface $container) {
-				return new DbalConnectionFactory(
-					credentialStore: $container->get(\OCA\OpenRegister\Service\Credential\CredentialStore::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class,
-			function (ContainerInterface $container) {
-				return new SqlTypeMapper(
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService::class,
-			function (ContainerInterface $container) {
-				return new DatabaseIntrospectionService(
-					connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
-					typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
-					registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-					diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			DbalObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new DbalObjectSourceProvider(
-					sourceMapper: $container->get(\OCA\OpenRegister\Db\SourceMapper::class),
-					connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		// Tables provider stack — a guarded reader (the sole Tables-boundary),
-		// pure mappers, a schema-sync reconciler, and the provider itself.
-		$context->registerService(
-			TablesUuidDeriver::class,
-			function () {
-				return new TablesUuidDeriver();
-			}
-		);
-
-		$context->registerService(
-			TablesTableReader::class,
-			function (ContainerInterface $container) {
-				return new TablesTableReader(
-					appManager: $container->get('OCP\App\IAppManager'),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TablesColumnMapper::class,
-			function (ContainerInterface $container) {
-				return new TablesColumnMapper(
-					uuidDeriver: $container->get(TablesUuidDeriver::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TablesSchemaSyncService::class,
-			function (ContainerInterface $container) {
-				return new TablesSchemaSyncService(
-					registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-					columnMapper: $container->get(TablesColumnMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			TablesObjectSourceProvider::class,
-			function (ContainerInterface $container) {
-				return new TablesObjectSourceProvider(
-					reader: $container->get(TablesTableReader::class),
-					columnMapper: $container->get(TablesColumnMapper::class),
-					uuidDeriver: $container->get(TablesUuidDeriver::class),
-					syncService: $container->get(TablesSchemaSyncService::class),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
+		foreach (array_keys(self::SERVICES) as $class) {
+			$context->registerService(
+				$class,
+				function (ContainerInterface $container) use ($class) {
+					return self::build(container: $container, class: $class);
+				}
+			);
+		}
 	}//end register()
+
+	/**
+	 * Build one listed service, resolving its constructor arguments from the container in their listed order.
+	 *
+	 * @param ContainerInterface $container The container to resolve from.
+	 * @param class-string       $class     A service listed in SERVICES.
+	 *
+	 * @return object The new service.
+	 */
+	private static function build(ContainerInterface $container, string $class): object {
+		$arguments = [];
+		foreach (self::SERVICES[$class] as $name => $id) {
+			$arguments[$name] = $container;
+			if ($id !== self::CONTAINER) {
+				$arguments[$name] = $container->get($id);
+			}
+		}
+
+		return new $class(...$arguments);
+	}//end build()
 
 	/**
 	 * Register the built-in object-source providers with the shared

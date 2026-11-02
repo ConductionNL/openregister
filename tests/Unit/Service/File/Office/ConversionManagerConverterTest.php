@@ -199,4 +199,95 @@ class ConversionManagerConverterTest extends TestCase {
 
 		$this->assertSame('%PDF-1.7 converted', $this->converter()->odtToPdf(odtBytes: 'odt'));
 	}//end testCreatesTheWorkFolder()
+
+	/**
+	 * Legacy .doc converts to DOCX when offered, else to plain text, else not at all.
+	 *
+	 * @return void
+	 */
+	public function testLegacyDocTargetPrefersDocx(): void {
+		$doc = 'application/msword';
+		$docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+		$this->offers(pairs: [[$doc, 'text/plain'], [$doc, $docx]]);
+		$this->assertSame('docx', $this->converter()->legacyDocTarget());
+
+		$this->manager = $this->createMock(IConversionManager::class);
+		$this->offers(pairs: [[$doc, 'text/plain']]);
+		$this->assertSame('txt', $this->converter()->legacyDocTarget());
+
+		$this->manager = $this->createMock(IConversionManager::class);
+		$this->offers(pairs: [[self::ODT, 'application/pdf']]);
+		$this->assertNull($this->converter()->legacyDocTarget());
+	}//end testLegacyDocTargetPrefersDocx()
+
+	/**
+	 * A legacy .doc goes through a .doc work file and comes back as DOCX.
+	 *
+	 * @return void
+	 */
+	public function testConvertsLegacyDocToDocx(): void {
+		$docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+		$this->offers(pairs: [['application/msword', $docx]]);
+		$this->workFolderExists();
+
+		$source = $this->createMock(File::class);
+		$this->work->expects($this->once())->method('newFile')
+			->with($this->matchesRegularExpression('/^[0-9a-f]{32}\.doc$/'), 'doc bytes')
+			->willReturn($source);
+		$result = $this->createMock(File::class);
+		$result->method('getContent')->willReturn('PK docx');
+		$this->work->method('get')->willReturn($result);
+		$this->manager->expects($this->once())->method('convert')
+			->with($source, $docx, $this->matchesRegularExpression('#\.docx$#'))
+			->willReturn('/openregister/files/.office-conversion/out.docx');
+
+		$this->assertSame('PK docx', $this->converter()->convertLegacyDoc(docBytes: 'doc bytes', target: 'docx'));
+	}//end testConvertsLegacyDocToDocx()
+
+	/**
+	 * A legacy .doc target other than DOCX or text is refused before any conversion.
+	 *
+	 * @return void
+	 */
+	public function testALegacyDocTargetOtherThanDocxOrTextIsRefused(): void {
+		$this->manager->expects($this->never())->method('convert');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Unsupported target for a legacy .doc');
+		$this->converter()->convertLegacyDoc(docBytes: 'doc bytes', target: 'pdf');
+	}//end testALegacyDocTargetOtherThanDocxOrTextIsRefused()
+
+	/**
+	 * When the provider list cannot be read, no conversion is offered.
+	 *
+	 * @return void
+	 */
+	public function testAFailingProviderListOffersNoConversion(): void {
+		$this->manager->method('getProviders')->willThrowException(new RuntimeException('providers down'));
+		$converter = $this->converter();
+
+		$this->assertFalse($converter->isAvailable());
+		$this->assertNull($converter->legacyDocTarget());
+	}//end testAFailingProviderListOffersNoConversion()
+
+	/**
+	 * A conversion that leaves no file behind is reported, and the work file is still removed.
+	 *
+	 * @return void
+	 */
+	public function testAConversionWithoutAResultFileIsReported(): void {
+		$this->offers(pairs: [[self::ODT, 'application/pdf']]);
+		$this->workFolderExists();
+
+		$source = $this->createMock(File::class);
+		$source->expects($this->once())->method('delete');
+		$this->work->method('newFile')->willReturn($source);
+		$this->work->method('get')->willReturn($this->createMock(Folder::class));
+		$this->manager->method('convert')->willReturn('/openregister/files/.office-conversion/out.pdf');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('The conversion did not produce a file');
+		$this->converter()->odtToPdf(odtBytes: 'odt');
+	}//end testAConversionWithoutAResultFileIsReported()
 }//end class

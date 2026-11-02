@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ use OCP\EventDispatcher\Event;
 /**
  * A listener may only admit; nothing it does refuses a caller the restriction lets in.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 class FileRestrictionAdmitEvent extends Event {
 
@@ -58,7 +58,7 @@ class FileRestrictionAdmitEvent extends Event {
 	 *
 	 * @return int The Nextcloud file id.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function getFileId(): int {
 		return $this->fileId;
@@ -69,7 +69,7 @@ class FileRestrictionAdmitEvent extends Event {
 	 *
 	 * @return string The user id.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function getUserId(): string {
 		return $this->userId;
@@ -80,7 +80,7 @@ class FileRestrictionAdmitEvent extends Event {
 	 *
 	 * @return array<string, mixed> The row.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function getRestriction(): array {
 		return $this->restriction;
@@ -91,7 +91,7 @@ class FileRestrictionAdmitEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function admit(): void {
 		$this->admitted = true;
@@ -103,7 +103,7 @@ class FileRestrictionAdmitEvent extends Event {
 	 *
 	 * @return bool True when admitted.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
 	 */
 	public function isAdmitted(): bool {
 		return $this->admitted;

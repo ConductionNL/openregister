@@ -18,7 +18,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -160,7 +160,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 	 * A refusal from the job service reaches the caller as a 422 carrying the
 	 * run it collided with, not a bare "no".
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -185,7 +185,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 	/**
 	 * Run now names the administrator asking, so the run row can too.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -209,7 +209,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 	/**
 	 * Naming no job is a bad request, never a run of something unnamed.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -222,7 +222,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 	/**
 	 * The verb decides: GET reads the mode, DELETE leaves it, POST enters it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
@@ -246,7 +246,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 	 * The facts page answers the version and the build a support call opens
 	 * with.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 *
 	 * @return void
 	 */

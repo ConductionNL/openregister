@@ -72,7 +72,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testAKeptPublicationPointsAtTheThemeWrittenAgainAfterAPartialRemove(): void {
 		$publications             = $this->store->ids(register: 'pub', schema: 'publication');
@@ -102,7 +102,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testARefreshedSetInstallsAgainWithoutWritesAndRemovesWhole(): void {
 		$this->store->undeletable = $this->store->ids(register: 'pub', schema: 'publication');
@@ -126,7 +126,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function testAnUntouchedSecondInstallRefreshesNothing(): void {
 		$updates = $this->store->updates;
@@ -141,7 +141,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	/**
 	 * A user who pointed a kept object's reference at something else keeps that edit: the next install leaves it and says so.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testAUsersEditOfAKeptObjectsReferenceIsLeftAndNamed(): void {
 		$publications = $this->store->ids(register: 'pub', schema: 'publication');
@@ -164,7 +164,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	/**
 	 * A kept object whose record predates the recorded values is not refreshed over a value nobody can vouch for.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testAReferenceTheRecordHoldsNoValueForIsLeft(): void {
 		$record = $this->record->read(set: 'demo');
@@ -187,7 +187,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	 * A field refreshed in an earlier run stays in the refresh record when a later run refreshes another field of
 	 * the object, so the earlier field is not read as edited by somebody on the run after.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
 	public function testARefreshKeepsTheFieldsAnEarlierRunRefreshed(): void {
 		$this->app(app: 'beta', fragment: ['objects' => [

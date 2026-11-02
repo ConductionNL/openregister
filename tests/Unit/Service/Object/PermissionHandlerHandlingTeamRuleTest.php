@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @covers \OCA\OpenRegister\Service\File\ObjectFileAccess
  *
- * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema

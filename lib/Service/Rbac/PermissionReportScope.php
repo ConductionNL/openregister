@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ class PermissionReportScope {
 	 *
 	 * @return Register[] The registers, empty when the filter matches nothing.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function registers(?string $filter): array {
 		try {
@@ -81,7 +81,7 @@ class PermissionReportScope {
 	 *
 	 * @return Schema[] The schemas, empty when the filter matches nothing.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function schemas(?string $filter): array {
 		try {

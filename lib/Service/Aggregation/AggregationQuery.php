@@ -154,13 +154,6 @@ class AggregationQuery {
 	 *
 	 * @throws InvalidArgumentException When the input is invalid.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *   Fail-fast validation chain: each `if` is one independent guard
-	 *   against bad input (including the single-/multi-field groupBy shape
-	 *   checks). Extracting them would reduce the count but obscure the
-	 *   per-rule error messages.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
@@ -173,6 +166,34 @@ class AggregationQuery {
 		?array $metrics = null,
 		bool $cumulative = false,
 	): self {
+		self::assertValidMetric(metric: $metric, field: $field);
+		self::assertValidMetricsList(metrics: $metrics, timeBucketed: $dateBucket !== null);
+		self::assertValidGroupBy(groupBy: $groupBy);
+		self::assertValidTimeBucketing(dateBucket: $dateBucket, grouped: $groupBy !== null);
+		self::assertCumulativeIsTimeBucketed(cumulative: $cumulative, timeBucketed: $dateBucket !== null);
+
+		return new self(
+			metric: $metric,
+			field: $field,
+			filter: $filter,
+			groupBy: $groupBy,
+			dateBucket: $dateBucket,
+			metrics: $metrics,
+			cumulative: $cumulative
+		);
+	}//end create()
+
+	/**
+	 * The metric must be known, and every metric but count needs a field.
+	 *
+	 * @param string      $metric The metric.
+	 * @param string|null $field  The field it runs over.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the metric is unknown or lacks a field.
+	 */
+	private static function assertValidMetric(string $metric, ?string $field): void {
 		if (in_array($metric, self::METRICS, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf(
@@ -188,91 +209,147 @@ class AggregationQuery {
 				sprintf('aggregation metric "%s" MUST specify a field', $metric)
 			);
 		}
+	}//end assertValidMetric()
 
-		if ($metrics !== null) {
-			if (count($metrics) === 0) {
-				throw new InvalidArgumentException('metrics list, when supplied, MUST NOT be empty');
-			}
-
-			foreach ($metrics as $metricEntry) {
-				if (is_array($metricEntry) === false || array_key_exists('metric', $metricEntry) === false) {
-					throw new InvalidArgumentException('each metrics entry MUST be an array with a `metric` key');
-				}
-
-				$entryMetric = (string)$metricEntry['metric'];
-				if (in_array($entryMetric, self::METRICS, true) === false) {
-					throw new InvalidArgumentException(
-						sprintf(
-							'metrics entry has an invalid metric "%s" (MUST be one of: %s)',
-							$entryMetric,
-							implode(', ', self::METRICS)
-						)
-					);
-				}
-
-				$entryField = ($metricEntry['field'] ?? null);
-				if ($entryMetric !== self::METRIC_COUNT && ($entryField === null || $entryField === '')) {
-					throw new InvalidArgumentException(
-						sprintf('metrics entry "%s" MUST specify a field', $entryMetric)
-					);
-				}
-			}//end foreach
-
-			if ($dateBucket !== null) {
-				throw new InvalidArgumentException(
-					'a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation'
-				);
-			}
-		}//end if
-
-		if ($groupBy !== null) {
-			$groupFields = self::normaliseGroupByFields(groupBy: $groupBy);
-			foreach ($groupFields as $groupField) {
-				if (is_string($groupField) === false || $groupField === '') {
-					throw new InvalidArgumentException(
-						'groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string'
-					);
-				}
-			}
-
-			if (count($groupFields) === 0) {
-				throw new InvalidArgumentException(
-					'groupBy MUST include a non-empty `field` or a non-empty `fields` list'
-				);
-			}
-
-			if (count($groupFields) !== count(array_unique($groupFields))) {
-				throw new InvalidArgumentException('groupBy fields MUST be distinct (duplicate field in groupBy list)');
-			}
-		}//end if
-
-		if ($dateBucket !== null) {
-			self::assertValidDateBucket(spec: $dateBucket);
+	/**
+	 * A `metrics` list, when supplied, is non-empty, holds valid entries and
+	 * is not combined with a time bucket.
+	 *
+	 * @param array<int, mixed>|null $metrics      The metrics list, or null.
+	 * @param bool                   $timeBucketed Whether a dateBucket is set.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the list is empty, an entry is invalid or a dateBucket is set.
+	 */
+	private static function assertValidMetricsList(?array $metrics, bool $timeBucketed): void {
+		if ($metrics === null) {
+			return;
 		}
 
-		if ($groupBy !== null && $dateBucket !== null) {
+		if (count($metrics) === 0) {
+			throw new InvalidArgumentException('metrics list, when supplied, MUST NOT be empty');
+		}
+
+		foreach ($metrics as $metricEntry) {
+			self::assertValidMetricsEntry(metricEntry: $metricEntry);
+		}
+
+		if ($timeBucketed === true) {
+			throw new InvalidArgumentException(
+				'a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation'
+			);
+		}
+	}//end assertValidMetricsList()
+
+	/**
+	 * One `metrics` entry: an array with a known `metric`, and a field for
+	 * every metric but count.
+	 *
+	 * @param mixed $metricEntry The entry.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the entry is malformed.
+	 */
+	private static function assertValidMetricsEntry(mixed $metricEntry): void {
+		if (is_array($metricEntry) === false || array_key_exists('metric', $metricEntry) === false) {
+			throw new InvalidArgumentException('each metrics entry MUST be an array with a `metric` key');
+		}
+
+		$entryMetric = (string) $metricEntry['metric'];
+		if (in_array($entryMetric, self::METRICS, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'metrics entry has an invalid metric "%s" (MUST be one of: %s)',
+					$entryMetric,
+					implode(', ', self::METRICS)
+				)
+			);
+		}
+
+		$entryField = ($metricEntry['field'] ?? null);
+		if ($entryMetric !== self::METRIC_COUNT && ($entryField === null || $entryField === '')) {
+			throw new InvalidArgumentException(
+				sprintf('metrics entry "%s" MUST specify a field', $entryMetric)
+			);
+		}
+	}//end assertValidMetricsEntry()
+
+	/**
+	 * A groupBy, when supplied, names one or more distinct, non-empty fields.
+	 *
+	 * @param array<mixed>|null $groupBy The groupBy spec, or null.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the groupBy is malformed.
+	 */
+	private static function assertValidGroupBy(?array $groupBy): void {
+		if ($groupBy === null) {
+			return;
+		}
+
+		$groupFields = self::normaliseGroupByFields(groupBy: $groupBy);
+		foreach ($groupFields as $groupField) {
+			if (is_string($groupField) === false || $groupField === '') {
+				throw new InvalidArgumentException(
+					'groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string'
+				);
+			}
+		}
+
+		if (count($groupFields) === 0) {
+			throw new InvalidArgumentException(
+				'groupBy MUST include a non-empty `field` or a non-empty `fields` list'
+			);
+		}
+
+		if (count($groupFields) !== count(array_unique($groupFields))) {
+			throw new InvalidArgumentException('groupBy fields MUST be distinct (duplicate field in groupBy list)');
+		}
+	}//end assertValidGroupBy()
+
+	/**
+	 * A dateBucket, when supplied, is well formed and is the only bucketing.
+	 *
+	 * @param array<string, mixed>|null $dateBucket The dateBucket spec, or null.
+	 * @param bool                      $grouped    Whether a groupBy is set.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the dateBucket is malformed or combined with a groupBy.
+	 */
+	private static function assertValidTimeBucketing(?array $dateBucket, bool $grouped): void {
+		if ($dateBucket === null) {
+			return;
+		}
+
+		self::assertValidDateBucket(spec: $dateBucket);
+		if ($grouped === true) {
 			throw new InvalidArgumentException(
 				'groupBy and dateBucket MUST NOT be combined — pick one bucketing strategy'
 			);
 		}
+	}//end assertValidTimeBucketing()
 
-		if ($cumulative === true && $dateBucket === null) {
+	/**
+	 * A running total needs time buckets to accumulate over.
+	 *
+	 * @param bool $cumulative   The cumulative flag.
+	 * @param bool $timeBucketed Whether a dateBucket is set.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When cumulative is set without a dateBucket.
+	 */
+	private static function assertCumulativeIsTimeBucketed(bool $cumulative, bool $timeBucketed): void {
+		if ($cumulative === true && $timeBucketed === false) {
 			throw new InvalidArgumentException(
 				'cumulative MUST only be combined with a dateBucket (time-bucket) aggregation'
 			);
 		}
-
-		return new self(
-			metric: $metric,
-			field: $field,
-			filter: $filter,
-			groupBy: $groupBy,
-			dateBucket: $dateBucket,
-			metrics: $metrics,
-			cumulative: $cumulative
-		);
-
-	}//end create()
+	}//end assertCumulativeIsTimeBucketed()
 
 	/**
 	 * Validate a dateBucket spec.

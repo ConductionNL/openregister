@@ -173,7 +173,7 @@ class FilePublishingHandlerTest extends TestCase {
 	 * share is never created. THE POINT: the guard runs before anything is
 	 * written, so a refusal cannot leave a half-published file behind.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	#[Test]
 	public function testPublishFileIsRefusedByAPartyIndicator(): void {

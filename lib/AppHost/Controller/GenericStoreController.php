@@ -439,7 +439,7 @@ class GenericStoreController extends Controller {
 	 *
 	 * @return JSONResponse `{outcome, slug}`; 401 anonymous, 403 not admitted, 400 no item.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
 	#[NoAdminRequired]
 	public function publish(): JSONResponse {
