@@ -8572,25 +8572,11 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $dispatchEvents = true,
 		bool $failIfExists = false,
 	): ObjectEntity {
-		// Dispatch creating event (pre-save hook).
+		// Dispatch creating event (pre-save hook). A refusal is held until the write knows whether
+		// this is a create at all: over a taken identifier it is an update, judged by the update guards.
+		$refusal = null;
 		if ($dispatchEvents === true) {
-			$creatingEvent = new ObjectCreatingEvent(object: $entity);
-			$this->eventDispatcher->dispatchTyped($creatingEvent);
-
-			// Check if a hook stopped propagation (reject mode).
-			if ($creatingEvent->isPropagationStopped() === true) {
-				throw new HookStoppedException(
-					message: (string)($creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'),
-					errors: $creatingEvent->getErrors()
-				);
-			}
-
-			// Merge modified data from hooks if any.
-			$modifiedData = $creatingEvent->getModifiedData();
-			if (empty($modifiedData) === false) {
-				$objectData = $entity->getObject() ?? [];
-				$entity->setObject(array_merge($objectData, $modifiedData));
-			}
+			$refusal = $this->runCreatingHooks(entity: $entity);
 		}
 
 		// Ensure table exists.
@@ -8630,7 +8616,14 @@ class MagicMapper extends AbstractObjectMapper {
 		// Save to table, learning the generated `_id` from the INSERT itself.
 		[$uuid, $insertedId] = $this->writeClaimingIdentifier(
 			entity: $entity,
-			write: ['data' => $objectArray, 'register' => $register, 'schema' => $schema, 'table' => $tableName, 'failIfExists' => $failIfExists]
+			write: [
+				'data' => $objectArray,
+				'register' => $register,
+				'schema' => $schema,
+				'table' => $tableName,
+				'failIfExists' => $failIfExists,
+				'refusal' => $refusal,
+			]
 		);
 
 		// Update entity UUID if it was generated.
@@ -8704,6 +8697,10 @@ class MagicMapper extends AbstractObjectMapper {
 	private function writeClaimingIdentifier(ObjectEntity $entity, array $write): array {
 		// Reset here, after the creating listeners ran, so an insert nested in one of them cannot leave its flag behind.
 		$this->replacedByLastInsert = null;
+		if (($write['refusal'] ?? null) !== null) {
+			return [$this->updateRefusedCreate(entity: $entity, write: $write), null];
+		}
+
 		$insertedId = null;
 		try {
 			$uuid = $this->saveObjectToRegisterSchemaTable(
@@ -8724,6 +8721,59 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return [$uuid, $insertedId];
 	}//end writeClaimingIdentifier()
+
+	/**
+	 * Dispatch ObjectCreatingEvent and merge what the hooks set; the refusal when a hook stopped it.
+	 *
+	 * @param ObjectEntity $entity The object being created.
+	 *
+	 * @return HookStoppedException|null The refusal to throw unless the write turns out to be an update.
+	 *
+	 * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
+	 */
+	private function runCreatingHooks(ObjectEntity $entity): ?HookStoppedException {
+		$creatingEvent = new ObjectCreatingEvent(object: $entity);
+		$this->eventDispatcher->dispatchTyped($creatingEvent);
+		if ($creatingEvent->isPropagationStopped() === true) {
+			return new HookStoppedException(
+				message: (string)($creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'),
+				errors: $creatingEvent->getErrors()
+			);
+		}
+
+		$modifiedData = $creatingEvent->getModifiedData();
+		if (empty($modifiedData) === false) {
+			$entity->setObject(array_merge(($entity->getObject() ?? []), $modifiedData));
+		}
+
+		return null;
+	}//end runCreatingHooks()
+
+	/**
+	 * A create its creating hooks refused: an update when its identifier is taken, else the refusal.
+	 *
+	 * The refusal judged a create. When the caller did not ask to fail on a taken
+	 * identifier and the row exists, the write is an update of that row, so the
+	 * update guards judge it instead.
+	 *
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $write  `table`, `register`, `schema`, `failIfExists` and the `refusal`.
+	 *
+	 * @return string The uuid written.
+	 *
+	 * @throws HookStoppedException The creating refusal, when this is a create after all.
+	 *
+	 * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
+	 */
+	private function updateRefusedCreate(ObjectEntity $entity, array $write): string {
+		if ($write['failIfExists'] === true
+			|| $this->findObjectInRegisterSchemaTable(uuid: (string)$entity->getUuid(), tableName: $write['table']) === null
+		) {
+			throw $write['refusal'];
+		}
+
+		return $this->updateTakenIdentifier(entity: $entity, target: $write);
+	}//end updateRefusedCreate()
 
 	/**
 	 * Write a create whose identifier is already taken as an update of the stored row.

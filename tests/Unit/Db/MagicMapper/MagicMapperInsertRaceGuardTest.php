@@ -83,6 +83,8 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 	private const REFUSAL = 'The transition is not allowed';
 
+	private const NOT_INITIAL = 'A new object starts in "open"';
+
 	/**
 	 * Events in the order they were dispatched.
 	 *
@@ -103,6 +105,13 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	 * @var bool
 	 */
 	private bool $taken = false;
+
+	/**
+	 * The object data of every table write, in order.
+	 *
+	 * @var list<array<string, mixed>>
+	 */
+	private array $writtenData = [];
 
 	/**
 	 * Run once inside the next ObjectCreatingEvent, before it is recorded.
@@ -130,6 +139,15 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 					$hook             = $this->onCreating;
 					$this->onCreating = null;
 					$hook();
+				}
+
+				if ($event instanceof ObjectCreatingEvent && (($event->getObject()->getObject()['status'] ?? null) === 'numbered')) {
+					$event->setModifiedData(['number' => 'N-1']);
+				}
+
+				if ($event instanceof ObjectCreatingEvent && (($event->getObject()->getObject()['status'] ?? null) === 'archived')) {
+					$event->setErrors(['message' => self::NOT_INITIAL]);
+					$event->stopPropagation();
 				}
 
 				if ($event instanceof ObjectUpdatingEvent && (($event->getNewObject()->getObject()['status'] ?? null) === 'in-deliberation')) {
@@ -174,6 +192,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$mapper->method('saveObjectToRegisterSchemaTable')->willReturnCallback(
 			function (array $objectData, Register $register, Schema $schema, string $tableName, bool $failIfExists = false, ?int &$insertedId = null): string {
 				$this->writes[] = $failIfExists;
+				$this->writtenData[] = $objectData;
 				if ($this->taken === true && $failIfExists === true) {
 					throw new ObjectExistsException(message: 'taken', uuid: self::UUID);
 				}
@@ -185,7 +204,9 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 				return self::UUID;
 			}
 		);
-		$mapper->method('findObjectInRegisterSchemaTable')->willReturn(['_id' => 5, '_uuid' => self::UUID]);
+		$mapper->method('findObjectInRegisterSchemaTable')->willReturnCallback(
+			fn (): ?array => ($this->taken === true ? ['_id' => 5, '_uuid' => self::UUID] : null)
+		);
 		$mapper->method('convertRowToObjectEntity')->willReturnCallback(
 			static function (): ObjectEntity {
 				$stored = new ObjectEntity();
@@ -372,4 +393,55 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
 	}//end testAStoppedUpdateLeavesNoReplacedRowBehind()
+	public function testARefusedCreateOverATakenIdentifierIsJudgedAsAnUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		$saved = $mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+
+		$this->assertSame(5, $saved->getId());
+		$this->assertSame([false], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class, ObjectUpdatingEvent::class, ObjectUpdatedEvent::class], $this->eventClasses());
+		$this->assertSame('open', $this->dispatched[2]->getOldObject()?->getObject()['status']);
+	}//end testARefusedCreateOverATakenIdentifierIsJudgedAsAnUpdate()
+
+	public function testARefusedCreateOfAFreeIdentifierStaysRefused(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('The creating refusal should stand.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+	}//end testARefusedCreateOfAFreeIdentifierStaysRefused()
+
+	public function testARefusedClaimStaysRefused(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		try {
+			$mapper->insertObjectEntity(entity: $this->entity('archived'), register: $register, schema: $schema, failIfExists: true);
+			$this->fail('The creating refusal should stand.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+	}//end testARefusedClaimStaysRefused()
+
+	public function testWhatACreatingHookSetsIsWritten(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+		$this->writtenData = [];
+
+		$mapper->insertObjectEntity(entity: $this->entity('numbered'), register: $register, schema: $schema);
+
+		$this->assertSame('N-1', ($this->writtenData[0]['number'] ?? $this->writtenData[0]['object']['number'] ?? null));
+	}//end testWhatACreatingHookSetsIsWritten()
+
 }//end class
