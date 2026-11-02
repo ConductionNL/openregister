@@ -12,6 +12,30 @@ import {
 const apiUrl = '/index.php/apps/openregister/api'
 
 /**
+ * The statistics with every count at 0.
+ *
+ * @return {object} Every count at 0.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyStatistics() {
+	return {
+		total: 0,
+		totalResults: 0,
+		averageResultsPerSearch: 0,
+		averageExecutionTime: 0,
+		successRate: 0,
+		uniqueSearchTerms: 0,
+		uniqueUsers: 0,
+		uniqueOrganizations: 0,
+		queryComplexity: {
+			simple: 0,
+			medium: 0,
+			complex: 0,
+		},
+	}
+}
+
+/**
  * Store for managing search trail logs
  * Provides functionality for retrieving, filtering, and managing search trail entries
  */
@@ -28,30 +52,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		searchTrailItem: null,
 
 		// Pagination
-		searchTrailPagination: {
-			total: 0,
-			page: 1,
-			pages: 1,
-			limit: 50,
-			offset: 0,
-		},
+		searchTrailPagination: listPagination({}, 50),
 
 		// Statistics
-		statistics: {
-			total: 0,
-			totalResults: 0,
-			averageResultsPerSearch: 0,
-			averageExecutionTime: 0,
-			successRate: 0,
-			uniqueSearchTerms: 0,
-			uniqueUsers: 0,
-			uniqueOrganizations: 0,
-			queryComplexity: {
-				simple: 0,
-				medium: 0,
-				complex: 0,
-			},
-		},
+		statistics: emptyStatistics(),
 
 		// Popular terms
 		popularTerms: [],
@@ -450,21 +454,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				return this.statistics
 			} catch (error) {
 				console.error('Error getting statistics:', error)
-				return {
-					total: 0,
-					totalResults: 0,
-					averageResultsPerSearch: 0,
-					averageExecutionTime: 0,
-					successRate: 0,
-					uniqueSearchTerms: 0,
-					uniqueUsers: 0,
-					uniqueOrganizations: 0,
-					queryComplexity: {
-						simple: 0,
-						medium: 0,
-						complex: 0,
-					},
-				}
+				return emptyStatistics()
 			}
 		},
 
@@ -546,28 +536,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		clearSearchTrailStore() {
 			this.searchTrailList = []
 			this.searchTrailItem = null
-			this.searchTrailPagination = {
-				total: 0,
-				page: 1,
-				pages: 1,
-				limit: 50,
-				offset: 0,
-			}
-			this.statistics = {
-				total: 0,
-				totalResults: 0,
-				averageResultsPerSearch: 0,
-				averageExecutionTime: 0,
-				successRate: 0,
-				uniqueSearchTerms: 0,
-				uniqueUsers: 0,
-				uniqueOrganizations: 0,
-				queryComplexity: {
-					simple: 0,
-					medium: 0,
-					complex: 0,
-				},
-			}
+			this.searchTrailPagination = listPagination({}, 50)
+			this.statistics = emptyStatistics()
 			this.popularTerms = []
 			this.activity = {
 				hourly: [],
