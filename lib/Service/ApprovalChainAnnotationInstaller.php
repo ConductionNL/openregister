@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Task\TaskState;
+use OCA\OpenRegister\Service\Task\ApprovingOutcomeSet;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -51,9 +51,6 @@ use Psr\Log\LoggerInterface;
  * Compiles `x-openregister-approval-chains` declarations into task templates.
  *
  * @template-implements IEventListener<Event>
- *
- * @SuppressWarnings(PHPMD.StaticAccess) TaskState is the published, stateless
- * task vocabulary, read here for the approving set.
  */
 class ApprovalChainAnnotationInstaller implements IEventListener {
 
@@ -207,7 +204,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			'positions' => $positions,
 		];
 
-		$approving = TaskState::approvingSet(declared: ($spec['approvingOutcomes'] ?? null));
+		$approving = (new ApprovingOutcomeSet(declared: ($spec['approvingOutcomes'] ?? null)))->entries();
 		if ($approving !== []) {
 			$template['approvingOutcomes'] = $approving;
 		}

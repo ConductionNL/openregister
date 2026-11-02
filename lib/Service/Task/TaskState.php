@@ -214,18 +214,7 @@ final class TaskState {
 	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public static function approvingSet(mixed $declared): array {
-		if (is_array($declared) === false) {
-			return [];
-		}
-
-		$set = [];
-		foreach ($declared as $entry) {
-			if (is_string($entry) === true && trim($entry) !== '') {
-				$set[] = strtolower(trim($entry));
-			}
-		}
-
-		return $set;
+		return (new ApprovingOutcomeSet(declared: $declared))->entries();
 	}//end approvingSet()
 
 	/**

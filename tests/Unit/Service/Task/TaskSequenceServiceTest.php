@@ -41,6 +41,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Event\TaskSequenceUndecidedEvent
  * @uses \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
  */
 class TaskSequenceServiceTest extends TestCase {
 

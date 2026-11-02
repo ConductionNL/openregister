@@ -42,6 +42,6 @@ A task sequence moves to its next position only when a position completes with a
 ## Impact
 
 - Amends `flow-approval-consolidation`.
-- Affected code: `lib/Service/Task/TaskSequenceService.php`, `lib/Service/Task/TaskState.php`, `lib/Db/TaskSequence.php`, `lib/Service/ApprovalChainAnnotationInstaller.php`, the new `lib/Event/TaskSequenceUndecidedEvent.php`, `docs/development/approval-events-migration.md`.
+- Affected code: `lib/Service/Task/TaskSequenceService.php`, `lib/Service/Task/TaskState.php`, the new `lib/Service/Task/ApprovingOutcomeSet.php`, `lib/Db/TaskSequence.php`, `lib/Service/ApprovalChainAnnotationInstaller.php`, the new `lib/Event/TaskSequenceUndecidedEvent.php`, `docs/development/approval-events-migration.md`.
 - Backwards compatible for every outcome the fleet sends today. A position completed with an empty or unknown outcome no longer advances.
 - Size: S.

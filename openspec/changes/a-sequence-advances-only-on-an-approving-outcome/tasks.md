@@ -9,7 +9,7 @@
 
 ## 2. Code
 
-- [x] 2.1 `TaskState::APPROVING_OUTCOMES` and `isApprovingOutcome()` (D-1, D-3).
+- [x] 2.1 `TaskState::APPROVING_OUTCOMES` and `isApprovingOutcome()` (D-1, D-3); `ApprovingOutcomeSet` normalises a declared set for the compiler and the sequence (D-2).
 - [x] 2.2 `TaskSequence::STATUS_UNDECIDED`, `TaskSequenceUndecidedEvent`, and `TaskSequenceService::onTaskTerminal()` closing a sequence as undecided (D-4).
 - [x] 2.3 `ApprovalChainAnnotationInstaller::compile()` carries `approvingOutcomes` (D-2).
 
