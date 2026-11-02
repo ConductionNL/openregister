@@ -70,6 +70,23 @@ const STATISTIC_FIELDS = [
  * Store for managing search trail logs
  * Provides functionality for retrieving, filtering, and managing search trail entries
  */
+/**
+ * The search trail store's statistics, popular terms, activity and usage
+ * figures, before anything loads.
+ *
+ * @return {object} The state.
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+ */
+function searchTrailInsightsState() {
+	return {
+		statistics: emptyStatistics(),
+		popularTerms: [],
+		activity: { hourly: [], daily: [], weekly: [], monthly: [] },
+		registerSchemaStats: [],
+		userAgentStats: [],
+	}
+}
+
 export const useSearchTrailStore = defineStore('searchTrail', {
 	state: () => ({
 		// Loading states
@@ -81,29 +98,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		// Data
 		searchTrailList: [],
 		searchTrailItem: null,
-
-		// Pagination
 		searchTrailPagination: listPagination({}, 50),
-
-		// Statistics
-		statistics: emptyStatistics(),
-
-		// Popular terms
-		popularTerms: [],
-
-		// Activity data
-		activity: {
-			hourly: [],
-			daily: [],
-			weekly: [],
-			monthly: [],
-		},
-
-		// Register schema statistics
-		registerSchemaStats: [],
-
-		// User agent statistics
-		userAgentStats: [],
+		...searchTrailInsightsState(),
 
 		// Filters
 		searchTrailFilters: {},

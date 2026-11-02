@@ -108,42 +108,67 @@ function keepMergeOperations(store, page) {
 	store.mergeOperationsOffset = data.offset ?? asked.offset
 }
 
-export const useQualityStore = defineStore('quality', {
-	state: () => ({
+/**
+ * The quality store's selection and quality listings, before anything loads.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the quality store.
+ */
+function qualityListingState() {
+	return {
 		// Shared (register, schema) selection — held here so switching
 		// between the four MDM views keeps the same selection.
 		selectedRegister: null,
 		selectedSchema: null,
-
 		registers: [],
 		schemas: [],
-
 		qualityStats: null,
-		lowQualityObjects: [],
-		lowQualityTotal: 0,
-		lowQualityLimit: 20,
-		lowQualityOffset: 0,
+		...emptyListing('lowQualityObjects', 'lowQuality'),
+		...emptyListing('duplicates', 'duplicates'),
+	}
+}
 
-		duplicates: [],
-		duplicatesTotal: 0,
-		duplicatesLimit: 20,
-		duplicatesOffset: 0,
-
+/**
+ * The quality store's master entity, merge and webhook state, before anything loads.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the quality store.
+ */
+function qualityMergeState() {
+	return {
 		masterEntities: [],
 		masterEntitiesTotal: 0,
 		goldenRecord: null,
-
-		mergeOperations: [],
-		mergeOperationsTotal: 0,
-		mergeOperationsLimit: 20,
-		mergeOperationsOffset: 0,
-
+		...emptyListing('mergeOperations', 'mergeOperations'),
 		webhooks: [],
 		webhookStats: {},
 		webhookFailures: [],
-
 		loading: false,
 		error: null,
+	}
+}
+
+/**
+ * An empty paged listing: no items, page size 20 from the start.
+ *
+ * @param {string} items The state name of the items.
+ * @param {string} prefix The prefix of its Total, Limit and Offset state names.
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the quality store.
+ */
+function emptyListing(items, prefix) {
+	return {
+		[items]: [],
+		[`${prefix}Total`]: 0,
+		[`${prefix}Limit`]: 20,
+		[`${prefix}Offset`]: 0,
+	}
+}
+
+export const useQualityStore = defineStore('quality', {
+	state: () => ({
+		...qualityListingState(),
+		...qualityMergeState(),
 	}),
 	getters: {
 		isLoading: (state) => state.loading,
