@@ -1309,7 +1309,7 @@
   },
   "src/store/modules/object.js": {
     "eqeqeq": {
-      "count": 3
+      "count": 1
     },
     "no-unused-vars": {
       "count": 2

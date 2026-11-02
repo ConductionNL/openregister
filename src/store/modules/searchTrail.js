@@ -6,7 +6,9 @@ import {
 	getListPage,
 	listPageQuery,
 	listPagination,
-	requestJson,
+	readOrFallback,
+	statisticsOrEmpty,
+	storeRequest,
 } from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -36,9 +38,55 @@ function emptyStatistics() {
 }
 
 /**
+ * A reader of one count of the statistics answer; a missing count is 0.
+ *
+ * @param {string} field The answer field.
+ * @return {function(object): number} The reader.
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+ */
+function count(field) {
+	return (stats) => stats[field] || 0
+}
+
+// The store's statistics keys, in order, with how each is read from the answer.
+const STATISTIC_FIELDS = [
+	['total', count('total_searches')],
+	['totalResults', count('total_results')],
+	['averageResultsPerSearch', count('avg_results_per_search')],
+	['averageExecutionTime', count('avg_response_time')],
+	['successRate', (stats) => (stats.success_rate ? stats.success_rate / 100 : 0)],
+	['uniqueSearchTerms', count('unique_search_terms')],
+	['uniqueUsers', count('unique_users')],
+	['uniqueOrganizations', count('unique_organizations')],
+	['avgSearchesPerSession', count('avg_searches_per_session')],
+	['avgObjectViewsPerSession', count('avg_object_views_per_session')],
+	[
+		'queryComplexity',
+		(stats) => stats.query_complexity || { simple: 0, medium: 0, complex: 0 },
+	],
+]
+
+/**
  * Store for managing search trail logs
  * Provides functionality for retrieving, filtering, and managing search trail entries
  */
+/**
+ * The search trail store's statistics, popular terms, activity and usage
+ * figures, before anything loads.
+ *
+ * @return {object} The state.
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+ */
+function searchTrailInsightsState() {
+	return {
+		statistics: emptyStatistics(),
+		popularTerms: [],
+		activity: { hourly: [], daily: [], weekly: [], monthly: [] },
+		registerSchemaStats: [],
+		userAgentStats: [],
+	}
+}
+
 export const useSearchTrailStore = defineStore('searchTrail', {
 	state: () => ({
 		// Loading states
@@ -50,29 +98,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		// Data
 		searchTrailList: [],
 		searchTrailItem: null,
-
-		// Pagination
 		searchTrailPagination: listPagination({}, 50),
-
-		// Statistics
-		statistics: emptyStatistics(),
-
-		// Popular terms
-		popularTerms: [],
-
-		// Activity data
-		activity: {
-			hourly: [],
-			daily: [],
-			weekly: [],
-			monthly: [],
-		},
-
-		// Register schema statistics
-		registerSchemaStats: [],
-
-		// User agent statistics
-		userAgentStats: [],
+		...searchTrailInsightsState(),
 
 		// Filters
 		searchTrailFilters: {},
@@ -127,23 +154,9 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		setStatistics(stats) {
-			this.statistics = {
-				total: stats.total_searches || 0,
-				totalResults: stats.total_results || 0,
-				averageResultsPerSearch: stats.avg_results_per_search || 0,
-				averageExecutionTime: stats.avg_response_time || 0,
-				successRate: stats.success_rate ? stats.success_rate / 100 : 0,
-				uniqueSearchTerms: stats.unique_search_terms || 0,
-				uniqueUsers: stats.unique_users || 0,
-				uniqueOrganizations: stats.unique_organizations || 0,
-				avgSearchesPerSession: stats.avg_searches_per_session || 0,
-				avgObjectViewsPerSession: stats.avg_object_views_per_session || 0,
-				queryComplexity: stats.query_complexity || {
-					simple: 0,
-					medium: 0,
-					complex: 0,
-				},
-			}
+			this.statistics = Object.fromEntries(
+				STATISTIC_FIELDS.map(([key, read]) => [key, read(stats)]),
+			)
 		},
 
 		/**
@@ -278,26 +291,18 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchStatistics(options = {}) {
-			this.statisticsLoading = true
-
-			try {
-				const query = new URLSearchParams()
-				if (options.from) query.append('from', options.from)
-				if (options.to) query.append('to', options.to)
-				const suffix = query.toString() ? `?${query.toString()}` : ''
-				const data = await requestJson(
-					`${apiUrl}/search-trails/statistics${suffix}`,
-					{ method: 'GET', failure: 'Failed to fetch statistics' },
-				)
-
-				this.setStatistics(data)
-				return data
-			} catch (error) {
-				console.error('Error fetching search trail statistics:', error)
-				throw error
-			} finally {
-				this.statisticsLoading = false
-			}
+			const query = new URLSearchParams()
+			if (options.from) query.append('from', options.from)
+			if (options.to) query.append('to', options.to)
+			const suffix = query.toString() ? `?${query.toString()}` : ''
+			return storeRequest(this, {
+				flag: 'statisticsLoading',
+				url: `${apiUrl}/search-trails/statistics${suffix}`,
+				request: { method: 'GET', failure: 'Failed to fetch statistics' },
+				log: (error) =>
+					console.error('Error fetching search trail statistics:', error),
+				keep: (data) => this.setStatistics(data),
+			})
 		},
 
 		/**
@@ -309,22 +314,14 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchPopularTerms(limit = 10) {
-			this.popularTermsLoading = true
-
-			try {
-				const data = await requestJson(
-					`${apiUrl}/search-trails/popular-terms?limit=${limit}`,
-					{ method: 'GET', failure: 'Failed to fetch popular terms' },
-				)
-
-				this.setPopularTerms(data)
-				return data
-			} catch (error) {
-				console.error('Error fetching popular terms:', error)
-				throw error
-			} finally {
-				this.popularTermsLoading = false
-			}
+			return storeRequest(this, {
+				flag: 'popularTermsLoading',
+				url: `${apiUrl}/search-trails/popular-terms?limit=${limit}`,
+				request: { method: 'GET', failure: 'Failed to fetch popular terms' },
+				log: (error) =>
+					console.error('Error fetching popular terms:', error),
+				keep: (data) => this.setPopularTerms(data),
+			})
 		},
 
 		/**
@@ -336,22 +333,14 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchActivity(period = 'daily') {
-			this.activityLoading = true
-
-			try {
-				const data = await requestJson(
-					`${apiUrl}/search-trails/activity?interval=${period}`,
-					{ method: 'GET', failure: 'Failed to fetch activity data' },
-				)
-
-				this.setActivity({ [period]: data })
-				return data
-			} catch (error) {
-				console.error('Error fetching activity data:', error)
-				throw error
-			} finally {
-				this.activityLoading = false
-			}
+			return storeRequest(this, {
+				flag: 'activityLoading',
+				url: `${apiUrl}/search-trails/activity?interval=${period}`,
+				request: { method: 'GET', failure: 'Failed to fetch activity data' },
+				log: (error) =>
+					console.error('Error fetching activity data:', error),
+				keep: (data) => this.setActivity({ [period]: data }),
+			})
 		},
 
 		/**
@@ -362,21 +351,19 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchRegisterSchemaStats() {
-			try {
-				const data = await requestJson(
-					`${apiUrl}/search-trails/register-schema-stats`,
-					{
-						method: 'GET',
-						failure: 'Failed to fetch register schema statistics',
-					},
-				)
-
-				this.setRegisterSchemaStats(data)
-				return data
-			} catch (error) {
-				console.error('Error fetching register schema statistics:', error)
-				throw error
-			}
+			return storeRequest(this, {
+				url: `${apiUrl}/search-trails/register-schema-stats`,
+				request: {
+					method: 'GET',
+					failure: 'Failed to fetch register schema statistics',
+				},
+				log: (error) =>
+					console.error(
+						'Error fetching register schema statistics:',
+						error,
+					),
+				keep: (data) => this.setRegisterSchemaStats(data),
+			})
 		},
 
 		/**
@@ -387,21 +374,16 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchUserAgentStats() {
-			try {
-				const data = await requestJson(
-					`${apiUrl}/search-trails/user-agent-stats`,
-					{
-						method: 'GET',
-						failure: 'Failed to fetch user agent statistics',
-					},
-				)
-
-				this.setUserAgentStats(data)
-				return data
-			} catch (error) {
-				console.error('Error fetching user agent statistics:', error)
-				throw error
-			}
+			return storeRequest(this, {
+				url: `${apiUrl}/search-trails/user-agent-stats`,
+				request: {
+					method: 'GET',
+					failure: 'Failed to fetch user agent statistics',
+				},
+				log: (error) =>
+					console.error('Error fetching user agent statistics:', error),
+				keep: (data) => this.setUserAgentStats(data),
+			})
 		},
 
 		/**
@@ -413,18 +395,16 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async cleanupSearchTrails(days = 30) {
-			try {
-				const data = await requestJson(`${apiUrl}/search-trails/cleanup`, {
+			return storeRequest(this, {
+				url: `${apiUrl}/search-trails/cleanup`,
+				request: {
 					method: 'POST',
 					body: { days },
 					failure: 'Failed to cleanup search trails',
-				})
-
-				return data
-			} catch (error) {
-				console.error('Error cleaning up search trails:', error)
-				throw error
-			}
+				},
+				log: (error) =>
+					console.error('Error cleaning up search trails:', error),
+			})
 		},
 
 		/**
@@ -449,13 +429,10 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getStatistics() {
-			try {
-				await this.fetchStatistics()
-				return this.statistics
-			} catch (error) {
-				console.error('Error getting statistics:', error)
-				return emptyStatistics()
-			}
+			return statisticsOrEmpty(this, {
+				empty: emptyStatistics,
+				log: (error) => console.error('Error getting statistics:', error),
+			})
 		},
 
 		/**
@@ -467,13 +444,17 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getPopularTerms(limit = 10) {
-			try {
-				await this.fetchPopularTerms(limit)
-				return this.popularTerms
-			} catch (error) {
-				console.error('Error getting popular terms:', error)
-				return []
-			}
+			return readOrFallback(
+				async () => {
+					await this.fetchPopularTerms(limit)
+					return this.popularTerms
+				},
+				{
+					log: (error) =>
+						console.error('Error getting popular terms:', error),
+					fallback: () => [],
+				},
+			)
 		},
 
 		/**
@@ -485,13 +466,17 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getActivity(period = 'daily') {
-			try {
-				await this.fetchActivity(period)
-				return this.activity[period] || []
-			} catch (error) {
-				console.error('Error getting activity data:', error)
-				return []
-			}
+			return readOrFallback(
+				async () => {
+					await this.fetchActivity(period)
+					return this.activity[period] || []
+				},
+				{
+					log: (error) =>
+						console.error('Error getting activity data:', error),
+					fallback: () => [],
+				},
+			)
 		},
 
 		/**
@@ -502,13 +487,20 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getRegisterSchemaStats() {
-			try {
-				await this.fetchRegisterSchemaStats()
-				return this.registerSchemaStats
-			} catch (error) {
-				console.error('Error getting register schema statistics:', error)
-				return []
-			}
+			return readOrFallback(
+				async () => {
+					await this.fetchRegisterSchemaStats()
+					return this.registerSchemaStats
+				},
+				{
+					log: (error) =>
+						console.error(
+							'Error getting register schema statistics:',
+							error,
+						),
+					fallback: () => [],
+				},
+			)
 		},
 
 		/**
@@ -519,13 +511,17 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async getUserAgentStats() {
-			try {
-				await this.fetchUserAgentStats()
-				return this.userAgentStats
-			} catch (error) {
-				console.error('Error getting user agent statistics:', error)
-				return []
-			}
+			return readOrFallback(
+				async () => {
+					await this.fetchUserAgentStats()
+					return this.userAgentStats
+				},
+				{
+					log: (error) =>
+						console.error('Error getting user agent statistics:', error),
+					fallback: () => [],
+				},
+			)
 		},
 
 		/**

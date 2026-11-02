@@ -133,6 +133,46 @@ export function defaultFileOptions() {
 	}
 }
 
+// The warning counts and totals of the system statistics, in display order.
+const SYSTEM_WARNING_COUNTS = [
+	'objectsWithoutOwner',
+	'objectsWithoutOrganisation',
+	'auditTrailsWithoutExpiry',
+	'searchTrailsWithoutExpiry',
+	'expiredAuditTrails',
+	'expiredSearchTrails',
+	'expiredObjects',
+]
+const SYSTEM_TOTAL_COUNTS = [
+	'totalObjects',
+	'totalBlobObjects',
+	'totalMagicObjects',
+	'totalSize',
+	'totalBlobSize',
+	'totalMagicSize',
+	'totalAuditTrails',
+	'totalSearchTrails',
+	'totalConfigurations',
+	'totalDataAccessProfiles',
+	'totalOrganisations',
+	'totalRegisters',
+	'totalSchemas',
+	'totalSources',
+	'totalWebhookLogs',
+	'deletedObjects',
+]
+
+/**
+ * Every count of a list at 0.
+ *
+ * @param {Array<string>} keys The counts.
+ * @return {object} The counts, each 0.
+ * @spec openspec/specs/entity-management-modals/spec.md
+ */
+function zeroCounts(keys) {
+	return Object.fromEntries(keys.map((key) => [key, 0]))
+}
+
 /**
  * The system statistics before they are loaded.
  *
@@ -141,33 +181,8 @@ export function defaultFileOptions() {
  */
 export function emptySystemStats() {
 	return {
-		warnings: {
-			objectsWithoutOwner: 0,
-			objectsWithoutOrganisation: 0,
-			auditTrailsWithoutExpiry: 0,
-			searchTrailsWithoutExpiry: 0,
-			expiredAuditTrails: 0,
-			expiredSearchTrails: 0,
-			expiredObjects: 0,
-		},
-		totals: {
-			totalObjects: 0,
-			totalBlobObjects: 0,
-			totalMagicObjects: 0,
-			totalSize: 0,
-			totalBlobSize: 0,
-			totalMagicSize: 0,
-			totalAuditTrails: 0,
-			totalSearchTrails: 0,
-			totalConfigurations: 0,
-			totalDataAccessProfiles: 0,
-			totalOrganisations: 0,
-			totalRegisters: 0,
-			totalSchemas: 0,
-			totalSources: 0,
-			totalWebhookLogs: 0,
-			deletedObjects: 0,
-		},
+		warnings: zeroCounts(SYSTEM_WARNING_COUNTS),
+		totals: zeroCounts(SYSTEM_TOTAL_COUNTS),
 		lastUpdated: null,
 	}
 }
@@ -180,40 +195,76 @@ export function emptySystemStats() {
  */
 export function emptyCacheStats() {
 	return {
-		overview: {
-			totalCacheSize: 0,
-			totalCacheEntries: 0,
-			overallHitRate: 0.0,
-			averageResponseTime: 0.0,
-			cacheEfficiency: 0.0,
-		},
-		services: {
-			object: emptyServiceCacheStats(),
-			schema: emptyServiceCacheStats(),
-			facet: emptyServiceCacheStats(),
-		},
-		distributed: {
-			type: 'unknown',
-			backend: 'Unknown',
-			available: false,
-		},
-		performance: {
-			averageHitTime: 0,
-			averageMissTime: 0,
-			performanceGain: 0,
-			optimalHitRate: 85.0,
-			currentTrend: 'unknown',
-		},
-		names: {
-			cache_size: 0,
-			hit_rate: 0.0,
-			hits: 0,
-			misses: 0,
-			warmups: 0,
-			enabled: false,
-		},
+		overview: emptyCacheOverview(),
+		services: emptyServicesCacheStats(),
+		distributed: { type: 'unknown', backend: 'Unknown', available: false },
+		performance: emptyCachePerformance(),
+		names: emptyNamesCacheStats(),
 		lastUpdated: null,
 		unavailable: true,
 		errorMessage: 'Loading...',
+	}
+}
+
+/**
+ * The per-service cache figures before they are loaded.
+ *
+ * @return {object}
+ * @spec openspec/specs/entity-management-modals/spec.md
+ */
+function emptyServicesCacheStats() {
+	return {
+		object: emptyServiceCacheStats(),
+		schema: emptyServiceCacheStats(),
+		facet: emptyServiceCacheStats(),
+	}
+}
+
+/**
+ * The cache overview before it is loaded.
+ *
+ * @return {object}
+ * @spec openspec/specs/entity-management-modals/spec.md
+ */
+function emptyCacheOverview() {
+	return {
+		totalCacheSize: 0,
+		totalCacheEntries: 0,
+		overallHitRate: 0.0,
+		averageResponseTime: 0.0,
+		cacheEfficiency: 0.0,
+	}
+}
+
+/**
+ * The cache performance figures before they are loaded.
+ *
+ * @return {object}
+ * @spec openspec/specs/entity-management-modals/spec.md
+ */
+function emptyCachePerformance() {
+	return {
+		averageHitTime: 0,
+		averageMissTime: 0,
+		performanceGain: 0,
+		optimalHitRate: 85.0,
+		currentTrend: 'unknown',
+	}
+}
+
+/**
+ * The names cache figures before they are loaded.
+ *
+ * @return {object}
+ * @spec openspec/specs/entity-management-modals/spec.md
+ */
+function emptyNamesCacheStats() {
+	return {
+		cache_size: 0,
+		hit_rate: 0.0,
+		hits: 0,
+		misses: 0,
+		warmups: 0,
+		enabled: false,
 	}
 }
