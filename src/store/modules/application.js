@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { Application } from '../../entities/index.js'
 import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
+import { okJson, sendJson } from '../../services/listPage.js'
 import { listStateActions } from './listState.js'
 
 export const useApplicationStore = defineStore('application', {
@@ -86,11 +87,7 @@ export const useApplicationStore = defineStore('application', {
 					method: 'GET',
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = (await response.json()).results
+				const data = (await okJson(response)).results
 
 				this.setApplicationList(data)
 
@@ -117,11 +114,7 @@ export const useApplicationStore = defineStore('application', {
 					method: 'GET',
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
+				const data = await okJson(response)
 				this.setApplicationItem(data)
 				return data
 			} catch (err) {
@@ -189,19 +182,12 @@ export const useApplicationStore = defineStore('application', {
 			const cleanedData = this.cleanApplicationForSave(applicationItem)
 
 			try {
-				const response = await fetch(endpoint, {
+				const response = await sendJson(endpoint, {
 					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(cleanedData),
+					body: cleanedData,
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
+				const responseData = await okJson(response)
 				const data = new Application(responseData)
 
 				this.setApplicationItem(data)
