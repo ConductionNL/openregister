@@ -75,3 +75,35 @@ export function searchGroupsDebounced(vm, search) {
 	}
 	vm.groupSearchDebounce = setTimeout(() => runGroupSearch(vm, search), 300)
 }
+
+/**
+ * Load every Nextcloud group onto a store as `{ id, name, userCount }`, for
+ * the access-control pickers. A refused or failed load leaves the store's
+ * groups as they were; only a failure is logged.
+ *
+ * @param {object} store The store: `nextcloudGroups`.
+ * @return {Promise<void>}
+ *
+ * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
+ */
+export async function loadNextcloudGroupsInto(store) {
+	try {
+		// Nextcloud OCS API v1, for compatibility.
+		const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+			headers: OCS_HEADERS,
+		})
+		if (response.ok) {
+			const data = await response.json()
+			if (data.ocs?.data?.groups) {
+				store.nextcloudGroups = data.ocs.data.groups.map((groupId) => ({
+					id: groupId,
+					name: groupId,
+					userCount: 0,
+				}))
+			}
+		}
+	} catch (error) {
+		// eslint-disable-next-line no-console
+		console.error('Error loading Nextcloud groups:', error)
+	}
+}

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { Organisation } from '../../entities/index.js'
+import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
 
 /**
  * Whether an organisation is the one a uuid or id names.
@@ -549,33 +550,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
 		 */
 		async loadNextcloudGroups() {
-			try {
-				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				const response = await fetch(
-					'/ocs/v1.php/cloud/groups?format=json',
-					{
-						headers: {
-							'OCS-APIRequest': 'true',
-						},
-					},
-				)
-
-				if (response.ok) {
-					const data = await response.json()
-					if (data.ocs?.data?.groups) {
-						// Transform group IDs into objects with additional info
-						this.nextcloudGroups = data.ocs.data.groups.map(
-							(groupId) => ({
-								id: groupId,
-								name: groupId,
-								userCount: 0, // Could be fetched separately if needed
-							}),
-						)
-					}
-				}
-			} catch (error) {
-				console.error('Error loading Nextcloud groups:', error)
-			}
+			return loadNextcloudGroupsInto(this)
 		},
 	},
 })

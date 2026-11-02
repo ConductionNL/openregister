@@ -1271,7 +1271,7 @@
   },
   "src/store/modules/application.js": {
     "no-console": {
-      "count": 6
+      "count": 5
     }
   },
   "src/store/modules/auditTrail.js": {
@@ -1317,7 +1317,7 @@
   },
   "src/store/modules/organisation.js": {
     "no-console": {
-      "count": 10
+      "count": 9
     }
   },
   "src/store/modules/quality.js": {
