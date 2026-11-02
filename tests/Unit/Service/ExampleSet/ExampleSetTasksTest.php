@@ -297,7 +297,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 			'a stranger'       => [['title' => 'T', 'objectUuid' => $on, 'assignee' => 'somebody.else'], 'assignee "somebody.else"'],
 			'an unknown state' => [['title' => 'T', 'objectUuid' => $on, 'state' => 'half-done'], "Unmapped task status 'half-done'"],
 			'not a date'       => [['title' => 'T', 'objectUuid' => $on, 'dueAt' => 'soon'], 'dueAt "soon" is not a date'],
-			'another field'    => [['title' => 'T', 'objectUuid' => $on, 'runUuid' => 'x'], 'field "runUuid"'],
+			'another field'    => [['title' => 'T', 'objectUuid' => $on, 'sequenceUuid' => 'x'], 'field "sequenceUuid"'],
 			'a stranger asked for it' => [['title' => 'T', 'objectUuid' => $on, 'requester' => 'somebody.else'], 'requester "somebody.else"'],
 			'an unknown requester' => [['title' => 'T', 'objectUuid' => $on, 'requester' => '{{cast:nobody.uid}}'], 'cannot resolve'],
 			'an expiry that is not a date' => [['title' => 'T', 'objectUuid' => $on, 'expiresAt' => 'later'], 'expiresAt "later" is not a date'],

@@ -218,8 +218,9 @@ class ExampleSetValues {
 	}//end tasksOf()
 
 	/**
-	 * The flows a fragment declares, by key, for `{{flow:key.uuid}}`: as the record holds them after the install
-	 * wrote them, or with a stand-in uuid for the check (`$record` null), since none is written yet.
+	 * The flows a fragment declares, by key, for `{{flow:key.uuid}}` and `{{flow:key.runs.run}}`: as the record
+	 * holds them after the install wrote them, or with stand-in uuids for the check (`$record` null), since none
+	 * is written yet. A stand-in names its keyed runs, and the step each waiting one waits on (`waitsOn`).
 	 *
 	 * @param array<string, mixed>      $fragment The fragment.
 	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
@@ -227,9 +228,30 @@ class ExampleSetValues {
 	 * @return array<string, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
 	public function flowsOf(array $fragment, ?array $record): array {
-		return $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
+		$flows = $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
+		if ($record !== null) {
+			return $flows;
+		}
+
+		foreach (($fragment['flows'] ?? []) as $flow) {
+			foreach ((array) ($flow['data']['runs'] ?? []) as $run) {
+				$run = (array) $run;
+				if (is_string($run['key'] ?? null) === false) {
+					continue;
+				}
+
+				$standIn = 'example-set-stand-in:run:'.$flow['key'].'.'.$run['key'];
+				$flows[(string) $flow['key']]['runs'][$run['key']] = $standIn;
+				if (($run['status'] ?? null) === 'suspended') {
+					$flows[(string) $flow['key']]['waitsOn'][$standIn] = (string) ($run['node'] ?? '');
+				}
+			}
+		}
+
+		return $flows;
 	}//end flowsOf()
 
 	/**
