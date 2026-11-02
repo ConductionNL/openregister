@@ -174,7 +174,7 @@ class TaskSequenceService {
 					'schemaId' => $sequence->getSchemaId(),
 					'templateId' => $sequence->getTemplateId(),
 					'templateVersion' => $sequence->getTemplateVersion(),
-					'templateSnapshot' => $position,
+					'templateSnapshot' => $this->positionSnapshot(position: $position, template: $template),
 					'sequenceUuid' => $sequence->getUuid(),
 					'sequencePosition' => $order,
 					'runUuid' => $runUuid,
@@ -186,6 +186,26 @@ class TaskSequenceService {
 
 		return $sequence;
 	}//end provision()
+
+	/**
+	 * A position as frozen onto its task, carrying the chain's declared
+	 * approving set so the task alone tells what approves it.
+	 *
+	 * @param array<string, mixed> $position The declared position.
+	 * @param array<string, mixed> $template The compiled template.
+	 *
+	 * @return array<string, mixed> The position, with `approvingOutcomes` when declared.
+	 *
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 */
+	private function positionSnapshot(array $position, array $template): array {
+		$approving = TaskState::approvingSet(declared: ($template['approvingOutcomes'] ?? null));
+		if ($approving !== []) {
+			$position['approvingOutcomes'] = $approving;
+		}
+
+		return $position;
+	}//end positionSnapshot()
 
 	/**
 	 * Progress a sequence after one of its tasks reached a terminal state.
@@ -361,12 +381,7 @@ class TaskSequenceService {
 	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	private function approvingOutcomes(TaskSequence $sequence): array {
-		$declared = TaskState::approvingSet(declared: (($sequence->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
-		if ($declared === []) {
-			return TaskState::APPROVING_OUTCOMES;
-		}
-
-		return $declared;
+		return TaskState::approvingSetOrDefault(declared: (($sequence->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
 	}//end approvingOutcomes()
 
 	/**
